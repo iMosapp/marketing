@@ -280,10 +280,10 @@ export default function OrganizationsScreen() {
                 </TouchableOpacity>
               </View>
               
-              <Text style={styles.inputLabel}>Organization Name *</Text>
+              <Text style={styles.inputLabel}>{newOrg.account_type === 'independent' ? "Independent's Name *" : "Organization Name *"}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., Ken Garff Auto Group"
+                placeholder={newOrg.account_type === 'independent' ? "e.g., John Smith" : "e.g., Ken Garff Auto Group"}
                 placeholderTextColor="#8E8E93"
                 value={newOrg.name}
                 onChangeText={(text) => setNewOrg({ ...newOrg, name: text })}
