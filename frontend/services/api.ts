@@ -687,6 +687,13 @@ export const emailAPI = {
     const response = await api.get(`/email/logs/${userId}`, { params });
     return response.data;
   },
+
+  // Email Analytics
+  getAnalytics: async (userId: string, days?: number) => {
+    const params = days ? { days } : {};
+    const response = await api.get(`/email/analytics/${userId}`, { params });
+    return response.data;
+  },
 };
 
 export default api;
