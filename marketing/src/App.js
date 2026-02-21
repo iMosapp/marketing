@@ -47,8 +47,7 @@ const Navigation = () => {
     <nav className={`nav ${isScrolled ? 'nav-scrolled' : ''}`}>
       <div className="nav-container">
         <a href="#" className="logo">
-          <span className="logo-text">iMos</span>
-          <Sparkles className="logo-sparkle" size={20} />
+          <img src="/imos-logo.png" alt="iMos" className="logo-image" />
         </a>
         
         <div className={`nav-links ${mobileMenuOpen ? 'nav-links-open' : ''}`}>
