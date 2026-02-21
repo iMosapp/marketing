@@ -303,14 +303,14 @@ export default function JoinTeamScreen() {
             
             {/* Form */}
             <View style={styles.formContainer}>
-              <Text style={styles.formTitle}>Get Started</Text>
+              <Text style={styles.formTitle}>Create Your Account</Text>
               <Text style={styles.formSubtitle}>
-                Enter your details to create your account
+                Set up your credentials to join {inviteData?.store_name}
               </Text>
               
               {/* Name Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
+                <Text style={styles.inputLabel}>Full Name *</Text>
                 <View style={styles.inputContainer}>
                   <Ionicons name="person-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
                   <TextInput
@@ -321,13 +321,43 @@ export default function JoinTeamScreen() {
                     placeholderTextColor="#6E6E73"
                     autoCapitalize="words"
                     autoCorrect={false}
+                    data-testid="join-name-input"
                   />
                 </View>
               </View>
               
-              {/* Phone Input */}
+              {/* Email Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone Number</Text>
+                <Text style={styles.inputLabel}>Email Address *</Text>
+                <View style={[
+                  styles.inputContainer, 
+                  inviteData?.recipient_email && styles.inputContainerDisabled
+                ]}>
+                  <Ionicons name="mail-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      inviteData?.recipient_email && styles.textInputDisabled
+                    ]}
+                    value={formData.email}
+                    onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+                    placeholder="john@example.com"
+                    placeholderTextColor="#6E6E73"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!inviteData?.recipient_email}
+                    data-testid="join-email-input"
+                  />
+                </View>
+                {inviteData?.recipient_email && (
+                  <Text style={styles.inputHint}>Email pre-filled from your invite</Text>
+                )}
+              </View>
+              
+              {/* Phone Input (Optional) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Phone Number (optional)</Text>
                 <View style={styles.inputContainer}>
                   <Ionicons name="call-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
                   <TextInput
@@ -338,24 +368,55 @@ export default function JoinTeamScreen() {
                     placeholderTextColor="#6E6E73"
                     keyboardType="phone-pad"
                     autoCorrect={false}
+                    data-testid="join-phone-input"
                   />
                 </View>
               </View>
               
-              {/* Email Input */}
+              {/* Password Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Address</Text>
+                <Text style={styles.inputLabel}>Create Password *</Text>
                 <View style={styles.inputContainer}>
-                  <Ionicons name="mail-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
+                  <Ionicons name="lock-closed-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
                   <TextInput
                     style={styles.textInput}
-                    value={formData.email}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
-                    placeholder="john@example.com"
+                    value={formData.password}
+                    onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
+                    placeholder="At least 6 characters"
                     placeholderTextColor="#6E6E73"
-                    keyboardType="email-address"
+                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    data-testid="join-password-input"
+                  />
+                  <Pressable
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#8E8E93"
+                    />
+                  </Pressable>
+                </View>
+              </View>
+              
+              {/* Confirm Password Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Confirm Password *</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons name="lock-closed-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.textInput}
+                    value={formData.confirmPassword}
+                    onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
+                    placeholder="Re-enter password"
+                    placeholderTextColor="#6E6E73"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    data-testid="join-confirm-password-input"
                   />
                 </View>
               </View>
@@ -373,16 +434,25 @@ export default function JoinTeamScreen() {
                 style={[styles.submitButton, { backgroundColor: primaryColor }]}
                 onPress={handleSubmit}
                 disabled={submitting}
+                data-testid="join-submit-button"
               >
                 {submitting ? (
                   <ActivityIndicator size="small" color="#000" />
                 ) : (
                   <>
-                    <Ionicons name="arrow-forward" size={20} color="#000" />
-                    <Text style={styles.submitButtonText}>Join Now</Text>
+                    <Ionicons name="checkmark-circle" size={20} color="#000" />
+                    <Text style={styles.submitButtonText}>Create Account & Join</Text>
                   </>
                 )}
               </TouchableOpacity>
+              
+              {/* Login Link */}
+              <View style={styles.loginLinkContainer}>
+                <Text style={styles.loginLinkText}>Already have an account? </Text>
+                <Pressable onPress={() => router.push('/auth/login')}>
+                  <Text style={styles.loginLink}>Log In</Text>
+                </Pressable>
+              </View>
               
               {/* Privacy Note */}
               <Text style={styles.privacyNote}>
