@@ -65,6 +65,14 @@ Enhance the "Digital Business Card" feature within the MVPLine application with:
 
 ### February 21, 2026 (Session 9 - Current)
 
+#### "Remember Me" Checkbox Feature - COMPLETE
+- Added "Remember me" checkbox on login screen
+- When checked, saves the user's email to AsyncStorage on successful login
+- Email is pre-filled automatically on next visit
+- Checkbox state is also persisted
+- Uses `@react-native-async-storage/async-storage` for cross-platform storage
+- Files modified: `/app/frontend/app/auth/login.tsx`
+
 #### Login Screen Enhancements - COMPLETE
 - Added "Invalid email or password" error message with red alert icon on failed login
 - Enlarged Sign Up button with full-width styling and blue border (2px solid #007AFF)
