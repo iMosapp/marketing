@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#34C759',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
