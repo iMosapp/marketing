@@ -63,7 +63,23 @@ Enhance the "Digital Business Card" feature within the MVPLine application with:
 
 ## What's Been Implemented
 
-### February 21, 2026 (Session 8 - Current)
+### February 21, 2026 (Session 9 - Current)
+
+#### Login Screen Enhancements - COMPLETE
+- Added "Invalid email or password" error message with red alert icon on failed login
+- Enlarged Sign Up button with full-width styling and blue border (2px solid #007AFF)
+- Error message displays in a styled container with red background and icon
+- Sign Up button now more prominent for new user registration
+- Files modified: `/app/frontend/app/auth/login.tsx`
+
+#### Contacts Pull-to-Refresh Fix (Web) - COMPLETE
+- Added manual refresh button in Contacts page header for web platform
+- RefreshControl doesn't work on static Expo web builds, so added refresh icon button
+- Refresh button visible only on web platform (`Platform.OS === 'web'`)
+- Refresh now also reloads tags along with contacts
+- Files modified: `/app/frontend/app/(tabs)/contacts.tsx`
+
+### February 21, 2026 (Session 8)
 
 #### Feature: iMOSapp.com Landing Page Logo - COMPLETE
 - Generated AI-human handshake logo using image generation tool
