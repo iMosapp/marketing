@@ -955,7 +955,6 @@ const styles = StyleSheet.create({
   trainingWidgetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   trainingWidgetTitle: {
     fontSize: 15,
