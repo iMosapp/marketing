@@ -745,7 +745,7 @@ export default function InboxScreen() {
                 filter === f && styles.filterTextActive,
               ]}
             >
-              {f === 'ai' ? 'MVP' : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f === 'ai' ? 'iMos' : f.charAt(0).toUpperCase() + f.slice(1)}
             </Text>
           </TouchableOpacity>
         ))}
