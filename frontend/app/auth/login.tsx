@@ -294,6 +294,14 @@ export default function LoginScreen() {
               </Pressable>
             )}
             
+            {/* Error Message */}
+            {loginError ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={18} color="#FF3B30" />
+                <Text style={styles.errorText}>{loginError}</Text>
+              </View>
+            ) : null}
+            
             {/* Biometric Login Button */}
             {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
               <TouchableOpacity
@@ -313,14 +321,31 @@ export default function LoginScreen() {
               </TouchableOpacity>
             )}
             
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => router.push('/auth/signup')}
-            >
-              <Text style={styles.linkText}>
-                Don't have an account? <Text style={styles.linkTextBold}>Sign Up</Text>
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Don't have an account?</Text>
+              {Platform.OS === 'web' ? (
+                <button
+                  type="button"
+                  onClick={() => router.push('/auth/signup')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 8,
+                    cursor: 'pointer',
+                    marginTop: 8,
+                  }}
+                >
+                  <Text style={styles.signupButtonText}>Sign Up</Text>
+                </button>
+              ) : (
+                <TouchableOpacity
+                  style={styles.signupButton}
+                  onPress={() => router.push('/auth/signup')}
+                >
+                  <Text style={styles.signupButtonText}>Sign Up</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
