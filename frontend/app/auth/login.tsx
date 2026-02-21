@@ -218,13 +218,11 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image 
-                source={require('../../assets/images/imos-logo.png')} 
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
+            <Image 
+              source={require('../../assets/images/imos-logo.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
           
           <View style={styles.form}>
