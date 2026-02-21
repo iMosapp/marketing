@@ -260,12 +260,27 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
             
-            <TouchableOpacity
-              style={styles.forgotButton}
-              onPress={handleForgotPassword}
-            >
-              <Text style={styles.forgotText}>Forgot Password?</Text>
-            </TouchableOpacity>
+            <View style={styles.optionsRow}>
+              <TouchableOpacity
+                style={styles.rememberMeContainer}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                  {rememberMe && (
+                    <Ionicons name="checkmark" size={14} color="#FFF" />
+                  )}
+                </View>
+                <Text style={styles.rememberMeText}>Remember me</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.forgotButton}
+                onPress={handleForgotPassword}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
             
             {Platform.OS === 'web' ? (
               <button
