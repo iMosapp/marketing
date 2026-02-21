@@ -135,7 +135,6 @@ export default function UsersScreen() {
       setCreating(false);
     }
   };
-  };
 
   // Filter and group users
   const sections = useMemo(() => {
