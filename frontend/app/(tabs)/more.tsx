@@ -51,18 +51,27 @@ export default function MoreScreen() {
     }
   };
   
-  const handleLogout = () => {
-    showConfirm(
-      'Log Out',
-      'Are you sure you want to log out?',
-      async () => {
+  const handleLogout = async () => {
+    // On web, use window.confirm for better compatibility
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to log out?');
+      if (confirmed) {
         await logout();
         router.replace('/auth/login');
-      },
-      undefined,
-      'Log Out',
-      'Cancel'
-    );
+      }
+    } else {
+      showConfirm(
+        'Log Out',
+        'Are you sure you want to log out?',
+        async () => {
+          await logout();
+          router.replace('/auth/login');
+        },
+        undefined,
+        'Log Out',
+        'Cancel'
+      );
+    }
   };
   
   // Check if user has admin access
