@@ -636,6 +636,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
     gap: 8,
+    cursor: 'pointer',
+  },
+  logoutButtonPressed: {
+    opacity: 0.7,
+    backgroundColor: '#2C2C2E',
   },
   logoutText: {
     fontSize: 17,
