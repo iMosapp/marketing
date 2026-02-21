@@ -53,12 +53,15 @@ export default function MoreScreen() {
   };
   
   const handleLogout = async () => {
-    // On web, use window.confirm for better compatibility
+    // On web/mobile Safari, skip confirm dialog for reliability
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Are you sure you want to log out?');
-      if (confirmed) {
+      try {
         await logout();
         router.replace('/auth/login');
+      } catch (e) {
+        console.error('Logout error:', e);
+        // Force redirect anyway
+        window.location.href = '/auth/login';
       }
     } else {
       showConfirm(
