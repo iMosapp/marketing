@@ -621,14 +621,14 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   signupButtonText: {
-    color: '#007AFF',
+    color: '#34C759',
     fontSize: 16,
     fontWeight: '600',
   },
   signupButtonLarge: {
     backgroundColor: '#1C1C1E',
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#34C759',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signupButtonTextLarge: {
-    color: '#007AFF',
+    color: '#34C759',
     fontSize: 18,
     fontWeight: '700',
   },
