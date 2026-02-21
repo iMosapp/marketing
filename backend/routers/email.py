@@ -509,10 +509,21 @@ async def update_brand_kit(entity_type: str, entity_id: str, brand_kit: BrandKit
 async def get_email_preferences(user_id: str):
     """Get user's email/SMS mode preferences"""
     db = get_db()
-    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    
+    # Return defaults if invalid user_id
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        return {
+            "default_mode": "sms",
+            "toggle_style": "pill",
+        }
     
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "default_mode": "sms",
+            "toggle_style": "pill",
+        }
     
     return user.get("messaging_preferences", {
         "default_mode": "sms",
@@ -524,13 +535,18 @@ async def update_email_preferences(user_id: str, preferences: dict):
     """Update user's email/SMS mode preferences"""
     db = get_db()
     
-    result = await db.users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"messaging_preferences": preferences}}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        result = await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"messaging_preferences": preferences}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid user ID: {str(e)}")
     
     return {"message": "Preferences updated"}
 
