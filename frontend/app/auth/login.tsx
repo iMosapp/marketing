@@ -182,8 +182,8 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome to MVPLine</Text>
-            <Text style={styles.subtitle}>Your Virtual Partner Line</Text>
+            <Text style={styles.title}>iMos</Text>
+            <Text style={styles.tagline}>Innovation Meets Old School</Text>
           </View>
           
           <View style={styles.form}>
