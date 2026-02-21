@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   linkTextBold: {
-    color: '#007AFF',
+    color: '#34C759',
     fontWeight: '600',
   },
   signupContainer: {
