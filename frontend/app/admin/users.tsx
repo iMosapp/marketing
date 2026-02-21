@@ -223,9 +223,27 @@ export default function UsersScreen() {
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Users</Text>
-        <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
-          <Ionicons name="person-add" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        {Platform.OS === 'web' ? (
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            style={{
+              padding: 4,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="person-add" size={24} color="#007AFF" />
+          </button>
+        ) : (
+          <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
+            <Ionicons name="person-add" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Search Bar */}
