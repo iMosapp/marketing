@@ -174,6 +174,20 @@ export default function MoreScreen() {
       color: '#34C759',
     },
     {
+      icon: 'color-palette',
+      title: 'Brand Kit',
+      subtitle: 'Customize email branding & colors',
+      onPress: () => router.push('/settings/brand-kit'),
+      color: '#AF52DE',
+    },
+    {
+      icon: 'bar-chart',
+      title: 'Email Analytics',
+      subtitle: 'Track opens, clicks & engagement',
+      onPress: () => router.push('/settings/email-analytics'),
+      color: '#FF2D55',
+    },
+    {
       icon: 'pricetags',
       title: 'Contact Tags',
       subtitle: 'Organize contacts with tags',
