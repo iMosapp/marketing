@@ -3,7 +3,7 @@ Email router - handles email sending via Resend, email templates, and email camp
 """
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 import logging
 import asyncio
