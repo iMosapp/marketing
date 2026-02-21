@@ -228,6 +228,19 @@ export default function ContactsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Contacts</Text>
         <View style={styles.headerButtons}>
+          {isWeb && (
+            <TouchableOpacity 
+              onPress={onRefresh}
+              style={styles.headerButton}
+              disabled={refreshing}
+            >
+              <Ionicons 
+                name="refresh" 
+                size={24} 
+                color={refreshing ? "#4C4C4E" : "#007AFF"} 
+              />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity 
             onPress={() => router.push('/contacts/import')}
             style={styles.headerButton}
