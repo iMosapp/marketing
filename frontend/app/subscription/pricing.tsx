@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://sop-training.preview.emergentagent.com';
+        : 'https://imos-auth-ui.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,

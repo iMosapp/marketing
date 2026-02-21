@@ -14,7 +14,7 @@ import os
 import uuid
 from datetime import datetime
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://sop-training.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://imos-auth-ui.preview.emergentagent.com')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@mvpline.com"
