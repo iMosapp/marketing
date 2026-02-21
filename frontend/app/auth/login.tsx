@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
+import { WebSafeButton } from '../../components/WebSafeButton';
 import {
   checkBiometricSupport,
   authenticateWithBiometric,
