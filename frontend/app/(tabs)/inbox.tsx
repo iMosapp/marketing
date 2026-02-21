@@ -107,6 +107,13 @@ export default function InboxScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
+  // Message mode state (SMS vs Email)
+  const [messageMode, setMessageMode] = useState<MessageModeType>('sms');
+  const [toggleStyle, setToggleStyle] = useState<ToggleStyle>('pill');
+  
+  // Get current colors based on mode
+  const colors = messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK;
+  
   // Bulk selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -121,6 +128,28 @@ export default function InboxScreen() {
   // Appointment modal state
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [appointmentConversation, setAppointmentConversation] = useState<any>(null);
+  
+  // Load user preferences for toggle style and default mode
+  useEffect(() => {
+    loadMessagePreferences();
+  }, [user?._id]);
+  
+  const loadMessagePreferences = async () => {
+    if (!user?._id) return;
+    try {
+      const prefs = await emailAPI.getPreferences(user._id);
+      if (prefs.default_mode) setMessageMode(prefs.default_mode);
+      if (prefs.toggle_style) setToggleStyle(prefs.toggle_style);
+    } catch (error) {
+      // Fallback to defaults if preferences don't exist
+      console.log('Using default message preferences');
+    }
+  };
+  
+  const handleModeChange = (mode: MessageMode) => {
+    triggerHaptic('medium');
+    setMessageMode(mode);
+  };
   
   useEffect(() => {
     loadConversations();
