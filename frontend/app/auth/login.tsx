@@ -236,8 +236,21 @@ export default function LoginScreen() {
             
             {Platform.OS === 'web' ? (
               <button
-                type="button"
-                onClick={!loading ? handleLogin : undefined}
+                type="submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!loading) {
+                    handleLogin();
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!loading) {
+                    handleLogin();
+                  }
+                }}
                 disabled={loading}
                 style={{
                   backgroundColor: '#007AFF',
@@ -252,12 +265,15 @@ export default function LoginScreen() {
                   border: 'none',
                   width: '100%',
                   WebkitAppearance: 'none',
+                  WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
+                  userSelect: 'none',
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: '#FFFFFF',
                 }}
               >
-                <Text style={styles.buttonText}>
-                  {loading ? 'Logging in...' : 'Log In'}
-                </Text>
+                {loading ? 'Logging in...' : 'Log In'}
               </button>
             ) : (
               <Pressable
