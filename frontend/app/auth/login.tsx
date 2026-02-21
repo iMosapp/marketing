@@ -235,8 +235,10 @@ export default function LoginScreen() {
             </TouchableOpacity>
             
             {Platform.OS === 'web' ? (
-              <div
+              <button
+                type="button"
                 onClick={!loading ? handleLogin : undefined}
+                disabled={loading}
                 style={{
                   backgroundColor: '#007AFF',
                   borderRadius: 12,
@@ -247,12 +249,16 @@ export default function LoginScreen() {
                   marginTop: 8,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   opacity: loading ? 0.5 : 1,
+                  border: 'none',
+                  width: '100%',
+                  WebkitAppearance: 'none',
+                  touchAction: 'manipulation',
                 }}
               >
                 <Text style={styles.buttonText}>
                   {loading ? 'Logging in...' : 'Log In'}
                 </Text>
-              </div>
+              </button>
             ) : (
               <Pressable
                 style={({ pressed }) => [
