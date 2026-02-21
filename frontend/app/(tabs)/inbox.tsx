@@ -1056,13 +1056,13 @@ export default function InboxScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS_DARK.background,
   },
   
   // Header - Luxury Glassmorphic
   header: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS_DARK.border,
   },
   headerWeb: {
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -1073,6 +1073,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modeBadge: {
+    backgroundColor: 'rgba(142, 142, 147, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  modeToggleWrapper: {
+    marginRight: 8,
+  },
+  modeIndicatorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF15',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#007AFF30',
+  },
+  modeIndicatorText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#007AFF',
   },
   headerButtons: {
     flexDirection: 'row',
@@ -1092,12 +1122,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
-    backgroundColor: `${COLORS.accent}15`,
+    backgroundColor: `${COLORS_DARK.accent}15`,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS_DARK.textPrimary,
     letterSpacing: -0.4,
   },
   
@@ -1108,14 +1138,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS_DARK.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS_DARK.border,
   },
   selectionCount: {
     fontSize: 17,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: COLORS_DARK.textPrimary,
     letterSpacing: -0.2,
   },
   selectAllButton: {
