@@ -46,6 +46,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [biometricLoading, setBiometricLoading] = useState(false);
   
   // Biometric state
