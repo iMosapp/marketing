@@ -330,38 +330,15 @@ export default function LoginScreen() {
             
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account?</Text>
-              {Platform.OS === 'web' ? (
-                <button
-                  type="button"
-                  onClick={() => router.push('/auth/signup')}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    router.push('/auth/signup');
-                  }}
-                  style={{
-                    backgroundColor: '#1C1C1E',
-                    border: '2px solid #007AFF',
-                    borderRadius: 12,
-                    padding: '16px 32px',
-                    cursor: 'pointer',
-                    marginTop: 12,
-                    width: '100%',
-                    WebkitAppearance: 'none',
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation',
-                    userSelect: 'none',
-                  }}
-                >
-                  <Text style={styles.signupButtonTextLarge}>Sign Up</Text>
-                </button>
-              ) : (
-                <TouchableOpacity
-                  style={styles.signupButtonLarge}
-                  onPress={() => router.push('/auth/signup')}
-                >
-                  <Text style={styles.signupButtonTextLarge}>Sign Up</Text>
-                </TouchableOpacity>
-              )}
+              <WebSafeButton
+                onPress={() => router.push('/auth/signup')}
+                title="Sign Up"
+                variant="outline"
+                size="large"
+                fullWidth
+                testID="signup-button"
+                style={{ marginTop: 12 }}
+              />
             </View>
           </View>
         </ScrollView>
