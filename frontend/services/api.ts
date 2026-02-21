@@ -10,8 +10,10 @@ const getBackendUrl = () => {
     if (backendUrl) {
       return `${backendUrl}/api`;
     }
-    // Fallback for Expo Go - use the tunnel URL
-    return 'https://sop-training.preview.emergentagent.com/api';
+    // In production, EXPO_PUBLIC_BACKEND_URL should always be set
+    // Fall back to relative path which will work if app is served from same domain
+    console.warn('EXPO_PUBLIC_BACKEND_URL not set, falling back to relative /api path');
+    return '/api';
   }
   // For web, relative path works fine
   return '/api';
