@@ -562,3 +562,138 @@ async def get_email_logs(user_id: str, limit: int = 50):
     ).sort("sent_at", -1).limit(limit).to_list(limit)
     
     return [{**log, "_id": str(log["_id"])} for log in logs]
+
+# ============= EMAIL ANALYTICS =============
+
+@router.get("/analytics/{user_id}")
+async def get_email_analytics(user_id: str, days: int = 30):
+    """Get email analytics summary for a user"""
+    db = get_db()
+    
+    # Calculate date range
+    from_date = datetime.utcnow() - timedelta(days=days) if days > 0 else None
+    
+    query = {"user_id": user_id}
+    if from_date:
+        query["sent_at"] = {"$gte": from_date}
+    
+    logs = await db.email_logs.find(query).to_list(1000)
+    
+    total_sent = len(logs)
+    total_delivered = sum(1 for l in logs if l.get("status") not in ["failed", "bounced"])
+    total_opened = sum(1 for l in logs if l.get("status") in ["opened", "clicked"])
+    total_clicked = sum(1 for l in logs if l.get("status") == "clicked")
+    total_bounced = sum(1 for l in logs if l.get("status") == "bounced")
+    total_failed = sum(1 for l in logs if l.get("status") == "failed")
+    
+    open_rate = round((total_opened / total_delivered * 100)) if total_delivered > 0 else 0
+    click_rate = round((total_clicked / total_opened * 100)) if total_opened > 0 else 0
+    
+    return {
+        "period_days": days,
+        "total_sent": total_sent,
+        "total_delivered": total_delivered,
+        "total_opened": total_opened,
+        "total_clicked": total_clicked,
+        "total_bounced": total_bounced,
+        "total_failed": total_failed,
+        "open_rate": open_rate,
+        "click_rate": click_rate,
+    }
+
+# ============= WEBHOOK ENDPOINTS (for Resend tracking) =============
+
+@router.post("/webhook/resend")
+async def resend_webhook(request: dict):
+    """Handle Resend webhook events for email tracking"""
+    db = get_db()
+    
+    event_type = request.get("type")
+    data = request.get("data", {})
+    email_id = data.get("email_id")
+    
+    if not email_id:
+        return {"status": "ignored", "reason": "no email_id"}
+    
+    # Map Resend event types to our status
+    status_map = {
+        "email.sent": "sent",
+        "email.delivered": "delivered",
+        "email.opened": "opened",
+        "email.clicked": "clicked",
+        "email.bounced": "bounced",
+        "email.complained": "complained",
+    }
+    
+    new_status = status_map.get(event_type)
+    if not new_status:
+        return {"status": "ignored", "reason": f"unknown event type: {event_type}"}
+    
+    update_data = {"status": new_status}
+    
+    # Add timestamp for specific events
+    if new_status == "opened":
+        update_data["opened_at"] = datetime.utcnow()
+    elif new_status == "clicked":
+        update_data["clicked_at"] = datetime.utcnow()
+        update_data["click_url"] = data.get("click", {}).get("link")
+    elif new_status == "delivered":
+        update_data["delivered_at"] = datetime.utcnow()
+    elif new_status == "bounced":
+        update_data["bounced_at"] = datetime.utcnow()
+        update_data["bounce_type"] = data.get("bounce", {}).get("type")
+    
+    result = await db.email_logs.update_one(
+        {"resend_id": email_id},
+        {"$set": update_data}
+    )
+    
+    return {
+        "status": "processed",
+        "event_type": event_type,
+        "email_id": email_id,
+        "matched": result.matched_count > 0
+    }
+
+# ============= TRACKING PIXEL ENDPOINT =============
+
+@router.get("/track/open/{log_id}")
+async def track_email_open(log_id: str):
+    """Track email open via 1x1 pixel"""
+    from fastapi.responses import Response
+    
+    db = get_db()
+    
+    try:
+        # Update the log to mark as opened
+        await db.email_logs.update_one(
+            {"_id": ObjectId(log_id), "status": {"$ne": "clicked"}},  # Don't downgrade from clicked
+            {"$set": {"status": "opened", "opened_at": datetime.utcnow()}}
+        )
+    except Exception as e:
+        logger.error(f"Error tracking email open: {e}")
+    
+    # Return a 1x1 transparent GIF
+    gif_bytes = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+    return Response(content=gif_bytes, media_type="image/gif")
+
+@router.get("/track/click/{log_id}")
+async def track_email_click(log_id: str, url: str = ""):
+    """Track email link click and redirect"""
+    from fastapi.responses import RedirectResponse
+    
+    db = get_db()
+    
+    try:
+        # Update the log to mark as clicked
+        await db.email_logs.update_one(
+            {"_id": ObjectId(log_id)},
+            {"$set": {"status": "clicked", "clicked_at": datetime.utcnow(), "click_url": url}}
+        )
+    except Exception as e:
+        logger.error(f"Error tracking email click: {e}")
+    
+    # Redirect to the actual URL
+    if url:
+        return RedirectResponse(url=url)
+    return {"status": "tracked"}
