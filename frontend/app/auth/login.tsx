@@ -77,9 +77,11 @@ export default function LoginScreen() {
   };
   
   const handleLogin = async () => {
+    setLoginError('');
+    
     if (!email || !password) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('Error', 'Please fill in all fields');
+      setLoginError('Please fill in all fields');
       return;
     }
     
@@ -107,8 +109,7 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      const message = error?.response?.data?.detail || 'Invalid credentials';
-      Alert.alert('Error', message);
+      setLoginError('Invalid email or password');
     } finally {
       setLoading(false);
     }
