@@ -408,20 +408,12 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
     alignItems: 'center',
-  },
-  logoContainer: {
     width: '100%',
-    maxWidth: 1020,
-    height: 480,
-    borderRadius: 240,
-    backgroundColor: 'rgba(52, 199, 89, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
   },
   logo: {
     width: 1000,
     height: 460,
+    maxWidth: '100%',
   },
   title: {
     fontSize: 48,
