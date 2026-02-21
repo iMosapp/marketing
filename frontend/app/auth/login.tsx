@@ -410,17 +410,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContainer: {
-    width: 320,
-    height: 160,
-    borderRadius: 80,
+    width: '100%',
+    maxWidth: 1020,
+    height: 480,
+    borderRadius: 240,
     backgroundColor: 'rgba(52, 199, 89, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   logo: {
-    width: 300,
-    height: 140,
+    width: 1000,
+    height: 460,
   },
   title: {
     fontSize: 48,
