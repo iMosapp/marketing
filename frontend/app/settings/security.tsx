@@ -489,4 +489,73 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     lineHeight: 20,
   },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  modalCancel: {
+    fontSize: 17,
+    color: '#007AFF',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  modalSave: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  modalContent: {
+    padding: 16,
+  },
+  modalSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: '#FFF',
+  },
+  eyeButton: {
+    padding: 16,
+  },
+  textInput: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#FFF',
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  passwordHint: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 12,
+    marginLeft: 4,
+  },
 });
