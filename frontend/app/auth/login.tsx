@@ -557,11 +557,11 @@ const styles = StyleSheet.create({
   forgotButton: {
   },
   forgotText: {
-    color: '#007AFF',
+    color: '#34C759',
     fontSize: 14,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#34C759',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
