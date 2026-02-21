@@ -234,8 +234,12 @@ export default function LoginScreen() {
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                loading && styles.buttonDisabled,
+                pressed && styles.buttonPressed,
+              ]}
               onPress={handleLogin}
               disabled={loading}
               data-testid="login-button"
@@ -243,7 +247,7 @@ export default function LoginScreen() {
               <Text style={styles.buttonText}>
                 {loading ? 'Logging in...' : 'Log In'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
             
             {/* Biometric Login Button */}
             {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
