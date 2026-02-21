@@ -200,6 +200,16 @@ h1, h2, h3, h4, h5, h6 {
   text-decoration: none;
 }
 
+.logo-image {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.footer-logo-image {
+  height: 50px;
+}
+
 .logo-text {
   font-family: 'Playfair Display', serif;
   font-size: 28px;
