@@ -234,20 +234,41 @@ export default function LoginScreen() {
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
             
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                loading && styles.buttonDisabled,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={handleLogin}
-              disabled={loading}
-              data-testid="login-button"
-            >
-              <Text style={styles.buttonText}>
-                {loading ? 'Logging in...' : 'Log In'}
-              </Text>
-            </Pressable>
+            {Platform.OS === 'web' ? (
+              <div
+                onClick={!loading ? handleLogin : undefined}
+                style={{
+                  backgroundColor: '#007AFF',
+                  borderRadius: 12,
+                  padding: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 8,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Logging in...' : 'Log In'}
+                </Text>
+              </div>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  loading && styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={handleLogin}
+                disabled={loading}
+                data-testid="login-button"
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Logging in...' : 'Log In'}
+                </Text>
+              </Pressable>
+            )}
             
             {/* Biometric Login Button */}
             {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
