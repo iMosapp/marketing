@@ -163,6 +163,7 @@ export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('all');
   const [activities, setActivities] = useState<any[]>([]);
   const [trainingProgress, setTrainingProgress] = useState<any>(null);
+  const [trainingExpanded, setTrainingExpanded] = useState(false);
   
   // Scroll position persistence
   const scrollViewRef = useRef<ScrollView>(null);
