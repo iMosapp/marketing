@@ -22,12 +22,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
-import { messagesAPI, contactsAPI } from '../../services/api';
+import { messagesAPI, contactsAPI, emailAPI } from '../../services/api';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
 import AppointmentModal from '../../components/AppointmentModal';
+import MessageModeToggle, { MessageMode, ToggleStyle } from '../../components/MessageModeToggle';
 
-// Luxury Design System Colors
-const COLORS = {
+// Message Mode Types
+type MessageModeType = 'sms' | 'email';
+
+// Luxury Design System Colors - Dark Mode (SMS)
+const COLORS_DARK = {
   background: '#000000',
   surface: '#1C1C1E',
   elevated: '#2C2C2E',
@@ -42,6 +46,26 @@ const COLORS = {
   border: 'rgba(255, 255, 255, 0.08)',
   borderFocus: 'rgba(46, 92, 255, 0.5)',
 };
+
+// Light Mode Colors (Email)
+const COLORS_LIGHT = {
+  background: '#F2F2F7',
+  surface: '#FFFFFF',
+  elevated: '#E5E5EA',
+  accent: '#007AFF',
+  success: '#34C759',
+  warning: '#FF9500',
+  danger: '#FF3B30',
+  gold: '#D4AF37',
+  textPrimary: '#000000',
+  textSecondary: '#6E6E73',
+  textTertiary: '#AEAEB2',
+  border: 'rgba(0, 0, 0, 0.08)',
+  borderFocus: 'rgba(0, 122, 255, 0.5)',
+};
+
+// Default to dark (SMS mode)
+let COLORS = COLORS_DARK;
 
 // AI Outcome configurations with luxury colors
 const AI_OUTCOME_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: string }> = {
