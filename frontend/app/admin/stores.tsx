@@ -141,30 +141,43 @@ export default function StoresScreen() {
       style={[styles.storeCard, item.active === false && styles.inactiveCard]}
       onPress={() => router.push(`/admin/stores/${item._id}`)}
     >
-      <View style={styles.storeIcon}>
-        <Ionicons name="storefront" size={24} color={item.active !== false ? "#34C759" : "#8E8E93"} />
-      </View>
-      <View style={styles.storeInfo}>
-        <Text style={[styles.storeName, item.active === false && styles.inactiveText]}>{item.name}</Text>
-        <Text style={styles.storeLocation}>
-          {item.city || 'N/A'}, {item.state || 'N/A'}
-        </Text>
-        {item.organization_name && (
-          <Text style={styles.orgNameLabel}>{item.organization_name}</Text>
-        )}
-      </View>
-      <View style={styles.storeStats}>
-        <View style={styles.userCountBadge}>
-          <Ionicons name="people" size={14} color="#8E8E93" />
-          <Text style={styles.userCountText}>{item.user_count || 0}</Text>
+      <View style={styles.storeCardContent}>
+        <View style={[styles.storeIcon, { backgroundColor: item.active !== false ? '#34C75920' : '#8E8E9320' }]}>
+          <Ionicons name="storefront" size={24} color={item.active !== false ? "#34C759" : "#8E8E93"} />
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: item.active !== false ? '#34C75920' : '#FF3B3020' }]}>
-          <Text style={[styles.statusText, { color: item.active !== false ? '#34C759' : '#FF3B30' }]}>
-            {item.active !== false ? 'Active' : 'Inactive'}
+        <View style={styles.storeInfo}>
+          <View style={styles.storeNameRow}>
+            <Text style={[styles.storeName, item.active === false && styles.inactiveText]}>{item.name}</Text>
+            <View style={[styles.statusDot, { backgroundColor: item.active !== false ? '#34C759' : '#FF3B30' }]} />
+          </View>
+          <Text style={styles.storeLocation}>
+            {item.city || 'N/A'}, {item.state || 'N/A'}
           </Text>
+          {item.organization_name && (
+            <Text style={styles.orgNameLabel}>{item.organization_name}</Text>
+          )}
+        </View>
+        <View style={styles.storeActions}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleToggleStoreActive(item);
+            }}
+          >
+            <Ionicons name={item.active !== false ? "pause-circle-outline" : "play-circle-outline"} size={22} color="#8E8E93" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleDeleteStore(item);
+            }}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+          </TouchableOpacity>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
     </TouchableOpacity>
   );
 
