@@ -32,6 +32,15 @@ export default function SecuritySettingsScreen() {
   const [toggling, setToggling] = useState(false);
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
   
+  // Change password modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  
   useFocusEffect(
     useCallback(() => {
       loadBiometricStatus();
