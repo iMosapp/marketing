@@ -120,6 +120,9 @@ export default function LoginScreen() {
     try {
       await login(email, password);
       
+      // Save or clear remembered email based on checkbox
+      await saveRememberedEmail(email);
+      
       // Success haptic on successful login
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
