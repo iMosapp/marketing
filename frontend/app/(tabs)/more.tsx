@@ -146,11 +146,25 @@ export default function MoreScreen() {
       color: '#FF3B30',
     },
     {
+      icon: 'swap-horizontal-outline',
+      title: 'SMS / Email Toggle',
+      subtitle: 'Choose toggle style and default mode',
+      onPress: () => router.push('/settings/toggle-style'),
+      color: '#5AC8FA',
+    },
+    {
       icon: 'document-text',
-      title: 'Message Templates',
-      subtitle: 'Create and manage your templates',
+      title: 'SMS Templates',
+      subtitle: 'Create and manage SMS templates',
       onPress: () => router.push('/settings/templates'),
       color: '#FFD60A',
+    },
+    {
+      icon: 'mail-outline',
+      title: 'Email Templates',
+      subtitle: 'Create and manage email templates',
+      onPress: () => router.push('/settings/email-templates'),
+      color: '#34C759',
     },
     {
       icon: 'pricetags',
