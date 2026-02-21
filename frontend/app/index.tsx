@@ -32,10 +32,10 @@ export default function Index() {
         router.replace('/auth/login');
       } else if (user?.needs_onboarding || user?.status === 'pending') {
         // New users (independent or pending) go to onboarding
-        router.replace('/onboarding');
+        router.replace('/onboarding/index');
       } else if (!user?.onboarding_complete) {
         // Legacy check for onboarding
-        router.replace('/onboarding');
+        router.replace('/onboarding/index');
       } else {
         // Navigate based on user role
         router.replace(getDefaultRoute(user?.role) as any);
