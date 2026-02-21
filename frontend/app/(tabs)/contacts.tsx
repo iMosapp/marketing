@@ -218,6 +218,35 @@ export default function ContactsScreen() {
         >
           <Ionicons name="chatbubble" size={20} color="#007AFF" />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            if (item.email) {
+              Alert.alert(
+                'Send Email',
+                `Send email to ${item.email}?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Open Mail App', onPress: () => {
+                    const mailUrl = `mailto:${item.email}`;
+                    Linking.openURL(mailUrl);
+                  }},
+                  { text: 'Use iMos Email', onPress: () => {
+                    router.push({
+                      pathname: `/contact/${item._id}`,
+                      params: { openEmail: 'true' }
+                    });
+                  }},
+                ]
+              );
+            } else {
+              Alert.alert('No Email', 'This contact does not have an email address');
+            }
+          }}
+        >
+          <Ionicons name="mail" size={20} color="#34C759" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
     );
