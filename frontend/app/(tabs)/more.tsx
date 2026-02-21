@@ -471,7 +471,8 @@ export default function MoreScreen() {
         </View>
         
         {Platform.OS === 'web' ? (
-          <div 
+          <button 
+            type="button"
             onClick={handleLogout}
             style={{
               display: 'flex',
@@ -486,11 +487,15 @@ export default function MoreScreen() {
               borderRadius: 12,
               gap: 8,
               cursor: 'pointer',
+              border: 'none',
+              width: 'calc(100% - 32px)',
+              WebkitAppearance: 'none',
+              touchAction: 'manipulation',
             }}
           >
             <Ionicons name="log-out" size={20} color="#FF3B30" />
             <Text style={styles.logoutText}>Log Out</Text>
-          </div>
+          </button>
         ) : (
           <Pressable 
             style={({ pressed }) => [
