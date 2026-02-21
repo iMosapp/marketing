@@ -979,6 +979,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
     borderRadius: 10,
     paddingVertical: 14,
+    marginTop: 16,
     marginBottom: 16,
   },
   trainingStatItem: {
