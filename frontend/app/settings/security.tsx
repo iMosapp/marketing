@@ -8,11 +8,14 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { authAPI } from '../../services/api';
 import {
   checkBiometricSupport,
   enableBiometricLogin,
