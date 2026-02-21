@@ -589,10 +589,10 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#34C759',
   },
   biometricButtonText: {
-    color: '#007AFF',
+    color: '#34C759',
     fontSize: 17,
     fontWeight: '600',
   },
