@@ -1,0 +1,49 @@
+{
+  "summary": "Tested hierarchy management APIs and Organization Detail Page. All 25 backend tests pass (100%). Frontend hierarchy view working correctly after expo restart. Fixed organizations list to use hierarchy/overview endpoint for store/user counts.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_hierarchy.py",
+    "/app/test_reports/pytest/pytest_hierarchy.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_hierarchy.py",
+    "/app/frontend/app/admin/organizations.tsx - Fixed to use /admin/hierarchy/overview endpoint for store/user counts"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "Super Admin": "Email: forest@mvpline.com, Password: MVPLine2024!",
+    "Test Organization ID": "699637971b07c23426a53249",
+    "Test Store ID": "699637981b07c23426a5324a",
+    "Test User ID": "6995b8bf6f535e1cec4e4ad4"
+  },
+  "seed_data_creation": "None - used existing test data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All hierarchy endpoints are working. Organization detail page shows full hierarchy with expandable stores and users. Organization list page now shows correct store/user counts using the hierarchy/overview endpoint.",
+  "features_tested": {
+    "hierarchy_overview_api": "PASS - /api/admin/hierarchy/overview returns organizations with counts",
+    "organization_hierarchy_api": "PASS - /api/admin/hierarchy/organization/{id} returns stores and users",
+    "store_hierarchy_api": "PASS - /api/admin/hierarchy/store/{id} returns users for store",
+    "users_hierarchy_filters": "PASS - filter=unassigned, filter=org_admins, organization_id param all work",
+    "assign_user_to_org_api": "PASS - /api/admin/hierarchy/users/{id}/assign-org works",
+    "assign_user_to_store_api": "PASS - /api/admin/hierarchy/users/{id}/assign-store supports multi-store",
+    "remove_user_from_store_api": "PASS - /api/admin/hierarchy/users/{id}/remove-store works",
+    "update_user_role_api": "PASS - /api/admin/hierarchy/users/{id}/role validates and updates role",
+    "organization_detail_page_hierarchy": "PASS - Shows Organization Admins, Stores with expandable users, Unassigned Users",
+    "user_status_toggle": "PASS - Green dots indicate active status, can toggle via API",
+    "organizations_list_counts": "PASS - Fixed to show correct store/user counts from hierarchy endpoint"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "summary": "Comprehensive testing of user signup and onboarding flows. All backend tests pass (10/10). Frontend testing confirms both independent and organization signup paths work correctly with proper status handling.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_signup_onboarding.py",
+    "/app/test_reports/pytest/pytest_signup_onboarding.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SMS notification to super admin is MOCKED - Twilio phone number +15552698119 is not valid, logs warning but doesn't fail signup",
+    "Two onboarding flows exist: /onboarding/index.tsx (persona wizard) and /onboarding.tsx (checklist). Users see persona wizard first, then restricted access if pending."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_signup_onboarding.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "Super Admin": "Email: forest@mvpline.com, Password: MVPLine2024!",
+    "Test Organization ID": "699637971b07c23426a53249"
+  },
+  "seed_data_creation": "Test users created and cleaned up during tests",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "User signup and onboarding flows verified. Independent users get status='active', needs_onboarding=true. Organization users get status='pending'. Pending users see 'Access Pending' screen on restricted tabs (inbox, dialer, contacts). More tab remains accessible. Admin approve endpoint changes status to 'active'. Store detail page returns users and available_users correctly.",
+  "features_tested": {
+    "independent_signup_with_account_type": "PASS - status='active', needs_onboarding=true, account_type='independent'",
+    "independent_signup_without_org_id": "PASS - Treated as independent, status='active'",
+    "org_signup_pending_status": "PASS - status='pending', account_type='organization', requested_role stored",
+    "pending_count_returns_correct_value": "PASS - Count increases after org signup",
+    "pending_count_unchanged_by_independent": "PASS - Independent signup doesn't affect pending count",
+    "admin_approve_changes_status": "PASS - status changes from 'pending' to 'active'",
+    "admin_approve_with_store_assignment": "PASS - User gets assigned to store during approval",
+    "store_detail_returns_users": "PASS - /api/admin/hierarchy/store/{id} returns users and available_users",
+    "store_detail_users_have_required_fields": "PASS - _id, name, email, role, is_active present",
+    "pending_user_can_login": "PASS - Returns token with status='pending' in user object",
+    "frontend_restricted_access_screen": "PASS - Pending users see 'Access Pending' screen with lock icon on inbox",
+    "frontend_onboarding_wizard": "PASS - Persona wizard shows for new users",
+    "frontend_greyed_tabs": "PASS - Restricted tabs appear greyed out for pending users"
+  },
+  "mocked_apis": {
+    "SMS notification": "MOCKED - Super admin notification attempts to use Twilio but fails due to invalid phone number, logs warning"
+  },
+  "rca_of_the_issue": null
+}

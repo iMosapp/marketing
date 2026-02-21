@@ -1,0 +1,113 @@
+{
+  "summary": "Store Profile and Public Review Page testing complete. Backend APIs fully functional (14/14 tests pass). Public Review page works perfectly. Store Profile page has a state hydration issue specific to Expo web when navigating directly to the URL - Zustand state resets on navigation.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/review/check-hours/{store_slug}",
+        "issue": "Was returning 520 error due to missing pytz module - FIXED by installing pytz",
+        "priority": "LOW",
+        "status": "FIXED"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "inbox.tsx",
+        "issue": "ScrollView was not imported but used in component",
+        "selector": "line 681",
+        "priority": "HIGH",
+        "status": "FIXED - Added ScrollView to react-native imports"
+      },
+      {
+        "component": "store-profile.tsx",
+        "issue": "Store Profile page shows 'No store associated with your account' when navigating directly via URL. Zustand state resets on page navigation in Expo web.",
+        "selector": "useAuthStore user.store_id",
+        "priority": "MEDIUM",
+        "root_cause": "Zustand store state doesn't persist across page navigations in Expo web. localStorage has correct data but Zustand state is reset."
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Direct URL navigation to /settings/store-profile",
+        "issue": "Zustand store reinitializes on navigation, losing auth state despite localStorage having correct data",
+        "affected_selectors": ["useAuthStore"],
+        "suggested_fix": "Use zustand/middleware persist to automatically hydrate state from localStorage, or add sync mechanism between localStorage and Zustand on page load"
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_store_profile_review.py",
+    "/app/test_reports/pytest/pytest_store_review.xml"
+  ],
+  "action_items": [
+    "PRIORITY: Add zustand persist middleware to authStore to automatically hydrate from AsyncStorage on page load",
+    "Or: Modify loadAuth in _layout.tsx to be awaited before rendering children",
+    "The User interface in authStore.ts was missing store_id, organization_id, role - already fixed"
+  ],
+  "critical_code_review_comments": [
+    "store-profile.tsx: Added authLoading check and user?.store_id dependency to useEffect",
+    "authStore.ts: User interface was missing store_id, organization_id, role fields - fixed",
+    "inbox.tsx: ScrollView was used but not imported - fixed by adding ScrollView to imports",
+    "public_review.py: pytz module not installed - fixed by pip install pytz and adding to requirements.txt",
+    "authStore.ts: Consider adding zustand persist middleware for automatic state hydration"
+  ],
+  "updated_files": [
+    "/app/frontend/store/authStore.ts",
+    "/app/frontend/app/(tabs)/inbox.tsx",
+    "/app/frontend/app/settings/store-profile.tsx",
+    "/app/backend/requirements.txt"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests pass)",
+    "frontend": "85% - Public Review page works, Store Profile has state hydration issue"
+  },
+  "test_credentials": {
+    "superadmin": {
+      "email": "superadmin@mvpline.com",
+      "password": "admin123"
+    },
+    "test_store": {
+      "store_id": "699637981b07c23426a5324a",
+      "slug": "ken-garff-honda-downtown"
+    }
+  },
+  "seed_data_creation": "Updated superadmin user to have store_id: 699637981b07c23426a5324a",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend APIs for Store Profile and Public Review are working correctly (14/14 tests pass). Public Review page at /review/ken-garff-honda-downtown works perfectly including feedback submission. Store Profile page at /settings/store-profile has a Zustand state hydration issue - the store resets on page navigation even though localStorage has correct data. Fix requires adding zustand persist middleware to authStore.",
+  "features_tested": {
+    "public_review_page": {
+      "get_store_data": "PASS - /api/review/page/{store_slug}",
+      "submit_feedback": "PASS - /api/review/submit/{store_slug}",
+      "review_links_display": "PASS - Google and Yelp links shown",
+      "social_links_display": "PASS - Facebook and Instagram shown",
+      "business_hours_display": "PASS - All days displayed correctly",
+      "feedback_form": "PASS - Form submission works with Thank You message"
+    },
+    "store_profile_page": {
+      "get_store_api": "PASS - /api/admin/stores/{store_id}",
+      "update_store_api": "PASS - PUT /api/admin/stores/{store_id}",
+      "frontend_display": "PARTIAL - Works after login but state resets on direct navigation"
+    },
+    "login_flow": {
+      "status": "PASS - Login works correctly, localStorage receives store_id and role"
+    },
+    "inbox_screen": {
+      "status": "PASS - Fixed ScrollView import issue"
+    }
+  },
+  "mocked_api": {
+    "noted": [
+      "None - all APIs are real and functional"
+    ]
+  },
+  "rca_of_issue": {
+    "issue": "Store Profile shows 'No store associated' on direct navigation",
+    "root_cause": "Zustand store initializes with isLoading: true and user: null. On page navigation in Expo web, the Zustand store reinitializes, losing the previous state. loadAuth() is called but by the time it completes, store-profile.tsx has already rendered with null user.",
+    "evidence": "localStorage contains correct store_id after login, but useAuthStore().user is null on initial render of store-profile page",
+    "mitigation": "1. Add zustand persist middleware to automatically sync with AsyncStorage, 2. Or block rendering until loadAuth completes in _layout.tsx"
+  }
+}
