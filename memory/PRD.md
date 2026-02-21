@@ -1,5 +1,11 @@
 # MVPLine - Digital Business Card Enhancement
 
+## Session: February 21, 2026
+- Migrated project from user's local folder to Emergent workspace
+- Configured Expo web export for static serving (expo export --platform web)
+- Seeded test database with admin users
+- App is now running at preview URL
+
 ## Things To Remind User In Future Sessions
 - **Voice Cloning for Jessi**: User wants to explore ElevenLabs voice cloning to give Jessi a custom voice. They will provide an audio sample (1-5 minutes of clear speech) to create a cloned voice. This would replace the current OpenAI TTS "nova" voice.
 
