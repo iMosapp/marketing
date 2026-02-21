@@ -179,14 +179,16 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   right: 0;
   z-index: 1000;
-  padding: 10px 0;
+  padding: 8px 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
   transition: all var(--transition-base);
 }
 
 .nav-scrolled {
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(20px);
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-gray-800);
 }
 
