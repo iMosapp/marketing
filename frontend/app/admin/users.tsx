@@ -4,11 +4,14 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
   ActivityIndicator,
   RefreshControl,
   TextInput,
   SectionList,
+  Modal,
+  ScrollView,
+  Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +43,15 @@ export default function UsersScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  
+  // Add User Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserRole, setNewUserRole] = useState('user');
+  const [sendInvite, setSendInvite] = useState(true);
+  const [creating, setCreating] = useState(false);
   
   useFocusEffect(
     useCallback(() => {
