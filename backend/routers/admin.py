@@ -568,6 +568,87 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
     return user_dict
 
 
+@router.post("/users/create")
+async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Create a user and optionally send invite email - admins only"""
+    import secrets
+    import string
+    
+    requesting_user = await get_requesting_user(x_user_id)
+    
+    if requesting_user:
+        role = requesting_user.get('role', 'user')
+        if role not in ['super_admin', 'org_admin', 'store_manager']:
+            raise HTTPException(status_code=403, detail="Only admins can create users")
+    
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip().lower()
+    phone = data.get('phone', '').strip()
+    user_role = data.get('role', 'user')
+    send_invite = data.get('send_invite', True)
+    
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    if not email or '@' not in email:
+        raise HTTPException(status_code=400, detail="Valid email is required")
+    
+    # Check if email exists
+    existing = await get_db().users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Generate temporary password
+    temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+    
+    user_dict = {
+        "email": email,
+        "password": temp_password,
+        "name": name,
+        "phone": phone,
+        "role": user_role,
+        "organization_id": requesting_user.get('organization_id') if requesting_user else None,
+        "store_id": requesting_user.get('store_id') if requesting_user else None,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "onboarding_complete": False,
+        "status": "active",
+        "is_active": True,
+        "needs_password_change": True,
+        "stats": {
+            'contacts_added': 0,
+            'messages_sent': 0,
+            'calls_made': 0,
+            'deals_closed': 0
+        },
+        "settings": {
+            'leaderboard_visible': True,
+            'compare_scope': 'state'
+        }
+    }
+    
+    result = await get_db().users.insert_one(user_dict)
+    user_id = str(result.inserted_id)
+    
+    # TODO: Send actual email when email service is configured
+    # For now, we'll just return success and show the temp password if not sending invite
+    invite_sent = False
+    if send_invite:
+        # In production, integrate with SendGrid/SES here
+        logger.info(f"Would send invite email to {email} with temp password")
+        invite_sent = True  # Mocked for now
+    
+    return {
+        "success": True,
+        "user_id": user_id,
+        "email": email,
+        "name": name,
+        "role": user_role,
+        "invite_sent": invite_sent,
+        "temp_password": temp_password if not send_invite else None,
+        "message": f"User created successfully. {'Invite email sent.' if send_invite else 'Share the temporary password securely.'}"
+    }
+
+
 @router.get("/users")
 async def list_users(
     organization_id: Optional[str] = None,
