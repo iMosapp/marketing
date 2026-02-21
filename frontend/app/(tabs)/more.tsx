@@ -460,10 +460,16 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
         
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Pressable 
+          style={({ pressed }) => [
+            styles.logoutButton,
+            pressed && styles.logoutButtonPressed,
+          ]} 
+          onPress={handleLogout}
+        >
           <Ionicons name="log-out" size={20} color="#FF3B30" />
           <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        </Pressable>
         
         <Text style={styles.version}>MVPLine v1.0.0</Text>
       </ScrollView>
