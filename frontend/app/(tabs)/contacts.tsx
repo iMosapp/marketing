@@ -103,7 +103,7 @@ export default function ContactsScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await loadContacts();
+    await Promise.all([loadContacts(), loadTags()]);
     setRefreshing(false);
   };
   
