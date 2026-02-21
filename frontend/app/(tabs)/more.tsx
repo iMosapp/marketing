@@ -476,7 +476,16 @@ export default function MoreScreen() {
         {Platform.OS === 'web' ? (
           <button 
             type="button"
-            onClick={handleLogout}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLogout();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLogout();
+            }}
             style={{
               display: 'flex',
               flexDirection: 'row',
@@ -493,7 +502,9 @@ export default function MoreScreen() {
               border: 'none',
               width: 'calc(100% - 32px)',
               WebkitAppearance: 'none',
+              WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
+              userSelect: 'none',
             }}
           >
             <Ionicons name="log-out" size={20} color="#FF3B30" />
