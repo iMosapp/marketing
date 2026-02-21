@@ -222,7 +222,6 @@ export default function LoginScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.tagline}>Innovation Meets Old School</Text>
           </View>
           
           <View style={styles.form}>
