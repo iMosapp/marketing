@@ -528,8 +528,7 @@ const Footer = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <a href="#" className="logo">
-            <span className="logo-text">iMos</span>
-            <Sparkles className="logo-sparkle" size={20} />
+            <img src="/imos-logo.png" alt="iMos" className="logo-image footer-logo-image" />
           </a>
           <p className="footer-tagline">Innovation Meets Old School</p>
           <p className="footer-description">
