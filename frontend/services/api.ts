@@ -588,4 +588,105 @@ export const searchAPI = {
   },
 };
 
+// ============= EMAIL API =============
+export const emailAPI = {
+  // Send email
+  send: async (userId: string, data: {
+    recipient_email: string;
+    recipient_name?: string;
+    subject: string;
+    html_content: string;
+    contact_id?: string;
+  }) => {
+    const response = await api.post(`/email/send?user_id=${userId}`, data);
+    return response.data;
+  },
+
+  // Email Templates
+  getTemplates: async (userId: string) => {
+    const response = await api.get(`/email/templates/${userId}`);
+    return response.data;
+  },
+
+  createTemplate: async (userId: string, template: {
+    name: string;
+    subject: string;
+    html_content: string;
+    category?: string;
+    description?: string;
+  }) => {
+    const response = await api.post(`/email/templates/${userId}`, template);
+    return response.data;
+  },
+
+  updateTemplate: async (userId: string, templateId: string, template: any) => {
+    const response = await api.put(`/email/templates/${userId}/${templateId}`, template);
+    return response.data;
+  },
+
+  deleteTemplate: async (userId: string, templateId: string) => {
+    const response = await api.delete(`/email/templates/${userId}/${templateId}`);
+    return response.data;
+  },
+
+  // Email Campaigns
+  getCampaigns: async (userId: string) => {
+    const response = await api.get(`/email/campaigns/${userId}`);
+    return response.data;
+  },
+
+  createCampaign: async (userId: string, campaign: {
+    name: string;
+    description?: string;
+    subject: string;
+    html_content: string;
+    trigger_type?: string;
+  }) => {
+    const response = await api.post(`/email/campaigns/${userId}`, campaign);
+    return response.data;
+  },
+
+  updateCampaign: async (userId: string, campaignId: string, updates: any) => {
+    const response = await api.put(`/email/campaigns/${userId}/${campaignId}`, updates);
+    return response.data;
+  },
+
+  deleteCampaign: async (userId: string, campaignId: string) => {
+    const response = await api.delete(`/email/campaigns/${userId}/${campaignId}`);
+    return response.data;
+  },
+
+  // Brand Kit
+  getBrandKit: async (entityType: 'user' | 'store' | 'organization', entityId: string) => {
+    const response = await api.get(`/email/brand-kit/${entityType}/${entityId}`);
+    return response.data;
+  },
+
+  updateBrandKit: async (entityType: 'user' | 'store' | 'organization', entityId: string, brandKit: any) => {
+    const response = await api.put(`/email/brand-kit/${entityType}/${entityId}`, brandKit);
+    return response.data;
+  },
+
+  // User Preferences (toggle style, default mode)
+  getPreferences: async (userId: string) => {
+    const response = await api.get(`/email/preferences/${userId}`);
+    return response.data;
+  },
+
+  updatePreferences: async (userId: string, preferences: {
+    default_mode?: 'sms' | 'email';
+    toggle_style?: 'pill' | 'fab' | 'tabs' | 'segmented';
+  }) => {
+    const response = await api.put(`/email/preferences/${userId}`, preferences);
+    return response.data;
+  },
+
+  // Email Logs
+  getLogs: async (userId: string, limit?: number) => {
+    const params = limit ? { limit } : {};
+    const response = await api.get(`/email/logs/${userId}`, { params });
+    return response.data;
+  },
+};
+
 export default api;
