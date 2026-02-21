@@ -470,16 +470,39 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
         
-        <Pressable 
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && styles.logoutButtonPressed,
-          ]} 
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out" size={20} color="#FF3B30" />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </Pressable>
+        {Platform.OS === 'web' ? (
+          <div 
+            onClick={handleLogout}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginLeft: 16,
+              marginRight: 16,
+              marginTop: 24,
+              padding: 16,
+              backgroundColor: '#1C1C1E',
+              borderRadius: 12,
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <Ionicons name="log-out" size={20} color="#FF3B30" />
+            <Text style={styles.logoutText}>Log Out</Text>
+          </div>
+        ) : (
+          <Pressable 
+            style={({ pressed }) => [
+              styles.logoutButton,
+              pressed && styles.logoutButtonPressed,
+            ]} 
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out" size={20} color="#FF3B30" />
+            <Text style={styles.logoutText}>Log Out</Text>
+          </Pressable>
+        )}
         
         <Text style={styles.version}>MVPLine v1.0.0</Text>
       </ScrollView>
