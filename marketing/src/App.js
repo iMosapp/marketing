@@ -82,14 +82,9 @@ const Hero = () => (
     </div>
     
     <div className="hero-content">
-      <div className="hero-badge">
-        <Sparkles size={14} />
-        <span>Introducing iMos 2.0</span>
-      </div>
-      
       <h1 className="hero-title">
-        <span className="hero-title-line">Innovation</span>
-        <span className="hero-title-line gradient-text">Meets Old School</span>
+        <span className="hero-title-line">Innovative</span>
+        <span className="hero-title-line gradient-text">Messaging Operating System</span>
       </h1>
       
       <p className="hero-subtitle">
