@@ -451,40 +451,10 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 8,
   },
-  storeDetails: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
   storeStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
-    paddingTop: 12,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
+    gap: 12,
   },
   statusBadge: {
     paddingHorizontal: 10,
