@@ -599,6 +599,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFF',
   },
+  textInputDisabled: {
+    color: '#8E8E93',
+  },
+  inputContainerDisabled: {
+    backgroundColor: '#1C1C1E',
+    borderColor: '#2C2C2E',
+  },
+  inputHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  eyeButton: {
+    padding: 14,
+  },
+  loginLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  loginLinkText: {
+    color: '#8E8E93',
+    fontSize: 14,
+  },
+  loginLink: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
