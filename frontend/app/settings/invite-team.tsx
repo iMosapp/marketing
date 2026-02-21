@@ -299,6 +299,101 @@ export default function InviteTeamScreen() {
           )}
         </View>
         
+        {/* Send via Email */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="mail" size={22} color="#34C759" />
+            <Text style={styles.sectionTitle}>Send via Email</Text>
+          </View>
+          <Text style={styles.sectionDescription}>
+            Send a professional email invitation with a direct signup link
+          </Text>
+          
+          {!showEmailForm ? (
+            <TouchableOpacity
+              style={[styles.sendSMSButton, { backgroundColor: '#34C759' }]}
+              onPress={() => setShowEmailForm(true)}
+              data-testid="send-email-invite-btn"
+            >
+              <Ionicons name="mail" size={20} color="#FFF" />
+              <Text style={[styles.sendSMSButtonText, { color: '#FFF' }]}>Send Email Invite</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.shareForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email Address *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={recipientEmail}
+                  onChangeText={setRecipientEmail}
+                  placeholder="colleague@company.com"
+                  placeholderTextColor="#6E6E73"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoFocus
+                  data-testid="email-invite-email-input"
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Name (optional)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={recipientName}
+                  onChangeText={setRecipientName}
+                  placeholder="John Smith"
+                  placeholderTextColor="#6E6E73"
+                  autoCapitalize="words"
+                  data-testid="email-invite-name-input"
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Personal Message (optional)</Text>
+                <TextInput
+                  style={[styles.textInput, { height: 80, textAlignVertical: 'top' }]}
+                  value={customMessage}
+                  onChangeText={setCustomMessage}
+                  placeholder="Looking forward to working with you!"
+                  placeholderTextColor="#6E6E73"
+                  multiline
+                  data-testid="email-invite-message-input"
+                />
+              </View>
+              
+              <View style={styles.formActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowEmailForm(false);
+                    setRecipientEmail('');
+                    setRecipientName('');
+                    setCustomMessage('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.sendButton, { backgroundColor: '#34C759' }]}
+                  onPress={sendViaEmail}
+                  disabled={sending}
+                  data-testid="email-invite-send-btn"
+                >
+                  {sending ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={18} color="#FFF" />
+                      <Text style={[styles.sendButtonText, { color: '#FFF' }]}>Send</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+        
         {/* Your Analytics */}
         {shares && shares.stats && (
           <View style={styles.section}>
