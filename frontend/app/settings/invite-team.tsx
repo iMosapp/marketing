@@ -30,7 +30,10 @@ export default function InviteTeamScreen() {
   // Form state
   const [recipientPhone, setRecipientPhone] = useState('');
   const [recipientName, setRecipientName] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
   const [showShareForm, setShowShareForm] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   
   useFocusEffect(
     useCallback(() => {
