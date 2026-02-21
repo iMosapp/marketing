@@ -516,9 +516,36 @@ const styles = StyleSheet.create({
   eyeButton: {
     padding: 16,
   },
-  forgotButton: {
-    alignSelf: 'flex-end',
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: -8,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#48484A',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  rememberMeText: {
+    color: '#8E8E93',
+    fontSize: 14,
+  },
+  forgotButton: {
   },
   forgotText: {
     color: '#007AFF',
