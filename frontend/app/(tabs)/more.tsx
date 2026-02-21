@@ -118,11 +118,18 @@ export default function MoreScreen() {
       color: '#FF9500',
     },
     {
-      icon: 'calendar',
-      title: 'Nurture Campaigns',
-      subtitle: 'Manage automated follow-ups',
+      icon: 'chatbubbles',
+      title: 'SMS Campaigns',
+      subtitle: 'Automated SMS follow-ups',
       onPress: () => router.push('/campaigns'),
       color: '#FF2D55',
+    },
+    {
+      icon: 'mail',
+      title: 'Email Campaigns',
+      subtitle: 'Automated email follow-ups',
+      onPress: () => router.push('/campaigns/email'),
+      color: '#AF52DE',
     },
     {
       icon: 'speedometer',
