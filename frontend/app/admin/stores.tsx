@@ -71,10 +71,7 @@ export default function StoresScreen() {
     
     setCreating(true);
     try {
-      await adminAPI.createStore({
-        ...newStore,
-        organization_id: selectedOrg,
-      });
+      await adminAPI.createStore(newStore);
       showSimpleAlert('Success', 'Store created successfully');
       setShowCreateModal(false);
       setNewStore({
@@ -84,8 +81,9 @@ export default function StoresScreen() {
         city: '',
         state: '',
         country: 'US',
+        organization_id: '',
       });
-      loadStores(selectedOrg);
+      loadStores();
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Failed to create store';
       showSimpleAlert('Error', message);
