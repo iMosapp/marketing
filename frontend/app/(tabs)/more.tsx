@@ -516,55 +516,18 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
         
-        {Platform.OS === 'web' ? (
-          <button 
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleLogout();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleLogout();
-            }}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginLeft: 16,
-              marginRight: 16,
-              marginTop: 24,
-              padding: 16,
-              backgroundColor: '#1C1C1E',
-              borderRadius: 12,
-              gap: 8,
-              cursor: 'pointer',
-              border: 'none',
-              width: 'calc(100% - 32px)',
-              WebkitAppearance: 'none',
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-              userSelect: 'none',
-            }}
-          >
-            <Ionicons name="log-out" size={20} color="#FF3B30" />
-            <Text style={styles.logoutText}>Log Out</Text>
-          </button>
-        ) : (
-          <Pressable 
-            style={({ pressed }) => [
-              styles.logoutButton,
-              pressed && styles.logoutButtonPressed,
-            ]} 
+        <View style={{ marginHorizontal: 16, marginTop: 24 }}>
+          <WebSafeButton
             onPress={handleLogout}
+            variant="secondary"
+            size="medium"
+            fullWidth
+            testID="logout-button"
           >
             <Ionicons name="log-out" size={20} color="#FF3B30" />
             <Text style={styles.logoutText}>Log Out</Text>
-          </Pressable>
-        )}
+          </WebSafeButton>
+        </View>
         
         <Text style={styles.version}>MVPLine v1.0.0</Text>
       </ScrollView>
