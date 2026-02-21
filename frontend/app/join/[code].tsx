@@ -76,12 +76,20 @@ export default function JoinTeamScreen() {
       setError('Please enter your name');
       return;
     }
-    if (!formData.phone.trim()) {
-      setError('Please enter your phone number');
-      return;
-    }
     if (!formData.email.trim() || !formData.email.includes('@')) {
       setError('Please enter a valid email address');
+      return;
+    }
+    if (!formData.password) {
+      setError('Please create a password');
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
     
@@ -89,15 +97,29 @@ export default function JoinTeamScreen() {
       setSubmitting(true);
       setError('');
       
-      const res = await api.post('/team-invite/join', {
+      // Use the new accept endpoint with password
+      const res = await api.post('/team-invite/accept', {
         invite_code: code,
         name: formData.name.trim(),
-        phone: formData.phone.trim(),
         email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        phone: formData.phone.trim() || undefined,
       });
       
-      setTrainingLink(res.data.training_link);
-      setSuccess(true);
+      if (res.data.success) {
+        // Auto-login with the new credentials
+        try {
+          await login({ 
+            email: formData.email.trim().toLowerCase(), 
+            password: formData.password 
+          });
+          // Navigate to main app after successful login
+          router.replace('/');
+        } catch (loginErr) {
+          // If auto-login fails, still show success but redirect to login
+          setSuccess(true);
+        }
+      }
     } catch (err: any) {
       console.error('Join failed:', err);
       setError(err.response?.data?.detail || 'Failed to create your account. Please try again.');
