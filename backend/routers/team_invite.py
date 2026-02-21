@@ -33,6 +33,23 @@ class TeamMemberJoin(BaseModel):
     email: str
 
 
+class EmailInviteRequest(BaseModel):
+    store_id: str
+    created_by: str
+    recipient_email: EmailStr
+    recipient_name: Optional[str] = None
+    custom_message: Optional[str] = None
+    expires_days: int = 7
+
+
+class AcceptInviteRequest(BaseModel):
+    invite_code: str
+    name: str
+    email: EmailStr
+    password: str
+    phone: Optional[str] = None
+
+
 class InviteLinkResponse(BaseModel):
     invite_code: str
     invite_url: str
