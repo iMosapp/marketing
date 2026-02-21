@@ -394,10 +394,12 @@ const styles = StyleSheet.create({
   storeCard: {
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2C2C2E',
+    padding: 14,
+    marginBottom: 10,
+  },
+  storeCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   storeHeader: {
     flexDirection: 'row',
@@ -405,10 +407,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   storeIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#34C75920',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -416,10 +417,20 @@ const styles = StyleSheet.create({
   storeInfo: {
     flex: 1,
   },
+  storeNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   storeName: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   storeLocation: {
     fontSize: 13,
@@ -430,6 +441,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#007AFF',
     marginTop: 2,
+  },
+  storeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  actionButton: {
+    padding: 8,
   },
   deleteButton: {
     padding: 8,
