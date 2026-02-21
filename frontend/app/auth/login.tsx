@@ -327,22 +327,32 @@ export default function LoginScreen() {
                 <button
                   type="button"
                   onClick={() => router.push('/auth/signup')}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    router.push('/auth/signup');
+                  }}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 8,
+                    backgroundColor: '#1C1C1E',
+                    border: '2px solid #007AFF',
+                    borderRadius: 12,
+                    padding: '16px 32px',
                     cursor: 'pointer',
-                    marginTop: 8,
+                    marginTop: 12,
+                    width: '100%',
+                    WebkitAppearance: 'none',
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    userSelect: 'none',
                   }}
                 >
-                  <Text style={styles.signupButtonText}>Sign Up</Text>
+                  <Text style={styles.signupButtonTextLarge}>Sign Up</Text>
                 </button>
               ) : (
                 <TouchableOpacity
-                  style={styles.signupButton}
+                  style={styles.signupButtonLarge}
                   onPress={() => router.push('/auth/signup')}
                 >
-                  <Text style={styles.signupButtonText}>Sign Up</Text>
+                  <Text style={styles.signupButtonTextLarge}>Sign Up</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -515,6 +525,54 @@ const styles = StyleSheet.create({
   linkTextBold: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  signupContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  signupText: {
+    color: '#8E8E93',
+    fontSize: 15,
+    marginBottom: 8,
+  },
+  signupButton: {
+    padding: 8,
+  },
+  signupButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  signupButtonLarge: {
+    backgroundColor: '#1C1C1E',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    marginTop: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  signupButtonTextLarge: {
+    color: '#007AFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3B3010',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
   },
   // Modal styles
   modalOverlay: {
