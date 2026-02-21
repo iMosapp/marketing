@@ -85,6 +85,58 @@ export default function UsersScreen() {
     }));
   };
 
+  const resetAddForm = () => {
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserPhone('');
+    setNewUserRole('user');
+    setSendInvite(true);
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUserName.trim()) {
+      Alert.alert('Error', 'Please enter a name');
+      return;
+    }
+    if (!newUserEmail.trim() || !newUserEmail.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const response = await api.post('/admin/users/create', {
+        name: newUserName.trim(),
+        email: newUserEmail.trim().toLowerCase(),
+        phone: newUserPhone.trim() || undefined,
+        role: newUserRole,
+        send_invite: sendInvite,
+      });
+
+      if (response.data.success) {
+        const message = sendInvite 
+          ? `User created! Login email sent to ${newUserEmail}`
+          : `User created with temporary password: ${response.data.temp_password}`;
+        
+        if (Platform.OS === 'web') {
+          alert(message);
+        } else {
+          Alert.alert('Success', message);
+        }
+        
+        setShowAddModal(false);
+        resetAddForm();
+        loadUsers();
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || 'Failed to create user';
+      Alert.alert('Error', message);
+    } finally {
+      setCreating(false);
+    }
+  };
+  };
+
   // Filter and group users
   const sections = useMemo(() => {
     const filteredUsers = users.filter(user => {
