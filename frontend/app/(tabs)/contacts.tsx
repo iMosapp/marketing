@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +38,9 @@ export default function ContactsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  
+  // Check if running on web platform
+  const isWeb = Platform.OS === 'web';
   
   // Check if user has restricted access
   const isPending = user?.status === 'pending';
