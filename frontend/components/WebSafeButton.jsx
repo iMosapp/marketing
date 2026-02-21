@@ -1,29 +1,10 @@
 import React, { useCallback, useRef } from 'react';
 import {
-  TouchableOpacity,
   Pressable,
   Text,
-  StyleSheet,
   Platform,
-  View,
   ActivityIndicator,
-  ViewStyle,
-  TextStyle,
 } from 'react-native';
-
-interface WebSafeButtonProps {
-  onPress: () => void;
-  title?: string;
-  children?: React.ReactNode;
-  disabled?: boolean;
-  loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
-  size?: 'small' | 'medium' | 'large';
-  style?: ViewStyle;
-  textStyle?: TextStyle;
-  testID?: string;
-  fullWidth?: boolean;
-}
 
 /**
  * WebSafeButton - A cross-platform button that works reliably on:
@@ -39,7 +20,7 @@ interface WebSafeButtonProps {
  * - CSS touch-action and tap-highlight fixes
  * - Immediate visual feedback
  */
-export const WebSafeButton: React.FC<WebSafeButtonProps> = ({
+export const WebSafeButton = ({
   onPress,
   title,
   children,
@@ -53,7 +34,7 @@ export const WebSafeButton: React.FC<WebSafeButtonProps> = ({
   fullWidth = false,
 }) => {
   const pressedRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef(null);
 
   // Debounced press handler to prevent double-fires
   const handlePress = useCallback(() => {
@@ -179,39 +160,34 @@ export const WebSafeButton: React.FC<WebSafeButtonProps> = ({
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           opacity: isDisabled ? 0.5 : 1,
           width: fullWidth ? '100%' : 'auto',
-          minHeight: 48, // Minimum touch target size
+          minHeight: 48,
           // iOS Safari fixes
           WebkitAppearance: 'none',
           WebkitTapHighlightColor: 'transparent',
           touchAction: 'manipulation',
           userSelect: 'none',
-          // Prevent text selection on long press
           WebkitUserSelect: 'none',
           MozUserSelect: 'none',
           msUserSelect: 'none',
-          // Smooth transitions
           transition: 'opacity 0.15s ease, transform 0.1s ease',
-          ...(style as any),
+          ...style,
         }}
         onTouchStart={(e) => {
-          // Visual feedback on touch start
-          (e.currentTarget as HTMLButtonElement).style.opacity = '0.8';
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.98)';
+          e.currentTarget.style.opacity = '0.8';
+          e.currentTarget.style.transform = 'scale(0.98)';
         }}
         onTouchCancel={(e) => {
-          // Reset on touch cancel
-          (e.currentTarget as HTMLButtonElement).style.opacity = isDisabled ? '0.5' : '1';
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+          e.currentTarget.style.opacity = isDisabled ? '0.5' : '1';
+          e.currentTarget.style.transform = 'scale(1)';
         }}
         onMouseUp={(e) => {
-          // Reset after mouse up
-          (e.currentTarget as HTMLButtonElement).style.opacity = isDisabled ? '0.5' : '1';
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+          e.currentTarget.style.opacity = isDisabled ? '0.5' : '1';
+          e.currentTarget.style.transform = 'scale(1)';
         }}
       >
         {loading ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="spinner" style={{
+            <span style={{
               width: 16,
               height: 16,
               border: '2px solid transparent',
