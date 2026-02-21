@@ -547,8 +547,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#34C759',
+    borderColor: '#34C759',
   },
   rememberMeText: {
     color: '#8E8E93',
