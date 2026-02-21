@@ -59,7 +59,33 @@ export default function LoginScreen() {
   useEffect(() => {
     // Check biometric support on mount
     checkBiometrics();
+    // Load remembered email
+    loadRememberedEmail();
   }, []);
+  
+  const loadRememberedEmail = async () => {
+    try {
+      const savedEmail = await AsyncStorage.getItem('rememberedEmail');
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+      }
+    } catch (error) {
+      console.log('Error loading remembered email:', error);
+    }
+  };
+  
+  const saveRememberedEmail = async (emailToSave: string) => {
+    try {
+      if (rememberMe && emailToSave) {
+        await AsyncStorage.setItem('rememberedEmail', emailToSave);
+      } else {
+        await AsyncStorage.removeItem('rememberedEmail');
+      }
+    } catch (error) {
+      console.log('Error saving remembered email:', error);
+    }
+  };
   
   const checkBiometrics = async () => {
     const status = await checkBiometricSupport();
