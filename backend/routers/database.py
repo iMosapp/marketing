@@ -25,10 +25,11 @@ def get_db():
     global _client, _db
     if _db is None:
         mongo_url = os.environ.get('MONGO_URL')
-        if mongo_url:
+        db_name = os.environ.get('DB_NAME')
+        if mongo_url and db_name:
             _client = AsyncIOMotorClient(mongo_url)
-            _db = _client[os.environ.get('DB_NAME', 'mvpline')]
-            logger.info(f"Database connected: {os.environ.get('DB_NAME', 'mvpline')}")
+            _db = _client[db_name]
+            logger.info(f"Database connected: {db_name}")
         else:
             logger.error("MONGO_URL not found in environment")
     return _db
