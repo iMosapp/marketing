@@ -289,63 +289,17 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
             
-            {Platform.OS === 'web' ? (
-              <button
-                type="submit"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!loading) {
-                    handleLogin();
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!loading) {
-                    handleLogin();
-                  }
-                }}
-                disabled={loading}
-                style={{
-                  backgroundColor: '#007AFF',
-                  borderRadius: 12,
-                  padding: 16,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginTop: 8,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.5 : 1,
-                  border: 'none',
-                  width: '100%',
-                  WebkitAppearance: 'none',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                  userSelect: 'none',
-                  fontSize: 16,
-                  fontWeight: '600',
-                  color: '#FFFFFF',
-                }}
-              >
-                {loading ? 'Logging in...' : 'Log In'}
-              </button>
-            ) : (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  loading && styles.buttonDisabled,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={handleLogin}
-                disabled={loading}
-                data-testid="login-button"
-              >
-                <Text style={styles.buttonText}>
-                  {loading ? 'Logging in...' : 'Log In'}
-                </Text>
-              </Pressable>
-            )}
+            <WebSafeButton
+              onPress={handleLogin}
+              title={loading ? 'Logging in...' : 'Log In'}
+              loading={loading}
+              disabled={loading}
+              variant="primary"
+              size="large"
+              fullWidth
+              testID="login-button"
+              style={{ marginTop: 8 }}
+            />
             
             {/* Error Message */}
             {loginError ? (
