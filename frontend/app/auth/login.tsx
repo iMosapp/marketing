@@ -217,7 +217,11 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>iMos</Text>
+            <Image 
+              source={require('../../assets/images/imos-logo.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.tagline}>Innovation Meets Old School</Text>
           </View>
           
