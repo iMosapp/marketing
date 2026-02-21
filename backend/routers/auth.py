@@ -232,6 +232,43 @@ async def reset_password(data: dict):
     
     return {"message": "Password updated successfully"}
 
+
+@router.post("/change-password")
+async def change_password(data: dict):
+    """Change password for logged-in user"""
+    user_id = data.get('user_id')
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    
+    if not all([user_id, current_password, new_password]):
+        raise HTTPException(status_code=400, detail="User ID, current password, and new password are required")
+    
+    if len(new_password) < 4:
+        raise HTTPException(status_code=400, detail="New password must be at least 4 characters")
+    
+    # Verify current password
+    try:
+        user = await get_db().users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get('password') != current_password:
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    
+    # Update password
+    result = await get_db().users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"password": new_password, "updated_at": datetime.utcnow()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Failed to update password")
+    
+    return {"message": "Password changed successfully"}
+
 @router.post("/persona/{user_id}")
 async def save_persona(user_id: str, persona: UserPersona):
     """Save the AI persona settings for a user"""
