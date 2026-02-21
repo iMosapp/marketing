@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebSafeButton } from '../../components/WebSafeButton';
 import api from '../../services/api';
 
 export default function MoreScreen() {
