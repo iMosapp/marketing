@@ -278,6 +278,108 @@ export default function UsersScreen() {
           )}
         />
       )}
+
+      {/* Add User Modal */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => { setShowAddModal(false); resetAddForm(); }}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add User</Text>
+            <TouchableOpacity onPress={handleCreateUser} disabled={creating}>
+              {creating ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <Text style={styles.modalSave}>Create</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <Text style={styles.inputLabel}>Name *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Full name"
+              placeholderTextColor="#8E8E93"
+              value={newUserName}
+              onChangeText={setNewUserName}
+              autoCapitalize="words"
+            />
+
+            <Text style={styles.inputLabel}>Email *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="email@example.com"
+              placeholderTextColor="#8E8E93"
+              value={newUserEmail}
+              onChangeText={setNewUserEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.inputLabel}>Phone (optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="+1 555 123 4567"
+              placeholderTextColor="#8E8E93"
+              value={newUserPhone}
+              onChangeText={setNewUserPhone}
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.inputLabel}>Role</Text>
+            <View style={styles.roleSelector}>
+              {ROLE_ORDER.map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  style={[
+                    styles.roleOption,
+                    newUserRole === role && { backgroundColor: ROLE_COLORS[role] + '30', borderColor: ROLE_COLORS[role] }
+                  ]}
+                  onPress={() => setNewUserRole(role)}
+                >
+                  <Text style={[
+                    styles.roleOptionText,
+                    newUserRole === role && { color: ROLE_COLORS[role] }
+                  ]}>
+                    {ROLE_LABELS[role]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.inviteToggle}
+              onPress={() => setSendInvite(!sendInvite)}
+            >
+              <View style={[styles.checkbox, sendInvite && styles.checkboxChecked]}>
+                {sendInvite && <Ionicons name="checkmark" size={16} color="#FFF" />}
+              </View>
+              <View style={styles.inviteToggleText}>
+                <Text style={styles.inviteToggleTitle}>Send login invitation email</Text>
+                <Text style={styles.inviteToggleSubtitle}>
+                  User will receive an email with login instructions
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {!sendInvite && (
+              <View style={styles.warningBox}>
+                <Ionicons name="warning" size={20} color="#FF9500" />
+                <Text style={styles.warningText}>
+                  A temporary password will be generated. Make sure to share it with the user securely.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
