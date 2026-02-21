@@ -51,8 +51,17 @@ export default function JoinTeamScreen() {
     try {
       setLoading(true);
       setError('');
-      const res = await api.get(`/team-invite/validate/${code}`);
+      // Use the new endpoint that returns email/name pre-fill for email invites
+      const res = await api.get(`/team-invite/validate-email/${code}`);
       setInviteData(res.data);
+      
+      // Pre-fill form if data available from email invite
+      if (res.data.recipient_email) {
+        setFormData(prev => ({ ...prev, email: res.data.recipient_email }));
+      }
+      if (res.data.recipient_name) {
+        setFormData(prev => ({ ...prev, name: res.data.recipient_name }));
+      }
     } catch (err: any) {
       console.error('Invalid invite:', err);
       setError(err.response?.data?.detail || 'This invite link is invalid or has expired.');
