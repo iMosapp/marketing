@@ -122,6 +122,48 @@ export default function InviteTeamScreen() {
     }
   };
   
+  const sendViaEmail = async () => {
+    if (!recipientEmail.trim()) {
+      Alert.alert('Error', 'Please enter an email address');
+      return;
+    }
+    
+    if (!recipientEmail.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+    
+    try {
+      setSending(true);
+      const res = await api.post('/team-invite/send-email-invite', {
+        store_id: user?.store_id,
+        created_by: user?._id,
+        recipient_email: recipientEmail.trim().toLowerCase(),
+        recipient_name: recipientName.trim() || undefined,
+        custom_message: customMessage.trim() || undefined,
+      });
+      
+      if (res.data.success) {
+        Alert.alert(
+          'Invite Sent!',
+          res.data.email_sent 
+            ? `Email invitation sent to ${recipientEmail}`
+            : res.data.message
+        );
+        setRecipientEmail('');
+        setRecipientName('');
+        setCustomMessage('');
+        setShowEmailForm(false);
+        loadData();
+      }
+    } catch (error: any) {
+      console.error('Failed to send email invite:', error);
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to send invite');
+    } finally {
+      setSending(false);
+    }
+  };
+  
   const formatPhone = (phone: string) => {
     // Simple phone formatting
     const cleaned = phone.replace(/\D/g, '');
