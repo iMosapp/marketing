@@ -3,15 +3,19 @@ Team Invite Router
 Handles team member invitations and account creation from invite links
 """
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from bson import ObjectId
 import secrets
+import os
+import logging
+import asyncio
 
 from routers.database import get_db
 
 router = APIRouter(prefix="/team-invite", tags=["Team Invite"])
+logger = logging.getLogger(__name__)
 
 
 # ============= MODELS =============
