@@ -11,16 +11,19 @@ import {
   Platform,
   Image,
   Linking,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
 export default function JoinTeamScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const router = useRouter();
+  const login = useAuthStore((state) => state.login);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +35,10 @@ export default function JoinTeamScreen() {
     name: '',
     phone: '',
     email: '',
+    password: '',
+    confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [trainingLink, setTrainingLink] = useState('');
   
   useEffect(() => {
