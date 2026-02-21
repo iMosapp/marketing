@@ -525,7 +525,7 @@ const Footer = () => (
           <a href="#" className="logo">
             <img src="/imos-logo.png" alt="iMos" className="logo-image footer-logo-image" />
           </a>
-          <p className="footer-tagline">Innovation Meets Old School</p>
+          <p className="footer-tagline">Innovative Messaging Operating System</p>
           <p className="footer-description">
             The modern CRM platform for sales professionals who value authentic connections.
           </p>
