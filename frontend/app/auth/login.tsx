@@ -338,12 +338,19 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 48,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 48,
     fontWeight: 'bold',
     color: '#FFF',
     marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   subtitle: {
     fontSize: 18,
