@@ -49,10 +49,13 @@ export default function ToggleStyleSettings() {
 
   useEffect(() => {
     loadPreferences();
-  }, []);
+  }, [user?._id]);
 
   const loadPreferences = async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const prefs = await emailAPI.getPreferences(user._id);

@@ -57,10 +57,13 @@ export default function EmailCampaignsPage() {
 
   useEffect(() => {
     loadCampaigns();
-  }, []);
+  }, [user?._id]);
 
   const loadCampaigns = async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await emailAPI.getCampaigns(user._id);
