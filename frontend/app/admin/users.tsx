@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
+  SectionList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,10 +25,12 @@ const ROLE_COLORS: Record<string, string> = {
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
-  org_admin: 'Org Admin',
+  org_admin: 'Admin',
   store_manager: 'Manager',
-  user: 'Sales Rep',
+  user: 'User',
 };
+
+const ROLE_ORDER = ['super_admin', 'org_admin', 'store_manager', 'user'];
 
 export default function UsersScreen() {
   const router = useRouter();
@@ -34,6 +38,8 @@ export default function UsersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   
   useFocusEffect(
     useCallback(() => {
@@ -60,9 +66,44 @@ export default function UsersScreen() {
     setRefreshing(false);
   };
 
-  // Separate active and inactive users
-  const activeUsers = users.filter(u => u.is_active !== false);
-  const inactiveUsers = users.filter(u => u.is_active === false);
+  const toggleSection = (role: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [role]: !prev[role]
+    }));
+  };
+
+  // Filter and group users
+  const sections = useMemo(() => {
+    const filteredUsers = users.filter(user => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        user.name?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query)
+      );
+    });
+
+    const grouped: Record<string, any[]> = {};
+    
+    filteredUsers.forEach(user => {
+      const role = user.role || 'user';
+      if (!grouped[role]) {
+        grouped[role] = [];
+      }
+      grouped[role].push(user);
+    });
+
+    return ROLE_ORDER
+      .filter(role => grouped[role]?.length > 0)
+      .map(role => ({
+        title: ROLE_LABELS[role] || role,
+        role: role,
+        color: ROLE_COLORS[role] || '#8E8E93',
+        data: collapsedSections[role] ? [] : grouped[role],
+        count: grouped[role].length,
+      }));
+  }, [users, searchQuery, collapsedSections]);
 
   const renderUser = ({ item }: { item: any }) => (
     <TouchableOpacity 
@@ -77,27 +118,39 @@ export default function UsersScreen() {
       <View style={styles.userInfo}>
         <Text style={[styles.userName, item.is_active === false && styles.inactiveText]}>{item.name}</Text>
         <Text style={styles.userEmail}>{item.email}</Text>
-        {item.organization_name && (
-          <Text style={styles.userOrg}>{item.organization_name}</Text>
-        )}
       </View>
-      <View style={styles.userMeta}>
-        <View style={[styles.roleBadge, { backgroundColor: (ROLE_COLORS[item.role] || '#8E8E93') + '20' }]}>
-          <Text style={[styles.roleBadgeText, { color: ROLE_COLORS[item.role] || '#8E8E93' }]}>
-            {ROLE_LABELS[item.role] || item.role}
-          </Text>
-        </View>
-        <View style={[styles.statusDot, { backgroundColor: item.is_active !== false ? '#34C759' : '#FF3B30' }]} />
-      </View>
+      <View style={[styles.statusDot, { backgroundColor: item.is_active !== false ? '#34C759' : '#FF3B30' }]} />
       <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
     </TouchableOpacity>
   );
 
-  const renderSectionHeader = (title: string, count: number) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionCount}>{count}</Text>
-    </View>
+  const renderSectionHeader = ({ section }: { section: any }) => (
+    <TouchableOpacity 
+      style={styles.sectionHeader}
+      onPress={() => toggleSection(section.role)}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.sectionIcon, { backgroundColor: section.color + '20' }]}>
+        <Ionicons 
+          name={
+            section.role === 'super_admin' ? 'shield-checkmark' :
+            section.role === 'org_admin' ? 'person-circle' :
+            section.role === 'store_manager' ? 'briefcase' : 'person'
+          } 
+          size={18} 
+          color={section.color} 
+        />
+      </View>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      <View style={[styles.countBadge, { backgroundColor: section.color + '20' }]}>
+        <Text style={[styles.countText, { color: section.color }]}>{section.count}</Text>
+      </View>
+      <Ionicons 
+        name={collapsedSections[section.role] ? 'chevron-down' : 'chevron-up'} 
+        size={20} 
+        color="#8E8E93" 
+      />
+    </TouchableOpacity>
   );
 
   return (
@@ -110,39 +163,51 @@ export default function UsersScreen() {
         <View style={{ width: 40 }} />
       </View>
       
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color="#8E8E93" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or email..."
+            placeholderTextColor="#8E8E93"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#8E8E93" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+      
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       ) : (
-        <FlatList
-          data={[
-            { type: 'header', title: 'Active Users', count: activeUsers.length },
-            ...activeUsers.map(u => ({ type: 'user', ...u })),
-            ...(inactiveUsers.length > 0 ? [
-              { type: 'divider' },
-              { type: 'header', title: 'Inactive Users', count: inactiveUsers.length },
-              ...inactiveUsers.map(u => ({ type: 'user', ...u })),
-            ] : []),
-          ]}
-          renderItem={({ item }) => {
-            if (item.type === 'header') {
-              return renderSectionHeader(item.title, item.count);
-            }
-            if (item.type === 'divider') {
-              return <View style={styles.sectionDivider} />;
-            }
-            return renderUser({ item });
-          }}
-          keyExtractor={(item, index) => item._id || `section-${index}`}
+        <SectionList
+          sections={sections}
+          renderItem={renderUser}
+          renderSectionHeader={renderSectionHeader}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={64} color="#2C2C2E" />
-              <Text style={styles.emptyText}>No users yet</Text>
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'No users found' : 'No users yet'}
+              </Text>
+              {searchQuery && (
+                <Text style={styles.emptySubtext}>Try a different search term</Text>
+              )}
             </View>
           )}
         />
@@ -173,6 +238,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C1E',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFF',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -181,23 +266,57 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
   },
-  userCard: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
+    marginTop: 8,
+  },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+    flex: 1,
+  },
+  countBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  countText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2C2C2E',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 6,
+    marginLeft: 16,
   },
   userAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   userAvatarText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   userInfo: {
@@ -205,7 +324,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#FFF',
   },
@@ -214,29 +333,11 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 2,
   },
-  userOrg: {
-    fontSize: 12,
-    color: '#007AFF',
-    marginTop: 2,
-  },
-  userMeta: {
-    alignItems: 'flex-end',
-    marginRight: 8,
-  },
-  roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  roleBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+    marginRight: 8,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -247,31 +348,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 16,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    marginTop: 8,
-  },
-  sectionTitle: {
+  emptySubtext: {
+    color: '#6E6E73',
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#2C2C2E',
-    marginVertical: 24,
-    marginHorizontal: 16,
+    marginTop: 4,
   },
   inactiveCard: {
     opacity: 0.6,
