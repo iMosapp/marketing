@@ -81,19 +81,28 @@ export const authAPI = {
   },
 
   forgotPassword: async (email: string) => {
-    const response = await api.post('/auth/forgot-password', { email });
+    const response = await api.post('/auth/forgot-password/request', { email });
     return response.data;
   },
 
   verifyResetCode: async (email: string, code: string) => {
-    const response = await api.post('/auth/verify-reset-code', { email, code });
+    const response = await api.post('/auth/forgot-password/verify', { email, code });
     return response.data;
   },
 
   resetPassword: async (email: string, code: string, newPassword: string) => {
-    const response = await api.post('/auth/reset-password', { 
+    const response = await api.post('/auth/forgot-password/reset', { 
       email, 
       code, 
+      new_password: newPassword 
+    });
+    return response.data;
+  },
+
+  changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
+    const response = await api.post('/auth/change-password', { 
+      user_id: userId,
+      current_password: currentPassword, 
       new_password: newPassword 
     });
     return response.data;
