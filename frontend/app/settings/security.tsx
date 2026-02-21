@@ -156,6 +156,130 @@ export default function SecuritySettingsScreen() {
     }
   };
   
+  const handleChangePassword = async () => {
+    if (!currentPassword) {
+      Alert.alert('Error', 'Please enter your current password');
+      return;
+    }
+    if (!newPassword || newPassword.length < 4) {
+      Alert.alert('Error', 'New password must be at least 4 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'New passwords do not match');
+      return;
+    }
+    if (currentPassword === newPassword) {
+      Alert.alert('Error', 'New password must be different from current password');
+      return;
+    }
+    
+    setChangingPassword(true);
+    try {
+      await authAPI.changePassword(user?._id || '', currentPassword, newPassword);
+      Alert.alert('Success', 'Your password has been changed successfully');
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || 'Failed to change password';
+      Alert.alert('Error', message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+  
+  const renderPasswordModal = () => (
+    <Modal
+      visible={showPasswordModal}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setShowPasswordModal(false)}
+    >
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+            <Text style={styles.modalCancel}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Change Password</Text>
+          <TouchableOpacity 
+            onPress={handleChangePassword}
+            disabled={changingPassword}
+          >
+            {changingPassword ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Text style={styles.modalSave}>Save</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.modalSectionTitle}>Current Password</Text>
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Enter current password"
+              placeholderTextColor="#8E8E93"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry={!showCurrentPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+            >
+              <Ionicons
+                name={showCurrentPassword ? 'eye-off' : 'eye'}
+                size={22}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>New Password</Text>
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Enter new password"
+              placeholderTextColor="#8E8E93"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={!showNewPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowNewPassword(!showNewPassword)}
+            >
+              <Ionicons
+                name={showNewPassword ? 'eye-off' : 'eye'}
+                size={22}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <TextInput
+            style={[styles.textInput, { marginTop: 12 }]}
+            placeholder="Confirm new password"
+            placeholderTextColor="#8E8E93"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showNewPassword}
+            autoCapitalize="none"
+          />
+          
+          <Text style={styles.passwordHint}>
+            Password must be at least 4 characters long
+          </Text>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+  
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
