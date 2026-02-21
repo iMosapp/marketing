@@ -528,4 +528,122 @@ const styles = StyleSheet.create({
   inactiveText: {
     color: '#8E8E93',
   },
+  addButton: {
+    padding: 4,
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  modalCancel: {
+    fontSize: 17,
+    color: '#007AFF',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  modalSave: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  modalContent: {
+    padding: 16,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 8,
+    marginTop: 16,
+    marginLeft: 4,
+  },
+  modalInput: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 16,
+    color: '#FFF',
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  roleSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  roleOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#1C1C1E',
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  roleOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  inviteToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#3A3A3C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  inviteToggleText: {
+    flex: 1,
+  },
+  inviteToggleTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#FFF',
+  },
+  inviteToggleSubtitle: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#FF950020',
+    borderRadius: 10,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#FF9500',
+    lineHeight: 18,
+  },
 });
