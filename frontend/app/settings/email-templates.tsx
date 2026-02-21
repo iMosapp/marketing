@@ -54,10 +54,13 @@ export default function EmailTemplatesSettings() {
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [user?._id]);
 
   const loadTemplates = async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await emailAPI.getTemplates(user._id);
