@@ -361,7 +361,7 @@ export default function SecuritySettingsScreen() {
           
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => router.push('/auth/forgot-password')}
+            onPress={() => setShowPasswordModal(true)}
           >
             <View style={styles.settingIcon}>
               <Ionicons name="key-outline" size={24} color="#FF9500" />
@@ -372,8 +372,24 @@ export default function SecuritySettingsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.settingItem, { marginTop: 8 }]}
+            onPress={() => router.push('/auth/forgot-password')}
+          >
+            <View style={styles.settingIcon}>
+              <Ionicons name="refresh-outline" size={24} color="#007AFF" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Reset Password</Text>
+              <Text style={styles.settingDescription}>Forgot your password? Reset via email</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
+      
+      {renderPasswordModal()}
     </SafeAreaView>
   );
 }
