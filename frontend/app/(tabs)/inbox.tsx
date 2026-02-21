@@ -666,11 +666,11 @@ export default function InboxScreen() {
   const renderHeader = () => {
     if (selectionMode) {
       return (
-        <View style={styles.selectionHeader}>
+        <View style={[styles.selectionHeader, { backgroundColor: colors.surface }]}>
           <TouchableOpacity onPress={exitSelectionMode} style={styles.headerIconButton} data-testid="selection-cancel-btn">
-            <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="close" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.selectionCount} data-testid="selection-count">
+          <Text style={[styles.selectionCount, { color: colors.textPrimary }]} data-testid="selection-count">
             {selectedIds.size} selected
           </Text>
           <TouchableOpacity onPress={selectAll} style={styles.selectAllButton} data-testid="select-all-btn">
@@ -682,17 +682,36 @@ export default function InboxScreen() {
 
     const headerContent = (
       <View style={styles.headerInner}>
-        <Text style={styles.title}>Inbox</Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
+            {messageMode === 'sms' ? 'Inbox' : 'Email'}
+          </Text>
+          <View style={styles.modeBadge}>
+            <Ionicons 
+              name={messageMode === 'sms' ? 'chatbubbles' : 'mail'} 
+              size={12} 
+              color={messageMode === 'email' ? '#007AFF' : '#8E8E93'} 
+            />
+          </View>
+        </View>
         <View style={styles.headerButtons}>
+          {/* Message Mode Toggle */}
+          <View style={styles.modeToggleWrapper}>
+            <MessageModeToggle
+              mode={messageMode}
+              onModeChange={handleModeChange}
+              style={toggleStyle}
+            />
+          </View>
           <TouchableOpacity 
             onPress={() => { triggerHaptic('light'); router.push('/search'); }} 
             style={styles.headerIconButton}
             data-testid="inbox-search-btn"
           >
-            <Ionicons name="search" size={22} color={COLORS.accent} />
+            <Ionicons name="search" size={22} color={colors.accent} />
           </TouchableOpacity>
           <TouchableOpacity onPress={openNewMessage} style={styles.composeButton} data-testid="compose-btn">
-            <Ionicons name="create-outline" size={24} color={COLORS.accent} />
+            <Ionicons name="create-outline" size={24} color={colors.accent} />
           </TouchableOpacity>
         </View>
       </View>
@@ -700,13 +719,13 @@ export default function InboxScreen() {
 
     if (Platform.OS !== 'web') {
       return (
-        <BlurView intensity={80} tint="dark" style={styles.header}>
+        <BlurView intensity={80} tint={messageMode === 'email' ? 'light' : 'dark'} style={[styles.header, { backgroundColor: colors.background }]}>
           {headerContent}
         </BlurView>
       );
     }
 
-    return <View style={[styles.header, styles.headerWeb]}>{headerContent}</View>;
+    return <View style={[styles.header, styles.headerWeb, { backgroundColor: colors.background }]}>{headerContent}</View>;
   };
   
   // Check if user has restricted access (pending status)
