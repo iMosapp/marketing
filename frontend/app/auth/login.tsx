@@ -477,10 +477,17 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     alignItems: 'center',
   },
+  logoContainer: {
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   logo: {
-    width: 300,
-    height: 140,
-    marginBottom: 8,
+    width: 220,
+    height: 100,
   },
   title: {
     fontSize: 48,
