@@ -99,7 +99,7 @@ export default function StoresScreen() {
       async () => {
         try {
           await adminAPI.deleteStore(store._id);
-          loadStores(selectedOrg);
+          loadStores();
         } catch (error) {
           showSimpleAlert('Error', 'Failed to delete store');
         }
