@@ -188,6 +188,13 @@ export default function MoreScreen() {
       color: '#FF2D55',
     },
     {
+      icon: 'people-outline',
+      title: 'Invite Team',
+      subtitle: 'Send invites via email or SMS',
+      onPress: () => router.push('/settings/invite-team'),
+      color: '#34C759',
+    },
+    {
       icon: 'pricetags',
       title: 'Contact Tags',
       subtitle: 'Organize contacts with tags',
