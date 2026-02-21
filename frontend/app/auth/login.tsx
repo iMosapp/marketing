@@ -357,7 +357,7 @@ export default function LoginScreen() {
               <Ionicons
                 name={getBiometricIcon(biometricStatus?.biometricType || 'none') as any}
                 size={48}
-                color="#007AFF"
+                color="#34C759"
               />
             </View>
             
