@@ -7,7 +7,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://imos-auth-ui.preview.emergentagent.com")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://imos-marketing.preview.emergentagent.com")
 TEST_USER_ID = "69963e636d8473ba25695a34"
 
 
