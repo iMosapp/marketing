@@ -590,59 +590,71 @@ export default function AdminDashboard() {
           
           {/* Training Progress Widget */}
           {trainingProgress && trainingProgress.total_sops > 0 && (
-            <TouchableOpacity 
-              style={styles.trainingWidget}
-              onPress={() => router.push('/admin/sop')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.trainingWidgetHeader}>
+            <View style={styles.trainingWidget}>
+              <TouchableOpacity 
+                style={styles.trainingWidgetHeader}
+                onPress={() => setTrainingExpanded(!trainingExpanded)}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="school" size={20} color="#34C759" />
                 <Text style={styles.trainingWidgetTitle}>Team Training Progress</Text>
                 <View style={styles.trainingRateBadge}>
                   <Text style={styles.trainingRateText}>{trainingProgress.summary?.completion_rate || 0}%</Text>
                 </View>
-              </View>
+                <Ionicons 
+                  name={trainingExpanded ? "chevron-up" : "chevron-down"} 
+                  size={20} 
+                  color="#8E8E93" 
+                  style={{ marginLeft: 8 }}
+                />
+              </TouchableOpacity>
               
-              <View style={styles.trainingSummary}>
-                <View style={styles.trainingStatItem}>
-                  <Text style={styles.trainingStatValue}>{trainingProgress.summary?.fully_trained || 0}</Text>
-                  <Text style={styles.trainingStatLabel}>Complete</Text>
-                </View>
-                <View style={styles.trainingStatDivider} />
-                <View style={styles.trainingStatItem}>
-                  <Text style={[styles.trainingStatValue, { color: '#FF9500' }]}>{trainingProgress.summary?.in_progress || 0}</Text>
-                  <Text style={styles.trainingStatLabel}>In Progress</Text>
-                </View>
-                <View style={styles.trainingStatDivider} />
-                <View style={styles.trainingStatItem}>
-                  <Text style={[styles.trainingStatValue, { color: '#FF3B30' }]}>{trainingProgress.summary?.not_started || 0}</Text>
-                  <Text style={styles.trainingStatLabel}>Not Started</Text>
-                </View>
-              </View>
-              
-              {trainingProgress.team_members?.slice(0, 3).map((member: any) => (
-                <View key={member._id} style={styles.trainingMemberRow}>
-                  <View style={styles.trainingMemberInfo}>
-                    <Text style={styles.trainingMemberName} numberOfLines={1}>{member.name}</Text>
-                    <Text style={styles.trainingMemberStats}>{member.completed}/{member.total} completed</Text>
+              {trainingExpanded && (
+                <>
+                  <View style={styles.trainingSummary}>
+                    <View style={styles.trainingStatItem}>
+                      <Text style={styles.trainingStatValue}>{trainingProgress.summary?.fully_trained || 0}</Text>
+                      <Text style={styles.trainingStatLabel}>Complete</Text>
+                    </View>
+                    <View style={styles.trainingStatDivider} />
+                    <View style={styles.trainingStatItem}>
+                      <Text style={[styles.trainingStatValue, { color: '#FF9500' }]}>{trainingProgress.summary?.in_progress || 0}</Text>
+                      <Text style={styles.trainingStatLabel}>In Progress</Text>
+                    </View>
+                    <View style={styles.trainingStatDivider} />
+                    <View style={styles.trainingStatItem}>
+                      <Text style={[styles.trainingStatValue, { color: '#FF3B30' }]}>{trainingProgress.summary?.not_started || 0}</Text>
+                      <Text style={styles.trainingStatLabel}>Not Started</Text>
+                    </View>
                   </View>
-                  <View style={styles.trainingProgressBar}>
-                    <View style={[styles.trainingProgressFill, { width: `${member.percentage}%` }]} />
-                  </View>
-                  <Text style={[
-                    styles.trainingMemberPercent,
-                    member.percentage === 100 ? { color: '#34C759' } : 
-                    member.percentage > 0 ? { color: '#FF9500' } : { color: '#FF3B30' }
-                  ]}>{member.percentage}%</Text>
-                </View>
-              ))}
-              
-              {trainingProgress.team_members?.length > 3 && (
-                <Text style={styles.trainingMoreText}>
-                  +{trainingProgress.team_members.length - 3} more team members
-                </Text>
+                  
+                  {trainingProgress.team_members?.slice(0, 3).map((member: any) => (
+                    <View key={member._id} style={styles.trainingMemberRow}>
+                      <View style={styles.trainingMemberInfo}>
+                        <Text style={styles.trainingMemberName} numberOfLines={1}>{member.name}</Text>
+                        <Text style={styles.trainingMemberStats}>{member.completed}/{member.total} completed</Text>
+                      </View>
+                      <View style={styles.trainingProgressBar}>
+                        <View style={[styles.trainingProgressFill, { width: `${member.percentage}%` }]} />
+                      </View>
+                      <Text style={[
+                        styles.trainingMemberPercent,
+                        member.percentage === 100 ? { color: '#34C759' } : 
+                        member.percentage > 0 ? { color: '#FF9500' } : { color: '#FF3B30' }
+                      ]}>{member.percentage}%</Text>
+                    </View>
+                  ))}
+                  
+                  {trainingProgress.team_members?.length > 3 && (
+                    <TouchableOpacity onPress={() => router.push('/admin/sop')}>
+                      <Text style={styles.trainingMoreText}>
+                        +{trainingProgress.team_members.length - 3} more team members
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
-            </TouchableOpacity>
+            </View>
           )}
           
           {/* Billing - super_admin only */}
