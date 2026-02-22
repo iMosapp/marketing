@@ -80,6 +80,25 @@ export default function UsersScreen() {
     }
   };
   
+  const loadOrganizations = async () => {
+    try {
+      const response = await api.get('/admin/organizations');
+      setOrganizations(response.data || []);
+    } catch (error) {
+      console.error('Failed to load organizations:', error);
+    }
+  };
+  
+  const loadStores = async (orgId?: string) => {
+    try {
+      const url = orgId ? `/admin/stores?organization_id=${orgId}` : '/admin/stores';
+      const response = await api.get(url);
+      setStores(response.data || []);
+    } catch (error) {
+      console.error('Failed to load stores:', error);
+    }
+  };
+  
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
