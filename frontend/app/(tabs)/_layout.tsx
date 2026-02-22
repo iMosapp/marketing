@@ -60,48 +60,67 @@ export default function TabLayout() {
   }, [isPending, needsOnboarding]);
   
   return (
-    <Tabs
-      initialRouteName={getInitialTab(user?.role)}
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#000',
-          borderTopColor: '#2C2C2E',
-          borderTopWidth: 1,
-          height: 88,
-          paddingBottom: 32,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="inbox"
-        options={{
-          title: 'Inbox',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={isPending ? '#3C3C3E' : color} />
-          ),
+    <>
+      <Tabs
+        initialRouteName={getInitialTab(user?.role)}
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#000',
+            borderTopColor: '#2C2C2E',
+            borderTopWidth: 1,
+            height: 88,
+            paddingBottom: 32,
+            paddingTop: 8,
+          },
+          tabBarActiveTintColor: '#007AFF',
+          tabBarInactiveTintColor: '#8E8E93',
           tabBarLabelStyle: {
             fontSize: 10,
             fontWeight: '600',
-            color: isPending ? '#3C3C3E' : undefined,
           },
         }}
-        listeners={{
-          tabPress: (e) => {
-            if (isPending) {
-              e.preventDefault();
-              // Could show alert here
-            }
-          },
-        }}
-      />
+      >
+        <Tabs.Screen
+          name="inbox"
+          options={{
+            title: 'Inbox',
+            tabBarIcon: ({ color, size }) => (
+              <View>
+                <Ionicons name="chatbubbles" size={size} color={isPending ? '#3C3C3E' : color} />
+                {unreadCount > 0 && (
+                  <View style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -8,
+                    backgroundColor: '#FF3B30',
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingHorizontal: 4,
+                  }}>
+                    <Ionicons name="flash" size={10} color="#FFF" />
+                  </View>
+                )}
+              </View>
+            ),
+            tabBarLabelStyle: {
+              fontSize: 10,
+              fontWeight: '600',
+              color: isPending ? '#3C3C3E' : undefined,
+            },
+          }}
+          listeners={{
+            tabPress: (e) => {
+              if (isPending) {
+                e.preventDefault();
+                // Could show alert here
+              }
+            },
+          }}
+        />
       <Tabs.Screen
         name="dialer"
         options={{
