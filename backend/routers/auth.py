@@ -243,8 +243,8 @@ async def change_password(data: dict):
     if not all([user_id, current_password, new_password]):
         raise HTTPException(status_code=400, detail="User ID, current password, and new password are required")
     
-    if len(new_password) < 4:
-        raise HTTPException(status_code=400, detail="New password must be at least 4 characters")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
     
     # Verify current password
     try:
@@ -258,10 +258,14 @@ async def change_password(data: dict):
     if user.get('password') != current_password:
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     
-    # Update password
+    # Update password and clear needs_password_change flag
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {"password": new_password, "updated_at": datetime.utcnow()}}
+        {"$set": {
+            "password": new_password, 
+            "needs_password_change": False,
+            "updated_at": datetime.utcnow()
+        }}
     )
     
     if result.modified_count == 0:
