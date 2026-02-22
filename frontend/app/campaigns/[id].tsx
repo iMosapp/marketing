@@ -165,6 +165,72 @@ export default function CampaignDetailScreen() {
     setHasChanges(true);
   };
   
+  const pickMediaForStep = async (stepId: string) => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your photo library.');
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setUploadingMedia(stepId);
+        
+        try {
+          const formData = new FormData();
+          const filename = asset.uri.split('/').pop() || 'image.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : 'image/jpeg';
+          
+          formData.append('file', { uri: asset.uri, name: filename, type } as any);
+          
+          const uploadResponse = await api.post('/media/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          
+          if (uploadResponse.data.url) {
+            setSequences(sequences.map(s => 
+              s.id === stepId 
+                ? { ...s, media_urls: [...s.media_urls, uploadResponse.data.url] }
+                : s
+            ));
+            setHasChanges(true);
+          }
+        } catch (uploadError) {
+          // Use local URI as fallback
+          setSequences(sequences.map(s => 
+            s.id === stepId 
+              ? { ...s, media_urls: [...s.media_urls, asset.uri] }
+              : s
+          ));
+          setHasChanges(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking media:', error);
+      Alert.alert('Error', 'Failed to select image.');
+    } finally {
+      setUploadingMedia(null);
+    }
+  };
+  
+  const removeMediaFromStep = (stepId: string, mediaIndex: number) => {
+    setSequences(sequences.map(s => 
+      s.id === stepId 
+        ? { ...s, media_urls: s.media_urls.filter((_, idx) => idx !== mediaIndex) }
+        : s
+    ));
+    setHasChanges(true);
+  };
+  
   const getDelayLabel = (step: SequenceStep, index: number) => {
     if (index === 0 && step.delayDays === 0 && step.delayMonths === 0) {
       return 'Immediately';
