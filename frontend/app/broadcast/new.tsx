@@ -637,10 +637,11 @@ export default function NewBroadcastScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity
+          <WebSafePressable
             style={styles.saveButton}
             onPress={() => handleSubmit(false)}
             disabled={submitting}
+            testID="save-draft-btn"
           >
             {submitting ? (
               <ActivityIndicator size="small" color="#007AFF" />
@@ -652,12 +653,13 @@ export default function NewBroadcastScreen() {
                 </Text>
               </>
             )}
-          </TouchableOpacity>
+          </WebSafePressable>
           
-          <TouchableOpacity
+          <WebSafePressable
             style={[styles.sendButton, (previewCount === 0 || submitting) && styles.sendButtonDisabled]}
             onPress={() => handleSubmit(true)}
             disabled={previewCount === 0 || submitting}
+            testID="send-now-btn"
           >
             {submitting ? (
               <ActivityIndicator size="small" color="#FFF" />
@@ -667,7 +669,7 @@ export default function NewBroadcastScreen() {
                 <Text style={styles.sendButtonText}>Send Now</Text>
               </>
             )}
-          </TouchableOpacity>
+          </WebSafePressable>
         </View>
         
         <View style={{ height: 40 }} />
