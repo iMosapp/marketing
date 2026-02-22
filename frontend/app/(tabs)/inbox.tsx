@@ -742,16 +742,22 @@ export default function InboxScreen() {
               style={toggleStyle}
             />
           </View>
-          <TouchableOpacity 
+          <WebIconButton 
             onPress={() => { triggerHaptic('light'); router.push('/search'); }} 
+            iconName="search"
+            iconSize={22}
+            iconColor={colors.accent}
+            testID="inbox-search-btn"
             style={styles.headerIconButton}
-            data-testid="inbox-search-btn"
-          >
-            <Ionicons name="search" size={22} color={colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={openNewMessage} style={styles.composeButton} data-testid="compose-btn">
-            <Ionicons name="create-outline" size={24} color={colors.accent} />
-          </TouchableOpacity>
+          />
+          <WebIconButton 
+            onPress={openNewMessage} 
+            iconName="create-outline"
+            iconSize={24}
+            iconColor={colors.accent}
+            testID="compose-btn"
+            style={styles.composeButton}
+          />
         </View>
       </View>
     );
