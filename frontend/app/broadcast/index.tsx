@@ -203,13 +203,14 @@ export default function BroadcastListScreen() {
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </WebSafePressable>
   );
 
   const FilterButton = ({ value, label, count }: { value: string; label: string; count?: number }) => (
-    <TouchableOpacity
+    <WebSafePressable
       style={[styles.filterButton, filter === value && styles.filterButtonActive]}
       onPress={() => setFilter(value)}
+      testID={`filter-btn-${value}`}
     >
       <Text style={[styles.filterButtonText, filter === value && styles.filterButtonTextActive]}>
         {label}
