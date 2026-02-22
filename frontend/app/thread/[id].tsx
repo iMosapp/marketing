@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import { useAuthStore } from '../../store/authStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
