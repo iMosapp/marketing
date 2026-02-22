@@ -8,7 +8,7 @@ import os
 import random
 import string
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://imos-deploy.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://reports-analytics-1.preview.emergentagent.com')
 if BASE_URL and not BASE_URL.startswith('http'):
     BASE_URL = f"https://{BASE_URL}"
 
