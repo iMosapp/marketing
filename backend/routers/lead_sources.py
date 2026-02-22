@@ -436,6 +436,18 @@ async def claim_lead(conversation_id: str, user_id: str):
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Could not claim lead - may already be claimed")
     
+    # Also update the contact to be owned by this user so it appears in their contacts
+    if conversation.get("contact_id"):
+        db.contacts.update_one(
+            {"_id": ObjectId(conversation["contact_id"])},
+            {"$set": {
+                "user_id": user_id,
+                "claimed_by": user_id,
+                "claimed_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }}
+        )
+    
     # Update lead source weighted counts if applicable
     if conversation.get("lead_source_id"):
         source = db.lead_sources.find_one({"_id": ObjectId(conversation["lead_source_id"])})
