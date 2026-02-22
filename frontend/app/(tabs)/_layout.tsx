@@ -24,6 +24,10 @@ export default function TabLayout() {
   const { user } = useAuthStore();
   const router = useRouter();
   
+  // Track if component is mounted (for hydration safety)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
   // Notification system
   const { 
     pendingNotification, 
@@ -35,24 +39,27 @@ export default function TabLayout() {
   
   // Show modal when there's a pending notification
   useEffect(() => {
-    if (pendingNotification) {
+    if (pendingNotification && mounted) {
       setShowNotificationModal(true);
     }
-  }, [pendingNotification]);
+  }, [pendingNotification, mounted]);
   
-  const handleNotificationDismiss = () => {
+  const handleNotificationDismiss = useCallback(() => {
     setShowNotificationModal(false);
     clearPendingNotification();
-  };
+  }, [clearPendingNotification]);
   
-  const handleNotificationAction = () => {
+  const handleNotificationAction = useCallback(() => {
     setShowNotificationModal(false);
     clearPendingNotification();
-  };
+  }, [clearPendingNotification]);
   
   // Check if user has restricted access (pending status)
   const isPending = user?.status === 'pending';
   const needsOnboarding = user?.needs_onboarding === true;
+  
+  // Badge should only show after mount to prevent hydration mismatch
+  const showBadge = mounted && unreadCount > 0;
   
   // Redirect pending users trying to access restricted tabs
   useEffect(() => {
