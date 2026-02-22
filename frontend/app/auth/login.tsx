@@ -129,6 +129,13 @@ export default function LoginScreen() {
       
       // Get the user from store after login
       const loggedInUser = useAuthStore.getState().user;
+      
+      // Check if user needs to change password (first-time login with temp password)
+      if (loggedInUser?.needs_password_change) {
+        router.replace('/auth/change-password');
+        return;
+      }
+      
       const defaultRoute = getDefaultRoute(loggedInUser?.role);
       
       // After successful login, check if we should offer biometric setup
