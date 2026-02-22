@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   brandTitle: {
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontFamily: 'Playfair Display, Georgia, serif',
     fontSize: 42,
     fontWeight: '700',
     fontStyle: 'italic',
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   brandBlue: {
-    color: '#5B9BD5',
+    color: '#007AFF',
   },
   brandPurple: {
     color: '#9B7BC7',
