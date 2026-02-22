@@ -132,6 +132,7 @@ iMos is a business management app for retail/service businesses. Key features in
 - [ ] SMS functionality (BLOCKED - Twilio toll-free number pending verification)
 
 ### P1 (High Priority)
+- [ ] **Fix Auth State Persistence** - Login doesn't persist on navigation/refresh (high impact on UX)
 - [ ] **Fix Lead Notification Modal** - Modal UI created but blocked by React #418 hydration error on web. Backend API is complete and working.
 - [ ] Quote drafts view/edit/delete functionality
 - [ ] Complete broadcast sending logic (needs Twilio)
