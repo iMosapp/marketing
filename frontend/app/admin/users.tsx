@@ -118,6 +118,8 @@ export default function UsersScreen() {
     setNewUserEmail('');
     setNewUserPhone('');
     setNewUserRole('user');
+    setNewUserOrgId(null);
+    setNewUserStoreId(null);
     setSendInvite(false);
     setCreatedUser(null);
   };
@@ -139,6 +141,8 @@ export default function UsersScreen() {
         email: newUserEmail.trim().toLowerCase(),
         phone: newUserPhone.trim() || undefined,
         role: newUserRole,
+        organization_id: newUserOrgId || undefined,
+        store_id: newUserStoreId || undefined,
         send_invite: sendInvite,
       });
 
