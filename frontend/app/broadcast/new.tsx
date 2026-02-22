@@ -535,9 +535,10 @@ export default function NewBroadcastScreen() {
           {expandedSections.schedule && (
             <View style={styles.sectionContent}>
               <View style={styles.scheduleOptions}>
-                <TouchableOpacity
+                <WebSafePressable
                   style={[styles.scheduleOption, scheduleType === 'now' && styles.scheduleOptionActive]}
                   onPress={() => setScheduleType('now')}
+                  testID="schedule-now"
                 >
                   <Ionicons
                     name={scheduleType === 'now' ? 'radio-button-on' : 'radio-button-off'}
@@ -547,11 +548,12 @@ export default function NewBroadcastScreen() {
                   <Text style={[styles.scheduleOptionText, scheduleType === 'now' && styles.scheduleOptionTextActive]}>
                     Save as draft (send manually)
                   </Text>
-                </TouchableOpacity>
+                </WebSafePressable>
                 
-                <TouchableOpacity
+                <WebSafePressable
                   style={[styles.scheduleOption, scheduleType === 'later' && styles.scheduleOptionActive]}
                   onPress={() => setScheduleType('later')}
+                  testID="schedule-later"
                 >
                   <Ionicons
                     name={scheduleType === 'later' ? 'radio-button-on' : 'radio-button-off'}
@@ -561,30 +563,32 @@ export default function NewBroadcastScreen() {
                   <Text style={[styles.scheduleOptionText, scheduleType === 'later' && styles.scheduleOptionTextActive]}>
                     Schedule for later
                   </Text>
-                </TouchableOpacity>
+                </WebSafePressable>
               </View>
               
               {scheduleType === 'later' && (
                 <View style={styles.dateTimeContainer}>
-                  <TouchableOpacity
+                  <WebSafePressable
                     style={styles.dateTimeButton}
                     onPress={() => setShowDatePicker(true)}
+                    testID="date-picker-btn"
                   >
                     <Ionicons name="calendar" size={20} color="#007AFF" />
                     <Text style={styles.dateTimeText}>
                       {scheduledDate.toLocaleDateString()}
                     </Text>
-                  </TouchableOpacity>
+                  </WebSafePressable>
                   
-                  <TouchableOpacity
+                  <WebSafePressable
                     style={styles.dateTimeButton}
                     onPress={() => setShowTimePicker(true)}
+                    testID="time-picker-btn"
                   >
                     <Ionicons name="time" size={20} color="#007AFF" />
                     <Text style={styles.dateTimeText}>
                       {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
-                  </TouchableOpacity>
+                  </WebSafePressable>
                 </View>
               )}
               
