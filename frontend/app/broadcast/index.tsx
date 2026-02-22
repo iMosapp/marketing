@@ -4,20 +4,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Pressable,
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { format } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-
-const IS_WEB = Platform.OS === 'web';
 
 interface Broadcast {
   id: string;
