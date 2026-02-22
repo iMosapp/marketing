@@ -315,12 +315,13 @@ export default function BroadcastListScreen() {
             <Text style={styles.emptySubtitle}>
               Create your first broadcast to send messages to multiple contacts at once
             </Text>
-            <TouchableOpacity
+            <WebSafePressable
               style={styles.createButton}
               onPress={() => router.push('/broadcast/new')}
+              testID="create-broadcast-btn"
             >
               <Text style={styles.createButtonText}>Create Broadcast</Text>
-            </TouchableOpacity>
+            </WebSafePressable>
           </View>
         )}
       />
