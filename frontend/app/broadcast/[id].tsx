@@ -227,13 +227,13 @@ export default function BroadcastDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <WebSafePressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </TouchableOpacity>
+        </WebSafePressable>
         <Text style={styles.headerTitle}>Broadcast Details</Text>
-        <TouchableOpacity onPress={handleDuplicate} style={styles.duplicateButton}>
+        <WebSafePressable onPress={handleDuplicate} style={styles.duplicateButton} testID="duplicate-btn">
           <Ionicons name="copy-outline" size={22} color="#007AFF" />
-        </TouchableOpacity>
+        </WebSafePressable>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
