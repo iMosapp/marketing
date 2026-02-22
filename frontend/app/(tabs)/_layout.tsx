@@ -3,8 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState, useCallback } from 'react';
 import { View, Platform } from 'react-native';
-import { useNotifications } from '../../hooks/useNotifications';
-import { LeadNotificationModal } from '../../components/notifications/LeadNotificationModal';
+// Temporarily disabled notification modal due to module resolution issue
+// import { useNotifications } from '../../hooks/useNotifications';
+// import { LeadNotificationModal } from '../../components/notifications/LeadNotificationModal';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -28,12 +29,10 @@ export default function TabLayout() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   
-  // Notification system
-  const { 
-    pendingNotification, 
-    unreadCount, 
-    clearPendingNotification 
-  } = useNotifications(5000); // Poll every 5 seconds
+  // Notification system temporarily disabled
+  const pendingNotification = null;
+  const unreadCount = 0;
+  const clearPendingNotification = () => {};
   
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   
