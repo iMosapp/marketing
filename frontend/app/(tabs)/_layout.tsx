@@ -173,6 +173,15 @@ export default function TabLayout() {
           ),
         }}
       />
-    </Tabs>
+      </Tabs>
+      
+      {/* Lead Notification Modal */}
+      <LeadNotificationModal
+        visible={showNotificationModal}
+        notification={pendingNotification}
+        onDismiss={handleNotificationDismiss}
+        onActionComplete={handleNotificationAction}
+      />
+    </>
   );
 }
