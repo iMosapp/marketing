@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get backend URL - use full URL for native apps, relative for web
 const getBackendUrl = () => {
@@ -29,10 +30,21 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and user ID
 api.interceptors.request.use(
-  (config) => {
-    // Token will be added here when auth is implemented
+  async (config) => {
+    try {
+      // Get user from storage and add X-User-ID header
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user?._id) {
+          config.headers['X-User-ID'] = user._id;
+        }
+      }
+    } catch (e) {
+      console.log('Error getting user for header:', e);
+    }
     return config;
   },
   (error) => {
