@@ -749,6 +749,131 @@ export default function InboxScreen() {
     return conversationContent;
   };
 
+  // Render team conversation item
+  const renderTeamConversation = ({ item }: { item: any }) => {
+    const contactName = item.contact_name || 'Unknown';
+    const contactInitials = contactName
+      .split(' ')
+      .map((n: string) => n[0] || '')
+      .join('')
+      .toUpperCase() || '?';
+    
+    const isClaimed = item.claimed;
+    const isNew = item.status === 'new';
+
+    const handlePress = () => {
+      triggerHaptic('light');
+      router.push({
+        pathname: `/thread/${item.id}`,
+        params: {
+          contact_name: contactName,
+          contact_phone: item.contact_phone || '',
+        }
+      });
+    };
+
+    const handleClaim = async () => {
+      triggerHaptic('medium');
+      if (!user) return;
+      
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/lead-sources/claim/${item.id}?user_id=${user._id}`,
+          { method: 'POST' }
+        );
+        const data = await response.json();
+        if (data.success) {
+          Alert.alert('Claimed', 'You have claimed this lead');
+          loadTeamConversations();
+        } else {
+          Alert.alert('Error', data.detail || 'Could not claim lead');
+        }
+      } catch (error) {
+        console.error('Error claiming lead:', error);
+        Alert.alert('Error', 'Failed to claim lead');
+      }
+    };
+    
+    return (
+      <TouchableOpacity
+        style={[
+          styles.conversationItem,
+          !isClaimed && styles.teamConversationUnclaimed,
+        ]}
+        onPress={handlePress}
+        activeOpacity={0.7}
+        data-testid={`team-conversation-${item.id}`}
+      >
+        <View style={styles.avatarContainer}>
+          <View style={[
+            styles.avatar,
+            !isClaimed && { backgroundColor: '#FF9500' },
+          ]}>
+            <Text style={styles.avatarText}>
+              {contactInitials}
+            </Text>
+          </View>
+          {isNew && !isClaimed && (
+            <View style={styles.newLeadBadge}>
+              <Ionicons name="flash" size={10} color="#FFF" />
+            </View>
+          )}
+        </View>
+      
+        <View style={styles.conversationContent}>
+          <View style={styles.conversationHeader}>
+            <View style={styles.nameRow}>
+              <Text style={styles.contactName} numberOfLines={1}>
+                {contactName}
+              </Text>
+              {item.lead_source_name && (
+                <View style={styles.leadSourceTag}>
+                  <Text style={styles.leadSourceTagText}>{item.lead_source_name}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.timestamp}>
+              {item.created_at ? formatTimestamp(item.created_at) : ''}
+            </Text>
+          </View>
+          
+          <View style={styles.teamConversationMeta}>
+            {item.team_name && (
+              <View style={styles.teamBadge}>
+                <Ionicons name="people" size={10} color="#8E8E93" />
+                <Text style={styles.teamBadgeText}>{item.team_name}</Text>
+              </View>
+            )}
+            {isClaimed ? (
+              <View style={styles.claimedBadge}>
+                <Ionicons name="checkmark-circle" size={12} color="#34C759" />
+                <Text style={styles.claimedBadgeText}>
+                  Claimed{item.claimed_by === user?._id ? ' by you' : ''}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.unclaimedBadge}>
+                <Ionicons name="flash" size={12} color="#FF9500" />
+                <Text style={styles.unclaimedBadgeText}>Jump Ball</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        
+        {!isClaimed && (
+          <TouchableOpacity
+            style={styles.claimButton}
+            onPress={handleClaim}
+            activeOpacity={0.7}
+            data-testid={`claim-btn-${item.id}`}
+          >
+            <Ionicons name="hand-right" size={18} color="#FF9500" />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   // Render header with glassmorphism on native
   const renderHeader = () => {
     if (selectionMode) {
