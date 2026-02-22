@@ -622,22 +622,62 @@ export default function JessiScreen() {
             />
             
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-              <TouchableOpacity
-                style={[
-                  styles.voiceButton,
-                  { backgroundColor: getStateColor() }
-                ]}
-                onPress={handleButtonPress}
-                disabled={state === 'processing' || state === 'speaking'}
-                activeOpacity={0.8}
-                data-testid="jessi-voice-btn"
-              >
-                {state === 'processing' ? (
-                  <ActivityIndicator size="large" color="#000" />
-                ) : (
-                  <Ionicons name={getStateIcon()} size={50} color="#000" />
-                )}
-              </TouchableOpacity>
+              {/* Web-compatible voice button */}
+              {IS_WEB ? (
+                <button
+                  type="button"
+                  onClick={handleButtonPress}
+                  disabled={state === 'processing' || state === 'speaking'}
+                  data-testid="jessi-voice-btn"
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 50,
+                    backgroundColor: getStateColor(),
+                    border: 'none',
+                    cursor: state === 'processing' || state === 'speaking' ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: `0 0 20px ${getStateColor()}80`,
+                    transition: 'transform 0.1s ease, opacity 0.15s ease',
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'scale(0.95)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  {state === 'processing' ? (
+                    <ActivityIndicator size="large" color="#000" />
+                  ) : (
+                    <Ionicons name={getStateIcon()} size={50} color="#000" />
+                  )}
+                </button>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.voiceButton,
+                    { backgroundColor: getStateColor() }
+                  ]}
+                  onPress={handleButtonPress}
+                  disabled={state === 'processing' || state === 'speaking'}
+                  activeOpacity={0.8}
+                  data-testid="jessi-voice-btn"
+                >
+                  {state === 'processing' ? (
+                    <ActivityIndicator size="large" color="#000" />
+                  ) : (
+                    <Ionicons name={getStateIcon()} size={50} color="#000" />
+                  )}
+                </TouchableOpacity>
+              )}
             </Animated.View>
             
             <Text style={[styles.stateText, { color: getStateColor() }]}>
