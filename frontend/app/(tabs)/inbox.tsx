@@ -195,6 +195,49 @@ export default function InboxScreen() {
     setMessageMode(mode);
   };
   
+  const handleInboxViewChange = async (view: 'my' | 'team') => {
+    triggerHaptic('medium');
+    setInboxView(view);
+    if (view === 'team') {
+      await loadTeamConversations();
+    }
+  };
+  
+  const loadTeamConversations = async () => {
+    if (!user) return;
+    setLoadingTeam(true);
+    try {
+      // Get user's teams
+      const teamsResponse = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/shared-inboxes?user_id=${user._id}`
+      );
+      const teamsData = await teamsResponse.json();
+      
+      if (teamsData.inboxes && teamsData.inboxes.length > 0) {
+        // Get conversations for all teams
+        const allTeamConversations: any[] = [];
+        for (const team of teamsData.inboxes) {
+          const teamId = team._id || team.id;
+          const convResponse = await fetch(
+            `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
+          );
+          const convData = await convResponse.json();
+          if (convData.conversations) {
+            allTeamConversations.push(...convData.conversations.map((c: any) => ({
+              ...c,
+              team_name: team.name,
+            })));
+          }
+        }
+        setTeamConversations(allTeamConversations);
+      }
+    } catch (error) {
+      console.error('Failed to load team conversations:', error);
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+  
   useEffect(() => {
     loadConversations();
   }, [user]);
