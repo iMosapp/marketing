@@ -262,6 +262,29 @@ export default function UserDetailScreen() {
     }
   };
   
+  const handleDeleteUser = () => {
+    if (!user) return;
+    showConfirm(
+      'Delete User',
+      `Are you sure you want to permanently delete "${user.name}"? This action cannot be undone. All their data, conversations, and contacts will be removed.`,
+      async () => {
+        setActionLoading(true);
+        try {
+          await api.delete(`/admin/users/${id}`);
+          showSimpleAlert('Success', 'User deleted');
+          router.back();
+        } catch (error: any) {
+          showSimpleAlert('Error', error.response?.data?.detail || 'Failed to delete user');
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      undefined,
+      'Delete',
+      'Cancel'
+    );
+  };
+  
   const renderCompletenessItem = (label: string, completed: boolean, icon: string) => (
     <View style={styles.completenessItem} key={label}>
       <Ionicons 
