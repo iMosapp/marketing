@@ -305,9 +305,10 @@ export default function NewBroadcastScreen() {
   };
 
   const SectionHeader = ({ title, section, icon }: { title: string; section: keyof typeof expandedSections; icon: string }) => (
-    <TouchableOpacity
+    <WebSafePressable
       style={styles.sectionHeader}
       onPress={() => toggleSection(section)}
+      testID={`section-${section}`}
     >
       <View style={styles.sectionHeaderLeft}>
         <Ionicons name={icon as any} size={20} color="#007AFF" />
@@ -318,7 +319,7 @@ export default function NewBroadcastScreen() {
         size={20}
         color="#8E8E93"
       />
-    </TouchableOpacity>
+    </WebSafePressable>
   );
 
   return (
