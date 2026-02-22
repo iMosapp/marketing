@@ -16,17 +16,15 @@ const getBackendUrl = () => {
     console.warn('EXPO_PUBLIC_BACKEND_URL not set, falling back to relative /api path');
     return '/api';
   }
-  // For web, use relative path - browser will resolve correctly
-  // However, check if we're on HTTPS and ensure consistency
-  if (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:') {
-    // Use full URL with HTTPS to avoid mixed content issues
-    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
-    if (backendUrl) {
-      // Ensure it starts with https:// 
-      const secureUrl = backendUrl.replace(/^http:/, 'https:');
-      return `${secureUrl}/api`;
-    }
+  // For web, we need to use the HTTPS backend URL to avoid mixed content issues
+  // The EXPO_PUBLIC_BACKEND_URL should be set in the environment
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+  if (backendUrl) {
+    // Ensure it starts with https:// to avoid mixed content errors
+    const secureUrl = backendUrl.replace(/^http:/, 'https:');
+    return `${secureUrl}/api`;
   }
+  // Fallback to relative - works when served from same origin
   return '/api';
 };
 
