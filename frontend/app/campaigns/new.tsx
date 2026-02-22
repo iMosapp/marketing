@@ -11,13 +11,16 @@ import {
   ActivityIndicator,
   Platform,
   Modal,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
+import api from '../../services/api';
 import { format, addDays, addMonths } from 'date-fns';
 
 interface SequenceStep {
@@ -25,6 +28,7 @@ interface SequenceStep {
   message: string;
   delayDays: number;
   delayMonths: number;
+  media_urls: string[];
 }
 
 export default function CampaignBuilderScreen() {
