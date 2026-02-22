@@ -131,6 +131,10 @@ export default function ThreadScreen() {
   const user = useAuthStore((state) => state.user);
   const flatListRef = useRef<FlatList>(null);
   
+  // Color mode state
+  const [messageMode, setMessageMode] = useState<'sms' | 'email'>('sms');
+  const colors = messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK;
+  
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,6 +160,22 @@ export default function ThreadScreen() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<{uri: string, type: string, name: string} | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
+  
+  // Load message preferences to match inbox mode
+  useEffect(() => {
+    loadMessagePreferences();
+  }, [user?._id]);
+  
+  const loadMessagePreferences = async () => {
+    if (!user?._id) return;
+    try {
+      const prefs = await emailAPI.getPreferences(user._id);
+      if (prefs.default_mode) setMessageMode(prefs.default_mode);
+    } catch (error) {
+      // Fallback to SMS mode
+      console.log('Using default SMS mode');
+    }
+  };
   
   // Template tracking for analytics
   const [selectedTemplateInfo, setSelectedTemplateInfo] = useState<{
