@@ -889,7 +889,7 @@ export default function ThreadScreen() {
           {item.ai_generated && (
             <View style={styles.aiIndicator}>
               <Ionicons name="sparkles" size={12} color="#34C759" />
-              <Text style={styles.aiIndicatorText}>MVP sent this</Text>
+              <Text style={styles.aiIndicatorText}>AI sent this</Text>
             </View>
           )}
           
@@ -1011,7 +1011,7 @@ export default function ThreadScreen() {
       {loadingAI && (
         <View style={styles.aiLoadingContainer}>
           <ActivityIndicator size="small" color="#34C759" />
-          <Text style={styles.aiLoadingText}>MVP is thinking...</Text>
+          <Text style={styles.aiLoadingText}>AI is thinking...</Text>
         </View>
       )}
       
@@ -1562,7 +1562,7 @@ export default function ThreadScreen() {
               </View>
               <View style={styles.modeInfo}>
                 <Text style={styles.modeName}>Auto-Reply</Text>
-                <Text style={styles.modeDesc}>MVP handles conversation automatically</Text>
+                <Text style={styles.modeDesc}>AI handles conversation automatically</Text>
               </View>
               {aiMode === 'auto_reply' && (
                 <Ionicons name="checkmark-circle" size={24} color="#34C759" />
@@ -1578,7 +1578,7 @@ export default function ThreadScreen() {
               </View>
               <View style={styles.modeInfo}>
                 <Text style={styles.modeName}>Assisted</Text>
-                <Text style={styles.modeDesc}>MVP suggests, you approve before sending</Text>
+                <Text style={styles.modeDesc}>AI suggests, you approve before sending</Text>
               </View>
               {aiMode === 'assisted' && (
                 <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
@@ -1594,7 +1594,7 @@ export default function ThreadScreen() {
               </View>
               <View style={styles.modeInfo}>
                 <Text style={styles.modeName}>Drafts Only</Text>
-                <Text style={styles.modeDesc}>MVP creates drafts but doesn't send</Text>
+                <Text style={styles.modeDesc}>AI creates drafts but doesn't send</Text>
               </View>
               {aiMode === 'draft_only' && (
                 <Ionicons name="checkmark-circle" size={24} color="#8E8E93" />

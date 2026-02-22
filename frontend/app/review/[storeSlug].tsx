@@ -421,7 +421,7 @@ export default function PublicReviewPage() {
 
             {/* Footer */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Powered by MVPLine</Text>
+              <Text style={styles.footerText}>Powered by iMOs</Text>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

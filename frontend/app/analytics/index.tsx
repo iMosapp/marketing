@@ -119,7 +119,7 @@ export default function AnalyticsScreen() {
             <View style={styles.aiHeader}>
               <View style={styles.aiTitleRow}>
                 <Ionicons name="sparkles" size={24} color="#34C759" />
-                <Text style={styles.aiTitle}>MVP Handled</Text>
+                <Text style={styles.aiTitle}>AI Handled</Text>
               </View>
               <Text style={styles.aiValue}>{currentStats.aiHandled}</Text>
             </View>

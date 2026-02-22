@@ -542,7 +542,7 @@ export default function JessiScreen() {
             <View style={styles.introContainer}>
               <Text style={styles.introTitle}>Hi, I'm Jessi!</Text>
               <Text style={styles.introText}>
-                Your voice assistant for MVPLine.{'\n'}
+                Your voice assistant for iMOs.{'\n'}
                 Tap to talk or type below.
               </Text>
             </View>

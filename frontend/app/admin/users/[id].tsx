@@ -473,7 +473,7 @@ export default function UserDetailScreen() {
                 <Text style={styles.infoText}>{user.phone || user.twilio_phone_number}</Text>
                 {user.twilio_phone_number && (
                   <View style={styles.twilioTag}>
-                    <Text style={styles.twilioTagText}>MVPLine</Text>
+                    <Text style={styles.twilioTagText}>iMOs</Text>
                   </View>
                 )}
               </View>

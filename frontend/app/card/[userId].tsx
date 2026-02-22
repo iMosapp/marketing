@@ -522,7 +522,7 @@ export default function DigitalCardPage() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Powered by MVPLine</Text>
+            <Text style={styles.footerText}>Powered by iMOs</Text>
           </View>
         </ScrollView>
       </SafeAreaView>

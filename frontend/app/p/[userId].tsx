@@ -491,7 +491,7 @@ export default function PublicLandingPage() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Powered by MVPLine</Text>
+        <Text style={styles.footerText}>Powered by iMOs</Text>
       </View>
 
       {/* Review Modal */}
