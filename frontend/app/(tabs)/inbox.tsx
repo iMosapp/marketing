@@ -182,6 +182,12 @@ export default function InboxScreen() {
   const loadMessagePreferences = async () => {
     if (!user?._id) return;
     try {
+      // First check AsyncStorage for saved preference
+      const savedMode = await AsyncStorage.getItem('message_mode');
+      if (savedMode === 'sms' || savedMode === 'email') {
+        setMessageMode(savedMode);
+      }
+      // Also load from API
       const prefs = await emailAPI.getPreferences(user._id);
       if (prefs.default_mode) setMessageMode(prefs.default_mode);
       if (prefs.toggle_style) setToggleStyle(prefs.toggle_style);
