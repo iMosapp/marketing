@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://reports-analytics-1.preview.emergentagent.com';
+        : 'https://imos-admin.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,
