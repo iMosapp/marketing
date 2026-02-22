@@ -129,21 +129,54 @@ export default function NewLeadSourceScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
+        {IS_WEB ? (
+          <button
+            type="button"
+            onClick={() => router.back()}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
+            data-testid="back-btn"
+          >
+            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          </button>
+        ) : (
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>New Lead Source</Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={saving}
-          style={styles.saveButton}
-        >
-          {saving ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <Text style={styles.saveButtonText}>Create</Text>
-          )}
-        </TouchableOpacity>
+        {IS_WEB ? (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              padding: 8,
+              opacity: saving ? 0.5 : 1,
+            }}
+            data-testid="create-btn"
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Text style={styles.saveButtonText}>Create</Text>
+            )}
+          </button>
+        ) : (
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={saving}
+            style={styles.saveButton}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Text style={styles.saveButtonText}>Create</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
