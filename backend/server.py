@@ -79,6 +79,7 @@ api_router.include_router(jessie.router)
 api_router.include_router(sop.router)
 api_router.include_router(invoices.router)
 api_router.include_router(email.router)
+api_router.include_router(reports.router)
 
 # ============= USER SETTINGS ENDPOINTS (kept here for URL compatibility) =============
 @api_router.get("/users/{user_id}/leaderboard-settings")
