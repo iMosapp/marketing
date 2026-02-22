@@ -182,27 +182,47 @@ export default function LeadSourceDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      'Delete Lead Source',
-      `Are you sure you want to delete "${source?.name}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(`/lead-sources/${id}`);
-              Alert.alert('Deleted', 'Lead source has been deleted');
-              router.back();
-            } catch (error) {
-              console.error('Error deleting lead source:', error);
-              Alert.alert('Error', 'Failed to delete lead source');
-            }
+    if (IS_WEB) {
+      setShowDeleteModal(true);
+    } else {
+      Alert.alert(
+        'Delete Lead Source',
+        `Are you sure you want to delete "${source?.name}"? This action cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: confirmDelete,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/lead-sources/${id}`);
+      if (IS_WEB) {
+        showToast('Lead source deleted', 'success');
+        setShowDeleteModal(false);
+        setTimeout(() => router.back(), 500);
+      } else {
+        Alert.alert('Deleted', 'Lead source has been deleted');
+        router.back();
+      }
+    } catch (error) {
+      console.error('Error deleting lead source:', error);
+      if (IS_WEB) {
+        showToast('Failed to delete lead source', 'error');
+        setShowDeleteModal(false);
+      } else {
+        Alert.alert('Error', 'Failed to delete lead source');
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const copyToClipboard = async (text: string, label: string) => {
