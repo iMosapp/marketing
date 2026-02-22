@@ -97,7 +97,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <View>
                 <Ionicons name="chatbubbles" size={size} color={isPending ? '#3C3C3E' : color} />
-                {unreadCount > 0 && (
+                {showBadge && (
                   <View style={{
                     position: 'absolute',
                     top: -4,
