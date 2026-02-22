@@ -41,17 +41,18 @@ export default function NewLeadSourceScreen() {
 
   const fetchTeams = async () => {
     try {
-      const storeId = user?.store_id || user?._id;
-      const response = await api.get(`/shared-inboxes?store_id=${storeId}`);
-      if (response.data.success || response.data.inboxes) {
-        setTeams(response.data.inboxes?.map((t: any) => ({ id: t._id || t.id, name: t.name })) || []);
-      }
+      const response = await api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`);
+      // Response is an array directly
+      const teamsData = Array.isArray(response.data) ? response.data : [];
+      setTeams(teamsData.map((t: any) => ({ id: t._id || t.id, name: t.name })));
     } catch (error) {
       console.error('Error fetching teams:', error);
+      setTeams([]);
     } finally {
       setLoadingTeams(false);
     }
   };
+
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
