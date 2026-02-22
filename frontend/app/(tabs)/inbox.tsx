@@ -886,6 +886,41 @@ export default function InboxScreen() {
         </View>
       </View>
       
+      {/* Inbox View Toggle (My/Team) */}
+      <View style={[styles.inboxToggleContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.inboxToggle, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={[
+              styles.inboxToggleOption,
+              inboxView === 'my' && styles.inboxToggleOptionActive,
+            ]}
+            onPress={() => handleInboxViewChange('my')}
+            activeOpacity={0.7}
+            data-testid="my-inbox-toggle"
+          >
+            <Ionicons name="person" size={14} color={inboxView === 'my' ? '#FFF' : colors.textSecondary} />
+            <Text style={[styles.inboxToggleText, inboxView === 'my' && styles.inboxToggleTextActive]}>
+              My Inbox
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.inboxToggleOption,
+              inboxView === 'team' && styles.inboxToggleOptionActive,
+            ]}
+            onPress={() => handleInboxViewChange('team')}
+            activeOpacity={0.7}
+            data-testid="team-inbox-toggle"
+          >
+            <Ionicons name="people" size={14} color={inboxView === 'team' ? '#FFF' : colors.textSecondary} />
+            <Text style={[styles.inboxToggleText, inboxView === 'team' && styles.inboxToggleTextActive]}>
+              Team Inbox
+            </Text>
+            {loadingTeam && <ActivityIndicator size="small" color="#FFF" style={{ marginLeft: 4 }} />}
+          </TouchableOpacity>
+        </View>
+      </View>
+      
       {/* Luxury Pill Filter Buttons - Scrollable */}
       <ScrollView 
         horizontal 
