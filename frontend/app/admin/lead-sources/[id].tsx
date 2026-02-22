@@ -131,9 +131,9 @@ export default function LeadSourceDetailScreen() {
         setStats(statsRes.data.stats);
       }
       
-      if (teamsRes.data.inboxes) {
-        setTeams(teamsRes.data.inboxes.map((t: any) => ({ id: t._id || t.id, name: t.name })));
-      }
+      // Teams data is an array directly
+      const teamsData = Array.isArray(teamsRes.data) ? teamsRes.data : [];
+      setTeams(teamsData.map((t: any) => ({ id: t._id || t.id, name: t.name })));
     } catch (error) {
       console.error('Error fetching lead source:', error);
       Alert.alert('Error', 'Failed to load lead source');
