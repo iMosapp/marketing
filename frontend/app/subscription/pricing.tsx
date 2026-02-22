@@ -395,7 +395,7 @@ export default function PricingPage() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>MVPLine Pro</Text>
+          <Text style={styles.heroTitle}>iMOs Pro</Text>
           <Text style={styles.heroSubtitle}>
             {activeTab === 'individual' 
               ? 'The complete relationship management platform'

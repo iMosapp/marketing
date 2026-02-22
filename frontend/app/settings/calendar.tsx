@@ -345,7 +345,7 @@ export default function CalendarSettingsScreen() {
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color="#007AFF" />
           <Text style={styles.infoText}>
-            When MVP sets an appointment with a contact, it will automatically be added to your connected calendars with the contact's details and a 15-minute reminder.
+            When your AI sets an appointment with a contact, it will automatically be added to your connected calendars with the contact's details and a 15-minute reminder.
           </Text>
         </View>
       </View>

@@ -155,7 +155,7 @@ export default function SearchScreen() {
           {item.ai_outcome && (
             <View style={[styles.aiTag, { backgroundColor: '#34C75920' }]}>
               <Ionicons name="sparkles" size={10} color="#34C759" />
-              <Text style={styles.aiTagText}>MVP</Text>
+              <Text style={styles.aiTagText}>AI</Text>
             </View>
           )}
         </View>

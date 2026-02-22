@@ -103,7 +103,7 @@ export default function SignupScreen() {
       // Different messages based on account type
       if (isIndependent) {
         Alert.alert(
-          'Welcome to MVPLine!',
+          'Welcome to iMOs!',
           "Your account is ready! Let's set up your profile, AI assistant, and virtual business card to get started.",
           [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
         );
@@ -131,7 +131,7 @@ export default function SignupScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Start your journey with MVPLine</Text>
+            <Text style={styles.subtitle}>Start your journey with iMOs</Text>
           </View>
           
           <View style={styles.form}>

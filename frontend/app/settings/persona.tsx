@@ -121,7 +121,7 @@ export default function PersonaSettings() {
     try {
       setSaving(true);
       await api.put(`/users/${user._id}/persona`, settings);
-      Alert.alert('Success', 'Your MVP persona has been updated');
+      Alert.alert('Success', 'Your AI persona has been updated');
     } catch (error) {
       console.error('Error saving persona:', error);
       Alert.alert('Error', 'Failed to save settings');
@@ -199,7 +199,7 @@ export default function PersonaSettings() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>MVP Persona</Text>
+        <Text style={styles.headerTitle}>AI Persona</Text>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
           {saving ? (
             <ActivityIndicator size="small" color="#007AFF" />
@@ -340,7 +340,7 @@ export default function PersonaSettings() {
           <View style={styles.switchRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.switchLabel}>Auto-introduce on first contact</Text>
-              <Text style={styles.switchHint}>MVP will introduce itself when messaging new leads</Text>
+              <Text style={styles.switchHint}>AI will introduce itself when messaging new leads</Text>
             </View>
             <Toggle
               value={settings.auto_introduce}
@@ -354,7 +354,7 @@ export default function PersonaSettings() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>ESCALATION KEYWORDS</Text>
           <Text style={styles.sectionDesc}>
-            MVP will flag conversations containing these words for your attention
+            AI will flag conversations containing these words for your attention
           </Text>
           <View style={styles.chipContainer}>
             {settings.escalation_keywords.map((keyword) => (
@@ -385,7 +385,7 @@ export default function PersonaSettings() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>YOUR SPECIALTIES</Text>
           <Text style={styles.sectionDesc}>
-            Help MVP understand what you specialize in
+            Help your AI understand what you specialize in
           </Text>
           <View style={styles.chipContainer}>
             {settings.specialties.map((specialty) => (

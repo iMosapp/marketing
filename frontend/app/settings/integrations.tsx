@@ -333,7 +333,7 @@ export default function IntegrationsScreen() {
     <View style={styles.tabContent}>
       <Text style={styles.sectionTitle}>API Documentation</Text>
       <Text style={styles.sectionSubtitle}>
-        Everything you need to integrate with MVPLine
+        Everything you need to integrate with iMOs
       </Text>
       
       {apiDocs && (
