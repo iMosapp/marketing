@@ -56,6 +56,7 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] UI Rebranding: "Innovation Meets Old School" (white/blue Playfair Display)
 - [x] Fixed mobile save buttons on Organizations/Stores/Users modals (WebSafeButton)
 - [x] Enhanced User creation with temp password display & copy functionality
+- [x] First-time password change prompt for new users with temp passwords
 
 ## Prioritized Backlog
 
