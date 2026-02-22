@@ -111,62 +111,54 @@ export default function BroadcastListScreen() {
     }
   };
 
-  const renderBroadcast = ({ item }: { item: Broadcast }) => (
-    <Pressable
-      style={styles.broadcastCard}
-      onPress={() => router.push(`/broadcast/${item.id}`)}
-      testID={`broadcast-card-${item.id}`}
-    >
-      <View style={styles.broadcastHeader}>
-        <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}20` }]}>
-          <Ionicons name={getStatusIcon(item.status)} size={14} color={getStatusColor(item.status)} />
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-          </Text>
-        </View>
-        {item.media_urls?.length > 0 && (
-          <View style={styles.mediaIndicator}>
-            <Ionicons name="image" size={14} color="#8E8E93" />
-          </View>
-        )}
-      </View>
-      
-      <Text style={styles.broadcastName}>{item.name}</Text>
-      <Text style={styles.broadcastMessage} numberOfLines={2}>{item.message}</Text>
-      
-      <View style={styles.broadcastMeta}>
-        <View style={styles.metaItem}>
-          <Ionicons name="people-outline" size={14} color="#8E8E93" />
-          <Text style={styles.metaText}>{item.recipient_count} recipients</Text>
+  const renderBroadcast = ({ item }: { item: Broadcast }) => {
+    const statusColor = getStatusColor(item.status);
+    const statusIcon = getStatusIcon(item.status);
+    
+    return (
+      <TouchableOpacity 
+        style={styles.broadcastCard}
+        onPress={() => router.push(`/broadcast/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: `${statusColor}20` }]}>
+          <Ionicons name={statusIcon as any} size={24} color={statusColor} />
         </View>
         
-        {item.status === 'sent' && (
-          <View style={styles.metaItem}>
-            <Ionicons name="checkmark-done" size={14} color="#34C759" />
-            <Text style={styles.metaText}>{item.sent_count} sent</Text>
+        <View style={styles.broadcastContent}>
+          <View style={styles.broadcastHeader}>
+            <Text style={styles.broadcastName} numberOfLines={1}>{item.name}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+              </Text>
+            </View>
           </View>
-        )}
-        
-        {item.scheduled_at && item.status === 'scheduled' && (
-          <View style={styles.metaItem}>
-            <Ionicons name="calendar-outline" size={14} color="#FF9500" />
-            <Text style={styles.metaText}>
-              {format(new Date(item.scheduled_at), 'MMM d, h:mm a')}
-            </Text>
+          
+          <Text style={styles.broadcastMessage} numberOfLines={2}>{item.message}</Text>
+          
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <Ionicons name="people" size={14} color="#8E8E93" />
+              <Text style={styles.statText}>{item.recipient_count} recipients</Text>
+            </View>
+            {item.status === 'sent' && (
+              <View style={styles.stat}>
+                <Ionicons name="checkmark-done" size={14} color="#34C759" />
+                <Text style={styles.statText}>{item.sent_count} sent</Text>
+              </View>
+            )}
+            {item.media_urls?.length > 0 && (
+              <View style={styles.stat}>
+                <Ionicons name="image" size={14} color="#8E8E93" />
+                <Text style={styles.statText}>{item.media_urls.length}</Text>
+              </View>
+            )}
           </View>
-        )}
-        
-        {item.sent_at && item.status === 'sent' && (
-          <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={14} color="#8E8E93" />
-            <Text style={styles.metaText}>
-              Sent {format(new Date(item.sent_at), 'MMM d, h:mm a')}
-            </Text>
-          </View>
-        )}
-      </View>
-    </Pressable>
-  );
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const FilterButton = ({ value, label, count }: { value: string; label: string; count?: number }) => (
     <Pressable
