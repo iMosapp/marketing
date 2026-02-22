@@ -27,6 +27,53 @@ import { useAuthStore } from '../../store/authStore';
 import { messagesAPI, templatesAPI } from '../../services/api';
 import api from '../../services/api';
 
+// Web platform detection
+const IS_WEB = Platform.OS === 'web';
+
+// Web-safe button component for toolbar
+const WebToolButton: React.FC<{
+  onPress: () => void;
+  disabled?: boolean;
+  testID?: string;
+  isRecording?: boolean;
+  children: React.ReactNode;
+}> = ({ onPress, disabled, testID, isRecording, children }) => {
+  if (IS_WEB) {
+    return (
+      <button
+        type="button"
+        onClick={onPress}
+        disabled={disabled}
+        data-testid={testID}
+        style={{
+          padding: 8,
+          background: isRecording ? 'rgba(255, 59, 48, 0.2)' : 'none',
+          border: 'none',
+          borderRadius: 8,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: disabled ? 0.5 : 1,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <TouchableOpacity
+      style={[{ padding: 8 }, isRecording && { backgroundColor: 'rgba(255, 59, 48, 0.2)', borderRadius: 8 }]}
+      onPress={onPress}
+      disabled={disabled}
+      data-testid={testID}
+    >
+      {children}
+    </TouchableOpacity>
+  );
+};
+
 interface Message {
   _id: string;
   content: string;
