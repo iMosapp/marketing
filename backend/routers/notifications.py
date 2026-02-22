@@ -114,7 +114,11 @@ def create_team_notifications(
         logger.warning(f"Team {team_id} not found for notifications")
         return []
     
-    members = team.get("members", []) or team.get("user_ids", [])
+    members = team.get("members", []) or team.get("user_ids", []) or team.get("assigned_user_ids", [])
+    
+    if not members:
+        logger.warning(f"Team {team_id} has no members")
+        return []
     
     for member_id in members:
         notif_id = create_notification(
