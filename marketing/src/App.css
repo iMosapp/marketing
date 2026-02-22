@@ -420,11 +420,31 @@ h1, h2, h3, h4, h5, h6 {
   color: #9B7BC7;
 }
 
+.hero-tagline {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+}
+
+.tagline-white {
+  color: #FFFFFF;
+}
+
+.tagline-blue {
+  color: #5B9BD5;
+}
+
+.tagline-purple {
+  color: #9B7BC7;
+}
+
 .hero-subtitle {
   font-size: 18px;
   color: var(--color-gray-400);
   margin-bottom: 32px;
-  max-width: 500px;
+  max-width: 560px;
+  line-height: 1.7;
 }
 
 .hero-buttons {
