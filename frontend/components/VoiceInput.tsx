@@ -150,6 +150,41 @@ export default function VoiceInput({
     }
   };
 
+  // Web-safe button rendering
+  if (IS_WEB) {
+    return (
+      <button
+        type="button"
+        onClick={handlePress}
+        disabled={disabled || isTranscribing}
+        data-testid="voice-input-btn"
+        style={{
+          width: buttonSize,
+          height: buttonSize,
+          borderRadius: buttonSize / 2,
+          border: 'none',
+          background: isRecording ? '#FF3B3020' : 'transparent',
+          cursor: disabled || isTranscribing ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: disabled ? 0.5 : 1,
+          ...style,
+        }}
+      >
+        {isTranscribing ? (
+          <ActivityIndicator size="small" color="#007AFF" />
+        ) : (
+          <Ionicons
+            name={isRecording ? 'stop-circle' : 'mic-outline'}
+            size={iconSize}
+            color={isRecording ? '#FF3B30' : color}
+          />
+        )}
+      </button>
+    );
+  }
+
   return (
     <TouchableOpacity
       style={[
