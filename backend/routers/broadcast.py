@@ -10,10 +10,19 @@ from datetime import datetime, timezone
 from bson import ObjectId
 import logging
 
-from database import db
+from routers.database import get_db
 
 router = APIRouter(prefix="/broadcast", tags=["broadcast"])
 logger = logging.getLogger(__name__)
+
+# Get database reference
+db = None
+
+def get_database():
+    global db
+    if db is None:
+        db = get_db()
+    return db
 
 
 # Pydantic Models
