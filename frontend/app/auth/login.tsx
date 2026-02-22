@@ -169,6 +169,13 @@ export default function LoginScreen() {
         // Login with stored credentials
         await login(result.credentials.email, result.credentials.password);
         const loggedInUser = useAuthStore.getState().user;
+        
+        // Check if user needs to change password
+        if (loggedInUser?.needs_password_change) {
+          router.replace('/auth/change-password');
+          return;
+        }
+        
         router.replace(getDefaultRoute(loggedInUser?.role) as any);
       } else if (result.error) {
         // Only show error if user didn't cancel
