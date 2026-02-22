@@ -134,7 +134,7 @@ async def get_filtered_contacts(filters: dict, user_id: str) -> List[dict]:
             query["purchase_date"] = date_query
     
     # Get contacts
-    contacts = await db.contacts.find(query, {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "email": 1}).to_list(10000)
+    contacts = await get_database().contacts.find(query, {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "email": 1}).to_list(10000)
     return contacts
 
 
@@ -145,7 +145,7 @@ async def list_broadcasts(user_id: str, status: Optional[str] = None, limit: int
     if status:
         query["status"] = status
     
-    broadcasts = await db.broadcasts.find(query).sort("created_at", -1).limit(limit).to_list(limit)
+    broadcasts = await get_database().broadcasts.find(query).sort("created_at", -1).limit(limit).to_list(limit)
     return {
         "success": True,
         "broadcasts": [serialize_broadcast(b) for b in broadcasts]
@@ -165,7 +165,7 @@ async def get_broadcast_stats(user_id: str):
         }}
     ]
     
-    stats = await db.broadcasts.aggregate(pipeline).to_list(10)
+    stats = await get_database().broadcasts.aggregate(pipeline).to_list(10)
     
     result = {
         "draft": 0,
@@ -255,7 +255,7 @@ async def create_broadcast(data: BroadcastCreate, user_id: str):
         "recipients": [str(c["_id"]) for c in contacts]
     }
     
-    result = await db.broadcasts.insert_one(broadcast)
+    result = await get_database().broadcasts.insert_one(broadcast)
     broadcast["_id"] = result.inserted_id
     
     return {
@@ -268,7 +268,7 @@ async def create_broadcast(data: BroadcastCreate, user_id: str):
 async def get_broadcast(broadcast_id: str, user_id: str):
     """Get a specific broadcast"""
     try:
-        broadcast = await db.broadcasts.find_one({
+        broadcast = await get_database().broadcasts.find_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id
         })
@@ -288,7 +288,7 @@ async def get_broadcast(broadcast_id: str, user_id: str):
 async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: str):
     """Update a broadcast (only if not yet sent)"""
     try:
-        broadcast = await db.broadcasts.find_one({
+        broadcast = await get_database().broadcasts.find_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id
         })
@@ -320,12 +320,12 @@ async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: st
         update_data["recipient_count"] = len(contacts)
         update_data["recipients"] = [str(c["_id"]) for c in contacts]
     
-    await db.broadcasts.update_one(
+    await get_database().broadcasts.update_one(
         {"_id": ObjectId(broadcast_id)},
         {"$set": update_data}
     )
     
-    updated = await db.broadcasts.find_one({"_id": ObjectId(broadcast_id)})
+    updated = await get_database().broadcasts.find_one({"_id": ObjectId(broadcast_id)})
     
     return {
         "success": True,
@@ -337,7 +337,7 @@ async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: st
 async def delete_broadcast(broadcast_id: str, user_id: str):
     """Delete a broadcast"""
     try:
-        result = await db.broadcasts.delete_one({
+        result = await get_database().broadcasts.delete_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id,
             "status": {"$nin": ["sending", "sent"]}  # Can't delete sent broadcasts
@@ -355,7 +355,7 @@ async def delete_broadcast(broadcast_id: str, user_id: str):
 async def send_broadcast(broadcast_id: str, user_id: str):
     """Send a broadcast immediately"""
     try:
-        broadcast = await db.broadcasts.find_one({
+        broadcast = await get_database().broadcasts.find_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id
         })
@@ -369,7 +369,7 @@ async def send_broadcast(broadcast_id: str, user_id: str):
         raise HTTPException(status_code=400, detail="Broadcast has already been sent")
     
     # Update status to sending
-    await db.broadcasts.update_one(
+    await get_database().broadcasts.update_one(
         {"_id": ObjectId(broadcast_id)},
         {"$set": {
             "status": "sending",
@@ -379,7 +379,7 @@ async def send_broadcast(broadcast_id: str, user_id: str):
     
     # Get recipient contacts
     recipient_ids = broadcast.get("recipients", [])
-    contacts = await db.contacts.find(
+    contacts = await get_database().contacts.find(
         {"_id": {"$in": [ObjectId(rid) for rid in recipient_ids]}},
         {"_id": 1, "phone": 1, "first_name": 1}
     ).to_list(10000)
@@ -406,7 +406,7 @@ async def send_broadcast(broadcast_id: str, user_id: str):
                     "sent_at": datetime.now(timezone.utc).isoformat(),
                     "user_id": user_id
                 }
-                await db.broadcast_messages.insert_one(message_record)
+                await get_database().broadcast_messages.insert_one(message_record)
                 sent_count += 1
             else:
                 failed_count += 1
@@ -416,7 +416,7 @@ async def send_broadcast(broadcast_id: str, user_id: str):
     
     # Update broadcast with results
     final_status = "sent" if failed_count == 0 else "sent"  # Still mark as sent even with some failures
-    await db.broadcasts.update_one(
+    await get_database().broadcasts.update_one(
         {"_id": ObjectId(broadcast_id)},
         {"$set": {
             "status": final_status,
@@ -437,7 +437,7 @@ async def send_broadcast(broadcast_id: str, user_id: str):
 async def duplicate_broadcast(broadcast_id: str, user_id: str):
     """Duplicate a broadcast"""
     try:
-        original = await db.broadcasts.find_one({
+        original = await get_database().broadcasts.find_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id
         })
@@ -464,7 +464,7 @@ async def duplicate_broadcast(broadcast_id: str, user_id: str):
         "recipients": original.get("recipients", [])
     }
     
-    result = await db.broadcasts.insert_one(new_broadcast)
+    result = await get_database().broadcasts.insert_one(new_broadcast)
     new_broadcast["_id"] = result.inserted_id
     
     return {
