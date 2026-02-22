@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import api from '../services/api';
 
+const IS_WEB = Platform.OS === 'web';
+
 interface VoiceInputProps {
   onTranscription: (text: string) => void;
   size?: 'small' | 'medium' | 'large';
