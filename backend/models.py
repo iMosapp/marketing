@@ -332,6 +332,7 @@ class CampaignSequenceStep(BaseModel):
     message_template: str
     delay_days: int = 0
     delay_months: int = 0
+    media_urls: List[str] = []  # Media attachments for this step
 
 class Campaign(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -341,6 +342,7 @@ class Campaign(BaseModel):
     trigger_tag: str = ""  # Tag that triggers this campaign
     segment_tags: List[str] = []
     message_template: str = ""  # Legacy single message
+    media_urls: List[str] = []  # Media attachments (legacy single message)
     sequences: List[CampaignSequenceStep] = []  # Multi-step sequences
     send_time: str = "10:00"  # HH:MM format
     schedule: Dict[str, Any] = {}  # frequency, timing, etc.
