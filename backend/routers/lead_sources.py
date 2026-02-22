@@ -65,7 +65,7 @@ def serialize_lead_source(source: dict) -> dict:
 
 # ============ LEAD SOURCE MANAGEMENT ============
 
-@router.post("/")
+@router.post("")
 async def create_lead_source(source: LeadSourceCreate, store_id: str, organization_id: Optional[str] = None):
     """Create a new lead source for a store"""
     db = get_db()
