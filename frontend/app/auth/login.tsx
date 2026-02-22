@@ -424,6 +424,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    fontSize: 72,
+    fontWeight: '700',
+  },
+  logoI: {
+    color: '#FF3B30',
+  },
+  logoM: {
+    color: '#007AFF',
+  },
+  logoO: {
+    color: '#FFD60A',
+  },
+  logoS: {
+    color: '#34C759',
+  },
   brandTitle: {
     fontFamily: 'Playfair Display, Georgia, serif',
     fontSize: 42,
