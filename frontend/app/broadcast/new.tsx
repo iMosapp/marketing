@@ -20,20 +20,19 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
-const IS_WEB = Platform.OS === 'web';
-
 // Web-safe pressable component for interactive elements
-const WebSafePressable = ({ onPress, style, children, testID, disabled }: any) => {
+const WebSafePressable = (props: { onPress?: () => void; style?: any; children?: React.ReactNode; testID?: string; disabled?: boolean }) => {
+  const { onPress, style, children, testID, disabled } = props;
   if (IS_WEB) {
     return (
       <button
         type="button"
         data-testid={testID}
         disabled={disabled}
-        onClick={(e) => {
+        onClick={(e: React.MouseEvent) => {
           e.preventDefault();
           e.stopPropagation();
-          if (!disabled) onPress?.();
+          if (!disabled && onPress) onPress();
         }}
         style={{
           background: 'none',
