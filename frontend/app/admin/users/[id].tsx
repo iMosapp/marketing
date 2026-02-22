@@ -603,6 +603,27 @@ export default function UserDetailScreen() {
           </TouchableOpacity>
         </View>
         
+        {/* Danger Zone */}
+        <View style={[styles.section, styles.dangerSection]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="warning-outline" size={20} color="#FF3B30" />
+            <Text style={[styles.sectionTitle, { color: '#FF3B30' }]}>Danger Zone</Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={handleDeleteUser}
+            disabled={actionLoading}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+            <Text style={styles.deleteButtonText}>Delete User</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.dangerWarning}>
+            This will permanently delete the user and all their data. This action cannot be undone.
+          </Text>
+        </View>
+        
         <View style={{ height: 40 }} />
       </ScrollView>
       
