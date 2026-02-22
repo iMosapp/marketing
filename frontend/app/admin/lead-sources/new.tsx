@@ -85,24 +85,7 @@ export default function NewLeadSourceScreen() {
     setSaving(true);
     try {
       const storeId = user?.store_id || user?._id;
-      
-      // Use fetch directly to bypass axios issue with HTTP/HTTPS
-      const baseUrl = Platform.OS === 'web' 
-        ? 'https://lead-routing-hub.preview.emergentagent.com/api'
-        : '/api';
-      const url = `${baseUrl}/lead-sources?store_id=${storeId}`;
-      
-      console.log('Fetching:', url);
-      
-      const fetchResponse = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      const response = { data: await fetchResponse.json() };
+      const response = await api.post(`/lead-sources?store_id=${storeId}`, formData);
       
       if (response.data.success) {
         Alert.alert(
