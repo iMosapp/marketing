@@ -62,6 +62,7 @@ export default function CampaignDetailScreen() {
   const [sendTime, setSendTime] = useState(new Date(new Date().setHours(10, 0, 0, 0)));
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
   
   useFocusEffect(
     useCallback(() => {
