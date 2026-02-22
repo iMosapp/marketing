@@ -62,6 +62,19 @@ iMos is a business management app for retail/service businesses. Key features in
   - Fixed blob URL handling for web audio uploads
 - [x] Added EMERGENT_LLM_KEY to backend for Jessie AI responses
 - [x] Verified admin seeding script creates default admin user on empty database
+- [x] Fixed inbox toolbar buttons not working on web (compose, search)
+  - Created WebIconButton component for web-safe header icons
+- [x] Fixed "New Message" modal black screen in Email mode
+  - Made modal styles dynamic based on messageMode (light for email, dark for SMS)
+- [x] Fixed thread/message attachment buttons not working on web
+  - Created WebToolButton component for toolbar actions
+  - Fixed image picker, mic, templates, and other toolbar buttons
+- [x] Fixed photo upload dialogs on web (contact photos, profile photos)
+  - Updated to directly open file picker on web instead of showing camera option
+- [x] Fixed voice-to-text in thread not working on web
+  - Added web-specific recording options and blob URL handling
+- [x] Updated VoiceInput component for web support
+  - Added IS_WEB detection and web-specific audio handling
 
 ### Previously Completed (Feb 2026)
 - [x] Password reset for forest@imosapp.com
