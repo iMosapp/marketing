@@ -524,13 +524,57 @@ export default function LeadSourceDetailScreen() {
             )}
 
             {/* Delete Button */}
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-              <Text style={styles.deleteButtonText}>Delete Lead Source</Text>
-            </TouchableOpacity>
+            <WebButton onPress={handleDelete} testID="delete-btn">
+              <View style={styles.deleteButton}>
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                <Text style={styles.deleteButtonText}>Delete Lead Source</Text>
+              </View>
+            </WebButton>
           </>
         )}
       </ScrollView>
+
+      {/* Delete Confirmation Modal (for web) */}
+      {IS_WEB && (
+        <Modal
+          visible={showDeleteModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalIconContainer}>
+                <Ionicons name="warning" size={48} color="#FF3B30" />
+              </View>
+              <Text style={styles.modalTitle}>Delete Lead Source?</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete "{source?.name}"? This action cannot be undone.
+              </Text>
+              <View style={styles.modalButtons}>
+                <Pressable
+                  style={styles.modalCancelButton}
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={deleting}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.modalDeleteButton}
+                  onPress={confirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalDeleteText}>Delete</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
