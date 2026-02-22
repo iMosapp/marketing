@@ -144,7 +144,7 @@ export default function PartnerAgreementSigningPage() {
     try {
       const originUrl = Platform.OS === 'web' 
         ? window.location.origin 
-        : 'https://mvpline.com';
+        : 'https://app.imosapp.com';
       
       const response = await api.post(`/partners/agreements/${agreementId}/create-payment`, {
         origin_url: originUrl,
