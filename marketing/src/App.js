@@ -47,7 +47,7 @@ const Navigation = () => {
     <nav className={`nav ${isScrolled ? 'nav-scrolled' : ''}`}>
       <div className="nav-container">
         <a href="#" className="logo">
-          <img src="/imos-logo.png" alt="iMos" className="logo-image" />
+          <span className="logo-text">iMos</span>
         </a>
         
         <div className={`nav-links ${mobileMenuOpen ? 'nav-links-open' : ''}`}>
@@ -83,12 +83,13 @@ const Hero = () => (
     
     <div className="hero-content">
       <h1 className="hero-title">
-        <span className="hero-title-line">Innovative</span>
-        <span className="hero-title-line gradient-text">Messaging Operating System</span>
+        <span className="hero-title-line hero-title-white">Innovative</span>
+        <span className="hero-title-line hero-title-blue">Messaging Operating</span>
+        <span className="hero-title-line hero-title-purple">System</span>
       </h1>
       
       <p className="hero-subtitle">
-        The modern CRM and communication platform that combines cutting-edge technology 
+        Innovation meets old school. The modern CRM and communication platform that combines cutting-edge technology 
         with timeless sales principles. Connect with customers via SMS, Email, and more.
       </p>
       
@@ -523,9 +524,9 @@ const Footer = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <a href="#" className="logo">
-            <img src="/imos-logo.png" alt="iMos" className="logo-image footer-logo-image" />
+            <span className="logo-text footer-logo-text">iMos</span>
           </a>
-          <p className="footer-tagline">Innovative Messaging Operating System</p>
+          <p className="footer-tagline">Innovation meets old school</p>
           <p className="footer-description">
             The modern CRM platform for sales professionals who value authentic connections.
           </p>
