@@ -16,15 +16,8 @@ const getBackendUrl = () => {
     console.warn('EXPO_PUBLIC_BACKEND_URL not set, falling back to relative /api path');
     return '/api';
   }
-  // For web, we need to use the HTTPS backend URL to avoid mixed content issues
-  // The EXPO_PUBLIC_BACKEND_URL should be set in the environment
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
-  if (backendUrl) {
-    // Ensure it starts with https:// to avoid mixed content errors
-    const secureUrl = backendUrl.replace(/^http:/, 'https:');
-    return `${secureUrl}/api`;
-  }
-  // Fallback to relative - works when served from same origin
+  // For web, always use relative path - the ingress handles routing
+  // This avoids mixed content issues because relative URLs inherit the page's protocol
   return '/api';
 };
 
