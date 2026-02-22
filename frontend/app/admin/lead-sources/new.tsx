@@ -27,6 +27,7 @@ interface Team {
 export default function NewLeadSourceScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
