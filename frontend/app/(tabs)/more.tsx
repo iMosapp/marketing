@@ -86,7 +86,7 @@ export default function MoreScreen() {
     {
       icon: 'sparkles',
       title: 'Ask Jessi',
-      subtitle: 'Your AI assistant for MVPLine help',
+      subtitle: 'Your AI assistant for iMos help',
       onPress: () => router.push('/jessie'),
       color: '#C9A962',
     },
@@ -529,7 +529,7 @@ export default function MoreScreen() {
           </WebSafeButton>
         </View>
         
-        <Text style={styles.version}>MVPLine v1.0.0</Text>
+        <Text style={styles.version}>iMos v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

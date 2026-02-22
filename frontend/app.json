@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "MVPLine",
-    "slug": "mvpline",
+    "name": "iMos",
+    "slug": "imos",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mvpline",
+    "scheme": "imos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -49,7 +49,7 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "Allow MVPLine to access your contacts to import them."
+          "contactsPermission": "Allow iMos to access your contacts to import them."
         }
       ],
       [

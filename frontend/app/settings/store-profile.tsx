@@ -343,12 +343,12 @@ export default function StoreProfileScreen() {
             <Text style={styles.reviewLinkLabel}>Share this link with customers:</Text>
             <View style={styles.reviewLinkBox}>
               <Text style={styles.reviewLinkUrl} numberOfLines={1}>
-                {`https://mvpline.com/review/${store.slug || store._id}`}
+                {`https://app.imosapp.com/review/${store.slug || store._id}`}
               </Text>
               <TouchableOpacity 
                 style={styles.copyButton}
                 onPress={async () => {
-                  const url = `https://mvpline.com/review/${store.slug || store._id}`;
+                  const url = `https://app.imosapp.com/review/${store.slug || store._id}`;
                   await Clipboard.setStringAsync(url);
                   Alert.alert('Copied!', 'Review page link copied to clipboard');
                 }}
