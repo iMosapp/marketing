@@ -109,7 +109,8 @@ export default function CampaignBuilderScreen() {
         id: newId, 
         message: '', 
         delayDays: 0, 
-        delayMonths: lastStep.delayMonths + 1 
+        delayMonths: lastStep.delayMonths + 1,
+        media_urls: [],
       },
     ]);
   };
