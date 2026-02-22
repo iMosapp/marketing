@@ -112,7 +112,7 @@ export default function BroadcastListScreen() {
   };
 
   const renderBroadcast = ({ item }: { item: Broadcast }) => (
-    <WebSafePressable
+    <Pressable
       style={styles.broadcastCard}
       onPress={() => router.push(`/broadcast/${item.id}`)}
       testID={`broadcast-card-${item.id}`}
