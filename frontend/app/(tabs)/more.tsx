@@ -126,6 +126,13 @@ export default function MoreScreen() {
       color: '#FF9500',
     },
     {
+      icon: 'git-branch',
+      title: 'Lead Sources',
+      subtitle: 'Manage inbound leads & routing',
+      onPress: () => router.push('/admin/lead-sources'),
+      color: '#5856D6',
+    },
+    {
       icon: 'chatbubbles',
       title: 'SMS Campaigns',
       subtitle: 'Automated SMS follow-ups',
