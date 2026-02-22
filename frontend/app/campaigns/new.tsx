@@ -259,6 +259,7 @@ export default function CampaignBuilderScreen() {
           message_template: s.message,
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
+          media_urls: s.media_urls,
         })),
         send_time: format(campaign.sendTime, 'HH:mm'),
         active: campaign.active,
