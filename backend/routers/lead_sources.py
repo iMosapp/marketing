@@ -354,6 +354,46 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
         {"$inc": {"lead_count": 1}}
     )
     
+    # ============ CREATE NOTIFICATIONS ============
+    contact_full_name = f"{first_name} {last_name}".strip()
+    source_name = source.get("name", "Unknown Source")
+    assignment_method = source.get("assignment_method", "jump_ball")
+    
+    if assignment_method == "jump_ball":
+        # Notify ALL team members - first to respond claims the lead
+        create_team_notifications(
+            team_id=team_id,
+            notification_type="jump_ball",
+            title="New Lead Available!",
+            message=f"New lead from {source_name}: {contact_full_name}. First to respond gets it!",
+            conversation_id=conversation_id,
+            contact_id=contact_id,
+            contact_name=contact_full_name,
+            contact_phone=phone,
+            contact_email=lead.email,
+            lead_source_name=source_name
+        )
+        logger.info(f"Jump ball notifications sent to team {team_id}")
+    else:
+        # Round Robin or Weighted - notify only the assigned user
+        if assigned_to:
+            create_notification(
+                notification_type="lead_assigned",
+                title="New Lead Assigned to You!",
+                message=f"You've been assigned a new lead from {source_name}: {contact_full_name}",
+                user_id=assigned_to,
+                team_id=team_id,
+                conversation_id=conversation_id,
+                contact_id=contact_id,
+                contact_name=contact_full_name,
+                contact_phone=phone,
+                contact_email=lead.email,
+                lead_source_name=source_name,
+                action_required=True,
+                priority="high"
+            )
+            logger.info(f"Lead assigned notification sent to user {assigned_to}")
+    
     # Log the lead
     logger.info(f"New lead received from {source.get('name')}: {phone} -> Team {team_id}, Assigned: {assigned_to}")
     
