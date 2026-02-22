@@ -154,25 +154,6 @@ export default function BroadcastListScreen() {
     );
   };
 
-  const FilterButton = ({ value, label, count }: { value: string; label: string; count?: number }) => (
-    <Pressable
-      style={[styles.filterButton, filter === value && styles.filterButtonActive]}
-      onPress={() => setFilter(value)}
-      testID={`filter-btn-${value}`}
-    >
-      <Text style={[styles.filterButtonText, filter === value && styles.filterButtonTextActive]}>
-        {label}
-      </Text>
-      {count !== undefined && count > 0 && (
-        <View style={[styles.filterCount, filter === value && styles.filterCountActive]}>
-          <Text style={[styles.filterCountText, filter === value && styles.filterCountTextActive]}>
-            {count}
-          </Text>
-        </View>
-      )}
-    </Pressable>
-  );
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
