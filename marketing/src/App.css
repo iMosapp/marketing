@@ -179,17 +179,17 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   right: 0;
   z-index: 1000;
-  padding: 8px 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  padding: 6px 0;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
   transition: all var(--transition-base);
 }
 
 .nav-scrolled {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(20px);
-  padding: 6px 0;
-  border-bottom: 1px solid var(--color-gray-800);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nav-container {
@@ -210,21 +210,30 @@ h1, h2, h3, h4, h5, h6 {
 .logo {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   text-decoration: none;
-  margin-left: 0;
-}
-
-.logo-text {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--color-white);
-  font-style: italic;
 }
 
-.footer-logo-text {
-  font-size: 40px;
+.footer-logo {
+  font-size: 36px;
+}
+
+.logo-i {
+  color: #FF3B30;
+}
+
+.logo-m {
+  color: #007AFF;
+}
+
+.logo-o {
+  color: #FFD60A;
+}
+
+.logo-s {
+  color: #34C759;
 }
 
 .logo-sparkle {
