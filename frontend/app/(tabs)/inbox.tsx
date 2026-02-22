@@ -987,32 +987,32 @@ export default function InboxScreen() {
                   onPress={() => startConversation(item)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.contactAvatar}>
-                    <Text style={styles.contactAvatarText}>
+                  <View style={[styles.contactAvatar, { backgroundColor: colors.elevated }]}>
+                    <Text style={[styles.contactAvatarText, { color: colors.textPrimary }]}>
                       {item.first_name?.[0]}{item.last_name?.[0] || ''}
                     </Text>
                   </View>
                   <View style={styles.contactInfo}>
-                    <Text style={styles.contactNameModal}>
+                    <Text style={[styles.contactNameModal, { color: colors.textPrimary }]}>
                       {item.first_name} {item.last_name || ''}
                     </Text>
-                    <Text style={styles.contactPhone}>{item.phone}</Text>
+                    <Text style={[styles.contactPhone, { color: colors.textSecondary }]}>{item.phone}</Text>
                   </View>
                   <View style={styles.contactAction}>
-                    <Ionicons name="chatbubble" size={20} color={COLORS.accent} />
+                    <Ionicons name="chatbubble" size={20} color={colors.accent} />
                   </View>
                 </TouchableOpacity>
               )}
-              ItemSeparatorComponent={() => <View style={styles.modalSeparator} />}
+              ItemSeparatorComponent={() => <View style={[styles.modalSeparator, { backgroundColor: colors.border }]} />}
               ListEmptyComponent={() => (
                 <View style={styles.emptyContainer}>
-                  <View style={styles.emptyIconContainerSmall}>
-                    <Ionicons name="people" size={32} color={COLORS.textTertiary} />
+                  <View style={[styles.emptyIconContainerSmall, { backgroundColor: colors.elevated }]}>
+                    <Ionicons name="people" size={32} color={colors.textTertiary} />
                   </View>
-                  <Text style={styles.emptyTitle}>
+                  <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                     {contactSearch ? 'No contacts found' : 'No contacts yet'}
                   </Text>
-                  <Text style={styles.emptySubtext}>
+                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                     {contactSearch ? 'Try a different search' : 'Add contacts to start messaging'}
                   </Text>
                 </View>
