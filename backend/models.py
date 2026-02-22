@@ -360,6 +360,7 @@ class CampaignCreate(BaseModel):
     trigger_tag: str = ""
     segment_tags: List[str] = []
     message_template: str = ""
+    media_urls: List[str] = []  # Media attachments
     sequences: List[CampaignSequenceStep] = []
     send_time: str = "10:00"
     schedule: Dict[str, Any] = {}
