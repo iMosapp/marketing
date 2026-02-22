@@ -11,7 +11,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://imos-marketing.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://imos-deploy.preview.emergentagent.com')
 
 # Test data
 TEST_STORE_ID = "699637981b07c23426a5324a"
