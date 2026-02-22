@@ -165,11 +165,11 @@ export default function BroadcastListScreen() {
           </View>
         )}
       </View>
-    </WebSafePressable>
+    </Pressable>
   );
 
   const FilterButton = ({ value, label, count }: { value: string; label: string; count?: number }) => (
-    <WebSafePressable
+    <Pressable
       style={[styles.filterButton, filter === value && styles.filterButtonActive]}
       onPress={() => setFilter(value)}
       testID={`filter-btn-${value}`}
