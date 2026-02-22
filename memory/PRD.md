@@ -119,7 +119,8 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Prioritized Backlog
 
-### P0 (Critical) - BLOCKED
+### P0 (Critical) - BLOCKED/RESOLVED
+- [x] **RESOLVED: Create Lead Source Button** - Was unresponsive on web due to FastAPI 307 redirect using HTTP instead of HTTPS
 - [ ] Email delivery (BLOCKED - user needs to verify domain with Resend)
 - [ ] SMS functionality (BLOCKED - Twilio toll-free number pending verification)
 
