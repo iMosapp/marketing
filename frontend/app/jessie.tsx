@@ -163,13 +163,23 @@ export default function JessiScreen() {
         playsInSilentModeIOS: true,
       });
       
-      // Create recording with metering enabled
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        {
-          ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-          isMeteringEnabled: true,
-        }
-      );
+      // Create recording with platform-specific options
+      // On web, expo-av uses MediaRecorder API which works differently
+      const recordingOptions = IS_WEB 
+        ? {
+            ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+            isMeteringEnabled: false, // Metering not supported on web
+            web: {
+              mimeType: 'audio/webm;codecs=opus',
+              bitsPerSecond: 128000,
+            },
+          }
+        : {
+            ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+            isMeteringEnabled: true,
+          };
+      
+      const { recording: newRecording } = await Audio.Recording.createAsync(recordingOptions);
       
       recordingRef.current = newRecording;
       recordingStartTimeRef.current = Date.now();
@@ -183,6 +193,10 @@ export default function JessiScreen() {
       
     } catch (error) {
       console.error('Failed to start recording:', error);
+      // Show user-friendly error on web
+      if (IS_WEB) {
+        setResponse("Couldn't access microphone. Please ensure you've granted microphone permission in your browser settings.");
+      }
       setState('idle');
     }
   };
