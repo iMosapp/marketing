@@ -26,6 +26,8 @@ import { contactsAPI, campaignsAPI, tagsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import VoiceInput from '../../components/VoiceInput';
 
+const IS_WEB = Platform.OS === 'web';
+
 interface CustomDateField {
   name: string;
   date: Date | null;
