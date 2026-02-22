@@ -367,18 +367,23 @@ export default function NewBroadcastScreen() {
             {selectedImages.map((img, index) => (
               <View key={index} style={styles.mediaPreview}>
                 <Image source={{ uri: img.uri }} style={styles.mediaImage} />
-                <TouchableOpacity
+                <WebSafePressable
                   style={styles.mediaRemove}
                   onPress={() => removeImage(index)}
+                  testID={`remove-image-${index}`}
                 >
                   <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                </TouchableOpacity>
+                </WebSafePressable>
               </View>
             ))}
-            <TouchableOpacity style={styles.addMediaButton} onPress={pickImage}>
+            <WebSafePressable 
+              style={styles.addMediaButton} 
+              onPress={pickImage}
+              testID="add-photo-btn"
+            >
               <Ionicons name="add-circle-outline" size={32} color="#007AFF" />
               <Text style={styles.addMediaText}>Add Photo</Text>
-            </TouchableOpacity>
+            </WebSafePressable>
           </View>
         </View>
 
