@@ -12,12 +12,18 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
 from bson import ObjectId
-from db import get_db
+from pymongo import MongoClient
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+# MongoDB connection
+def get_db():
+    client = MongoClient(os.environ.get("MONGO_URL", "mongodb://localhost:27017"))
+    return client[os.environ.get("DB_NAME", "test_database")]
 
 
 class NotificationCreate(BaseModel):
