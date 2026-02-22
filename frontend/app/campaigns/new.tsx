@@ -78,11 +78,11 @@ export default function CampaignBuilderScreen() {
       setSequences(soldFollowupTemplates);
       setCampaign(prev => ({ ...prev, type, triggerTag: 'sold' }));
     } else if (type === 'birthday') {
-      setSequences([{ id: '1', message: "Happy birthday, {name}! Hope you have an amazing day! If there's anything I can do for you, just let me know.", delayDays: 0, delayMonths: 0 }]);
+      setSequences([{ id: '1', message: "Happy birthday, {name}! Hope you have an amazing day! If there's anything I can do for you, just let me know.", delayDays: 0, delayMonths: 0, media_urls: [] }]);
     } else if (type === 'anniversary') {
-      setSequences([{ id: '1', message: "Happy anniversary on your {vehicle} purchase, {name}! Can you believe it's been a year? Hope it's still treating you well!", delayDays: 0, delayMonths: 0 }]);
+      setSequences([{ id: '1', message: "Happy anniversary on your {vehicle} purchase, {name}! Can you believe it's been a year? Hope it's still treating you well!", delayDays: 0, delayMonths: 0, media_urls: [] }]);
     } else {
-      setSequences([{ id: '1', message: '', delayDays: 0, delayMonths: 0 }]);
+      setSequences([{ id: '1', message: '', delayDays: 0, delayMonths: 0, media_urls: [] }]);
     }
   };
   
