@@ -49,11 +49,6 @@ export default function VoiceInput({
   const buttonSize = size === 'small' ? 32 : size === 'large' ? 48 : 40;
 
   const handlePress = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Not Available', 'Voice recording is only available on mobile devices.');
-      return;
-    }
-
     if (disabled || isTranscribing) return;
 
     try {
@@ -70,11 +65,19 @@ export default function VoiceInput({
 
           if (uri) {
             const formData = new FormData();
-            formData.append('file', {
-              uri,
-              type: 'audio/m4a',
-              name: 'recording.m4a',
-            } as any);
+            
+            if (IS_WEB) {
+              // On web, uri is a blob URL
+              const response = await fetch(uri);
+              const blob = await response.blob();
+              formData.append('file', blob, 'recording.webm');
+            } else {
+              formData.append('file', {
+                uri,
+                type: 'audio/m4a',
+                name: 'recording.m4a',
+              } as any);
+            }
 
             try {
               const response = await api.post('/voice/transcribe', formData, {
@@ -107,18 +110,43 @@ export default function VoiceInput({
           playsInSilentModeIOS: true,
         });
 
+        // Platform-specific recording options
+        const recordingOptions = IS_WEB 
+          ? {
+              ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+              isMeteringEnabled: false,
+              web: {
+                mimeType: 'audio/webm;codecs=opus',
+                bitsPerSecond: 128000,
+              },
+            }
+          : Audio.RecordingOptionsPresets.HIGH_QUALITY;
+
         const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        await recording.prepareToRecordAsync(recordingOptions);
         await recording.startAsync();
 
         recordingRef.current = recording;
         setIsRecording(true);
+        
+        // On web, auto-stop after 30 seconds
+        if (IS_WEB) {
+          setTimeout(() => {
+            if (recordingRef.current) {
+              handlePress(); // Stop recording
+            }
+          }, 30000);
+        }
       }
     } catch (error) {
       console.error('Recording error:', error);
       setIsRecording(false);
       setIsTranscribing(false);
-      Alert.alert('Error', 'Failed to record audio');
+      if (IS_WEB) {
+        Alert.alert('Microphone Error', 'Could not access microphone. Please ensure you have granted permission in your browser.');
+      } else {
+        Alert.alert('Error', 'Failed to record audio');
+      }
     }
   };
 
