@@ -22,6 +22,8 @@ import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import VoicemailRecorder from '../../components/VoicemailRecorder';
 
+const IS_WEB = Platform.OS === 'web';
+
 const SOCIAL_PLATFORMS = [
   { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', placeholder: 'https://facebook.com/yourprofile' },
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', placeholder: 'https://instagram.com/yourhandle' },
