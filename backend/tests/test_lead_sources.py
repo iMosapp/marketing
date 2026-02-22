@@ -502,7 +502,7 @@ class TestLeadSourcesAPI:
         print("  1. Created lead source")
         
         # 2. Verify source is listed
-        list_response = self.session.get(f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}")
+        list_response = self.session.get(f"{BASE_URL}/api/lead-sources?store_id={self.store_id}")
         sources = list_response.json()["lead_sources"]
         assert any(s["id"] == source_id for s in sources)
         print("  2. Source appears in list")
