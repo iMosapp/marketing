@@ -445,6 +445,13 @@ export default function ThreadScreen() {
 
   const handleAttachPhoto = () => {
     setShowAttachMenu(false);
+    
+    // On web, directly open image picker (no camera option)
+    if (IS_WEB) {
+      pickImage();
+      return;
+    }
+    
     Alert.alert(
       'Add Photo',
       'Choose an option',
