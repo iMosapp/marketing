@@ -111,7 +111,7 @@ async def create_team_invite(data: TeamInviteCreate):
     
     # Generate full URL
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
     invite_url = f"{base_url}/join/{invite_code}"
     
     return {
@@ -266,7 +266,7 @@ async def join_team(data: TeamMemberJoin):
     
     # Generate training link
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
     training_link = f"{base_url}/onboarding?token={secrets.token_urlsafe(16)}"
     
     # Queue welcome SMS (if auto-send is enabled)
@@ -324,7 +324,7 @@ async def get_store_invites(store_id: str):
         creators = {str(c["_id"]): c.get("name", "Unknown") for c in creator_docs}
     
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
     
     result = []
     for invite in invites:
@@ -384,7 +384,7 @@ async def get_user_share_link(user_id: str):
     
     if existing:
         import os
-        base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+        base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
         return {
             "invite_code": existing["invite_code"],
             "invite_url": f"{base_url}/join/{existing['invite_code']}",
@@ -419,7 +419,7 @@ async def get_user_share_link(user_id: str):
     await db.team_invites.insert_one(invite)
     
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
     
     return {
         "invite_code": invite_code,
@@ -507,7 +507,7 @@ async def share_invite_via_sms(data: ShareInviteViaSMS):
     
     # Build invite URL
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
     invite_url = f"{base_url}/join/{invite_code}"
     
     # Get onboarding settings for message template

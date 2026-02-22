@@ -8,8 +8,8 @@ router = APIRouter(prefix="/legal", tags=["legal"])
 
 # Last updated date
 LAST_UPDATED = "February 19, 2026"
-COMPANY_NAME = "MVPLine"
-COMPANY_EMAIL = "legal@mvpline.com"
+COMPANY_NAME = "iMos"
+COMPANY_EMAIL = "legal@imosapp.com"
 COMPANY_ADDRESS = "Salt Lake City, Utah"
 
 TERMS_OF_SERVICE = f"""
@@ -572,7 +572,7 @@ If you have questions about this Privacy Policy or our data practices, please co
 Email: {COMPANY_EMAIL}
 Address: {COMPANY_ADDRESS}
 
-For data protection inquiries, you may also contact our Data Protection Officer at: dpo@mvpline.com
+For data protection inquiries, you may also contact our Data Protection Officer at: dpo@imosapp.com
 
 ---
 

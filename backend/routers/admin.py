@@ -2498,7 +2498,7 @@ async def add_team_member(data: AddTeamMemberRequest):
         settings = await db.onboarding_settings.find_one({"is_global": True})
     
     # Generate training link
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.mvpline.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
     training_token = secrets.token_urlsafe(16)
     training_link = f"{base_url}/onboarding?token={training_token}"
     

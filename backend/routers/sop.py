@@ -1086,7 +1086,7 @@ async def seed_sops(x_user_id: str = Header(None, alias="X-User-ID")):
                 {
                     "order": 5,
                     "title": "Contacting Support",
-                    "description": "If you need more help:\n\n• Ask Jessi first (tap 'Ask Jessi')\n• Email support@mvpline.com\n• Include screenshots of the issue\n• Describe steps to reproduce",
+                    "description": "If you need more help:\n\n• Ask Jessi first (tap 'Ask Jessi')\n• Email support@imosapp.com\n• Include screenshots of the issue\n• Describe steps to reproduce",
                     "link_text": "Ask Jessi for Help",
                     "link_url": "/jessie"
                 }
