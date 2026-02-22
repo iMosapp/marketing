@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   ScrollView,
   ActivityIndicator,
   Alert,
@@ -18,6 +19,44 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
+
+// Web-safe pressable component for interactive elements
+const WebSafePressable = ({ onPress, style, children, testID, disabled }: any) => {
+  if (IS_WEB) {
+    return (
+      <button
+        type="button"
+        data-testid={testID}
+        disabled={disabled}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!disabled) onPress?.();
+        }}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          margin: 0,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation',
+          ...style,
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Pressable onPress={onPress} style={style} testID={testID} disabled={disabled}>
+      {children}
+    </Pressable>
+  );
+};
 
 interface Broadcast {
   id: string;
