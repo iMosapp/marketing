@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   FlatList,
   ActivityIndicator,
   RefreshControl,
@@ -15,6 +16,44 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { format } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+
+// Web-safe button component for interactive elements
+const WebSafePressable = ({ onPress, style, children, testID, disabled }: any) => {
+  if (Platform.OS === 'web') {
+    return (
+      <button
+        type="button"
+        data-testid={testID}
+        disabled={disabled}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!disabled) onPress?.();
+        }}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          margin: 0,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation',
+          ...style,
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Pressable onPress={onPress} style={style} testID={testID} disabled={disabled}>
+      {children}
+    </Pressable>
+  );
+};
 
 const IS_WEB = Platform.OS === 'web';
 
