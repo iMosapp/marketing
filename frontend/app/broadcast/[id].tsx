@@ -365,10 +365,11 @@ export default function BroadcastDetailScreen() {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           {canSend && (
-            <TouchableOpacity
+            <WebSafePressable
               style={styles.sendButton}
               onPress={handleSend}
               disabled={sending}
+              testID="send-btn"
             >
               {sending ? (
                 <ActivityIndicator size="small" color="#FFF" />
@@ -378,14 +379,15 @@ export default function BroadcastDetailScreen() {
                   <Text style={styles.sendButtonText}>Send Now</Text>
                 </>
               )}
-            </TouchableOpacity>
+            </WebSafePressable>
           )}
           
           {canDelete && (
-            <TouchableOpacity
+            <WebSafePressable
               style={styles.deleteButton}
               onPress={handleDelete}
               disabled={deleting}
+              testID="delete-btn"
             >
               {deleting ? (
                 <ActivityIndicator size="small" color="#FF3B30" />
@@ -395,7 +397,7 @@ export default function BroadcastDetailScreen() {
                   <Text style={styles.deleteButtonText}>Delete</Text>
                 </>
               )}
-            </TouchableOpacity>
+            </WebSafePressable>
           )}
         </View>
 
