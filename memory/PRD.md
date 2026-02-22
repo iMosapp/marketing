@@ -182,6 +182,8 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 - expo-av is deprecated - will be removed in SDK 54 (migrate to expo-audio/expo-video)
 - Passwords are stored in PLAINTEXT (not hashed) - be aware when working with auth
 - Lead sources use MongoDB collections: `lead_sources`, `conversations`, `contacts`
+- **FastAPI redirect_slashes=False** - Required to prevent HTTP redirects when behind HTTPS proxy
+- Route definitions use empty string `""` instead of `"/"` to avoid trailing slash issues
 
 ## Integrations
 - **Resend:** Email sending (active but blocked - needs domain verification)
