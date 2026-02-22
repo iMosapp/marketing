@@ -218,11 +218,16 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Image 
-              source={require('../../assets/images/imos-logo.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Text style={styles.brandTitle}>
+              <Text style={styles.brandWhite}>Innovative</Text>
+            </Text>
+            <Text style={styles.brandTitle}>
+              <Text style={styles.brandBlue}>Messaging Operating</Text>
+            </Text>
+            <Text style={styles.brandTitle}>
+              <Text style={styles.brandPurple}>System</Text>
+            </Text>
+            <Text style={styles.tagline}>Innovation meets old school</Text>
           </View>
           
           <View style={styles.form}>
@@ -480,8 +485,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#34C759',
-    borderColor: '#34C759',
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
   rememberMeText: {
     color: '#8E8E93',
@@ -490,11 +495,11 @@ const styles = StyleSheet.create({
   forgotButton: {
   },
   forgotText: {
-    color: '#34C759',
+    color: '#007AFF',
     fontSize: 14,
   },
   button: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -522,10 +527,10 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
     borderWidth: 1,
-    borderColor: '#34C759',
+    borderColor: '#007AFF',
   },
   biometricButtonText: {
-    color: '#34C759',
+    color: '#007AFF',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -538,7 +543,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   linkTextBold: {
-    color: '#34C759',
+    color: '#007AFF',
     fontWeight: '600',
   },
   signupContainer: {
@@ -554,14 +559,14 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   signupButtonText: {
-    color: '#34C759',
+    color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
   },
   signupButtonLarge: {
     backgroundColor: '#1C1C1E',
     borderWidth: 2,
-    borderColor: '#34C759',
+    borderColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -570,7 +575,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signupButtonTextLarge: {
-    color: '#34C759',
+    color: '#007AFF',
     fontSize: 18,
     fontWeight: '700',
   },
@@ -609,7 +614,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#34C75920',
+    backgroundColor: '#007AFF20',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -647,7 +652,7 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     flex: 1,
-    backgroundColor: '#34C759',
+    backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
