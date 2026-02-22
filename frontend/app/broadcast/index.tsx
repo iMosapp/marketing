@@ -45,7 +45,6 @@ export default function BroadcastListScreen() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<string>('all');
 
   const fetchData = useCallback(async () => {
     if (!user?._id) {
@@ -55,7 +54,7 @@ export default function BroadcastListScreen() {
     
     try {
       const [broadcastsRes, statsRes] = await Promise.all([
-        api.get(`/broadcast?user_id=${user._id}${filter !== 'all' ? `&status=${filter}` : ''}`),
+        api.get(`/broadcast?user_id=${user._id}`),
         api.get(`/broadcast/stats?user_id=${user._id}`)
       ]);
       
@@ -71,7 +70,7 @@ export default function BroadcastListScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?._id, filter]);
+  }, [user?._id]);
 
   useFocusEffect(
     useCallback(() => {
