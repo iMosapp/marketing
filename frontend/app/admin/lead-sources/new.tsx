@@ -76,11 +76,19 @@ export default function NewLeadSourceScreen() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('Error', 'Please enter a name for the lead source');
+      if (IS_WEB) {
+        showToast('Please enter a name for the lead source', 'error');
+      } else {
+        Alert.alert('Error', 'Please enter a name for the lead source');
+      }
       return;
     }
     if (!formData.team_id) {
-      Alert.alert('Error', 'Please select a team to handle leads from this source');
+      if (IS_WEB) {
+        showToast('Please select a team to handle leads from this source', 'error');
+      } else {
+        Alert.alert('Error', 'Please select a team to handle leads from this source');
+      }
       return;
     }
 
@@ -90,15 +98,25 @@ export default function NewLeadSourceScreen() {
       const response = await api.post(`/lead-sources?store_id=${storeId}`, formData);
       
       if (response.data.success) {
-        Alert.alert(
-          'Lead Source Created',
-          `Webhook URL:\n${response.data.lead_source.webhook_url}\n\nAPI Key has been generated. View details to copy credentials.`,
-          [{ text: 'OK', onPress: () => router.back() }]
-        );
+        if (IS_WEB) {
+          showToast(`Lead Source "${formData.name}" created successfully!`, 'success', 4000);
+          // Navigate back after a short delay to show the toast
+          setTimeout(() => router.back(), 1500);
+        } else {
+          Alert.alert(
+            'Lead Source Created',
+            `Webhook URL:\n${response.data.lead_source.webhook_url}\n\nAPI Key has been generated. View details to copy credentials.`,
+            [{ text: 'OK', onPress: () => router.back() }]
+          );
+        }
       }
     } catch (error) {
       console.error('Error creating lead source:', error);
-      Alert.alert('Error', 'Failed to create lead source');
+      if (IS_WEB) {
+        showToast('Failed to create lead source', 'error');
+      } else {
+        Alert.alert('Error', 'Failed to create lead source');
+      }
     } finally {
       setSaving(false);
     }
