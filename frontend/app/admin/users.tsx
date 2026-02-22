@@ -52,13 +52,19 @@ export default function UsersScreen() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserRole, setNewUserRole] = useState('user');
+  const [newUserOrgId, setNewUserOrgId] = useState<string | null>(null);
+  const [newUserStoreId, setNewUserStoreId] = useState<string | null>(null);
   const [sendInvite, setSendInvite] = useState(false); // Default to showing password
   const [creating, setCreating] = useState(false);
   const [createdUser, setCreatedUser] = useState<any>(null);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
   
   useFocusEffect(
     useCallback(() => {
       loadUsers();
+      loadOrganizations();
+      loadStores();
     }, [])
   );
   
