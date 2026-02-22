@@ -17,7 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
+import { WebSafeButton } from '../../components/WebSafeButton';
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30',
