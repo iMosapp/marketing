@@ -314,6 +314,11 @@ export default function MyProfileScreen() {
           <TouchableOpacity 
             style={styles.photoContainer}
             onPress={() => {
+              // On web, directly open file picker (no camera option)
+              if (IS_WEB) {
+                pickImage();
+                return;
+              }
               Alert.alert(
                 'Update Photo',
                 'Choose how to update your profile photo',
