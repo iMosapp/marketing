@@ -31,7 +31,7 @@ def get_short_url_base() -> str:
         return short_domain.rstrip('/')
     
     # Use the preview URL base
-    # This will be set to the final domain (mvpline.com) in production
+    # This will be set to the final domain (app.imosapp.com) in production
     base_url = os.environ.get('BASE_URL', 'https://imos-deploy.preview.emergentagent.com')
     return base_url.rstrip('/')
 
