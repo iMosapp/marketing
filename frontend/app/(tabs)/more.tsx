@@ -147,6 +147,13 @@ export default function MoreScreen() {
       color: '#34C759',
     },
     {
+      icon: 'bar-chart',
+      title: 'Reports',
+      subtitle: 'Detailed performance reports',
+      onPress: () => router.push('/reports'),
+      color: '#007AFF',
+    },
+    {
       icon: 'shield-checkmark',
       title: 'Security',
       subtitle: 'Face ID, password settings',
