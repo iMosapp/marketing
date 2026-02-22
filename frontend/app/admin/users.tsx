@@ -405,6 +405,64 @@ export default function UsersScreen() {
               keyboardType="phone-pad"
             />
 
+            <Text style={styles.inputLabel}>Organization (optional)</Text>
+            <View style={styles.pickerContainer}>
+              <TouchableOpacity
+                style={[styles.pickerOption, !newUserOrgId && styles.pickerOptionSelected]}
+                onPress={() => {
+                  setNewUserOrgId(null);
+                  setNewUserStoreId(null);
+                  loadStores();
+                }}
+              >
+                <Text style={[styles.pickerOptionText, !newUserOrgId && styles.pickerOptionTextSelected]}>
+                  Individual (No Org)
+                </Text>
+              </TouchableOpacity>
+              {organizations.map((org) => (
+                <TouchableOpacity
+                  key={org._id}
+                  style={[styles.pickerOption, newUserOrgId === org._id && styles.pickerOptionSelected]}
+                  onPress={() => {
+                    setNewUserOrgId(org._id);
+                    setNewUserStoreId(null);
+                    loadStores(org._id);
+                  }}
+                >
+                  <Text style={[styles.pickerOptionText, newUserOrgId === org._id && styles.pickerOptionTextSelected]}>
+                    {org.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {stores.length > 0 && (
+              <>
+                <Text style={styles.inputLabel}>Store (optional)</Text>
+                <View style={styles.pickerContainer}>
+                  <TouchableOpacity
+                    style={[styles.pickerOption, !newUserStoreId && styles.pickerOptionSelected]}
+                    onPress={() => setNewUserStoreId(null)}
+                  >
+                    <Text style={[styles.pickerOptionText, !newUserStoreId && styles.pickerOptionTextSelected]}>
+                      No Store
+                    </Text>
+                  </TouchableOpacity>
+                  {stores.map((store) => (
+                    <TouchableOpacity
+                      key={store._id}
+                      style={[styles.pickerOption, newUserStoreId === store._id && styles.pickerOptionSelected]}
+                      onPress={() => setNewUserStoreId(store._id)}
+                    >
+                      <Text style={[styles.pickerOptionText, newUserStoreId === store._id && styles.pickerOptionTextSelected]}>
+                        {store.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
             <Text style={styles.inputLabel}>Role</Text>
             <View style={styles.roleSelector}>
               {ROLE_ORDER.map((role) => (
