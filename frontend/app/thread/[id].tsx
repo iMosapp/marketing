@@ -1170,9 +1170,9 @@ export default function ThreadScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        <View style={styles.composerContainer}>
+        <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
           {/* Main composer box */}
-          <View style={styles.composerBox}>
+          <View style={[styles.composerBox, { backgroundColor: colors.surface }]}>
             {/* Media Preview */}
             {selectedMedia && (
               <View style={styles.mediaPreview}>
@@ -1183,15 +1183,15 @@ export default function ThreadScreen() {
                 >
                   <Ionicons name="close-circle" size={24} color="#FF3B30" />
                 </TouchableOpacity>
-                <Text style={styles.mediaPreviewText}>Photo attached - tap send to send MMS</Text>
+                <Text style={[styles.mediaPreviewText, { color: colors.textSecondary }]}>Photo attached - tap send to send MMS</Text>
               </View>
             )}
             
             {/* Text input area */}
             <TextInput
-              style={styles.composerInput}
+              style={[styles.composerInput, { color: colors.textPrimary }]}
               placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
-              placeholderTextColor="#6E6E73"
+              placeholderTextColor={colors.textSecondary}
               value={message}
               onChangeText={setMessage}
               multiline
