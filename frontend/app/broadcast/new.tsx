@@ -22,56 +22,6 @@ import api from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
 
-// Web-safe pressable component for interactive elements
-const WebSafePressable = (props) => {
-  const { onPress, style, children, testID, disabled } = props;
-  if (IS_WEB) {
-    // Convert React Native style to web-compatible style
-    const webStyle = Array.isArray(style) 
-      ? style.reduce((acc, s) => ({ ...acc, ...(s || {}) }), {})
-      : style || {};
-    
-    return (
-      <button
-        type="button"
-        data-testid={testID}
-        disabled={disabled}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (!disabled && onPress) onPress();
-        }}
-        style={{
-          background: webStyle.backgroundColor || 'none',
-          border: 'none',
-          padding: webStyle.padding || 0,
-          margin: 0,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          flexDirection: webStyle.flexDirection || 'row',
-          alignItems: webStyle.alignItems || 'center',
-          justifyContent: webStyle.justifyContent || 'center',
-          gap: webStyle.gap || 0,
-          borderRadius: webStyle.borderRadius || 0,
-          paddingLeft: webStyle.paddingLeft || webStyle.paddingHorizontal || 0,
-          paddingRight: webStyle.paddingRight || webStyle.paddingHorizontal || 0,
-          paddingTop: webStyle.paddingTop || webStyle.paddingVertical || 0,
-          paddingBottom: webStyle.paddingBottom || webStyle.paddingVertical || 0,
-          WebkitTapHighlightColor: 'transparent',
-          touchAction: 'manipulation',
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
-  return (
-    <Pressable onPress={onPress} style={style} testID={testID} disabled={disabled}>
-      {children}
-    </Pressable>
-  );
-};
-
 interface Tag {
   id: string;
   name: string;
