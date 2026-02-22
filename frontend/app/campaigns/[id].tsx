@@ -103,10 +103,11 @@ export default function CampaignDetailScreen() {
         message: s.message_template || s.message || '',
         delayDays: s.delay_days || 0,
         delayMonths: s.delay_months || 0,
+        media_urls: s.media_urls || [],
       }));
       
       if (seqs.length === 0) {
-        seqs.push({ id: '1', step: 1, message: data.message_template || '', delayDays: 0, delayMonths: 0 });
+        seqs.push({ id: '1', step: 1, message: data.message_template || '', delayDays: 0, delayMonths: 0, media_urls: [] });
       }
       
       setSequences(seqs);
