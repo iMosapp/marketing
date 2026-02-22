@@ -7,7 +7,7 @@ from bson import ObjectId
 from typing import Optional
 import logging
 
-from database import get_db
+from routers.database import get_db
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 logger = logging.getLogger(__name__)
