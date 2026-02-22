@@ -318,24 +318,30 @@ export default function UsersScreen() {
 
       {/* Add User Modal */}
       <Modal
-        visible={showAddModal}
+        visible={showAddModal && !createdUser}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShowAddModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => { setShowAddModal(false); resetAddForm(); }}>
+            <WebSafeButton
+              onPress={() => { setShowAddModal(false); resetAddForm(); }}
+              variant="ghost"
+              testID="modal-cancel"
+            >
               <Text style={styles.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
+            </WebSafeButton>
             <Text style={styles.modalTitle}>Add User</Text>
-            <TouchableOpacity onPress={handleCreateUser} disabled={creating}>
-              {creating ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <Text style={styles.modalSave}>Create</Text>
-              )}
-            </TouchableOpacity>
+            <WebSafeButton
+              onPress={handleCreateUser}
+              disabled={creating}
+              loading={creating}
+              variant="ghost"
+              testID="modal-create"
+            >
+              <Text style={styles.modalSave}>Create</Text>
+            </WebSafeButton>
           </View>
 
           <ScrollView style={styles.modalContent}>
