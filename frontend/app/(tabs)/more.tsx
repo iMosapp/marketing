@@ -377,7 +377,7 @@ export default function MoreScreen() {
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
             <Text style={styles.profileEmail}>{user?.email || ''}</Text>
-            <Text style={styles.profileNumber}>MVPLine: {user?.mvpline_number || '+1555XXXXXXX'}</Text>
+            <Text style={styles.profileNumber}>iMos: {user?.mvpline_number || '+1555XXXXXXX'}</Text>
             {user?.role && user.role !== 'user' && (
               <View style={styles.roleBadge}>
                 <Ionicons name="shield-checkmark" size={12} color="#34C759" />
