@@ -86,6 +86,7 @@ export default function LeadSourceDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
+  const { showToast } = useToast();
   
   const [source, setSource] = useState<LeadSource | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -94,6 +95,8 @@ export default function LeadSourceDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
