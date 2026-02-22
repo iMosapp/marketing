@@ -1292,4 +1292,31 @@ const styles = StyleSheet.create({
     color: '#34C759',
     marginTop: 2,
   },
+  // Danger Zone
+  dangerSection: {
+    borderWidth: 1,
+    borderColor: '#FF3B3040',
+    backgroundColor: '#FF3B3010',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF3B3020',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  dangerWarning: {
+    color: '#8E8E93',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 18,
+  },
 });
