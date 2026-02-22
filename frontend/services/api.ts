@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Get backend URL - use full URL for native apps, relative for web
+// Get backend URL - use full URL for native apps, full HTTPS URL for web
 const getBackendUrl = () => {
   // For native apps (iOS/Android), we need the full URL
   if (Platform.OS !== 'web') {
@@ -16,9 +16,10 @@ const getBackendUrl = () => {
     console.warn('EXPO_PUBLIC_BACKEND_URL not set, falling back to relative /api path');
     return '/api';
   }
-  // For web, always use relative path - the ingress handles routing
-  // This avoids mixed content issues because relative URLs inherit the page's protocol
-  return '/api';
+  // For web - force HTTPS since we know the production URL
+  // This is needed because the XHR resolution is incorrectly using HTTP
+  // We hardcode this because env vars are not reliably available at build time
+  return 'https://lead-routing-hub.preview.emergentagent.com/api';
 };
 
 const BACKEND_URL = getBackendUrl();
