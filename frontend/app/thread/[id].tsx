@@ -1199,35 +1199,35 @@ export default function ThreadScreen() {
             />
             
             {/* Bottom toolbar inside the box */}
-            <View style={styles.composerToolbar}>
+            <View style={[styles.composerToolbar, { borderTopColor: colors.border }]}>
               {/* Left side tools */}
               <View style={styles.composerTools}>
                 <WebToolButton
                   onPress={handleAttachPhoto}
                   testID="attach-photo-btn"
                 >
-                  <Ionicons name="image-outline" size={22} color="#8E8E93" />
+                  <Ionicons name="image-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
                 
                 <WebToolButton
                   onPress={() => setShowTemplates(true)}
                   testID="templates-btn"
                 >
-                  <Ionicons name="document-text-outline" size={22} color="#8E8E93" />
+                  <Ionicons name="document-text-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
                 
                 <WebToolButton
                   onPress={() => setShowReviewLinks(true)}
                   testID="review-links-btn"
                 >
-                  <Ionicons name="star-outline" size={22} color="#8E8E93" />
+                  <Ionicons name="star-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
                 
                 <WebToolButton
                   onPress={openBusinessCardPicker}
                   testID="business-card-btn"
                 >
-                  <Ionicons name="card-outline" size={22} color="#8E8E93" />
+                  <Ionicons name="card-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
                 
                 <WebToolButton
@@ -1237,12 +1237,12 @@ export default function ThreadScreen() {
                   testID="voice-to-text-btn"
                 >
                   {transcribing ? (
-                    <ActivityIndicator size="small" color="#007AFF" />
+                    <ActivityIndicator size="small" color={colors.accent} />
                   ) : (
                     <Ionicons
                       name={isRecording ? 'stop-circle' : 'mic-outline'}
                       size={22}
-                      color={isRecording ? '#FF3B30' : '#8E8E93'}
+                      color={isRecording ? '#FF3B30' : colors.textSecondary}
                     />
                   )}
                 </WebToolButton>
@@ -1255,7 +1255,7 @@ export default function ThreadScreen() {
                   <Ionicons
                     name="sparkles"
                     size={20}
-                    color={aiMode === 'off' ? '#3C3C3E' : '#34C759'}
+                    color={aiMode === 'off' ? colors.elevated : '#34C759'}
                   />
                 </WebToolButton>
               </View>
