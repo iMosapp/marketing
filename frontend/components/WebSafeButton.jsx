@@ -65,7 +65,7 @@ export const WebSafeButton = ({
     switch (variant) {
       case 'primary':
         return {
-          bg: '#34C759',
+          bg: '#007AFF',
           text: '#FFFFFF',
           border: 'transparent',
         };
@@ -84,18 +84,18 @@ export const WebSafeButton = ({
       case 'outline':
         return {
           bg: 'transparent',
-          text: '#34C759',
-          border: '#34C759',
+          text: '#007AFF',
+          border: '#007AFF',
         };
       case 'ghost':
         return {
           bg: 'transparent',
-          text: '#34C759',
+          text: '#007AFF',
           border: 'transparent',
         };
       default:
         return {
-          bg: '#34C759',
+          bg: '#007AFF',
           text: '#FFFFFF',
           border: 'transparent',
         };
