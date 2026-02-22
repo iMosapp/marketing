@@ -1130,40 +1130,39 @@ export default function ThreadScreen() {
             <View style={styles.composerToolbar}>
               {/* Left side tools */}
               <View style={styles.composerTools}>
-                <TouchableOpacity
-                  style={styles.toolButton}
+                <WebToolButton
                   onPress={handleAttachPhoto}
+                  testID="attach-photo-btn"
                 >
                   <Ionicons name="image-outline" size={22} color="#8E8E93" />
-                </TouchableOpacity>
+                </WebToolButton>
                 
-                <TouchableOpacity
-                  style={styles.toolButton}
+                <WebToolButton
                   onPress={() => setShowTemplates(true)}
+                  testID="templates-btn"
                 >
                   <Ionicons name="document-text-outline" size={22} color="#8E8E93" />
-                </TouchableOpacity>
+                </WebToolButton>
                 
-                <TouchableOpacity
-                  style={styles.toolButton}
+                <WebToolButton
                   onPress={() => setShowReviewLinks(true)}
+                  testID="review-links-btn"
                 >
                   <Ionicons name="star-outline" size={22} color="#8E8E93" />
-                </TouchableOpacity>
+                </WebToolButton>
                 
-                <TouchableOpacity
-                  style={styles.toolButton}
+                <WebToolButton
                   onPress={openBusinessCardPicker}
-                  data-testid="business-card-btn"
+                  testID="business-card-btn"
                 >
                   <Ionicons name="card-outline" size={22} color="#8E8E93" />
-                </TouchableOpacity>
+                </WebToolButton>
                 
-                <TouchableOpacity
-                  style={[styles.toolButton, isRecording && styles.recordingButton]}
+                <WebToolButton
                   onPress={handleVoiceToText}
                   disabled={transcribing}
-                  data-testid="voice-to-text-btn"
+                  isRecording={isRecording}
+                  testID="voice-to-text-btn"
                 >
                   {transcribing ? (
                     <ActivityIndicator size="small" color="#007AFF" />
@@ -1174,10 +1173,20 @@ export default function ThreadScreen() {
                       color={isRecording ? '#FF3B30' : '#8E8E93'}
                     />
                   )}
-                </TouchableOpacity>
+                </WebToolButton>
                 
-                <TouchableOpacity
-                  style={styles.toolButton}
+                <WebToolButton
+                  onPress={loadAISuggestion}
+                  disabled={loadingAI || aiMode === 'off'}
+                  testID="ai-suggestion-btn"
+                >
+                  <Ionicons
+                    name="sparkles"
+                    size={20}
+                    color={aiMode === 'off' ? '#3C3C3E' : '#34C759'}
+                  />
+                </WebToolButton>
+              </View>
                   onPress={loadAISuggestion}
                   disabled={loadingAI || aiMode === 'off'}
                 >
