@@ -150,10 +150,10 @@ export default function BroadcastListScreen() {
   };
 
   const renderBroadcast = ({ item }: { item: Broadcast }) => (
-    <TouchableOpacity
+    <WebSafePressable
       style={styles.broadcastCard}
       onPress={() => router.push(`/broadcast/${item.id}`)}
-      activeOpacity={0.7}
+      testID={`broadcast-card-${item.id}`}
     >
       <View style={styles.broadcastHeader}>
         <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}20` }]}>
