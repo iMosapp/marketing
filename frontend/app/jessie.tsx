@@ -29,6 +29,8 @@ type ConversationState = 'idle' | 'listening' | 'processing' | 'speaking';
 const SILENCE_THRESHOLD = -40; // dB level considered silence
 const SILENCE_DURATION = 1200; // ms of silence before auto-send (reduced from 1500)
 const MIN_RECORDING_TIME = 400; // minimum recording time before checking silence
+const WEB_AUTO_STOP_DURATION = 10000; // On web, auto-stop after 10 seconds since metering isn't available
+const IS_WEB = Platform.OS === 'web';
 
 export default function JessiScreen() {
   const router = useRouter();
