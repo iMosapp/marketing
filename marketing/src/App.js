@@ -83,13 +83,12 @@ const Hero = () => (
     
     <div className="hero-content">
       <h1 className="hero-title">
-        <span className="hero-title-line hero-title-white">Innovative</span>
-        <span className="hero-title-line hero-title-blue">Messaging Operating</span>
-        <span className="hero-title-line hero-title-purple">System</span>
+        <span className="hero-title-line hero-title-white">Innovation Meets</span>
+        <span className="hero-title-line hero-title-blue">Old School</span>
       </h1>
       
       <p className="hero-subtitle">
-        Innovation meets old school. The modern CRM and communication platform that combines cutting-edge technology 
+        The modern CRM and communication platform that combines cutting-edge technology 
         with timeless sales principles. Connect with customers via SMS, Email, and more.
       </p>
       

@@ -218,15 +218,11 @@ export default function LoginScreen() {
         >
           <View style={styles.header}>
             <Text style={styles.brandTitle}>
-              <Text style={styles.brandWhite}>Innovative</Text>
+              <Text style={styles.brandWhite}>Innovation Meets</Text>
             </Text>
             <Text style={styles.brandTitle}>
-              <Text style={styles.brandBlue}>Messaging Operating</Text>
+              <Text style={styles.brandBlue}>Old School</Text>
             </Text>
-            <Text style={styles.brandTitle}>
-              <Text style={styles.brandPurple}>System</Text>
-            </Text>
-            <Text style={styles.tagline}>Innovation meets old school</Text>
           </View>
           
           <View style={styles.form}>
