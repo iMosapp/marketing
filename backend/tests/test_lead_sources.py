@@ -49,7 +49,7 @@ class TestLeadSourcesAPI:
     
     def test_list_lead_sources_empty(self):
         """GET /api/lead-sources returns empty array for store with no sources"""
-        response = self.session.get(f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}")
+        response = self.session.get(f"{BASE_URL}/api/lead-sources?store_id={self.store_id}")
         
         assert response.status_code == 200
         data = response.json()
@@ -60,7 +60,7 @@ class TestLeadSourcesAPI:
     
     def test_list_lead_sources_requires_store_id(self):
         """GET /api/lead-sources without store_id should fail"""
-        response = self.session.get(f"{BASE_URL}/api/lead-sources/")
+        response = self.session.get(f"{BASE_URL}/api/lead-sources")
         
         # Should return 422 (validation error) since store_id is required
         assert response.status_code == 422
@@ -79,7 +79,7 @@ class TestLeadSourcesAPI:
         }
         
         response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json=payload
         )
         
@@ -119,7 +119,7 @@ class TestLeadSourcesAPI:
         }
         
         response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json=payload
         )
         
@@ -138,7 +138,7 @@ class TestLeadSourcesAPI:
         }
         
         response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json=payload
         )
         
@@ -157,7 +157,7 @@ class TestLeadSourcesAPI:
         }
         
         response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json=payload
         )
         
@@ -175,7 +175,7 @@ class TestLeadSourcesAPI:
         }
         
         response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json=payload
         )
         
@@ -190,7 +190,7 @@ class TestLeadSourcesAPI:
         }
         
         response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json=payload
         )
         
@@ -203,7 +203,7 @@ class TestLeadSourcesAPI:
         """GET /api/lead-sources/{id} returns specific lead source"""
         # First create a lead source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Get By ID Source",
                 "team_id": "test_team_get",
@@ -238,7 +238,7 @@ class TestLeadSourcesAPI:
         """PATCH /api/lead-sources/{id} updates lead source"""
         # Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Update Source",
                 "team_id": "test_team_update",
@@ -276,7 +276,7 @@ class TestLeadSourcesAPI:
         """PATCH /api/lead-sources/{id} can toggle is_active status"""
         # Create active source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Toggle Active",
                 "team_id": "test_team_toggle",
@@ -303,7 +303,7 @@ class TestLeadSourcesAPI:
         """DELETE /api/lead-sources/{id} removes lead source"""
         # Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Delete Source",
                 "team_id": "test_team_delete",
@@ -330,7 +330,7 @@ class TestLeadSourcesAPI:
         """POST /api/lead-sources/inbound/{id} processes lead with valid API key"""
         # Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Webhook Source",
                 "team_id": "test_team_webhook",
@@ -368,7 +368,7 @@ class TestLeadSourcesAPI:
         """POST /api/lead-sources/inbound/{id} rejects invalid API key"""
         # Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Invalid API Key Source",
                 "team_id": "test_team_invalid",
@@ -395,7 +395,7 @@ class TestLeadSourcesAPI:
         """POST /api/lead-sources/inbound/{id} rejects requests without API key"""
         # Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_No API Key Source",
                 "team_id": "test_team_no_key",
@@ -421,7 +421,7 @@ class TestLeadSourcesAPI:
         """POST /api/lead-sources/inbound/{id} rejects leads for inactive sources"""
         # Create and deactivate source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Inactive Source",
                 "team_id": "test_team_inactive",
@@ -459,7 +459,7 @@ class TestLeadSourcesAPI:
         """GET /api/lead-sources/stats/{id} returns source statistics"""
         # Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Stats Source",
                 "team_id": "test_team_stats",
@@ -486,7 +486,7 @@ class TestLeadSourcesAPI:
         """Test complete workflow: create source -> receive lead -> get stats"""
         # 1. Create source
         create_response = self.session.post(
-            f"{BASE_URL}/api/lead-sources/?store_id={self.store_id}",
+            f"{BASE_URL}/api/lead-sources?store_id={self.store_id}",
             json={
                 "name": "TEST_Full Workflow Source",
                 "description": "Testing complete workflow",
