@@ -605,6 +605,10 @@ h1, h2, h3, h4, h5, h6 {
     font-size: clamp(56px, 15vw, 90px);
   }
   
+  .hero-tagline {
+    font-size: 24px;
+  }
+  
   .hero-subtitle {
     max-width: 100%;
     margin-left: auto;
@@ -633,6 +637,10 @@ h1, h2, h3, h4, h5, h6 {
   
   .hero-title {
     font-size: clamp(48px, 18vw, 72px);
+  }
+  
+  .hero-tagline {
+    font-size: 20px;
   }
 }
 
