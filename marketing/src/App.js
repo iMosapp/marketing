@@ -543,9 +543,9 @@ const Footer = () => (
             <span className="logo-o">O</span>
             <span className="logo-s">s</span>
           </a>
-          <p className="footer-tagline">Innovation meets old school</p>
+          <p className="footer-tagline">Innovation Meets Old School</p>
           <p className="footer-description">
-            The modern CRM platform for sales professionals who value authentic connections.
+            Built on timeless relationship principles and powered by modern automation.
           </p>
           <div className="footer-social">
             <a href="#" aria-label="Twitter"><Twitter size={20} /></a>
