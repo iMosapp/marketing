@@ -183,13 +183,13 @@ export default function TabLayout() {
       />
       </Tabs>
       
-      {/* Lead Notification Modal */}
-      <LeadNotificationModal
+      {/* Lead Notification Modal - temporarily disabled */}
+      {/* <LeadNotificationModal
         visible={showNotificationModal}
         notification={pendingNotification}
         onDismiss={handleNotificationDismiss}
         onActionComplete={handleNotificationAction}
-      />
+      /> */}
     </>
   );
 }
