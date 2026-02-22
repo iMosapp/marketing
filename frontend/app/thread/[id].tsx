@@ -161,13 +161,14 @@ export default function ThreadScreen() {
   // Load message preferences to match inbox mode
   useEffect(() => {
     loadMessagePreferences();
-  }, [user?._id]);
+  }, []);
   
   const loadMessagePreferences = async () => {
-    if (!user?._id) return;
     try {
-      const prefs = await emailAPI.getPreferences(user._id);
-      if (prefs.default_mode) setMessageMode(prefs.default_mode);
+      const savedMode = await AsyncStorage.getItem('message_mode');
+      if (savedMode === 'sms' || savedMode === 'email') {
+        setMessageMode(savedMode);
+      }
     } catch (error) {
       // Fallback to SMS mode
       console.log('Using default SMS mode');
