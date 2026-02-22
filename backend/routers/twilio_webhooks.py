@@ -17,7 +17,7 @@ router = APIRouter(prefix="/webhooks/twilio", tags=["Twilio Webhooks"])
 logger = logging.getLogger(__name__)
 
 # Backend URL for constructing media URLs
-BACKEND_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://lead-routing.preview.emergentagent.com")
+BACKEND_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://lead-routing-hub.preview.emergentagent.com")
 
 
 async def download_and_store_media(media_url: str, media_type: str) -> Optional[str]:
