@@ -296,28 +296,65 @@ export default function NewLeadSourceScreen() {
           <Text style={styles.sublabel}>How should leads be distributed to team members?</Text>
           <View style={styles.methodsContainer}>
             {assignmentMethods.map((method) => (
-              <TouchableOpacity
-                key={method.id}
-                style={[
-                  styles.methodCard,
-                  formData.assignment_method === method.id && styles.methodCardSelected,
-                  formData.assignment_method === method.id && { borderColor: method.color },
-                ]}
-                onPress={() => setFormData({ ...formData, assignment_method: method.id as any })}
-              >
-                <View style={[styles.methodIcon, { backgroundColor: method.color + '20' }]}>
-                  <Ionicons name={method.icon as any} size={24} color={method.color} />
-                </View>
-                <View style={styles.methodInfo}>
-                  <Text style={styles.methodName}>{method.name}</Text>
-                  <Text style={styles.methodDescription}>{method.description}</Text>
-                </View>
-                <Ionicons
-                  name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
-                  size={24}
-                  color={formData.assignment_method === method.id ? method.color : '#3A3A3C'}
-                />
-              </TouchableOpacity>
+              IS_WEB ? (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, assignment_method: method.id as any })}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#1C1C1E',
+                    borderRadius: 12,
+                    padding: 16,
+                    border: formData.assignment_method === method.id 
+                      ? `2px solid ${method.color}` 
+                      : '2px solid #2C2C2E',
+                    cursor: 'pointer',
+                    marginBottom: 10,
+                    width: '100%',
+                    gap: 12,
+                  }}
+                  data-testid={`method-${method.id}`}
+                >
+                  <View style={[styles.methodIcon, { backgroundColor: method.color + '20' }]}>
+                    <Ionicons name={method.icon as any} size={24} color={method.color} />
+                  </View>
+                  <View style={styles.methodInfo}>
+                    <Text style={styles.methodName}>{method.name}</Text>
+                    <Text style={styles.methodDescription}>{method.description}</Text>
+                  </View>
+                  <Ionicons
+                    name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={24}
+                    color={formData.assignment_method === method.id ? method.color : '#3A3A3C'}
+                  />
+                </button>
+              ) : (
+                <TouchableOpacity
+                  key={method.id}
+                  style={[
+                    styles.methodCard,
+                    formData.assignment_method === method.id && styles.methodCardSelected,
+                    formData.assignment_method === method.id && { borderColor: method.color },
+                  ]}
+                  onPress={() => setFormData({ ...formData, assignment_method: method.id as any })}
+                >
+                  <View style={[styles.methodIcon, { backgroundColor: method.color + '20' }]}>
+                    <Ionicons name={method.icon as any} size={24} color={method.color} />
+                  </View>
+                  <View style={styles.methodInfo}>
+                    <Text style={styles.methodName}>{method.name}</Text>
+                    <Text style={styles.methodDescription}>{method.description}</Text>
+                  </View>
+                  <Ionicons
+                    name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={24}
+                    color={formData.assignment_method === method.id ? method.color : '#3A3A3C'}
+                  />
+                </TouchableOpacity>
+              )
             ))}
           </View>
         </View>
