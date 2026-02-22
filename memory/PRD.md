@@ -8,15 +8,19 @@ iMos is a business management app for retail/service businesses. Key features in
 - Partner agreements
 - Review management
 - AI assistant (Jessi)
+- Lead Sources & Routing system
 
 ## Current Architecture
 ```
 /app
 ├── backend/         # FastAPI + MongoDB
 │   ├── routers/     # API endpoints
+│   │   └── lead_sources.py  # Lead routing system
 │   └── models.py    # Pydantic models
 ├── frontend/        # React Native/Expo (web export)
 │   ├── app/         # Screens (Expo Router)
+│   │   ├── admin/lead-sources/  # Lead Sources management
+│   │   └── (tabs)/inbox.tsx     # My/Team inbox toggle
 │   ├── components/  # Reusable components
 │   └── store/       # Zustand state
 └── marketing/       # Separate Vite React site (Netlify)
@@ -52,41 +56,40 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] Invoice viewing
 - [x] AI assistant (Jessi) - with web microphone fix
 - [x] WebSafeButton component (mobile web fix)
+- [x] Lead Sources & Routing System
 
 ### Completed This Session (Feb 22, 2026)
+
+#### Lead Sources & Routing Feature (NEW)
+- [x] **Backend API (100% tested)**
+  - Full CRUD for lead sources: create, read, update, delete
+  - Webhook endpoint for inbound leads: `POST /api/lead-sources/inbound/{source_id}`
+  - API key authentication for webhooks
+  - Three assignment methods:
+    - **Jump Ball**: First team member to respond claims the lead
+    - **Round Robin**: Auto-assign to next team member in rotation
+    - **Weighted Round Robin**: Auto-assign to member with fewest leads
+  - Team inbox queries: `GET /api/lead-sources/team-inbox/{team_id}`
+  - User inbox queries: `GET /api/lead-sources/user-inbox/{user_id}`
+  - Lead claiming: `POST /api/lead-sources/claim/{conversation_id}`
+  - Lead source statistics
+
+- [x] **Frontend Pages**
+  - Lead Sources list page (`/admin/lead-sources`)
+  - New Lead Source form (`/admin/lead-sources/new`)
+  - Lead Source detail/edit page (`/admin/lead-sources/[id]`)
+  - My Inbox / Team Inbox toggle in Inbox screen
+  - Menu item in More tab
+
+#### Previously Completed
 - [x] **Broadcast Feature - Loading Bug Fix**
-  - Fixed infinite loading state on broadcast list page
-  - Loading now properly terminates when user data is not available
-  
 - [x] **Broadcast Feature - Web Button Clickability**
-  - Replaced TouchableOpacity components with Pressable (web-compatible via React Native Web)
-  - Used native HTML `<button>` for key actions like "+ New" button on web
-  - All filter buttons (All, Drafts, Scheduled, Sent) clickable on web
-  - Add Photo button clickable on web
-  - Back button clickable on web
-  - All collapsible sections (Filter by Tags, Purchase Date, Schedule) working
-  
 - [x] Fixed "Ask Jessie" microphone not working on web
-  - Added web platform detection (IS_WEB constant)
-  - Created web-specific HTML button for mic (instead of TouchableOpacity)
-  - Modified VAD to work without metering on web (assumes user is speaking)
-  - Added webm audio format support for web recordings
-  - Fixed blob URL handling for web audio uploads
-- [x] Added EMERGENT_LLM_KEY to backend for Jessie AI responses
-- [x] Verified admin seeding script creates default admin user on empty database
-- [x] Fixed inbox toolbar buttons not working on web (compose, search)
-  - Created WebIconButton component for web-safe header icons
+- [x] Fixed inbox toolbar buttons not working on web
 - [x] Fixed "New Message" modal black screen in Email mode
-  - Made modal styles dynamic based on messageMode (light for email, dark for SMS)
 - [x] Fixed thread/message attachment buttons not working on web
-  - Created WebToolButton component for toolbar actions
-  - Fixed image picker, mic, templates, and other toolbar buttons
-- [x] Fixed photo upload dialogs on web (contact photos, profile photos)
-  - Updated to directly open file picker on web instead of showing camera option
+- [x] Fixed photo upload dialogs on web
 - [x] Fixed voice-to-text in thread not working on web
-  - Added web-specific recording options and blob URL handling
-- [x] Updated VoiceInput component for web support
-  - Added IS_WEB detection and web-specific audio handling
 
 ### Previously Completed (Feb 2026)
 - [x] Password reset for forest@imosapp.com
@@ -104,33 +107,56 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Prioritized Backlog
 
-### P0 (Critical) - IN PROGRESS
+### P0 (Critical) - BLOCKED
 - [ ] Email delivery (BLOCKED - user needs to verify domain with Resend)
-- [ ] Quote drafts view/edit/delete functionality
+- [ ] SMS functionality (BLOCKED - Twilio toll-free number pending verification)
 
-### P1 (High Priority) - BROADCAST FEATURE IN PROGRESS
-- [x] Broadcast list page loads correctly (fixed loading bug)
-- [x] Web buttons clickable (fixed TouchableOpacity issue)
-- [ ] Complete broadcast sending logic (currently mocked, needs Twilio)
-- [ ] Campaign media attachments UI (backend ready, frontend needed)
-- [ ] Twilio SMS integration (SMS sending currently mocked)
-- [ ] Store Edit/Delete functionality
+### P1 (High Priority)
+- [ ] Quote drafts view/edit/delete functionality
+- [ ] Complete broadcast sending logic (needs Twilio)
 - [ ] Populate Reports section with real data (currently hardcoded)
 
 ### P2 (Medium Priority)
-- [ ] Rebuild frontend dist with rebranding updates
+- [ ] Store Edit/Delete functionality
+- [ ] Searchable Training Manual with screenshots
 
 ### P3 (Low Priority/Future)
-- [ ] App Store submission prep
-  - App icons
-  - Splash screens
-  - EAS build configuration
-  - Screenshots
+- [ ] App Store submission prep (icons, splash screens)
+
+## Lead Sources API Reference
+
+### Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/lead-sources?store_id=X | List lead sources |
+| POST | /api/lead-sources?store_id=X | Create lead source |
+| GET | /api/lead-sources/{id} | Get lead source details |
+| PATCH | /api/lead-sources/{id} | Update lead source |
+| DELETE | /api/lead-sources/{id} | Delete lead source |
+| POST | /api/lead-sources/inbound/{id} | Webhook for inbound leads |
+| POST | /api/lead-sources/claim/{conv_id}?user_id=X | Claim a lead |
+| GET | /api/lead-sources/team-inbox/{team_id} | Get team's leads |
+| GET | /api/lead-sources/user-inbox/{user_id} | Get user's leads |
+| GET | /api/lead-sources/stats/{id} | Get lead source stats |
+
+### Webhook Authentication
+Include `X-API-Key` header with the API key provided when creating the lead source.
+
+### Example Webhook Payload
+```json
+{
+  "name": "John Doe",
+  "phone": "+15551234567",
+  "email": "john@example.com",
+  "notes": "Interested in SUV"
+}
+```
 
 ## Test Credentials
 | Email | Password | Role |
 |-------|----------|------|
 | forestward@gmail.com | Admin123! | super_admin |
+| matthew@imosapp.com | Matthew2026! | super_admin |
 | bridger@imosapp.com | Admin123! | super_admin |
 | admin@imosapp.com | iMOs2026! | super_admin (seeded) |
 
@@ -141,9 +167,10 @@ iMos is a business management app for retail/service businesses. Key features in
 - Marketing site updates require manual Netlify deploy
 - expo-av is deprecated - will be removed in SDK 54 (migrate to expo-audio/expo-video)
 - Passwords are stored in PLAINTEXT (not hashed) - be aware when working with auth
+- Lead sources use MongoDB collections: `lead_sources`, `conversations`, `contacts`
 
 ## Integrations
 - **Resend:** Email sending (active but blocked - needs domain verification)
 - **Netlify:** Marketing site hosting (active)
-- **Twilio:** SMS/MMS (planned, not implemented)
+- **Twilio:** SMS/MMS (credentials configured, pending toll-free verification)
 - **EMERGENT_LLM_KEY:** Used for Jessie AI assistant (GPT-5.2 + OpenAI TTS)
