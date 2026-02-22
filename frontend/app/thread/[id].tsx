@@ -1095,27 +1095,27 @@ export default function ThreadScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          <Ionicons name="chevron-back" size={28} color={colors.accent} />
         </TouchableOpacity>
         
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{contactName}</Text>
-          <Text style={styles.headerPhone}>{contactPhone}</Text>
+          <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
+          <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
         </View>
         
         <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.settingsButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#007AFF" />
+          <Ionicons name="ellipsis-horizontal" size={24} color={colors.accent} />
         </TouchableOpacity>
       </View>
       
       {/* Messages */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -1128,14 +1128,14 @@ export default function ThreadScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#007AFF"
+              tintColor={colors.accent}
             />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubble-outline" size={48} color="#2C2C2E" />
-              <Text style={styles.emptyText}>No messages yet</Text>
-              <Text style={styles.emptySubtext}>Start the conversation!</Text>
+              <Ionicons name="chatbubble-outline" size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textPrimary }]}>No messages yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start the conversation!</Text>
             </View>
           )}
           onContentSizeChange={() => {
