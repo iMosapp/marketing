@@ -53,10 +53,15 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] Password reset for forest@imosapp.com
 - [x] Full rebranding: mvpline.com → imosapp.com
 - [x] Verified mobile button fix working  
-- [x] UI Rebranding: "Innovation Meets Old School" (white/blue Playfair Display)
+- [x] UI Rebranding: iMOs colorful logo (i=red, M=blue, O=yellow, s=green)
 - [x] Fixed mobile save buttons on Organizations/Stores/Users modals (WebSafeButton)
 - [x] Enhanced User creation with temp password display & copy functionality
 - [x] First-time password change prompt for new users with temp passwords
+- [x] User creation with org/store assignment
+- [x] Delete user functionality in user detail page
+- [x] All MVP references updated to iMOs/AI throughout app
+- [x] Created Reports section with permission-based views (org/store/user levels)
+- [x] Reports: Overview, Messaging, Campaigns, Team, Personal pages
 
 ## Prioritized Backlog
 
