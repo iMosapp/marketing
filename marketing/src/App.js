@@ -47,7 +47,10 @@ const Navigation = () => {
     <nav className={`nav ${isScrolled ? 'nav-scrolled' : ''}`}>
       <div className="nav-container">
         <a href="#" className="logo">
-          <span className="logo-text">iMos</span>
+          <span className="logo-i">i</span>
+          <span className="logo-m">M</span>
+          <span className="logo-o">O</span>
+          <span className="logo-s">s</span>
         </a>
         
         <div className={`nav-links ${mobileMenuOpen ? 'nav-links-open' : ''}`}>
