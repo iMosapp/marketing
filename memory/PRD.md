@@ -54,6 +54,18 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] WebSafeButton component (mobile web fix)
 
 ### Completed This Session (Feb 22, 2026)
+- [x] **Broadcast Feature - Loading Bug Fix**
+  - Fixed infinite loading state on broadcast list page
+  - Loading now properly terminates when user data is not available
+  
+- [x] **Broadcast Feature - Web Button Clickability**
+  - Replaced TouchableOpacity components with Pressable (web-compatible via React Native Web)
+  - Used native HTML `<button>` for key actions like "+ New" button on web
+  - All filter buttons (All, Drafts, Scheduled, Sent) clickable on web
+  - Add Photo button clickable on web
+  - Back button clickable on web
+  - All collapsible sections (Filter by Tags, Purchase Date, Schedule) working
+  
 - [x] Fixed "Ask Jessie" microphone not working on web
   - Added web platform detection (IS_WEB constant)
   - Created web-specific HTML button for mic (instead of TouchableOpacity)
