@@ -93,7 +93,8 @@ export default function UsersScreen() {
     setNewUserEmail('');
     setNewUserPhone('');
     setNewUserRole('user');
-    setSendInvite(true);
+    setSendInvite(false);
+    setCreatedUser(null);
   };
 
   const handleCreateUser = async () => {
@@ -117,18 +118,13 @@ export default function UsersScreen() {
       });
 
       if (response.data.success) {
-        const message = sendInvite 
-          ? `User created! Login email sent to ${newUserEmail}`
-          : `User created with temporary password: ${response.data.temp_password}`;
-        
-        if (Platform.OS === 'web') {
-          alert(message);
-        } else {
-          Alert.alert('Success', message);
-        }
-        
-        setShowAddModal(false);
-        resetAddForm();
+        // Store the created user to show credentials
+        setCreatedUser({
+          name: newUserName.trim(),
+          email: newUserEmail.trim().toLowerCase(),
+          temp_password: response.data.temp_password,
+          invite_sent: response.data.invite_sent,
+        });
         loadUsers();
       }
     } catch (error: any) {
@@ -137,6 +133,27 @@ export default function UsersScreen() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleCopyPassword = async () => {
+    if (createdUser?.temp_password) {
+      await Clipboard.setStringAsync(createdUser.temp_password);
+      Alert.alert('Copied', 'Password copied to clipboard');
+    }
+  };
+
+  const handleCopyCredentials = async () => {
+    if (createdUser) {
+      const credentials = `Email: ${createdUser.email}\nPassword: ${createdUser.temp_password}`;
+      await Clipboard.setStringAsync(credentials);
+      Alert.alert('Copied', 'Credentials copied to clipboard');
+    }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setCreatedUser(null);
+    setShowAddModal(false);
+    resetAddForm();
   };
 
   // Filter and group users
