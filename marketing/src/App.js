@@ -529,8 +529,11 @@ const Footer = () => (
     <div className="container">
       <div className="footer-grid">
         <div className="footer-brand">
-          <a href="#" className="logo">
-            <span className="logo-text footer-logo-text">iMos</span>
+          <a href="#" className="logo footer-logo">
+            <span className="logo-i">i</span>
+            <span className="logo-m">M</span>
+            <span className="logo-o">O</span>
+            <span className="logo-s">s</span>
           </a>
           <p className="footer-tagline">Innovation meets old school</p>
           <p className="footer-description">
