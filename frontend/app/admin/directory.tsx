@@ -558,11 +558,11 @@ export default function DirectoryPage() {
                 <Text style={styles.memberTitle}>{member.role_label}</Text>
               </View>
               <View style={styles.memberBadges}>
-                {/* MVP Badge for #1 */}
+                {/* Top Performer Badge for #1 */}
                 {index === 0 ? (
                   <View style={styles.mvpBadge}>
                     <Ionicons name="star" size={14} color="#000" />
-                    <Text style={styles.mvpBadgeText}>MVP</Text>
+                    <Text style={styles.mvpBadgeText}>#1</Text>
                   </View>
                 ) : (
                   <View style={[
