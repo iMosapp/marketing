@@ -15,13 +15,17 @@ iMos is a business management app for retail/service businesses. Key features in
 /app
 ├── backend/         # FastAPI + MongoDB
 │   ├── routers/     # API endpoints
-│   │   └── lead_sources.py  # Lead routing system
+│   │   ├── lead_sources.py    # Lead routing system
+│   │   └── notifications.py   # Lead notification system
 │   └── models.py    # Pydantic models
 ├── frontend/        # React Native/Expo (web export)
 │   ├── app/         # Screens (Expo Router)
 │   │   ├── admin/lead-sources/  # Lead Sources management
 │   │   └── (tabs)/inbox.tsx     # My/Team inbox toggle
-│   ├── components/  # Reusable components
+│   ├── components/
+│   │   └── notifications/       # Lead notification modal
+│   ├── hooks/
+│   │   └── useNotifications.ts  # Notification polling hook
 │   └── store/       # Zustand state
 └── marketing/       # Separate Vite React site (Netlify)
 ```
