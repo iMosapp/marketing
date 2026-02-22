@@ -27,6 +27,45 @@ import SwipeableConversationItem from '../../components/SwipeableConversationIte
 import AppointmentModal from '../../components/AppointmentModal';
 import MessageModeToggle, { MessageMode, ToggleStyle } from '../../components/MessageModeToggle';
 
+const IS_WEB = Platform.OS === 'web';
+
+// Web-safe icon button for header actions
+const WebIconButton: React.FC<{
+  onPress: () => void;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconSize?: number;
+  iconColor: string;
+  testID?: string;
+  style?: any;
+}> = ({ onPress, iconName, iconSize = 24, iconColor, testID, style }) => {
+  if (IS_WEB) {
+    return (
+      <button
+        type="button"
+        onClick={onPress}
+        data-testid={testID}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 8,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...style,
+        }}
+      >
+        <Ionicons name={iconName} size={iconSize} color={iconColor} />
+      </button>
+    );
+  }
+  return (
+    <TouchableOpacity onPress={onPress} style={[{ padding: 8 }, style]} data-testid={testID}>
+      <Ionicons name={iconName} size={iconSize} color={iconColor} />
+    </TouchableOpacity>
+  );
+};
+
 // Message Mode Types
 type MessageModeType = 'sms' | 'email';
 
