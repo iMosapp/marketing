@@ -29,28 +29,9 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token, user ID, and fix URL for HTTPS
+// Request interceptor to add auth token and user ID
 api.interceptors.request.use(
   async (config) => {
-    // Debug: Log the URL being constructed
-    if (Platform.OS === 'web') {
-      console.log('Axios config:', { url: config.url, baseURL: config.baseURL });
-    }
-    
-    // Fix mixed content issue on web - ensure HTTPS URLs
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.protocol === 'https:') {
-      // If the full URL was constructed with http://, fix it
-      if (config.url && config.url.startsWith('http://')) {
-        config.url = config.url.replace('http://', 'https://');
-        console.log('Fixed URL to:', config.url);
-      }
-      // Also check baseURL if it's being used to construct full URL
-      if (config.baseURL && config.baseURL.startsWith('http://')) {
-        config.baseURL = config.baseURL.replace('http://', 'https://');
-        console.log('Fixed baseURL to:', config.baseURL);
-      }
-    }
-    
     try {
       // Get user from storage and add X-User-ID header
       const userStr = await AsyncStorage.getItem('user');
