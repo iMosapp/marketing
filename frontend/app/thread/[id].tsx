@@ -551,6 +551,30 @@ export default function ThreadScreen() {
 
   // Congrats Card Functions
   const pickCongratsPhoto = async () => {
+    // On web, directly open file picker
+    if (IS_WEB) {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Photo library access is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setCongratsPhoto({
+          uri: asset.uri,
+          type: asset.mimeType || 'image/jpeg',
+          name: asset.fileName || 'image.jpg',
+        });
+      }
+      return;
+    }
+    
     Alert.alert(
       'Add Customer Photo',
       'Choose an option',
