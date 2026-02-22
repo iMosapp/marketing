@@ -63,11 +63,11 @@ export default function CampaignBuilderScreen() {
   ];
   
   const soldFollowupTemplates: SequenceStep[] = [
-    { id: '1', message: "Hey {name}! Just wanted to check in - how are you enjoying your new {vehicle}? Let me know if you have any questions!", delayDays: 3, delayMonths: 0 },
-    { id: '2', message: "Hi {name}! It's been about a month with your {vehicle}. Everything running smoothly? I'm here if you need anything!", delayDays: 0, delayMonths: 1 },
-    { id: '3', message: "Hey {name}! Quick check-in at the 3 month mark. How's the {vehicle} treating you? Don't forget to schedule your first service if you haven't already!", delayDays: 0, delayMonths: 3 },
-    { id: '4', message: "Happy 6 months with your {vehicle}, {name}! Hope you're still loving it. Let me know if there's anything I can help with!", delayDays: 0, delayMonths: 6 },
-    { id: '5', message: "Can you believe it's been a year, {name}?! Time flies! How's the {vehicle}? If you know anyone looking for a great deal, send them my way!", delayDays: 0, delayMonths: 12 },
+    { id: '1', message: "Hey {name}! Just wanted to check in - how are you enjoying your new {vehicle}? Let me know if you have any questions!", delayDays: 3, delayMonths: 0, media_urls: [] },
+    { id: '2', message: "Hi {name}! It's been about a month with your {vehicle}. Everything running smoothly? I'm here if you need anything!", delayDays: 0, delayMonths: 1, media_urls: [] },
+    { id: '3', message: "Hey {name}! Quick check-in at the 3 month mark. How's the {vehicle} treating you? Don't forget to schedule your first service if you haven't already!", delayDays: 0, delayMonths: 3, media_urls: [] },
+    { id: '4', message: "Happy 6 months with your {vehicle}, {name}! Hope you're still loving it. Let me know if there's anything I can help with!", delayDays: 0, delayMonths: 6, media_urls: [] },
+    { id: '5', message: "Can you believe it's been a year, {name}?! Time flies! How's the {vehicle}? If you know anyone looking for a great deal, send them my way!", delayDays: 0, delayMonths: 12, media_urls: [] },
   ];
   
   const handleTypeSelect = (type: typeof campaign.type) => {
