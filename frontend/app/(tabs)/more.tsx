@@ -119,6 +119,13 @@ export default function MoreScreen() {
       color: '#FF9500',
     },
     {
+      icon: 'megaphone',
+      title: 'Broadcast',
+      subtitle: 'One-time mass messaging',
+      onPress: () => router.push('/broadcast'),
+      color: '#FF9500',
+    },
+    {
       icon: 'chatbubbles',
       title: 'SMS Campaigns',
       subtitle: 'Automated SMS follow-ups',
