@@ -52,8 +52,9 @@ export default function UsersScreen() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserRole, setNewUserRole] = useState('user');
-  const [sendInvite, setSendInvite] = useState(true);
+  const [sendInvite, setSendInvite] = useState(false); // Default to showing password
   const [creating, setCreating] = useState(false);
+  const [createdUser, setCreatedUser] = useState<any>(null);
   
   useFocusEffect(
     useCallback(() => {
