@@ -343,7 +343,7 @@ async def stripe_webhook(request: Request):
 app.include_router(api_router)
 
 # Include short URL router at root level (not under /api) for clean short URLs
-# This allows URLs like mvpline.com/s/abc123 instead of mvpline.com/api/s/abc123
+# This allows URLs like app.imosapp.com/s/abc123 instead of app.imosapp.com/api/s/abc123
 app.include_router(short_urls.router)
 
 # ============= STARTUP EVENT =============
