@@ -199,55 +199,39 @@ export default function BroadcastListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header - matching Campaigns style */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Broadcasts</Text>
-        {IS_WEB ? (
-          <button
-            type="button"
-            onClick={() => router.push('/broadcast/new')}
-            data-testid="new-broadcast-btn"
-            style={{
-              background: '#007AFF',
-              border: 'none',
-              borderRadius: 20,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <Ionicons name="add" size={20} color="#FFF" />
-            <Text style={{ color: '#FFF', fontWeight: '600' }}>New</Text>
-          </button>
-        ) : (
-          <TouchableOpacity
-            style={styles.newButton}
-            onPress={() => router.push('/broadcast/new')}
-          >
-            <Ionicons name="add" size={20} color="#FFF" />
-            <Text style={styles.newButtonText}>New</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color="#007AFF" />
+        </TouchableOpacity>
+        
+        <Text style={styles.title}>Broadcasts</Text>
+        
+        <TouchableOpacity
+          onPress={() => router.push('/broadcast/new')}
+          style={styles.addButton}
+        >
+          <Ionicons name="add-circle" size={32} color="#007AFF" />
+        </TouchableOpacity>
       </View>
 
-      {/* Stats Cards */}
-      {stats && (
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.total_messages_sent}</Text>
-            <Text style={styles.statLabel}>Total Sent</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.scheduled}</Text>
-            <Text style={styles.statLabel}>Scheduled</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.draft}</Text>
-            <Text style={styles.statLabel}>Drafts</Text>
+      {/* Stats Banner - matching Campaigns style */}
+      <View style={styles.statsBanner}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{stats?.total_messages_sent || 0}</Text>
+          <Text style={styles.statLabel}>Total Sent</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{stats?.scheduled || 0}</Text>
+          <Text style={styles.statLabel}>Scheduled</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{stats?.draft || 0}</Text>
+          <Text style={styles.statLabel}>Drafts</Text>
+        </View>
+      </View>
           </View>
         </View>
       )}
