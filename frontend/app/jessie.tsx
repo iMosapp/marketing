@@ -196,7 +196,29 @@ export default function JessiScreen() {
       clearTimeout(silenceTimerRef.current);
     }
     
-    // Monitor audio levels every 100ms
+    // On web, metering is not supported by expo-av
+    // Use a simple timer-based approach instead
+    if (IS_WEB) {
+      // For web: assume user is always speaking (skip VAD)
+      hasSpokenRef.current = true;
+      
+      // Show a simple visual feedback animation
+      let level = 0;
+      meteringIntervalRef.current = setInterval(() => {
+        // Simulate audio level with a pulsing animation
+        level = 0.3 + Math.sin(Date.now() / 200) * 0.3;
+        setAudioLevel(level);
+      }, 100);
+      
+      // Auto-stop after WEB_AUTO_STOP_DURATION (user can also tap to stop earlier)
+      silenceTimerRef.current = setTimeout(() => {
+        stopAndProcess();
+      }, WEB_AUTO_STOP_DURATION);
+      
+      return;
+    }
+    
+    // Native: Monitor audio levels every 100ms for VAD
     meteringIntervalRef.current = setInterval(async () => {
       if (!recordingRef.current) return;
       
