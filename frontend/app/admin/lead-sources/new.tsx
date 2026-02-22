@@ -214,33 +214,77 @@ export default function NewLeadSourceScreen() {
           ) : teams.length === 0 ? (
             <View style={styles.noTeamsContainer}>
               <Text style={styles.noTeamsText}>No teams found</Text>
-              <TouchableOpacity onPress={() => router.push('/admin/shared-inboxes')}>
-                <Text style={styles.createTeamLink}>Create a team first</Text>
-              </TouchableOpacity>
+              {IS_WEB ? (
+                <button
+                  type="button"
+                  onClick={() => router.push('/admin/shared-inboxes')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                >
+                  <Text style={styles.createTeamLink}>Create a team first</Text>
+                </button>
+              ) : (
+                <TouchableOpacity onPress={() => router.push('/admin/shared-inboxes')}>
+                  <Text style={styles.createTeamLink}>Create a team first</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View style={styles.teamsContainer}>
               {teams.map((team) => (
-                <TouchableOpacity
-                  key={team.id}
-                  style={[
-                    styles.teamOption,
-                    formData.team_id === team.id && styles.teamOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, team_id: team.id })}
-                >
-                  <Ionicons
-                    name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={formData.team_id === team.id ? '#007AFF' : '#8E8E93'}
-                  />
-                  <Text style={[
-                    styles.teamOptionText,
-                    formData.team_id === team.id && styles.teamOptionTextSelected,
-                  ]}>
-                    {team.name}
-                  </Text>
-                </TouchableOpacity>
+                IS_WEB ? (
+                  <button
+                    key={team.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, team_id: team.id })}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      backgroundColor: formData.team_id === team.id ? '#007AFF10' : '#1C1C1E',
+                      borderRadius: 10,
+                      padding: 14,
+                      border: formData.team_id === team.id ? '1px solid #007AFF' : '1px solid #2C2C2E',
+                      cursor: 'pointer',
+                      marginBottom: 8,
+                      width: '100%',
+                    }}
+                    data-testid={`team-option-${team.id}`}
+                  >
+                    <Ionicons
+                      name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={formData.team_id === team.id ? '#007AFF' : '#8E8E93'}
+                    />
+                    <Text style={[
+                      styles.teamOptionText,
+                      formData.team_id === team.id && styles.teamOptionTextSelected,
+                    ]}>
+                      {team.name}
+                    </Text>
+                  </button>
+                ) : (
+                  <TouchableOpacity
+                    key={team.id}
+                    style={[
+                      styles.teamOption,
+                      formData.team_id === team.id && styles.teamOptionSelected,
+                    ]}
+                    onPress={() => setFormData({ ...formData, team_id: team.id })}
+                  >
+                    <Ionicons
+                      name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={formData.team_id === team.id ? '#007AFF' : '#8E8E93'}
+                    />
+                    <Text style={[
+                      styles.teamOptionText,
+                      formData.team_id === team.id && styles.teamOptionTextSelected,
+                    ]}>
+                      {team.name}
+                    </Text>
+                  </TouchableOpacity>
+                )
               ))}
             </View>
           )}
