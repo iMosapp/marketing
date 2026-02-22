@@ -191,9 +191,15 @@ export default function InboxScreen() {
     }
   };
   
-  const handleModeChange = (mode: MessageMode) => {
+  const handleModeChange = async (mode: MessageMode) => {
     triggerHaptic('medium');
     setMessageMode(mode);
+    // Save mode preference to AsyncStorage so other screens can use it
+    try {
+      await AsyncStorage.setItem('message_mode', mode);
+    } catch (e) {
+      console.log('Error saving mode preference:', e);
+    }
   };
   
   const handleInboxViewChange = async (view: 'my' | 'team') => {
