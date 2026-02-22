@@ -770,6 +770,13 @@ export default function AdminDashboard() {
             color="#007AFF"
             onPress={() => router.push('/admin/quotes')}
           />
+          <ToolCard 
+            icon="bar-chart" 
+            title="Reports"
+            subtitle="Performance & analytics"
+            color="#5AC8FA"
+            onPress={() => router.push('/reports')}
+          />
         </View>
         )}
         
