@@ -285,6 +285,8 @@ h1, h2, h3, h4, h5, h6 {
   
   .mobile-menu-btn {
     display: block;
+    padding: 8px;
+    margin-right: 0;
   }
   
   .nav-links-open {
@@ -294,9 +296,19 @@ h1, h2, h3, h4, h5, h6 {
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--color-black);
+    background: rgba(0, 0, 0, 0.95);
     padding: 20px;
     border-bottom: 1px solid var(--color-gray-800);
+  }
+  
+  .nav-container {
+    padding: 0 12px;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .logo {
+    font-size: 24px;
   }
 }
 
