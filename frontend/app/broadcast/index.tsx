@@ -20,7 +20,7 @@ import api from '../../services/api';
 const IS_WEB = Platform.OS === 'web';
 
 // Web-safe button component for interactive elements
-const WebSafePressable = (props: { onPress?: () => void; style?: any; children?: React.ReactNode; testID?: string; disabled?: boolean }) => {
+const WebSafePressable = (props) => {
   const { onPress, style, children, testID, disabled } = props;
   if (IS_WEB) {
     return (
@@ -28,7 +28,7 @@ const WebSafePressable = (props: { onPress?: () => void; style?: any; children?:
         type="button"
         data-testid={testID}
         disabled={disabled}
-        onClick={(e: React.MouseEvent) => {
+        onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           if (!disabled && onPress) onPress();
