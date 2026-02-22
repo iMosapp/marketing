@@ -52,7 +52,10 @@ export default function BroadcastListScreen() {
   const [filter, setFilter] = useState<string>('all');
 
   const fetchData = useCallback(async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
     
     try {
       const [broadcastsRes, statsRes] = await Promise.all([
