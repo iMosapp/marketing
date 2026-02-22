@@ -232,17 +232,6 @@ export default function BroadcastListScreen() {
           <Text style={styles.statLabel}>Drafts</Text>
         </View>
       </View>
-          </View>
-        </View>
-      )}
-
-      {/* Filters */}
-      <View style={styles.filtersContainer}>
-        <FilterButton value="all" label="All" />
-        <FilterButton value="draft" label="Drafts" count={stats?.draft} />
-        <FilterButton value="scheduled" label="Scheduled" count={stats?.scheduled} />
-        <FilterButton value="sent" label="Sent" count={stats?.sent} />
-      </View>
 
       <FlatList
         data={broadcasts}
@@ -254,20 +243,9 @@ export default function BroadcastListScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="megaphone-outline" size={48} color="#3A3A3C" />
-            </View>
-            <Text style={styles.emptyTitle}>No broadcasts yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Create your first broadcast to send messages to multiple contacts at once
-            </Text>
-            <Pressable
-              style={styles.createButton}
-              onPress={() => router.push('/broadcast/new')}
-              testID="create-broadcast-btn"
-            >
-              <Text style={styles.createButtonText}>Create Broadcast</Text>
-            </Pressable>
+            <Ionicons name="megaphone-outline" size={64} color="#2C2C2E" />
+            <Text style={styles.emptyText}>No broadcasts yet</Text>
+            <Text style={styles.emptySubtext}>Create your first broadcast message</Text>
           </View>
         )}
       />
