@@ -966,18 +966,18 @@ export default function InboxScreen() {
                 ListHeaderComponent={() => (
                   isPhoneNumber ? (
                   <TouchableOpacity 
-                    style={styles.phoneNumberOption}
+                    style={[styles.phoneNumberOption, { backgroundColor: colors.elevated }]}
                     onPress={() => startNewConversationWithNumber(contactSearch)}
                     activeOpacity={0.7}
                   >
-                    <View style={styles.phoneNumberIcon}>
-                      <Ionicons name="keypad" size={22} color={COLORS.success} />
+                    <View style={[styles.phoneNumberIcon, { backgroundColor: `${colors.success}20` }]}>
+                      <Ionicons name="keypad" size={22} color={colors.success} />
                     </View>
                     <View style={styles.phoneNumberInfo}>
-                      <Text style={styles.phoneNumberLabel}>Send to</Text>
-                      <Text style={styles.phoneNumberValue}>{contactSearch}</Text>
+                      <Text style={[styles.phoneNumberLabel, { color: colors.textSecondary }]}>Send to</Text>
+                      <Text style={[styles.phoneNumberValue, { color: colors.textPrimary }]}>{contactSearch}</Text>
                     </View>
-                    <Ionicons name="arrow-forward-circle" size={26} color={COLORS.success} />
+                    <Ionicons name="arrow-forward-circle" size={26} color={colors.success} />
                   </TouchableOpacity>
                 ) : null
               )}
