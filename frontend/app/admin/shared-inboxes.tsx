@@ -280,55 +280,94 @@ export default function SharedInboxesPage() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Create Shared Inbox</Text>
+          <Pressable 
+            style={styles.modalOverlay} 
+            onPress={() => !IS_WEB && setShowCreateModal(false)}
+          >
+            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create Shared Inbox</Text>
+                {IS_WEB ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                    data-testid="close-create-modal"
+                  >
+                    <Ionicons name="close" size={24} color="#8E8E93" />
+                  </button>
+                ) : (
                   <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                     <Ionicons name="close" size={24} color="#8E8E93" />
                   </TouchableOpacity>
-                </View>
+                )}
+              </View>
+              
+              <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
+                <Text style={styles.inputLabel}>Inbox Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newInbox.name}
+                  onChangeText={(text) => setNewInbox({...newInbox, name: text})}
+                  placeholder="e.g., Sales Team"
+                  placeholderTextColor="#8E8E93"
+                  data-testid="inbox-name-input"
+                />
                 
-                <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-                  <Text style={styles.inputLabel}>Inbox Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newInbox.name}
-                    onChangeText={(text) => setNewInbox({...newInbox, name: text})}
-                    placeholder="e.g., Sales Team"
-                    placeholderTextColor="#8E8E93"
-                  />
-                  
-                  <Text style={styles.inputLabel}>Phone Number *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newInbox.phone_number}
-                    onChangeText={(text) => setNewInbox({...newInbox, phone_number: text})}
-                    placeholder="+1 555 123 4567"
-                    placeholderTextColor="#8E8E93"
-                    keyboardType="phone-pad"
-                  />
-                  
-                  <Text style={styles.inputLabel}>Description</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={newInbox.description}
-                    onChangeText={(text) => setNewInbox({...newInbox, description: text})}
-                    placeholder="What is this inbox for?"
-                    placeholderTextColor="#8E8E93"
-                    multiline
-                    numberOfLines={3}
-                  />
-                </ScrollView>
+                <Text style={styles.inputLabel}>Phone Number *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newInbox.phone_number}
+                  onChangeText={(text) => setNewInbox({...newInbox, phone_number: text})}
+                  placeholder="+1 555 123 4567"
+                  placeholderTextColor="#8E8E93"
+                  keyboardType="phone-pad"
+                  data-testid="inbox-phone-input"
+                />
                 
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={newInbox.description}
+                  onChangeText={(text) => setNewInbox({...newInbox, description: text})}
+                  placeholder="What is this inbox for?"
+                  placeholderTextColor="#8E8E93"
+                  multiline
+                  numberOfLines={3}
+                  data-testid="inbox-description-input"
+                />
+              </ScrollView>
+              
+              {IS_WEB ? (
+                <button
+                  type="button"
+                  onClick={handleCreateInbox}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#007AFF',
+                    borderRadius: 12,
+                    padding: 16,
+                    margin: 16,
+                    gap: 8,
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  data-testid="create-inbox-submit"
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                  <Text style={styles.submitButtonText}>Create Inbox</Text>
+                </button>
+              ) : (
                 <TouchableOpacity style={styles.submitButton} onPress={handleCreateInbox}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFF" />
                   <Text style={styles.submitButtonText}>Create Inbox</Text>
                 </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
+              )}
+            </Pressable>
+          </Pressable>
         </KeyboardAvoidingView>
       </Modal>
 
