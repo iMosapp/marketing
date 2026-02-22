@@ -231,15 +231,14 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.brandTitle}>
-              <Text style={styles.brandWhite}>Innovation</Text>
-            </Text>
-            <Text style={styles.brandTitle}>
-              <Text style={styles.brandBlue}>Meets</Text>
-            </Text>
-            <Text style={styles.brandTitle}>
-              <Text style={styles.brandWhite}>Old School</Text>
-            </Text>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoText}>
+                <Text style={styles.logoI}>i</Text>
+                <Text style={styles.logoM}>M</Text>
+                <Text style={styles.logoO}>o</Text>
+                <Text style={styles.logoS}>s</Text>
+              </Text>
+            </View>
           </View>
           
           <View style={styles.form}>
