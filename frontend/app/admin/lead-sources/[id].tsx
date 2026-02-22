@@ -552,24 +552,68 @@ export default function LeadSourceDetailScreen() {
                 Are you sure you want to delete "{source?.name}"? This action cannot be undone.
               </Text>
               <View style={styles.modalButtons}>
-                <Pressable
-                  style={styles.modalCancelButton}
-                  onPress={() => setShowDeleteModal(false)}
-                  disabled={deleting}
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.modalDeleteButton}
-                  onPress={confirmDelete}
-                  disabled={deleting}
-                >
-                  {deleting ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Text style={styles.modalDeleteText}>Delete</Text>
-                  )}
-                </Pressable>
+                {IS_WEB ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(false)}
+                      disabled={deleting}
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#2C2C2E',
+                        borderRadius: 10,
+                        padding: 14,
+                        border: 'none',
+                        cursor: deleting ? 'not-allowed' : 'pointer',
+                        opacity: deleting ? 0.5 : 1,
+                      }}
+                    >
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmDelete}
+                      disabled={deleting}
+                      data-testid="confirm-delete-btn"
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#FF3B30',
+                        borderRadius: 10,
+                        padding: 14,
+                        border: 'none',
+                        cursor: deleting ? 'not-allowed' : 'pointer',
+                        opacity: deleting ? 0.5 : 1,
+                      }}
+                    >
+                      {deleting ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Text style={styles.modalDeleteText}>Delete</Text>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Pressable
+                      style={styles.modalCancelButton}
+                      onPress={() => setShowDeleteModal(false)}
+                      disabled={deleting}
+                    >
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.modalDeleteButton}
+                      onPress={confirmDelete}
+                      disabled={deleting}
+                    >
+                      {deleting ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Text style={styles.modalDeleteText}>Delete</Text>
+                      )}
+                    </Pressable>
+                  </>
+                )}
               </View>
             </View>
           </View>
