@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { Platform } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -31,8 +31,7 @@ export function useNotifications(pollInterval: number = 5000): UseNotificationsR
   const [pendingNotification, setPendingNotification] = useState<LeadNotification | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const appState = useRef(AppState.currentState);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchPendingNotification = useCallback(async () => {
     if (!user?._id) return;
@@ -83,20 +82,6 @@ export function useNotifications(pollInterval: number = 5000): UseNotificationsR
     setPendingNotification(null);
     fetchUnreadCount();
   }, [fetchUnreadCount]);
-
-  // Handle app state changes (foreground/background)
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App came to foreground - refresh notifications
-        refreshNotifications();
-      }
-      appState.current = nextAppState;
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription?.remove();
-  }, [refreshNotifications]);
 
   // Start polling when user is logged in
   useEffect(() => {
