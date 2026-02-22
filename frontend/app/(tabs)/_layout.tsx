@@ -1,7 +1,10 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { useNotifications } from '../../hooks/useNotifications';
+import { LeadNotificationModal } from '../../components/notifications/LeadNotificationModal';
 
 // Get the initial tab based on user role
 const getInitialTab = (role?: string): string => {
@@ -18,6 +21,32 @@ const getInitialTab = (role?: string): string => {
 export default function TabLayout() {
   const { user } = useAuthStore();
   const router = useRouter();
+  
+  // Notification system
+  const { 
+    pendingNotification, 
+    unreadCount, 
+    clearPendingNotification 
+  } = useNotifications(5000); // Poll every 5 seconds
+  
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  
+  // Show modal when there's a pending notification
+  useEffect(() => {
+    if (pendingNotification) {
+      setShowNotificationModal(true);
+    }
+  }, [pendingNotification]);
+  
+  const handleNotificationDismiss = () => {
+    setShowNotificationModal(false);
+    clearPendingNotification();
+  };
+  
+  const handleNotificationAction = () => {
+    setShowNotificationModal(false);
+    clearPendingNotification();
+  };
   
   // Check if user has restricted access (pending status)
   const isPending = user?.status === 'pending';
