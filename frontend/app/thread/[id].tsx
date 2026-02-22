@@ -24,8 +24,33 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import AISuggestion from '../../components/AISuggestion';
 import { useAuthStore } from '../../store/authStore';
-import { messagesAPI, templatesAPI } from '../../services/api';
+import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
+
+// Web platform detection
+const IS_WEB = Platform.OS === 'web';
+
+// Dark Mode Colors
+const COLORS_DARK = {
+  background: '#000000',
+  surface: '#1C1C1E',
+  elevated: '#2C2C2E',
+  accent: '#007AFF',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#8E8E93',
+  border: '#2C2C2E',
+};
+
+// Light Mode Colors  
+const COLORS_LIGHT = {
+  background: '#F2F2F7',
+  surface: '#FFFFFF',
+  elevated: '#E5E5EA',
+  accent: '#007AFF',
+  textPrimary: '#000000',
+  textSecondary: '#6E6E73',
+  border: 'rgba(0, 0, 0, 0.1)',
+};
 
 // Web platform detection
 const IS_WEB = Platform.OS === 'web';
