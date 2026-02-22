@@ -112,7 +112,7 @@ export default function LeadSourceDetailScreen() {
       const [sourceRes, statsRes, teamsRes] = await Promise.all([
         api.get(`/lead-sources/${id}`),
         api.get(`/lead-sources/stats/${id}`),
-        api.get(`/shared-inboxes?store_id=${user?.store_id || user?._id}`),
+        api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
       ]);
       
       if (sourceRes.data.success) {
