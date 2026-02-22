@@ -23,6 +23,11 @@ const IS_WEB = Platform.OS === 'web';
 const WebSafePressable = (props) => {
   const { onPress, style, children, testID, disabled } = props;
   if (IS_WEB) {
+    // Convert React Native style to web-compatible style
+    const webStyle = Array.isArray(style) 
+      ? style.reduce((acc, s) => ({ ...acc, ...(s || {}) }), {})
+      : style || {};
+    
     return (
       <button
         type="button"
@@ -34,17 +39,23 @@ const WebSafePressable = (props) => {
           if (!disabled && onPress) onPress();
         }}
         style={{
-          background: 'none',
+          background: webStyle.backgroundColor || 'none',
           border: 'none',
-          padding: 0,
+          padding: webStyle.padding || 0,
           margin: 0,
           cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexDirection: webStyle.flexDirection || 'row',
+          alignItems: webStyle.alignItems || 'center',
+          justifyContent: webStyle.justifyContent || 'center',
+          gap: webStyle.gap || 0,
+          borderRadius: webStyle.borderRadius || 0,
+          paddingLeft: webStyle.paddingLeft || webStyle.paddingHorizontal || 0,
+          paddingRight: webStyle.paddingRight || webStyle.paddingHorizontal || 0,
+          paddingTop: webStyle.paddingTop || webStyle.paddingVertical || 0,
+          paddingBottom: webStyle.paddingBottom || webStyle.paddingVertical || 0,
           WebkitTapHighlightColor: 'transparent',
           touchAction: 'manipulation',
-          ...style,
         }}
       >
         {children}
