@@ -832,6 +832,7 @@ async def get_user_detail(user_id: str, x_user_id: str = Header(None, alias="X-U
             pass
     
     # Get available stores for assignment (in same org, not already assigned)
+    # For super_admin viewing, show all stores if user has no org
     available_stores = []
     if user.get('organization_id'):
         org_stores = await db.stores.find({
@@ -841,6 +842,19 @@ async def get_user_detail(user_id: str, x_user_id: str = Header(None, alias="X-U
         
         assigned_ids = set(store_ids)
         for store in org_stores:
+            store_id_str = str(store['_id'])
+            if store_id_str not in assigned_ids:
+                available_stores.append({
+                    "_id": store_id_str,
+                    "name": store.get('name', 'Unknown'),
+                    "city": store.get('city'),
+                    "state": store.get('state')
+                })
+    elif requesting_user and requesting_user.get('role') == 'super_admin':
+        # Super admin can see all active stores for users without an org
+        all_stores = await db.stores.find({"active": True}).to_list(100)
+        assigned_ids = set(store_ids)
+        for store in all_stores:
             store_id_str = str(store['_id'])
             if store_id_str not in assigned_ids:
                 available_stores.append({
