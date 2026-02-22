@@ -922,25 +922,25 @@ export default function InboxScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
         >
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+          <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <TouchableOpacity onPress={() => {
                 setShowNewMessage(false);
                 setContactSearch('');
               }}>
-                <Text style={styles.modalCancel}>Cancel</Text>
+                <Text style={[styles.modalCancel, { color: colors.accent }]}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>New Message</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>New Message</Text>
               <View style={{ width: 60 }} />
             </View>
             
             <View style={styles.modalSearchContainer}>
-              <View style={styles.modalSearchBar}>
-                <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+              <View style={[styles.modalSearchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Ionicons name="search" size={18} color={colors.textSecondary} />
                 <TextInput
-                  style={styles.modalSearchInput}
+                  style={[styles.modalSearchInput, { color: colors.textPrimary }]}
                   placeholder="Search or enter phone number"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   value={contactSearch}
                   onChangeText={setContactSearch}
                   autoFocus
@@ -948,7 +948,7 @@ export default function InboxScreen() {
                 />
                 {contactSearch.length > 0 && (
                   <TouchableOpacity onPress={() => setContactSearch('')}>
-                    <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+                    <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
                 )}
               </View>
