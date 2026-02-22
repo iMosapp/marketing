@@ -11,7 +11,6 @@ import {
   ScrollView,
   Alert,
   Modal,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -409,9 +408,33 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 32,
     alignItems: 'center',
     width: '100%',
+  },
+  brandTitle: {
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontSize: 42,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    lineHeight: 52,
+    textAlign: 'center',
+  },
+  brandWhite: {
+    color: '#FFFFFF',
+  },
+  brandBlue: {
+    color: '#5B9BD5',
+  },
+  brandPurple: {
+    color: '#9B7BC7',
+  },
+  tagline: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 16,
   },
   logo: {
     width: 1000,
