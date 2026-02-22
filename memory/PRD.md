@@ -108,8 +108,12 @@ iMos is a business management app for retail/service businesses. Key features in
 - [ ] Email delivery (BLOCKED - user needs to verify domain with Resend)
 - [ ] Quote drafts view/edit/delete functionality
 
-### P1 (High Priority)
-- [ ] Twilio SMS integration (currently mocked)
+### P1 (High Priority) - BROADCAST FEATURE IN PROGRESS
+- [x] Broadcast list page loads correctly (fixed loading bug)
+- [x] Web buttons clickable (fixed TouchableOpacity issue)
+- [ ] Complete broadcast sending logic (currently mocked, needs Twilio)
+- [ ] Campaign media attachments UI (backend ready, frontend needed)
+- [ ] Twilio SMS integration (SMS sending currently mocked)
 - [ ] Store Edit/Delete functionality
 - [ ] Populate Reports section with real data (currently hardcoded)
 
