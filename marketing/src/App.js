@@ -47,10 +47,11 @@ const Navigation = () => {
     <nav className={`nav ${isScrolled ? 'nav-scrolled' : ''}`}>
       <div className="nav-container">
         <a href="#" className="logo">
-          <span className="logo-i">i</span>
-          <span className="logo-m">M</span>
-          <span className="logo-o">O</span>
-          <span className="logo-s">s</span>
+          <img 
+            src="https://customer-assets.emergentagent.com/job_fa8f2237-6045-477a-9d52-8e5b2b3bc01a/artifacts/da6xk2ap_Screenshot%202026-02-22%20at%202.17.36%E2%80%AFPM.png" 
+            alt="iMOs Logo" 
+            className="logo-image"
+          />
         </a>
         
         <div className={`nav-links ${mobileMenuOpen ? 'nav-links-open' : ''}`}>
