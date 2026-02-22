@@ -352,10 +352,57 @@ async def startup_event():
     # Initialize database connection
     db = get_db()
     if db is not None:
-        logger.info("MVPLine API v2.0 started")
+        logger.info("iMOs API v2.0 started")
         logger.info(f"Connected to MongoDB: {os.environ.get('DB_NAME', 'unknown')}")
+        
+        # Seed admin user if database is empty
+        await seed_admin_user(db)
     else:
         logger.error("Failed to connect to MongoDB!")
+
+async def seed_admin_user(db):
+    """Create default admin user if no users exist in database"""
+    try:
+        user_count = await db.users.count_documents({})
+        if user_count == 0:
+            logger.info("Empty database detected - creating default admin user...")
+            
+            admin_user = {
+                "email": "admin@imosapp.com",
+                "password": "iMOs2026!",
+                "name": "Admin User",
+                "phone": "",
+                "role": "super_admin",
+                "organization_id": None,
+                "store_id": None,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "onboarding_complete": True,
+                "status": "active",
+                "is_active": True,
+                "needs_password_change": False,
+                "stats": {
+                    'contacts_added': 0,
+                    'messages_sent': 0,
+                    'calls_made': 0,
+                    'deals_closed': 0
+                },
+                "settings": {
+                    'leaderboard_visible': True,
+                    'compare_scope': 'state'
+                }
+            }
+            
+            await db.users.insert_one(admin_user)
+            logger.info("=" * 50)
+            logger.info("DEFAULT ADMIN USER CREATED:")
+            logger.info("  Email: admin@imosapp.com")
+            logger.info("  Password: iMOs2026!")
+            logger.info("=" * 50)
+        else:
+            logger.info(f"Database has {user_count} existing users - skipping seed")
+    except Exception as e:
+        logger.error(f"Failed to seed admin user: {e}")
 
 if __name__ == "__main__":
     import uvicorn
