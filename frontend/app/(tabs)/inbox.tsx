@@ -146,6 +146,11 @@ export default function InboxScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
+  // Inbox view toggle (My Inbox vs Team Inbox)
+  const [inboxView, setInboxView] = useState<'my' | 'team'>('my');
+  const [teamConversations, setTeamConversations] = useState<any[]>([]);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  
   // Message mode state (SMS vs Email)
   const [messageMode, setMessageMode] = useState<MessageModeType>('sms');
   const [toggleStyle, setToggleStyle] = useState<ToggleStyle>('pill');
