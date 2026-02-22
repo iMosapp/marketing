@@ -103,6 +103,13 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] Fixed photo upload dialogs on web
 - [x] Fixed voice-to-text in thread not working on web
 
+### Completed This Session (Feb 22, 2026 - Continued)
+- [x] **VERIFIED: Team Inbox Light Mode Text Visibility** - Contact names properly display in light/Email mode
+- [x] **VERIFIED: Thread Page Theming** - Conversation thread respects saved mode (light/dark) from AsyncStorage
+- [x] **VERIFIED: Lead Claim Contact Assignment** - Claimed leads now appear in user's Contacts list (user_id correctly set)
+- [x] **VERIFIED: Toast Notification System** - Web-compatible toast for create/delete actions
+- [x] **VERIFIED: Delete Lead Source on Web** - Custom modal replaces mobile-only Alert.alert
+
 ### Previously Completed (Feb 2026)
 - [x] Password reset for forest@imosapp.com
 - [x] Full rebranding: mvpline.com → imosapp.com
