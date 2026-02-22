@@ -94,9 +94,17 @@ const Hero = () => (
         </span>
       </h1>
       
+      <h2 className="hero-tagline">
+        <span className="tagline-white">Innovation</span>{' '}
+        <span className="tagline-blue">Meets</span>{' '}
+        <span className="tagline-purple">Old School</span>
+      </h2>
+      
       <p className="hero-subtitle">
-        The modern CRM and communication platform that combines cutting-edge technology 
-        with timeless sales principles. Connect with customers via SMS, Email, and more.
+        Built on timeless relationship principles and powered by modern automation, 
+        this platform ensures every customer feels remembered. The system handles 
+        the consistency... so you can focus on authentic human connection without 
+        anyone falling through the cracks.
       </p>
       
       <div className="hero-buttons">
