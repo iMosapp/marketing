@@ -846,6 +846,32 @@ const styles = StyleSheet.create({
     color: '#FF9500',
     lineHeight: 18,
   },
+  pickerContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  pickerOption: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#2C2C2E',
+    borderWidth: 1,
+    borderColor: '#3A3A3C',
+  },
+  pickerOptionSelected: {
+    backgroundColor: '#007AFF20',
+    borderColor: '#007AFF',
+  },
+  pickerOptionText: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  pickerOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
   // Success Modal Styles
   successOverlay: {
     flex: 1,
