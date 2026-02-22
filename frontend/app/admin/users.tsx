@@ -759,4 +759,62 @@ const styles = StyleSheet.create({
     color: '#FF9500',
     lineHeight: 18,
   },
+  // Success Modal Styles
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  successModal: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  successIcon: {
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontSize: 15,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  credentialsBox: {
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    marginBottom: 20,
+  },
+  credentialRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  credentialLabel: {
+    fontSize: 14,
+    color: '#8E8E93',
+    width: 80,
+  },
+  credentialValue: {
+    fontSize: 14,
+    color: '#FFF',
+    fontWeight: '600',
+    flex: 1,
+  },
+  successActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
 });
