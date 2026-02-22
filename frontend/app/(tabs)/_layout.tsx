@@ -1,10 +1,12 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Platform } from 'react-native';
 import { useNotifications } from '../../hooks/useNotifications';
 import { LeadNotificationModal } from '../../components/notifications/LeadNotificationModal';
+
+const IS_WEB = Platform.OS === 'web';
 
 // Get the initial tab based on user role
 const getInitialTab = (role?: string): string => {
