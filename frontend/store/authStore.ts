@@ -16,6 +16,7 @@ interface User {
   status?: string;  // pending, active, inactive
   account_type?: string;  // independent, organization
   needs_onboarding?: boolean;
+  needs_password_change?: boolean;  // Flag for first-time password change
   isImpersonating?: boolean;  // Flag for impersonation mode
 }
 
