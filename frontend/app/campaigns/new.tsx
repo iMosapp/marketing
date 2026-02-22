@@ -45,11 +45,12 @@ export default function CampaignBuilderScreen() {
   });
   
   const [sequences, setSequences] = useState<SequenceStep[]>([
-    { id: '1', message: '', delayDays: 0, delayMonths: 0 },
+    { id: '1', message: '', delayDays: 0, delayMonths: 0, media_urls: [] },
   ]);
   
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
   
   const availableTags = ['sold', 'lead', 'hot', 'customer', 'lease_end', 'service_due', 'referral', 'vip'];
   
