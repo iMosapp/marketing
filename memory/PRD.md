@@ -36,6 +36,10 @@ iMos is a business management app for retail/service businesses. Key features in
 - **App:** `app.imosapp.com` (Emergent)
 - **Marketing:** `www.imosapp.com` (Netlify)
 
+## Default Admin Credentials (for fresh deployments)
+- **Email:** admin@imosapp.com
+- **Password:** iMOs2026!
+
 ## What's Been Implemented
 
 ### Core Features
@@ -46,10 +50,20 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] Social media links
 - [x] Partner agreements system
 - [x] Invoice viewing
-- [x] AI assistant (Jessi)
+- [x] AI assistant (Jessi) - with web microphone fix
 - [x] WebSafeButton component (mobile web fix)
 
-### Completed This Session (Feb 2026)
+### Completed This Session (Feb 22, 2026)
+- [x] Fixed "Ask Jessie" microphone not working on web
+  - Added web platform detection (IS_WEB constant)
+  - Created web-specific HTML button for mic (instead of TouchableOpacity)
+  - Modified VAD to work without metering on web (assumes user is speaking)
+  - Added webm audio format support for web recordings
+  - Fixed blob URL handling for web audio uploads
+- [x] Added EMERGENT_LLM_KEY to backend for Jessie AI responses
+- [x] Verified admin seeding script creates default admin user on empty database
+
+### Previously Completed (Feb 2026)
 - [x] Password reset for forest@imosapp.com
 - [x] Full rebranding: mvpline.com → imosapp.com
 - [x] Verified mobile button fix working  
@@ -65,12 +79,14 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETE
-- ~~Rebranding from mvpline to imosapp.com~~
+### P0 (Critical) - IN PROGRESS
+- [ ] Email delivery (BLOCKED - user needs to verify domain with Resend)
+- [ ] Quote drafts view/edit/delete functionality
 
 ### P1 (High Priority)
 - [ ] Twilio SMS integration (currently mocked)
 - [ ] Store Edit/Delete functionality
+- [ ] Populate Reports section with real data (currently hardcoded)
 
 ### P2 (Medium Priority)
 - [ ] Rebuild frontend dist with rebranding updates
@@ -86,17 +102,19 @@ iMos is a business management app for retail/service businesses. Key features in
 | Email | Password | Role |
 |-------|----------|------|
 | forestward@gmail.com | Admin123! | super_admin |
-| forest@imosapp.com | Admin123! | super_admin |
 | bridger@imosapp.com | Admin123! | super_admin |
-| manager@imosapp.com | Admin123! | store_manager |
+| admin@imosapp.com | iMOs2026! | super_admin (seeded) |
 
 ## Technical Notes
 - Database field `mvpline_number` preserved for data compatibility
 - Internal storage keys (biometrics, calendar) unchanged
 - SMS functionality is MOCKED until Twilio integration
 - Marketing site updates require manual Netlify deploy
+- expo-av is deprecated - will be removed in SDK 54 (migrate to expo-audio/expo-video)
+- Passwords are stored in PLAINTEXT (not hashed) - be aware when working with auth
 
 ## Integrations
-- **Resend:** Email sending (active)
+- **Resend:** Email sending (active but blocked - needs domain verification)
 - **Netlify:** Marketing site hosting (active)
 - **Twilio:** SMS/MMS (planned, not implemented)
+- **EMERGENT_LLM_KEY:** Used for Jessie AI assistant (GPT-5.2 + OpenAI TTS)
