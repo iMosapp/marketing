@@ -267,7 +267,7 @@ export default function NewBroadcastScreen() {
   };
 
   const SectionHeader = ({ title, section, icon }: { title: string; section: keyof typeof expandedSections; icon: string }) => (
-    <WebSafePressable
+    <Pressable
       style={styles.sectionHeader}
       onPress={() => toggleSection(section)}
       testID={`section-${section}`}
@@ -281,15 +281,15 @@ export default function NewBroadcastScreen() {
         size={20}
         color="#8E8E93"
       />
-    </WebSafePressable>
+    </Pressable>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <WebSafePressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
+        <Pressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </WebSafePressable>
+        </Pressable>
         <Text style={styles.headerTitle}>New Broadcast</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -329,23 +329,23 @@ export default function NewBroadcastScreen() {
             {selectedImages.map((img, index) => (
               <View key={index} style={styles.mediaPreview}>
                 <Image source={{ uri: img.uri }} style={styles.mediaImage} />
-                <WebSafePressable
+                <Pressable
                   style={styles.mediaRemove}
                   onPress={() => removeImage(index)}
                   testID={`remove-image-${index}`}
                 >
                   <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                </WebSafePressable>
+                </Pressable>
               </View>
             ))}
-            <WebSafePressable 
+            <Pressable 
               style={styles.addMediaButton} 
               onPress={pickImage}
               testID="add-photo-btn"
             >
               <Ionicons name="add-circle-outline" size={32} color="#007AFF" />
               <Text style={styles.addMediaText}>Add Photo</Text>
-            </WebSafePressable>
+            </Pressable>
           </View>
         </View>
 
@@ -361,7 +361,7 @@ export default function NewBroadcastScreen() {
                   <Text style={styles.filterLabel}>Include contacts with these tags:</Text>
                   <View style={styles.tagsContainer}>
                     {availableTags.map(tag => (
-                      <WebSafePressable
+                      <Pressable
                         key={tag.id}
                         style={[
                           styles.tagChip,
@@ -376,14 +376,14 @@ export default function NewBroadcastScreen() {
                         ]}>
                           {tag.name}
                         </Text>
-                      </WebSafePressable>
+                      </Pressable>
                     ))}
                   </View>
                   
                   <Text style={[styles.filterLabel, { marginTop: 16 }]}>Exclude contacts with these tags:</Text>
                   <View style={styles.tagsContainer}>
                     {availableTags.map(tag => (
-                      <WebSafePressable
+                      <Pressable
                         key={`exclude-${tag.id}`}
                         style={[
                           styles.tagChip,
@@ -398,7 +398,7 @@ export default function NewBroadcastScreen() {
                         ]}>
                           {tag.name}
                         </Text>
-                      </WebSafePressable>
+                      </Pressable>
                     ))}
                   </View>
                 </>
@@ -417,7 +417,7 @@ export default function NewBroadcastScreen() {
               {/* Quick Presets */}
               <View style={styles.presetsContainer}>
                 {PRESET_FILTERS.map(preset => (
-                  <WebSafePressable
+                  <Pressable
                     key={preset.days}
                     style={[
                       styles.presetButton,
@@ -437,7 +437,7 @@ export default function NewBroadcastScreen() {
                     ]}>
                       {preset.label}
                     </Text>
-                  </WebSafePressable>
+                  </Pressable>
                 ))}
               </View>
               
@@ -446,7 +446,7 @@ export default function NewBroadcastScreen() {
               <View style={styles.monthYearContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {MONTHS.map((month, index) => (
-                    <WebSafePressable
+                    <Pressable
                       key={month}
                       style={[
                         styles.monthButton,
@@ -465,7 +465,7 @@ export default function NewBroadcastScreen() {
                       ]}>
                         {month.slice(0, 3)}
                       </Text>
-                    </WebSafePressable>
+                    </Pressable>
                   ))}
                 </ScrollView>
               </View>
@@ -497,7 +497,7 @@ export default function NewBroadcastScreen() {
           {expandedSections.schedule && (
             <View style={styles.sectionContent}>
               <View style={styles.scheduleOptions}>
-                <WebSafePressable
+                <Pressable
                   style={[styles.scheduleOption, scheduleType === 'now' && styles.scheduleOptionActive]}
                   onPress={() => setScheduleType('now')}
                   testID="schedule-now"
@@ -510,9 +510,9 @@ export default function NewBroadcastScreen() {
                   <Text style={[styles.scheduleOptionText, scheduleType === 'now' && styles.scheduleOptionTextActive]}>
                     Save as draft (send manually)
                   </Text>
-                </WebSafePressable>
+                </Pressable>
                 
-                <WebSafePressable
+                <Pressable
                   style={[styles.scheduleOption, scheduleType === 'later' && styles.scheduleOptionActive]}
                   onPress={() => setScheduleType('later')}
                   testID="schedule-later"
@@ -525,12 +525,12 @@ export default function NewBroadcastScreen() {
                   <Text style={[styles.scheduleOptionText, scheduleType === 'later' && styles.scheduleOptionTextActive]}>
                     Schedule for later
                   </Text>
-                </WebSafePressable>
+                </Pressable>
               </View>
               
               {scheduleType === 'later' && (
                 <View style={styles.dateTimeContainer}>
-                  <WebSafePressable
+                  <Pressable
                     style={styles.dateTimeButton}
                     onPress={() => setShowDatePicker(true)}
                     testID="date-picker-btn"
@@ -539,9 +539,9 @@ export default function NewBroadcastScreen() {
                     <Text style={styles.dateTimeText}>
                       {scheduledDate.toLocaleDateString()}
                     </Text>
-                  </WebSafePressable>
+                  </Pressable>
                   
-                  <WebSafePressable
+                  <Pressable
                     style={styles.dateTimeButton}
                     onPress={() => setShowTimePicker(true)}
                     testID="time-picker-btn"
@@ -550,7 +550,7 @@ export default function NewBroadcastScreen() {
                     <Text style={styles.dateTimeText}>
                       {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
-                  </WebSafePressable>
+                  </Pressable>
                 </View>
               )}
               
@@ -599,7 +599,7 @@ export default function NewBroadcastScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <WebSafePressable
+          <Pressable
             style={styles.saveButton}
             onPress={() => handleSubmit(false)}
             disabled={submitting}
@@ -615,9 +615,9 @@ export default function NewBroadcastScreen() {
                 </Text>
               </>
             )}
-          </WebSafePressable>
+          </Pressable>
           
-          <WebSafePressable
+          <Pressable
             style={[styles.sendButton, (previewCount === 0 || submitting) && styles.sendButtonDisabled]}
             onPress={() => handleSubmit(true)}
             disabled={previewCount === 0 || submitting}
@@ -631,7 +631,7 @@ export default function NewBroadcastScreen() {
                 <Text style={styles.sendButtonText}>Send Now</Text>
               </>
             )}
-          </WebSafePressable>
+          </Pressable>
         </View>
         
         <View style={{ height: 40 }} />
