@@ -86,9 +86,12 @@ const Hero = () => (
     
     <div className="hero-content">
       <h1 className="hero-title">
-        <span className="hero-title-line hero-title-white">Innovation</span>
-        <span className="hero-title-line hero-title-blue">Meets</span>
-        <span className="hero-title-line hero-title-white">Old School</span>
+        <span className="hero-logo">
+          <span className="hero-i">i</span>
+          <span className="hero-m">M</span>
+          <span className="hero-o">O</span>
+          <span className="hero-s">s</span>
+        </span>
       </h1>
       
       <p className="hero-subtitle">
