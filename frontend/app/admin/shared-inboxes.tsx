@@ -373,13 +373,27 @@ export default function SharedInboxesPage() {
 
       {/* Assign User Modal */}
       <Modal visible={showAssignModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => !IS_WEB && setShowAssignModal(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add User to {selectedInbox?.name}</Text>
-              <TouchableOpacity onPress={() => setShowAssignModal(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
-              </TouchableOpacity>
+              {IS_WEB ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAssignModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                  data-testid="close-assign-modal"
+                >
+                  <Ionicons name="close" size={24} color="#8E8E93" />
+                </button>
+              ) : (
+                <TouchableOpacity onPress={() => setShowAssignModal(false)}>
+                  <Ionicons name="close" size={24} color="#8E8E93" />
+                </TouchableOpacity>
+              )}
             </View>
             
             <ScrollView style={styles.modalBody}>
@@ -387,31 +401,67 @@ export default function SharedInboxesPage() {
                 <Text style={styles.noUsers}>All users are already assigned</Text>
               ) : (
                 getUnassignedUsers().map((u) => (
-                  <TouchableOpacity
-                    key={u.id}
-                    style={styles.userSelectItem}
-                    onPress={() => {
-                      handleAssignUser(u.id);
-                      setShowAssignModal(false);
-                    }}
-                    data-testid={`select-user-${u.id}`}
-                  >
-                    <View style={styles.userAvatar}>
-                      <Text style={styles.userAvatarText}>
-                        {u.name.split(' ').map(n => n[0]).join('')}
-                      </Text>
-                    </View>
-                    <View style={styles.userSelectInfo}>
-                      <Text style={styles.userSelectName}>{u.name}</Text>
-                      <Text style={styles.userSelectEmail}>{u.email}</Text>
-                    </View>
-                    <Ionicons name="add-circle" size={24} color="#34C759" />
-                  </TouchableOpacity>
+                  IS_WEB ? (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => {
+                        handleAssignUser(u.id);
+                        setShowAssignModal(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        padding: 12,
+                        borderBottom: '1px solid #2C2C2E',
+                        background: 'none',
+                        border: 'none',
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#2C2C2E',
+                        width: '100%',
+                        cursor: 'pointer',
+                      }}
+                      data-testid={`select-user-${u.id}`}
+                    >
+                      <View style={styles.userAvatar}>
+                        <Text style={styles.userAvatarText}>
+                          {u.name.split(' ').map(n => n[0]).join('')}
+                        </Text>
+                      </View>
+                      <View style={styles.userSelectInfo}>
+                        <Text style={styles.userSelectName}>{u.name}</Text>
+                        <Text style={styles.userSelectEmail}>{u.email}</Text>
+                      </View>
+                      <Ionicons name="add-circle" size={24} color="#34C759" />
+                    </button>
+                  ) : (
+                    <TouchableOpacity
+                      key={u.id}
+                      style={styles.userSelectItem}
+                      onPress={() => {
+                        handleAssignUser(u.id);
+                        setShowAssignModal(false);
+                      }}
+                      data-testid={`select-user-${u.id}`}
+                    >
+                      <View style={styles.userAvatar}>
+                        <Text style={styles.userAvatarText}>
+                          {u.name.split(' ').map(n => n[0]).join('')}
+                        </Text>
+                      </View>
+                      <View style={styles.userSelectInfo}>
+                        <Text style={styles.userSelectName}>{u.name}</Text>
+                        <Text style={styles.userSelectEmail}>{u.email}</Text>
+                      </View>
+                      <Ionicons name="add-circle" size={24} color="#34C759" />
+                    </TouchableOpacity>
+                  )
                 ))
               )}
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
