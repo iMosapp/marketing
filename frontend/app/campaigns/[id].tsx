@@ -918,4 +918,57 @@ const styles = StyleSheet.create({
   bottomPadding: {
     height: 40,
   },
+  // Media attachment styles
+  mediaSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#2C2C2E',
+  },
+  mediaLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  mediaPreview: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    position: 'relative',
+  },
+  mediaThumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+  },
+  mediaRemoveButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#000',
+    borderRadius: 11,
+  },
+  addMediaButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    backgroundColor: '#2C2C2E',
+    borderWidth: 1,
+    borderColor: '#3A3A3C',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addMediaText: {
+    fontSize: 10,
+    color: '#007AFF',
+    marginTop: 2,
+    fontWeight: '600',
+  },
 });
