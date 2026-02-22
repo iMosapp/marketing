@@ -2018,4 +2018,119 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
+  
+  // Inbox Toggle (My/Team)
+  inboxToggleContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  inboxToggle: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 4,
+  },
+  inboxToggleOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  inboxToggleOptionActive: {
+    backgroundColor: COLORS_DARK.accent,
+  },
+  inboxToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS_DARK.textSecondary,
+  },
+  inboxToggleTextActive: {
+    color: '#FFF',
+  },
+  
+  // Team Conversation Styles
+  teamConversationUnclaimed: {
+    backgroundColor: `${COLORS_DARK.warning}08`,
+  },
+  newLeadBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF9500',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS_DARK.background,
+  },
+  leadSourceTag: {
+    backgroundColor: '#5856D620',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+  },
+  leadSourceTagText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#5856D6',
+    textTransform: 'uppercase',
+  },
+  teamConversationMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  teamBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  teamBadgeText: {
+    fontSize: 11,
+    color: COLORS_DARK.textSecondary,
+  },
+  claimedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#34C75915',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  claimedBadgeText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#34C759',
+  },
+  unclaimedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FF950020',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  unclaimedBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FF9500',
+  },
+  claimButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FF950020',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
 });
