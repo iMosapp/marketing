@@ -58,10 +58,6 @@ const WebSafePressable = (props: { onPress?: () => void; style?: any; children?:
   );
 };
 
-const OLD_IS_WEB = Platform.OS === 'web';
-
-const IS_WEB = Platform.OS === 'web';
-
 interface Broadcast {
   id: string;
   name: string;
