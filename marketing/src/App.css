@@ -362,12 +362,30 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(48px, 8vw, 80px);
+  font-size: clamp(72px, 12vw, 120px);
   font-weight: 700;
-  font-style: italic;
   line-height: 1.1;
   margin-bottom: 24px;
+}
+
+.hero-logo {
+  display: block;
+}
+
+.hero-i {
+  color: #FF3B30;
+}
+
+.hero-m {
+  color: #007AFF;
+}
+
+.hero-o {
+  color: #FFD60A;
+}
+
+.hero-s {
+  color: #34C759;
 }
 
 .hero-title-line {
