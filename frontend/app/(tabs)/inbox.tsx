@@ -834,7 +834,7 @@ export default function InboxScreen() {
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
             <View style={styles.nameRow}>
-              <Text style={styles.contactName} numberOfLines={1}>
+              <Text style={[styles.contactName, { color: colors.textPrimary }]} numberOfLines={1}>
                 {contactName}
               </Text>
               {item.lead_source_name && (
@@ -843,7 +843,7 @@ export default function InboxScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.timestamp}>
+            <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
               {item.created_at ? formatTimestamp(item.created_at) : ''}
             </Text>
           </View>
