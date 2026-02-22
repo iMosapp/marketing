@@ -238,9 +238,9 @@ export default function BroadcastListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <WebSafePressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </TouchableOpacity>
+        </WebSafePressable>
         <Text style={styles.headerTitle}>Broadcasts</Text>
         {IS_WEB ? (
           <button
