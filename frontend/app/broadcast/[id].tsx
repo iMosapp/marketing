@@ -212,9 +212,9 @@ export default function BroadcastDetailScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Broadcast not found</Text>
-          <TouchableOpacity style={styles.backButtonLarge} onPress={() => router.back()}>
+          <WebSafePressable style={styles.backButtonLarge} onPress={() => router.back()} testID="go-back-btn">
             <Text style={styles.backButtonText}>Go Back</Text>
-          </TouchableOpacity>
+          </WebSafePressable>
         </View>
       </SafeAreaView>
     );
