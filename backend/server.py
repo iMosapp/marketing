@@ -81,6 +81,7 @@ api_router.include_router(invoices.router)
 api_router.include_router(email.router)
 api_router.include_router(reports.router)
 api_router.include_router(broadcast.router)
+api_router.include_router(lead_sources.router)
 
 # ============= USER SETTINGS ENDPOINTS (kept here for URL compatibility) =============
 @api_router.get("/users/{user_id}/leaderboard-settings")
