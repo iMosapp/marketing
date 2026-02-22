@@ -145,6 +145,7 @@ export default function CampaignDetailScreen() {
         message: '', 
         delayDays: 0, 
         delayMonths: (lastStep?.delayMonths || 0) + 1,
+        media_urls: [],
       },
     ]);
     setHasChanges(true);
