@@ -481,7 +481,7 @@ export default function AdminDashboard() {
           />
           <DataBar 
             icon="sparkles" 
-            label="MVP"
+            label="AI"
             value={dataStats?.ai_messages}
             color="#AF52DE"
             onPress={() => router.push('/admin/data/ai-messages')}
@@ -745,7 +745,7 @@ export default function AdminDashboard() {
           <ToolCard 
             icon="call" 
             title="Phone Assignments"
-            subtitle="Manage MVPLine numbers"
+            subtitle="Manage iMOs numbers"
             color="#5AC8FA"
             onPress={() => router.push('/admin/phone-assignments')}
           />

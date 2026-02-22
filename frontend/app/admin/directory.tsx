@@ -546,7 +546,7 @@ export default function DirectoryPage() {
       ) : (
         efficiencyLeaderboard.map((member, index) => (
           <View key={member.id} style={styles.memberCard}>
-            {/* Header with Avatar, Name, and MVP/Rank Badge */}
+            {/* Header with Avatar, Name, and Top Performer Badge */}
             <View style={styles.memberHeader}>
               <View style={[styles.avatar, { backgroundColor: ROLE_COLORS[member.role] + '30' }]}>
                 <Text style={[styles.avatarText, { color: ROLE_COLORS[member.role] }]}>
