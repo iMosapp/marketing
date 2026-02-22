@@ -212,25 +212,19 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 4px;
   text-decoration: none;
-  margin-left: -20px;
-}
-
-.logo-image {
-  height: 60px;
-  width: auto;
-  object-fit: contain;
-}
-
-.footer-logo-image {
-  height: 80px;
+  margin-left: 0;
 }
 
 .logo-text {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
-  font-weight: 800;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
   color: var(--color-white);
   font-style: italic;
+}
+
+.footer-logo-text {
+  font-size: 40px;
 }
 
 .logo-sparkle {
@@ -359,15 +353,28 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-title {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(48px, 8vw, 72px);
-  font-weight: 800;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 700;
+  font-style: italic;
   line-height: 1.1;
   margin-bottom: 24px;
 }
 
 .hero-title-line {
   display: block;
+}
+
+.hero-title-white {
+  color: var(--color-white);
+}
+
+.hero-title-blue {
+  color: #5B9BD5;
+}
+
+.hero-title-purple {
+  color: #9B7BC7;
 }
 
 .hero-subtitle {
