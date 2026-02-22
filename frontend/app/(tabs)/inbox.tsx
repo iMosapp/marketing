@@ -960,10 +960,35 @@ export default function InboxScreen() {
       </ScrollView>
       
       {/* Conversation List */}
-      {loading ? (
+      {loading || (inboxView === 'team' && loadingTeam) ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
+      ) : inboxView === 'team' ? (
+        <FlatList
+          data={teamConversations}
+          renderItem={renderTeamConversation}
+          keyExtractor={(item) => item.id || item._id}
+          contentContainerStyle={styles.listContent}
+          style={styles.listContainer}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadTeamConversations()}
+              tintColor={COLORS.accent}
+            />
+          }
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="people" size={48} color={COLORS.accent} />
+              </View>
+              <Text style={styles.emptyTitle}>No team leads yet</Text>
+              <Text style={styles.emptySubtext}>Leads from your team's lead sources will appear here</Text>
+            </View>
+          )}
+        />
       ) : (
         <FlatList
           data={filteredConversations}
