@@ -174,9 +174,9 @@ export default function BroadcastDetailScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Broadcast not found</Text>
-          <WebSafePressable style={styles.backButtonLarge} onPress={() => router.back()} testID="go-back-btn">
+          <Pressable style={styles.backButtonLarge} onPress={() => router.back()} testID="go-back-btn">
             <Text style={styles.backButtonText}>Go Back</Text>
-          </WebSafePressable>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -189,13 +189,13 @@ export default function BroadcastDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <WebSafePressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
+        <Pressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </WebSafePressable>
+        </Pressable>
         <Text style={styles.headerTitle}>Broadcast Details</Text>
-        <WebSafePressable onPress={handleDuplicate} style={styles.duplicateButton} testID="duplicate-btn">
+        <Pressable onPress={handleDuplicate} style={styles.duplicateButton} testID="duplicate-btn">
           <Ionicons name="copy-outline" size={22} color="#007AFF" />
-        </WebSafePressable>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -327,7 +327,7 @@ export default function BroadcastDetailScreen() {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           {canSend && (
-            <WebSafePressable
+            <Pressable
               style={styles.sendButton}
               onPress={handleSend}
               disabled={sending}
@@ -341,11 +341,11 @@ export default function BroadcastDetailScreen() {
                   <Text style={styles.sendButtonText}>Send Now</Text>
                 </>
               )}
-            </WebSafePressable>
+            </Pressable>
           )}
           
           {canDelete && (
-            <WebSafePressable
+            <Pressable
               style={styles.deleteButton}
               onPress={handleDelete}
               disabled={deleting}
@@ -359,7 +359,7 @@ export default function BroadcastDetailScreen() {
                   <Text style={styles.deleteButtonText}>Delete</Text>
                 </>
               )}
-            </WebSafePressable>
+            </Pressable>
           )}
         </View>
 
