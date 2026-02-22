@@ -10,13 +10,16 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
+import api from '../../services/api';
 import { format, parse } from 'date-fns';
 
 interface SequenceStep {
@@ -28,6 +31,7 @@ interface SequenceStep {
   delay_days?: number;
   delayMonths: number;
   delay_months?: number;
+  media_urls: string[];
 }
 
 interface Enrollment {
