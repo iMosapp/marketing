@@ -235,7 +235,7 @@ export default function LoginScreen() {
               <Text style={styles.logoText}>
                 <Text style={styles.logoI}>i</Text>
                 <Text style={styles.logoM}>M</Text>
-                <Text style={styles.logoO}>o</Text>
+                <Text style={styles.logoO}>O</Text>
                 <Text style={styles.logoS}>s</Text>
               </Text>
             </View>
