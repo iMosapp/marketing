@@ -22,6 +22,16 @@ iMos is a business management app for retail/service businesses. Key features in
 └── marketing/       # Separate Vite React site (Netlify)
 ```
 
+## Current Branding
+- **Slogan:** "Innovation meets old school"
+- **Title:** "Innovative Messaging Operating System"
+- **Colors:** 
+  - "Innovative" - White
+  - "Messaging Operating" - Blue (#5B9BD5)
+  - "System" - Purple (#9B7BC7)
+  - Buttons - Blue (#007AFF)
+- **Logo:** Text-only branding (no image logo)
+
 ## Deployments
 - **App:** `app.imosapp.com` (Emergent)
 - **Marketing:** `www.imosapp.com` (Netlify)
