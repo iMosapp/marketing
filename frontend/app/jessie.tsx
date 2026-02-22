@@ -478,7 +478,10 @@ export default function JessiScreen() {
   
   const getStateText = () => {
     switch (state) {
-      case 'listening': return 'Listening... (will auto-send when you pause)';
+      case 'listening': 
+        return IS_WEB 
+          ? 'Listening... (tap mic to stop and send)' 
+          : 'Listening... (will auto-send when you pause)';
       case 'processing': return 'Thinking...';
       case 'speaking': return 'Jessi is speaking';
       default: return greeting;
