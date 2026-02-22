@@ -78,6 +78,14 @@ iMos is a business management app for retail/service businesses. Key features in
   - Lead claiming: `POST /api/lead-sources/claim/{conversation_id}`
   - Lead source statistics
 
+- [x] **Lead Assignment Notifications (Backend Complete)**
+  - Notifications API: `GET /api/notifications/`, `POST /api/notifications/{id}/action`
+  - Automatic notification creation when leads are ingested
+  - Jump Ball: Notifies ALL team members
+  - Round Robin/Weighted: Notifies assigned user only
+  - Action tracking: Call, Text, Email, or Dismiss
+  - When user claims via action, other team notifications are auto-dismissed
+
 - [x] **Frontend Pages**
   - Lead Sources list page (`/admin/lead-sources`)
   - New Lead Source form (`/admin/lead-sources/new`)
