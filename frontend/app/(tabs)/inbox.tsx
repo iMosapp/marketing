@@ -207,32 +207,42 @@ export default function InboxScreen() {
     if (!user) return;
     setLoadingTeam(true);
     try {
-      // Get user's teams
+      // Get user's teams/shared inboxes
       const teamsResponse = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/shared-inboxes?user_id=${user._id}`
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/admin/team/shared-inboxes?user_id=${user._id}`
       );
       const teamsData = await teamsResponse.json();
       
-      if (teamsData.inboxes && teamsData.inboxes.length > 0) {
+      // teamsData is an array directly (not wrapped in {inboxes: ...})
+      const teams = Array.isArray(teamsData) ? teamsData : (teamsData.inboxes || []);
+      
+      if (teams.length > 0) {
         // Get conversations for all teams
         const allTeamConversations: any[] = [];
-        for (const team of teamsData.inboxes) {
+        for (const team of teams) {
           const teamId = team._id || team.id;
-          const convResponse = await fetch(
-            `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
-          );
-          const convData = await convResponse.json();
-          if (convData.conversations) {
-            allTeamConversations.push(...convData.conversations.map((c: any) => ({
-              ...c,
-              team_name: team.name,
-            })));
+          try {
+            const convResponse = await fetch(
+              `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
+            );
+            const convData = await convResponse.json();
+            if (convData.conversations) {
+              allTeamConversations.push(...convData.conversations.map((c: any) => ({
+                ...c,
+                team_name: team.name,
+              })));
+            }
+          } catch (e) {
+            console.log(`No leads for team ${teamId}`);
           }
         }
         setTeamConversations(allTeamConversations);
+      } else {
+        setTeamConversations([]);
       }
     } catch (error) {
       console.error('Failed to load team conversations:', error);
+      setTeamConversations([]);
     } finally {
       setLoadingTeam(false);
     }
