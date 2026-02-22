@@ -587,6 +587,16 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     user_role = data.get('role', 'user')
     send_invite = data.get('send_invite', True)
     
+    # Get org and store from request, or fall back to requesting user's
+    organization_id = data.get('organization_id')
+    store_id = data.get('store_id')
+    
+    # Non-super admins can only create users in their own org
+    if requesting_user and requesting_user.get('role') != 'super_admin':
+        if organization_id and organization_id != requesting_user.get('organization_id'):
+            raise HTTPException(status_code=403, detail="You can only create users in your organization")
+        organization_id = requesting_user.get('organization_id')
+    
     if not name:
         raise HTTPException(status_code=400, detail="Name is required")
     if not email or '@' not in email:
@@ -606,8 +616,9 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "name": name,
         "phone": phone,
         "role": user_role,
-        "organization_id": requesting_user.get('organization_id') if requesting_user else None,
-        "store_id": requesting_user.get('store_id') if requesting_user else None,
+        "organization_id": organization_id,
+        "store_id": store_id,
+        "store_ids": [store_id] if store_id else [],
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
         "onboarding_complete": False,
@@ -643,6 +654,8 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "email": email,
         "name": name,
         "role": user_role,
+        "organization_id": organization_id,
+        "store_id": store_id,
         "invite_sent": invite_sent,
         "temp_password": temp_password if not send_invite else None,
         "message": f"User created successfully. {'Invite email sent.' if send_invite else 'Share the temporary password securely.'}"
