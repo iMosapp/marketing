@@ -699,11 +699,6 @@ export default function ThreadScreen() {
   };
 
   const handleVoiceToText = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Not Available', 'Voice-to-text is only available on mobile devices.');
-      return;
-    }
-    
     try {
       if (isRecording) {
         // Stop recording and transcribe
@@ -719,11 +714,19 @@ export default function ThreadScreen() {
           if (uri) {
             // Create form data to send to backend
             const formData = new FormData();
-            formData.append('file', {
-              uri,
-              type: 'audio/m4a',
-              name: 'recording.m4a',
-            } as any);
+            
+            if (IS_WEB) {
+              // On web, audioUri is a blob URL - fetch it and create proper file
+              const response = await fetch(uri);
+              const blob = await response.blob();
+              formData.append('file', blob, 'recording.webm');
+            } else {
+              formData.append('file', {
+                uri,
+                type: 'audio/m4a',
+                name: 'recording.m4a',
+              } as any);
+            }
             
             try {
               const response = await api.post('/voice/transcribe', formData, {
@@ -737,7 +740,6 @@ export default function ThreadScreen() {
                 setMessage(prev => prev ? `${prev} ${response.data.text}` : response.data.text);
               } else if (response.data.success && !response.data.text) {
                 // Empty transcription (silence) - no error, just don't add anything
-                // Could optionally show a toast: "No speech detected"
               } else {
                 Alert.alert('Transcription Error', response.data.error || 'Failed to transcribe audio');
               }
@@ -762,18 +764,43 @@ export default function ThreadScreen() {
           playsInSilentModeIOS: true,
         });
         
+        // Platform-specific recording options
+        const recordingOptions = IS_WEB 
+          ? {
+              ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+              isMeteringEnabled: false,
+              web: {
+                mimeType: 'audio/webm;codecs=opus',
+                bitsPerSecond: 128000,
+              },
+            }
+          : Audio.RecordingOptionsPresets.HIGH_QUALITY;
+        
         const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        await recording.prepareToRecordAsync(recordingOptions);
         await recording.startAsync();
         
         recordingRef.current = recording;
         setIsRecording(true);
+        
+        // On web, auto-stop after 30 seconds since there's no visual feedback
+        if (IS_WEB) {
+          setTimeout(() => {
+            if (recordingRef.current && isRecording) {
+              handleVoiceToText(); // Stop recording
+            }
+          }, 30000);
+        }
       }
     } catch (error) {
       console.error('Recording error:', error);
       setIsRecording(false);
       setTranscribing(false);
-      Alert.alert('Error', 'Failed to record audio. Please try again.');
+      if (IS_WEB) {
+        Alert.alert('Microphone Error', 'Could not access microphone. Please ensure you have granted microphone permission in your browser.');
+      } else {
+        Alert.alert('Error', 'Failed to record audio. Please try again.');
+      }
     }
   };
   
