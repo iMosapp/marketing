@@ -222,7 +222,7 @@ export default function BroadcastListScreen() {
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </WebSafePressable>
   );
 
   if (loading) {
