@@ -52,9 +52,6 @@ const COLORS_LIGHT = {
   border: 'rgba(0, 0, 0, 0.1)',
 };
 
-// Web platform detection
-const IS_WEB = Platform.OS === 'web';
-
 // Web-safe button component for toolbar
 const WebToolButton: React.FC<{
   onPress: () => void;
