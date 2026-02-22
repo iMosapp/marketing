@@ -9,7 +9,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://imos-admin.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://lead-routing.preview.emergentagent.com').rstrip('/')
 
 # Test user credentials
 TEST_EMAIL = "superadmin@mvpline.com"
