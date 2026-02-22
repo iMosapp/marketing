@@ -229,10 +229,18 @@ export default function LeadSourceDetailScreen() {
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(text);
-        Alert.alert('Copied', `${label} copied to clipboard`);
+        if (IS_WEB) {
+          showToast(`${label} copied to clipboard`, 'success');
+        } else {
+          Alert.alert('Copied', `${label} copied to clipboard`);
+        }
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not copy to clipboard');
+      if (IS_WEB) {
+        showToast('Could not copy to clipboard', 'error');
+      } else {
+        Alert.alert('Error', 'Could not copy to clipboard');
+      }
     }
   };
 
