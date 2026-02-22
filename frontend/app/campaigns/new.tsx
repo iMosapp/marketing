@@ -457,6 +457,40 @@ export default function CampaignBuilderScreen() {
                 textAlignVertical="top"
               />
               <Text style={styles.charCount}>{step.message.length} / 500</Text>
+              
+              {/* Media Attachments */}
+              <View style={styles.mediaSection}>
+                <Text style={styles.mediaLabel}>Media Attachments</Text>
+                <View style={styles.mediaGrid}>
+                  {step.media_urls.map((url, mediaIndex) => (
+                    <View key={mediaIndex} style={styles.mediaPreview}>
+                      <Image source={{ uri: url }} style={styles.mediaThumbnail} />
+                      <TouchableOpacity 
+                        style={styles.mediaRemoveButton}
+                        onPress={() => removeMediaFromStep(step.id, mediaIndex)}
+                      >
+                        <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {step.media_urls.length < 3 && (
+                    <TouchableOpacity 
+                      style={styles.addMediaButton}
+                      onPress={() => pickMediaForStep(step.id)}
+                      disabled={uploadingMedia === step.id}
+                    >
+                      {uploadingMedia === step.id ? (
+                        <ActivityIndicator size="small" color="#007AFF" />
+                      ) : (
+                        <>
+                          <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
+                          <Text style={styles.addMediaText}>Add Photo</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
             </View>
           ))}
           
