@@ -232,12 +232,20 @@ export default function LoginScreen() {
         >
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Text style={styles.logoText}>
-                <Text style={styles.logoI}>i</Text>
-                <Text style={styles.logoM}>M</Text>
-                <Text style={styles.logoO}>O</Text>
-                <Text style={styles.logoS}>s</Text>
-              </Text>
+              {Platform.OS === 'web' ? (
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_fa8f2237-6045-477a-9d52-8e5b2b3bc01a/artifacts/da6xk2ap_Screenshot%202026-02-22%20at%202.17.36%E2%80%AFPM.png" 
+                  alt="iMOs Logo" 
+                  style={{ width: 200, height: 'auto', marginBottom: 8 }} 
+                />
+              ) : (
+                <Text style={styles.logoText}>
+                  <Text style={styles.logoI}>i</Text>
+                  <Text style={styles.logoM}>M</Text>
+                  <Text style={styles.logoO}>O</Text>
+                  <Text style={styles.logoS}>s</Text>
+                </Text>
+              )}
             </View>
           </View>
           
