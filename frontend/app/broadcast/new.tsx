@@ -399,13 +399,14 @@ export default function NewBroadcastScreen() {
                   <Text style={styles.filterLabel}>Include contacts with these tags:</Text>
                   <View style={styles.tagsContainer}>
                     {availableTags.map(tag => (
-                      <TouchableOpacity
+                      <WebSafePressable
                         key={tag.id}
                         style={[
                           styles.tagChip,
                           filters.tags.includes(tag.name) && styles.tagChipSelected,
                         ]}
                         onPress={() => toggleTag(tag.name, 'include')}
+                        testID={`tag-include-${tag.id}`}
                       >
                         <Text style={[
                           styles.tagChipText,
@@ -413,20 +414,21 @@ export default function NewBroadcastScreen() {
                         ]}>
                           {tag.name}
                         </Text>
-                      </TouchableOpacity>
+                      </WebSafePressable>
                     ))}
                   </View>
                   
                   <Text style={[styles.filterLabel, { marginTop: 16 }]}>Exclude contacts with these tags:</Text>
                   <View style={styles.tagsContainer}>
                     {availableTags.map(tag => (
-                      <TouchableOpacity
+                      <WebSafePressable
                         key={`exclude-${tag.id}`}
                         style={[
                           styles.tagChip,
                           filters.exclude_tags.includes(tag.name) && styles.tagChipExcluded,
                         ]}
                         onPress={() => toggleTag(tag.name, 'exclude')}
+                        testID={`tag-exclude-${tag.id}`}
                       >
                         <Text style={[
                           styles.tagChipText,
@@ -434,7 +436,7 @@ export default function NewBroadcastScreen() {
                         ]}>
                           {tag.name}
                         </Text>
-                      </TouchableOpacity>
+                      </WebSafePressable>
                     ))}
                   </View>
                 </>
