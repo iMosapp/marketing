@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api, { adminAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebSafeButton } from '../../components/WebSafeButton';
 
 export default function OrganizationsScreen() {
   const router = useRouter();
@@ -243,41 +244,51 @@ export default function OrganizationsScreen() {
         >
           <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+              <WebSafeButton
+                onPress={() => setShowCreateModal(false)}
+                variant="ghost"
+                testID="modal-cancel"
+              >
                 <Text style={styles.modalCancel}>Cancel</Text>
-              </TouchableOpacity>
+              </WebSafeButton>
               <Text style={styles.modalTitle}>New Organization</Text>
-              <TouchableOpacity onPress={handleCreateOrg} disabled={creating}>
-                {creating ? (
-                  <ActivityIndicator size="small" color="#007AFF" />
-                ) : (
-                  <Text style={styles.modalSave}>Create</Text>
-                )}
-              </TouchableOpacity>
+              <WebSafeButton
+                onPress={handleCreateOrg}
+                disabled={creating}
+                loading={creating}
+                variant="ghost"
+                testID="modal-create"
+              >
+                <Text style={styles.modalSave}>Create</Text>
+              </WebSafeButton>
             </View>
             
             <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
               {/* Account Type */}
               <Text style={styles.inputLabel}>Account Type</Text>
               <View style={styles.typeSelector}>
-                <TouchableOpacity 
-                  style={[styles.typeButton, newOrg.account_type === 'organization' && styles.typeButtonActive]}
+                <WebSafeButton
                   onPress={() => setNewOrg({ ...newOrg, account_type: 'organization' })}
+                  variant={newOrg.account_type === 'organization' ? 'primary' : 'secondary'}
+                  testID="org-type-organization"
+                  style={{ flex: 1 }}
                 >
-                  <Ionicons name="business" size={20} color={newOrg.account_type === 'organization' ? '#FFF' : '#8E8E93'} />
-                  <Text style={[styles.typeText, newOrg.account_type === 'organization' && styles.typeTextActive]}>
-                    Organization
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.typeButton, newOrg.account_type === 'independent' && styles.typeButtonActive]}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="business" size={20} color="#FFF" />
+                    <Text style={{ color: '#FFF', fontWeight: '600' }}>Organization</Text>
+                  </View>
+                </WebSafeButton>
+                <WebSafeButton
                   onPress={() => setNewOrg({ ...newOrg, account_type: 'independent' })}
+                  variant={newOrg.account_type === 'independent' ? 'primary' : 'secondary'}
+                  testID="org-type-independent"
+                  style={{ flex: 1 }}
                 >
-                  <Ionicons name="person" size={20} color={newOrg.account_type === 'independent' ? '#FFF' : '#8E8E93'} />
-                  <Text style={[styles.typeText, newOrg.account_type === 'independent' && styles.typeTextActive]}>
-                    Independent
-                  </Text>
-                </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="person" size={20} color="#FFF" />
+                    <Text style={{ color: '#FFF', fontWeight: '600' }}>Independent</Text>
+                  </View>
+                </WebSafeButton>
               </View>
               
               <Text style={styles.inputLabel}>{newOrg.account_type === 'independent' ? "Independent's Name *" : "Organization Name *"}</Text>
