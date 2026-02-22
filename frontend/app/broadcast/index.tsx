@@ -184,7 +184,7 @@ export default function BroadcastListScreen() {
           </Text>
         </View>
       )}
-    </WebSafePressable>
+    </Pressable>
   );
 
   if (loading) {
