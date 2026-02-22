@@ -319,12 +319,22 @@ export default function JessiScreen() {
   const processVoice = async (audioUri: string) => {
     try {
       // Create form data for audio upload
+      // On web, the audio is in webm format; on native, it's m4a
       const formData = new FormData();
-      formData.append('file', {
-        uri: audioUri,
-        type: 'audio/m4a',
-        name: 'recording.m4a',
-      } as any);
+      
+      if (IS_WEB) {
+        // On web, audioUri is a blob URL - we need to fetch it and create a proper file
+        const response = await fetch(audioUri);
+        const blob = await response.blob();
+        formData.append('file', blob, 'recording.webm');
+      } else {
+        formData.append('file', {
+          uri: audioUri,
+          type: 'audio/m4a',
+          name: 'recording.m4a',
+        } as any);
+      }
+      
       formData.append('user_id', user?._id || '');
       
       // Transcribe with longer timeout
