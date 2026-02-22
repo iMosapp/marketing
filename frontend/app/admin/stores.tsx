@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api, { adminAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebSafeButton } from '../../components/WebSafeButton';
 
 export default function StoresScreen() {
   const router = useRouter();
@@ -255,17 +256,23 @@ export default function StoresScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+            <WebSafeButton
+              onPress={() => setShowCreateModal(false)}
+              variant="ghost"
+              testID="modal-cancel"
+            >
               <Text style={styles.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
+            </WebSafeButton>
             <Text style={styles.modalTitle}>New Store</Text>
-            <TouchableOpacity onPress={handleCreateStore} disabled={creating}>
-              {creating ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <Text style={styles.modalSave}>Create</Text>
-              )}
-            </TouchableOpacity>
+            <WebSafeButton
+              onPress={handleCreateStore}
+              disabled={creating}
+              loading={creating}
+              variant="ghost"
+              testID="modal-create"
+            >
+              <Text style={styles.modalSave}>Create</Text>
+            </WebSafeButton>
           </View>
           
           <ScrollView style={styles.modalContent}>
