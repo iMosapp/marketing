@@ -1187,33 +1187,53 @@ export default function ThreadScreen() {
                   />
                 </WebToolButton>
               </View>
-                  onPress={loadAISuggestion}
-                  disabled={loadingAI || aiMode === 'off'}
-                >
-                  <Ionicons
-                    name="sparkles"
-                    size={20}
-                    color={aiMode === 'off' ? '#3C3C3E' : '#34C759'}
-                  />
-                </TouchableOpacity>
-              </View>
               
               {/* Send button */}
-              <TouchableOpacity
-                style={[styles.composerSendButton, ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled]}
-                onPress={() => selectedMedia ? sendMMS() : handleSend()}
-                disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
-              >
-                {sending || sendingMedia ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Ionicons
-                    name="send"
-                    size={18}
-                    color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
-                  />
-                )}
-              </TouchableOpacity>
+              {IS_WEB ? (
+                <button
+                  type="button"
+                  onClick={() => selectedMedia ? sendMMS() : handleSend()}
+                  disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
+                  data-testid="send-message-btn"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia ? '#007AFF' : '#3A3A3C',
+                    border: 'none',
+                    cursor: (!message.trim() && !selectedMedia) || sending || sendingMedia ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {sending || sendingMedia ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Ionicons
+                      name="send"
+                      size={18}
+                      color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
+                    />
+                  )}
+                </button>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.composerSendButton, ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled]}
+                  onPress={() => selectedMedia ? sendMMS() : handleSend()}
+                  disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
+                >
+                  {sending || sendingMedia ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Ionicons
+                      name="send"
+                      size={18}
+                      color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
+                    />
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
