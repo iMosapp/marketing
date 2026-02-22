@@ -103,7 +103,7 @@ async def create_lead_source(source: LeadSourceCreate, store_id: str, organizati
         "message": f"Lead source created. Webhook URL: {webhook_url}"
     }
 
-@router.get("/")
+@router.get("")
 async def list_lead_sources(store_id: str):
     """List all lead sources for a store"""
     db = get_db()
