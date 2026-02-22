@@ -149,7 +149,11 @@ export default function LeadSourceDetailScreen() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('Error', 'Name is required');
+      if (IS_WEB) {
+        showToast('Name is required', 'error');
+      } else {
+        Alert.alert('Error', 'Name is required');
+      }
       return;
     }
 
@@ -159,11 +163,19 @@ export default function LeadSourceDetailScreen() {
       if (response.data.success) {
         setSource(response.data.lead_source);
         setEditing(false);
-        Alert.alert('Success', 'Lead source updated');
+        if (IS_WEB) {
+          showToast('Lead source updated successfully', 'success');
+        } else {
+          Alert.alert('Success', 'Lead source updated');
+        }
       }
     } catch (error) {
       console.error('Error updating lead source:', error);
-      Alert.alert('Error', 'Failed to update lead source');
+      if (IS_WEB) {
+        showToast('Failed to update lead source', 'error');
+      } else {
+        Alert.alert('Error', 'Failed to update lead source');
+      }
     } finally {
       setSaving(false);
     }
