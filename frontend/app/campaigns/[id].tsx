@@ -270,6 +270,7 @@ export default function CampaignDetailScreen() {
           message_template: s.message,
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
+          media_urls: s.media_urls,
         })),
       };
       
