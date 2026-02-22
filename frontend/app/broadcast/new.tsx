@@ -455,7 +455,7 @@ export default function NewBroadcastScreen() {
               {/* Quick Presets */}
               <View style={styles.presetsContainer}>
                 {PRESET_FILTERS.map(preset => (
-                  <TouchableOpacity
+                  <WebSafePressable
                     key={preset.days}
                     style={[
                       styles.presetButton,
@@ -467,6 +467,7 @@ export default function NewBroadcastScreen() {
                       purchase_month: null,
                       purchase_year: null,
                     }))}
+                    testID={`preset-${preset.days}`}
                   >
                     <Text style={[
                       styles.presetText,
@@ -474,7 +475,7 @@ export default function NewBroadcastScreen() {
                     ]}>
                       {preset.label}
                     </Text>
-                  </TouchableOpacity>
+                  </WebSafePressable>
                 ))}
               </View>
               
@@ -483,7 +484,7 @@ export default function NewBroadcastScreen() {
               <View style={styles.monthYearContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {MONTHS.map((month, index) => (
-                    <TouchableOpacity
+                    <WebSafePressable
                       key={month}
                       style={[
                         styles.monthButton,
@@ -494,6 +495,7 @@ export default function NewBroadcastScreen() {
                         purchase_month: prev.purchase_month === index + 1 ? null : index + 1,
                         days_since_purchase: null,
                       }))}
+                      testID={`month-${month}`}
                     >
                       <Text style={[
                         styles.monthText,
@@ -501,7 +503,7 @@ export default function NewBroadcastScreen() {
                       ]}>
                         {month.slice(0, 3)}
                       </Text>
-                    </TouchableOpacity>
+                    </WebSafePressable>
                   ))}
                 </ScrollView>
               </View>
