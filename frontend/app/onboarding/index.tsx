@@ -220,7 +220,7 @@ const AnalyticsDemo = () => {
   return (
     <View style={demoStyles.phoneFrame}>
       <View style={demoStyles.analyticsContainer}>
-        <Text style={demoStyles.analyticsTitle}>Your MVP This Week</Text>
+        <Text style={demoStyles.analyticsTitle}>Your Stats This Week</Text>
         <View style={demoStyles.statRow}>
           <View style={demoStyles.statCard}>
             <Ionicons name="chatbubbles" size={20} color="#007AFF" />
@@ -323,7 +323,7 @@ const SLIDES: OnboardingSlide[] = [
   {
     id: 'welcome',
     type: 'welcome',
-    title: 'Welcome to MVPLine!',
+    title: 'Welcome to iMOs!',
     subtitle: 'Your Virtual Partner Line',
     description: 'You\'re about to unlock something incredible - a personal AI assistant that works 24/7, sounds just like YOU, and helps you close more deals.',
     icon: 'rocket',
@@ -341,7 +341,7 @@ const SLIDES: OnboardingSlide[] = [
     id: 'ai_intro',
     type: 'feature',
     title: 'Meet Your AI Clone',
-    subtitle: 'The Magic Behind MVPLine',
+    subtitle: 'The Magic Behind iMOs',
     description: 'Your Virtual Assistant isn\'t just any chatbot. It learns YOUR personality and responds to customers as if it\'s really you.',
     icon: 'sparkles',
     iconColor: '#AF52DE',
@@ -492,7 +492,7 @@ const SLIDES: OnboardingSlide[] = [
   {
     id: 'analytics',
     type: 'feature',
-    title: 'See Your MVP at Work',
+    title: 'See Your AI at Work',
     subtitle: 'Incredible Analytics',
     description: 'Watch your AI in action! See leads captured, messages sent, and time saved.',
     icon: 'analytics',
@@ -507,7 +507,7 @@ const SLIDES: OnboardingSlide[] = [
     type: 'complete',
     title: 'You\'re All Set!',
     subtitle: 'Time to Close Some Deals',
-    description: 'Your AI assistant is ready. The more you use MVPLine, the smarter it gets!',
+    description: 'Your AI assistant is ready. The more you use iMOs, the smarter it gets!',
     icon: 'checkmark-circle',
     iconColor: '#34C759',
     bgGradient: ['#0F2E1A', '#1A1A1A'],

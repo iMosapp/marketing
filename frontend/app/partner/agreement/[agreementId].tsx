@@ -83,7 +83,7 @@ export default function PartnerAgreementSigningPage() {
         );
         
         if (response.data.payment_status === 'paid') {
-          Alert.alert('Payment Successful!', 'Welcome to the MVPLine Partner Program!');
+          Alert.alert('Payment Successful!', 'Welcome to the iMOs Partner Program!');
           loadAgreement();
           break;
         }
@@ -130,7 +130,7 @@ export default function PartnerAgreementSigningPage() {
         // Redirect to payment
         initiatePayment();
       } else {
-        Alert.alert('Success!', 'Welcome to the MVPLine Partner Program!');
+        Alert.alert('Success!', 'Welcome to the iMOs Partner Program!');
         loadAgreement();
       }
     } catch (error: any) {
@@ -220,7 +220,7 @@ export default function PartnerAgreementSigningPage() {
             </View>
             <Text style={styles.signedTitle}>Agreement Signed!</Text>
             <Text style={styles.signedSubtitle}>
-              Welcome to the MVPLine Partner Program
+              Welcome to the iMOs Partner Program
             </Text>
             
             <View style={styles.signedDetails}>
