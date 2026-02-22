@@ -362,6 +362,12 @@ export default function ContactDetailScreen() {
   };
   
   const showPhotoOptions = () => {
+    // On web, directly open file picker (no camera option)
+    if (IS_WEB) {
+      pickImage();
+      return;
+    }
+    
     showAlert('Add Photo', 'Choose an option', [
       {
         text: 'Take Photo',
