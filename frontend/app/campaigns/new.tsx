@@ -127,6 +127,81 @@ export default function CampaignBuilderScreen() {
     ));
   };
   
+  const pickMediaForStep = async (stepId: string) => {
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to attach media.');
+        return;
+      }
+      
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setUploadingMedia(stepId);
+        
+        try {
+          // Create form data for upload
+          const formData = new FormData();
+          const filename = asset.uri.split('/').pop() || 'image.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : 'image/jpeg';
+          
+          formData.append('file', {
+            uri: asset.uri,
+            name: filename,
+            type,
+          } as any);
+          
+          // Upload the image
+          const uploadResponse = await api.post('/media/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          
+          if (uploadResponse.data.url) {
+            // Add URL to the step's media_urls
+            setSequences(sequences.map(s => 
+              s.id === stepId 
+                ? { ...s, media_urls: [...s.media_urls, uploadResponse.data.url] }
+                : s
+            ));
+          }
+        } catch (uploadError) {
+          console.error('Upload error:', uploadError);
+          // For now, use the local URI as a fallback
+          setSequences(sequences.map(s => 
+            s.id === stepId 
+              ? { ...s, media_urls: [...s.media_urls, asset.uri] }
+              : s
+          ));
+        }
+      }
+    } catch (error) {
+      console.error('Error picking media:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
+    } finally {
+      setUploadingMedia(null);
+    }
+  };
+  
+  const removeMediaFromStep = (stepId: string, mediaIndex: number) => {
+    setSequences(sequences.map(s => 
+      s.id === stepId 
+        ? { ...s, media_urls: s.media_urls.filter((_, idx) => idx !== mediaIndex) }
+        : s
+    ));
+  };
+  
   const getDelayLabel = (step: SequenceStep, index: number) => {
     if (index === 0) return 'Immediately when tagged';
     
