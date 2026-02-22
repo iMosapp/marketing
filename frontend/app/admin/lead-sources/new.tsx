@@ -36,15 +36,30 @@ export default function NewLeadSourceScreen() {
   });
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
+    if (user?._id) {
+      fetchTeams();
+    }
+  }, [user?._id]);
 
   const fetchTeams = async () => {
+    if (!user?._id) {
+      setLoadingTeams(false);
+      return;
+    }
+    
     try {
-      const response = await api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`);
+      console.log('Fetching teams for user:', user._id);
+      const response = await api.get(`/admin/team/shared-inboxes?user_id=${user._id}`);
+      console.log('Teams response:', response.data);
+      
       // Response is an array directly
       const teamsData = Array.isArray(response.data) ? response.data : [];
-      setTeams(teamsData.map((t: any) => ({ id: t._id || t.id, name: t.name })));
+      const mappedTeams = teamsData.map((t: any) => ({ 
+        id: t.id || t._id, 
+        name: t.name 
+      }));
+      console.log('Mapped teams:', mappedTeams);
+      setTeams(mappedTeams);
     } catch (error) {
       console.error('Error fetching teams:', error);
       setTeams([]);
