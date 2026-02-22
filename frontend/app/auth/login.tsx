@@ -429,9 +429,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImage: {
-    width: 200,
-    height: 80,
-    marginBottom: 8,
+    width: 280,
+    height: 100,
+    marginBottom: 16,
   },
   logoText: {
     fontSize: 72,
