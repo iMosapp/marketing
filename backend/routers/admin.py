@@ -2298,6 +2298,319 @@ async def remove_user_from_store(user_id: str, data: dict):
 async def update_user_role(user_id: str, data: dict):
     """Update a user's role"""
     role = data.get("role")
+
+
+# ============= DATA ENDPOINTS =============
+
+@router.get("/data/messages")
+async def get_data_messages(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get messages data for admin dashboard"""
+    db = get_db()
+    user = await get_requesting_user(x_user_id)
+    
+    query = {}
+    if user and user.get('role') not in ['super_admin', 'org_admin']:
+        store_ids = await get_scoped_store_ids(user)
+        if store_ids:
+            query['store_id'] = {'$in': store_ids}
+    
+    messages = await db.messages.find(query).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    # Get user names
+    user_ids = list(set(m.get('user_id') for m in messages if m.get('user_id')))
+    users = {}
+    if user_ids:
+        user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
+        users = {str(u['_id']): u.get('name') for u in user_docs}
+    
+    result = []
+    for m in messages:
+        result.append({
+            '_id': str(m['_id']),
+            'contact_name': m.get('contact_name'),
+            'contact_phone': m.get('contact_phone'),
+            'user_name': users.get(m.get('user_id')),
+            'content': m.get('content') or m.get('body') or '',
+            'direction': m.get('direction', 'outbound'),
+            'created_at': m.get('created_at', datetime.utcnow()).isoformat(),
+            'status': m.get('status')
+        })
+    
+    return result
+
+
+@router.get("/data/calls")
+async def get_data_calls(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get calls data for admin dashboard"""
+    db = get_db()
+    user = await get_requesting_user(x_user_id)
+    
+    query = {}
+    if user and user.get('role') not in ['super_admin', 'org_admin']:
+        store_ids = await get_scoped_store_ids(user)
+        if store_ids:
+            query['store_id'] = {'$in': store_ids}
+    
+    calls = await db.calls.find(query).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    user_ids = list(set(c.get('user_id') for c in calls if c.get('user_id')))
+    users = {}
+    if user_ids:
+        user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
+        users = {str(u['_id']): u.get('name') for u in user_docs}
+    
+    result = []
+    for c in calls:
+        result.append({
+            '_id': str(c['_id']),
+            'contact_name': c.get('contact_name'),
+            'contact_phone': c.get('contact_phone') or c.get('from_number') or c.get('to_number'),
+            'user_name': users.get(c.get('user_id')),
+            'direction': c.get('direction', 'outbound'),
+            'duration': c.get('duration', 0),
+            'status': c.get('status', 'completed'),
+            'created_at': c.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/ai-messages")
+async def get_data_ai_messages(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get AI messages/interactions data"""
+    db = get_db()
+    
+    ai_messages = await db.ai_messages.find({}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    result = []
+    for m in ai_messages:
+        result.append({
+            '_id': str(m['_id']),
+            'contact_name': m.get('contact_name'),
+            'user_name': m.get('user_name'),
+            'prompt': m.get('prompt'),
+            'response': m.get('response'),
+            'ai_type': m.get('ai_type') or m.get('type'),
+            'created_at': m.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/card-shares")
+async def get_data_card_shares(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get digital card share data"""
+    db = get_db()
+    
+    shares = await db.card_shares.find({}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    user_ids = list(set(s.get('user_id') for s in shares if s.get('user_id')))
+    users = {}
+    if user_ids:
+        user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
+        users = {str(u['_id']): u.get('name') for u in user_docs}
+    
+    result = []
+    for s in shares:
+        result.append({
+            '_id': str(s['_id']),
+            'user_name': users.get(s.get('user_id')),
+            'contact_name': s.get('contact_name'),
+            'share_type': s.get('share_type') or s.get('method'),
+            'view_count': s.get('view_count', 0),
+            'created_at': s.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/referrals")
+async def get_data_referrals(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get referrals data"""
+    db = get_db()
+    
+    referrals = await db.referrals.find({}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    result = []
+    for r in referrals:
+        result.append({
+            '_id': str(r['_id']),
+            'referrer_name': r.get('referrer_name'),
+            'referee_name': r.get('referee_name'),
+            'referee_phone': r.get('referee_phone'),
+            'status': r.get('status', 'pending'),
+            'store_name': r.get('store_name'),
+            'created_at': r.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/campaigns")
+async def get_data_campaigns(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get campaigns data"""
+    db = get_db()
+    
+    campaigns = await db.campaigns.find({}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    result = []
+    for c in campaigns:
+        result.append({
+            '_id': str(c['_id']),
+            'name': c.get('name', 'Untitled Campaign'),
+            'type': c.get('type'),
+            'status': c.get('status', 'draft'),
+            'sent_count': c.get('sent_count', 0),
+            'open_count': c.get('open_count', 0),
+            'click_count': c.get('click_count', 0),
+            'store_name': c.get('store_name'),
+            'created_at': c.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/review-templates")
+async def get_data_review_templates(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get review templates sent data"""
+    db = get_db()
+    
+    templates = await db.template_sends.find({'template_type': 'review'}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    result = []
+    for t in templates:
+        result.append({
+            '_id': str(t['_id']),
+            'template_name': t.get('template_name'),
+            'user_name': t.get('user_name'),
+            'contact_name': t.get('contact_name'),
+            'contact_phone': t.get('contact_phone'),
+            'status': t.get('status', 'sent'),
+            'created_at': t.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/referral-templates")
+async def get_data_referral_templates(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get referral templates sent data"""
+    db = get_db()
+    
+    templates = await db.template_sends.find({'template_type': 'referral'}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    result = []
+    for t in templates:
+        result.append({
+            '_id': str(t['_id']),
+            'template_name': t.get('template_name'),
+            'user_name': t.get('user_name'),
+            'contact_name': t.get('contact_name'),
+            'contact_phone': t.get('contact_phone'),
+            'status': t.get('status', 'sent'),
+            'created_at': t.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/data/sold-templates")
+async def get_data_sold_templates(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 100
+):
+    """Get sold/congrats templates sent data"""
+    db = get_db()
+    
+    templates = await db.template_sends.find({'template_type': {'$in': ['sold', 'congrats']}}).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    result = []
+    for t in templates:
+        result.append({
+            '_id': str(t['_id']),
+            'template_name': t.get('template_name'),
+            'user_name': t.get('user_name'),
+            'contact_name': t.get('contact_name'),
+            'contact_phone': t.get('contact_phone'),
+            'status': t.get('status', 'sent'),
+            'created_at': t.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
+
+@router.get("/contacts")
+async def get_admin_contacts(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    limit: int = 500
+):
+    """Get all contacts for admin view"""
+    db = get_db()
+    user = await get_requesting_user(x_user_id)
+    
+    query = {}
+    if user and user.get('role') not in ['super_admin', 'org_admin']:
+        store_ids = await get_scoped_store_ids(user)
+        if store_ids:
+            query['store_id'] = {'$in': store_ids}
+    
+    contacts = await db.contacts.find(query).sort('created_at', -1).limit(limit).to_list(limit)
+    
+    # Get user and store names
+    user_ids = list(set(c.get('assigned_to') or c.get('user_id') for c in contacts if c.get('assigned_to') or c.get('user_id')))
+    store_ids = list(set(c.get('store_id') for c in contacts if c.get('store_id')))
+    
+    users = {}
+    stores = {}
+    
+    if user_ids:
+        user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
+        users = {str(u['_id']): u.get('name') for u in user_docs}
+    
+    if store_ids:
+        store_docs = await db.stores.find({'_id': {'$in': [ObjectId(sid) for sid in store_ids]}}).to_list(100)
+        stores = {str(s['_id']): s.get('name') for s in store_docs}
+    
+    result = []
+    for c in contacts:
+        result.append({
+            '_id': str(c['_id']),
+            'first_name': c.get('first_name'),
+            'last_name': c.get('last_name'),
+            'phone': c.get('phone'),
+            'email': c.get('email'),
+            'user_name': users.get(c.get('assigned_to') or c.get('user_id')),
+            'store_name': stores.get(c.get('store_id')),
+            'status': c.get('status'),
+            'created_at': c.get('created_at', datetime.utcnow()).isoformat()
+        })
+    
+    return result
+
     valid_roles = ["super_admin", "org_admin", "store_manager", "user"]
     
     if role not in valid_roles:
