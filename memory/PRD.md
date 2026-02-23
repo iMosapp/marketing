@@ -168,6 +168,63 @@ iMos is a business management app for retail/service businesses. Key features in
     - Filtering by category, status, price range, tags
     - Full audit trail
 
+## Inventory Webhooks API Reference
+
+### Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /api/webhooks/inventory/add | Add or upsert inventory item |
+| POST | /api/webhooks/inventory/update | Partial update (only provided fields) |
+| POST | /api/webhooks/inventory/delete | Soft delete (archive) or hard delete |
+| POST | /api/webhooks/inventory/bulk | Multiple operations in one request |
+| GET | /api/webhooks/inventory | List items with filters |
+| GET | /api/webhooks/inventory/{external_id} | Get single item |
+| GET | /api/webhooks/inventory/config/endpoints | Integration documentation |
+
+### Example: Add Vehicle (Automotive)
+```json
+{
+  "external_id": "VIN_1HGCV1F34NA123456",
+  "name": "2024 Honda Civic LX",
+  "category": "vehicle",
+  "status": "available",
+  "price": 25995,
+  "attributes": {
+    "vin": "1HGCV1F34NA123456",
+    "year": 2024,
+    "make": "Honda",
+    "model": "Civic",
+    "mileage": 12
+  }
+}
+```
+
+### Example: Add Property (Real Estate)
+```json
+{
+  "external_id": "MLS_12345",
+  "name": "4BR Home in South Jordan",
+  "category": "property",
+  "status": "available",
+  "price": 575000,
+  "attributes": {
+    "address": "123 Main St",
+    "bedrooms": 4,
+    "bathrooms": 3.5,
+    "square_feet": 3200
+  }
+}
+```
+
+### Example: Mark as Sold
+```json
+{
+  "external_id": "VIN_1HGCV1F34NA123456",
+  "status": "sold",
+  "price": 24500
+}
+```
+
 ## Lead Sources API Reference
 
 ### Endpoints
