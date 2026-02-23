@@ -97,7 +97,7 @@ export default function ActivityFeedScreen() {
     switch (userRole) {
       case 'super_admin': return 'Platform-wide Activity';
       case 'org_admin': return 'Organization Activity';
-      case 'store_manager': return 'Store Activity';
+      case 'store_manager': return 'Account Activity';
       default: return 'Your Activity';
     }
   };

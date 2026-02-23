@@ -41,7 +41,7 @@ interface Store {
 
 const ROLES = [
   { id: 'user', label: 'Sales Rep', color: '#007AFF' },
-  { id: 'store_manager', label: 'Store Manager', color: '#34C759' },
+  { id: 'store_manager', label: 'Account Manager', color: '#34C759' },
   { id: 'org_admin', label: 'Org Admin', color: '#FF9500' },
 ];
 

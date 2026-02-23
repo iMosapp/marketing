@@ -176,7 +176,7 @@ export default function StoreDetailScreen() {
     setSaving(true);
     try {
       await api.put(`/admin/stores/${id}`, editedStore);
-      showSimpleAlert('Success', 'Store updated successfully');
+      showSimpleAlert('Success', 'Account updated successfully');
       loadStoreData();
       setEditMode(false);
     } catch (error) {
