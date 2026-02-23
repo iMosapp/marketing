@@ -208,9 +208,6 @@ export default function IMOSLandingPage() {
             <View style={styles.phoneMockup}>
               <View style={styles.phoneNotch} />
               <View style={styles.phoneScreen}>
-                <View style={styles.phoneHeader}>
-                  <Text style={styles.phoneHeaderText}>Messages</Text>
-                </View>
                 <View style={styles.messagesContainer}>
                   {/* Outgoing message */}
                   <View style={styles.messageOutgoing}>
