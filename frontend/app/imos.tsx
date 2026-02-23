@@ -450,7 +450,7 @@ export default function IMOSLandingPage() {
             </View>
             <Text style={styles.pricingPlanName}>Professional</Text>
             <View style={styles.pricingPriceRow}>
-              <Text style={styles.pricingPrice}>$99</Text>
+              <Text style={styles.pricingPrice}>$79</Text>
               <Text style={styles.pricingPeriod}>/month</Text>
             </View>
             <Text style={styles.pricingDescription}>For growing sales teams</Text>
