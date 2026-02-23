@@ -358,16 +358,15 @@ app.include_router(short_urls.router)
 # ============= STARTUP EVENT =============
 @app.on_event("startup")
 async def startup_event():
-    # Initialize database connection
-    db = get_db()
-    if db is not None:
-        logger.info("iMOs API v2.0 started")
-        logger.info(f"Connected to MongoDB: {os.environ.get('DB_NAME', 'unknown')}")
-        
-        # Seed admin user if database is empty
-        await seed_admin_user(db)
-    else:
-        logger.error("Failed to connect to MongoDB!")
+    logger.info("iMOs API v2.0 starting...")
+    # Don't block startup - database connection will happen on first request
+    try:
+        db = get_db()
+        if db is not None:
+            logger.info("iMOs API v2.0 started")
+            logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')}")
+    except Exception as e:
+        logger.warning(f"Database connection will be established on first request: {e}")
 
 async def seed_admin_user(db):
     """Create default admin user if no users exist in database"""
