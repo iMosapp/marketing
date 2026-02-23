@@ -2603,6 +2603,14 @@ async def get_admin_contacts(
     
     result = []
     for c in contacts:
+        created_at = c.get('created_at')
+        if isinstance(created_at, str):
+            created_at_str = created_at
+        elif created_at:
+            created_at_str = created_at.isoformat()
+        else:
+            created_at_str = datetime.utcnow().isoformat()
+            
         result.append({
             '_id': str(c['_id']),
             'first_name': c.get('first_name'),
@@ -2612,7 +2620,7 @@ async def get_admin_contacts(
             'user_name': users.get(c.get('assigned_to') or c.get('user_id')),
             'store_name': stores.get(c.get('store_id')),
             'status': c.get('status'),
-            'created_at': c.get('created_at', datetime.utcnow()).isoformat()
+            'created_at': created_at_str
         })
     
     return result
