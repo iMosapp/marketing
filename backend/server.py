@@ -350,7 +350,7 @@ async def health_check():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
 @app.get("/")
-async def root():
+async def app_root():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
 # Include the api_router in the main app
