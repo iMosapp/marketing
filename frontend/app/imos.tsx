@@ -144,6 +144,7 @@ export default function IMOSLandingPage() {
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -161,14 +162,23 @@ export default function IMOSLandingPage() {
             />
           </View>
           <View style={styles.navLinks}>
-            <TouchableOpacity style={styles.navLink}>
+            <TouchableOpacity style={styles.navLink} onPress={() => scrollToSection('features')}>
               <Text style={styles.navLinkText}>Features</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.navLink}>
+            <TouchableOpacity style={styles.navLink} onPress={() => scrollToSection('howItWorks')}>
+              <Text style={styles.navLinkText}>How It Works</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navLink} onPress={() => scrollToSection('pricing')}>
               <Text style={styles.navLinkText}>Pricing</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.navLink}>
-              <Text style={styles.navLinkText}>About</Text>
+            <TouchableOpacity style={styles.navLink} onPress={() => scrollToSection('testimonials')}>
+              <Text style={styles.navLinkText}>Testimonials</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navLink} onPress={() => scrollToSection('faq')}>
+              <Text style={styles.navLinkText}>FAQ</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navLink} onPress={handleSignIn}>
+              <Text style={styles.navLinkText}>Sign In</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.ctaButtonSmall} onPress={handleGetStarted}>
               <Text style={styles.ctaButtonSmallText}>Get Started</Text>
