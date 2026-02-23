@@ -56,8 +56,13 @@ export default function IntegrationsScreen() {
   const [apiDocs, setApiDocs] = useState<any>(null);
 
   useEffect(() => {
-    loadData();
-  }, [user?.store_id]);
+    if (user?.store_id) {
+      loadData();
+    } else if (user?._id) {
+      // User loaded but no store_id - stop loading spinner
+      setLoading(false);
+    }
+  }, [user?.store_id, user?._id]);
 
   const loadData = async () => {
     if (!user?.store_id) return;

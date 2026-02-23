@@ -33,14 +33,16 @@ export default function CalendarSettingsScreen() {
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
   useEffect(() => {
-    loadCalendarStatus();
-    checkNativeCalendarPermission();
+    if (user?._id) {
+      loadCalendarStatus();
+      checkNativeCalendarPermission();
+    }
     
     // Check if just connected from OAuth callback
     if (params.connected === 'true') {
       loadCalendarStatus();
     }
-  }, [params.connected]);
+  }, [params.connected, user?._id]);
 
   useEffect(() => {
     if (nativeCalendarPermission === 'granted') {
