@@ -418,6 +418,43 @@ export default function UserDetailScreen() {
             </TouchableOpacity>
           </View>
           
+          {/* Inactive User Banner with Reactivate */}
+          {!user.is_active && (
+            <View style={styles.inactiveBanner}>
+              <View style={styles.inactiveBannerHeader}>
+                <Ionicons name="person-remove" size={24} color="#FF9500" />
+                <Text style={styles.inactiveBannerTitle}>User Deactivated</Text>
+              </View>
+              {user.deletion_source && (
+                <View style={styles.deletionInfo}>
+                  <Text style={styles.deletionSource}>
+                    Deleted by: {user.deletion_source}
+                  </Text>
+                  {user.deleted_at && (
+                    <Text style={styles.deletionDate}>
+                      on {new Date(user.deleted_at).toLocaleDateString()} at {new Date(user.deleted_at).toLocaleTimeString()}
+                    </Text>
+                  )}
+                </View>
+              )}
+              <TouchableOpacity 
+                style={styles.reactivateButton}
+                onPress={handleReactivateUser}
+                disabled={actionLoading}
+                data-testid="reactivate-user-btn"
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="refresh" size={18} color="#FFF" />
+                    <Text style={styles.reactivateButtonText}>Reactivate User</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+          
           {/* Pending Status */}
           {user.status === 'pending' && (
             <View style={styles.pendingBanner}>
