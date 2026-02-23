@@ -456,12 +456,14 @@ const styles = StyleSheet.create({
   },
   dialerContainer: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    paddingTop: 20,
   },
   numberDisplay: {
     paddingHorizontal: 32,
-    paddingVertical: 24,
+    paddingVertical: 16,
     alignItems: 'center',
+    minHeight: 60,
   },
   numberText: {
     fontSize: 36,
@@ -471,7 +473,7 @@ const styles = StyleSheet.create({
   },
   dialPadWrapper: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   dialPad: {
     gap: 12,
