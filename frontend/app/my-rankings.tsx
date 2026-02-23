@@ -102,7 +102,10 @@ export default function MyRankingsScreen() {
   };
   
   const toggleVisibility = async (visible: boolean) => {
-    if (!user) return;
+    if (!user?._id) {
+      showSimpleAlert('Error', 'Please log in to update settings');
+      return;
+    }
     
     setSavingSettings(true);
     try {
@@ -113,6 +116,7 @@ export default function MyRankingsScreen() {
         await loadLeaderboard();
       }
     } catch (error) {
+      console.error('Failed to update leaderboard settings:', error);
       showSimpleAlert('Error', 'Failed to update settings');
     } finally {
       setSavingSettings(false);
