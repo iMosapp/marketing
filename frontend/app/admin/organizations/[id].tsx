@@ -330,7 +330,7 @@ export default function OrganizationDetailScreen() {
                   style={styles.createButton}
                   onPress={() => router.push(`/admin/stores?org=${id}`)}
                 >
-                  <Text style={styles.createButtonText}>Create Store</Text>
+                  <Text style={styles.createButtonText}>Create Account</Text>
                 </TouchableOpacity>
               </View>
             ) : (
