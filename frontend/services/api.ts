@@ -3,19 +3,14 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Get backend URL - use full URL for native apps, relative for web
+// Get backend URL - use full URL for all platforms when EXPO_PUBLIC_BACKEND_URL is set
 const getBackendUrl = () => {
-  // For native apps (iOS/Android), we need the full URL
-  if (Platform.OS !== 'web') {
-    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || Constants.expoConfig?.extra?.backendUrl;
-    if (backendUrl) {
-      return `${backendUrl}/api`;
-    }
-    // In production, EXPO_PUBLIC_BACKEND_URL should always be set
-    console.warn('EXPO_PUBLIC_BACKEND_URL not set, falling back to relative /api path');
-    return '/api';
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || Constants.expoConfig?.extra?.backendUrl;
+  if (backendUrl) {
+    return `${backendUrl}/api`;
   }
-  // For web, use relative path - the ingress handles routing
+  // Fallback to relative path for local development
+  console.warn('EXPO_PUBLIC_BACKEND_URL not set, falling back to relative /api path');
   return '/api';
 };
 
