@@ -5,7 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get backend URL - use full URL for all platforms when EXPO_PUBLIC_BACKEND_URL is set
 const getBackendUrl = () => {
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || Constants.expoConfig?.extra?.backendUrl;
+  // Production backend URL - hardcoded for web builds where env vars don't work
+  const PRODUCTION_BACKEND = 'https://02221223pmwebapp.fly.dev';
+  
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || Constants.expoConfig?.extra?.backendUrl || PRODUCTION_BACKEND;
   if (backendUrl) {
     return `${backendUrl}/api`;
   }
