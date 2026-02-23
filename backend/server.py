@@ -361,21 +361,30 @@ from fastapi.responses import FileResponse
 
 # Check if static folder exists (in production build)
 static_path = Path(__file__).parent / "static"
-if static_path.exists():
-    # Serve static files
-    app.mount("/static", StaticFiles(directory=str(static_path / "static")), name="static")
+if static_path.exists() and (static_path / "index.html").exists():
+    logger.info(f"Serving static frontend from {static_path}")
     
-    # Catch-all route for SPA - serve index.html for all non-API routes
+    # Serve static assets (JS, CSS, images)
+    static_assets = static_path / "static"
+    if static_assets.exists():
+        app.mount("/static", StaticFiles(directory=str(static_assets)), name="static_assets")
+    
+    # Catch-all route for SPA - must be last
+    @app.get("/")
     @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # Don't serve index.html for API routes
-        if full_path.startswith("api/") or full_path.startswith("s/"):
+    async def serve_spa(full_path: str = ""):
+        # Don't serve index.html for API routes or short URLs
+        if full_path.startswith("api") or full_path.startswith("s/") or full_path == "healthz":
             raise HTTPException(status_code=404)
         
         index_file = static_path / "index.html"
-        if index_file.exists():
-            return FileResponse(str(index_file))
-        raise HTTPException(status_code=404)
+        return FileResponse(str(index_file))
+else:
+    logger.info("No static frontend found - API only mode")
+    
+    @app.get("/")
+    async def root_api():
+        return {"status": "healthy", "message": "iMOs API v2.0"}
 
 # ============= STARTUP EVENT =============
 @app.on_event("startup")
