@@ -411,7 +411,7 @@ export default function IMOSLandingPage() {
           <View style={styles.pricingCard}>
             <Text style={styles.pricingPlanName}>Starter</Text>
             <View style={styles.pricingPriceRow}>
-              <Text style={styles.pricingPrice}>$29</Text>
+              <Text style={styles.pricingPrice}>$49</Text>
               <Text style={styles.pricingPeriod}>/month</Text>
             </View>
             <Text style={styles.pricingDescription}>Perfect for individual sales reps</Text>
@@ -449,7 +449,7 @@ export default function IMOSLandingPage() {
             </View>
             <Text style={styles.pricingPlanName}>Professional</Text>
             <View style={styles.pricingPriceRow}>
-              <Text style={styles.pricingPrice}>$79</Text>
+              <Text style={styles.pricingPrice}>$99</Text>
               <Text style={styles.pricingPeriod}>/month</Text>
             </View>
             <Text style={styles.pricingDescription}>For growing sales teams</Text>
