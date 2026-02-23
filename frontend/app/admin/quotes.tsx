@@ -103,6 +103,7 @@ export default function QuotesListPage() {
       case 'accepted': return '#34C759';
       case 'expired': return '#FF3B30';
       case 'cancelled': return '#FF3B30';
+      case 'archived': return '#636366';
       default: return '#8E8E93';
     }
   };
