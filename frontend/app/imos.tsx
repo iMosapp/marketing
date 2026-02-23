@@ -484,6 +484,33 @@ const styles = StyleSheet.create({
     marginHorizontal: 'auto',
     alignItems: 'center',
   },
+  taglineContainer: {
+    marginBottom: 32,
+  },
+  taglineText: {
+    fontSize: Platform.OS === 'web' ? 72 : 48,
+    fontWeight: '800',
+    letterSpacing: -2,
+    textAlign: 'center',
+  },
+  taglineI: {
+    color: '#FF3B30', // Red
+  },
+  taglineApostrophe: {
+    color: '#FFFFFF',
+  },
+  taglineM: {
+    color: '#007AFF', // Blue
+  },
+  taglineSpace: {
+    color: '#FFFFFF',
+  },
+  taglineOld: {
+    color: '#FFD60A', // Yellow
+  },
+  taglineSchool: {
+    color: '#34C759', // Green
+  },
   heroLogo: {
     width: Platform.OS === 'web' ? 280 : 200,
     height: Platform.OS === 'web' ? 280 : 200,
