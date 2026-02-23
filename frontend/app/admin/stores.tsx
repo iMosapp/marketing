@@ -263,12 +263,12 @@ export default function StoresScreen() {
       ) : (
         <FlatList
           data={[
-            { type: 'header', title: 'Active Stores', count: activeStores.length },
-            ...activeStores.map(s => ({ type: 'store', ...s })),
-            ...(inactiveStores.length > 0 ? [
+            { type: 'header', title: 'Active Stores', count: filteredActiveStores.length },
+            ...filteredActiveStores.map(s => ({ type: 'store', ...s })),
+            ...(filteredInactiveStores.length > 0 ? [
               { type: 'divider' },
-              { type: 'header', title: 'Inactive Stores', count: inactiveStores.length },
-              ...inactiveStores.map(s => ({ type: 'store', ...s })),
+              { type: 'header', title: 'Inactive Stores', count: filteredInactiveStores.length },
+              ...filteredInactiveStores.map(s => ({ type: 'store', ...s })),
             ] : []),
           ]}
           renderItem={({ item }) => {
