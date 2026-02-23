@@ -22,12 +22,19 @@ const getInitialTab = (role?: string): string => {
 };
 
 export default function TabLayout() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, isLoading } = useAuthStore();
   const router = useRouter();
   
   // Track if component is mounted (for hydration safety)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  
+  // Protect tabs - redirect to login if not authenticated
+  useEffect(() => {
+    if (mounted && !isLoading && !isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [mounted, isLoading, isAuthenticated]);
   
   // Notification system temporarily disabled
   const pendingNotification = null;
