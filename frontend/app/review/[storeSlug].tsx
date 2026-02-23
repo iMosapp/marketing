@@ -66,7 +66,7 @@ export default function PublicReviewPage() {
       setStoreData(response.data);
     } catch (error) {
       console.error('Error loading store:', error);
-      Alert.alert('Error', 'Store not found');
+      Alert.alert('Error', 'Account not found');
     } finally {
       setLoading(false);
     }

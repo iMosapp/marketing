@@ -80,7 +80,7 @@ export default function ReportsScreen() {
   const getScopeLabel = () => {
     switch (overview?.scope) {
       case 'organization': return 'Organization';
-      case 'store': return 'Store';
+      case 'store': return 'Account';
       case 'personal': return 'Personal';
       default: return '';
     }

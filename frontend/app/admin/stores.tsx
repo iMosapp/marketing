@@ -68,7 +68,7 @@ export default function StoresScreen() {
   
   const handleCreateStore = async () => {
     if (!newStore.name) {
-      showSimpleAlert('Error', 'Store name is required');
+      showSimpleAlert('Error', 'Account name is required');
       return;
     }
     
