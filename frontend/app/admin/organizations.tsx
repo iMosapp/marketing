@@ -437,6 +437,45 @@ const styles = StyleSheet.create({
   addButton: {
     padding: 4,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchButton: {
+    padding: 4,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFF',
+  },
+  searchResultCount: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 8,
+    marginLeft: 4,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#6E6E73',
+    marginTop: 8,
+  },
   listContent: {
     padding: 16,
   },
