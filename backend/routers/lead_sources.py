@@ -74,7 +74,7 @@ async def create_lead_source(source: LeadSourceCreate, store_id: str, organizati
     source_id = str(ObjectId())
     api_key = secrets.token_urlsafe(32)
     
-    base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://lead-routing-1.preview.emergentagent.com")
+    base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://deploy-crm-fix.preview.emergentagent.com")
     webhook_url = f"{base_url}/api/lead-sources/inbound/{source_id}"
     
     lead_source = {

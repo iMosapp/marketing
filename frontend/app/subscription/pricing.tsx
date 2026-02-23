@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://lead-routing-1.preview.emergentagent.com';
+        : 'https://deploy-crm-fix.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,

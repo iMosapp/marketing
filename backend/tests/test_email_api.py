@@ -7,7 +7,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://lead-routing-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://deploy-crm-fix.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "forestward@gmail.com"
