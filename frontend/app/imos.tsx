@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     color: '#FF3B30', // Red
   },
   taglineApostrophe: {
-    color: '#FFFFFF',
+    color: '#34C759', // Green - same as School
   },
   taglineM: {
     color: '#007AFF', // Blue
