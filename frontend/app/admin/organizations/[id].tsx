@@ -295,7 +295,7 @@ export default function OrganizationDetailScreen() {
               <View style={styles.statItem}>
                 <Ionicons name="storefront" size={20} color="#007AFF" />
                 <Text style={styles.statValue}>{hierarchy.stats.total_stores}</Text>
-                <Text style={styles.statLabel}>Stores</Text>
+                <Text style={styles.statLabel}>Accounts</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="people" size={20} color="#007AFF" />

@@ -290,7 +290,7 @@ export default function PricingPage() {
           </View>
           <View style={styles.featureRow}>
             <Ionicons name="checkmark-circle" size={18} color="#34C759" />
-            <Text style={styles.featureText}>Store-level analytics</Text>
+            <Text style={styles.featureText}>Account-level analytics</Text>
           </View>
           <View style={styles.featureRow}>
             <Ionicons name="checkmark-circle" size={18} color="#34C759" />
@@ -387,7 +387,7 @@ export default function PricingPage() {
             color={activeTab === 'store' ? '#FFF' : '#8E8E93'} 
           />
           <Text style={[styles.tabText, activeTab === 'store' && styles.tabTextActive]}>
-            Store / Team
+            Account / Team
           </Text>
         </TouchableOpacity>
       </View>
