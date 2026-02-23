@@ -160,6 +160,13 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Completed This Session (Feb 23, 2026)
 
+### Logo Update (COMPLETED - Feb 23, 2026)
+- [x] **Login Page** - Updated to use new iMOS colorful logo (red i, blue M, yellow O, green S)
+- [x] **Landing Page (imos.tsx)** - Navigation bar updated with new logo
+- [x] **Landing Page Footer** - Updated with new logo
+- [x] **Marketing Preview** - Logo file updated in dist folder
+- [x] **Assets** - New logo saved to `/app/frontend/assets/images/imos-logo-white-v3.png`
+
 ### Inventory Webhook System (NEW - Industry Agnostic)
 - [x] **Backend API (100% tested)**
   - Full CRUD for inventory via webhooks
