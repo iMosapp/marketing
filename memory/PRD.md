@@ -132,10 +132,12 @@ iMos is a business management app for retail/service businesses. Key features in
 - [ ] Email delivery (BLOCKED - user needs to verify domain with Resend)
 - [ ] SMS functionality (BLOCKED - Twilio toll-free number pending verification)
 
-### P1 (High Priority)
-- [x] **Fixed: Shared Inboxes Page** - Was showing "User not found" error, now loads correctly with all inbox data
-- [ ] **Fix Auth State Persistence** - Login doesn't persist on navigation/refresh (high impact on UX)
-- [ ] **Fix Lead Notification Modal** - Modal UI created but blocked by React #418 hydration error on web. Backend API is complete and working.
+### P1 (High Priority) - SEVERAL FIXED
+- [x] **FIXED: Shared Inboxes Page** - Was showing "User not found" error, now loads correctly with all inbox data
+- [x] **FIXED: Auth State Persistence** - Login now persists on navigation/refresh via AsyncStorage
+- [x] **FIXED: Root URL Black Screen** - Added HTML meta redirect to `/auth/login` as workaround for Expo web hydration issue
+- [x] **FIXED: Settings Pages Loading** - Templates, Tags, Calendar, Integrations all fixed (race condition)
+- [ ] **React Hydration Error #418** - Root cause still exists in Expo web, but workaround in place
 - [ ] Quote drafts view/edit/delete functionality
 - [ ] Complete broadcast sending logic (needs Twilio)
 - [ ] Populate Reports section with real data (currently hardcoded)
