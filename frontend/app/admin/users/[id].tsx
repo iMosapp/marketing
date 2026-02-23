@@ -1013,6 +1013,56 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 8,
   },
+  // Inactive User Banner
+  inactiveBanner: {
+    backgroundColor: '#FF3B3015',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#FF3B3030',
+  },
+  inactiveBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  inactiveBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF9500',
+    marginLeft: 10,
+  },
+  deletionInfo: {
+    backgroundColor: '#00000030',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  deletionSource: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FF9500',
+  },
+  deletionDate: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 4,
+  },
+  reactivateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#34C759',
+    borderRadius: 10,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  reactivateButtonText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   impersonateButton: {
     flexDirection: 'row',
     alignItems: 'center',
