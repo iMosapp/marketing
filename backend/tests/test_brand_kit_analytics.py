@@ -6,7 +6,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crm-webhooks.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crm-debug-stage-1.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "forestward@gmail.com"
