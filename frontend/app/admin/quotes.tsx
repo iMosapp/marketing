@@ -442,6 +442,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#2C2C2E',
   },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 4,
+  },
+  archiveButton: {
+    padding: 4,
+  },
   validUntil: {
     fontSize: 13,
     color: '#8E8E93',
