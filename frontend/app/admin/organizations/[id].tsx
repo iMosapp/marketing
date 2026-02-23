@@ -419,7 +419,7 @@ export default function OrganizationDetailScreen() {
               <View style={styles.userList}>
                 {hierarchy.unassigned_users.map(user => renderUserBadge(user))}
               </View>
-              <Text style={styles.hintText}>These users are in the org but not assigned to any store</Text>
+              <Text style={styles.hintText}>These users are in the org but not assigned to any account</Text>
             </View>
           )}
           
