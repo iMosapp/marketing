@@ -174,6 +174,26 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] **Marketing Preview** - Logo file updated in dist folder
 - [x] **Assets** - New logo saved to `/app/frontend/assets/images/imos-logo-white-v3.png`
 
+### Marketing Landing Page Overhaul (COMPLETED - Feb 23, 2026)
+- [x] **New Tagline** - "I'm Old School" with colorful letters + "With a modern twist." subtitle in blue
+- [x] **Hero Section** - Left-aligned text with iPhone mockup showing text conversation
+- [x] **Phone Mockup** - Displays realistic SMS conversation about vehicle anniversary follow-up
+- [x] **Navigation** - Features, How It Works, Pricing, Testimonials, FAQ, Sign In, Get Started
+- [x] **All nav links functional** - Scroll to sections or navigate to auth pages
+- [x] **Pricing Section** - Starter ($49), Professional ($79), Enterprise (Custom)
+- [x] **FAQ Section** - 5 common questions with answers
+- [x] **Demo Request Form** - "Watch Demo" opens modal form that creates leads in database
+- [x] **Header 95% transparent** - With backdrop blur effect
+- [x] **Favicon** - New iMOS branded favicon (red i, blue M)
+- [x] **Meta tags** - Updated title, description, Open Graph tags
+
+### Demo Request System (NEW - Feb 23, 2026)
+- [x] Created `/app/backend/routers/demo_requests.py`
+- [x] POST `/api/demo-requests` - Creates contact with tags `demo-request`, `website-lead`
+- [x] GET `/api/demo-requests` - Lists all demo requests
+- [x] Modal form on landing page with name, email, phone, company, message fields
+- [x] Success confirmation message after submission
+
 ### Inventory Webhook System (NEW - Industry Agnostic)
 - [x] **Backend API (100% tested)**
   - Full CRUD for inventory via webhooks
