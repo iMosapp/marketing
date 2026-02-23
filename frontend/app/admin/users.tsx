@@ -461,7 +461,7 @@ export default function UsersScreen() {
 
             {stores.length > 0 && (
               <>
-                <Text style={styles.inputLabel}>Store (optional)</Text>
+                <Text style={styles.inputLabel}>Account (optional)</Text>
                 <View style={styles.pickerContainer}>
                   <TouchableOpacity
                     style={[styles.pickerOption, !newUserStoreId && styles.pickerOptionSelected]}

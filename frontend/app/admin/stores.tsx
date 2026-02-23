@@ -212,7 +212,7 @@ export default function StoresScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.title}>Stores</Text>
+        <Text style={styles.title}>Accounts</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowSearch(!showSearch)} style={styles.searchButton}>
             <Ionicons name="search" size={24} color="#007AFF" />
@@ -334,7 +334,7 @@ export default function StoresScreen() {
           </View>
           
           <ScrollView style={styles.modalContent}>
-            <Text style={styles.inputLabel}>Store Name *</Text>
+            <Text style={styles.inputLabel}>Account Name *</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g., Ken Garff Honda Downtown"
