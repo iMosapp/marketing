@@ -105,13 +105,41 @@ const testimonials = [
 
 export default function IMOSLandingPage() {
   const [scrollY, setScrollY] = useState(0);
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const router = useRouter();
+  
+  // Section positions for scrolling
+  const sectionRefs = {
+    features: React.useRef<View>(null),
+    howItWorks: React.useRef<View>(null),
+    pricing: React.useRef<View>(null),
+    testimonials: React.useRef<View>(null),
+    faq: React.useRef<View>(null),
+  };
+  
+  const [sectionPositions, setSectionPositions] = useState<{[key: string]: number}>({});
 
   const handleGetStarted = () => {
-    Linking.openURL('mailto:hello@imosapp.com?subject=Get%20Started%20with%20iMOS');
+    router.push('/auth/signup');
+  };
+
+  const handleSignIn = () => {
+    router.push('/auth/login');
   };
 
   const handleScheduleDemo = () => {
     Linking.openURL('mailto:demo@imosapp.com?subject=Schedule%20a%20Demo');
+  };
+  
+  const scrollToSection = (sectionKey: string) => {
+    const position = sectionPositions[sectionKey];
+    if (position !== undefined && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: position - 80, animated: true });
+    }
+  };
+  
+  const handleSectionLayout = (sectionKey: string, y: number) => {
+    setSectionPositions(prev => ({ ...prev, [sectionKey]: y }));
   };
 
   return (
