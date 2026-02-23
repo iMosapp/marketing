@@ -180,7 +180,7 @@ export default function OrganizationDetailScreen() {
           await api.put(`/admin/stores/${store._id}`, { active: newStatus });
           loadHierarchy();
         } catch (error) {
-          showSimpleAlert('Error', 'Failed to update store status');
+          showSimpleAlert('Error', 'Failed to update account status');
         }
       }
     );
