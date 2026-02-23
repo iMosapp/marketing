@@ -427,10 +427,12 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   logoImage: {
     width: 1680,
     height: 600,
+    maxWidth: '100%',
     marginBottom: 16,
   },
   logoText: {
