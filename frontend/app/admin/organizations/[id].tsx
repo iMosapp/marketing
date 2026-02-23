@@ -325,7 +325,7 @@ export default function OrganizationDetailScreen() {
             
             {hierarchy.stores.length === 0 ? (
               <View style={styles.emptySection}>
-                <Text style={styles.emptyText}>No stores yet</Text>
+                <Text style={styles.emptyText}>No accounts yet</Text>
                 <TouchableOpacity 
                   style={styles.createButton}
                   onPress={() => router.push(`/admin/stores?org=${id}`)}
