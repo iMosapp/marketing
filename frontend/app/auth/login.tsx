@@ -234,7 +234,7 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image 
-                source={{ uri: 'https://customer-assets.emergentagent.com/job_fa8f2237-6045-477a-9d52-8e5b2b3bc01a/artifacts/da6xk2ap_Screenshot%202026-02-22%20at%202.17.36%E2%80%AFPM.png' }}
+                source={{ uri: 'https://customer-assets.emergentagent.com/job_35683d39-9c8e-4a2d-a3f7-89b34db8b170/artifacts/g39ale0a_ChatGPT%20Image%20Feb%2023%2C%202026%2C%2004_06_33%20PM.png' }}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
