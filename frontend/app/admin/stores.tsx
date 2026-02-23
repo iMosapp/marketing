@@ -321,7 +321,7 @@ export default function StoresScreen() {
             >
               <Text style={styles.modalCancel}>Cancel</Text>
             </WebSafeButton>
-            <Text style={styles.modalTitle}>New Store</Text>
+            <Text style={styles.modalTitle}>New Account</Text>
             <WebSafeButton
               onPress={handleCreateStore}
               disabled={creating}
