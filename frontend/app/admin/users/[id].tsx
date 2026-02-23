@@ -708,7 +708,7 @@ export default function UserDetailScreen() {
           {availableStores.length === 0 ? (
             <View style={styles.emptyModalState}>
               <Ionicons name="storefront-outline" size={48} color="#8E8E93" />
-              <Text style={styles.emptyModalText}>No available stores</Text>
+              <Text style={styles.emptyModalText}>No available accounts</Text>
               <Text style={styles.emptyModalSubtext}>
                 User is already assigned to all stores in their organization
               </Text>

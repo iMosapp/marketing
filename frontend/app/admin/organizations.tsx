@@ -174,7 +174,7 @@ export default function OrganizationsScreen() {
       <View style={styles.orgStats}>
         <View style={styles.statItem}>
           <Ionicons name="storefront-outline" size={16} color="#8E8E93" />
-          <Text style={styles.statText}>{item.store_count || 0} stores</Text>
+          <Text style={styles.statText}>{item.store_count || 0} accounts</Text>
         </View>
         <View style={styles.statItem}>
           <Ionicons name="people-outline" size={16} color="#8E8E93" />
