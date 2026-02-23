@@ -2580,20 +2580,26 @@ async def get_admin_contacts(
     
     contacts = await db.contacts.find(query).sort('created_at', -1).limit(limit).to_list(limit)
     
-    # Get user and store names
-    user_ids = list(set(c.get('assigned_to') or c.get('user_id') for c in contacts if c.get('assigned_to') or c.get('user_id')))
-    store_ids = list(set(c.get('store_id') for c in contacts if c.get('store_id')))
+    # Get user and store names - filter out invalid ObjectIds
+    user_ids = [uid for uid in set(c.get('assigned_to') or c.get('user_id') for c in contacts if c.get('assigned_to') or c.get('user_id')) if uid and len(str(uid)) == 24]
+    store_ids = [sid for sid in set(c.get('store_id') for c in contacts if c.get('store_id')) if sid and len(str(sid)) == 24]
     
     users = {}
     stores = {}
     
     if user_ids:
-        user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
-        users = {str(u['_id']): u.get('name') for u in user_docs}
+        try:
+            user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
+            users = {str(u['_id']): u.get('name') for u in user_docs}
+        except:
+            pass
     
     if store_ids:
-        store_docs = await db.stores.find({'_id': {'$in': [ObjectId(sid) for sid in store_ids]}}).to_list(100)
-        stores = {str(s['_id']): s.get('name') for s in store_docs}
+        try:
+            store_docs = await db.stores.find({'_id': {'$in': [ObjectId(sid) for sid in store_ids]}}).to_list(100)
+            stores = {str(s['_id']): s.get('name') for s in store_docs}
+        except:
+            pass
     
     result = []
     for c in contacts:
