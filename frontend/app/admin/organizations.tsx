@@ -131,6 +131,18 @@ export default function OrganizationsScreen() {
       'Cancel'
     );
   };
+
+  // Filter organizations based on search query
+  const filteredOrganizations = organizations.filter((org) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      org.name?.toLowerCase().includes(query) ||
+      org.admin_email?.toLowerCase().includes(query) ||
+      org.city?.toLowerCase().includes(query) ||
+      org.state?.toLowerCase().includes(query)
+    );
+  });
   
   const renderOrganization = ({ item }: { item: any }) => (
     <TouchableOpacity 
