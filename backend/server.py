@@ -343,6 +343,11 @@ async def stripe_webhook(request: Request):
         logger.error(f"Stripe webhook error: {str(e)}")
         return {"status": "received"}  # Always return 200 to Stripe
 
+# Root health check for Railway/deployment health checks
+@app.get("/")
+async def health_check():
+    return {"status": "healthy", "message": "iMOs API v2.0"}
+
 # Include the api_router in the main app
 app.include_router(api_router)
 
