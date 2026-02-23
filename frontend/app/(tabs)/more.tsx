@@ -286,7 +286,7 @@ export default function MoreScreen() {
     {
       icon: 'shield-checkmark',
       title: 'Admin Panel',
-      subtitle: 'Manage organizations, stores, and users',
+      subtitle: 'Manage organizations, accounts, and users',
       onPress: () => router.push('/admin'),
       color: '#34C759',
     },
