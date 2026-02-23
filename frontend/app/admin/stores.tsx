@@ -263,11 +263,11 @@ export default function StoresScreen() {
       ) : (
         <FlatList
           data={[
-            { type: 'header', title: 'Active Stores', count: filteredActiveStores.length },
+            { type: 'header', title: 'Active Accounts', count: filteredActiveStores.length },
             ...filteredActiveStores.map(s => ({ type: 'store', ...s })),
             ...(filteredInactiveStores.length > 0 ? [
               { type: 'divider' },
-              { type: 'header', title: 'Inactive Stores', count: filteredInactiveStores.length },
+              { type: 'header', title: 'Inactive Accounts', count: filteredInactiveStores.length },
               ...filteredInactiveStores.map(s => ({ type: 'store', ...s })),
             ] : []),
           ]}
