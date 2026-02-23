@@ -145,6 +145,29 @@ iMos is a business management app for retail/service businesses. Key features in
 ### P3 (Low Priority/Future)
 - [ ] App Store submission prep (icons, splash screens)
 
+## Completed This Session (Feb 23, 2026)
+
+### Inventory Webhook System (NEW - Industry Agnostic)
+- [x] **Backend API (100% tested)**
+  - Full CRUD for inventory via webhooks
+  - Supports ANY industry: Automotive, Real Estate, Retail, Custom
+  - Flexible attributes system for industry-specific fields
+  - Endpoints:
+    - `POST /api/webhooks/inventory/add` - Add/upsert inventory
+    - `POST /api/webhooks/inventory/update` - Partial update
+    - `POST /api/webhooks/inventory/delete` - Soft/hard delete
+    - `POST /api/webhooks/inventory/bulk` - Bulk operations
+    - `GET /api/webhooks/inventory` - List with filters
+    - `GET /api/webhooks/inventory/{external_id}` - Get single item
+    - `GET /api/webhooks/inventory/config/endpoints` - Integration docs
+  - Features:
+    - External ID support for CRM sync
+    - Status tracking (available, sold, pending, reserved, off_market)
+    - Sale tracking with timestamps and prices
+    - Soft delete (archive) by default
+    - Filtering by category, status, price range, tags
+    - Full audit trail
+
 ## Lead Sources API Reference
 
 ### Endpoints
