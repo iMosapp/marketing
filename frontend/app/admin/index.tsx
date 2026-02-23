@@ -398,7 +398,7 @@ export default function AdminDashboard() {
             {(hasPermission(user, 'view_all_stores') || hasPermission(user, 'view_org_stores')) && (
               <CustomerTile 
                 icon="storefront" 
-                label="Stores"
+                label="Accounts"
                 active={stats?.stores_active || 0}
                 inactive={stats?.stores_inactive || 0}
                 color="#34C759"
@@ -439,7 +439,7 @@ export default function AdminDashboard() {
             
             <CustomerTile 
               icon="storefront" 
-              label="My Stores"
+              label="My Accounts"
               active={stats?.stores_active || 0}
               inactive={0}
               color="#34C759"

@@ -258,7 +258,7 @@ export default function CreateQuotePage() {
               onPress={() => setPlanType('store')}
             >
               <Ionicons name="storefront" size={20} color={planType === 'store' ? '#FFF' : '#8E8E93'} />
-              <Text style={[styles.tabText, planType === 'store' && styles.tabTextActive]}>Store / Team</Text>
+              <Text style={[styles.tabText, planType === 'store' && styles.tabTextActive]}>Account / Team</Text>
             </TouchableOpacity>
           </View>
         </View>
