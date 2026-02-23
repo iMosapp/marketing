@@ -256,7 +256,7 @@ export default function StoreDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.title}>Store</Text>
+          <Text style={styles.title}>Account</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -273,12 +273,12 @@ export default function StoreDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.title}>Store</Text>
+          <Text style={styles.title}>Account</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color="#FF3B30" />
-          <Text style={styles.errorText}>Store not found</Text>
+          <Text style={styles.errorText}>Account not found</Text>
         </View>
       </SafeAreaView>
     );

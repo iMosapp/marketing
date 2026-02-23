@@ -314,7 +314,7 @@ export default function OrganizationDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="storefront" size={20} color="#34C759" />
-              <Text style={styles.sectionTitle}>Stores ({hierarchy.stores.length})</Text>
+              <Text style={styles.sectionTitle}>Accounts ({hierarchy.stores.length})</Text>
               <TouchableOpacity 
                 style={styles.addButton}
                 onPress={() => router.push(`/admin/stores?org=${id}`)}
