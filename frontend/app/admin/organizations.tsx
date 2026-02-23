@@ -258,7 +258,7 @@ export default function OrganizationsScreen() {
         </View>
       ) : (
         <FlatList
-          data={organizations}
+          data={filteredOrganizations}
           renderItem={renderOrganization}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
@@ -268,13 +268,19 @@ export default function OrganizationsScreen() {
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="business-outline" size={64} color="#2C2C2E" />
-              <Text style={styles.emptyText}>No organizations yet</Text>
-              <TouchableOpacity 
-                style={styles.createButton}
-                onPress={() => setShowCreateModal(true)}
-              >
-                <Text style={styles.createButtonText}>Create Organization</Text>
-              </TouchableOpacity>
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'No organizations found' : 'No organizations yet'}
+              </Text>
+              {searchQuery ? (
+                <Text style={styles.emptySubtext}>Try a different search term</Text>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.createButton}
+                  onPress={() => setShowCreateModal(true)}
+                >
+                  <Text style={styles.createButtonText}>Create Organization</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         />
