@@ -126,10 +126,11 @@ export default function IMOSLandingPage() {
       <View style={styles.nav}>
         <View style={styles.navContent}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="flash" size={20} color="#000" />
-            </View>
-            <Text style={styles.logoText}>iMOS</Text>
+            <Image 
+              source={{ uri: IMOS_LOGO }} 
+              style={styles.navLogo}
+              resizeMode="contain"
+            />
           </View>
           <View style={styles.navLinks}>
             <TouchableOpacity style={styles.navLink}>
