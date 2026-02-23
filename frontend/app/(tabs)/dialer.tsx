@@ -285,14 +285,14 @@ export default function DialerScreen() {
       
       {!showCallLog ? (
         <View style={styles.dialerContainer}>
-          {/* Number Display */}
+          {/* Number Display - moved up */}
           <View style={styles.numberDisplay}>
             <Text style={styles.numberText} numberOfLines={1} adjustsFontSizeToFit>
-              {phoneNumber || 'Enter number'}
+              {phoneNumber || '\u00A0'}
             </Text>
           </View>
           
-          {/* Dial Pad - Fixed at bottom */}
+          {/* Dial Pad */}
           <View style={styles.dialPadWrapper}>
             <View style={styles.dialPad}>
               {dialPad.map((row, rowIndex) => (
