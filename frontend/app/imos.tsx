@@ -204,6 +204,7 @@ export default function IMOSLandingPage() {
                 <Text style={styles.taglineSpace}> </Text>
                 <Text style={styles.taglineSchool}>School</Text>
               </Text>
+              <Text style={styles.taglineSubtext}>With a modern twist.</Text>
             </View>
             
             <Text style={styles.heroSubtitle}>
