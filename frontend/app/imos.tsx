@@ -1176,6 +1176,132 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   
+  // Pricing
+  pricingGrid: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    gap: 24,
+    maxWidth: 1100,
+    marginHorizontal: 'auto',
+    justifyContent: 'center',
+    alignItems: 'stretch',
+  },
+  pricingCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 32,
+    flex: 1,
+    minWidth: 280,
+    maxWidth: 350,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  pricingCardFeatured: {
+    borderColor: COLORS.accent,
+    borderWidth: 2,
+    position: 'relative',
+  },
+  pricingBadge: {
+    position: 'absolute',
+    top: -12,
+    left: '50%',
+    transform: [{ translateX: -50 }],
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  pricingBadgeText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pricingPlanName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+  },
+  pricingPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  pricingPrice: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  pricingPeriod: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginLeft: 4,
+  },
+  pricingDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 24,
+  },
+  pricingFeatures: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  pricingFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pricingFeatureText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  pricingButton: {
+    backgroundColor: COLORS.elevated,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  pricingButtonFeatured: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+  pricingButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  pricingButtonTextFeatured: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+  },
+  
+  // FAQ
+  faqContainer: {
+    maxWidth: 800,
+    marginHorizontal: 'auto',
+    gap: 16,
+  },
+  faqItem: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  faqQuestion: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+  },
+  faqAnswer: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    lineHeight: 24,
+  },
+  
   // CTA Section
   ctaSection: {
     paddingVertical: 100,
