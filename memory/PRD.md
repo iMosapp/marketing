@@ -326,6 +326,18 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
   - Issue: Page stuck on loading spinner
   - Fix: Added `user?.store_id` and `user?._id` dependencies to useEffect
 
+### Auth & Navigation Fixes
+- [x] **Fixed Root URL Black Screen:**
+  - Issue: `/` showed black screen due to Expo web hydration error
+  - Fix: Added meta refresh and JS redirect in `public/index.html` to `/auth/login`
+- [x] **Auth State Persistence Verified:**
+  - AsyncStorage already stores auth data
+  - loadAuth() is called on app mount in `_layout.tsx`
+  - Tested: Login → Reload → User stays logged in ✅
+- [x] **Added Protected Route Guards:**
+  - Added auth check to `(tabs)/_layout.tsx`
+  - Redirects unauthenticated users to login
+
 ### Testing Results
 - Backend API: 94% pass rate (30/32 tests)
 - Frontend UI: 95%+ pass rate (all pages now loading correctly)
