@@ -1,12 +1,9 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://02221223pmwebapp.fly.dev/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/api/:path*",
+      "destination": "https://02221223pmwebapp.fly.dev/api/:path*"
     }
-  ]
+  ],
+  "trailingSlash": false
 }
