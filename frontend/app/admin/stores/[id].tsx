@@ -538,7 +538,7 @@ export default function StoreDetailScreen() {
             
             <View style={styles.permissionRow}>
               <View style={styles.permissionInfo}>
-                <Text style={styles.permissionTitle}>Store Managers</Text>
+                <Text style={styles.permissionTitle}>Account Managers</Text>
                 <Text style={styles.permissionDesc}>Allow managers to create and edit campaigns</Text>
               </View>
               <TouchableOpacity
@@ -610,7 +610,7 @@ export default function StoreDetailScreen() {
                 style={styles.input}
                 value={editedStore.name}
                 onChangeText={(text) => setEditedStore({ ...editedStore, name: text })}
-                placeholder="Store name"
+                placeholder="Account name"
                 placeholderTextColor="#8E8E93"
               />
               
@@ -673,7 +673,7 @@ export default function StoreDetailScreen() {
           {/* Store Info (View Mode) */}
           {!editMode && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Store Details</Text>
+              <Text style={styles.sectionTitle}>Account Details</Text>
               
               {store.phone && (
                 <View style={styles.infoRow}>
