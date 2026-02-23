@@ -248,7 +248,7 @@ export default function PricingPage() {
         )}
 
         <View style={styles.planHeader}>
-          <Text style={styles.planName}>Store Plan</Text>
+          <Text style={styles.planName}>Account Plan</Text>
           <Text style={styles.planDescription}>
             {userCount >= 6 ? 'Volume pricing for 6+ users' : 'For dealerships & sales teams'}
           </Text>

@@ -137,7 +137,7 @@ export default function StoreProfileScreen() {
             <Text style={styles.headerTitle}>Account Profile</Text>
             <View style={{ width: 60 }} />
           </View>
-          <Text style={styles.noStoreText}>No store associated with your account</Text>
+          <Text style={styles.noStoreText}>No account associated with your profile</Text>
         </SafeAreaView>
       </View>
     );
@@ -168,7 +168,7 @@ export default function StoreProfileScreen() {
               value={store.name || ''}
               onChangeText={(text) => updateField('name', text)}
               editable={isAdmin}
-              placeholder="Store Name"
+              placeholder="Account Name"
               placeholderTextColor="#8E8E93"
             />
             
