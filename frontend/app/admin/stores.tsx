@@ -75,7 +75,7 @@ export default function StoresScreen() {
     setCreating(true);
     try {
       await adminAPI.createStore(newStore);
-      showSimpleAlert('Success', 'Store created successfully');
+      showSimpleAlert('Success', 'Account created successfully');
       setShowCreateModal(false);
       setNewStore({
         name: '',
@@ -88,7 +88,7 @@ export default function StoresScreen() {
       });
       loadStores();
     } catch (error: any) {
-      const message = error?.response?.data?.detail || 'Failed to create store';
+      const message = error?.response?.data?.detail || 'Failed to create account';
       showSimpleAlert('Error', message);
     } finally {
       setCreating(false);
@@ -97,14 +97,14 @@ export default function StoresScreen() {
   
   const handleDeleteStore = (store: any) => {
     showConfirm(
-      'Delete Store',
-      `Are you sure you want to delete "${store.name}"? Users will be unassigned from this store.`,
+      'Delete Account',
+      `Are you sure you want to delete "${store.name}"? Users will be unassigned from this account.`,
       async () => {
         try {
           await adminAPI.deleteStore(store._id);
           loadStores();
         } catch (error) {
-          showSimpleAlert('Error', 'Failed to delete store');
+          showSimpleAlert('Error', 'Failed to delete account');
         }
       },
       undefined,
