@@ -751,6 +751,18 @@ const styles = StyleSheet.create({
   inactiveText: {
     color: '#8E8E93',
   },
+  deletionSource: {
+    fontSize: 11,
+    color: '#FF9500',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  inactiveSectionHeader: {
+    marginTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#2C2C2E',
+    paddingTop: 24,
+  },
   addButton: {
     padding: 4,
   },
