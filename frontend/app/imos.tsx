@@ -698,6 +698,124 @@ export default function IMOSLandingPage() {
         </View>
       </View>
     </ScrollView>
+    
+    {/* Demo Request Modal */}
+    <Modal
+      visible={showDemoModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowDemoModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity 
+            style={styles.modalClose}
+            onPress={() => setShowDemoModal(false)}
+          >
+            <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+          
+          {submitSuccess ? (
+            <View style={styles.successContainer}>
+              <Ionicons name="checkmark-circle" size={64} color={COLORS.green} />
+              <Text style={styles.successTitle}>Thank You!</Text>
+              <Text style={styles.successText}>
+                We've received your demo request. Our team will reach out to you within 24 hours to schedule a personalized demo.
+              </Text>
+              <TouchableOpacity 
+                style={styles.ctaButton}
+                onPress={() => setShowDemoModal(false)}
+              >
+                <Text style={styles.ctaButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.modalTitle}>Schedule a Demo</Text>
+              <Text style={styles.modalSubtitle}>
+                See how iMOS can transform your sales process. Fill out the form and we'll be in touch within 24 hours.
+              </Text>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Full Name *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="John Smith"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={demoForm.name}
+                  onChangeText={(text) => setDemoForm(prev => ({ ...prev, name: text }))}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Email *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="john@company.com"
+                  placeholderTextColor={COLORS.textTertiary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={demoForm.email}
+                  onChangeText={(text) => setDemoForm(prev => ({ ...prev, email: text }))}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Phone *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="(555) 123-4567"
+                  placeholderTextColor={COLORS.textTertiary}
+                  keyboardType="phone-pad"
+                  value={demoForm.phone}
+                  onChangeText={(text) => setDemoForm(prev => ({ ...prev, phone: text }))}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Company</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Your Company Name"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={demoForm.company}
+                  onChangeText={(text) => setDemoForm(prev => ({ ...prev, company: text }))}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Message (Optional)</Text>
+                <TextInput
+                  style={[styles.formInput, styles.formTextarea]}
+                  placeholder="Tell us about your sales team and goals..."
+                  placeholderTextColor={COLORS.textTertiary}
+                  multiline
+                  numberOfLines={3}
+                  value={demoForm.message}
+                  onChangeText={(text) => setDemoForm(prev => ({ ...prev, message: text }))}
+                />
+              </View>
+              
+              <TouchableOpacity 
+                style={[styles.ctaButton, styles.submitButton]}
+                onPress={handleDemoSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <>
+                    <Text style={styles.ctaButtonText}>Request Demo</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#000" />
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
