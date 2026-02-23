@@ -768,12 +768,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   phoneHomeBar: {
-    width: 120,
+    width: 100,
     height: 4,
-    backgroundColor: '#FFF',
+    backgroundColor: '#333',
     borderRadius: 2,
     alignSelf: 'center',
-    marginTop: 8,
+    marginTop: 6,
     marginBottom: 8,
   },
   
