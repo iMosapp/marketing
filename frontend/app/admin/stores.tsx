@@ -137,6 +137,22 @@ export default function StoresScreen() {
   const activeStores = stores.filter(s => s.active !== false);
   const inactiveStores = stores.filter(s => s.active === false);
 
+  // Filter stores based on search query
+  const filterStores = (storeList: any[]) => {
+    if (!searchQuery.trim()) return storeList;
+    const query = searchQuery.toLowerCase();
+    return storeList.filter((store) =>
+      store.name?.toLowerCase().includes(query) ||
+      store.city?.toLowerCase().includes(query) ||
+      store.state?.toLowerCase().includes(query) ||
+      store.organization_name?.toLowerCase().includes(query)
+    );
+  };
+
+  const filteredActiveStores = filterStores(activeStores);
+  const filteredInactiveStores = filterStores(inactiveStores);
+  const totalFiltered = filteredActiveStores.length + filteredInactiveStores.length;
+
   const renderStore = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={[styles.storeCard, item.active === false && styles.inactiveCard]}
