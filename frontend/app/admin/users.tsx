@@ -185,7 +185,7 @@ export default function UsersScreen() {
     resetAddForm();
   };
 
-  // Filter and group users
+  // Filter and group users - separate active and inactive
   const sections = useMemo(() => {
     const filteredUsers = users.filter(user => {
       if (!searchQuery.trim()) return true;
@@ -196,9 +196,13 @@ export default function UsersScreen() {
       );
     });
 
+    // Separate active and inactive users
+    const activeUsers = filteredUsers.filter(u => u.is_active !== false);
+    const inactiveUsers = filteredUsers.filter(u => u.is_active === false);
+
     const grouped: Record<string, any[]> = {};
     
-    filteredUsers.forEach(user => {
+    activeUsers.forEach(user => {
       const role = user.role || 'user';
       if (!grouped[role]) {
         grouped[role] = [];
@@ -206,7 +210,7 @@ export default function UsersScreen() {
       grouped[role].push(user);
     });
 
-    return ROLE_ORDER
+    const activeSections = ROLE_ORDER
       .filter(role => grouped[role]?.length > 0)
       .map(role => ({
         title: ROLE_LABELS[role] || role,
@@ -214,7 +218,22 @@ export default function UsersScreen() {
         color: ROLE_COLORS[role] || '#8E8E93',
         data: collapsedSections[role] ? [] : grouped[role],
         count: grouped[role].length,
+        isInactive: false,
       }));
+
+    // Add inactive users section if any exist
+    if (inactiveUsers.length > 0) {
+      activeSections.push({
+        title: 'Inactive Users',
+        role: 'inactive',
+        color: '#8E8E93',
+        data: collapsedSections['inactive'] ? [] : inactiveUsers,
+        count: inactiveUsers.length,
+        isInactive: true,
+      });
+    }
+
+    return activeSections;
   }, [users, searchQuery, collapsedSections]);
 
   const renderUser = ({ item }: { item: any }) => (
@@ -230,6 +249,9 @@ export default function UsersScreen() {
       <View style={styles.userInfo}>
         <Text style={[styles.userName, item.is_active === false && styles.inactiveText]}>{item.name}</Text>
         <Text style={styles.userEmail}>{item.email}</Text>
+        {item.is_active === false && item.deletion_source && (
+          <Text style={styles.deletionSource}>Deleted by: {item.deletion_source}</Text>
+        )}
       </View>
       <View style={[styles.statusDot, { backgroundColor: item.is_active !== false ? '#34C759' : '#FF3B30' }]} />
       <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
