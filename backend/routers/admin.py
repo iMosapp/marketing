@@ -1550,6 +1550,54 @@ async def get_individuals():
     } for u in individuals]
 
 
+@router.post("/individuals")
+async def create_individual(
+    individual_data: dict,
+    x_user_id: str = Header(None, alias="X-User-ID")
+):
+    """
+    Create an individual user (sole proprietor, not part of an organization).
+    """
+    db = get_db()
+    
+    # Validate required fields
+    if not individual_data.get('email'):
+        raise HTTPException(status_code=400, detail="Email is required")
+    if not individual_data.get('name'):
+        raise HTTPException(status_code=400, detail="Name is required")
+    
+    # Check if email already exists
+    existing = await db.users.find_one({"email": individual_data['email']})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    # Create individual user
+    import bcrypt
+    password = individual_data.get('password', 'Individual123!')
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    new_individual = {
+        "email": individual_data['email'],
+        "name": individual_data['name'],
+        "phone": individual_data.get('phone', ''),
+        "title": individual_data.get('title', ''),
+        "password": hashed,
+        "role": "user",
+        "is_individual": True,
+        "is_active": True,
+        "organization_id": None,
+        "store_id": None,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.users.insert_one(new_individual)
+    new_individual['_id'] = str(result.inserted_id)
+    del new_individual['password']
+    
+    return new_individual
+
+
 # ============= BILLING & REVENUE ENDPOINTS =============
 @router.get("/billing/summary")
 async def get_billing_summary(
