@@ -490,9 +490,9 @@ export default function ThreadScreen() {
   const handleAttachPhoto = () => {
     setShowAttachMenu(false);
     
-    // On web, directly open image picker (no camera option)
+    // On web, show attachment options modal instead of Alert
     if (IS_WEB) {
-      pickImage();
+      setShowPhotoOptionsModal(true);
       return;
     }
     
