@@ -207,6 +207,26 @@ export default function UserDetailScreen() {
       }
     );
   };
+
+  const handleReactivateUser = () => {
+    if (!user) return;
+    showConfirm(
+      'Reactivate User',
+      `Are you sure you want to reactivate ${user.name}? They will be able to log in and access the system again.`,
+      async () => {
+        setActionLoading(true);
+        try {
+          await api.put(`/admin/users/${id}/reactivate`);
+          loadUserData();
+          showSimpleAlert('Success', `${user.name} has been reactivated`);
+        } catch (error: any) {
+          showSimpleAlert('Error', error.response?.data?.detail || 'Failed to reactivate user');
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    );
+  };
   
   const handleChangeOrganization = async (newOrgId: string) => {
     if (!user) return;
