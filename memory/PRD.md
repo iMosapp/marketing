@@ -38,7 +38,16 @@ iMos is a business management app for retail/service businesses. Key features in
   - "Messaging Operating" - Blue (#5B9BD5)
   - "System" - Purple (#9B7BC7)
   - Buttons - Blue (#007AFF)
-- **Logo:** Text-only branding (no image logo)
+- **Logo:** iMOS colorful text logo
+  - "i" - Red
+  - "M" - Blue  
+  - "O" - Yellow
+  - "S" - Green
+  - Glowing/neon effect on dark background
+- **Logo URL:** `https://customer-assets.emergentagent.com/job_35683d39-9c8e-4a2d-a3f7-89b34db8b170/artifacts/g39ale0a_ChatGPT%20Image%20Feb%2023%2C%202026%2C%2004_06_33%20PM.png`
+- **Local Logo Files:**
+  - `/app/frontend/assets/images/imos-logo-white-v3.png`
+  - `/app/frontend/dist/marketing-preview/imos-logo.png`
 
 ## Deployments
 - **App:** `app.imosapp.com` (Emergent)
