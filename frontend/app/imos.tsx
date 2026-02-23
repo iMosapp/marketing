@@ -325,10 +325,11 @@ export default function IMOSLandingPage() {
         <View style={styles.footerContent}>
           <View style={styles.footerBrand}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoIcon}>
-                <Ionicons name="flash" size={20} color="#000" />
-              </View>
-              <Text style={styles.logoText}>iMOS</Text>
+              <Image 
+                source={{ uri: IMOS_LOGO }} 
+                style={styles.footerLogo}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.footerTagline}>Innovation Meets Old School</Text>
             <Text style={styles.footerDescription}>
