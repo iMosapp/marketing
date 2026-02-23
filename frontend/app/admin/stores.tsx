@@ -288,13 +288,19 @@ export default function StoresScreen() {
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="storefront-outline" size={64} color="#2C2C2E" />
-              <Text style={styles.emptyText}>No stores yet</Text>
-              <TouchableOpacity 
-                style={styles.createButton}
-                onPress={() => setShowCreateModal(true)}
-              >
-                <Text style={styles.createButtonText}>Add Store</Text>
-              </TouchableOpacity>
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'No stores found' : 'No stores yet'}
+              </Text>
+              {searchQuery ? (
+                <Text style={styles.emptySubtext}>Try a different search term</Text>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.createButton}
+                  onPress={() => setShowCreateModal(true)}
+                >
+                  <Text style={styles.createButtonText}>Add Store</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         />
