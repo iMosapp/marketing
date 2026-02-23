@@ -16,6 +16,7 @@ const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
 const HANDSHAKE_IMAGE = 'https://static.prod-images.emergentagent.com/jobs/aca65436-af09-4c87-a476-6757d45879e3/images/8f2bbe5337ce1d58d812afb189af3569f807308ff8c36bf5d0c051e6562b1a0c.png';
+const IMOS_LOGO = 'https://customer-assets.emergentagent.com/job_35683d39-9c8e-4a2d-a3f7-89b34db8b170/artifacts/g39ale0a_ChatGPT%20Image%20Feb%2023%2C%202026%2C%2004_06_33%20PM.png';
 
 // App-consistent Design Colors
 const COLORS = {
