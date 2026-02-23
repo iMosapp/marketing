@@ -223,10 +223,12 @@ export default function MyRankingsScreen() {
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
               <Switch
-                value={settings.leaderboard_visible}
-                onValueChange={toggleVisibility}
+                data-testid="leaderboard-visibility-toggle"
+                value={settings.leaderboard_visible === true}
+                onValueChange={(value) => toggleVisibility(value)}
                 trackColor={{ false: '#3A3A3C', true: '#34C759' }}
                 thumbColor="#FFF"
+                disabled={savingSettings}
               />
             )}
           </View>
