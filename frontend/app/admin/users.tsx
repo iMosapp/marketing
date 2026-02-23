@@ -260,13 +260,14 @@ export default function UsersScreen() {
 
   const renderSectionHeader = ({ section }: { section: any }) => (
     <TouchableOpacity 
-      style={styles.sectionHeader}
+      style={[styles.sectionHeader, section.isInactive && styles.inactiveSectionHeader]}
       onPress={() => toggleSection(section.role)}
       activeOpacity={0.7}
     >
       <View style={[styles.sectionIcon, { backgroundColor: section.color + '20' }]}>
         <Ionicons 
           name={
+            section.role === 'inactive' ? 'person-remove' :
             section.role === 'super_admin' ? 'shield-checkmark' :
             section.role === 'org_admin' ? 'person-circle' :
             section.role === 'store_manager' ? 'briefcase' : 'person'
