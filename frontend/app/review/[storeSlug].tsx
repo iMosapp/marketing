@@ -143,7 +143,7 @@ export default function PublicReviewPage() {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle" size={64} color="#FF3B30" />
-        <Text style={styles.errorTitle}>Store Not Found</Text>
+        <Text style={styles.errorTitle}>Account Not Found</Text>
         <Text style={styles.errorText}>This review page doesn't exist.</Text>
       </View>
     );

@@ -224,7 +224,7 @@ export default function DiscountCodesPage() {
               />
             </View>
             <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Store Plans</Text>
+              <Text style={styles.switchLabel}>Account Plans</Text>
               <Switch
                 value={forStore}
                 onValueChange={setForStore}
