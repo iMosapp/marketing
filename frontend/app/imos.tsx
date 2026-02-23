@@ -679,6 +679,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 40,
+    perspective: 1000,
   },
   phoneMockup: {
     width: 280,
@@ -688,11 +689,17 @@ const styles = StyleSheet.create({
     padding: 0,
     borderWidth: 2,
     borderColor: '#1a1a1a',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
+    shadowColor: '#000',
+    shadowOffset: { width: 20, height: 30 },
+    shadowOpacity: 0.5,
     shadowRadius: 40,
     overflow: 'hidden',
+    transform: [
+      { perspective: 1000 },
+      { rotateY: '-15deg' },
+      { rotateX: '5deg' },
+      { rotateZ: '2deg' },
+    ],
   },
   phoneNotch: {
     width: 90,
