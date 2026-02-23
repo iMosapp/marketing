@@ -68,10 +68,14 @@ export default function SharedInboxesPage() {
   }, [user?._id]);
 
   const loadData = async () => {
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
     try {
       const [inboxRes, usersRes] = await Promise.all([
-        api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
-        api.get(`/admin/team/users?user_id=${user?._id}`),
+        api.get(`/admin/team/shared-inboxes?user_id=${user._id}`),
+        api.get(`/admin/team/users?user_id=${user._id}`),
       ]);
       setInboxes(inboxRes.data);
       setUsers(usersRes.data);
