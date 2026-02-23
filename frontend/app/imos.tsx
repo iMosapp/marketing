@@ -112,6 +112,18 @@ export default function IMOSLandingPage() {
   const scrollViewRef = React.useRef<ScrollView>(null);
   const router = useRouter();
   
+  // Demo modal state
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoForm, setDemoForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    message: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  
   // Section positions for scrolling
   const sectionRefs = {
     features: React.useRef<View>(null),
@@ -132,7 +144,46 @@ export default function IMOSLandingPage() {
   };
 
   const handleScheduleDemo = () => {
-    Linking.openURL('mailto:demo@imosapp.com?subject=Schedule%20a%20Demo');
+    setShowDemoModal(true);
+    setSubmitSuccess(false);
+  };
+  
+  const handleDemoSubmit = async () => {
+    if (!demoForm.name || !demoForm.email || !demoForm.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || process.env.REACT_APP_BACKEND_URL || '';
+      const response = await fetch(`${API_URL}/api/demo-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: demoForm.name,
+          email: demoForm.email,
+          phone: demoForm.phone,
+          company: demoForm.company,
+          message: demoForm.message,
+          source: 'website_demo_request',
+        }),
+      });
+      
+      if (response.ok) {
+        setSubmitSuccess(true);
+        setDemoForm({ name: '', email: '', phone: '', company: '', message: '' });
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error('Demo request error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const scrollToSection = (sectionKey: string) => {
