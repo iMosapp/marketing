@@ -55,18 +55,20 @@ Third-party integration webhooks use a separate path:
 **Collections:**
 - `users`
 - `organizations`
-- `accounts` (formerly stores)
+- `stores` (displayed as "Accounts" in UI)
 - `quotes`
 - `individuals`
 - `inventory_items`
 - `discount_codes`
 - `partner_agreements`
-- `company_directory`
+- `directory_members`
 - `shared_inboxes`
-- `pending_users`
+- `lead_sources`
+- `conversations`
+- `contacts`
 - `calls`
 - `campaigns`
-- `contacts`
+- `messages`
 
 ### Field Naming
 - Use `snake_case` for all fields
@@ -76,15 +78,16 @@ Third-party integration webhooks use a separate path:
 ## Frontend Standards
 
 ### API Service
-- Single centralized API configuration
-- Base URL from environment variable: `REACT_APP_BACKEND_URL`
-- All API calls go through `/api/v1/...`
+- Single centralized API configuration at `/app/frontend/services/api.ts`
+- Base URL from environment variable: `EXPO_PUBLIC_BACKEND_URL` or `REACT_APP_BACKEND_URL`
+- All API calls go through `/api/...` prefix (handled by axios baseURL)
 
 ### Naming Conventions
-- **UI Label:** "Account" (NOT "Store")
-- **Brand Name:** "IMOS" or "imosapp"
+- **UI Label:** "Account" (NOT "Store") - internal DB still uses `stores`
+- **Brand Name:** "iMOs" or "imosapp"
 - Components: PascalCase (e.g., `UserList.tsx`)
 - Hooks: camelCase with `use` prefix (e.g., `useAuth.ts`)
+- Pages: lowercase with dashes (e.g., `shared-inboxes.tsx`)
 
 ## Code Organization
 
