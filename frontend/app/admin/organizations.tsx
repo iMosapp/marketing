@@ -212,10 +212,44 @@ export default function OrganizationsScreen() {
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Organizations</Text>
-        <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addButton}>
-          <Ionicons name="add-circle" size={32} color="#007AFF" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShowSearch(!showSearch)} style={styles.searchButton}>
+            <Ionicons name="search" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addButton}>
+            <Ionicons name="add-circle" size={32} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
       </View>
+      
+      {/* Search Bar */}
+      {showSearch && (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name, email, city..."
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {searchQuery && (
+            <Text style={styles.searchResultCount}>
+              {filteredOrganizations.length} result{filteredOrganizations.length !== 1 ? 's' : ''}
+            </Text>
+          )}
+        </View>
+      )}
       
       {/* List */}
       {loading ? (
