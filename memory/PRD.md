@@ -182,6 +182,10 @@ iMos is a business management app for retail/service businesses. Key features in
   - Inactive users section with visual distinction
   - Shows deletion source (e.g., "Deleted by: Salesforce CRM")
   - Allows managers to see deleted users before permanent removal
+- [x] **Reactivate User Feature** (NEW)
+  - Backend endpoint: `PUT /api/admin/users/{id}/reactivate`
+  - Frontend: "Reactivate User" button on inactive user detail page
+  - Clears deletion tracking and restores user to active status
 
 ## Inventory Webhooks API Reference
 
