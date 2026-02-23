@@ -153,26 +153,24 @@ export default function IMOSLandingPage() {
       <View style={styles.hero}>
         <View style={styles.heroGlow} />
         <View style={styles.heroContent}>
-          {/* AI-Human Handshake Logo */}
-          <Image 
-            source={{ uri: HANDSHAKE_IMAGE }} 
-            style={styles.heroLogo}
-            resizeMode="contain"
-          />
-          
-          <View style={styles.badge}>
-            <Ionicons name="sparkles" size={14} color={COLORS.accent} />
-            <Text style={styles.badgeText}>Innovation Meets Old School</Text>
+          {/* Colorful Tagline */}
+          <View style={styles.taglineContainer}>
+            <Text style={styles.taglineText}>
+              <Text style={styles.taglineI}>I</Text>
+              <Text style={styles.taglineApostrophe}>'</Text>
+              <Text style={styles.taglineM}>m</Text>
+              <Text style={styles.taglineSpace}> </Text>
+              <Text style={styles.taglineOld}>Old</Text>
+              <Text style={styles.taglineSpace}> </Text>
+              <Text style={styles.taglineSchool}>School</Text>
+            </Text>
           </View>
           
-          <Text style={styles.heroTitle}>
-            The Future of{'\n'}
-            <Text style={styles.heroTitleAccent}>Customer Engagement</Text>
-          </Text>
-          
           <Text style={styles.heroSubtitle}>
-            Combine time-tested sales principles with cutting-edge AI technology. 
-            iMOS empowers your team to build genuine relationships at scale.
+            Built on timeless relationship principles and powered by modern automation, 
+            this platform ensures every customer feels remembered. The system handles the 
+            consistency... so you can focus on authentic human connection without anyone 
+            falling through the cracks.
           </Text>
           
           <View style={styles.heroButtons}>
@@ -416,8 +414,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   navLogo: {
-    width: 100,
-    height: 36,
+    width: 180,
+    height: 64,
   },
   footerLogo: {
     width: 100,
