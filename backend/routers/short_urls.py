@@ -32,7 +32,7 @@ def get_short_url_base() -> str:
     
     # Use the preview URL base
     # This will be set to the final domain (app.imosapp.com) in production
-    base_url = os.environ.get('BASE_URL', 'https://crm-debug-stage-1.preview.emergentagent.com')
+    base_url = os.environ.get('BASE_URL', 'https://app-rebuild-18.preview.emergentagent.com')
     return base_url.rstrip('/')
 
 async def create_short_url(

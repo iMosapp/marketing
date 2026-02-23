@@ -2772,7 +2772,7 @@ async def migrate_mms_media():
     import base64
     import os
     
-    BACKEND_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://crm-debug-stage-1.preview.emergentagent.com")
+    BACKEND_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-rebuild-18.preview.emergentagent.com")
     twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
     
