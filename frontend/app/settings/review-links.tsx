@@ -140,7 +140,7 @@ export default function ReviewLinksScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Store Review Links</Text>
+          <Text style={styles.headerTitle}>Account Review Links</Text>
           {isStoreAdmin && (
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
               <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>

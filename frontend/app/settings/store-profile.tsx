@@ -134,7 +134,7 @@ export default function StoreProfileScreen() {
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Store Profile</Text>
+            <Text style={styles.headerTitle}>Account Profile</Text>
             <View style={{ width: 60 }} />
           </View>
           <Text style={styles.noStoreText}>No store associated with your account</Text>
@@ -150,7 +150,7 @@ export default function StoreProfileScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Store Profile</Text>
+          <Text style={styles.headerTitle}>Account Profile</Text>
           {isAdmin && (
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
               <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
@@ -162,7 +162,7 @@ export default function StoreProfileScreen() {
           {/* Basic Info */}
           <Text style={styles.sectionTitle}>BASIC INFO</Text>
           <View style={styles.card}>
-            <Text style={styles.label}>Store Name</Text>
+            <Text style={styles.label}>Account Name</Text>
             <TextInput
               style={styles.input}
               value={store.name || ''}
