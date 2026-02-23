@@ -168,6 +168,21 @@ iMos is a business management app for retail/service businesses. Key features in
     - Filtering by category, status, price range, tags
     - Full audit trail
 
+### Search Functionality Added (NEW)
+- [x] **Organizations page** - Magnifying glass icon opens search bar
+- [x] **Stores page** - Magnifying glass icon opens search bar  
+- [x] **Users page** - Already had search (verified working)
+- [x] Search filters: name, email, city, state, organization name
+
+### Soft Delete with Audit Trail (NEW)
+- [x] **Webhook user deletion** now tracks deletion source
+  - `deletion_source` field records who deleted (e.g., "Salesforce CRM", "Manual", etc.)
+  - `deletion_reason` provides human-readable context
+- [x] **Users page** separates Active and Inactive users
+  - Inactive users section with visual distinction
+  - Shows deletion source (e.g., "Deleted by: Salesforce CRM")
+  - Allows managers to see deleted users before permanent removal
+
 ## Inventory Webhooks API Reference
 
 ### Endpoints
