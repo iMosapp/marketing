@@ -20,13 +20,24 @@ export default function Index() {
   const { isAuthenticated, isLoading, user } = useAuthStore();
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [timeout, setTimeoutReached] = useState(false);
+  
+  // Add a timeout to prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeoutReached(true);
+    }, 3000); // 3 second timeout
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   useEffect(() => {
     // Wait until navigation is ready before attempting to navigate
     if (!rootNavigationState?.key) return;
     if (hasNavigated) return;
     
-    if (!isLoading) {
+    // Navigate if not loading OR if timeout reached
+    if (!isLoading || timeout) {
       setHasNavigated(true);
       if (!isAuthenticated) {
         router.replace('/auth/login');
@@ -41,7 +52,7 @@ export default function Index() {
         router.replace(getDefaultRoute(user?.role) as any);
       }
     }
-  }, [isAuthenticated, isLoading, user, rootNavigationState?.key, hasNavigated]);
+  }, [isAuthenticated, isLoading, user, rootNavigationState?.key, hasNavigated, timeout]);
   
   return (
     <View style={styles.container}>
