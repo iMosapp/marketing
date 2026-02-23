@@ -2576,6 +2576,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
+  // Photo Options Modal Styles (for Web)
+  photoOptionsOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  photoOptionsModal: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 20,
+    width: '80%',
+    maxWidth: 320,
+  },
+  photoOptionsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFF',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  photoOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#2C2C2E',
+    marginBottom: 10,
+    gap: 12,
+  },
+  photoOptionText: {
+    fontSize: 16,
+    color: '#FFF',
+  },
+  photoOptionCancel: {
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  photoOptionCancelText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+  },
   // Congrats Card Modal Styles
   congratsModalOverlay: {
     flex: 1,
