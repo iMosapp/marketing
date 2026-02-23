@@ -545,13 +545,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   taglineContainer: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   taglineText: {
-    fontSize: Platform.OS === 'web' ? 72 : 48,
+    fontSize: Platform.OS === 'web' ? 64 : 48,
     fontWeight: '800',
     letterSpacing: -2,
-    textAlign: 'center',
+    textAlign: Platform.OS === 'web' ? 'left' : 'center',
   },
   taglineI: {
     color: '#FF3B30', // Red
