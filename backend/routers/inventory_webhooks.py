@@ -18,11 +18,64 @@ import logging
 import os
 
 from .database import get_db
-from models.inventory import (
-    InventoryItemCreate,
-    InventoryItemUpdate, 
-    InventoryItemDelete,
-)
+
+# Import inline to avoid models package conflict
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Define models inline since there's a naming conflict with models.py
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+
+
+class InventoryItemCreate(BaseModel):
+    """Model for creating inventory via webhook"""
+    external_id: str
+    name: str
+    category: str = "item"
+    status: str = "available"
+    price: Optional[float] = None
+    original_price: Optional[float] = None
+    currency: str = "USD"
+    store_id: Optional[str] = None
+    organization_id: Optional[str] = None
+    assigned_to_user_id: Optional[str] = None
+    images: List[str] = []
+    primary_image: Optional[str] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    attributes: Dict[str, Any] = {}
+    tags: List[str] = []
+    is_featured: bool = False
+    is_visible: bool = True
+    source_system: Optional[str] = None
+    source_url: Optional[str] = None
+
+
+class InventoryItemUpdate(BaseModel):
+    """Model for updating inventory via webhook"""
+    external_id: str
+    name: Optional[str] = None
+    category: Optional[str] = None
+    status: Optional[str] = None
+    price: Optional[float] = None
+    original_price: Optional[float] = None
+    store_id: Optional[str] = None
+    assigned_to_user_id: Optional[str] = None
+    images: Optional[List[str]] = None
+    primary_image: Optional[str] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    attributes: Optional[Dict[str, Any]] = None
+    tags: Optional[List[str]] = None
+    is_featured: Optional[bool] = None
+    is_visible: Optional[bool] = None
+
+
+class InventoryItemDelete(BaseModel):
+    """Model for deleting inventory via webhook"""
+    external_id: str
 
 router = APIRouter(prefix="/webhooks/inventory", tags=["inventory-webhooks"])
 logger = logging.getLogger(__name__)
