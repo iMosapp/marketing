@@ -1600,6 +1600,56 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </Modal>
       
+      {/* Photo Options Modal (for Web) */}
+      <Modal
+        visible={showPhotoOptionsModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowPhotoOptionsModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.photoOptionsOverlay}
+          activeOpacity={1}
+          onPress={() => setShowPhotoOptionsModal(false)}
+        >
+          <View style={styles.photoOptionsModal} onStartShouldSetResponder={() => true}>
+            <Text style={styles.photoOptionsTitle}>Add Photo</Text>
+            
+            <TouchableOpacity
+              style={styles.photoOptionButton}
+              onPress={() => {
+                setShowPhotoOptionsModal(false);
+                pickImage();
+              }}
+              data-testid="photo-option-library"
+            >
+              <Ionicons name="images-outline" size={24} color="#007AFF" />
+              <Text style={styles.photoOptionText}>Choose from Library</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.photoOptionButton}
+              onPress={() => {
+                setShowPhotoOptionsModal(false);
+                setShowCongratsCardModal(true);
+              }}
+              data-testid="photo-option-congrats"
+            >
+              <Ionicons name="gift-outline" size={24} color="#C9A962" />
+              <Text style={styles.photoOptionText}>Create Congrats Card</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.photoOptionButton, styles.photoOptionCancel]}
+              onPress={() => setShowPhotoOptionsModal(false)}
+              data-testid="photo-option-cancel"
+            >
+              <Text style={styles.photoOptionCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+      
       {/* Congrats Card Modal */}
       <Modal
         visible={showCongratsCardModal}
