@@ -287,7 +287,10 @@ export default function IMOSLandingPage() {
       </View>
 
       {/* Features Section */}
-      <View style={styles.section}>
+      <View 
+        style={styles.section}
+        onLayout={(e) => handleSectionLayout('features', e.nativeEvent.layout.y)}
+      >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>FEATURES</Text>
           <Text style={styles.sectionTitle}>Everything You Need to Win</Text>
@@ -310,7 +313,10 @@ export default function IMOSLandingPage() {
       </View>
 
       {/* How It Works */}
-      <View style={[styles.section, styles.sectionDark]}>
+      <View 
+        style={[styles.section, styles.sectionDark]}
+        onLayout={(e) => handleSectionLayout('howItWorks', e.nativeEvent.layout.y)}
+      >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
           <Text style={styles.sectionTitle}>Get Started in Minutes</Text>
