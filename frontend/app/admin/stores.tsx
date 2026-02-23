@@ -289,7 +289,7 @@ export default function StoresScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="storefront-outline" size={64} color="#2C2C2E" />
               <Text style={styles.emptyText}>
-                {searchQuery ? 'No stores found' : 'No stores yet'}
+                {searchQuery ? 'No accounts found' : 'No accounts yet'}
               </Text>
               {searchQuery ? (
                 <Text style={styles.emptySubtext}>Try a different search term</Text>
@@ -298,7 +298,7 @@ export default function StoresScreen() {
                   style={styles.createButton}
                   onPress={() => setShowCreateModal(true)}
                 >
-                  <Text style={styles.createButtonText}>Add Store</Text>
+                  <Text style={styles.createButtonText}>Add Account</Text>
                 </TouchableOpacity>
               )}
             </View>
