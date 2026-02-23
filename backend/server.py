@@ -344,7 +344,7 @@ async def stripe_webhook(request: Request):
         return {"status": "received"}  # Always return 200 to Stripe
 
 # Root health check for Railway/deployment health checks
-@app.get("/")
+@app.get("/healthz")
 async def health_check():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
@@ -354,6 +354,28 @@ app.include_router(api_router)
 # Include short URL router at root level (not under /api) for clean short URLs
 # This allows URLs like app.imosapp.com/s/abc123 instead of app.imosapp.com/api/s/abc123
 app.include_router(short_urls.router)
+
+# ============= SERVE STATIC FRONTEND =============
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Check if static folder exists (in production build)
+static_path = Path(__file__).parent / "static"
+if static_path.exists():
+    # Serve static files
+    app.mount("/static", StaticFiles(directory=str(static_path / "static")), name="static")
+    
+    # Catch-all route for SPA - serve index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Don't serve index.html for API routes
+        if full_path.startswith("api/") or full_path.startswith("s/"):
+            raise HTTPException(status_code=404)
+        
+        index_file = static_path / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        raise HTTPException(status_code=404)
 
 # ============= STARTUP EVENT =============
 @app.on_event("startup")
