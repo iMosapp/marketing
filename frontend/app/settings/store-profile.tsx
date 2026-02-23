@@ -73,7 +73,7 @@ export default function StoreProfileScreen() {
     setSaving(true);
     try {
       await api.put(`/admin/stores/${user.store_id}`, store);
-      Alert.alert('Saved!', 'Store profile updated');
+      Alert.alert('Saved!', 'Account profile updated');
     } catch (error) {
       Alert.alert('Error', 'Failed to save store profile');
     } finally {

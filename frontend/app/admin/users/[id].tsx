@@ -75,13 +75,13 @@ const ROLE_COLORS: Record<string, string> = {
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   org_admin: 'Org Admin',
-  store_manager: 'Store Manager',
+  store_manager: 'Account Manager',
   user: 'Sales Rep',
 };
 
 const AVAILABLE_ROLES = [
   { value: 'user', label: 'Sales Rep', color: '#007AFF' },
-  { value: 'store_manager', label: 'Store Manager', color: '#34C759' },
+  { value: 'store_manager', label: 'Account Manager', color: '#34C759' },
   { value: 'org_admin', label: 'Org Admin', color: '#FF9500' },
 ];
 
