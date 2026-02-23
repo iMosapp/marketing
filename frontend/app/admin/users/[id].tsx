@@ -36,6 +36,11 @@ interface UserDetail {
   created_at?: string;
   last_login?: string;
   social_links?: Record<string, string>;
+  // Deletion tracking
+  deleted_at?: string;
+  deletion_source?: string;
+  deletion_reason?: string;
+  previous_status?: string;
 }
 
 interface StoreInfo {
