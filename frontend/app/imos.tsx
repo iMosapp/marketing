@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
