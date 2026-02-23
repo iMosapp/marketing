@@ -202,15 +202,21 @@ async def webhook_user_deleted(
     store_id = user.get("store_id")
     org_id = user.get("organization_id")
     
-    # Deactivate user (soft delete)
+    # Determine deletion source
+    deletion_source = user_data.deletion_source or "External System (Webhook)"
+    
+    # Deactivate user (soft delete) with audit trail
     await db.users.update_one(
         {"_id": user_id},
         {
             "$set": {
                 "is_active": False,
-                "status": "deleted",
+                "status": "inactive",
                 "deleted_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.utcnow(),
+                "deletion_source": deletion_source,
+                "deletion_reason": f"Deleted by {deletion_source}",
+                "previous_status": user.get("status", "active")
             }
         }
     )
