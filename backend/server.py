@@ -344,6 +344,7 @@ async def stripe_webhook(request: Request):
         return {"status": "received"}  # Always return 200 to Stripe
 
 # Root health check
+@app.get("/health")
 @app.get("/healthz")
 async def health_check():
     return {"status": "healthy", "message": "iMOs API v2.0"}
