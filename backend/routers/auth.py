@@ -83,6 +83,10 @@ async def signup(user_data: UserCreate):
     user_dict['updated_at'] = datetime.utcnow()
     user_dict['onboarding_complete'] = False
     
+    # Check if this is the FIRST user in the database - make them super_admin
+    user_count = await get_db().users.count_documents({})
+    is_first_user = user_count == 0
+    
     # Check if independent (no organization_id or account_type is 'independent')
     is_independent = (
         not user_dict.get('organization_id') or 
@@ -92,7 +96,16 @@ async def signup(user_data: UserCreate):
     # Store what role they requested
     user_dict['requested_role'] = user_dict.get('role', 'Sales Rep')
     
-    if is_independent:
+    if is_first_user:
+        # First user gets super_admin rights
+        user_dict['role'] = 'super_admin'
+        user_dict['status'] = 'active'
+        user_dict['is_active'] = True
+        user_dict['account_type'] = 'independent'
+        user_dict['organization_id'] = None
+        user_dict['needs_onboarding'] = False
+        logger.info(f"First user {user_dict['email']} created as super_admin")
+    elif is_independent:
         # Independents get full access immediately
         user_dict['role'] = 'user'  # They manage themselves
         user_dict['status'] = 'active'
