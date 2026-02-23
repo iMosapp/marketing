@@ -639,6 +639,10 @@ h1, h2, h3, h4, h5, h6 {
     font-size: clamp(56px, 15vw, 90px);
   }
   
+  .hero-title-large {
+    font-size: clamp(48px, 12vw, 80px);
+  }
+  
   .hero-tagline {
     font-size: 24px;
   }
@@ -671,6 +675,10 @@ h1, h2, h3, h4, h5, h6 {
   
   .hero-title {
     font-size: clamp(48px, 18vw, 72px);
+  }
+  
+  .hero-title-large {
+    font-size: clamp(40px, 14vw, 64px);
   }
   
   .hero-tagline {
