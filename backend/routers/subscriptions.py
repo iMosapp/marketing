@@ -497,6 +497,41 @@ async def get_quote(quote_id: str):
     return quote
 
 
+
+@router.delete("/quotes/{quote_id}")
+async def delete_quote(quote_id: str):
+    """Delete a quote (only drafts can be deleted)"""
+    db = get_db()
+    
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Only allow deleting drafts
+    if quote["status"] != "draft":
+        raise HTTPException(status_code=400, detail="Only draft quotes can be deleted")
+    
+    await db.subscription_quotes.delete_one({"_id": ObjectId(quote_id)})
+    return {"message": "Quote deleted successfully"}
+
+
+@router.put("/quotes/{quote_id}/archive")
+async def archive_quote(quote_id: str):
+    """Archive a quote"""
+    db = get_db()
+    
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    await db.subscription_quotes.update_one(
+        {"_id": ObjectId(quote_id)},
+        {"$set": {"status": "archived", "archived_at": datetime.utcnow()}}
+    )
+    return {"message": "Quote archived successfully"}
+
+
+
 # ============= CHECKOUT & PAYMENT =============
 
 @router.post("/checkout")
