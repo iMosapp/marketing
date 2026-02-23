@@ -392,6 +392,181 @@ export default function IMOSLandingPage() {
         </View>
       </View>
 
+      {/* Pricing Section */}
+      <View 
+        style={[styles.section, styles.sectionDark]}
+        onLayout={(e) => handleSectionLayout('pricing', e.nativeEvent.layout.y)}
+      >
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>PRICING</Text>
+          <Text style={styles.sectionTitle}>Simple, Transparent Pricing</Text>
+          <Text style={styles.sectionSubtitle}>
+            No hidden fees. Cancel anytime. Start with a 14-day free trial.
+          </Text>
+        </View>
+        
+        <View style={styles.pricingGrid}>
+          {/* Starter Plan */}
+          <View style={styles.pricingCard}>
+            <Text style={styles.pricingPlanName}>Starter</Text>
+            <View style={styles.pricingPriceRow}>
+              <Text style={styles.pricingPrice}>$29</Text>
+              <Text style={styles.pricingPeriod}>/month</Text>
+            </View>
+            <Text style={styles.pricingDescription}>Perfect for individual sales reps</Text>
+            <View style={styles.pricingFeatures}>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>500 SMS messages/month</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>1,000 Email sends/month</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>500 Contacts</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Basic analytics</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Digital business card</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.pricingButton} onPress={handleGetStarted}>
+              <Text style={styles.pricingButtonText}>Start Free Trial</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Professional Plan */}
+          <View style={[styles.pricingCard, styles.pricingCardFeatured]}>
+            <View style={styles.pricingBadge}>
+              <Text style={styles.pricingBadgeText}>Most Popular</Text>
+            </View>
+            <Text style={styles.pricingPlanName}>Professional</Text>
+            <View style={styles.pricingPriceRow}>
+              <Text style={styles.pricingPrice}>$79</Text>
+              <Text style={styles.pricingPeriod}>/month</Text>
+            </View>
+            <Text style={styles.pricingDescription}>For growing sales teams</Text>
+            <View style={styles.pricingFeatures}>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>2,000 SMS messages/month</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>5,000 Email sends/month</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Unlimited contacts</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Advanced analytics</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Team collaboration</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Priority support</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={[styles.pricingButton, styles.pricingButtonFeatured]} onPress={handleGetStarted}>
+              <Text style={styles.pricingButtonTextFeatured}>Start Free Trial</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Enterprise Plan */}
+          <View style={styles.pricingCard}>
+            <Text style={styles.pricingPlanName}>Enterprise</Text>
+            <View style={styles.pricingPriceRow}>
+              <Text style={styles.pricingPrice}>Custom</Text>
+            </View>
+            <Text style={styles.pricingDescription}>For large organizations</Text>
+            <View style={styles.pricingFeatures}>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Unlimited messaging</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Unlimited contacts</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>White-label options</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Dedicated account manager</Text>
+              </View>
+              <View style={styles.pricingFeatureRow}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+                <Text style={styles.pricingFeatureText}>Custom integrations</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.pricingButton} onPress={handleScheduleDemo}>
+              <Text style={styles.pricingButtonText}>Contact Sales</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* FAQ Section */}
+      <View 
+        style={styles.section}
+        onLayout={(e) => handleSectionLayout('faq', e.nativeEvent.layout.y)}
+      >
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>FAQ</Text>
+          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+        </View>
+        
+        <View style={styles.faqContainer}>
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>How does the free trial work?</Text>
+            <Text style={styles.faqAnswer}>
+              Start with a 14-day free trial with full access to all Professional features. No credit card required. Cancel anytime.
+            </Text>
+          </View>
+          
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>Can I import my existing contacts?</Text>
+            <Text style={styles.faqAnswer}>
+              Yes! Import contacts from your phone, spreadsheets (CSV/Excel), or sync from other CRMs like Salesforce, HubSpot, and more.
+            </Text>
+          </View>
+          
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>Is my data secure?</Text>
+            <Text style={styles.faqAnswer}>
+              Absolutely. We use bank-level encryption, are SOC 2 compliant, and never sell your data. Your customer information is safe with us.
+            </Text>
+          </View>
+          
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>Do I need a separate phone number for SMS?</Text>
+            <Text style={styles.faqAnswer}>
+              We provide you with a dedicated business phone number, or you can use your existing number with our Twilio integration.
+            </Text>
+          </View>
+          
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>What kind of support do you offer?</Text>
+            <Text style={styles.faqAnswer}>
+              All plans include email support. Professional plans get priority support, and Enterprise customers have a dedicated account manager.
+            </Text>
+          </View>
+        </View>
+      </View>
+
       {/* CTA Section */}
       <View style={styles.ctaSection}>
         <View style={styles.ctaGlow} />
