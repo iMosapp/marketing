@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
-import { useRouter, useRootNavigationState } from 'expo-router';
+import { useRouter, useRootNavigationState, Redirect } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
 
 // Helper to get the right landing page based on user role
@@ -9,77 +9,54 @@ const getDefaultRoute = (role?: string): string => {
     case 'super_admin':
     case 'org_admin':
     case 'store_manager':
-      return '/(tabs)/more';  // Admins and managers go to More tab
+      return '/(tabs)/more';
     default:
-      return '/(tabs)/inbox'; // Regular users go to Inbox
+      return '/(tabs)/inbox';
   }
 };
 
 export default function Index() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user, loadAuth } = useAuthStore();
-  const rootNavigationState = useRootNavigationState();
-  const [hasNavigated, setHasNavigated] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   
-  // Track mount state
+  // Track mount state and load auth
   useEffect(() => {
     setMounted(true);
-    // Ensure auth is loaded
     loadAuth();
   }, []);
   
+  // Determine redirect path once loading is complete
   useEffect(() => {
-    // For web: don't wait for rootNavigationState
-    // For native: wait for navigation to be ready
-    const isNavReady = Platform.OS === 'web' || rootNavigationState?.key;
+    if (!mounted || isLoading) return;
     
-    if (!mounted) return;
-    if (!isNavReady) return;
-    if (hasNavigated) return;
-    
-    // Add a small delay on web to allow state to settle
-    const delay = Platform.OS === 'web' ? 100 : 0;
-    
-    const doNavigation = () => {
-      // Only navigate if loading is complete
-      if (isLoading) return;
-      
-      setHasNavigated(true);
-      
-      if (!isAuthenticated) {
-        router.replace('/auth/login');
-      } else if (user?.needs_onboarding || user?.status === 'pending') {
-        router.replace('/onboarding/index');
-      } else if (!user?.onboarding_complete) {
-        router.replace('/onboarding/index');
-      } else {
-        router.replace(getDefaultRoute(user?.role) as any);
-      }
-    };
-    
-    if (delay > 0) {
-      const timer = setTimeout(doNavigation, delay);
-      return () => clearTimeout(timer);
+    if (!isAuthenticated) {
+      setRedirectPath('/auth/login');
+    } else if (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete) {
+      setRedirectPath('/onboarding/index');
     } else {
-      doNavigation();
+      setRedirectPath(getDefaultRoute(user?.role));
     }
-  }, [isAuthenticated, isLoading, user, rootNavigationState?.key, hasNavigated, mounted]);
+  }, [mounted, isLoading, isAuthenticated, user]);
   
-  // Fallback: if still stuck after 3 seconds, force redirect to login
+  // Fallback timeout for web
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || redirectPath) return;
     
-    const fallbackTimer = setTimeout(() => {
-      if (!hasNavigated) {
-        console.log('Fallback redirect to login');
-        setHasNavigated(true);
-        router.replace('/auth/login');
+    const timer = setTimeout(() => {
+      if (!redirectPath) {
+        setRedirectPath('/auth/login');
       }
-    }, 3000);
+    }, 2000);
     
-    return () => clearTimeout(fallbackTimer);
-  }, [mounted, hasNavigated]);
+    return () => clearTimeout(timer);
+  }, [mounted, redirectPath]);
+  
+  // Use Redirect component for cleaner navigation
+  if (redirectPath) {
+    return <Redirect href={redirectPath as any} />;
+  }
   
   return (
     <View style={styles.container}>
