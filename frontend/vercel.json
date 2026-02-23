@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://02221223pmwebapp.fly.dev/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "https://02221223pmwebapp.fly.dev/api/$1" },
+    { "source": "/:path*", "destination": "/index.html" }
   ]
 }
