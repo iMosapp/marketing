@@ -430,10 +430,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoImage: {
-    width: 1680,
-    height: 600,
+    width: 320,
+    height: 120,
     maxWidth: '100%',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   logoText: {
     fontSize: 72,
