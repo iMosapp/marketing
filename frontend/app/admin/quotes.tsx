@@ -116,7 +116,7 @@ export default function QuotesListPage() {
     return new Date(validUntil) < new Date();
   };
 
-  const filters = ['all', 'draft', 'sent', 'accepted', 'expired'];
+  const filters = ['all', 'draft', 'sent', 'accepted', 'expired', 'archived'];
 
   return (
     <SafeAreaView style={styles.container}>
