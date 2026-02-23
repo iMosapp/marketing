@@ -173,7 +173,7 @@ export default function OrganizationDetailScreen() {
   const handleToggleStoreActive = (store: StoreInfo) => {
     const newStatus = !store.active;
     showConfirm(
-      newStatus ? 'Activate Store' : 'Deactivate Store',
+      newStatus ? 'Activate Account' : 'Deactivate Account',
       `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} ${store.name}?`,
       async () => {
         try {
