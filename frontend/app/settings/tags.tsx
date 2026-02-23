@@ -61,11 +61,13 @@ export default function TagsSettings() {
   const isInOrg = !!user?.org_id;
 
   useEffect(() => {
-    loadTags();
-    if (isAdmin && isInOrg) {
-      loadPendingTags();
+    if (user?._id) {
+      loadTags();
+      if (isAdmin && isInOrg) {
+        loadPendingTags();
+      }
     }
-  }, []);
+  }, [user?._id]);
 
   const loadTags = async () => {
     if (!user?._id) return;

@@ -49,8 +49,10 @@ export default function TemplatesSettings() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadTemplates();
-  }, []);
+    if (user?._id) {
+      loadTemplates();
+    }
+  }, [user?._id]);
 
   const loadTemplates = async () => {
     if (!user?._id) return;
