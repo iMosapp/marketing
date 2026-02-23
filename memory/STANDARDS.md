@@ -6,22 +6,23 @@
 ## API Route Standards
 
 ### Main API Routes
-All application API endpoints MUST use versioned paths:
+All application API endpoints use the `/api/` prefix:
 ```
-/api/v1/{resource}
+/api/{router-prefix}/{endpoint}
 ```
 
-**Examples:**
-- `/api/v1/organizations`
-- `/api/v1/accounts`
-- `/api/v1/users`
-- `/api/v1/quotes`
-- `/api/v1/individuals`
-- `/api/v1/discount-codes`
-- `/api/v1/partner-agreements`
-- `/api/v1/company-directory`
-- `/api/v1/shared-inboxes`
-- `/api/v1/pending-users`
+**Current Route Structure:**
+- `/api/admin/organizations` - Organization management
+- `/api/admin/stores` - Account (Store) management
+- `/api/admin/users` - User management
+- `/api/admin/individuals` - Individual management
+- `/api/admin/pending-users` - Pending user approvals
+- `/api/admin/team/shared-inboxes` - Shared inbox management
+- `/api/subscriptions/quotes` - Quote management
+- `/api/subscriptions/discount-codes` - Discount code management
+- `/api/partners/agreements` - Partner agreements
+- `/api/directory/members` - Company directory
+- `/api/lead-sources` - Lead source routing
 
 ### External Webhooks
 Third-party integration webhooks use a separate path:
@@ -30,16 +31,19 @@ Third-party integration webhooks use a separate path:
 ```
 
 **Examples:**
-- `/api/webhooks/inventory`
-- `/api/webhooks/users`
-- `/api/webhooks/twilio`
+- `/api/webhooks/inventory` - Inventory sync webhooks
+- `/api/webhooks/user-created` - User sync webhooks
+- `/api/webhooks/user-deleted` - User deletion webhooks
+- `/api/webhooks/twilio/incoming` - Twilio SMS webhooks
 
 ### Authentication Routes
 ```
-/api/v1/auth/login
-/api/v1/auth/register
-/api/v1/auth/logout
-/api/v1/auth/refresh
+/api/auth/login
+/api/auth/signup
+/api/auth/change-password
+/api/auth/forgot-password/request
+/api/auth/forgot-password/verify
+/api/auth/forgot-password/reset
 ```
 
 ## Database Standards
