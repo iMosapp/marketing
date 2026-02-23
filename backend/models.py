@@ -134,7 +134,7 @@ class Store(BaseModel):
         arbitrary_types_allowed = True
 
 class StoreCreate(BaseModel):
-    organization_id: str
+    organization_id: Optional[str] = None
     name: str
     phone: Optional[str] = None
     address: Optional[str] = None
