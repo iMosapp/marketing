@@ -773,6 +773,69 @@ async def update_admin_user(
     return {"message": "User updated"}
 
 
+@router.put("/users/{user_id}/reactivate")
+async def reactivate_user(
+    user_id: str,
+    x_user_id: str = Header(None, alias="X-User-ID")
+):
+    """
+    Reactivate a deactivated/inactive user.
+    Clears deletion tracking fields and sets is_active=True.
+    """
+    requesting_user = await get_requesting_user(x_user_id)
+    
+    if requesting_user:
+        role = requesting_user.get('role', 'user')
+        if role not in ['super_admin', 'org_admin', 'store_manager']:
+            raise HTTPException(status_code=403, detail="Only managers and admins can reactivate users")
+        
+        if role != 'super_admin':
+            has_access = await verify_user_access(requesting_user, user_id)
+            if not has_access:
+                raise HTTPException(status_code=403, detail="Access denied to this user")
+    
+    db = get_db()
+    
+    # Get the user first to check they exist and are inactive
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get('is_active', True):
+        raise HTTPException(status_code=400, detail="User is already active")
+    
+    # Reactivate the user
+    result = await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$set": {
+                "is_active": True,
+                "status": user.get('previous_status', 'active'),
+                "reactivated_at": datetime.utcnow(),
+                "reactivated_by": x_user_id,
+                "updated_at": datetime.utcnow()
+            },
+            "$unset": {
+                "deleted_at": "",
+                "deletion_source": "",
+                "deletion_reason": "",
+                "previous_status": ""
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to reactivate user")
+    
+    logger.info(f"User {user_id} reactivated by {x_user_id}")
+    
+    return {
+        "message": "User reactivated successfully",
+        "user_id": user_id,
+        "user_name": user.get('name')
+    }
+
+
 @router.delete("/users/{user_id}")
 async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
     """Delete a user - super_admin or org_admin only"""
