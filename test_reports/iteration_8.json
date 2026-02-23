@@ -1,0 +1,158 @@
+{
+  "summary": "Comprehensive admin panel testing - All 22 main admin pages load successfully. Detail pages (Organizations, Stores, Users) work correctly. Identified 8 broken data page links (404s) and some API integration issues.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/admin/shared-inboxes",
+        "issue": "404 - Frontend calls wrong URL. Correct endpoint is /api/admin/team/shared-inboxes",
+        "priority": "LOW"
+      },
+      {
+        "endpoint": "/api/admin/activity/recent",
+        "issue": "Intermittent 520 errors from Cloudflare during testing",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Shared Inboxes page",
+        "issue": "API call fails with 404 because user._id may be undefined when page loads. Error: Failed to load shared inboxes",
+        "affected_selectors": [],
+        "priority": "MEDIUM"
+      }
+    ],
+    "design_issues": [],
+    "missing_pages": [
+      {
+        "page": "/admin/data/messages",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/calls",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/ai-messages",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/card-shares",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/referrals",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/campaigns",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/review-templates",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/referral-templates",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/data/sold-templates",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      },
+      {
+        "page": "/admin/contacts",
+        "linked_from": "Admin Dashboard DATA section",
+        "status": "404 - Page file does not exist"
+      }
+    ]
+  },
+  "pages_tested": {
+    "main_admin_pages": {
+      "total": 22,
+      "passed": 22,
+      "failed": 0,
+      "pages": [
+        "Admin Dashboard ✓",
+        "Organizations List ✓",
+        "Accounts/Stores List ✓",
+        "Users List ✓",
+        "Pending Users ✓",
+        "Activity Feed ✓",
+        "Lead Sources ✓",
+        "Billing ✓",
+        "Revenue Forecast ✓",
+        "Leaderboards ✓",
+        "Training & SOPs ✓",
+        "Phone Assignments ✓",
+        "Partner Agreements ✓",
+        "Discount Codes ✓",
+        "Quotes ✓",
+        "Individuals ✓",
+        "Onboarding Settings ✓",
+        "Company Directory ✓",
+        "Shared Inboxes ✓",
+        "Bulk Transfer ✓",
+        "Training Preview ✓",
+        "Reports ✓"
+      ]
+    },
+    "detail_pages": {
+      "organization_detail": "✓ Works - /admin/organizations/[id]",
+      "store_detail": "✓ Works - /admin/stores/[id]",
+      "user_detail": "✓ Works - /admin/users/[id]"
+    },
+    "data_pages": {
+      "congrats-cards": "✓ Works",
+      "messages": "✗ 404",
+      "calls": "✗ 404",
+      "ai-messages": "✗ 404",
+      "card-shares": "✗ 404",
+      "referrals": "✗ 404",
+      "campaigns": "✗ 404",
+      "contacts": "✗ 404"
+    }
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Create missing data pages: messages, calls, ai-messages, card-shares, referrals, campaigns, review-templates, referral-templates, sold-templates",
+    "Create /admin/contacts page (currently 404)",
+    "Fix Shared Inboxes API integration - ensure user._id is available before API call",
+    "Consider removing data links from admin dashboard that don't have corresponding pages"
+  ],
+  "critical_code_review_comments": [
+    "Multiple dead links in admin dashboard DATA section - these link to non-existent pages",
+    "Only /app/frontend/app/admin/data/congrats-cards.tsx exists, but dashboard links to 10+ data pages",
+    "React Native web console shows 'Unexpected text node' warnings - minor issue"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% - All tested endpoints respond correctly",
+    "frontend": "68% - 22/22 main pages work, 10 data page links are broken (404)"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All main admin pages work. The primary issues are missing data pages linked from admin dashboard. The congrats-cards data page is the only one that exists. Consider either creating the missing pages or removing the links.",
+  "login_flow": {
+    "url": "https://crm-webhooks.preview.emergentagent.com/auth/login",
+    "status": "Working correctly",
+    "note": "Login redirects to /more page for super_admin role, then can navigate to /admin"
+  }
+}
