@@ -151,53 +151,101 @@ export default function IMOSLandingPage() {
 
       {/* Hero Section */}
       <View style={styles.hero}>
-        <View style={styles.heroGlow} />
-        <View style={styles.heroContent}>
-          {/* Colorful Tagline */}
-          <View style={styles.taglineContainer}>
-            <Text style={styles.taglineText}>
-              <Text style={styles.taglineI}>I</Text>
-              <Text style={styles.taglineApostrophe}>'</Text>
-              <Text style={styles.taglineM}>m</Text>
-              <Text style={styles.taglineSpace}> </Text>
-              <Text style={styles.taglineOld}>Old</Text>
-              <Text style={styles.taglineSpace}> </Text>
-              <Text style={styles.taglineSchool}>School</Text>
+        <View style={styles.heroRow}>
+          {/* Left side - Text content */}
+          <View style={styles.heroTextContent}>
+            {/* Colorful Tagline */}
+            <View style={styles.taglineContainer}>
+              <Text style={styles.taglineText}>
+                <Text style={styles.taglineI}>I</Text>
+                <Text style={styles.taglineApostrophe}>'</Text>
+                <Text style={styles.taglineM}>m</Text>
+                <Text style={styles.taglineSpace}> </Text>
+                <Text style={styles.taglineOld}>Old</Text>
+                <Text style={styles.taglineSpace}> </Text>
+                <Text style={styles.taglineSchool}>School</Text>
+              </Text>
+            </View>
+            
+            <Text style={styles.heroSubtitle}>
+              Built on timeless relationship principles and powered by modern automation, 
+              this platform ensures every customer feels remembered. The system handles the 
+              consistency... so you can focus on authentic human connection without anyone 
+              falling through the cracks.
             </Text>
+            
+            <View style={styles.heroButtons}>
+              <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
+                <Text style={styles.ctaButtonText}>Start Free Trial</Text>
+                <Ionicons name="arrow-forward" size={20} color="#000" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleScheduleDemo}>
+                <Ionicons name="play-circle" size={24} color={COLORS.textPrimary} />
+                <Text style={styles.secondaryButtonText}>Watch Demo</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.heroStats}>
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatNumber}>500+</Text>
+                <Text style={styles.heroStatLabel}>Active Teams</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatNumber}>2M+</Text>
+                <Text style={styles.heroStatLabel}>Messages Sent</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatNumber}>98%</Text>
+                <Text style={styles.heroStatLabel}>Satisfaction</Text>
+              </View>
+            </View>
           </View>
           
-          <Text style={styles.heroSubtitle}>
-            Built on timeless relationship principles and powered by modern automation, 
-            this platform ensures every customer feels remembered. The system handles the 
-            consistency... so you can focus on authentic human connection without anyone 
-            falling through the cracks.
-          </Text>
-          
-          <View style={styles.heroButtons}>
-            <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
-              <Text style={styles.ctaButtonText}>Start Free Trial</Text>
-              <Ionicons name="arrow-forward" size={20} color="#000" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleScheduleDemo}>
-              <Ionicons name="play-circle" size={24} color={COLORS.textPrimary} />
-              <Text style={styles.secondaryButtonText}>Watch Demo</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.heroStats}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNumber}>500+</Text>
-              <Text style={styles.heroStatLabel}>Active Teams</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNumber}>2M+</Text>
-              <Text style={styles.heroStatLabel}>Messages Sent</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNumber}>98%</Text>
-              <Text style={styles.heroStatLabel}>Satisfaction</Text>
+          {/* Right side - Phone mockup */}
+          <View style={styles.phoneContainer}>
+            <View style={styles.phoneMockup}>
+              <View style={styles.phoneNotch} />
+              <View style={styles.phoneScreen}>
+                <View style={styles.phoneHeader}>
+                  <Text style={styles.phoneHeaderText}>Messages</Text>
+                </View>
+                <View style={styles.messagesContainer}>
+                  {/* Outgoing message */}
+                  <View style={styles.messageOutgoing}>
+                    <Text style={styles.messageOutgoingText}>
+                      Hey Sarah! Can you believe it's been a year since you got your Civic? Time flies! How's it treating you?
+                    </Text>
+                    <Text style={styles.messageTime}>10:32 AM</Text>
+                  </View>
+                  
+                  {/* Incoming message */}
+                  <View style={styles.messageIncoming}>
+                    <Text style={styles.messageIncomingText}>
+                      Oh wow, already a year?! It's been amazing honestly. Best decision I made!
+                    </Text>
+                    <Text style={styles.messageTimeIncoming}>10:34 AM</Text>
+                  </View>
+                  
+                  {/* Outgoing message */}
+                  <View style={styles.messageOutgoing}>
+                    <Text style={styles.messageOutgoingText}>
+                      So glad to hear that! Let me know if you ever need anything. We're running a service special this month too 🔧
+                    </Text>
+                    <Text style={styles.messageTime}>10:35 AM</Text>
+                  </View>
+                  
+                  {/* Incoming message */}
+                  <View style={styles.messageIncoming}>
+                    <Text style={styles.messageIncomingText}>
+                      Actually perfect timing - I was just thinking about an oil change. I'll stop by Saturday!
+                    </Text>
+                    <Text style={styles.messageTimeIncoming}>10:37 AM</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.phoneHomeBar} />
             </View>
           </View>
         </View>
