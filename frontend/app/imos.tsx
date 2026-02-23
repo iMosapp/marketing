@@ -198,6 +198,7 @@ export default function IMOSLandingPage() {
   };
 
   return (
+    <>
     <ScrollView
       ref={scrollViewRef}
       style={styles.container}
