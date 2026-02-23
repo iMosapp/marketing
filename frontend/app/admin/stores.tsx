@@ -116,15 +116,15 @@ export default function StoresScreen() {
   const handleToggleStoreActive = (store: any) => {
     const newStatus = !store.active;
     showConfirm(
-      newStatus ? 'Activate Store' : 'Deactivate Store',
+      newStatus ? 'Activate Account' : 'Deactivate Account',
       `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} "${store.name}"?`,
       async () => {
         try {
           await api.put(`/admin/stores/${store._id}`, { active: newStatus });
           loadStores();
-          showSimpleAlert('Success', `Store ${newStatus ? 'activated' : 'deactivated'}`);
+          showSimpleAlert('Success', `Account ${newStatus ? 'activated' : 'deactivated'}`);
         } catch (error) {
-          showSimpleAlert('Error', 'Failed to update store status');
+          showSimpleAlert('Error', 'Failed to update account status');
         }
       },
       undefined,
