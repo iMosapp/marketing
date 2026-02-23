@@ -231,7 +231,33 @@ export default function QuotesListPage() {
                 ]}>
                   {isExpired(quote.valid_until) ? 'Expired' : `Valid until ${formatDate(quote.valid_until)}`}
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <View style={styles.actionButtons}>
+                  {quote.status === 'draft' && (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteQuote(quote._id, quote.status);
+                      }}
+                      data-testid={`delete-quote-${quote.quote_number}`}
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  )}
+                  {quote.status !== 'archived' && (
+                    <TouchableOpacity
+                      style={styles.archiveButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleArchiveQuote(quote._id);
+                      }}
+                      data-testid={`archive-quote-${quote.quote_number}`}
+                    >
+                      <Ionicons name="archive-outline" size={18} color="#8E8E93" />
+                    </TouchableOpacity>
+                  )}
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                </View>
               </View>
             </TouchableOpacity>
           ))
