@@ -515,6 +515,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: '#000000',
+  },
+  heroRow: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    maxWidth: 1200,
+    marginHorizontal: 'auto',
+    alignItems: 'center',
+    gap: 60,
+  },
+  heroTextContent: {
+    flex: 1,
+    alignItems: Platform.OS === 'web' ? 'flex-start' : 'center',
   },
   heroGlow: {
     position: 'absolute',
