@@ -94,39 +94,61 @@ Third-party integration webhooks use a separate path:
 ### Backend Structure
 ```
 /app/backend/
-├── models/          # Pydantic models
-├── routes/          # API route handlers
-├── services/        # Business logic
-├── utils/           # Helper functions
-└── server.py        # Main app, router registration
+├── models/          # Pydantic models (e.g., inventory_models.py, webhook_models.py)
+├── routers/         # API route handlers (one file per feature)
+├── services/        # Business logic services
+├── tests/           # Pytest test files
+└── server.py        # Main FastAPI app, router registration
 ```
 
 ### Frontend Structure
 ```
 /app/frontend/
 ├── app/
-│   ├── (app)/       # Authenticated routes
-│   ├── (auth)/      # Auth routes
+│   ├── (tabs)/      # Main tab navigation (inbox, contacts, dialer, more)
+│   ├── admin/       # Admin panel pages
+│   ├── auth/        # Authentication pages
+│   ├── settings/    # User settings pages
 │   └── ...
 ├── components/      # Reusable components
-├── services/        # API services
-└── hooks/           # Custom hooks
+├── services/        # API services (api.ts)
+├── hooks/           # Custom hooks
+└── store/           # Zustand state management
 ```
 
 ## Router Registration (server.py)
 
-All routers MUST be registered with the `/api/v1` prefix in `server.py`:
+All routers are registered under the `/api` prefix via api_router:
 ```python
-app.include_router(users_router, prefix="/api/v1")
-app.include_router(organizations_router, prefix="/api/v1")
-app.include_router(accounts_router, prefix="/api/v1")
+# Create the api_router with /api prefix
+api_router = APIRouter(prefix="/api")
+
+# Include feature routers (they define their own sub-prefixes)
+api_router.include_router(auth.router)      # /api/auth/...
+api_router.include_router(admin.router)      # /api/admin/...
+api_router.include_router(contacts.router)   # /api/contacts/...
 # ... etc
+
+# Include api_router in main app
+app.include_router(api_router)
 ```
 
-Webhook routers use `/api/webhooks`:
-```python
-app.include_router(inventory_webhooks_router, prefix="/api/webhooks")
-```
+## Admin Panel Routes (Frontend)
+
+All admin pages are under `/admin/` path:
+- `/admin` - Main admin dashboard
+- `/admin/organizations` - Organizations list
+- `/admin/stores` - Accounts list
+- `/admin/users` - Users list
+- `/admin/individuals` - Individuals list
+- `/admin/pending-users` - Pending user approvals
+- `/admin/shared-inboxes` - Shared inbox management
+- `/admin/quotes` - Quote management
+- `/admin/discount-codes` - Discount codes
+- `/admin/partner-agreements` - Partner agreements
+- `/admin/directory` - Company directory
+- `/admin/phone-assignments` - Twilio phone assignments
+- `/admin/lead-sources` - Lead source routing
 
 ---
 
