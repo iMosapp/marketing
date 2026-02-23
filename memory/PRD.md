@@ -16,27 +16,33 @@ iMos is a business management app for retail/service businesses. Key features in
 ├── backend/         # FastAPI + MongoDB
 │   ├── routers/     # API endpoints
 │   │   ├── lead_sources.py    # Lead routing system
-│   │   └── notifications.py   # Lead notification system
+│   │   ├── notifications.py   # Lead notification system
+│   │   └── demo_requests.py   # Website demo form submissions
 │   └── models.py    # Pydantic models
 ├── frontend/        # React Native/Expo (web export)
 │   ├── app/         # Screens (Expo Router)
 │   │   ├── admin/lead-sources/  # Lead Sources management
+│   │   ├── imos.tsx             # Marketing landing page
 │   │   └── (tabs)/inbox.tsx     # My/Team inbox toggle
 │   ├── components/
 │   │   └── notifications/       # Lead notification modal
 │   ├── hooks/
 │   │   └── useNotifications.ts  # Notification polling hook
+│   ├── public/
+│   │   ├── favicon.ico          # iMOS branded favicon
+│   │   └── favicon.png          # Apple touch icon
 │   └── store/       # Zustand state
-└── marketing/       # Separate Vite React site (Netlify)
 ```
 
 ## Current Branding
-- **Slogan:** "Innovation meets old school"
-- **Title:** "Innovative Messaging Operating System"
+- **Tagline:** "I'm Old School. With a modern twist."
 - **Colors:** 
-  - "Innovative" - White
-  - "Messaging Operating" - Blue (#5B9BD5)
-  - "System" - Purple (#9B7BC7)
+  - "I" - Red (#FF3B30)
+  - "'" - Green (#34C759)
+  - "m" - Blue (#007AFF)
+  - "Old" - Yellow (#FFD60A)
+  - "School" - Green (#34C759)
+  - "With a modern twist." - Blue (#007AFF)
   - Buttons - Blue (#007AFF)
 - **Logo:** iMOS colorful text logo
   - "i" - Red
@@ -44,6 +50,7 @@ iMos is a business management app for retail/service businesses. Key features in
   - "O" - Yellow
   - "S" - Green
   - Glowing/neon effect on dark background
+- **Favicon:** Red "i" + Blue "M" on black background
 - **Logo URL:** `https://customer-assets.emergentagent.com/job_35683d39-9c8e-4a2d-a3f7-89b34db8b170/artifacts/g39ale0a_ChatGPT%20Image%20Feb%2023%2C%202026%2C%2004_06_33%20PM.png`
 - **Local Logo Files:**
   - `/app/frontend/assets/images/imos-logo-white-v3.png`
