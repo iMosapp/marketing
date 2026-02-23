@@ -2,10 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies with extra index for emergentintegrations
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+RUN pip install --no-cache-dir --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ -r requirements.txt
 
 # Copy backend code
 COPY backend/ .
