@@ -774,6 +774,13 @@ const styles = StyleSheet.create({
     letterSpacing: -2,
     textAlign: Platform.OS === 'web' ? 'left' : 'center',
   },
+  taglineSubtext: {
+    fontSize: Platform.OS === 'web' ? 28 : 22,
+    fontWeight: '600',
+    color: '#007AFF',
+    textAlign: Platform.OS === 'web' ? 'left' : 'center',
+    marginTop: 8,
+  },
   taglineI: {
     color: '#FF3B30', // Red
   },
