@@ -405,6 +405,19 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 24px;
 }
 
+.hero-title-large {
+  font-size: clamp(56px, 10vw, 100px);
+  font-weight: 800;
+  line-height: 1.05;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-line {
+  display: block;
+}
+
 .hero-logo {
   display: block;
 }

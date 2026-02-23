@@ -86,19 +86,11 @@ const Hero = () => (
     </div>
     
     <div className="hero-content">
-      <h1 className="hero-title">
-        <img 
-          src="https://customer-assets.emergentagent.com/job_fa8f2237-6045-477a-9d52-8e5b2b3bc01a/artifacts/da6xk2ap_Screenshot%202026-02-22%20at%202.17.36%E2%80%AFPM.png" 
-          alt="iMOs Logo" 
-          className="hero-logo-image"
-        />
+      <h1 className="hero-title-large">
+        <span className="hero-line tagline-white">Innovation</span>
+        <span className="hero-line tagline-blue">Meets</span>
+        <span className="hero-line tagline-purple">Old School</span>
       </h1>
-      
-      <h2 className="hero-tagline">
-        <span className="tagline-white">Innovation</span>{' '}
-        <span className="tagline-blue">Meets</span>{' '}
-        <span className="tagline-purple">Old School</span>
-      </h2>
       
       <p className="hero-subtitle">
         Built on timeless relationship principles and powered by modern automation, 
