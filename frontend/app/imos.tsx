@@ -360,7 +360,10 @@ export default function IMOSLandingPage() {
       </View>
 
       {/* Testimonials */}
-      <View style={styles.section}>
+      <View 
+        style={styles.section}
+        onLayout={(e) => handleSectionLayout('testimonials', e.nativeEvent.layout.y)}
+      >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>TESTIMONIALS</Text>
           <Text style={styles.sectionTitle}>Loved by Sales Teams</Text>
