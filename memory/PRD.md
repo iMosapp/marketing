@@ -310,10 +310,24 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
   - Fix: Added `user._id` dependency to useEffect and guard in loadData
   - Now shows: Sales Team, Support, B Team inboxes with assigned users
 
+### Settings Pages Race Condition Fixes
+- [x] **Fixed SMS Templates page (`/settings/templates`):**
+  - Issue: Page stuck on loading spinner
+  - Fix: Added `user?._id` dependency to useEffect
+- [x] **Fixed Contact Tags page (`/settings/tags`):**
+  - Issue: Page stuck on loading spinner  
+  - Fix: Added `user?._id` dependency to useEffect
+- [x] **Fixed Calendar Settings page (`/settings/calendar`):**
+  - Issue: Page stuck on loading spinner
+  - Fix: Added `user?._id` dependency to useEffect
+- [x] **Fixed Integrations page (`/settings/integrations`):**
+  - Issue: Page stuck on loading spinner
+  - Fix: Added `user?.store_id` and `user?._id` dependencies to useEffect
+
 ### Testing Results
 - Backend API: 94% pass rate (30/32 tests)
-- Frontend UI: 95% pass rate (all pages load, minor Playwright click issue)
-- Test report: `/app/test_reports/iteration_9.json`
+- Frontend UI: 95%+ pass rate (all pages now loading correctly)
+- Test reports: `/app/test_reports/iteration_9.json`, `/app/test_reports/iteration_10.json`
 
 ## Technical Notes
 - Database field `mvpline_number` preserved for data compatibility
