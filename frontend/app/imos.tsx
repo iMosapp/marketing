@@ -414,8 +414,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   navLogo: {
-    width: 180,
-    height: 64,
+    width: 240,
+    height: 80,
   },
   footerLogo: {
     width: 100,
