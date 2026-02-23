@@ -66,6 +66,35 @@ export default function QuotesListPage() {
     loadQuotes();
   };
 
+  const handleDeleteQuote = async (quoteId: string, status: string) => {
+    if (status !== 'draft') {
+      alert('Only draft quotes can be deleted');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this quote?')) return;
+    
+    try {
+      await api.delete(`/subscriptions/quotes/${quoteId}`);
+      loadQuotes();
+    } catch (error) {
+      console.error('Error deleting quote:', error);
+      alert('Failed to delete quote');
+    }
+  };
+
+  const handleArchiveQuote = async (quoteId: string) => {
+    if (!confirm('Are you sure you want to archive this quote?')) return;
+    
+    try {
+      await api.put(`/subscriptions/quotes/${quoteId}/archive`);
+      loadQuotes();
+    } catch (error) {
+      console.error('Error archiving quote:', error);
+      alert('Failed to archive quote');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return '#8E8E93';
