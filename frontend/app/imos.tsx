@@ -415,6 +415,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  navLogo: {
+    width: 100,
+    height: 36,
+  },
+  footerLogo: {
+    width: 100,
+    height: 36,
+  },
   logoIcon: {
     width: 36,
     height: 36,
