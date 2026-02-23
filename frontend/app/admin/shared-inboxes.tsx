@@ -62,8 +62,10 @@ export default function SharedInboxesPage() {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?._id) {
+      loadData();
+    }
+  }, [user?._id]);
 
   const loadData = async () => {
     try {
