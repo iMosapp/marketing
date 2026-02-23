@@ -32,6 +32,7 @@ class WebhookUserCreate(BaseModel):
 class WebhookUserDelete(BaseModel):
     external_id: Optional[str] = None
     email: Optional[EmailStr] = None
+    deletion_source: Optional[str] = None  # e.g., "Salesforce", "Manual", "CDK", etc.
     # At least one must be provided to identify the user
 
 class WebhookContactCreate(BaseModel):
