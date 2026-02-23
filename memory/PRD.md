@@ -276,10 +276,42 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 ## Test Credentials
 | Email | Password | Role |
 |-------|----------|------|
+| forest@imosapp.com | Admin123! | super_admin |
 | forestward@gmail.com | Admin123! | super_admin |
 | matthew@imosapp.com | Matthew2026! | super_admin |
 | bridger@imosapp.com | Admin123! | super_admin |
 | admin@imosapp.com | iMOs2026! | super_admin (seeded) |
+
+## Completed This Session (Dec 23, 2025)
+
+### Technical Standards Document Created
+- [x] Created `/app/memory/STANDARDS.md` with:
+  - API route conventions (all routes under `/api/` prefix)
+  - Database collection naming standards
+  - Frontend naming conventions ("Account" in UI, "stores" in DB)
+  - Code organization structure
+  - Admin panel route documentation
+
+### Admin Panel Verification & Fix
+- [x] **Verified all admin panel pages are working:**
+  - Organizations (list, view, create) ✓
+  - Accounts/Stores (list, view, create) ✓
+  - Users (list, search, view by role groups) ✓
+  - Individuals (list, view) ✓
+  - Quotes (list with filters) ✓
+  - Discount Codes (list, deactivate) ✓
+  - Partner Agreements (list, stats) ✓
+  - Company Directory (list, filter by role) ✓
+  - Pending Users (list pending approvals) ✓
+- [x] **Fixed Shared Inboxes page:**
+  - Issue: API returned "User not found" due to race condition
+  - Fix: Added `user._id` dependency to useEffect and guard in loadData
+  - Now shows: Sales Team, Support, B Team inboxes with assigned users
+
+### Testing Results
+- Backend API: 94% pass rate (30/32 tests)
+- Frontend UI: 95% pass rate (all pages load, minor Playwright click issue)
+- Test report: `/app/test_reports/iteration_9.json`
 
 ## Technical Notes
 - Database field `mvpline_number` preserved for data compatibility
