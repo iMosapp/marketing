@@ -195,7 +195,7 @@ export default function MyAccountScreen() {
     },
     {
       icon: 'sparkles',
-      title: 'Train Jessie AI',
+      title: 'Train Jessi AI',
       subtitle: 'Chat with your AI assistant',
       color: '#C9A962',
       onPress: () => router.push('/jessie'),
