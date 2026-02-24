@@ -257,9 +257,9 @@ export default function IMOSLandingPage() {
                 <Text style={styles.taglineSpace}> </Text>
                 <Text style={styles.taglineOld}>Old</Text>
                 <Text style={styles.taglineSpace}> </Text>
-                <Text style={styles.taglineSchool}>school</Text>
+                <Text style={styles.taglineSchool}>School</Text>
               </Text>
-              <Text style={styles.taglineSubtext}>with modern tools.</Text>
+              <Text style={styles.taglineSubtext}>with modern tools</Text>
             </View>
             
             <Text style={styles.heroSubtitle}>
