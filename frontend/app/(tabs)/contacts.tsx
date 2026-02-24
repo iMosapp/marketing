@@ -326,6 +326,7 @@ export default function ContactsScreen() {
             onPress={() => setShowAddContactModal(true)}
             accessibilityRole="button"
             accessibilityLabel="Add new contact"
+            data-testid="add-contact-button"
           >
             <Ionicons name="add-circle" size={32} color="#007AFF" />
           </TouchableOpacity>
