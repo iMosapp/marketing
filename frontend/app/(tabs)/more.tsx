@@ -3,50 +3,59 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Pressable,
   StyleSheet,
   ScrollView,
   Platform,
   Image,
+  Animated,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
-import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
-import { WebSafeButton } from '../../components/WebSafeButton';
+import { showSimpleAlert } from '../../services/alert';
 import api from '../../services/api';
 
-const HIDDEN_ITEMS_KEY = 'hidden_menu_items';
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+type MenuItem = {
+  icon: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  color: string;
+  badge?: number;
+};
+
+type Section = {
+  id: string;
+  title: string;
+  icon: string;
+  color: string;
+  items: MenuItem[];
+  defaultExpanded?: boolean;
+};
 
 export default function MoreScreen() {
   const router = useRouter();
   const { user, logout, isImpersonating, stopImpersonation, originalUser } = useAuthStore();
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
-  const [hiddenItems, setHiddenItems] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['essentials']));
   
-  // Load hidden items and pending count
+  // Load pending count for super admins
   useFocusEffect(
     useCallback(() => {
-      loadHiddenItems();
       if (user?.role === 'super_admin' || originalUser?.role === 'super_admin') {
         fetchPendingCount();
       }
     }, [user?.role, originalUser?.role])
   );
-  
-  const loadHiddenItems = async () => {
-    try {
-      const saved = await AsyncStorage.getItem(HIDDEN_ITEMS_KEY);
-      if (saved) {
-        setHiddenItems(new Set(JSON.parse(saved)));
-      }
-    } catch (error) {
-      console.error('Failed to load hidden items:', error);
-    }
-  };
   
   const fetchPendingCount = async () => {
     try {
@@ -86,326 +95,431 @@ export default function MoreScreen() {
     }
   };
   
-  // Check if user has admin access
-  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager';
+  const toggleSection = (sectionId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
   
-  const menuItems = [
+  // Check user roles
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager';
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isIndependent = !user?.organization_id;
+
+  // Define all sections with their items
+  const sections: Section[] = [
+    // Essentials - Always show, expanded by default
     {
-      id: 'training-hub',
-      icon: 'school',
-      title: 'Training Hub',
-      subtitle: 'Learn how to use iMos',
-      onPress: () => router.push('/training-hub'),
-      color: '#FF9500',
-      alwaysShow: true,
+      id: 'essentials',
+      title: 'Essentials',
+      icon: 'star',
+      color: '#FFD60A',
+      defaultExpanded: true,
+      items: [
+        {
+          icon: 'school',
+          title: 'Training Hub',
+          subtitle: 'Learn how to use iMos',
+          onPress: () => router.push('/training-hub'),
+          color: '#FF9500',
+        },
+        {
+          icon: 'sparkles',
+          title: 'Ask Jessi',
+          subtitle: 'Your AI assistant',
+          onPress: () => router.push('/jessie'),
+          color: '#C9A962',
+        },
+        {
+          icon: 'checkmark-done',
+          title: 'Tasks & Reminders',
+          subtitle: 'Manage follow-ups',
+          onPress: () => router.push('/tasks'),
+          color: '#34C759',
+        },
+      ],
     },
+    // Communication Tools
     {
-      id: 'ask-jessi',
-      icon: 'sparkles',
-      title: 'Ask Jessi',
-      subtitle: 'Your AI assistant for iMos help',
-      onPress: () => router.push('/jessie'),
-      color: '#C9A962',
-    },
-    {
-      id: 'digital-card',
-      icon: 'card',
-      title: 'My Digital Card',
-      subtitle: 'Photo, bio, socials & card preview',
-      onPress: () => router.push('/settings/my-profile'),
-      color: '#007AFF',
-    },
-    {
-      id: 'ai-persona',
-      icon: 'person',
-      title: 'AI Persona Settings',
-      subtitle: 'Edit your AI communication style',
-      onPress: () => router.push('/settings/persona'),
-      color: '#AF52DE',
-    },
-    {
-      id: 'tasks',
-      icon: 'checkmark-done',
-      title: 'Tasks & Reminders',
-      subtitle: 'Manage follow-ups and to-dos',
-      onPress: () => router.push('/tasks'),
-      color: '#34C759',
-    },
-    {
-      id: 'notifications',
-      icon: 'notifications',
-      title: 'Notifications',
-      subtitle: 'Manage alerts and escalations',
-      onPress: () => showSimpleAlert('Notifications', 'Feature coming soon'),
-      color: '#FF9500',
-    },
-    {
-      id: 'broadcast',
-      icon: 'megaphone',
-      title: 'Broadcast',
-      subtitle: 'One-time mass messaging',
-      onPress: () => router.push('/broadcast'),
-      color: '#FF9500',
-    },
-    {
-      id: 'lead-sources',
-      icon: 'git-branch',
-      title: 'Lead Sources',
-      subtitle: 'Manage inbound leads & routing',
-      onPress: () => router.push('/admin/lead-sources'),
-      color: '#5856D6',
-    },
-    {
-      id: 'sms-campaigns',
+      id: 'communication',
+      title: 'Communication',
       icon: 'chatbubbles',
-      title: 'SMS Campaigns',
-      subtitle: 'Automated SMS follow-ups',
-      onPress: () => router.push('/campaigns'),
-      color: '#FF2D55',
-    },
-    {
-      id: 'email-campaigns',
-      icon: 'mail',
-      title: 'Email Campaigns',
-      subtitle: 'Automated email follow-ups',
-      onPress: () => router.push('/campaigns/email'),
-      color: '#AF52DE',
-    },
-    {
-      id: 'campaign-dashboard',
-      icon: 'speedometer',
-      title: 'Campaign Dashboard',
-      subtitle: 'View enrollments and pending messages',
-      onPress: () => router.push('/campaigns/dashboard'),
-      color: '#5AC8FA',
-    },
-    {
-      id: 'analytics',
-      icon: 'stats-chart',
-      title: 'Analytics',
-      subtitle: 'View your performance metrics',
-      onPress: () => router.push('/analytics'),
-      color: '#34C759',
-    },
-    {
-      id: 'reports',
-      icon: 'bar-chart',
-      title: 'Reports',
-      subtitle: 'Detailed performance reports',
-      onPress: () => router.push('/reports'),
       color: '#007AFF',
+      items: [
+        {
+          icon: 'megaphone',
+          title: 'Broadcast',
+          subtitle: 'Mass messaging',
+          onPress: () => router.push('/broadcast'),
+          color: '#FF9500',
+        },
+        {
+          icon: 'chatbubbles',
+          title: 'SMS Campaigns',
+          subtitle: 'Automated SMS follow-ups',
+          onPress: () => router.push('/campaigns'),
+          color: '#FF2D55',
+        },
+        {
+          icon: 'mail',
+          title: 'Email Campaigns',
+          subtitle: 'Automated email follow-ups',
+          onPress: () => router.push('/campaigns/email'),
+          color: '#AF52DE',
+        },
+        {
+          icon: 'speedometer',
+          title: 'Campaign Dashboard',
+          subtitle: 'View enrollments',
+          onPress: () => router.push('/campaigns/dashboard'),
+          color: '#5AC8FA',
+        },
+      ],
     },
-    {
-      id: 'security',
-      icon: 'shield-checkmark',
-      title: 'Security',
-      subtitle: 'Face ID, password settings',
-      onPress: () => router.push('/settings/security'),
-      color: '#FF3B30',
-    },
-    {
-      id: 'sms-email-toggle',
-      icon: 'swap-horizontal-outline',
-      title: 'SMS / Email Toggle',
-      subtitle: 'Choose toggle style and default mode',
-      onPress: () => router.push('/settings/toggle-style'),
-      color: '#5AC8FA',
-    },
+    // Templates & Branding
     {
       id: 'templates',
-      icon: 'document-text',
-      title: 'SMS Templates',
-      subtitle: 'Create and manage SMS templates',
-      onPress: () => router.push('/settings/templates'),
-      color: '#FFD60A',
-    },
-    {
-      id: 'email-templates',
-      icon: 'mail-outline',
-      title: 'Email Templates',
-      subtitle: 'Create and manage email templates',
-      onPress: () => router.push('/settings/email-templates'),
-      color: '#34C759',
-    },
-    {
-      id: 'brand-kit',
+      title: 'Templates & Branding',
       icon: 'color-palette',
-      title: 'Brand Kit',
-      subtitle: 'Customize email branding & colors',
-      onPress: () => router.push('/settings/brand-kit'),
       color: '#AF52DE',
+      items: [
+        {
+          icon: 'document-text',
+          title: 'SMS Templates',
+          subtitle: 'Create SMS templates',
+          onPress: () => router.push('/settings/templates'),
+          color: '#FFD60A',
+        },
+        {
+          icon: 'mail-outline',
+          title: 'Email Templates',
+          subtitle: 'Create email templates',
+          onPress: () => router.push('/settings/email-templates'),
+          color: '#34C759',
+        },
+        {
+          icon: 'color-palette',
+          title: 'Brand Kit',
+          subtitle: 'Email branding & colors',
+          onPress: () => router.push('/settings/brand-kit'),
+          color: '#AF52DE',
+        },
+        {
+          icon: 'gift-outline',
+          title: 'Congrats Cards',
+          subtitle: 'Thank you card style',
+          onPress: () => router.push('/settings/congrats-template'),
+          color: '#C9A962',
+        },
+      ],
     },
+    // Performance & Analytics
     {
-      id: 'email-analytics',
-      icon: 'bar-chart',
-      title: 'Email Analytics',
-      subtitle: 'Track opens, clicks & engagement',
-      onPress: () => router.push('/settings/email-analytics'),
-      color: '#FF2D55',
-    },
-    {
-      id: 'invite-team',
-      icon: 'people-outline',
-      title: 'Invite Team',
-      subtitle: 'Send invites via email or SMS',
-      onPress: () => router.push('/settings/invite-team'),
+      id: 'performance',
+      title: 'Performance',
+      icon: 'stats-chart',
       color: '#34C759',
+      items: [
+        {
+          icon: 'stats-chart',
+          title: 'Analytics',
+          subtitle: 'Performance metrics',
+          onPress: () => router.push('/analytics'),
+          color: '#34C759',
+        },
+        {
+          icon: 'bar-chart',
+          title: 'Reports',
+          subtitle: 'Detailed reports',
+          onPress: () => router.push('/reports'),
+          color: '#007AFF',
+        },
+        {
+          icon: 'bar-chart',
+          title: 'Email Analytics',
+          subtitle: 'Opens, clicks, engagement',
+          onPress: () => router.push('/settings/email-analytics'),
+          color: '#FF2D55',
+        },
+        ...(isIndependent ? [{
+          icon: 'trophy',
+          title: 'My Rankings',
+          subtitle: 'Compare with other pros',
+          onPress: () => router.push('/admin/my-rankings'),
+          color: '#FFD60A',
+        }] : []),
+      ],
     },
+    // Contacts & Leads
     {
-      id: 'tags',
-      icon: 'pricetags',
-      title: 'Contact Tags',
-      subtitle: 'Organize contacts with tags',
-      onPress: () => router.push('/settings/tags'),
-      color: '#FF9500',
-    },
-    {
-      id: 'calendar',
-      icon: 'calendar-outline',
-      title: 'Calendar',
-      subtitle: 'Connect Google & device calendars',
-      onPress: () => router.push('/settings/calendar'),
-      color: '#007AFF',
-    },
-    {
-      id: 'review-links',
-      icon: 'star-outline',
-      title: 'Review Links',
-      subtitle: 'Google, Facebook, Yelp review links',
-      onPress: () => router.push('/settings/review-links'),
-      color: '#FFD60A',
-    },
-    {
-      id: 'review-approvals',
-      icon: 'chatbubbles-outline',
-      title: 'Review Approvals',
-      subtitle: 'Approve customer reviews for your landing page',
-      onPress: () => router.push('/settings/review-approvals'),
-      color: '#AF52DE',
-    },
-    {
-      id: 'congrats-template',
-      icon: 'gift-outline',
-      title: 'Congrats Card Style',
-      subtitle: 'Customize your thank you cards',
-      onPress: () => router.push('/settings/congrats-template'),
-      color: '#C9A962',
-    },
-    {
-      id: 'integrations',
-      icon: 'git-network',
-      title: 'Integrations',
-      subtitle: 'API keys, webhooks, CRM & DMS',
-      onPress: () => router.push('/settings/integrations'),
+      id: 'contacts',
+      title: 'Contacts & Leads',
+      icon: 'people',
       color: '#5856D6',
+      items: [
+        {
+          icon: 'git-branch',
+          title: 'Lead Sources',
+          subtitle: 'Inbound leads & routing',
+          onPress: () => router.push('/admin/lead-sources'),
+          color: '#5856D6',
+        },
+        {
+          icon: 'pricetags',
+          title: 'Contact Tags',
+          subtitle: 'Organize with tags',
+          onPress: () => router.push('/settings/tags'),
+          color: '#FF9500',
+        },
+        {
+          icon: 'star-outline',
+          title: 'Review Links',
+          subtitle: 'Google, Facebook, Yelp',
+          onPress: () => router.push('/settings/review-links'),
+          color: '#FFD60A',
+        },
+        {
+          icon: 'chatbubbles-outline',
+          title: 'Review Approvals',
+          subtitle: 'Approve customer reviews',
+          onPress: () => router.push('/settings/review-approvals'),
+          color: '#AF52DE',
+        },
+      ],
     },
+    // Profile & AI
+    {
+      id: 'profile',
+      title: 'Profile & AI',
+      icon: 'person',
+      color: '#FF9500',
+      items: [
+        {
+          icon: 'card',
+          title: 'My Digital Card',
+          subtitle: 'Bio, socials & preview',
+          onPress: () => router.push('/settings/my-profile'),
+          color: '#007AFF',
+        },
+        {
+          icon: 'person',
+          title: 'AI Persona',
+          subtitle: 'Communication style',
+          onPress: () => router.push('/settings/persona'),
+          color: '#AF52DE',
+        },
+      ],
+    },
+    // Settings & Security
     {
       id: 'settings',
-      icon: 'settings',
       title: 'Settings',
-      subtitle: 'App preferences and account',
-      onPress: () => showSimpleAlert('Settings', 'Feature coming soon'),
+      icon: 'settings',
       color: '#8E8E93',
+      items: [
+        {
+          icon: 'shield-checkmark',
+          title: 'Security',
+          subtitle: 'Face ID, passwords',
+          onPress: () => router.push('/settings/security'),
+          color: '#FF3B30',
+        },
+        {
+          icon: 'notifications',
+          title: 'Notifications',
+          subtitle: 'Alerts & escalations',
+          onPress: () => showSimpleAlert('Notifications', 'Feature coming soon'),
+          color: '#FF9500',
+        },
+        {
+          icon: 'swap-horizontal-outline',
+          title: 'SMS / Email Toggle',
+          subtitle: 'Toggle style & default',
+          onPress: () => router.push('/settings/toggle-style'),
+          color: '#5AC8FA',
+        },
+        {
+          icon: 'calendar-outline',
+          title: 'Calendar',
+          subtitle: 'Connect calendars',
+          onPress: () => router.push('/settings/calendar'),
+          color: '#007AFF',
+        },
+        {
+          icon: 'git-network',
+          title: 'Integrations',
+          subtitle: 'API keys & webhooks',
+          onPress: () => router.push('/settings/integrations'),
+          color: '#5856D6',
+        },
+        {
+          icon: 'people-outline',
+          title: 'Invite Team',
+          subtitle: 'Send invites',
+          onPress: () => router.push('/settings/invite-team'),
+          color: '#34C759',
+        },
+      ],
     },
   ];
-  
-  // Filter menu items based on hidden preferences
-  const visibleMenuItems = menuItems.filter(item => 
-    (item as any).alwaysShow || !hiddenItems.has((item as any).id || '')
+
+  // Admin section - only for admins
+  const adminSection: Section | null = isAdmin ? {
+    id: 'admin',
+    title: 'Administration',
+    icon: 'shield-checkmark',
+    color: '#FF3B30',
+    items: [
+      {
+        icon: 'shield-checkmark',
+        title: 'Admin Panel',
+        subtitle: 'Manage org & users',
+        onPress: () => router.push('/admin'),
+        color: '#34C759',
+      },
+      ...(isSuperAdmin ? [
+        {
+          icon: 'person-add',
+          title: 'Pending Users',
+          subtitle: 'Approve new signups',
+          onPress: () => router.push('/admin/pending-users'),
+          color: '#FF3B30',
+          badge: pendingUsersCount,
+        },
+        {
+          icon: 'document-text',
+          title: 'Partner Agreements',
+          subtitle: 'Reseller contracts',
+          onPress: () => router.push('/admin/partner-agreements'),
+          color: '#FF9500',
+        },
+        {
+          icon: 'people',
+          title: 'Company Directory',
+          subtitle: 'Team & leaderboards',
+          onPress: () => router.push('/admin/directory'),
+          color: '#AF52DE',
+        },
+        {
+          icon: 'mail',
+          title: 'Shared Inboxes',
+          subtitle: 'Phone number users',
+          onPress: () => router.push('/admin/shared-inboxes'),
+          color: '#007AFF',
+        },
+        {
+          icon: 'swap-horizontal',
+          title: 'Bulk Transfer',
+          subtitle: 'Transfer contacts',
+          onPress: () => router.push('/admin/bulk-transfer'),
+          color: '#FF3B30',
+        },
+        {
+          icon: 'call',
+          title: 'Phone Assignments',
+          subtitle: 'Twilio numbers',
+          onPress: () => router.push('/admin/phone-assignments'),
+          color: '#32ADE6',
+        },
+        {
+          icon: 'documents',
+          title: 'View Quotes',
+          subtitle: 'Subscription quotes',
+          onPress: () => router.push('/admin/quotes'),
+          color: '#30B0C7',
+        },
+        {
+          icon: 'receipt',
+          title: 'Create Quote',
+          subtitle: 'Generate quotes',
+          onPress: () => router.push('/admin/create-quote'),
+          color: '#34C759',
+        },
+        {
+          icon: 'ticket',
+          title: 'Discount Codes',
+          subtitle: 'Manage discounts',
+          onPress: () => router.push('/admin/discount-codes'),
+          color: '#5856D6',
+        },
+      ] : []),
+    ],
+  } : null;
+
+  // Combine all sections
+  const allSections = adminSection ? [adminSection, ...sections] : sections;
+
+  const renderMenuItem = (item: MenuItem, index: number, isLast: boolean) => (
+    <TouchableOpacity
+      key={`${item.title}-${index}`}
+      style={[styles.menuItem, isLast && { borderBottomWidth: 0 }]}
+      onPress={item.onPress}
+      data-testid={`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+    >
+      <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+        <Ionicons name={item.icon as any} size={22} color={item.color} />
+        {item.badge && item.badge > 0 && (
+          <View style={styles.badgeDot}>
+            <Text style={styles.badgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.menuContent}>
+        <Text style={styles.menuTitle}>{item.title}</Text>
+        <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+      </View>
+      {item.badge && item.badge > 0 && (
+        <View style={styles.notificationBadge}>
+          <Text style={styles.notificationBadgeText}>{item.badge}</Text>
+        </View>
+      )}
+      <Ionicons name="chevron-forward" size={18} color="#6E6E73" />
+    </TouchableOpacity>
   );
-  
-  // Check if user is an independent (no organization)
-  const isIndependent = !user?.organization_id;
-  
-  // Add independent menu item for users without an organization
-  const independentMenuItems = isIndependent ? [
-    {
-      icon: 'trophy',
-      title: 'My Rankings',
-      subtitle: 'Compare with other pros in your area',
-      onPress: () => router.push('/admin/my-rankings'),
-      color: '#FFD60A',
-    },
-  ] : [];
-  
-  // Add admin menu items for users with admin access
-  const adminMenuItems = isAdmin ? [
-    {
-      icon: 'shield-checkmark',
-      title: 'Admin Panel',
-      subtitle: 'Manage organizations, accounts, and users',
-      onPress: () => router.push('/admin'),
-      color: '#34C759',
-    },
-  ] : [];
-  
-  // Super admin only menu items
-  const superAdminMenuItems = user?.role === 'super_admin' ? [
-    {
-      icon: 'person-add',
-      title: 'Pending Users',
-      subtitle: 'Review and approve new signups',
-      onPress: () => router.push('/admin/pending-users'),
-      color: '#FF3B30',
-      badge: pendingUsersCount,
-    },
-    {
-      icon: 'document-text',
-      title: 'Partner Agreements',
-      subtitle: 'Manage reseller & referral contracts',
-      onPress: () => router.push('/admin/partner-agreements'),
-      color: '#FF9500',
-    },
-    {
-      icon: 'people',
-      title: 'Company Directory',
-      subtitle: 'Team members, performance & leaderboards',
-      onPress: () => router.push('/admin/directory'),
-      color: '#AF52DE',
-    },
-    {
-      icon: 'mail',
-      title: 'Shared Inboxes',
-      subtitle: 'Assign multiple users to phone numbers',
-      onPress: () => router.push('/admin/shared-inboxes'),
-      color: '#007AFF',
-    },
-    {
-      icon: 'swap-horizontal',
-      title: 'Bulk Transfer',
-      subtitle: 'Transfer contacts between users',
-      onPress: () => router.push('/admin/bulk-transfer'),
-      color: '#FF3B30',
-    },
-    {
-      icon: 'call',
-      title: 'Phone Assignments',
-      subtitle: 'Assign Twilio numbers to users',
-      onPress: () => router.push('/admin/phone-assignments'),
-      color: '#32ADE6',
-    },
-    {
-      icon: 'documents',
-      title: 'View Quotes',
-      subtitle: 'View & manage subscription quotes',
-      onPress: () => router.push('/admin/quotes'),
-      color: '#30B0C7',
-    },
-    {
-      icon: 'receipt',
-      title: 'Create Quote',
-      subtitle: 'Generate subscription quotes',
-      onPress: () => router.push('/admin/create-quote'),
-      color: '#34C759',
-    },
-    {
-      icon: 'ticket',
-      title: 'Discount Codes',
-      subtitle: 'Generate & manage discount codes',
-      onPress: () => router.push('/admin/discount-codes'),
-      color: '#5856D6',
-    },
-  ] : [];
+
+  const renderSection = (section: Section) => {
+    const isExpanded = expandedSections.has(section.id);
+    const itemCount = section.items.length;
+
+    return (
+      <View key={section.id} style={styles.collapsibleSection} data-testid={`section-${section.id}`}>
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => toggleSection(section.id)}
+          activeOpacity={0.7}
+          data-testid={`section-header-${section.id}`}
+        >
+          <View style={[styles.sectionIcon, { backgroundColor: `${section.color}20` }]}>
+            <Ionicons name={section.icon as any} size={20} color={section.color} />
+          </View>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitleText}>{section.title}</Text>
+            <Text style={styles.sectionCount}>{itemCount} items</Text>
+          </View>
+          <Ionicons 
+            name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+            size={20} 
+            color="#8E8E93" 
+          />
+        </TouchableOpacity>
+        
+        {isExpanded && (
+          <View style={styles.sectionContent}>
+            {section.items.map((item, index) => 
+              renderMenuItem(item, index, index === section.items.length - 1)
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -420,6 +534,7 @@ export default function MoreScreen() {
             style={styles.impersonationBanner}
             onPress={handleExitImpersonation}
             disabled={exitingImpersonation}
+            data-testid="impersonation-banner"
           >
             <View style={styles.impersonationContent}>
               <Ionicons name="person-circle" size={24} color="#FFF" />
@@ -432,6 +547,7 @@ export default function MoreScreen() {
           </TouchableOpacity>
         )}
         
+        {/* Profile Card */}
         <TouchableOpacity 
           style={styles.profileCard}
           onPress={() => router.push('/my-account')}
@@ -483,142 +599,27 @@ export default function MoreScreen() {
           </View>
         </TouchableOpacity>
         
-        {/* Admin Section */}
-        {adminMenuItems.length > 0 && (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionTitle}>Administration</Text>
-            {adminMenuItems.map((item, index) => (
-              <TouchableOpacity
-                key={`admin-${index}`}
-                style={styles.menuItem}
-                onPress={item.onPress}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={24} color={item.color} />
-                </View>
-                <View style={styles.menuContent}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-              </TouchableOpacity>
-            ))}
-            {superAdminMenuItems.map((item, index) => (
-              <TouchableOpacity
-                key={`super-${index}`}
-                style={styles.menuItem}
-                onPress={item.onPress}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={24} color={item.color} />
-                  {item.badge > 0 && (
-                    <View style={styles.badgeDot}>
-                      <Text style={styles.badgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.menuContent}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-                </View>
-                {item.badge > 0 && (
-                  <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>{item.badge}</Text>
-                  </View>
-                )}
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+        {/* All Collapsible Sections */}
+        {allSections.map(section => renderSection(section))}
         
-        {/* Independent Section */}
-        {independentMenuItems.length > 0 && (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionTitle}>Performance</Text>
-            {independentMenuItems.map((item, index) => (
-              <TouchableOpacity
-                key={`sole-${index}`}
-                style={styles.menuItem}
-                onPress={item.onPress}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={24} color={item.color} />
-                </View>
-                <View style={styles.menuContent}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-        
-        <View style={styles.menuSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Features</Text>
-            <TouchableOpacity 
-              style={styles.customizeButton}
-              onPress={() => router.push('/customize-menu')}
-            >
-              <Ionicons name="options" size={16} color="#007AFF" />
-              <Text style={styles.customizeButtonText}>Customize</Text>
-            </TouchableOpacity>
-          </View>
-          {visibleMenuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.menuItem}
-              onPress={item.onPress}
-            >
-              <View style={styles.menuIcon}>
-                <Ionicons name={item.icon as any} size={24} color={item.color || '#007AFF'} />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>{item.title}</Text>
-                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          ))}
-          {hiddenItems.size > 0 && (
-            <Text style={styles.hiddenNote}>
-              {hiddenItems.size} item{hiddenItems.size > 1 ? 's' : ''} hidden • Tap Customize to show
-            </Text>
-          )}
-        </View>
-        
-        {/* Legal Section */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>Legal</Text>
+        {/* Legal Section - Always visible, not collapsible */}
+        <View style={styles.legalSection}>
           <TouchableOpacity
-            style={styles.menuItem}
+            style={styles.legalItem}
             onPress={() => router.push('/terms')}
             data-testid="terms-of-service-link"
           >
-            <View style={styles.menuIcon}>
-              <Ionicons name="document-text" size={24} color="#8E8E93" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Terms of Service</Text>
-              <Text style={styles.menuSubtitle}>Usage terms and conditions</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="document-text" size={18} color="#6E6E73" />
+            <Text style={styles.legalText}>Terms of Service</Text>
           </TouchableOpacity>
+          <Text style={styles.legalDivider}>•</Text>
           <TouchableOpacity
-            style={[styles.menuItem, { borderBottomWidth: 0 }]}
+            style={styles.legalItem}
             onPress={() => router.push('/privacy')}
             data-testid="privacy-policy-link"
           >
-            <View style={styles.menuIcon}>
-              <Ionicons name="shield-checkmark" size={24} color="#8E8E93" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Privacy Policy</Text>
-              <Text style={styles.menuSubtitle}>How we protect your data</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="shield-checkmark" size={18} color="#6E6E73" />
+            <Text style={styles.legalText}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>
         
@@ -694,7 +695,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#1C1C1E',
     marginHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 16,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -704,30 +705,30 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   profileAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileAvatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   profileAvatarText: {
     color: '#FFF',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
   },
   editBadge: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -740,23 +741,14 @@ const styles = StyleSheet.create({
   profileChevron: {
     marginLeft: 8,
   },
-  profileSignOutButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FF3B3015',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
   profileName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   profileEmail: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8E8E93',
     marginBottom: 2,
   },
@@ -766,11 +758,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   profileLogoSmall: {
-    width: 32,
-    height: 12,
+    width: 28,
+    height: 10,
   },
   profileNumber: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -781,126 +773,87 @@ const styles = StyleSheet.create({
     marginTop: 6,
     backgroundColor: '#34C75920',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   roleText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#34C759',
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#8E8E93',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: 16,
-  },
-  customizeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  customizeButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  hiddenNote: {
-    fontSize: 12,
-    color: '#6E6E73',
-    textAlign: 'center',
-    paddingVertical: 12,
-    fontStyle: 'italic',
-  },
-  menuSection: {
+  // Collapsible Section Styles
+  collapsibleSection: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
     overflow: 'hidden',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  sectionTitleContainer: {
+    flex: 1,
+  },
+  sectionTitleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  sectionCount: {
+    fontSize: 12,
+    color: '#6E6E73',
+    marginTop: 1,
+  },
+  sectionContent: {
+    borderTopWidth: 1,
+    borderTopColor: '#2C2C2E',
+  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#2C2C2E',
   },
   menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF20',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    position: 'relative',
   },
   menuContent: {
     flex: 1,
   },
   menuTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
     color: '#FFF',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   menuSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    gap: 8,
-    cursor: 'pointer',
-  },
-  logoutButtonPressed: {
-    opacity: 0.7,
-    backgroundColor: '#2C2C2E',
-  },
-  logoutText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FF3B30',
-  },
-  versionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-    gap: 6,
-  },
-  versionLogo: {
-    width: 40,
-    height: 16,
-  },
-  version: {
     fontSize: 12,
     color: '#8E8E93',
   },
   badgeDot: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -4,
+    right: -4,
     backgroundColor: '#FF3B30',
     width: 18,
     height: 18,
@@ -918,15 +871,70 @@ const styles = StyleSheet.create({
   notificationBadge: {
     backgroundColor: '#FF3B30',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 10,
     marginRight: 8,
-    minWidth: 24,
+    minWidth: 22,
     alignItems: 'center',
   },
   notificationBadgeText: {
     color: '#FFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
+  },
+  // Legal Section
+  legalSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 12,
+  },
+  legalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legalText: {
+    fontSize: 13,
+    color: '#6E6E73',
+  },
+  legalDivider: {
+    fontSize: 13,
+    color: '#3A3A3C',
+  },
+  // Logout Button
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 14,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    gap: 8,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF3B30',
+  },
+  versionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 6,
+  },
+  versionLogo: {
+    width: 36,
+    height: 14,
+  },
+  version: {
+    fontSize: 12,
+    color: '#6E6E73',
   },
 });
