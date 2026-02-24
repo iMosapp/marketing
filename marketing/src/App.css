@@ -1315,3 +1315,135 @@ section {
     justify-content: center;
   }
 }
+
+
+/* ============================================
+   Demo Form Section
+   ============================================ */
+.demo-form-section {
+  padding: 100px 24px;
+  background: linear-gradient(180deg, #000000 0%, #0a0a0f 100%);
+}
+
+.demo-form-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.demo-form-content {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 48px;
+}
+
+.demo-form-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-white);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.demo-form-subtitle {
+  font-size: 16px;
+  color: var(--color-gray-400);
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.demo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-300);
+}
+
+.form-group input,
+.form-group textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px;
+  color: var(--color-white);
+  transition: all var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-blue);
+  background: rgba(0, 122, 255, 0.05);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--color-gray-600);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.demo-success {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.demo-success .success-icon {
+  color: var(--color-green);
+  margin-bottom: 20px;
+}
+
+.demo-success h3 {
+  font-size: 24px;
+  color: var(--color-white);
+  margin-bottom: 12px;
+}
+
+.demo-success p {
+  color: var(--color-gray-400);
+  line-height: 1.6;
+}
+
+.demo-link {
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .demo-form-content {
+    padding: 32px 24px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-group.full-width {
+    grid-column: span 1;
+  }
+}
