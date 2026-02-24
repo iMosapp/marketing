@@ -190,6 +190,12 @@ iMos is a business management app for retail/service businesses. Key features in
   - **Verified:** 100% test pass rate (9/9 tests)
   - **Test Report:** `/app/test_reports/iteration_12.json`
 
+- [x] **Congrats Card photos automatically populate contact avatars**
+  - When creating a congrats card with a photo, the photo is saved to the contact's profile
+  - Only updates if contact doesn't already have a photo
+  - Shows success message when photo is updated
+  - **Files Modified:** `backend/routers/congrats_cards.py`, `frontend/app/thread/[id].tsx`
+
 ### UI/UX Fixes (COMPLETED - Feb 24, 2026)
 - [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
   - WebIconButton component renders native HTML `<button>` on web for proper click handling
