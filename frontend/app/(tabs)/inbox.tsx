@@ -788,6 +788,7 @@ export default function InboxScreen() {
   // Render team conversation item
   const renderTeamConversation = ({ item }: { item: any }) => {
     const contactName = item.contact_name || 'Unknown';
+    const contactPhoto = item.contact_photo || null;
     const contactInitials = contactName
       .split(' ')
       .map((n: string) => n[0] || '')
@@ -841,14 +842,24 @@ export default function InboxScreen() {
         data-testid={`team-conversation-${item.id}`}
       >
         <View style={styles.avatarContainer}>
-          <View style={[
-            styles.avatar,
-            !isClaimed && { backgroundColor: '#FF9500' },
-          ]}>
-            <Text style={styles.avatarText}>
-              {contactInitials}
-            </Text>
-          </View>
+          {contactPhoto ? (
+            <Image 
+              source={{ uri: contactPhoto }} 
+              style={[
+                styles.avatarPhoto,
+                !isClaimed && { borderWidth: 2, borderColor: '#FF9500' },
+              ]} 
+            />
+          ) : (
+            <View style={[
+              styles.avatar,
+              !isClaimed && { backgroundColor: '#FF9500' },
+            ]}>
+              <Text style={styles.avatarText}>
+                {contactInitials}
+              </Text>
+            </View>
+          )}
           {isNew && !isClaimed && (
             <View style={styles.newLeadBadge}>
               <Ionicons name="flash" size={10} color="#FFF" />
