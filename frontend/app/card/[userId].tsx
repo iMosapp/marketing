@@ -445,24 +445,22 @@ export default function DigitalCardPage() {
             </Animated.View>
           </View>
 
-          {/* Save Contact Button - Below Card */}
+          {/* Share Contact Button - Below Card */}
           <TouchableOpacity
             style={[styles.saveButton, saved && styles.saveButtonSaved]}
-            onPress={handleSaveContact}
-            disabled={saving || saved}
-            data-testid="save-contact-btn"
+            onPress={() => setShowShareModal(true)}
+            disabled={saving}
+            data-testid="share-contact-btn"
           >
-            {saving ? (
-              <ActivityIndicator color="#1A1A1A" />
-            ) : saved ? (
+            {saved ? (
               <>
                 <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>Contact Saved!</Text>
+                <Text style={styles.saveButtonText}>Contact Shared!</Text>
               </>
             ) : (
               <>
-                <Ionicons name="person-add" size={22} color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>Save My Contact</Text>
+                <Ionicons name="share-social" size={22} color="#1A1A1A" />
+                <Text style={styles.saveButtonText}>Share My Contact</Text>
               </>
             )}
           </TouchableOpacity>
