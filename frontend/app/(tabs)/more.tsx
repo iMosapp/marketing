@@ -212,6 +212,7 @@ export default function MoreScreen() {
       color: '#5AC8FA',
     },
     {
+      id: 'templates',
       icon: 'document-text',
       title: 'SMS Templates',
       subtitle: 'Create and manage SMS templates',
@@ -219,6 +220,7 @@ export default function MoreScreen() {
       color: '#FFD60A',
     },
     {
+      id: 'email-templates',
       icon: 'mail-outline',
       title: 'Email Templates',
       subtitle: 'Create and manage email templates',
@@ -226,6 +228,7 @@ export default function MoreScreen() {
       color: '#34C759',
     },
     {
+      id: 'brand-kit',
       icon: 'color-palette',
       title: 'Brand Kit',
       subtitle: 'Customize email branding & colors',
@@ -233,6 +236,7 @@ export default function MoreScreen() {
       color: '#AF52DE',
     },
     {
+      id: 'email-analytics',
       icon: 'bar-chart',
       title: 'Email Analytics',
       subtitle: 'Track opens, clicks & engagement',
@@ -240,6 +244,7 @@ export default function MoreScreen() {
       color: '#FF2D55',
     },
     {
+      id: 'invite-team',
       icon: 'people-outline',
       title: 'Invite Team',
       subtitle: 'Send invites via email or SMS',
@@ -247,6 +252,7 @@ export default function MoreScreen() {
       color: '#34C759',
     },
     {
+      id: 'tags',
       icon: 'pricetags',
       title: 'Contact Tags',
       subtitle: 'Organize contacts with tags',
@@ -254,6 +260,7 @@ export default function MoreScreen() {
       color: '#FF9500',
     },
     {
+      id: 'calendar',
       icon: 'calendar-outline',
       title: 'Calendar',
       subtitle: 'Connect Google & device calendars',
