@@ -238,6 +238,7 @@ async def get_organization_leaderboard(
             "rank": i + 1,
             "user_id": str(u['_id']),
             "name": u.get('name', 'Unknown'),
+            "photo_url": u.get('photo_url'),
             "metric_value": u.get('stats', {}).get(metric, 0),
             "store_id": u.get('store_id'),
             "role": u.get('role', 'user')
