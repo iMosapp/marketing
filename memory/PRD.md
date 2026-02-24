@@ -167,6 +167,14 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Completed This Session (Feb 24, 2026)
 
+### Critical Bug Fixes (COMPLETED - Feb 24, 2026)
+- [x] **FIXED: Signup Button Not Working on Web** (P0 - Showstopper)
+  - **Root Cause:** React Native's `Alert.alert()` doesn't work on web browsers - calls silently fail
+  - **Fix:** Added Platform.OS check and use `window.alert()` for web, `Alert.alert()` for native
+  - **Files Modified:** `frontend/app/auth/signup.tsx`
+  - **Verified:** 100% test pass rate - signup creates user, sends welcome email, redirects to onboarding
+  - **Test Report:** `/app/test_reports/iteration_11.json`
+
 ### UI/UX Fixes (COMPLETED - Feb 24, 2026)
 - [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
   - WebIconButton component renders native HTML `<button>` on web for proper click handling
