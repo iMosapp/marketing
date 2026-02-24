@@ -1,89 +1,97 @@
 <analysis>**original_problem_statement:**
-The user's primary goal is to enhance and fix their CRM application. Key requests during this session included:
-1.  **Fix Quotes & Agreements (P0):** The initial P0 task was to fix the unmanageable Quotes and Partner Agreements screens by adding back buttons and edit/delete/resend functionality. (Completed)
-2.  **Team Chat UI/UX (P1):** Remove the intrusive top-right notification button and replace it with a more subtle notification badge on the Team tab icon in the bottom navigation. (Completed)
-3.  **Clickable Profile / My Account (P0):** Make the user's profile card clickable, leading to a centralized My Account page for editing photos, upgrading plans, and managing AI settings. (Completed)
-4.  **Fix Contact Actions & Conversation UI (P0):** Fix non-functional call/text/email buttons on the contacts page and address a white screen bug in the conversation view. The user requested a clear visual distinction between SMS and Email modes. (Completed)
-5.  **Fix Mobile Data Sync (P0):** User reported that contact photos and tags added on their phone are not saving to the database or appearing on the web app. (In Progress - Diagnosed)
-6.  **Voice-First AI Training (P1):** Implement a feature to train the Jessi AI assistant via voice dictation instead of manually filling out forms. (Completed)
-7.  **Correct AI Name Spelling (P2):** Change all user-facing instances of Jessie AI to Jessi AI. (Completed)
-8.  **Enforce UI Hierarchy (P2):** Ensure a consistent Organization - - Card and Send Link button was not working. The user also wanted to ensure the card generation process was clean and included links for reviews/socials. (Completed)
-10. **UI Customization & Help Center (P0):** Introduce a way for users to customize the UI by hiding unused feature tiles. Also, create a built-in training/help center with a voice-powered assistant. (Completed)
-11. **Fix Custom Domain (P0):** The user's website  is down due to an SSL/DNS configuration issue between Squarespace, Cloudflare, and Emergent. (In Progress - Diagnosed)
-12. **Reorganize More Page (P0):** The most recent request is to consolidate the numerous icons on the More page into organized, collapsible categories to reduce clutter. (In Progress)
+The user's goal for this session was to continue enhancing their CRM application with a strong focus on UI/UX simplification, workflow uniformity, and new user experience.
+
+1.  **Reorganize More Page (P0):** Consolidate the cluttered More page into organized, collapsible sections. (Completed)
+2.  **Fix Contact Photos (P0):** Resolve an issue where contact photos were not appearing in the contact list, inbox, or thread headers. This involved debugging the frontend display logic and fixing a missing backend API endpoint for photo uploads. (Completed)
+3.  **Streamline Contact Creation (P0):** Implement a Quick Contact Creation panel that appears in the message thread when texting a new number. This allows adding a name, photo, and tags without leaving the conversation. The new contact is saved automatically when the first message is sent. (Completed)
+4.  **Unify Add Contact Flow (P1):** Ensure that clicking the + button on the Contacts page follows the same streamlined Quick Contact Creation workflow as starting a new message. (Completed)
+5.  **Admin User Creation (P1):** Enhance the Quick Contact Creation panel for admins, adding an optional section to create a full user account (with email and role) for the new contact simultaneously. (Completed)
+6.  **Enhance New User Sign-Up (P1):** Add optional fields (Photo, Bio, Social Links) to the main sign-up form to pre-populate user profiles. (Completed)
+7.  **Implement Profile Verification (P1):** Add a Verify Your Info step to the beginning of the onboarding flow for new users to confirm or complete the profile information they provided during sign-up. (Completed)
+8.  **Redesign Onboarding Experience (P0):** Overhaul the entire onboarding process, transforming it from a simple settings configuration wizard into a comprehensive, 16-step guided walkthrough of the app's key features and layout. (Completed)
+9.  **UI/UX Polish & Fixes (P1/P2):**
+    *   Fix the photo upload on the My Account page, removing a redundant button and correcting the web file picker logic. (Completed)
+    *   Add varied, colorful icons to the Training Hub for better visual appeal. (Completed)
+    *   Enlarge the iMOs logo in the inbox filter pills for better visibility. (Completed)
+    *   Remove a duplicate More New tab from the bottom navigation. (Completed)
+    *   Move the Sign Out button from the bottom of the More page to the user's profile card to prevent accidental taps. (Completed)
+    *   Add a Relationship Management System tagline to the login page. (Completed)
+    *   Add a category badge to the marketing site's hero section. (Completed)
+10. **Fix Digital Card Flow (P0):** The user requested that the My Digital Card quick action go directly to the card preview and that a missing Back button be added to that page and others. (In Progress)
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a feature-rich CRM with a React/Expo frontend and FastAPI backend. In this session, the agent successfully fixed the critical Quotes and Agreements management workflow, implemented a new My Account page, created a voice-powered AI training feature, and fixed several UI/UX bugs related to contact actions and the conversation screen. A customizable menu and a Training Hub were also added. The agent was in the middle of a major reorganization of the More page when the user reported a critical SSL/DNS issue with their custom domain, which became the new priority.
+The application is a full-featured CRM. In this session, a massive number of features and UI/UX improvements were completed. Key additions include a completely redesigned and streamlined More page, a powerful Quick Contact Creation workflow available from both the Inbox and Contacts pages, an enhanced user creation flow for admins, and a brand-new, comprehensive 16-step guided tour for new user onboarding. Numerous bugs related to photo display and uploads were fixed, and many small but impactful UI polish tasks were completed across the app. The agent was in the middle of fixing the navigation flow for the My Digital Card feature.
 
 **Last working item**:
--   **Last item agent was working:** Reorganizing the More page to be less cluttered. The user requested consolidating the many feature icons into collapsible, organized sections similar to the My Account page layout.
+-   **Last item agent was working:** The user requested two fixes related to the My Digital Card feature on the My Account page:
+    1.  The My Digital Card quick action should navigate directly to the card preview page () instead of the edit page.
+    2.  A Back button is missing on the card preview page, preventing users from returning to the previous screen.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The test should navigate to the More page and verify the new layout with collapsible sections. It must confirm that all feature links within the new sections are still present and navigate to their correct pages.
+-   **Which testing method agent to use?** Frontend testing agent. The test should navigate to , click the My Digital Card quick action, verify it navigates to , confirm a Back button exists, and confirm clicking it returns the user to the My Account page.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** (P0) Custom domain is down due to SSL/DNS error.
--   **Issue 2:** (P0) Reorganize the More page to reduce clutter.
--   **Issue 3:** (P1) Mobile app data (photos, tags) is not syncing to the database.
+-   **Issue 1:** (P0) Fix My Digital Card quick action and add missing Back buttons.
+-   **Issue 2:** (P0) Custom domain  is down.
+-   **Issue 3:** (P1) Mobile data for  may not be syncing.
 -   **Issue 4:** (P2) React Hydration Error #418 persists.
 
 **Issues Detail:**
--   **Issue 1: Custom domain is down due to SSL/DNS error**
-    -   **Attempted fixes:** The agent and user investigated the DNS settings in Squarespace and SSL settings in Cloudflare. The root cause appears to be a misconfiguration between the two services, where Cloudflare is interfering with Emergent's SSL provisioning for the custom domain. The agent identified conflicting nameservers and recommended the user remove the site from Cloudflare entirely, letting Squarespace's DNS (which has the correct A records) point directly to the Emergent deployment.
+-   **Issue 1: Fix My Digital Card quick action and add missing Back buttons.**
+    -   **Attempted fixes:** The agent identified the correct link for the card preview () and began editing  to change the  for the quick action link.
     -   **Next debug checklist:**
-        1.  Follow up with the user to confirm if they have removed  from their Cloudflare account.
-        2.  If so, instruct them to wait ~15 minutes for DNS changes to propagate, then click the I have added DNS records button in their Emergent deployment dashboard.
-        3.  If the issue persists after removing Cloudflare, the issue is between Squarespace and Emergent. Call the  for platform-specific assistance.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a production blocker. The user cannot access their application on their custom domain.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** N/A (Manual browser test)
-    -   **Blocked on other issue:** User action (modifying DNS/Cloudflare settings).
-
--   **Issue 2: Reorganize the More page to reduce clutter**
-    -   **Attempted fixes:** The agent started creating a new component  to build the redesigned page with a cleaner, section-based layout.
-    -   **Next debug checklist:**
-        1.  Resume work on .
-        2.  Group all existing menu items into logical, collapsible sections (e.g., Administration, Features, Performance).
-        3.  Replace the old  with the new implementation.
-        4.  Verify all navigation links work as expected.
-    -   **Why fix this issue and what will be achieved with the fix?** The current UI is overwhelming. This will simplify the user experience.
+        1.  Finish modifying the  in .
+        2.  Open .
+        3.  Add a Back button component (likely using ) to the page's header or layout.
+        4.  Test the complete user flow.
+    -   **Why fix this issue and what will be achieved with the fix?** Improves user navigation and fixes a dead-end UI.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Blocked on other issue:** None.
 
--   **Issue 3: Mobile app data is not syncing to the database**
-    -   **Attempted fixes:** The agent verified via API tests that the backend endpoints for updating contact photos and tags are working correctly. Backend logs show no incoming requests from the user's phone. This confirms the issue is on the client-side (mobile app).
+-   **Issue 2: Custom domain is down due to SSL/DNS error.**
+    -   **Attempted fixes:** In the previous session, the agent diagnosed a Cloudflare conflict. In this session, the user confirmed they removed the domain from Cloudflare. However, this was never followed up on, and the work was deprioritized in favor of feature development.
     -   **Next debug checklist:**
-        1.  Explain to the user that their mobile app build is likely outdated or pointing to the wrong backend.
-        2.  Instruct the user on how to obtain and install the latest production build of the mobile app.
-        3.  Consider adding a visual Syncing... indicator to the app to provide better user feedback on data-saving operations.
-    -   **Why fix this issue and what will be achieved with the fix?** Core functionality is broken for the user on their phone, causing data inconsistencies between their devices.
+        1.  Ask the user to manually test if  is now working.
+        2.  If it is not, the issue may be between Squarespace DNS and Emergent. Call the  for platform-specific help.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a production blocker preventing access to the application via its primary domain.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** N/A (Manual browser test by user)
+    -   **Blocked on other issue:** User verification.
+
+-   **Issue 3: Mobile app data is not syncing to the database.**
+    -   **Attempted fixes:** The agent correctly diagnosed that photo uploads were failing due to a missing backend endpoint and fixed it. However, the original report also mentioned *tags* not saving. The agent incorrectly assumed the user was on a native mobile build, but the user clarified they use the web app on their phone's browser.
+    -   **Next debug checklist:**
+        1.  Ask the user to confirm if adding *tags* to a contact from their phone's web browser is now working correctly.
+        2.  If not, investigate the tag-saving mechanism in the contact forms to check for any mobile-browser-specific issues.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures data consistency across all user devices.
     -   **Status:** BLOCKED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** User verification on a mobile device.
-    -   **Blocked on other issue:** User action (re-installing the mobile app).
+    -   **Blocked on other issue:** User verification.
 
--   **Issue 4: React Hydration Error #418**
-    -   **Attempted fixes:** None in this session. A workaround is still in place.
-    -   **Why fix this issue and what will be achieved with the fix?** The current redirect is a hack. A proper fix would improve app stability and startup performance.
+-   **Issue 4: React Hydration Error #418.**
+    -   **Attempted fixes:** None in this session. A meta-refresh tag workaround is still in place.
+    -   **Why fix this issue and what will be achieved with the fix?** To remove a temporary hack and improve app stability and performance.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Frontend.
 
 **In progress Task List**:
--   **Task 1: Complete More Page Reorganization (P0)**
-    -   **Where to resume:** Continue development in , implementing the collapsible section layout.
-    -   **What will be achieved with this?** A decluttered, intuitive navigation page that meets the user's request for better organization.
+-   **Task 1: Fix Digital Card Flow and Add Back Buttons (P0)**
+    -   **Where to resume:** Continue editing  to update the link, then move to  to implement the Back button.
+    -   **What will be achieved with this?** A seamless and intuitive navigation flow for viewing and returning from the digital business card.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Frontend.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-  - (P1) **Implement Voice Help Assistant:** The UI for the Training Hub help assistant is built. The backend logic to receive a voice/text question and provide a helpful answer needs to be implemented.
+  - (P1) **Implement Voice Help Assistant Backend:** The UI is built; the backend logic to process questions and return answers needs to be implemented.
 - **Future Tasks:**
   - (P2) Populate **Training Hub** with actual video content.
   - (P2) Verify avatar consistency in the inbox search dropdown.
@@ -93,70 +101,75 @@ The application is a feature-rich CRM with a React/Expo frontend and FastAPI bac
   - (P2) Populate Reports & Analytics section.
 
 **Completed work in this session**
--   **Quotes & Agreements Management:** Fully implemented back buttons, edit, delete, and resend functionality. Verified with testing agent.
--   **Team Chat Notification Badge:** Replaced the top-right button with an unread message badge on the bottom Team tab.
--   **My Account Page:** Created a centralized page for profile management, accessible by clicking the user's profile card.
--   **Contact Interaction Bugs:** Fixed non-functional call/text/email buttons and implemented a clear visual mode indicator (SMS vs. Email) in the conversation view to resolve the white screen bug.
--   **Voice-First AI Training:** Built a new feature allowing users to train the Jessi AI via voice dictation.
--   **UI/UX Polish:** Corrected AI assistant's name to Jessi, enforced Org- Card button by making alerts web-compatible.
+-   **More Page Reorganization:** Replaced a long list of 35+ items with clean, collapsible sections. Tested and verified.
+-   **Contact Photo Display & Upload:** Fixed bugs preventing photos from showing in lists/headers and fixed the backend API () to allow photo uploads from My Account.
+-   **Quick Contact Creation:** Built a new UI panel in the message thread to create contacts on the fly, which auto-saves when the first message is sent.
+-   **Unified Add Contact Flow:** Modified the Contacts page + button to use the same Quick Contact Creation workflow.
+-   **Admin Quick User Creation:** Added an optional Create User Account section to the Quick Contact panel for admin roles.
+-   **Enhanced Onboarding & Sign-up:** Revamped the sign-up form with optional fields and created a Profile Verification step. Redesigned the entire onboarding flow into a 16-step guided app tour.
+-   **UI/UX Polish:**
+    -   Removed duplicate More New tab and moved the Sign Out button.
+    -   Added colorful icons to the Training Hub.
+    -   Enlarged the iMOs filter button in the inbox.
+    -   Added taglines to the Login page and Marketing site.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: React Hydration Error #418**
-    -   **Debug checklist:** The app's root still uses a meta-refresh tag as a workaround. A permanent solution requires investigating the Expo for Web build process.
-    -   **Why to solve this issue and what will be achieved with this?** To remove the temporary hack and improve app stability.
-    -   **Should Test frontend/backend/both after fix:** Frontend
-    -   **Is recurring issue?** Y
+-   **Issue 1: React Hydration Error #418.** (Carried over)
+-   **Issue 2: Avatar consistency in inbox search dropdown.** (Carried over from previous fork, not addressed)
+-   **Issue 3: Leaderboard toggle functionality.** (Carried over from previous fork, not addressed)
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** React Hydration Error #418.
--   **Recurrence count:** 5+
+-   **Recurrence count:** 6+
 -   **Status:** NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Dynamic UI Customization:** Using  to store user preferences on which menu items to display and dynamically rendering the UI based on that stored state.
--   **Voice-to-Data Pipeline:** A new feature flow where a user's voice input is sent to a backend endpoint (), which then uses an LLM to parse the unstructured text into structured JSON data to populate profile fields.
--   **Client-Side Bug Diagnosis:** Differentiated between a backend bug and a client-side (mobile app) sync issue by verifying API functionality independently and checking server logs for incoming requests.
--   **DNS/SSL Troubleshooting:** Guided the user through debugging a complex custom domain issue involving the domain registrar (Squarespace), a CDN/proxy (Cloudflare), and the hosting platform (Emergent).
+-   **Conditional UI Rendering:** Showing/hiding the Quick Contact Panel and the admin-only Create User Account section within it based on component state and user role.
+-   **Stateful Multi-Step Wizard:** The redesigned onboarding flow () uses state to manage progress through 16 different slides, some informational and some interactive.
+-   **Client-Side Navigation with Parameters:** Passing the  URL as a search parameter when navigating to a new thread to ensure the photo appears instantly.
+-   **Backend API Extension:** Identifying and fixing a critical bug by adding a  endpoint in  to handle profile photo updates, which was missing from the API.
+-   **React Native Web Workarounds:** Addressed framework-specific issues like making  clickable in tests () and implementing a manual base64 file reader for  on the web.
 
 **key DB schema**
-- No new collections were added. Existing , , and  collections were more heavily utilized.
+-   **users:** The schema was not altered, but usage was expanded. The , , , and  fields are now populated during sign-up and onboarding, making profiles more complete from the start.
 
 **All files of reference**
--   : **(In Progress)** The file where the new More page is being built.
--   : **(New)** The central hub for all user-specific settings and actions.
--   : **(New)** The UI for the voice-powered AI training feature.
--   : **(New)** Contains the backend API endpoint for processing the voice training transcription.
--   : **(Modified)** Contains the fix for the dark mode/white screen issue and the new SMS/Email mode indicator banner.
--   : **(New)** The admin detail page for managing partner agreements.
+-   : **(In Progress)** Being edited to fix the My Digital Card link.
+-   : **(Next Step)** Needs a Back button added.
+-   : **(Heavily Modified)** The core of the new contact creation workflow. Contains the logic for the Quick Contact Panel and the Create User panel.
+-   : **(Heavily Modified)** Contains the new 16-step guided app tour.
+-   : **(Heavily Modified)** Contains the new collapsible section layout.
+-   : **(Modified)** Contains the new  endpoint that fixed the user photo upload functionality.
 
 **Critical Info for New Agent**
--   **The user's custom domain () is down.** This is the highest priority issue. Your first action should be to follow up on the DNS/Cloudflare troubleshooting. The last recommendation was for the user to remove the site from their Cloudflare account. See if they have done this and guide them on the next steps.
--   **The mobile app is not syncing data.** This is the second major blocker for the user. Be prepared to explain that this is a client-side issue and the fix is to get an updated app build on their phone, not to change any backend code.
--   **The More page needs to be reorganized.** This was the last active coding task. The user wants the cluttered icons consolidated into collapsible sections. You should resume this work after addressing the custom domain issue.
+-   The user is very hands-on and frequently provides new high-priority tasks, often interrupting the planned work. Be prepared to pivot quickly from the planned task list.
+-   The highest priority *technical debt* item is the **Custom Domain (Issue #2)**. It was reported as a P0, the user took the requested action (removing Cloudflare), but the agent never followed up to verify the fix. This should be addressed immediately after the current task.
+-   The mobile sync issue diagnosis was flawed. The user is on the web app via a phone browser. The photo part of the issue is likely fixed, but  may still be failing. This needs re-verification with the user.
+-   The file  is now a critical and complex component. Changes to it should be made carefully.
 
 **documents and test reports created in this job**
 -   
--    (updated multiple times)
+-    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests help with reorganizing the More page to be less cluttered with icons, suggesting collapsible categories. *(Status: IN PROGRESS)*
-2.  **User:** Provides credentials and details showing their domain is not working due to an SSL error. *(Status: IN PROGRESS - Diagnosed)*
-3.  **User:** Asks what to do in Squarespace nameservers. *(Status: Addressed)*
-4.  **User:** Confused about what record to add in Squarespace DNS settings. *(Status: Addressed)*
-5.  **User:** Expresses confusion over DNS/Cloudflare setup, stating they already added the A records as instructed. *(Status: Addressed)*
-6.  **User:** Asks which is the correct record to add from Emergent's instructions. *(Status: Addressed)*
-7.  **User:** Having trouble finding the enable setting in Cloudflare docs. *(Status: Addressed)*
-8.  **User:** Shows a screenshot of the re-deploy prompt and the DNS conflict in Squarespace. *(Status: Addressed)*
-9.  **User:** Requests help with the website not working, showing a Cloudflare SSL error. *(Status: Addressed)*
-10. **User:** Asks for customizable UI to hide unused feature tiles and a voice-powered help assistant. *(Status: COMPLETED)*
+1.  **User:** On the quick actions in my account, when I click on My Digital Card, I want it to be the actual card... also theres no back button". *(Status: IN PROGRESS)*
+2.  **User:** "Im still having an issue... Saving a photo to my contact. Its not actually saving it for me." *(Status: COMPLETED - Backend API fixed)*
+3.  **User:** Requests adding "Relationship Management System" to the marketing site hero page. *(Status: COMPLETED)*
+4.  **User:** Requests adding "relationship management system" tagline to the login page. *(Status: COMPLETED)*
+5.  **User:** "Across the bottom, you have More and More New. Whats that all about? And... move the Sign Out button. *(Status: COMPLETED)*
+6.  **User:** Lets make that bigger so the IMOS letters and sizing look similar to what you have in the other pills." *(Status: COMPLETED)*
+7.  **User:** "In the training hub all the icons... are just blue. Lets update all of those icons to match the look and feel. *(Status: COMPLETED)*
+8.  **User:** In the My Account tab... get rid of the Add Photo and just leave the camera icon... its not saving the picture." *(Status: COMPLETED)*
+9.  **User:** "I think thats good for now. I want to deploy this. *(Status: Addressed - a few more fixes were done first)*
+10. **User:** Recreate... the onboarding deck, make the look and feel... more like how you would walk through the tool. *(Status: COMPLETED)*
 
 **Project Health Check:**
 -   **Broken:**
-    -   Custom domain access () due to SSL/DNS configuration errors.
-    -   Data synchronization from the user's mobile app to the backend.
+    -   Custom domain  access is still unverified and likely broken.
+    -   Data sync for  from a mobile browser is unverified.
 -   **Mocked:**
     -   Twilio SMS functionality.
 
@@ -164,11 +177,11 @@ The application is a feature-rich CRM with a React/Expo frontend and FastAPI bac
 -   **MongoDB Atlas:** Primary database.
 -   **Resend:** Transactional emails.
 -   **Twilio:** SMS messaging (in MOCK mode).
--   **Cloudflare:** DNS/SSL proxy (currently misconfigured and causing issues).
--   **OpenAI:** Used on the backend for the Jessi AI persona and voice training data extraction.
+-   **Cloudflare:** DNS/SSL proxy (supposedly removed by the user but needs verification).
+-   **OpenAI:** Used on the backend for the Jessi AI persona.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (for Quotes/Agreements fix).
+-   **Testing agent used after significant changes:** YES (for the More page reorganization).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
 -   **Known regressions:** None.
@@ -177,4 +190,5 @@ The application is a feature-rich CRM with a React/Expo frontend and FastAPI bac
 -   **Super Admin:**  / 
 
 **What agent forgot to execute**
--   The previous handoff mentioned verifying avatars in the inbox search dropdown and re-testing the leaderboard toggle. These carry-over tasks were not addressed in this session.</analysis>
+-   **Follow-up on Custom Domain Fix:** The agent did not verify if removing Cloudflare resolved the P0 domain issue.
+-   **Carry-over tasks from previous fork:** The agent once again did not address verifying avatars in the inbox search dropdown or re-testing the leaderboard toggle.</analysis>

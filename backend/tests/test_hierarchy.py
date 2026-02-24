@@ -8,7 +8,7 @@ import os
 import random
 import string
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://jessi-ai-training.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://imos-ux-polish.preview.emergentagent.com')
 
 # Test data constants
 TEST_ORG_ID = "699637971b07c23426a53249"  # Ken Garff Auto Group
