@@ -785,10 +785,27 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
   - Created `/app/frontend/app/onboarding/types.ts` for TypeScript interfaces
   - Updated `onboarding/index.tsx` to use role-based slides via `getOnboardingSlidesForRole()`
 - **Onboarding Flows by Role:**
-  - **Org Admin (9 slides):** Organization dashboard, store management, user management, team invites, reports
-  - **Store Manager (10 slides):** Manager dashboard, your store, team management, leaderboards, performance tracking
+  - **Org Admin (10 slides):** Organization dashboard, store management, user management, team invites → **Invite Store Managers step**
+  - **Store Manager (11 slides):** Manager dashboard, your store, team management, leaderboards, performance → **Invite Salespeople step**
   - **Salesperson (15 slides):** Sales toolkit, inbox, contacts, new message flow, AI assistant, digital card, templates, performance
 - **Files Created/Modified:**
-  - `frontend/app/onboarding/slideLibraries.ts` - NEW: Role-based slide libraries
-  - `frontend/app/onboarding/types.ts` - NEW: TypeScript interfaces
-  - `frontend/app/onboarding/index.tsx` - Updated to use role-based slides
+  - `frontend/app/onboarding/slideLibraries.ts` - NEW: Role-based slide libraries with team invite slides
+  - `frontend/app/onboarding/types.ts` - NEW: TypeScript interfaces with team_invite type
+  - `frontend/app/onboarding/index.tsx` - Updated with team invite UI and functionality
+
+### Cascading Team Invite Flow (COMPLETED - Feb 24, 2026)
+- **Feature:** Top-down deployment where each role invites their direct reports
+- **Flow:**
+  1. Super Admin creates Organization → Invites Org Admin
+  2. Org Admin completes onboarding → Step 9: "Invite Your Store Managers"
+  3. Store Manager completes onboarding → Step 10: "Invite Your Sales Team"
+  4. Salespeople complete onboarding → Ready to use app
+- **UI Features:**
+  - Add multiple team members with Name, Email, Phone fields
+  - "Add Another [Role]" button for batch invites
+  - "Send Invites & Continue" button sends invites and proceeds
+  - "Skip for now" option to invite later
+  - Success message when invites are sent
+- **Backend Integration:**
+  - Uses existing `/admin/users/create` endpoint with `send_invite: true`
+  - Auto-assigns correct role, organization_id, and store_id
