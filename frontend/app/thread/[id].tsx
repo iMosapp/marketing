@@ -1333,6 +1333,185 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </View>
       
+      {/* Quick Contact Creation Panel */}
+      {isNewContact && showQuickContactPanel && !contactCreated && (
+        <View style={styles.quickContactPanel} data-testid="quick-contact-panel">
+          <View style={styles.quickContactHeader}>
+            <Text style={styles.quickContactTitle}>New Contact</Text>
+            <TouchableOpacity 
+              onPress={() => setShowQuickContactPanel(false)}
+              style={styles.quickContactClose}
+            >
+              <Ionicons name="chevron-up" size={20} color="#8E8E93" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.quickContactContent}>
+            {/* Photo */}
+            <TouchableOpacity 
+              style={styles.quickContactPhotoContainer}
+              onPress={handleNewContactPhoto}
+              data-testid="quick-contact-photo-btn"
+            >
+              {newContactPhoto ? (
+                <Image source={{ uri: newContactPhoto }} style={styles.quickContactPhoto} />
+              ) : (
+                <View style={styles.quickContactPhotoPlaceholder}>
+                  <Ionicons name="camera" size={24} color="#8E8E93" />
+                </View>
+              )}
+              <View style={styles.quickContactPhotoBadge}>
+                <Ionicons name="add" size={14} color="#FFF" />
+              </View>
+            </TouchableOpacity>
+            
+            {/* Name Fields */}
+            <View style={styles.quickContactFields}>
+              <TextInput
+                style={styles.quickContactInput}
+                placeholder="First Name"
+                placeholderTextColor="#6E6E73"
+                value={newContactFirstName}
+                onChangeText={setNewContactFirstName}
+                data-testid="quick-contact-first-name"
+              />
+              <TextInput
+                style={styles.quickContactInput}
+                placeholder="Last Name"
+                placeholderTextColor="#6E6E73"
+                value={newContactLastName}
+                onChangeText={setNewContactLastName}
+                data-testid="quick-contact-last-name"
+              />
+            </View>
+          </View>
+          
+          {/* Tags Section */}
+          <View style={styles.quickContactTagsSection}>
+            <Text style={styles.quickContactTagsLabel}>Tags:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickContactTagsScroll}>
+              {newContactTags.map((tagName, index) => {
+                const tag = availableTags.find(t => t.name === tagName);
+                return (
+                  <TouchableOpacity 
+                    key={index}
+                    style={[styles.quickContactTag, { backgroundColor: tag?.color || '#007AFF' }]}
+                    onPress={() => setNewContactTags(prev => prev.filter(t => t !== tagName))}
+                  >
+                    <Text style={styles.quickContactTagText}>{tagName}</Text>
+                    <Ionicons name="close" size={12} color="#FFF" />
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity 
+                style={styles.quickContactAddTag}
+                onPress={() => setShowTagPicker(true)}
+                data-testid="quick-contact-add-tag"
+              >
+                <Ionicons name="add" size={16} color="#007AFF" />
+                <Text style={styles.quickContactAddTagText}>Add Tag</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+          
+          {/* Actions */}
+          <View style={styles.quickContactActions}>
+            <TouchableOpacity 
+              style={styles.quickContactActionBtn}
+              onPress={() => {
+                setCongratsCustomerName(`${newContactFirstName} ${newContactLastName}`.trim() || contactPhone);
+                setShowCongratsCardModal(true);
+              }}
+              data-testid="quick-contact-congrats-btn"
+            >
+              <Ionicons name="gift" size={18} color="#C9A962" />
+              <Text style={styles.quickContactActionText}>Congrats Card</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.quickContactActionBtn, styles.quickContactSaveBtn]}
+              onPress={async () => {
+                await createQuickContact();
+                showSimpleAlert('Success', 'Contact saved!');
+              }}
+              data-testid="quick-contact-save-btn"
+            >
+              <Ionicons name="checkmark" size={18} color="#FFF" />
+              <Text style={[styles.quickContactActionText, { color: '#FFF' }]}>Save Contact</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.quickContactHint}>
+            Contact will auto-save when you send your first message
+          </Text>
+        </View>
+      )}
+      
+      {/* Collapsed Quick Contact indicator */}
+      {isNewContact && !showQuickContactPanel && !contactCreated && (
+        <TouchableOpacity 
+          style={styles.quickContactCollapsed}
+          onPress={() => setShowQuickContactPanel(true)}
+        >
+          <Ionicons name="person-add" size={16} color="#007AFF" />
+          <Text style={styles.quickContactCollapsedText}>Add contact details</Text>
+          <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+        </TouchableOpacity>
+      )}
+      
+      {/* Tag Picker Modal */}
+      <Modal
+        visible={showTagPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTagPicker(false)}
+      >
+        <View style={styles.tagPickerOverlay}>
+          <View style={styles.tagPickerContainer}>
+            <View style={styles.tagPickerHeader}>
+              <Text style={styles.tagPickerTitle}>Select Tags</Text>
+              <TouchableOpacity onPress={() => setShowTagPicker(false)}>
+                <Ionicons name="close" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.tagPickerList}>
+              {availableTags.map((tag) => {
+                const isSelected = newContactTags.includes(tag.name);
+                return (
+                  <TouchableOpacity
+                    key={tag._id}
+                    style={[
+                      styles.tagPickerItem,
+                      isSelected && styles.tagPickerItemSelected
+                    ]}
+                    onPress={() => {
+                      if (isSelected) {
+                        setNewContactTags(prev => prev.filter(t => t !== tag.name));
+                      } else {
+                        setNewContactTags(prev => [...prev, tag.name]);
+                      }
+                    }}
+                  >
+                    <View style={[styles.tagPickerDot, { backgroundColor: tag.color }]} />
+                    <Text style={styles.tagPickerItemText}>{tag.name}</Text>
+                    {isSelected && <Ionicons name="checkmark" size={20} color="#007AFF" />}
+                  </TouchableOpacity>
+                );
+              })}
+              {availableTags.length === 0 && (
+                <Text style={styles.tagPickerEmpty}>No tags available. Create tags in Settings → Contact Tags</Text>
+              )}
+            </ScrollView>
+            <TouchableOpacity 
+              style={styles.tagPickerDone}
+              onPress={() => setShowTagPicker(false)}
+            >
+              <Text style={styles.tagPickerDoneText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
       {/* Messages */}
       {loading ? (
         <View style={styles.loadingContainer}>
