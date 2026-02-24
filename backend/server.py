@@ -90,6 +90,7 @@ api_router.include_router(notifications.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(inventory_webhooks.router)
 api_router.include_router(demo_requests.router)
+api_router.include_router(team_chat.router)
 
 # ============= USER SETTINGS ENDPOINTS (kept here for URL compatibility) =============
 @api_router.get("/users/{user_id}/leaderboard-settings")
