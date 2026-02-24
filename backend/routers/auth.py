@@ -202,6 +202,9 @@ async def signup(user_data: UserCreate):
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
     
+    # Send welcome email to new user
+    await send_welcome_email(user_dict)
+    
     # Send notification to super admin only for non-independents
     if not is_independent:
         await notify_super_admin_of_new_user(user_dict)
