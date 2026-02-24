@@ -354,6 +354,22 @@ export default function LoginScreen() {
                 style={{ marginTop: 12 }}
               />
             </View>
+            
+            {/* Refresh Button for Web */}
+            {Platform.OS === 'web' && (
+              <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                }}
+                data-testid="refresh-app-btn"
+              >
+                <Ionicons name="refresh" size={18} color="#8E8E93" />
+                <Text style={styles.refreshButtonText}>Refresh App</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -640,6 +656,19 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  refreshButtonText: {
+    color: '#8E8E93',
+    fontSize: 14,
+    fontWeight: '500',
   },
   errorContainer: {
     flexDirection: 'row',
