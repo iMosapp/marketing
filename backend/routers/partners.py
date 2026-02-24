@@ -381,6 +381,8 @@ async def get_agreement(agreement_id: str):
         "status": agreement.get("status"),
         "signed_partner": agreement.get("signed_partner"),
         "signed_at": agreement.get("signed_at").isoformat() if agreement.get("signed_at") else None,
+        "created_at": agreement.get("created_at").isoformat() if agreement.get("created_at") else None,
+        "sent_at": agreement.get("sent_at").isoformat() if agreement.get("sent_at") else None,
     }
 
 
