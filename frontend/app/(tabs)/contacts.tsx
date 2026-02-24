@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Image,
   ActivityIndicator,
   RefreshControl,
@@ -20,6 +19,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { contactsAPI, messagesAPI, tagsAPI } from '../../services/api';
+import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 interface Tag {
   _id: string;
