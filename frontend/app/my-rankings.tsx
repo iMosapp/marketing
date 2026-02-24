@@ -169,6 +169,17 @@ export default function MyRankingsScreen() {
           )}
         </View>
         
+        {/* Avatar */}
+        {item.photo_url ? (
+          <Image source={{ uri: item.photo_url }} style={styles.userAvatarPhoto} />
+        ) : (
+          <View style={styles.userAvatar}>
+            <Text style={styles.avatarText}>
+              {item.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '?'}
+            </Text>
+          </View>
+        )}
+        
         <View style={styles.userInfo}>
           <Text style={styles.userName}>
             {item.is_you ? 'You' : item.name}
