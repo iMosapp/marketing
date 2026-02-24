@@ -143,6 +143,7 @@ export default function ContactsScreen() {
         params: {
           contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
           contact_phone: contact.phone,
+          contact_photo: contact.photo || '',
         }
       });
     } catch (error) {
@@ -152,9 +153,36 @@ export default function ContactsScreen() {
         params: {
           contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
           contact_phone: contact.phone,
+          contact_photo: contact.photo || '',
         }
       });
     }
+  };
+  
+  // Handle adding a new contact - navigate to thread with Quick Contact Panel
+  const handleAddNewContact = () => {
+    if (!newContactPhone.trim()) {
+      showSimpleAlert('Phone Required', 'Please enter a phone number');
+      return;
+    }
+    
+    // Format phone number
+    let phone = newContactPhone.trim();
+    if (!phone.startsWith('+')) {
+      phone = '+1' + phone.replace(/\D/g, '');
+    }
+    
+    setShowAddContactModal(false);
+    setNewContactPhone('');
+    
+    // Navigate to thread with the phone number - Quick Contact Panel will show
+    router.push({
+      pathname: `/thread/${phone}`,
+      params: {
+        contact_name: phone,
+        contact_phone: phone,
+      }
+    });
   };
   
   // Filter contacts by selected tag
