@@ -168,6 +168,16 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Completed This Session (Continued - Feb 24, 2026)
 
+### Team Tab Notification Badge (COMPLETED - Feb 24, 2026)
+- [x] **Removed top-right floating notification button** (per user feedback)
+  - User found it distracting and covering UI elements
+- [x] **Added unread badge to Team tab** in bottom navigation
+  - Shows red badge with unread count when there are new team messages
+  - Badge clears when user taps on Team tab
+  - Polls for new messages every 10 seconds
+  - **Files Modified:** `frontend/app/(tabs)/_layout.tsx`
+  - **Files Removed (from layout):** `QuickAlertButton` component no longer rendered
+
 ### Quotes & Partner Agreements Management (COMPLETED - Feb 24, 2026)
 - [x] **Quote Management - Full CRUD Operations**
   - **Quote Detail Page** (`frontend/app/admin/quote/[id].tsx`)
