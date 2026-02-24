@@ -1457,6 +1457,70 @@ export default function ThreadScreen() {
             </ScrollView>
           </View>
           
+          {/* Create User Account Section (Admin Only) */}
+          {isAdmin && (
+            <View style={styles.createUserSection}>
+              <TouchableOpacity 
+                style={styles.createUserToggle}
+                onPress={() => setCreateUserAccount(!createUserAccount)}
+              >
+                <View style={styles.createUserToggleLeft}>
+                  <View style={[styles.createUserCheckbox, createUserAccount && styles.createUserCheckboxActive]}>
+                    {createUserAccount && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                  </View>
+                  <View>
+                    <Text style={styles.createUserToggleText}>Also create user account</Text>
+                    <Text style={styles.createUserToggleHint}>They'll receive login credentials via SMS</Text>
+                  </View>
+                </View>
+                <Ionicons name={createUserAccount ? "chevron-up" : "chevron-down"} size={18} color="#8E8E93" />
+              </TouchableOpacity>
+              
+              {createUserAccount && (
+                <View style={styles.createUserFields}>
+                  <View style={styles.createUserInputContainer}>
+                    <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+                    <TextInput
+                      style={styles.createUserInput}
+                      placeholder="Email (for login)"
+                      placeholderTextColor="#6E6E73"
+                      value={newUserEmail}
+                      onChangeText={setNewUserEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  </View>
+                  
+                  <View style={styles.createUserRoleContainer}>
+                    <Text style={styles.createUserRoleLabel}>Role:</Text>
+                    <View style={styles.createUserRoleOptions}>
+                      {[
+                        { value: 'user', label: 'Team Member' },
+                        { value: 'store_manager', label: 'Manager' },
+                      ].map((role) => (
+                        <TouchableOpacity
+                          key={role.value}
+                          style={[
+                            styles.createUserRoleBtn,
+                            newUserRole === role.value && styles.createUserRoleBtnActive
+                          ]}
+                          onPress={() => setNewUserRole(role.value)}
+                        >
+                          <Text style={[
+                            styles.createUserRoleBtnText,
+                            newUserRole === role.value && styles.createUserRoleBtnTextActive
+                          ]}>
+                            {role.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+          
           {/* Actions */}
           <View style={styles.quickContactActions}>
             <TouchableOpacity 
