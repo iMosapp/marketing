@@ -683,13 +683,22 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   header: {
-    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#1C1C1E',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerContent: {
+    flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
   },
