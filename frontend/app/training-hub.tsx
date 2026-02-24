@@ -413,11 +413,11 @@ export default function TrainingHubScreen() {
                 onPress={() => handleTopicPress(topic)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.topicIcon, { backgroundColor: `${topic.icon === 'sparkles' ? '#C9A962' : '#007AFF'}20` }]}>
+                <View style={[styles.topicIcon, { backgroundColor: `${topic.iconColor}20` }]}>
                   <Ionicons 
                     name={topic.icon as any} 
                     size={24} 
-                    color={topic.icon === 'sparkles' ? '#C9A962' : '#007AFF'} 
+                    color={topic.iconColor} 
                   />
                 </View>
                 <View style={styles.topicContent}>
