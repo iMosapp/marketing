@@ -777,3 +777,18 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 - **Bug Fixed:**
   - Added `onboarding_complete` to allowed_fields in user update API
 - **Test Data Tracker:** `/app/TEST_DATA_TRACKER.md`
+
+### Role-Based Onboarding & Training (COMPLETED - Feb 24, 2026)
+- **Feature:** Different onboarding flows based on user role
+- **Implementation:**
+  - Created `/app/frontend/app/onboarding/slideLibraries.ts` with role-specific slide sets
+  - Created `/app/frontend/app/onboarding/types.ts` for TypeScript interfaces
+  - Updated `onboarding/index.tsx` to use role-based slides via `getOnboardingSlidesForRole()`
+- **Onboarding Flows by Role:**
+  - **Org Admin (9 slides):** Organization dashboard, store management, user management, team invites, reports
+  - **Store Manager (10 slides):** Manager dashboard, your store, team management, leaderboards, performance tracking
+  - **Salesperson (15 slides):** Sales toolkit, inbox, contacts, new message flow, AI assistant, digital card, templates, performance
+- **Files Created/Modified:**
+  - `frontend/app/onboarding/slideLibraries.ts` - NEW: Role-based slide libraries
+  - `frontend/app/onboarding/types.ts` - NEW: TypeScript interfaces
+  - `frontend/app/onboarding/index.tsx` - Updated to use role-based slides
