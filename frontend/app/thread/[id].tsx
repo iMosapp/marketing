@@ -712,12 +712,12 @@ export default function ThreadScreen() {
 
   const createCongratsCard = async () => {
     if (!congratsPhoto || !congratsCustomerName.trim() || !user?._id) {
-      Alert.alert('Missing Info', 'Please add a photo and enter the customer name.');
+      showSimpleAlert('Missing Info', 'Please add a photo and enter the customer name.');
       return;
     }
 
     // Premium haptic feedback on button press
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!IS_WEB) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     setCreatingCongratsCard(true);
     try {
@@ -740,15 +740,18 @@ export default function ThreadScreen() {
 
       if (response.data.success) {
         // Success haptic feedback - feels satisfying!
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (!IS_WEB) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // Get the card image URL for MMS
+        const cardImageUrl = `${api.defaults.baseURL}/congrats/card/${response.data.card_id}/image`;
         
         // Use short URL if available, otherwise fall back to full URL
         const cardUrl = response.data.short_url || response.data.card_url || 
           `${api.defaults.baseURL?.replace('/api', '')}/congrats/${response.data.card_id}`;
         
-        // Insert message with short link
+        // Insert message with both the image and short link
         const firstName = congratsCustomerName.split(' ')[0];
-        const cardMessage = `Hey ${firstName}! 🎉 We made this special thank you card just for you: ${cardUrl}`;
+        const cardMessage = `Hey ${firstName}! 🎉 Congrats on your new purchase! We made this special thank you card just for you:\n\n${cardUrl}\n\nDownload & share it! Leave us a review if you loved your experience!`;
         
         setMessage(cardMessage);
         
@@ -760,15 +763,15 @@ export default function ThreadScreen() {
         
         // Show success message - mention if contact photo was updated
         const photoUpdateMsg = response.data.contact_photo_updated 
-          ? "\n\n📸 Contact's profile photo has been updated with this picture!"
+          ? "\n\nContact's profile photo has been updated!"
           : "";
-        Alert.alert('Card Created!', `The congrats card link has been added to your message. Hit send to share it!${photoUpdateMsg}`);
+        showSimpleAlert('Card Created!', `The congrats card link has been added to your message. Hit send to share it!${photoUpdateMsg}`);
       }
     } catch (error: any) {
       // Error haptic feedback
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (!IS_WEB) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.error('Error creating congrats card:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to create congrats card');
+      showSimpleAlert('Error', error.response?.data?.detail || 'Failed to create congrats card');
     } finally {
       setCreatingCongratsCard(false);
     }
