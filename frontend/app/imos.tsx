@@ -675,8 +675,8 @@ export default function IMOSLandingPage() {
             </View>
             <View style={styles.footerColumn}>
               <Text style={styles.footerColumnTitle}>Legal</Text>
-              <TouchableOpacity><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
-              <TouchableOpacity><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/privacy')}><Text style={styles.footerLink}>Privacy</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/terms')}><Text style={styles.footerLink}>Terms</Text></TouchableOpacity>
               <TouchableOpacity><Text style={styles.footerLink}>Security</Text></TouchableOpacity>
             </View>
           </View>
