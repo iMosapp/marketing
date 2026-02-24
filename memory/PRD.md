@@ -168,6 +168,20 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Completed This Session (Continued - Feb 24, 2026)
 
+### Contacts Page & Thread Bugs Fixed (COMPLETED - Feb 24, 2026)
+- [x] **Fixed white screen issue** - Thread page now uses dark mode for both SMS and Email
+- [x] **Added clear visual mode indicator** - New banner below header:
+  - **Blue banner** with chat icon for SMS Mode
+  - **Green banner** with mail icon for Email Mode
+  - One-tap "Switch to SMS/Email" button to change modes
+- [x] **Fixed phone icon** - Now opens tel: link to trigger phone dialer
+- [x] **Fixed chat icon** - Now navigates directly to thread in SMS mode
+- [x] **Fixed email icon** - Now navigates directly to thread in Email mode
+- [x] **Replaced Alert.alert** with web-compatible alerts in contacts page
+- **Files Modified:** 
+  - `frontend/app/(tabs)/contacts.tsx` - Fixed action buttons
+  - `frontend/app/thread/[id].tsx` - Added mode banner, always dark mode
+
 ### My Account Page - Clickable Profile (COMPLETED - Feb 24, 2026)
 - [x] **Profile card is now clickable** on the More page
   - Shows pencil/edit badge on avatar to indicate it's tappable
