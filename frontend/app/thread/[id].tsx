@@ -1951,6 +1951,25 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
+  headerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginLeft: 4,
+  },
+  headerAvatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginLeft: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
   headerInfo: {
     flex: 1,
     marginLeft: 8,
