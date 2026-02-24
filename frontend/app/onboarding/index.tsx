@@ -671,14 +671,8 @@ export default function OnboardingScreen() {
   };
 
   const canProceed = () => {
-    if (currentSlide.type === 'ai_setup') {
-      if (currentSlide.id === 'ai_bio') {
-        return bioInputs.fun_facts.trim().length >= 10;
-      }
-      if (currentSlide.interactiveType === 'choice') {
-        return true;
-      }
-    }
+    // All slides can proceed - we want users to move quickly through the tour
+    // The only validation is on AI style choices which are pre-selected
     return true;
   };
 
