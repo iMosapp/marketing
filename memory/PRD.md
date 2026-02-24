@@ -207,6 +207,26 @@ iMos is a business management app for retail/service businesses. Key features in
     - Onboarding AI intro slide ("The Magic Behind [logo]")
   - **Files Modified:** `inbox.tsx`, `signup.tsx`, `more.tsx`, `onboarding/index.tsx`
 
+### Team Chat Feature (COMPLETED - Feb 24, 2026)
+- [x] **Internal Team Chat System (Slack-like)**
+  - New "Team" tab in bottom navigation
+  - **Channel Types:**
+    - Organization-wide channels (all members across locations)
+    - Store channels (per-location teams)
+    - Custom groups (hand-picked members like "All GMs")
+    - Direct Messages (1-on-1 private chats)
+  - **Features:**
+    - @mentions with notifications
+    - Voice-to-text input for quick messages
+    - Broadcast messaging capability
+    - Unread message counts
+    - Real-time polling for new messages
+  - **Use Case:** "Hey @Jimmy, you have a customer out front" → push notification to team
+  - **Files Created:**
+    - `backend/routers/team_chat.py` - Full API for channels, messages, members
+    - `frontend/app/(tabs)/team.tsx` - Team Chat UI
+  - **Database Collections:** `team_channels`, `team_messages`, `team_read_status`
+
 ### UI/UX Fixes (COMPLETED - Feb 24, 2026)
 - [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
   - WebIconButton component renders native HTML `<button>` on web for proper click handling
