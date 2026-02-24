@@ -1965,6 +1965,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
+  contactAvatarPhoto: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 14,
+  },
   contactAvatarText: {
     fontSize: 15,
     fontWeight: '600',
