@@ -63,6 +63,14 @@ export default function TabLayout() {
     }
   }, [mounted, isLoading, isAuthenticated]);
   
+  // Check if user needs to complete onboarding (first login verification)
+  useEffect(() => {
+    if (mounted && !isLoading && isAuthenticated && user && !user.onboarding_complete) {
+      // Redirect to onboarding for profile verification
+      router.replace('/onboarding');
+    }
+  }, [mounted, isLoading, isAuthenticated, user?.onboarding_complete]);
+  
   // Notification system temporarily disabled
   const pendingNotification = null;
   const unreadCount = 0;
