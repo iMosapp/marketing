@@ -432,6 +432,7 @@ export default function ThreadScreen() {
     if (user?._id && id) {
       ensureConversation();
       loadContactInfo();
+      checkIfNewContact();
     }
   }, [id, user?._id]);
   
