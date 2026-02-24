@@ -1156,6 +1156,12 @@ async def get_detailed_stats():
         ]
     })
     
+    # Partner agreements count
+    partner_agreements = await db.partner_agreements.count_documents({})
+    
+    # Total employees (all active users)
+    total_employees = await db.users.count_documents({"is_active": {"$ne": False}})
+    
     return {
         "orgs_active": orgs_active,
         "orgs_inactive": orgs_inactive,
@@ -1165,6 +1171,8 @@ async def get_detailed_stats():
         "users_inactive": users_inactive,
         "individuals_active": individuals_active,
         "individuals_inactive": individuals_inactive,
+        "partner_agreements": partner_agreements,
+        "total_employees": total_employees,
     }
 
 
