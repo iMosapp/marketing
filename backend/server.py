@@ -193,6 +193,35 @@ async def update_persona_settings(user_id: str, data: dict):
     
     return {"message": "Persona settings saved"}
 
+
+@api_router.patch("/users/{user_id}")
+async def patch_user_profile(user_id: str, data: dict):
+    """Update user profile fields including photo"""
+    db = get_db()
+    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links']
+    update_dict = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    
+    result = await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Return the updated user data
+    updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if updated_user:
+        updated_user["_id"] = str(updated_user["_id"])
+        # Remove sensitive fields
+        updated_user.pop("password", None)
+    
+    return updated_user
+
+
 # ============= ACTIVITY FEED ENDPOINT =============
 @api_router.get("/activity/{user_id}")
 async def get_activity_feed(user_id: str, limit: int = 20):
