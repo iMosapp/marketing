@@ -64,7 +64,7 @@ export default function QuoteDetailScreen() {
       setEditedNotes(response.data.notes || '');
     } catch (error) {
       console.error('Error loading quote:', error);
-      Alert.alert('Error', 'Failed to load quote');
+      showSimpleAlert('Error', 'Failed to load quote');
     } finally {
       setLoading(false);
     }
