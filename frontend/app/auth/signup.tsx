@@ -474,6 +474,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#8E8E93',
   },
+  subtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subtitleLogo: {
+    width: 50,
+    height: 20,
+    marginLeft: 4,
+  },
   form: {
     gap: 16,
   },
