@@ -619,6 +619,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
+  profileAvatarContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
   profileAvatar: {
     width: 64,
     height: 64,
@@ -626,15 +630,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+  },
+  profileAvatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   profileAvatarText: {
     color: '#FFF',
     fontSize: 24,
     fontWeight: '600',
   },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#1C1C1E',
+  },
   profileInfo: {
     flex: 1,
+  },
+  profileChevron: {
+    marginLeft: 8,
   },
   profileSignOutButton: {
     width: 44,
