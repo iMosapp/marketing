@@ -46,6 +46,10 @@ app.add_middleware(
 async def root():
     return {"message": "MVPLine API", "version": "2.0"}
 
+@api_router.get("/health")
+async def api_health():
+    return {"status": "healthy", "message": "iMOs API v2.0"}
+
 # ============= INCLUDE ROUTERS =============
 api_router.include_router(auth.router)
 api_router.include_router(contacts.router)
