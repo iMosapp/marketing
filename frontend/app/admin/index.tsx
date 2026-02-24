@@ -950,6 +950,54 @@ const styles = StyleSheet.create({
   timeFilterTextActive: {
     color: '#FFF',
   },
+  // Quick Stats Styles
+  quickStatsContainer: {
+    marginBottom: 20,
+  },
+  quickStatsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  quickStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  quickStatCard: {
+    width: '31%',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  quickStatIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  quickStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: 2,
+  },
+  quickStatLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: 2,
+  },
+  quickStatSubtext: {
+    fontSize: 10,
+    color: '#8E8E93',
+  },
   // Collapsible Section Styles
   collapsibleSection: {
     marginBottom: 12,
