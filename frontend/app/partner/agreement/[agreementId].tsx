@@ -214,6 +214,14 @@ export default function PartnerAgreementSigningPage() {
     return (
       <View style={styles.signedContainer}>
         <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
+          {/* Back Button */}
+          <View style={styles.signedHeader}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={28} color="#007AFF" />
+            </TouchableOpacity>
+            <Text style={styles.signedHeaderTitle}>Agreement Details</Text>
+            <View style={{ width: 28 }} />
+          </View>
           <ScrollView contentContainerStyle={styles.signedContent}>
             <View style={styles.successBadge}>
               <Ionicons name="checkmark-circle" size={80} color="#34C759" />
