@@ -1552,8 +1552,8 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   imosLogoFilter: {
-    width: 40,
-    height: 16,
+    width: 52,
+    height: 20,
   },
   
   // List
