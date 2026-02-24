@@ -61,28 +61,43 @@ export default function SignupScreen() {
     }
   };
   
+  // Web-compatible alert function
+  const showAlert = (title: string, message: string, onOk?: () => void) => {
+    if (Platform.OS === 'web') {
+      // Use window.alert for web, then execute callback
+      window.alert(`${title}\n\n${message}`);
+      if (onOk) onOk();
+    } else {
+      Alert.alert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
+    }
+  };
+
   const handleSignup = async () => {
+    console.log('[Signup] handleSignup called');
+    
     if (!name || !email || !phone || !password) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      showAlert('Error', 'Please fill in all required fields');
       return;
     }
     
     if (!selectedOrg) {
-      Alert.alert('Error', 'Please select how you work');
+      showAlert('Error', 'Please select how you work');
       return;
     }
     
     if (!role.trim()) {
-      Alert.alert('Error', 'Please enter your role/title');
+      showAlert('Error', 'Please enter your role/title');
       return;
     }
     
     if (!acceptedTerms) {
-      Alert.alert('Terms Required', 'Please accept the Terms of Service and Privacy Policy to continue');
+      showAlert('Terms Required', 'Please accept the Terms of Service and Privacy Policy to continue');
       return;
     }
     
     setLoading(true);
+    console.log('[Signup] Starting signup process...');
+    
     try {
       const signupData: any = { 
         name, 
@@ -98,25 +113,37 @@ export default function SignupScreen() {
         signupData.organization_id = selectedOrg._id;
       }
       
+      console.log('[Signup] Calling signup API with data:', { ...signupData, password: '***' });
       await signup(signupData);
+      console.log('[Signup] Signup successful!');
       
-      // Different messages based on account type
-      if (isIndependent) {
-        Alert.alert(
-          'Welcome to iMOs!',
-          "Your account is ready! Let's set up your profile, AI assistant, and virtual business card to get started.",
-          [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
-        );
+      // Different messages based on account type - redirect immediately on web
+      if (Platform.OS === 'web') {
+        if (isIndependent) {
+          window.alert("Welcome to iMOs!\n\nYour account is ready! Let's set up your profile, AI assistant, and virtual business card.");
+        } else {
+          window.alert("Account Created!\n\nYour account is pending approval. You can set up your profile and business card while you wait.");
+        }
+        router.replace('/');
       } else {
-        Alert.alert(
-          'Account Created!',
-          'Your account is pending approval. You can set up your profile and business card while you wait for admin configuration.',
-          [{ text: 'OK', onPress: () => router.replace('/') }]
-        );
+        if (isIndependent) {
+          Alert.alert(
+            'Welcome to iMOs!',
+            "Your account is ready! Let's set up your profile, AI assistant, and virtual business card to get started.",
+            [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
+          );
+        } else {
+          Alert.alert(
+            'Account Created!',
+            'Your account is pending approval. You can set up your profile and business card while you wait for admin configuration.',
+            [{ text: 'OK', onPress: () => router.replace('/') }]
+          );
+        }
       }
     } catch (error: any) {
+      console.error('[Signup] Error:', error);
       const message = error?.response?.data?.detail || 'Failed to create account';
-      Alert.alert('Error', message);
+      showAlert('Error', message);
     } finally {
       setLoading(false);
     }
