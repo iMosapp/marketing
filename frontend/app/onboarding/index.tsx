@@ -770,7 +770,19 @@ export default function OnboardingScreen() {
           )}
 
           {/* Title */}
-          <Text style={styles.title}>{currentSlide.title}</Text>
+          {currentSlide.id === 'welcome' ? (
+            <View style={styles.welcomeTitleContainer}>
+              <Text style={styles.title}>Welcome to </Text>
+              <Image 
+                source={require('../../assets/images/imos-logo-white-v3.png')}
+                style={styles.welcomeLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.title}>!</Text>
+            </View>
+          ) : (
+            <Text style={styles.title}>{currentSlide.title}</Text>
+          )}
           {currentSlide.subtitle && (
             <Text style={[styles.subtitle, { color: currentSlide.iconColor }]}>
               {currentSlide.subtitle}
