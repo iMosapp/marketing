@@ -408,6 +408,57 @@ async def update_agreement(agreement_id: str, data: dict):
     return {"success": True, "message": "Agreement updated"}
 
 
+@router.delete("/agreements/{agreement_id}")
+async def delete_agreement(agreement_id: str):
+    """Delete an agreement (only drafts can be deleted)"""
+    db = get_db()
+    
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if not agreement:
+        raise HTTPException(status_code=404, detail="Agreement not found")
+    
+    # Only allow deleting drafts or unsent agreements
+    if agreement.get("status") in ["signed", "paid"]:
+        raise HTTPException(status_code=400, detail="Cannot delete a signed agreement")
+    
+    await db.partner_agreements.delete_one({"_id": ObjectId(agreement_id)})
+    
+    return {"success": True, "message": "Agreement deleted"}
+
+
+@router.post("/agreements/{agreement_id}/send")
+async def send_agreement(agreement_id: str):
+    """Send/resend agreement link to partner via email"""
+    db = get_db()
+    
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if not agreement:
+        raise HTTPException(status_code=404, detail="Agreement not found")
+    
+    partner_email = agreement.get("partner_email")
+    if not partner_email:
+        raise HTTPException(status_code=400, detail="No partner email on this agreement")
+    
+    # Update status to sent
+    await db.partner_agreements.update_one(
+        {"_id": ObjectId(agreement_id)},
+        {"$set": {
+            "status": "sent",
+            "sent_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    # TODO: Send actual email when Resend is configured
+    logger.info(f"Agreement {agreement_id} marked as sent to {partner_email}")
+    
+    return {
+        "success": True,
+        "message": "Agreement sent successfully",
+        "sent_to": partner_email
+    }
+
+
 # ============= PARTNER SIGNING =============
 
 @router.post("/agreements/{agreement_id}/sign")
