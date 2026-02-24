@@ -588,6 +588,106 @@ export default function DigitalCardPage() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Share Modal */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowShareModal(false)}
+        >
+          <View style={styles.shareModal}>
+            <View style={styles.shareModalHandle} />
+            <Text style={styles.shareModalTitle}>Share My Contact</Text>
+            <Text style={styles.shareModalSubtitle}>Choose how to share your digital card</Text>
+            
+            <View style={styles.shareOptionsGrid}>
+              <TouchableOpacity 
+                style={styles.shareOption}
+                onPress={handleShareLink}
+                data-testid="share-via-link"
+              >
+                <View style={[styles.shareOptionIcon, { backgroundColor: '#007AFF20' }]}>
+                  <Ionicons name="share-outline" size={24} color="#007AFF" />
+                </View>
+                <Text style={styles.shareOptionText}>Share Link</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.shareOption}
+                onPress={handleCopyLink}
+                data-testid="copy-link"
+              >
+                <View style={[styles.shareOptionIcon, { backgroundColor: '#5856D620' }]}>
+                  <Ionicons name="copy-outline" size={24} color="#5856D6" />
+                </View>
+                <Text style={styles.shareOptionText}>Copy Link</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.shareOption}
+                onPress={handleShareSMS}
+                data-testid="share-via-sms"
+              >
+                <View style={[styles.shareOptionIcon, { backgroundColor: '#34C75920' }]}>
+                  <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
+                </View>
+                <Text style={styles.shareOptionText}>Via Text</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.shareOption}
+                onPress={handleShareEmail}
+                data-testid="share-via-email"
+              >
+                <View style={[styles.shareOptionIcon, { backgroundColor: '#FF950020' }]}>
+                  <Ionicons name="mail-outline" size={24} color="#FF9500" />
+                </View>
+                <Text style={styles.shareOptionText}>Via Email</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.shareOption}
+                onPress={handleSaveContact}
+                disabled={saving}
+                data-testid="download-vcard"
+              >
+                <View style={[styles.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
+                  {saving ? (
+                    <ActivityIndicator size="small" color="#C9A962" />
+                  ) : (
+                    <Ionicons name="download-outline" size={24} color="#C9A962" />
+                  )}
+                </View>
+                <Text style={styles.shareOptionText}>Save vCard</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.shareOption}
+                onPress={() => { flipCard(); setShowShareModal(false); }}
+                data-testid="show-qr-code"
+              >
+                <View style={[styles.shareOptionIcon, { backgroundColor: '#AF52DE20' }]}>
+                  <Ionicons name="qr-code-outline" size={24} color="#AF52DE" />
+                </View>
+                <Text style={styles.shareOptionText}>Show QR</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.shareModalCancel}
+              onPress={() => setShowShareModal(false)}
+            >
+              <Text style={styles.shareModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
