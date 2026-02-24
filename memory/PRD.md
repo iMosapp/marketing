@@ -735,3 +735,15 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
   - Metric values shown inline for data items
 - **Files Modified:**
   - `frontend/app/admin/index.tsx` - Complete redesign with collapsible sections
+
+### Digital Card Share Feature (COMPLETED - Feb 24, 2026)
+- **Change:** "Save My Contact" button → "Share My Contact" button
+- **New Share Modal with 6 options:**
+  - Share Link - Opens native share sheet with card URL
+  - Copy Link - Copies card URL to clipboard
+  - Via Text - Opens SMS app with pre-filled message
+  - Via Email - Opens email client with pre-filled subject and body
+  - Save vCard - Downloads .vcf contact file
+  - Show QR - Flips card to show QR code
+- **Files Modified:**
+  - `frontend/app/card/[userId].tsx` - Added share modal with multiple sharing methods
