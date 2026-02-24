@@ -303,7 +303,8 @@ export default function ThreadScreen() {
   const contactName = (contact_name as string) || 'Contact';
   const contactPhone = (contact_phone as string) || '';
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
-  const [contactPhoto, setContactPhoto] = useState<string | null>(null);
+  // Initialize with param photo if available, will be overwritten by API if different
+  const [contactPhoto, setContactPhoto] = useState<string | null>((paramPhoto as string) || null);
   
   useEffect(() => {
     if (user?._id && id) {
@@ -321,8 +322,16 @@ export default function ThreadScreen() {
         setContactPhoto(response.data.contact_photo);
       }
     } catch (error) {
-      // Contact photo not available, that's ok
-      console.log('Contact photo not available');
+      // Contact photo not available from conversation - try loading from contact directly
+      // This handles the case where id is a contact_id (new conversation)
+      try {
+        const contactResponse = await api.get(`/contacts/${user?._id}/${id}`);
+        if (contactResponse.data?.photo) {
+          setContactPhoto(contactResponse.data.photo);
+        }
+      } catch (e) {
+        console.log('Contact photo not available');
+      }
     }
   };
   
