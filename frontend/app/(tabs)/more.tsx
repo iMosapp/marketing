@@ -556,8 +556,17 @@ export default function MoreScreen() {
         )}
         
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>Features</Text>
-          {menuItems.map((item, index) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Features</Text>
+            <TouchableOpacity 
+              style={styles.customizeButton}
+              onPress={() => router.push('/customize-menu')}
+            >
+              <Ionicons name="options" size={16} color="#007AFF" />
+              <Text style={styles.customizeButtonText}>Customize</Text>
+            </TouchableOpacity>
+          </View>
+          {visibleMenuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
@@ -573,6 +582,11 @@ export default function MoreScreen() {
               <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
             </TouchableOpacity>
           ))}
+          {hiddenItems.size > 0 && (
+            <Text style={styles.hiddenNote}>
+              {hiddenItems.size} item{hiddenItems.size > 1 ? 's' : ''} hidden • Tap Customize to show
+            </Text>
+          )}
         </View>
         
         {/* Legal Section */}
