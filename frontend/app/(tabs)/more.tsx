@@ -800,6 +800,31 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingRight: 16,
+  },
+  customizeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  customizeButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  hiddenNote: {
+    fontSize: 12,
+    color: '#6E6E73',
+    textAlign: 'center',
+    paddingVertical: 12,
+    fontStyle: 'italic',
+  },
   menuSection: {
     marginHorizontal: 16,
     marginBottom: 16,
