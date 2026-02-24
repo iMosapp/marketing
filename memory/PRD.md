@@ -762,3 +762,18 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 - **Files Modified:**
   - `frontend/app/admin/index.tsx` - Added quickStatsContainer with clickable cards
   - `backend/routers/admin.py` - Extended stats endpoint with new fields
+
+### End-to-End Workflow Test (COMPLETED - Feb 24, 2026)
+- **Test Data Created:**
+  - 1 Organization: TEST_Sunshine Auto Group
+  - 5 Stores: Downtown, Westside, Northgate, Provo, Sandy
+  - 36 Users: 1 Org Admin, 5 Store Managers, 30 Salespeople
+- **Workflows Verified:**
+  - ✅ Organization/Store/User creation via API
+  - ✅ Password change enforcement for new users
+  - ✅ Onboarding redirect for first login
+  - ✅ Role-based access control (Super Admin, Org Admin, Manager, User)
+  - ✅ Team Invite page with SMS/Email options
+- **Bug Fixed:**
+  - Added `onboarding_complete` to allowed_fields in user update API
+- **Test Data Tracker:** `/app/TEST_DATA_TRACKER.md`
