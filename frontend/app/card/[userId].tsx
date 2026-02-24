@@ -234,6 +234,7 @@ export default function DigitalCardPage() {
           <TouchableOpacity 
             onPress={() => router.back()} 
             style={styles.backButton}
+            accessibilityRole="button"
             data-testid="back-button"
           >
             <Ionicons name="chevron-back" size={28} color="#C9A962" />
