@@ -456,8 +456,8 @@ const styles = StyleSheet.create({
   },
   dialerContainer: {
     flex: 1,
-    justifyContent: 'flex-start',
-    paddingTop: 20,
+    justifyContent: 'flex-end',
+    paddingBottom: 20,
   },
   numberDisplay: {
     paddingHorizontal: 32,
