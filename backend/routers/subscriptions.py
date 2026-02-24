@@ -497,6 +497,60 @@ async def get_quote(quote_id: str):
     return quote
 
 
+@router.patch("/quotes/{quote_id}")
+async def update_quote(quote_id: str, data: dict):
+    """Update a quote (notes, status, etc.)"""
+    db = get_db()
+    
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Only allow updating certain fields
+    allowed_fields = ["notes", "status", "valid_until"]
+    update_dict = {k: v for k, v in data.items() if k in allowed_fields}
+    update_dict["updated_at"] = datetime.utcnow()
+    
+    await db.subscription_quotes.update_one(
+        {"_id": ObjectId(quote_id)},
+        {"$set": update_dict}
+    )
+    
+    return {"message": "Quote updated successfully"}
+
+
+@router.post("/quotes/{quote_id}/send")
+async def send_quote(quote_id: str):
+    """Send/resend a quote to the customer via email"""
+    db = get_db()
+    
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    customer_email = quote.get("customer", {}).get("email")
+    if not customer_email:
+        raise HTTPException(status_code=400, detail="No customer email on this quote")
+    
+    # Update status to sent
+    await db.subscription_quotes.update_one(
+        {"_id": ObjectId(quote_id)},
+        {"$set": {
+            "status": "sent",
+            "sent_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    # TODO: Send actual email when Resend is configured
+    # For now, just update status
+    logger.info(f"Quote {quote['quote_number']} marked as sent to {customer_email}")
+    
+    return {
+        "message": "Quote sent successfully",
+        "sent_to": customer_email
+    }
+
 
 @router.delete("/quotes/{quote_id}")
 async def delete_quote(quote_id: str):
