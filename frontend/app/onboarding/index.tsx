@@ -716,6 +716,13 @@ export default function OnboardingScreen() {
   const renderMultiInput = () => {
     if (!currentSlide.inputFields) return null;
     
+    // Determine which state to use based on slide id
+    const isProfileVerify = currentSlide.id === 'verify_profile';
+    const inputState = isProfileVerify ? profileInputs : bioInputs;
+    const setInputState = isProfileVerify 
+      ? (updater: any) => setProfileInputs(prev => ({ ...prev, ...updater }))
+      : (updater: any) => setBioInputs(prev => ({ ...prev, ...updater }));
+    
     return (
       <ScrollView style={styles.inputsContainer} showsVerticalScrollIndicator={false}>
         {currentSlide.inputFields.map((field) => (
@@ -725,15 +732,23 @@ export default function OnboardingScreen() {
               style={[styles.textInput, field.multiline && styles.textInputMultiline]}
               placeholder={field.placeholder}
               placeholderTextColor="#6E6E73"
-              value={bioInputs[field.key as keyof typeof bioInputs]}
-              onChangeText={(text) => setBioInputs(prev => ({ ...prev, [field.key]: text }))}
+              value={inputState[field.key as keyof typeof inputState] || ''}
+              onChangeText={(text) => {
+                if (isProfileVerify) {
+                  setProfileInputs(prev => ({ ...prev, [field.key]: text }));
+                } else {
+                  setBioInputs(prev => ({ ...prev, [field.key]: text }));
+                }
+              }}
               multiline={field.multiline}
               maxLength={field.multiline ? 300 : 100}
             />
           </View>
         ))}
         <Text style={styles.inputHint}>
-          This info helps your AI sound more like YOU!
+          {isProfileVerify 
+            ? 'Review and update your info - this powers your business card!'
+            : 'This info helps your AI sound more like YOU!'}
         </Text>
       </ScrollView>
     );
