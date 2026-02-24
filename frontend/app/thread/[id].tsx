@@ -8,7 +8,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   Modal,
   ScrollView,
@@ -27,6 +26,7 @@ import AISuggestion from '../../components/AISuggestion';
 import { useAuthStore } from '../../store/authStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
+import { showSimpleAlert } from '../../services/alert';
 
 // Web platform detection
 const IS_WEB = Platform.OS === 'web';
