@@ -760,7 +760,7 @@ async def update_admin_user(
         if user_data.get('role') == 'super_admin' and requesting_user.get('role') != 'super_admin':
             raise HTTPException(status_code=403, detail="Only super admins can grant super admin role")
     
-    allowed_fields = ['name', 'phone', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active']
+    allowed_fields = ['name', 'phone', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active', 'onboarding_complete']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
     
     result = await get_db().users.update_one(
