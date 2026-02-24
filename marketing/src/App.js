@@ -90,14 +90,15 @@ const Hero = () => (
         <span className="tagline-colorful">
           <span className="tagline-red">i</span>
           <span className="tagline-green">'</span>
-          <span className="tagline-blue">m</span>
+          <span className="tagline-blue">M</span>
           <span className="tagline-white"> </span>
           <span className="tagline-yellow">Old</span>
           <span className="tagline-white"> </span>
-          <span className="tagline-green">School</span>
+          <span className="tagline-green">s</span>
+          <span className="tagline-green">chool</span>
         </span>
       </h1>
-      <h2 className="hero-tagline-sub">With modern tools.</h2>
+      <h2 className="hero-tagline-sub">with modern tools.</h2>
       
       <p className="hero-subtitle">
         Built on timeless relationship principles and powered by modern automation, 
