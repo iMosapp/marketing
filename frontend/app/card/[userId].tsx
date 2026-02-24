@@ -12,12 +12,14 @@ import {
   Animated,
   Dimensions,
   Share,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Paths, File as ExpoFile } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import api from '../../services/api';
 
