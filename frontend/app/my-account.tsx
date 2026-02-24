@@ -45,7 +45,32 @@ export default function MyAccountScreen() {
 
   const pickImage = async () => {
     try {
-      // Request permissions
+      // On web, use native file input for better compatibility
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e: any) => {
+          const file = e.target.files[0];
+          if (file) {
+            setUploading(true);
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64Data = reader.result as string;
+              await uploadPhotoBase64(base64Data);
+            };
+            reader.onerror = () => {
+              setUploading(false);
+              showSimpleAlert('Error', 'Failed to read image file');
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+        return;
+      }
+
+      // Request permissions (native only)
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         showSimpleAlert('Permission Required', 'Please allow access to your photo library to upload a profile picture.');
@@ -66,6 +91,30 @@ export default function MyAccountScreen() {
     } catch (error) {
       console.error('Error picking image:', error);
       showSimpleAlert('Error', 'Failed to select image');
+    }
+  };
+
+  // Upload photo from base64 string (for web)
+  const uploadPhotoBase64 = async (base64Data: string) => {
+    if (!user?._id) return;
+
+    try {
+      // Upload to backend
+      const response = await api.patch(`/users/${user._id}`, {
+        photo_url: base64Data,
+      });
+
+      if (response.data) {
+        setPhotoUrl(base64Data);
+        // Update user in store
+        setUser({ ...user, photo_url: base64Data });
+        showSimpleAlert('Success', 'Profile photo updated!');
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      showSimpleAlert('Error', 'Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
     }
   };
 
