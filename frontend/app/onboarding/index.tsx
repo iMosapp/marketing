@@ -784,18 +784,20 @@ export default function OnboardingScreen() {
               styles.nextButton,
               !canProceed() && styles.nextButtonDisabled,
               isLastSlide && styles.completeButton,
+              currentSlide.type === 'team_invite' && styles.sendInvitesButton,
             ]}
-            onPress={handleNext}
-            disabled={!canProceed() || completing}
+            onPress={currentSlide.type === 'team_invite' ? sendTeamInvites : handleNext}
+            disabled={!canProceed() || completing || sendingInvites}
           >
-            {completing ? (
+            {completing || sendingInvites ? (
               <ActivityIndicator size="small" color="#000" />
             ) : (
               <>
                 <Text style={[styles.nextButtonText, isLastSlide && styles.completeButtonText]}>
-                  {isLastSlide ? "Let's Go!" : 'Continue'}
+                  {isLastSlide ? "Let's Go!" : currentSlide.type === 'team_invite' ? 'Send Invites & Continue' : 'Continue'}
                 </Text>
-                {!isLastSlide && <Ionicons name="chevron-forward" size={20} color="#000" />}
+                {!isLastSlide && currentSlide.type !== 'team_invite' && <Ionicons name="chevron-forward" size={20} color="#000" />}
+                {currentSlide.type === 'team_invite' && <Ionicons name="paper-plane" size={18} color="#000" style={{ marginLeft: 6 }} />}
               </>
             )}
           </TouchableOpacity>
