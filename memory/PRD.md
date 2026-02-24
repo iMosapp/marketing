@@ -718,3 +718,20 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 - **Files Modified:**
   - `frontend/app/(tabs)/more.tsx` - Updated adminSection with direct navigation links
 - **Verified:** Administration section now shows 14 items with full infrastructure access
+
+### Admin Dashboard Redesign (COMPLETED - Feb 24, 2026)
+- **Goal:** Match Admin Dashboard style with More page's cohesive collapsible sections
+- **Role-Based Access Implemented:**
+  - **Super Admins:** See Customer Infrastructure (Organizations, Accounts, Users, Individuals), Data & Analytics, Tools, Internal Administration
+  - **Org Admins:** See Customer Infrastructure (Accounts, Users), Data & Analytics, Tools
+  - **Managers:** See My Stores & Team section, Data & Analytics, Tools (with My Agreement, My Invoices)
+  - **Users:** See only My Account section (profile, digital card, performance)
+- **Features:**
+  - Collapsible sections with smooth animations
+  - Activity ticker at top
+  - Data range filter (7D, 30D, 90D, All)
+  - Role badge in header
+  - Item counts on each section
+  - Metric values shown inline for data items
+- **Files Modified:**
+  - `frontend/app/admin/index.tsx` - Complete redesign with collapsible sections
