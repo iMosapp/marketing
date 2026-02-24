@@ -735,9 +735,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FF3B30',
   },
-  version: {
-    textAlign: 'center',
+  versionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 24,
+    gap: 6,
+  },
+  versionLogo: {
+    width: 40,
+    height: 16,
+  },
+  version: {
     fontSize: 12,
     color: '#8E8E93',
   },
