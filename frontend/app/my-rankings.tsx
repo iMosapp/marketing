@@ -524,6 +524,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  userAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2C2C2E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  userAvatarPhoto: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  avatarText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+  },
   userInfo: {
     flex: 1,
   },
