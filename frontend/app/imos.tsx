@@ -836,8 +836,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 100,
     paddingTop: Platform.OS === 'web' ? 0 : 50,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    backdropFilter: 'blur(20px)',
+    backgroundColor: 'transparent',
   },
   navContent: {
     flexDirection: 'row',
