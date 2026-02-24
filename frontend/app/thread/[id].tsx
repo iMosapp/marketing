@@ -205,6 +205,18 @@ export default function ThreadScreen() {
   const [congratsCustomMessage, setCongratsCustomMessage] = useState('');
   const [creatingCongratsCard, setCreatingCongratsCard] = useState(false);
 
+  // Quick Contact Creation state (for new numbers)
+  const [isNewContact, setIsNewContact] = useState(false);
+  const [newContactFirstName, setNewContactFirstName] = useState('');
+  const [newContactLastName, setNewContactLastName] = useState('');
+  const [newContactPhoto, setNewContactPhoto] = useState<string | null>(null);
+  const [newContactTags, setNewContactTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<{_id: string, name: string, color: string}[]>([]);
+  const [showTagPicker, setShowTagPicker] = useState(false);
+  const [showQuickContactPanel, setShowQuickContactPanel] = useState(true);
+  const [contactCreated, setContactCreated] = useState(false);
+  const [createdContactId, setCreatedContactId] = useState<string | null>(null);
+
   // Load templates from API
   useEffect(() => {
     loadTemplates();
