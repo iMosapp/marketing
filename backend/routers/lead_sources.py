@@ -481,13 +481,14 @@ async def get_team_inbox(team_id: str, include_claimed: bool = False):
     
     conversations = list(db.conversations.find(query).sort("last_message_at", -1))
     
-    return {
-        "success": True,
-        "conversations": [{
+    result = []
+    for c in conversations:
+        conv_data = {
             "id": str(c["_id"]),
             "contact_id": c.get("contact_id"),
             "contact_phone": c.get("contact_phone"),
             "contact_name": c.get("contact_name"),
+            "contact_photo": None,
             "lead_source_name": c.get("lead_source_name"),
             "status": c.get("status"),
             "claimed": c.get("claimed", False),
@@ -495,7 +496,20 @@ async def get_team_inbox(team_id: str, include_claimed: bool = False):
             "assigned_to": c.get("assigned_to"),
             "last_message_at": c.get("last_message_at"),
             "created_at": c.get("created_at"),
-        } for c in conversations]
+        }
+        # Try to get contact photo
+        if c.get("contact_id"):
+            try:
+                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])})
+                if contact:
+                    conv_data["contact_photo"] = contact.get("photo")
+            except:
+                pass
+        result.append(conv_data)
+    
+    return {
+        "success": True,
+        "conversations": result
     }
 
 @router.get("/user-inbox/{user_id}")
@@ -510,19 +524,33 @@ async def get_user_inbox(user_id: str):
         ]
     }).sort("last_message_at", -1))
     
-    return {
-        "success": True,
-        "conversations": [{
+    result = []
+    for c in conversations:
+        conv_data = {
             "id": str(c["_id"]),
             "contact_id": c.get("contact_id"),
             "contact_phone": c.get("contact_phone"),
             "contact_name": c.get("contact_name"),
+            "contact_photo": None,
             "lead_source_name": c.get("lead_source_name"),
             "status": c.get("status"),
             "claimed": c.get("claimed", False),
             "last_message_at": c.get("last_message_at"),
             "created_at": c.get("created_at"),
-        } for c in conversations]
+        }
+        # Try to get contact photo
+        if c.get("contact_id"):
+            try:
+                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])})
+                if contact:
+                    conv_data["contact_photo"] = contact.get("photo")
+            except:
+                pass
+        result.append(conv_data)
+    
+    return {
+        "success": True,
+        "conversations": result
     }
 
 # ============ STATS ============
