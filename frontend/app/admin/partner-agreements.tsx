@@ -80,7 +80,7 @@ export default function PartnerAgreementsScreen() {
 
   const createAgreement = async () => {
     if (!selectedTemplate || !selectedTier) {
-      Alert.alert('Required', 'Please select a template and commission tier');
+      showSimpleAlert('Required', 'Please select a template and commission tier');
       return;
     }
     
@@ -106,7 +106,7 @@ export default function PartnerAgreementsScreen() {
       // Refresh agreements list
       loadData();
     } catch (error) {
-      Alert.alert('Error', 'Failed to create agreement');
+      showSimpleAlert('Error', 'Failed to create agreement');
     } finally {
       setCreating(false);
     }
@@ -116,7 +116,7 @@ export default function PartnerAgreementsScreen() {
     const baseUrl = window?.location?.origin || 'https://app.imosapp.com';
     const link = `${baseUrl}/partner/agreement/${agreementId}`;
     await Clipboard.setStringAsync(link);
-    Alert.alert('Copied', 'Agreement link copied to clipboard');
+    showSimpleAlert('Copied', 'Agreement link copied to clipboard');
   };
 
   const resetModal = () => {
