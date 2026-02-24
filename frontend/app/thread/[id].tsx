@@ -3520,4 +3520,95 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
+  // Create User Section Styles (Admin Only)
+  createUserSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#2C2C2E',
+  },
+  createUserToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  createUserToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  createUserCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#3A3A3C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createUserCheckboxActive: {
+    backgroundColor: '#34C759',
+    borderColor: '#34C759',
+  },
+  createUserToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  createUserToggleHint: {
+    fontSize: 11,
+    color: '#8E8E93',
+    marginTop: 1,
+  },
+  createUserFields: {
+    marginTop: 12,
+    gap: 10,
+  },
+  createUserInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2C2C2E',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  createUserInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#FFF',
+  },
+  createUserRoleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  createUserRoleLabel: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  createUserRoleOptions: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  createUserRoleBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#2C2C2E',
+    alignItems: 'center',
+  },
+  createUserRoleBtnActive: {
+    backgroundColor: '#007AFF',
+  },
+  createUserRoleBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  createUserRoleBtnTextActive: {
+    color: '#FFF',
+  },
 });
