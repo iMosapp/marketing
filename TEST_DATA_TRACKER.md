@@ -25,3 +25,9 @@
 | 699e2f2e8dabd9b79df28e5c | TEST_David Brown | david.brown@sunshineauto.test | store_manager | Northgate | 7U0QWcFuOSMQ |
 | 699e2f2f8dabd9b79df28e5d | TEST_Jessica Taylor | jessica.taylor@sunshineauto.test | store_manager | Provo | Ph5PGFk4C6bZ |
 | 699e2f2f8dabd9b79df28e5e | TEST_Robert Garcia | robert.garcia@sunshineauto.test | store_manager | Sandy | E5keyoSMIOKS |
+| 699e2f3a8dabd9b79df28e5f | TEST_Alex Martinez | alex.martinez.downtown@sunshineauto.test | user | Downtown | jC152aTEqI1U |
+| 699e2f3a8dabd9b79df28e60 | TEST_Emma Wilson | emma.wilson.downtown@sunshineauto.test | user | Downtown | u5dweqJVfxI0 |
+| 699e2f3b8dabd9b79df28e61 | TEST_James Anderson | james.anderson.downtown@sunshineauto.test | user | Downtown | RAE0BEw24wIE |
+| 699e2f3b8dabd9b79df28e62 | TEST_Olivia Davis | olivia.davis.downtown@sunshineauto.test | user | Downtown | E6yELqESXVxt |
+| 699e2f3b8dabd9b79df28e63 | TEST_William Lee | william.lee.downtown@sunshineauto.test | user | Downtown | cCtFxL7PXoW6 |
+| 699e2f3b8dabd9b79df28e64 | TEST_Sophia Thomas | sophia.thomas.downtown@sunshineauto.test | user | Downtown | N9PsTmvof24e |
