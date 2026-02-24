@@ -299,25 +299,23 @@ export default function DialerScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header Icons */}
       <View style={styles.headerIcons}>
-        <TouchableOpacity 
-          style={styles.headerButton}
+        <WebIconButton 
           onPress={() => setShowSearchModal(true)}
-        >
-          <Ionicons name="search" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.headerButton}
+          iconName="search"
+          iconSize={24}
+          iconColor="#007AFF"
+          testID="dialer-search-btn"
+        />
+        <WebIconButton 
           onPress={() => {
             setShowCallLog(!showCallLog);
             setCallLogSearch('');
           }}
-        >
-          <Ionicons
-            name={showCallLog ? 'keypad' : 'time'}
-            size={24}
-            color="#007AFF"
-          />
-        </TouchableOpacity>
+          iconName={showCallLog ? 'keypad' : 'time'}
+          iconSize={24}
+          iconColor="#007AFF"
+          testID="dialer-toggle-btn"
+        />
       </View>
       
       {!showCallLog ? (
