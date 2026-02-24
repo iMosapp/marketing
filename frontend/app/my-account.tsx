@@ -187,18 +187,18 @@ export default function MyAccountScreen() {
       onPress: () => router.push('/settings/my-profile'),
     },
     {
-      icon: 'sparkles',
-      title: 'Train Jessie AI',
-      subtitle: 'Customize your AI assistant',
-      color: '#C9A962',
-      onPress: () => router.push('/jessie'),
+      icon: 'mic',
+      title: 'Voice Training',
+      subtitle: 'Train AI with your voice',
+      color: '#FF3B30',
+      onPress: () => router.push('/voice-training'),
     },
     {
-      icon: 'person',
-      title: 'AI Persona',
-      subtitle: 'Set your communication style',
-      color: '#AF52DE',
-      onPress: () => router.push('/settings/persona'),
+      icon: 'sparkles',
+      title: 'Train Jessie AI',
+      subtitle: 'Chat with your AI assistant',
+      color: '#C9A962',
+      onPress: () => router.push('/jessie'),
     },
   ];
 
