@@ -1161,6 +1161,38 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </View>
       
+      {/* SMS/Email Mode Indicator Banner */}
+      <View style={[
+        styles.modeBanner, 
+        { backgroundColor: messageMode === 'sms' ? '#007AFF' : '#34C759' }
+      ]}>
+        <Ionicons 
+          name={messageMode === 'sms' ? 'chatbubble' : 'mail'} 
+          size={18} 
+          color="#FFF" 
+        />
+        <Text style={styles.modeBannerText}>
+          {messageMode === 'sms' ? 'SMS Mode' : 'Email Mode'}
+        </Text>
+        <TouchableOpacity 
+          style={styles.modeSwitchButton}
+          onPress={() => {
+            const newMode = messageMode === 'sms' ? 'email' : 'sms';
+            setMessageMode(newMode);
+            AsyncStorage.setItem('message_mode', newMode);
+          }}
+        >
+          <Text style={styles.modeSwitchText}>
+            Switch to {messageMode === 'sms' ? 'Email' : 'SMS'}
+          </Text>
+          <Ionicons 
+            name={messageMode === 'sms' ? 'mail-outline' : 'chatbubble-outline'} 
+            size={14} 
+            color="#FFF" 
+          />
+        </TouchableOpacity>
+      </View>
+      
       {/* Messages */}
       {loading ? (
         <View style={styles.loadingContainer}>
