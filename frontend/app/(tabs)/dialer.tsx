@@ -484,7 +484,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingTop: 8,
     gap: 16,
+    zIndex: 10,
   },
   headerButton: {
     padding: 4,
