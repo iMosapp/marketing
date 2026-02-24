@@ -165,7 +165,20 @@ iMos is a business management app for retail/service businesses. Key features in
 ### P3 (Low Priority/Future)
 - [ ] App Store submission prep (icons, splash screens)
 
-## Completed This Session (Feb 23, 2026)
+## Completed This Session (Feb 24, 2026)
+
+### UI/UX Fixes (COMPLETED - Feb 24, 2026)
+- [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
+  - WebIconButton component renders native HTML `<button>` on web for proper click handling
+  - Fixed number display overlapping with header icons by adding proper spacing
+- [x] **Refresh App Button on Login** - Added "Refresh App" button at bottom of login screen for web users
+  - Calls `window.location.reload()` to force refresh the app
+- [x] **Sign Out Button Moved to Profile Card** - Logout button moved from bottom of More page to profile card header
+  - Red logout icon on right side of profile card for easy access
+  - Added "Are you sure you want to log out?" confirmation dialog for both web and mobile
+  - Prevents accidental logout when scrolling
+
+## Completed Previous Session (Feb 23, 2026)
 
 ### Logo Update (COMPLETED - Feb 23, 2026)
 - [x] **Login Page** - Updated to use new iMOS colorful logo (red i, blue M, yellow O, green S)
