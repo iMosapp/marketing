@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState, useCallback } from 'react';
 import { View, Platform } from 'react-native';
+import QuickAlertButton from '../../components/QuickAlertButton';
 // Temporarily disabled notification modal due to module resolution issue
 // import { useNotifications } from '../../hooks/useNotifications';
 // import { LeadNotificationModal } from '../../components/notifications/LeadNotificationModal';
