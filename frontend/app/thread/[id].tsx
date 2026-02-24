@@ -310,6 +310,116 @@ export default function ThreadScreen() {
       console.log('No review links configured');
     }
   };
+
+  // Load available tags for quick contact creation
+  const loadAvailableTags = async () => {
+    if (!user?._id) return;
+    try {
+      const response = await api.get(`/tags/${user._id}`);
+      setAvailableTags(response.data || []);
+    } catch (error) {
+      console.log('Failed to load tags');
+    }
+  };
+
+  // Check if this is a new contact (phone number not in system)
+  const checkIfNewContact = async () => {
+    if (!user?._id || !contactPhone) return;
+    
+    // If the id looks like a phone number or is "new", this is likely a new contact
+    const isPhoneNumberId = /^[\d\+\-\s\(\)]+$/.test(id as string) || id === 'new';
+    
+    if (isPhoneNumberId) {
+      setIsNewContact(true);
+      loadAvailableTags();
+      return;
+    }
+    
+    // Try to find the contact by the id
+    try {
+      const contactResponse = await api.get(`/contacts/${user._id}/${id}`);
+      if (contactResponse.data) {
+        // Contact exists
+        setIsNewContact(false);
+        setContactCreated(true);
+        setCreatedContactId(id as string);
+      }
+    } catch (error) {
+      // Contact doesn't exist by id, check by phone
+      try {
+        const searchResponse = await api.get(`/contacts/${user._id}?search=${encodeURIComponent(contactPhone)}`);
+        const contacts = searchResponse.data || [];
+        const exactMatch = contacts.find((c: any) => c.phone === contactPhone);
+        if (exactMatch) {
+          setIsNewContact(false);
+          setContactCreated(true);
+          setCreatedContactId(exactMatch._id);
+        } else {
+          setIsNewContact(true);
+          loadAvailableTags();
+        }
+      } catch (e) {
+        // Assume new contact if we can't verify
+        setIsNewContact(true);
+        loadAvailableTags();
+      }
+    }
+  };
+
+  // Handle photo selection for new contact
+  const handleNewContactPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          const base64Data = `data:image/jpeg;base64,${asset.base64}`;
+          setNewContactPhoto(base64Data);
+          setContactPhoto(base64Data); // Also update header photo immediately
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showSimpleAlert('Error', 'Failed to select photo');
+    }
+  };
+
+  // Create contact with collected info
+  const createQuickContact = async (): Promise<string | null> => {
+    if (!user?._id || !contactPhone || contactCreated) return createdContactId;
+    
+    try {
+      const contactData = {
+        first_name: newContactFirstName || contactPhone,
+        last_name: newContactLastName || '',
+        phone: contactPhone,
+        photo: newContactPhoto || null,
+        tags: newContactTags,
+        source: 'quick_create',
+      };
+
+      const response = await api.post(`/contacts/${user._id}`, contactData);
+      const newContactId = response.data._id || response.data.id;
+      
+      setContactCreated(true);
+      setCreatedContactId(newContactId);
+      setIsNewContact(false);
+      setShowQuickContactPanel(false);
+      
+      return newContactId;
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      // Don't block message sending if contact creation fails
+      return null;
+    }
+  };
   
   const conversationId = id as string;
   const contactName = (contact_name as string) || 'Contact';
