@@ -751,7 +751,11 @@ export default function ThreadScreen() {
         setCongratsCustomerName('');
         setCongratsCustomMessage('');
         
-        Alert.alert('Card Created!', 'The congrats card link has been added to your message. Hit send to share it!');
+        // Show success message - mention if contact photo was updated
+        const photoUpdateMsg = response.data.contact_photo_updated 
+          ? "\n\n📸 Contact's profile photo has been updated with this picture!"
+          : "";
+        Alert.alert('Card Created!', `The congrats card link has been added to your message. Hit send to share it!${photoUpdateMsg}`);
       }
     } catch (error: any) {
       // Error haptic feedback
