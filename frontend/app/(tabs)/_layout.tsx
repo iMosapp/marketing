@@ -212,6 +212,9 @@ export default function TabLayout() {
       />
       </Tabs>
       
+      {/* Quick Alert Floating Button */}
+      <QuickAlertButton visible={!isPending && !needsOnboarding} />
+      
       {/* Lead Notification Modal - temporarily disabled */}
       {/* <LeadNotificationModal
         visible={showNotificationModal}
