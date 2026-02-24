@@ -1546,6 +1546,10 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: '#FFF',
   },
+  imosLogoFilter: {
+    width: 40,
+    height: 16,
+  },
   
   // List
   listContainer: {
