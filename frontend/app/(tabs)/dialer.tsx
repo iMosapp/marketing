@@ -497,8 +497,10 @@ const styles = StyleSheet.create({
   numberDisplay: {
     paddingHorizontal: 32,
     paddingVertical: 16,
+    paddingTop: 24,
     alignItems: 'center',
     minHeight: 60,
+    marginTop: 8,
   },
   numberText: {
     fontSize: 36,
