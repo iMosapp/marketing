@@ -747,3 +747,18 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
   - Show QR - Flips card to show QR code
 - **Files Modified:**
   - `frontend/app/card/[userId].tsx` - Added share modal with multiple sharing methods
+
+### Admin Dashboard Quick Stats (COMPLETED - Feb 24, 2026)
+- **Feature:** Added "Quick Overview" section at top of Admin Dashboard for Super Admins
+- **6 Clickable Stat Cards:**
+  - Organizations (total + active count) → /admin/organizations
+  - Accounts (total + active count) → /admin/stores
+  - Users (total + active count) → /admin/users
+  - Employees (total count) → /admin/directory
+  - Agreements (partner contracts count) → /admin/partner-agreements
+  - Individuals (total + active count) → /admin/individuals
+- **Backend Updates:**
+  - Added `partner_agreements` and `total_employees` to `/api/admin/stats/detailed` endpoint
+- **Files Modified:**
+  - `frontend/app/admin/index.tsx` - Added quickStatsContainer with clickable cards
+  - `backend/routers/admin.py` - Extended stats endpoint with new fields
