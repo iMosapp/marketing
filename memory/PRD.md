@@ -168,6 +168,20 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Completed This Session (Continued - Feb 24, 2026)
 
+### My Account Page - Clickable Profile (COMPLETED - Feb 24, 2026)
+- [x] **Profile card is now clickable** on the More page
+  - Shows pencil/edit badge on avatar to indicate it's tappable
+  - Shows chevron arrow for navigation hint
+  - Displays user photo if available, otherwise initials
+- [x] **New "My Account" page** (`frontend/app/my-account.tsx`)
+  - Large profile photo with camera button overlay
+  - One-tap buttons for: Change Photo, My Digital Card, Train Jessie AI, AI Persona
+  - Upgrade & Rewards section: Upgrade Plan, Refer a Friend
+  - Quick access to Security, Notifications, Brand Kit, Calendar, Integrations
+  - Account info showing phone, organization, store
+- [x] **Profile photo upload** works with both camera and library picker
+- [x] **Sign Out button** moved to bottom of More page (cleaner profile card)
+
 ### Team Tab Notification Badge (COMPLETED - Feb 24, 2026)
 - [x] **Removed top-right floating notification button** (per user feedback)
   - User found it distracting and covering UI elements
