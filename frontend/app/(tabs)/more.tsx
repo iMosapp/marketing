@@ -376,15 +376,29 @@ export default function MoreScreen() {
           </TouchableOpacity>
         )}
         
-        <View style={styles.profileCard}>
-          <View style={styles.profileAvatar}>
-            <Text style={styles.profileAvatarText}>
-              {user?.name
-                ?.split(' ')
-                .map((n) => n[0])
-                .join('')
-                .toUpperCase() || '?'}
-            </Text>
+        <TouchableOpacity 
+          style={styles.profileCard}
+          onPress={() => router.push('/my-account')}
+          activeOpacity={0.7}
+          data-testid="profile-card"
+        >
+          <View style={styles.profileAvatarContainer}>
+            {user?.photo_url ? (
+              <Image source={{ uri: user.photo_url }} style={styles.profileAvatarImage} />
+            ) : (
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>
+                  {user?.name
+                    ?.split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase() || '?'}
+                </Text>
+              </View>
+            )}
+            <View style={styles.editBadge}>
+              <Ionicons name="pencil" size={10} color="#FFF" />
+            </View>
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
@@ -408,15 +422,10 @@ export default function MoreScreen() {
               </View>
             )}
           </View>
-          {/* Sign Out button in profile card */}
-          <TouchableOpacity
-            style={styles.profileSignOutButton}
-            onPress={handleLogout}
-            data-testid="logout-button-header"
-          >
-            <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
-          </TouchableOpacity>
-        </View>
+          <View style={styles.profileChevron}>
+            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+          </View>
+        </TouchableOpacity>
         
         {/* Admin Section */}
         {adminMenuItems.length > 0 && (
