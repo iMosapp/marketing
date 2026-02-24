@@ -647,9 +647,13 @@ export default function TeamChatScreen() {
 
         {/* Message Input */}
         <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.voiceButton}>
-            <Ionicons name="mic" size={24} color={COLORS.accent} />
-          </TouchableOpacity>
+          <VoiceInput 
+            onTranscription={(text) => {
+              setMessageText(prev => prev ? `${prev} ${text}` : text);
+            }}
+            size={24}
+            color={COLORS.accent}
+          />
           
           <TextInput
             ref={messageInputRef}
