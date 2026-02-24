@@ -578,6 +578,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  signedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C1E',
+  },
+  signedHeaderTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFF',
+  },
   signedContent: {
     padding: 24,
     alignItems: 'center',
