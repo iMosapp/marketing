@@ -885,7 +885,7 @@ section {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .pricing-card {
@@ -895,6 +895,9 @@ section {
   padding: 32px;
   position: relative;
   transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
 }
 
 .pricing-card:hover {
@@ -957,6 +960,7 @@ section {
 .pricing-features {
   list-style: none;
   margin-bottom: 24px;
+  flex-grow: 1;
 }
 
 .pricing-features li {
@@ -971,6 +975,10 @@ section {
 .check-icon {
   color: var(--color-green);
   flex-shrink: 0;
+}
+
+.pricing-card .btn {
+  margin-top: auto;
 }
 
 @media (max-width: 968px) {
