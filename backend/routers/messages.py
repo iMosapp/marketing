@@ -80,7 +80,8 @@ async def get_conversations(user_id: str, personal_only: bool = True):
             conv['contact'] = {
                 "id": str(contact['_id']),
                 "name": f"{contact['first_name']} {contact.get('last_name', '')}".strip(),
-                "phone": contact['phone']
+                "phone": contact['phone'],
+                "photo": contact.get('photo')  # Include contact photo for avatar display
             }
         
         # Get last message
