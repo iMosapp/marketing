@@ -377,10 +377,15 @@ async def save_persona(user_id: str, persona: UserPersona):
 async def complete_onboarding(data: dict):
     """
     Complete the onboarding process for a new user.
-    Saves AI preferences, persona data, and notifies admins/managers.
+    Saves profile data, AI preferences, persona data, and notifies admins/managers.
     """
     db = get_db()
     user_id = data.get("user_id")
+    
+    # Profile verification data
+    updated_name = data.get("name")
+    title = data.get("title", "")
+    bio = data.get("bio", "")
     
     # New comprehensive onboarding data
     communication_style = data.get("communication_style", "friendly")
