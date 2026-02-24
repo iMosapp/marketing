@@ -44,6 +44,7 @@ export default function DigitalCardPage() {
   const [saved, setSaved] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Animation values
   const flipAnimation = useRef(new Animated.Value(0)).current;
