@@ -314,16 +314,22 @@ export default function PartnerAgreementSigningPage() {
   return (
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        {/* Header */}
+        {/* Header with Back Button */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{agreement.template_name}</Text>
-          {agreement.commission_tier && (
-            <View style={styles.tierBadge}>
-              <Text style={styles.tierBadgeText}>
-                {agreement.commission_tier.name} - {agreement.commission_tier.percentage}%
-              </Text>
-            </View>
-          )}
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>{agreement.template_name}</Text>
+            {agreement.commission_tier && (
+              <View style={styles.tierBadge}>
+                <Text style={styles.tierBadgeText}>
+                  {agreement.commission_tier.name} - {agreement.commission_tier.percentage}%
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={{ width: 28 }} />
         </View>
 
         <ScrollView style={styles.scrollView}>
