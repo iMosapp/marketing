@@ -268,6 +268,7 @@ export default function MoreScreen() {
       color: '#007AFF',
     },
     {
+      id: 'review-links',
       icon: 'star-outline',
       title: 'Review Links',
       subtitle: 'Google, Facebook, Yelp review links',
@@ -275,6 +276,7 @@ export default function MoreScreen() {
       color: '#FFD60A',
     },
     {
+      id: 'review-approvals',
       icon: 'chatbubbles-outline',
       title: 'Review Approvals',
       subtitle: 'Approve customer reviews for your landing page',
@@ -282,6 +284,7 @@ export default function MoreScreen() {
       color: '#AF52DE',
     },
     {
+      id: 'congrats-template',
       icon: 'gift-outline',
       title: 'Congrats Card Style',
       subtitle: 'Customize your thank you cards',
@@ -289,6 +292,7 @@ export default function MoreScreen() {
       color: '#C9A962',
     },
     {
+      id: 'integrations',
       icon: 'git-network',
       title: 'Integrations',
       subtitle: 'API keys, webhooks, CRM & DMS',
@@ -296,6 +300,7 @@ export default function MoreScreen() {
       color: '#5856D6',
     },
     {
+      id: 'settings',
       icon: 'settings',
       title: 'Settings',
       subtitle: 'App preferences and account',
@@ -303,6 +308,11 @@ export default function MoreScreen() {
       color: '#8E8E93',
     },
   ];
+  
+  // Filter menu items based on hidden preferences
+  const visibleMenuItems = menuItems.filter(item => 
+    (item as any).alwaysShow || !hiddenItems.has((item as any).id || '')
+  );
   
   // Check if user is an independent (no organization)
   const isIndependent = !user?.organization_id;
