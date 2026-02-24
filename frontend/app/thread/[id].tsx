@@ -125,7 +125,7 @@ interface Template {
 
 export default function ThreadScreen() {
   const router = useRouter();
-  const { id, contact_name, contact_phone, contact_email, mode } = useLocalSearchParams();
+  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const flatListRef = useRef<FlatList>(null);
   
