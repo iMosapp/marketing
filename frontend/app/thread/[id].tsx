@@ -231,7 +231,18 @@ export default function ThreadScreen() {
     if (Platform.OS !== 'web') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter to send
+      // Enter to send (without Shift for new line)
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        // Only if focused on message input area
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.getAttribute('contenteditable')) {
+          e.preventDefault();
+          if (message.trim() && !sending) {
+            handleSend();
+          }
+        }
+      }
+      // Ctrl/Cmd + Enter also sends (alternative)
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         if (message.trim() && !sending) {
