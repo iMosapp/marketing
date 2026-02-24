@@ -586,6 +586,7 @@ export default function InboxScreen() {
   
   const renderConversation = ({ item }: { item: any }) => {
     const contactName = item.contact?.name || 'Unknown';
+    const contactPhoto = item.contact?.photo || null;
     const contactInitials = contactName
       .split(' ')
       .map((n: string) => n[0] || '')
@@ -654,15 +655,25 @@ export default function InboxScreen() {
               isAcknowledged && styles.aiRingAcknowledged,
             ]} />
           )}
-          <View style={[
-            styles.avatar,
-            hasAiOutcome && styles.avatarWithRing,
-            isUrgent && !hasAiOutcome && styles.avatarUrgent,
-          ]}>
-            <Text style={styles.avatarText}>
-              {contactInitials}
-            </Text>
-          </View>
+          {contactPhoto ? (
+            <Image 
+              source={{ uri: contactPhoto }} 
+              style={[
+                styles.avatarPhoto,
+                hasAiOutcome && styles.avatarWithRing,
+              ]} 
+            />
+          ) : (
+            <View style={[
+              styles.avatar,
+              hasAiOutcome && styles.avatarWithRing,
+              isUrgent && !hasAiOutcome && styles.avatarUrgent,
+            ]}>
+              <Text style={styles.avatarText}>
+                {contactInitials}
+              </Text>
+            </View>
+          )}
           {item.status === 'closed' && (
             <View style={styles.closedBadge}>
               <Ionicons name="checkmark" size={10} color="#FFF" />
