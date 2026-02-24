@@ -636,6 +636,15 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
+  profileSignOutButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FF3B3015',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
   profileName: {
     fontSize: 20,
     fontWeight: '600',
