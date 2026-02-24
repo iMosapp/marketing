@@ -310,6 +310,99 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
             
+            {/* Optional Fields Section */}
+            <TouchableOpacity 
+              style={styles.optionalToggle}
+              onPress={toggleOptionalFields}
+            >
+              <View style={styles.optionalToggleLeft}>
+                <Ionicons name="add-circle" size={20} color="#007AFF" />
+                <Text style={styles.optionalToggleText}>
+                  Add more info (optional)
+                </Text>
+              </View>
+              <Ionicons 
+                name={showOptionalFields ? "chevron-up" : "chevron-down"} 
+                size={18} 
+                color="#8E8E93" 
+              />
+            </TouchableOpacity>
+            
+            {showOptionalFields && (
+              <View style={styles.optionalFields}>
+                {/* Photo */}
+                <TouchableOpacity 
+                  style={styles.photoSection}
+                  onPress={handleSelectPhoto}
+                >
+                  {photo ? (
+                    <Image source={{ uri: photo }} style={styles.photoPreview} />
+                  ) : (
+                    <View style={styles.photoPlaceholder}>
+                      <Ionicons name="camera" size={28} color="#8E8E93" />
+                    </View>
+                  )}
+                  <View style={styles.photoTextContainer}>
+                    <Text style={styles.photoLabel}>Profile Photo</Text>
+                    <Text style={styles.photoHint}>
+                      {photo ? 'Tap to change' : 'Helps customers recognize you'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                {/* Bio */}
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Brief bio about yourself..."
+                  placeholderTextColor="#8E8E93"
+                  value={bio}
+                  onChangeText={setBio}
+                  multiline
+                  numberOfLines={3}
+                />
+                
+                {/* Social Links */}
+                <Text style={styles.socialLabel}>Social Links (for your business card)</Text>
+                <View style={styles.socialInputContainer}>
+                  <Ionicons name="logo-instagram" size={20} color="#E1306C" />
+                  <TextInput
+                    style={styles.socialInput}
+                    placeholder="Instagram username"
+                    placeholderTextColor="#6E6E73"
+                    value={socialLinks.instagram}
+                    onChangeText={(text) => setSocialLinks(prev => ({ ...prev, instagram: text }))}
+                    autoCapitalize="none"
+                  />
+                </View>
+                <View style={styles.socialInputContainer}>
+                  <Ionicons name="logo-facebook" size={20} color="#4267B2" />
+                  <TextInput
+                    style={styles.socialInput}
+                    placeholder="Facebook profile URL"
+                    placeholderTextColor="#6E6E73"
+                    value={socialLinks.facebook}
+                    onChangeText={(text) => setSocialLinks(prev => ({ ...prev, facebook: text }))}
+                    autoCapitalize="none"
+                  />
+                </View>
+                <View style={styles.socialInputContainer}>
+                  <Ionicons name="logo-linkedin" size={20} color="#0077B5" />
+                  <TextInput
+                    style={styles.socialInput}
+                    placeholder="LinkedIn profile URL"
+                    placeholderTextColor="#6E6E73"
+                    value={socialLinks.linkedin}
+                    onChangeText={(text) => setSocialLinks(prev => ({ ...prev, linkedin: text }))}
+                    autoCapitalize="none"
+                  />
+                </View>
+                
+                <Text style={styles.optionalHint}>
+                  You can always add or change these later
+                </Text>
+              </View>
+            )}
+            
             {/* Info Banner - Different message for independent vs org */}
             <View style={[styles.infoBanner, isIndependent && styles.infoBannerSuccess]}>
               <Ionicons name={isIndependent ? "checkmark-circle" : "information-circle"} size={20} color={isIndependent ? "#34C759" : "#007AFF"} />
