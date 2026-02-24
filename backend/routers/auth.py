@@ -439,6 +439,22 @@ async def complete_onboarding(data: dict):
         "ai_persona_context": "\n".join(persona_context) if persona_context else "",
     }
     
+    # Update name if provided and different
+    if updated_name and updated_name.strip():
+        update_data["name"] = updated_name.strip()
+    
+    # Update persona with title and bio
+    persona_update = {}
+    if title.strip():
+        persona_update["title"] = title.strip()
+    if bio.strip():
+        persona_update["bio"] = bio.strip()
+    
+    if persona_update:
+        # Merge with existing persona data
+        existing_persona = user.get("persona", {})
+        update_data["persona"] = {**existing_persona, **persona_update}
+    
     # Store individual fields for persona training
     if hobbies.strip():
         update_data["hobbies"] = hobbies.strip()
