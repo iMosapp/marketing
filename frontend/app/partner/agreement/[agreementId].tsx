@@ -283,6 +283,14 @@ export default function PartnerAgreementSigningPage() {
     return (
       <View style={styles.paymentContainer}>
         <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
+          {/* Back Button */}
+          <View style={styles.paymentHeader}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={28} color="#007AFF" />
+            </TouchableOpacity>
+            <Text style={styles.paymentHeaderTitle}>Complete Payment</Text>
+            <View style={{ width: 28 }} />
+          </View>
           <View style={styles.paymentContent}>
             <Ionicons name="card-outline" size={64} color="#FF9500" />
             <Text style={styles.paymentTitle}>Payment Required</Text>
