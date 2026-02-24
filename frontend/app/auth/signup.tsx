@@ -306,6 +306,7 @@ export default function SignupScreen() {
             
             {Platform.OS === 'web' ? (
               <button
+                type="button"
                 style={{
                   width: '100%',
                   padding: '16px',
@@ -315,7 +316,10 @@ export default function SignupScreen() {
                   cursor: (loading || !acceptedTerms) ? 'not-allowed' : 'pointer',
                   opacity: (loading || !acceptedTerms) ? 0.5 : 1,
                 }}
-                onClick={handleSignup}
+                onClick={() => {
+                  console.log('[Signup] Button clicked');
+                  handleSignup();
+                }}
                 disabled={loading || !acceptedTerms}
                 data-testid="signup-submit-button"
               >
