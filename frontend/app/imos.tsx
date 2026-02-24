@@ -941,6 +941,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 'auto',
     alignItems: 'center',
   },
+  categoryBadge: {
+    backgroundColor: 'rgba(0, 122, 255, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+    alignSelf: Platform.OS === 'web' ? 'flex-start' : 'center',
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#007AFF',
+    letterSpacing: 2,
+  },
   taglineContainer: {
     marginBottom: 24,
   },
