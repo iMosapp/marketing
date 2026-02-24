@@ -211,7 +211,27 @@ export default function TabLayout() {
         options={{
           title: 'Team',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbox-ellipses" size={size} color={isPending ? '#3C3C3E' : color} />
+            <View>
+              <Ionicons name="chatbox-ellipses" size={size} color={isPending ? '#3C3C3E' : color} />
+              {mounted && teamUnreadCount > 0 && (
+                <View style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -10,
+                  backgroundColor: '#FF3B30',
+                  borderRadius: 10,
+                  minWidth: 18,
+                  height: 18,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 4,
+                }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFF' }}>
+                    {teamUnreadCount > 99 ? '99+' : teamUnreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
           tabBarLabelStyle: {
             fontSize: 10,
@@ -223,6 +243,10 @@ export default function TabLayout() {
           tabPress: (e) => {
             if (isPending) {
               e.preventDefault();
+            }
+            // Reset unread count when navigating to Team tab
+            if (!isPending) {
+              setTeamUnreadCount(0);
             }
           },
         }}
