@@ -226,17 +226,39 @@ export default function SignupScreen() {
             </View>
             
             <View style={styles.termsContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setAcceptedTerms(!acceptedTerms)}
-                data-testid="terms-checkbox"
-              >
-                <Ionicons
-                  name={acceptedTerms ? 'checkbox' : 'square-outline'}
-                  size={24}
-                  color={acceptedTerms ? '#007AFF' : '#8E8E93'}
-                />
-              </TouchableOpacity>
+              {Platform.OS === 'web' ? (
+                <button
+                  type="button"
+                  onClick={() => setAcceptedTerms(!acceptedTerms)}
+                  data-testid="terms-checkbox"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Ionicons
+                    name={acceptedTerms ? 'checkbox' : 'square-outline'}
+                    size={24}
+                    color={acceptedTerms ? '#007AFF' : '#8E8E93'}
+                  />
+                </button>
+              ) : (
+                <TouchableOpacity
+                  style={styles.checkbox}
+                  onPress={() => setAcceptedTerms(!acceptedTerms)}
+                  data-testid="terms-checkbox"
+                >
+                  <Ionicons
+                    name={acceptedTerms ? 'checkbox' : 'square-outline'}
+                    size={24}
+                    color={acceptedTerms ? '#007AFF' : '#8E8E93'}
+                  />
+                </TouchableOpacity>
+              )}
               <Text style={styles.termsText}>
                 I agree to the{' '}
                 <Text 
