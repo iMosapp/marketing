@@ -196,6 +196,17 @@ iMos is a business management app for retail/service businesses. Key features in
   - Shows success message when photo is updated
   - **Files Modified:** `backend/routers/congrats_cards.py`, `frontend/app/thread/[id].tsx`
 
+- [x] **iMOs logo branding throughout the app**
+  - Replaced "iMOs" text with the actual logo image across the app
+  - **Updated locations:**
+    - Inbox filter pill (third pill now shows logo)
+    - Signup page subtitle ("Start your journey with [logo]")
+    - More page profile section (phone number with logo)
+    - More page version text ("[logo] v1.0.0")
+    - Onboarding welcome page ("Welcome to [logo]!")
+    - Onboarding AI intro slide ("The Magic Behind [logo]")
+  - **Files Modified:** `inbox.tsx`, `signup.tsx`, `more.tsx`, `onboarding/index.tsx`
+
 ### UI/UX Fixes (COMPLETED - Feb 24, 2026)
 - [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
   - WebIconButton component renders native HTML `<button>` on web for proper click handling
