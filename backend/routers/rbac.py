@@ -86,7 +86,7 @@ async def get_scoped_organization_ids(user: dict) -> List[str]:
     
     if role == 'super_admin':
         # Super admin sees all
-        orgs = await db.organizations.find({}, {"_id": 1}).to_list(1000)
+        orgs = await db.organizations.find({}, {"_id": 1}).limit(500).to_list(500)
         return [str(o["_id"]) for o in orgs]
     
     elif role == 'org_admin':
@@ -128,7 +128,7 @@ async def get_scoped_store_ids(user: dict) -> List[str]:
     
     if role == 'super_admin':
         # Super admin sees all stores
-        stores = await db.stores.find({}, {"_id": 1}).to_list(1000)
+        stores = await db.stores.find({}, {"_id": 1}).limit(500).to_list(500)
         return [str(s["_id"]) for s in stores]
     
     elif role == 'org_admin':
@@ -136,7 +136,7 @@ async def get_scoped_store_ids(user: dict) -> List[str]:
         org_id = user.get('organization_id')
         if not org_id:
             return []
-        stores = await db.stores.find({"organization_id": org_id}, {"_id": 1}).to_list(1000)
+        stores = await db.stores.find({"organization_id": org_id}, {"_id": 1}).limit(500).to_list(500)
         return [str(s["_id"]) for s in stores]
     
     elif role == 'store_manager':

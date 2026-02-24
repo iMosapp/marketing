@@ -92,7 +92,7 @@ async def get_tags(user_id: str):
     for tag in tags:
         if org_id:
             # Count across org users
-            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).to_list(1000)
+            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).limit(500).to_list(500)
             org_user_ids = [str(u["_id"]) for u in org_users]
             count = await db.contacts.count_documents({
                 "user_id": {"$in": org_user_ids},
@@ -289,7 +289,7 @@ async def update_tag(user_id: str, tag_id: str, tag_data: dict):
     # If name changed, update all contacts with this tag
     if old_name != new_name:
         if org_id:
-            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).to_list(1000)
+            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).limit(500).to_list(500)
             org_user_ids = [str(u["_id"]) for u in org_users]
             await db.contacts.update_many(
                 {"user_id": {"$in": org_user_ids}, "tags": old_name},
@@ -332,7 +332,7 @@ async def delete_tag(user_id: str, tag_id: str, remove_from_contacts: bool = Tru
     # Remove tag from all contacts if requested
     if remove_from_contacts:
         if org_id:
-            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).to_list(1000)
+            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).limit(500).to_list(500)
             org_user_ids = [str(u["_id"]) for u in org_users]
             await db.contacts.update_many(
                 {"user_id": {"$in": org_user_ids}, "tags": tag_name},
@@ -422,7 +422,7 @@ async def get_contacts_by_tag(user_id: str, tag_name: str):
     
     contacts = await db.contacts.find({
         "$and": [base_filter, {"tags": tag_name}]
-    }).sort("first_name", 1).to_list(1000)
+    }).sort("first_name", 1).limit(500).to_list(500)
     
     for contact in contacts:
         contact["_id"] = str(contact["_id"])

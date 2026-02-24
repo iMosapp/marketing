@@ -78,7 +78,7 @@ async def global_search(
     # Search Conversations
     if "conversations" in search_types:
         # First get conversations accessible to user
-        conversations = await get_db().conversations.find(base_filter).to_list(1000)
+        conversations = await get_db().conversations.find(base_filter).limit(500).to_list(500)
         
         matching_conversations = []
         for conv in conversations:

@@ -39,7 +39,7 @@ async def get_organization_leaderboard(
         query["store_id"] = store_id
     
     # Get users in org/store
-    users = await get_db().users.find(query, {"password": 0}).to_list(1000)
+    users = await get_db().users.find(query, {"password": 0}).limit(500).to_list(500)
     
     # Sort by metric
     metric_key = f"stats.{metric}"
@@ -96,7 +96,7 @@ async def get_regional_leaderboard(
     # For 'country', no additional filter
     
     # Get users matching criteria
-    users = await get_db().users.find(query, {"password": 0}).to_list(1000)
+    users = await get_db().users.find(query, {"password": 0}).limit(500).to_list(500)
     
     # Add current user if not in list (to show their rank)
     user_in_list = any(str(u['_id']) == user_id for u in users)

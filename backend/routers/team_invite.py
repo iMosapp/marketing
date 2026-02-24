@@ -663,7 +663,7 @@ async def get_store_invite_analytics(store_id: str, days: int = 30):
     shares = await db.invite_shares.find({
         "store_id": store_id,
         "created_at": {"$gte": start_date}
-    }).to_list(1000)
+    }).limit(500).to_list(500)
     
     # Get unique sharers with their stats
     sharer_stats = {}

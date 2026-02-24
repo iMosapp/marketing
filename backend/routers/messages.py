@@ -64,7 +64,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         ("ai_outcome_priority", 1),  # Lower priority number = more important
         ("unread", -1),  # Unread first
         ("last_message_at", -1)  # Then by recency
-    ]).to_list(1000)
+    ]).limit(500).to_list(500)
     
     result = []
     for conv in conversations:
@@ -116,7 +116,7 @@ async def get_conversation(user_id: str, conversation_id: str):
     # Get messages
     messages = await get_db().messages.find(
         {"conversation_id": conversation_id}
-    ).sort("timestamp", 1).to_list(1000)
+    ).sort("timestamp", 1).limit(500).to_list(500)
     
     conv['messages'] = [{
         "_id": str(m['_id']),
@@ -646,7 +646,7 @@ async def get_thread_messages(conversation_id: str):
     # Get messages
     messages = await get_db().messages.find(
         {"conversation_id": conversation_id}
-    ).sort("timestamp", 1).to_list(1000)
+    ).sort("timestamp", 1).limit(500).to_list(500)
     
     return [{
         "_id": str(m['_id']),

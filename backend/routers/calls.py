@@ -54,7 +54,7 @@ async def get_call_logs(user_id: str, call_type: Optional[str] = None):
     else:
         query = base_filter
     
-    calls = await get_db().calls.find(query).sort("timestamp", -1).to_list(1000)
+    calls = await get_db().calls.find(query).sort("timestamp", -1).limit(500).to_list(500)
     
     # Enrich with contact info
     result = []

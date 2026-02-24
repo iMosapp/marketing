@@ -60,14 +60,14 @@ async def list_organizations(x_user_id: str = Header(None, alias="X-User-ID")):
     
     if not user:
         # Fallback for backward compatibility - return all (will be restricted later)
-        orgs = await get_db().organizations.find().to_list(1000)
+        orgs = await get_db().organizations.find().limit(500).to_list(500)
         return [{**org, "_id": str(org["_id"])} for org in orgs]
     
     role = user.get('role', 'user')
     
     if role == 'super_admin':
         # Super admin sees all organizations
-        orgs = await get_db().organizations.find().to_list(1000)
+        orgs = await get_db().organizations.find().limit(500).to_list(500)
     else:
         # Non-super admins see only their organization
         org_ids = await get_scoped_organization_ids(user)
@@ -75,7 +75,7 @@ async def list_organizations(x_user_id: str = Header(None, alias="X-User-ID")):
             return []
         orgs = await get_db().organizations.find({
             "_id": {"$in": [ObjectId(oid) for oid in org_ids if oid]}
-        }).to_list(1000)
+        }).limit(500).to_list(500)
     
     return [{**org, "_id": str(org["_id"])} for org in orgs]
 
@@ -222,7 +222,7 @@ async def get_organization_leaderboard(
         ]
     
     # Get users in org/store
-    users = await db.users.find(query, {"password": 0}).to_list(1000)
+    users = await db.users.find(query, {"password": 0}).limit(500).to_list(500)
     
     # Sort by metric
     sorted_users = sorted(
@@ -329,7 +329,7 @@ async def list_stores(
         if organization_id:
             query['organization_id'] = organization_id
     
-    stores = await db.stores.find(query).to_list(1000)
+    stores = await db.stores.find(query).limit(500).to_list(500)
     
     # Get all organizations to map names
     org_ids = list(set([s.get('organization_id') for s in stores if s.get('organization_id')]))
@@ -719,7 +719,7 @@ async def list_users(
         if role:
             query['role'] = role
     
-    users = await get_db().users.find(query, {"password": 0}).to_list(1000)
+    users = await get_db().users.find(query, {"password": 0}).limit(500).to_list(500)
     return [{**user, "_id": str(user["_id"])} for user in users]
 
 
@@ -1009,7 +1009,7 @@ async def get_pending_users():
     users = await get_db().users.find(
         {"status": "pending"},
         {"password": 0}
-    ).sort("created_at", -1).to_list(1000)
+    ).sort("created_at", -1).limit(500).to_list(500)
     
     # Get org names for display
     org_ids = list(set([u.get("organization_id") for u in users if u.get("organization_id")]))
@@ -1321,11 +1321,11 @@ async def get_congrats_cards(
     stores = {}
     
     if user_ids:
-        user_docs = await db.users.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids if uid]}}, {"_id": 1, "name": 1}).to_list(1000)
+        user_docs = await db.users.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids if uid]}}, {"_id": 1, "name": 1}).limit(500).to_list(500)
         users = {str(u["_id"]): u.get("name", "Unknown") for u in user_docs}
     
     if store_ids:
-        store_docs = await db.stores.find({"_id": {"$in": [ObjectId(sid) for sid in store_ids if sid]}}, {"_id": 1, "name": 1}).to_list(1000)
+        store_docs = await db.stores.find({"_id": {"$in": [ObjectId(sid) for sid in store_ids if sid]}}, {"_id": 1, "name": 1}).limit(500).to_list(500)
         stores = {str(s["_id"]): s.get("name", "Unknown") for s in store_docs}
     
     # Format response
@@ -1534,7 +1534,7 @@ async def get_individuals():
             ]
         },
         {"password": 0}  # Exclude password
-    ).sort("created_at", -1).to_list(1000)
+    ).sort("created_at", -1).limit(500).to_list(500)
     
     return [{
         "_id": str(u["_id"]),
@@ -1812,7 +1812,7 @@ async def get_users_for_phone_assignment():
     users = await get_db().users.find(
         {},
         {"password": 0}  # Exclude password
-    ).sort("name", 1).to_list(1000)
+    ).sort("name", 1).limit(500).to_list(500)
     
     return [{
         "_id": str(u["_id"]),
@@ -1878,19 +1878,19 @@ async def get_phone_assignments_summary():
     users_with_phones = await get_db().users.find(
         {"mvpline_number": {"$exists": True, "$ne": None, "$ne": ""}},
         {"name": 1, "email": 1, "mvpline_number": 1}
-    ).to_list(1000)
+    ).limit(500).to_list(500)
     
     # Get shared inboxes with phone numbers
     shared_inboxes = await get_db().shared_inboxes.find(
         {"phone_number": {"$exists": True, "$ne": None, "$ne": ""}},
         {"name": 1, "phone_number": 1, "assigned_users": 1}
-    ).to_list(1000)
+    ).limit(500).to_list(500)
     
     # Get stores with phone numbers
     stores = await get_db().stores.find(
         {"twilio_phone_number": {"$exists": True, "$ne": None, "$ne": ""}},
         {"name": 1, "twilio_phone_number": 1}
-    ).to_list(1000)
+    ).limit(500).to_list(500)
     
     return {
         "users": [{
@@ -1949,7 +1949,7 @@ def normalize_phone_number(phone: str) -> str:
 async def get_hierarchy_overview():
     """Get complete hierarchy overview with counts"""
     # Get all organizations with store and user counts
-    orgs = await get_db().organizations.find().to_list(1000)
+    orgs = await get_db().organizations.find().limit(500).to_list(500)
     
     result = []
     for org in orgs:
@@ -2011,7 +2011,7 @@ async def get_organization_hierarchy(org_id: str):
     users = await get_db().users.find(
         {"organization_id": org_id},
         {"password": 0}
-    ).to_list(1000)
+    ).limit(500).to_list(500)
     
     # Build store data with user assignments
     store_data = []
@@ -2102,7 +2102,7 @@ async def get_store_hierarchy(store_id: str):
             {"store_id": store_id},
             {"store_ids": store_id}
         ]
-    }, {"password": 0}).to_list(1000)
+    }, {"password": 0}).limit(500).to_list(500)
     
     # Get users in the org who are NOT assigned to this store (for adding)
     org_users_not_in_store = []
@@ -2111,7 +2111,7 @@ async def get_store_hierarchy(store_id: str):
             "organization_id": store["organization_id"],
             "store_id": {"$ne": store_id},
             "store_ids": {"$nin": [store_id]}
-        }, {"password": 0}).to_list(1000)
+        }, {"password": 0}).limit(500).to_list(500)
     
     return {
         "store": {
@@ -2176,7 +2176,7 @@ async def get_all_users_hierarchy(
             {"store_ids": store_id}
         ]
     
-    users = await get_db().users.find(query, {"password": 0}).to_list(1000)
+    users = await get_db().users.find(query, {"password": 0}).limit(500).to_list(500)
     
     # Get org and store names for display
     org_ids = list(set([u.get("organization_id") for u in users if u.get("organization_id")]))
@@ -2783,7 +2783,7 @@ async def migrate_mms_media():
     messages = await get_db().messages.find({
         "has_media": True,
         "media_urls": {"$regex": "api.twilio.com"}
-    }).to_list(1000)
+    }).limit(500).to_list(500)
     
     migrated_count = 0
     errors = []

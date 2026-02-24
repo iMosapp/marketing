@@ -119,7 +119,7 @@ async def get_campaigns(user_id: str):
     """Get all campaigns with role-based access"""
     base_filter = await get_data_filter(user_id)
     
-    campaigns = await get_db().campaigns.find(base_filter).to_list(1000)
+    campaigns = await get_db().campaigns.find(base_filter).limit(500).to_list(500)
     return [Campaign(**{**camp, "_id": str(camp["_id"])}) for camp in campaigns]
 
 @router.get("/{user_id}/{campaign_id}")
@@ -248,7 +248,7 @@ async def get_campaign_enrollments(user_id: str, campaign_id: str, status: str =
     if status:
         query["$and"].append({"status": status})
     
-    enrollments = await get_db().campaign_enrollments.find(query).to_list(1000)
+    enrollments = await get_db().campaign_enrollments.find(query).limit(500).to_list(500)
     return [{**e, "_id": str(e["_id"])} for e in enrollments]
 
 @router.delete("/{user_id}/{campaign_id}/enrollments/{enrollment_id}")
@@ -382,7 +382,7 @@ async def check_date_triggers(user_id: str):
                 base_filter,
                 {"birthday": {"$exists": True, "$ne": None}}
             ]
-        }).to_list(1000)
+        }).limit(500).to_list(500)
         
         for contact in contacts:
             birthday = contact.get('birthday')
@@ -423,7 +423,7 @@ async def check_date_triggers(user_id: str):
                 base_filter,
                 {"anniversary": {"$exists": True, "$ne": None}}
             ]
-        }).to_list(1000)
+        }).limit(500).to_list(500)
         
         for contact in contacts:
             anniversary = contact.get('anniversary')

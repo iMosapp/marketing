@@ -70,7 +70,7 @@ async def get_reports_overview(
         scope = 'personal'
     
     # Get users in scope
-    users_in_scope = await db.users.find(user_filter, {'_id': 1}).to_list(1000)
+    users_in_scope = await db.users.find(user_filter, {'_id': 1}).limit(500).to_list(500)
     user_ids = [str(u['_id']) for u in users_in_scope]
     
     # Aggregate statistics
@@ -192,7 +192,7 @@ async def get_messaging_report(
     else:
         user_filter = {'_id': ObjectId(user_id)}
     
-    users_in_scope = await db.users.find(user_filter, {'_id': 1}).to_list(1000)
+    users_in_scope = await db.users.find(user_filter, {'_id': 1}).limit(500).to_list(500)
     user_ids = [str(u['_id']) for u in users_in_scope]
     
     # Daily breakdown

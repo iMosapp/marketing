@@ -36,7 +36,7 @@ async def get_tasks(user_id: str, completed: Optional[bool] = None):
     else:
         query = base_filter
     
-    tasks = await get_db().tasks.find(query).sort("due_date", 1).to_list(1000)
+    tasks = await get_db().tasks.find(query).sort("due_date", 1).limit(500).to_list(500)
     return [Task(**{**task, "_id": str(task["_id"])}) for task in tasks]
 
 @router.put("/{user_id}/{task_id}")

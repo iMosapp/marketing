@@ -577,7 +577,7 @@ async def get_email_analytics(user_id: str, days: int = 30):
     if from_date:
         query["sent_at"] = {"$gte": from_date}
     
-    logs = await db.email_logs.find(query).to_list(1000)
+    logs = await db.email_logs.find(query).limit(500).to_list(500)
     
     total_sent = len(logs)
     total_delivered = sum(1 for l in logs if l.get("status") not in ["failed", "bounced"])
