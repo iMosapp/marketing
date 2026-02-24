@@ -84,3 +84,51 @@ curl -X DELETE "$API_URL/api/admin/cleanup/test-data" -H "Authorization: Bearer 
 - **Salespeople:** 30 (6 per store)
 - **Total Test Users:** 36
 
+
+---
+
+## WORKFLOW TEST RESULTS
+
+### Test Scenario: Complete Organizational Enrollment Workflow
+
+#### Step 1: Create Organization ✅
+- Created "TEST_Sunshine Auto Group" 
+- Organization ID: 699e2ec58dabd9b79df28e4e
+
+#### Step 2: Create 5 Stores ✅
+- Downtown (SLC), Westside (SLC), Northgate (Ogden), Provo, Sandy
+- All stores linked to organization
+
+#### Step 3: Create Org Admin ✅
+- TEST_Sarah Mitchell (org_admin role)
+- Can manage all stores in organization
+
+#### Step 4: Create Store Managers ✅
+- 5 managers, one for each store
+- Each assigned to specific store_id
+
+#### Step 5: Create Salespeople ✅
+- 6 salespeople per store (30 total)
+- All assigned correct organization and store
+
+#### Step 6: Test Manager Login Flow ✅
+1. Login with temp password → Redirected to password change
+2. Set new password → Redirected to onboarding
+3. Complete onboarding → Access main app
+4. Role-based UI displayed correctly (Manager badge)
+
+### Verified Workflows:
+- ✅ User creation with temp password
+- ✅ Password change enforcement
+- ✅ Onboarding flow redirect
+- ✅ Role-based menu display
+- ✅ Organization/Store hierarchy
+
+### Issues Found:
+- ⚠️ `onboarding_complete` was not in allowed_fields for user update (FIXED)
+- ⚠️ Onboarding automation couldn't complete all 16 steps in browser test (manual completion works)
+
+### Data Ready for Testing:
+- 36 test users with credentials in this tracker
+- All users have TEST_ prefix for easy identification and cleanup
+
