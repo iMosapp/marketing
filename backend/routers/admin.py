@@ -49,6 +49,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
     }.get(role, 'Team Member')
     
     login_url = f"{APP_URL}/auth/login"
+    logo_url = f"{APP_URL}/imos-logo-original.png"
     
     try:
         result = await asyncio.to_thread(resend.Emails.send, {
@@ -56,33 +57,41 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
             "to": email,
             "subject": f"You're Invited to Join iMOs as {role_title}",
             "html": f"""
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #C9A962; margin: 0;">iMOs</h1>
-                    <p style="color: #666; margin-top: 5px;">Relationship Management System</p>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+                <div style="text-align: center; margin-bottom: 20px; padding: 20px;">
+                    <img src="{logo_url}" alt="iMOs Logo" style="max-width: 180px; height: auto;" />
                 </div>
                 
                 <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 16px; color: white;">
-                    <h2 style="margin-top: 0;">Welcome, {name}!</h2>
-                    <p>You've been invited to join iMOs as a <strong>{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
+                    <h2 style="margin-top: 0; color: #C9A962;">Welcome, {name}!</h2>
+                    <p style="font-size: 16px; line-height: 1.6;">You've been invited to join <strong>iMOs</strong> as a <strong style="color: #C9A962;">{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
                     
-                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin: 20px 0;">
-                        <p style="margin: 0 0 10px 0;"><strong>Your Login Credentials:</strong></p>
-                        <p style="margin: 5px 0;">Email: <code style="background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;">{email}</code></p>
-                        <p style="margin: 5px 0;">Temporary Password: <code style="background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;">{temp_password}</code></p>
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin: 25px 0;">
+                        <p style="margin: 0 0 15px 0; font-weight: 600; color: #C9A962;">Your Login Credentials:</p>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: rgba(255,255,255,0.7);">Email:</td>
+                                <td style="padding: 8px 0;"><code style="background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; color: #fff;">{email}</code></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: rgba(255,255,255,0.7);">Temporary Password:</td>
+                                <td style="padding: 8px 0;"><code style="background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; color: #fff;">{temp_password}</code></td>
+                            </tr>
+                        </table>
                     </div>
                     
-                    <p style="font-size: 14px; color: rgba(255,255,255,0.7);">You'll be prompted to create a new password when you first log in.</p>
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 25px;">You'll be prompted to create a new password when you first log in.</p>
                     
-                    <div style="text-align: center; margin-top: 30px;">
-                        <a href="{login_url}" style="display: inline-block; background: #C9A962; color: #000; padding: 14px 32px; text-decoration: none; border-radius: 30px; font-weight: 600;">
+                    <div style="text-align: center;">
+                        <a href="{login_url}" style="display: inline-block; background: #C9A962; color: #000; padding: 16px 40px; text-decoration: none; border-radius: 30px; font-weight: 700; font-size: 16px;">
                             Get Started
                         </a>
                     </div>
                 </div>
                 
-                <div style="text-align: center; margin-top: 30px; color: #888; font-size: 12px;">
-                    <p>iMOs - Your Virtual Partner Line</p>
+                <div style="text-align: center; margin-top: 25px; color: #888; font-size: 12px;">
+                    <p style="margin: 5px 0;">iMOs - Your Relationship Management System</p>
+                    <p style="margin: 5px 0; color: #aaa;">Questions? Contact support@imosapp.com</p>
                 </div>
             </div>
             """
