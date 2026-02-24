@@ -1619,6 +1619,18 @@ export default function ThreadScreen() {
               style={styles.photoOptionButton}
               onPress={() => {
                 setShowPhotoOptionsModal(false);
+                takePhoto();
+              }}
+              data-testid="photo-option-camera"
+            >
+              <Ionicons name="camera-outline" size={24} color="#34C759" />
+              <Text style={styles.photoOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.photoOptionButton}
+              onPress={() => {
+                setShowPhotoOptionsModal(false);
                 pickImage();
               }}
               data-testid="photo-option-library"
