@@ -330,6 +330,13 @@ export default function OnboardingScreen() {
     bio: '',
   });
   
+  // Team invite state
+  const [teamInvites, setTeamInvites] = useState<{name: string; email: string; phone: string}[]>([
+    { name: '', email: '', phone: '' },
+  ]);
+  const [sendingInvites, setSendingInvites] = useState(false);
+  const [invitesSent, setInvitesSent] = useState(false);
+  
   // Pre-fill profile inputs with user data
   useEffect(() => {
     if (user) {
