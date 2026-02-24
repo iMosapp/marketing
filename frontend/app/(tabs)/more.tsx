@@ -12,10 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 import api from '../../services/api';
+
+const HIDDEN_ITEMS_KEY = 'hidden_menu_items';
 
 export default function MoreScreen() {
   const router = useRouter();
