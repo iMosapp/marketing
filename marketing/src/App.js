@@ -88,8 +88,8 @@ const Hero = () => (
     <div className="hero-content">
       <h1 className="hero-title-large">
         <span className="tagline-colorful">
-          <span className="tagline-red">I</span>
-          <span className="tagline-white">'</span>
+          <span className="tagline-red">i</span>
+          <span className="tagline-green">'</span>
           <span className="tagline-blue">m</span>
           <span className="tagline-white"> </span>
           <span className="tagline-yellow">Old</span>
@@ -97,7 +97,7 @@ const Hero = () => (
           <span className="tagline-green">School</span>
         </span>
       </h1>
-      <h2 className="hero-tagline-sub">With a modern twist.</h2>
+      <h2 className="hero-tagline-sub">With modern tools.</h2>
       
       <p className="hero-subtitle">
         Built on timeless relationship principles and powered by modern automation, 
@@ -110,9 +110,9 @@ const Hero = () => (
         <a href="https://app.imosapp.com/auth/signup" className="btn btn-primary btn-lg">
           Start Free Trial <ArrowRight size={18} />
         </a>
-        <button className="btn btn-outline btn-lg">
-          <Play size={18} /> Watch Demo
-        </button>
+        <a href="#demo-form" className="btn btn-outline btn-lg demo-link">
+          Schedule a Demo
+        </a>
       </div>
       
       <div className="hero-stats">
