@@ -145,11 +145,58 @@ export default function DigitalCardPage() {
       }
 
       setSaved(true);
+      setShowShareModal(false);
     } catch (error) {
       console.error('Error saving contact:', error);
     } finally {
       setSaving(false);
     }
+  };
+
+  // Share via link
+  const handleShareLink = async () => {
+    try {
+      const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+      await Share.share({
+        message: `Check out my digital business card: ${cardUrl}`,
+        url: cardUrl,
+        title: cardData?.user?.name ? `${cardData.user.name}'s Business Card` : 'My Business Card',
+      });
+      setShowShareModal(false);
+    } catch (error) {
+      console.error('Error sharing link:', error);
+    }
+  };
+
+  // Copy link to clipboard
+  const handleCopyLink = async () => {
+    try {
+      const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+      await Clipboard.setStringAsync(cardUrl);
+      if (Platform.OS === 'web') {
+        alert('Link copied to clipboard!');
+      }
+      setShowShareModal(false);
+    } catch (error) {
+      console.error('Error copying link:', error);
+    }
+  };
+
+  // Share via SMS
+  const handleShareSMS = () => {
+    const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+    const message = `Check out my digital business card: ${cardUrl}`;
+    Linking.openURL(`sms:?body=${encodeURIComponent(message)}`);
+    setShowShareModal(false);
+  };
+
+  // Share via Email
+  const handleShareEmail = () => {
+    const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+    const subject = `${cardData?.user?.name || 'My'} Digital Business Card`;
+    const body = `Hi!\n\nHere's my digital business card:\n${cardUrl}\n\nLooking forward to connecting!`;
+    Linking.openURL(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    setShowShareModal(false);
   };
 
   // Share QR Code - uses short URL for cleaner sharing
