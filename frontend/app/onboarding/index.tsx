@@ -591,44 +591,6 @@ const SLIDES: OnboardingSlide[] = [
     ],
   },
 ];
-    actionButton: { label: 'Import Contacts', route: '/contacts/import' },
-    benefits: [
-      'One-tap import',
-      'Organize with tags',
-      'Never lose a contact',
-    ],
-  },
-  
-  // FEATURE: Analytics
-  {
-    id: 'analytics',
-    type: 'feature',
-    title: 'See Your AI at Work',
-    subtitle: 'Incredible Analytics',
-    description: 'Watch your AI in action! See leads captured, messages sent, and time saved.',
-    icon: 'analytics',
-    iconColor: '#5AC8FA',
-    bgGradient: ['#0F1A2E', '#1A2E3E'],
-    demoComponent: 'analytics',
-  },
-  
-  // COMPLETE
-  {
-    id: 'complete',
-    type: 'complete',
-    title: 'You\'re All Set!',
-    subtitle: 'Time to Close Some Deals',
-    description: 'Your AI assistant is ready. The more you use iMOs, the smarter it gets!',
-    icon: 'checkmark-circle',
-    iconColor: '#34C759',
-    bgGradient: ['#0F2E1A', '#1A1A1A'],
-    benefits: [
-      'AI trained on YOUR style',
-      'All features unlocked',
-      'Support team ready to help',
-    ],
-  },
-];
 
 // ============================================
 // MAIN COMPONENT
