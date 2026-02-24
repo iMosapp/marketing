@@ -217,6 +217,15 @@ export default function ThreadScreen() {
   const [contactCreated, setContactCreated] = useState(false);
   const [createdContactId, setCreatedContactId] = useState<string | null>(null);
 
+  // User Account Creation state (for admins/managers)
+  const [createUserAccount, setCreateUserAccount] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState('user');
+  const [creatingUser, setCreatingUser] = useState(false);
+  
+  // Check if current user is admin/manager
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager';
+
   // Load templates from API
   useEffect(() => {
     loadTemplates();
