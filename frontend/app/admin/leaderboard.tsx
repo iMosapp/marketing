@@ -126,11 +126,15 @@ export default function LeaderboardScreen() {
         
         {/* User Info */}
         <View style={styles.userInfo}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.avatarText}>
-              {item.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '?'}
-            </Text>
-          </View>
+          {item.photo_url ? (
+            <Image source={{ uri: item.photo_url }} style={styles.userAvatarPhoto} />
+          ) : (
+            <View style={styles.userAvatar}>
+              <Text style={styles.avatarText}>
+                {item.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '?'}
+              </Text>
+            </View>
+          )}
           <View style={styles.userDetails}>
             <Text style={styles.userName}>
               {item.name}
