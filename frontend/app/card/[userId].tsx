@@ -36,6 +36,7 @@ const SOCIAL_PLATFORMS = [
 ];
 
 export default function DigitalCardPage() {
+  const router = useRouter();
   const { userId, campaign, contact } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [cardData, setCardData] = useState<any>(null);
