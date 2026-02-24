@@ -424,6 +424,14 @@ export default function MoreScreen() {
               </View>
             )}
           </View>
+          {/* Sign Out button in profile card */}
+          <TouchableOpacity
+            style={styles.profileSignOutButton}
+            onPress={handleLogout}
+            data-testid="logout-button-header"
+          >
+            <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
+          </TouchableOpacity>
         </View>
         
         {/* Admin Section */}
