@@ -160,7 +160,21 @@ export default function SignupScreen() {
         signupData.organization_id = selectedOrg._id;
       }
       
-      console.log('[Signup] Calling signup API with data:', { ...signupData, password: '***' });
+      // Include optional fields if provided
+      if (photo) {
+        signupData.photo_url = photo;
+      }
+      if (bio.trim()) {
+        signupData.bio = bio.trim();
+      }
+      if (socialLinks.instagram || socialLinks.facebook || socialLinks.linkedin) {
+        signupData.social_links = {};
+        if (socialLinks.instagram) signupData.social_links.instagram = socialLinks.instagram;
+        if (socialLinks.facebook) signupData.social_links.facebook = socialLinks.facebook;
+        if (socialLinks.linkedin) signupData.social_links.linkedin = socialLinks.linkedin;
+      }
+      
+      console.log('[Signup] Calling signup API with data:', { ...signupData, password: '***', photo_url: signupData.photo_url ? '[photo]' : undefined });
       await signup(signupData);
       console.log('[Signup] Signup successful!');
       
