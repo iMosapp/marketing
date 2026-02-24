@@ -243,3 +243,78 @@ async def clear_chat_history(user_id: str):
     )
     
     return {"message": "Chat history cleared"}
+
+
+async def extract_profile_info(text: str, context: str = "intro") -> dict:
+    """
+    Extract structured profile information from natural speech.
+    Uses AI to parse what the user said into profile fields.
+    """
+    import json
+    
+    api_key = os.getenv("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise ValueError("EMERGENT_LLM_KEY not configured")
+    
+    # Context-specific extraction prompts
+    extraction_prompts = {
+        "intro": """Extract the following from this self-introduction:
+- bio: A 1-2 sentence professional bio
+- years_experience: How many years of experience (just the number or phrase)
+- specialties: List of professional specialties or skills mentioned
+- personal_motto: Any motto or philosophy mentioned""",
+        
+        "hobbies": """Extract the following from this description of hobbies/interests:
+- hobbies: List of hobbies mentioned
+- interests: List of interests or passions mentioned""",
+        
+        "family": """Extract the following from this personal/family description:
+- family_info: A brief summary of family situation
+- fun_facts: List of fun or interesting facts about them""",
+        
+        "expertise": """Extract the following from this expertise description:
+- specialties: List of areas of expertise
+- fun_facts: List of achievements or interesting facts
+- personal_motto: Any philosophy or approach mentioned"""
+    }
+    
+    prompt = extraction_prompts.get(context, extraction_prompts["intro"])
+    
+    system_prompt = f"""You are a profile data extractor. Extract structured information from the user's speech.
+
+{prompt}
+
+IMPORTANT:
+- Only extract information that was actually mentioned
+- Return empty arrays [] for lists with no items
+- Return null for fields not mentioned
+- Keep text natural and conversational
+- For bio, write in third person ("Forest is..." not "I am...")
+
+Return ONLY valid JSON, no markdown or explanation."""
+
+    chat = LlmChat(
+        api_key=api_key,
+        model="gpt-5.2",
+        system=system_prompt
+    )
+    
+    user_msg = UserMessage(f"Here's what they said:\n\n\"{text}\"")
+    response = await chat.send_async(user_msg)
+    
+    # Parse the JSON response
+    try:
+        # Clean up response - remove markdown code blocks if present
+        response_text = response.strip()
+        if response_text.startswith("```"):
+            response_text = response_text.split("```")[1]
+            if response_text.startswith("json"):
+                response_text = response_text[4:]
+        
+        extracted = json.loads(response_text)
+        
+        # Clean up null values
+        return {k: v for k, v in extracted.items() if v is not None and v != [] and v != ""}
+    except json.JSONDecodeError:
+        # If JSON parsing fails, return minimal extraction
+        return {"bio": text[:200] if len(text) > 200 else text}
