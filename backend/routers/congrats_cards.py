@@ -102,6 +102,7 @@ async def create_congrats_card(
     """
     Create a new congrats card
     Returns a shareable link
+    Also updates the contact's avatar with the photo if contact exists
     """
     db = get_db()
     
@@ -132,6 +133,33 @@ async def create_congrats_card(
     
     base64_data = base64.b64encode(contents).decode('utf-8')
     photo_url = f"data:{photo.content_type};base64,{base64_data}"
+    
+    # Update contact's avatar if contact exists (by phone number)
+    contact_updated = False
+    if customer_phone:
+        # Normalize phone number for matching
+        normalized_phone = customer_phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        if not normalized_phone.startswith("+"):
+            normalized_phone = "+1" + normalized_phone if len(normalized_phone) == 10 else normalized_phone
+        
+        # Find contact by phone (try multiple formats)
+        contact = await db.contacts.find_one({
+            "$or": [
+                {"phone": customer_phone},
+                {"phone": normalized_phone},
+                {"phone": {"$regex": normalized_phone[-10:] if len(normalized_phone) >= 10 else normalized_phone}}
+            ],
+            "user_id": salesman_id
+        })
+        
+        if contact and not contact.get("photo"):
+            # Update contact's photo with the congrats card photo
+            await db.contacts.update_one(
+                {"_id": contact["_id"]},
+                {"$set": {"photo": photo_url, "photo_source": "congrats_card"}}
+            )
+            contact_updated = True
+            print(f"[CongratsCard] Updated contact {contact.get('first_name', '')} {contact.get('last_name', '')} avatar from congrats card photo")
     
     # Generate unique card ID
     card_id = str(uuid.uuid4())[:12]
@@ -166,6 +194,7 @@ async def create_congrats_card(
         "downloads": 0,
         "shares": 0,
         "created_at": datetime.now(timezone.utc),
+        "contact_photo_updated": contact_updated,
     }
     
     await db.congrats_cards.insert_one(card_doc)
@@ -193,7 +222,8 @@ async def create_congrats_card(
         "card_id": card_id,
         "card_url": full_card_url,
         "short_url": short_url_result["short_url"],
-        "message": "Congrats card created!"
+        "message": "Congrats card created!",
+        "contact_photo_updated": contact_updated
     }
 
 
