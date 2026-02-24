@@ -218,7 +218,8 @@ export default function PartnerAgreementsScreen() {
             <TouchableOpacity
               key={agreement.id}
               style={styles.agreementCard}
-              onPress={() => router.push(`/partner/agreement/${agreement.id}`)}
+              onPress={() => router.push(`/admin/partner-agreement/${agreement.id}`)}
+              data-testid={`agreement-${agreement.id}`}
             >
               <View style={styles.agreementHeader}>
                 <View>
