@@ -1304,6 +1304,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 6,
   },
+  welcomeTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  welcomeLogo: {
+    width: 70,
+    height: 28,
+    marginHorizontal: 4,
+  },
+  subtitleWithLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  subtitleLogo: {
+    width: 50,
+    height: 20,
+  },
   subtitle: {
     fontSize: 15,
     fontWeight: '600',
