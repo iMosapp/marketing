@@ -180,6 +180,27 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="team"
+        options={{
+          title: 'Team',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbox-ellipses" size={size} color={isPending ? '#3C3C3E' : color} />
+          ),
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: '600',
+            color: isPending ? '#3C3C3E' : undefined,
+          },
+        }}
+        listeners={{
+          tabPress: (e) => {
+            if (isPending) {
+              e.preventDefault();
+            }
+          },
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: 'More',
