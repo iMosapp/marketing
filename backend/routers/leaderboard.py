@@ -122,6 +122,7 @@ async def get_regional_leaderboard(
             "rank": i + 1,
             "user_id": str(u['_id']),
             "name": u.get('name', 'Unknown'),
+            "photo_url": u.get('photo_url'),
             "metric_value": u.get('stats', {}).get(metric, 0),
             "state": u.get('state', ''),
             "is_you": is_current_user
