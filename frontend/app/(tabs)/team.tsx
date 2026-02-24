@@ -490,8 +490,8 @@ export default function TeamChatScreen() {
                 <Text style={styles.inputLabel}>Channel Type</Text>
                 <View style={styles.typeButtons}>
                   {[
-                    { type: 'store' as const, label: 'Store', icon: 'business-outline' },
                     { type: 'org' as const, label: 'Organization', icon: 'globe-outline' },
+                    { type: 'store' as const, label: 'Store', icon: 'business-outline' },
                     { type: 'custom' as const, label: 'Custom Group', icon: 'people-outline' },
                   ].map((option) => (
                     <TouchableOpacity
