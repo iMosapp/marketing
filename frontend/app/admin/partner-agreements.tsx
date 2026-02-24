@@ -279,7 +279,7 @@ export default function PartnerAgreementsScreen() {
                   <TouchableOpacity 
                     onPress={async () => {
                       await Clipboard.setStringAsync(createdLink);
-                      Alert.alert('Copied!', 'Link copied to clipboard');
+                      showSimpleAlert('Copied!', 'Link copied to clipboard');
                     }}
                   >
                     <Ionicons name="copy" size={24} color="#007AFF" />
