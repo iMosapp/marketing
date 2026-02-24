@@ -255,16 +255,37 @@ export default function SignupScreen() {
               </Text>
             </View>
             
-            <TouchableOpacity
-              style={[styles.button, (loading || !acceptedTerms) && styles.buttonDisabled]}
-              onPress={handleSignup}
-              disabled={loading || !acceptedTerms}
-              data-testid="signup-submit-button"
-            >
-              <Text style={styles.buttonText}>
-                {loading ? 'Creating Account...' : 'Sign Up'}
-              </Text>
-            </TouchableOpacity>
+            {Platform.OS === 'web' ? (
+              <button
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: (loading || !acceptedTerms) ? '#333' : '#007AFF',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: (loading || !acceptedTerms) ? 'not-allowed' : 'pointer',
+                  opacity: (loading || !acceptedTerms) ? 0.5 : 1,
+                }}
+                onClick={handleSignup}
+                disabled={loading || !acceptedTerms}
+                data-testid="signup-submit-button"
+              >
+                <span style={{ color: '#FFF', fontSize: '18px', fontWeight: '600' }}>
+                  {loading ? 'Creating Account...' : 'Sign Up'}
+                </span>
+              </button>
+            ) : (
+              <TouchableOpacity
+                style={[styles.button, (loading || !acceptedTerms) && styles.buttonDisabled]}
+                onPress={handleSignup}
+                disabled={loading || !acceptedTerms}
+                data-testid="signup-submit-button"
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Creating Account...' : 'Sign Up'}
+                </Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity
               style={styles.linkButton}
