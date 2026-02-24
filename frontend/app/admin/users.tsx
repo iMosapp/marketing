@@ -711,6 +711,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  userAvatarPhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   userAvatarText: {
     fontSize: 14,
     fontWeight: '600',
