@@ -5,7 +5,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crm-signup-fix.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://agreements-mgmt.preview.emergentagent.com')
 
 class TestURLShortener:
     """URL Shortener endpoint tests"""

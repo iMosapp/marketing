@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://crm-signup-fix.preview.emergentagent.com';
+        : 'https://agreements-mgmt.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,
