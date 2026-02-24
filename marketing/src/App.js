@@ -602,6 +602,144 @@ const Footer = () => (
   </footer>
 );
 
+// Demo Form Component
+const DemoForm = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('https://app.imosapp.com/api/demo-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          message: formData.message,
+          source: 'website_demo_request',
+        }),
+      });
+      
+      if (response.ok) {
+        setSubmitSuccess(true);
+        setFormData({ name: '', email: '', phone: '', company: '', message: '' });
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error('Demo request error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="demo-form-section" id="demo-form">
+      <div className="demo-form-container">
+        <div className="demo-form-content">
+          <h2 className="demo-form-title">Schedule a Demo</h2>
+          <p className="demo-form-subtitle">
+            See how iMOs can transform your sales process. Fill out the form and one of our team members will reach out to schedule a personalized demo.
+          </p>
+          
+          {submitSuccess ? (
+            <div className="demo-success">
+              <CheckCircle size={48} className="success-icon" />
+              <h3>Thank You!</h3>
+              <p>We've received your request. One of our team members will reach out shortly to schedule your demo.</p>
+            </div>
+          ) : (
+            <form className="demo-form" onSubmit={handleSubmit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="name">Full Name *</label>
+                  <input
+                    type="text"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="John Smith"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email">Email *</label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="john@company.com"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="phone">Phone Number *</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    placeholder="(555) 123-4567"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="company">Company Name</label>
+                  <input
+                    type="text"
+                    id="company"
+                    value={formData.company}
+                    onChange={(e) => setFormData({...formData, company: e.target.value})}
+                    placeholder="Your Company"
+                  />
+                </div>
+              </div>
+              
+              <div className="form-group full-width">
+                <label htmlFor="message">Message (Optional)</label>
+                <textarea
+                  id="message"
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  placeholder="Tell us about your business and what you're looking for..."
+                  rows={4}
+                />
+              </div>
+              
+              <button type="submit" className="btn btn-primary btn-lg btn-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Request Demo'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // Main App
 function App() {
   return (
@@ -613,6 +751,7 @@ function App() {
       <Pricing />
       <Testimonials />
       <FAQ />
+      <DemoForm />
       <CTA />
       <Footer />
     </div>
