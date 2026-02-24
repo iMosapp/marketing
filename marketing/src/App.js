@@ -87,10 +87,17 @@ const Hero = () => (
     
     <div className="hero-content">
       <h1 className="hero-title-large">
-        <span className="hero-line tagline-white">Innovation</span>
-        <span className="hero-line tagline-blue">Meets</span>
-        <span className="hero-line tagline-purple">Old School</span>
+        <span className="tagline-colorful">
+          <span className="tagline-red">I</span>
+          <span className="tagline-white">'</span>
+          <span className="tagline-blue">m</span>
+          <span className="tagline-white"> </span>
+          <span className="tagline-yellow">Old</span>
+          <span className="tagline-white"> </span>
+          <span className="tagline-green">School</span>
+        </span>
       </h1>
+      <h2 className="hero-tagline-sub">With a modern twist.</h2>
       
       <p className="hero-subtitle">
         Built on timeless relationship principles and powered by modern automation, 
@@ -110,18 +117,18 @@ const Hero = () => (
       
       <div className="hero-stats">
         <div className="hero-stat">
-          <span className="hero-stat-value">10,000+</span>
-          <span className="hero-stat-label">Active Users</span>
+          <span className="hero-stat-value">500+</span>
+          <span className="hero-stat-label">Active Teams</span>
         </div>
         <div className="hero-stat-divider" />
         <div className="hero-stat">
-          <span className="hero-stat-value">5M+</span>
+          <span className="hero-stat-value">2M+</span>
           <span className="hero-stat-label">Messages Sent</span>
         </div>
         <div className="hero-stat-divider" />
         <div className="hero-stat">
           <span className="hero-stat-value">98%</span>
-          <span className="hero-stat-label">Satisfaction Rate</span>
+          <span className="hero-stat-label">Satisfaction</span>
         </div>
       </div>
     </div>
