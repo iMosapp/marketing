@@ -6,14 +6,15 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../../services/api';
+import { showAlert, showSimpleAlert, showConfirm } from '../../../services/alert';
 
 interface Quote {
   _id: string;
