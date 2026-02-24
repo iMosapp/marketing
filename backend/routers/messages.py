@@ -641,6 +641,42 @@ async def get_ai_suggestion(user_id: str, conversation_id: str):
     return {"suggestion": suggestion}
 
 
+@router.get("/conversation/{conversation_id}/info")
+async def get_conversation_info(conversation_id: str):
+    """Get conversation info including contact details and photo"""
+    db = get_db()
+    
+    # Find conversation
+    try:
+        conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+    except:
+        conv = await db.conversations.find_one({"_id": conversation_id})
+    
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    result = {
+        "_id": str(conv["_id"]),
+        "contact_name": conv.get("contact_name"),
+        "contact_phone": conv.get("contact_phone"),
+        "contact_photo": None,
+        "status": conv.get("status", "active"),
+    }
+    
+    # Try to get contact photo
+    contact_id = conv.get("contact_id")
+    if contact_id:
+        try:
+            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+            if contact:
+                result["contact_photo"] = contact.get("photo")
+                result["contact_name"] = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or result["contact_name"]
+        except:
+            pass
+    
+    return result
+
+
 @router.get("/thread/{conversation_id}")
 async def get_thread_messages(conversation_id: str):
     """Get messages for a conversation thread (simplified endpoint)"""
