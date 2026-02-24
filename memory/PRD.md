@@ -161,12 +161,24 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ### P2 (Medium Priority)
 - [ ] Store Edit/Delete functionality
-- [ ] Searchable Training Manual with screenshots
+- [x] **DONE: Training Hub** - Searchable tutorials with voice help
 
 ### P3 (Low Priority/Future)
 - [ ] App Store submission prep (icons, splash screens)
 
 ## Completed This Session (Continued - Feb 24, 2026)
+
+### Customizable UI & Training Hub (COMPLETED - Feb 24, 2026)
+- [x] **Customize Menu Page** (`frontend/app/customize-menu.tsx`)
+  - Toggle OFF features you don't use to reduce overwhelm
+  - "Show All" / "Hide All" quick actions
+  - Organized by category
+  - Settings saved to AsyncStorage
+- [x] **Training Hub** (`frontend/app/training-hub.tsx`)
+  - Voice Help: Ask questions by voice or text, get AI answers
+  - Searchable training topics organized by category
+  - Topics: Getting Started, Messaging, AI Features, Sales Tools, Campaigns, Team
+- [x] **Updated More Page** with "Customize" button and Training Hub
 
 ### Voice Training for AI (COMPLETED - Feb 24, 2026)
 - [x] **Created Voice Training page** (`frontend/app/voice-training.tsx`)
