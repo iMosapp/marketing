@@ -591,6 +591,31 @@ async def update_user(user_id: str, user_data: dict):
     return {"message": "User updated successfully"}
 
 
+@router.patch("/users/{user_id}")
+async def patch_user(user_id: str, user_data: dict):
+    """Update user profile fields including photo"""
+    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links']
+    update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    
+    result = await get_db().users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Return the updated user data
+    updated_user = await get_db().users.find_one({"_id": ObjectId(user_id)})
+    if updated_user:
+        updated_user["_id"] = str(updated_user["_id"])
+    
+    return updated_user
+
+
 @router.get("/users/{user_id}/review-links")
 async def get_review_links(user_id: str):
     """Get user's review links for quick sharing"""
