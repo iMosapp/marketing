@@ -548,6 +548,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0D0D',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C1E',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFF',
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#0D0D0D',
