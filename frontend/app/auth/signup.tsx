@@ -158,7 +158,14 @@ export default function SignupScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Start your journey with iMOs</Text>
+            <View style={styles.subtitleContainer}>
+              <Text style={styles.subtitle}>Start your journey with </Text>
+              <Image 
+                source={require('../../assets/images/imos-logo-white-v3.png')}
+                style={styles.subtitleLogo}
+                resizeMode="contain"
+              />
+            </View>
           </View>
           
           <View style={styles.form}>
