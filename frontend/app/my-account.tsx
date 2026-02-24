@@ -307,26 +307,19 @@ export default function MyAccountScreen() {
             </View>
           )}
 
-          {/* Photo action buttons */}
-          <View style={styles.photoActions}>
-            {photoUrl ? (
-              <>
-                <TouchableOpacity style={styles.photoActionBtn} onPress={showPhotoOptions}>
-                  <Ionicons name="refresh" size={18} color="#007AFF" />
-                  <Text style={styles.photoActionText}>Change</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.photoActionBtn} onPress={removePhoto}>
-                  <Ionicons name="trash" size={18} color="#FF3B30" />
-                  <Text style={[styles.photoActionText, { color: '#FF3B30' }]}>Remove</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
+          {/* Photo action buttons - only show when photo exists */}
+          {photoUrl && (
+            <View style={styles.photoActions}>
               <TouchableOpacity style={styles.photoActionBtn} onPress={showPhotoOptions}>
-                <Ionicons name="add" size={18} color="#007AFF" />
-                <Text style={styles.photoActionText}>Add Photo</Text>
+                <Ionicons name="refresh" size={18} color="#007AFF" />
+                <Text style={styles.photoActionText}>Change</Text>
               </TouchableOpacity>
-            )}
-          </View>
+              <TouchableOpacity style={styles.photoActionBtn} onPress={removePhoto}>
+                <Ionicons name="trash" size={18} color="#FF3B30" />
+                <Text style={[styles.photoActionText, { color: '#FF3B30' }]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Quick Actions */}
