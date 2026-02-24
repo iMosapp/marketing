@@ -751,9 +751,6 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
-  profileChevron: {
-    marginLeft: 8,
-  },
   profileName: {
     fontSize: 18,
     fontWeight: '600',
