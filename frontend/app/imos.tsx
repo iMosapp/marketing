@@ -1085,14 +1085,14 @@ const styles = StyleSheet.create({
   phoneMockup: {
     width: 280,
     height: 580,
-    backgroundColor: '#000000',
+    backgroundColor: '#F2F2F7',
     borderRadius: 44,
     padding: 0,
     borderWidth: 2,
-    borderColor: '#1a1a1a',
+    borderColor: '#E5E5EA',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 40,
     overflow: 'hidden',
   },
@@ -1107,19 +1107,19 @@ const styles = StyleSheet.create({
   },
   phoneScreen: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F2F2F7',
     overflow: 'hidden',
   },
   phoneHeader: {
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: '#E5E5EA',
   },
   phoneHeaderText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#000000',
     textAlign: 'center',
   },
   messagesContainer: {
@@ -1143,7 +1143,7 @@ const styles = StyleSheet.create({
   },
   messageIncoming: {
     alignSelf: 'flex-start',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#E5E5EA',
     borderRadius: 18,
     borderBottomLeftRadius: 4,
     paddingHorizontal: 14,
@@ -1151,19 +1151,19 @@ const styles = StyleSheet.create({
     maxWidth: '85%',
   },
   messageIncomingText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 14,
     lineHeight: 20,
   },
   messageTime: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
     textAlign: 'right',
   },
   messageTimeIncoming: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.5)',
     marginTop: 4,
   },
   phoneHomeBar: {
