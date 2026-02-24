@@ -205,7 +205,18 @@ export default function ContactsScreen() {
           style={styles.actionButton}
           onPress={(e) => {
             e.stopPropagation();
-            Alert.alert('Calling', item.phone);
+            if (item.phone) {
+              const phoneUrl = Platform.OS === 'web' 
+                ? `tel:${item.phone}` 
+                : `tel:${item.phone}`;
+              Linking.canOpenURL(phoneUrl).then(supported => {
+                if (supported) {
+                  Linking.openURL(phoneUrl);
+                } else {
+                  showSimpleAlert('Call', `Calling ${item.phone}`);
+                }
+              });
+            }
           }}
         >
           <Ionicons name="call" size={20} color="#007AFF" />
@@ -214,7 +225,15 @@ export default function ContactsScreen() {
           style={styles.actionButton}
           onPress={(e) => {
             e.stopPropagation();
-            startConversation(item);
+            // Navigate to thread in SMS mode
+            router.push({
+              pathname: `/thread/${item._id}`,
+              params: {
+                contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
+                contact_phone: item.phone,
+                mode: 'sms'
+              }
+            });
           }}
         >
           <Ionicons name="chatbubble" size={20} color="#007AFF" />
@@ -224,25 +243,18 @@ export default function ContactsScreen() {
           onPress={(e) => {
             e.stopPropagation();
             if (item.email) {
-              Alert.alert(
-                'Send Email',
-                `Send email to ${item.email}?`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Open Mail App', onPress: () => {
-                    const mailUrl = `mailto:${item.email}`;
-                    Linking.openURL(mailUrl);
-                  }},
-                  { text: 'Use iMos Email', onPress: () => {
-                    router.push({
-                      pathname: `/contact/${item._id}`,
-                      params: { openEmail: 'true' }
-                    });
-                  }},
-                ]
-              );
+              // Navigate to thread in email mode
+              router.push({
+                pathname: `/thread/${item._id}`,
+                params: {
+                  contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
+                  contact_phone: item.phone,
+                  contact_email: item.email,
+                  mode: 'email'
+                }
+              });
             } else {
-              Alert.alert('No Email', 'This contact does not have an email address');
+              showSimpleAlert('No Email', 'This contact does not have an email address');
             }
           }}
         >
