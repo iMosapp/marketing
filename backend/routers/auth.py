@@ -9,6 +9,8 @@ import random
 import logging
 import os
 import httpx
+import resend
+import asyncio
 
 from models import User, UserCreate, UserPersona
 from routers.database import get_db
@@ -16,8 +18,73 @@ from routers.database import get_db
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
+# Resend configuration
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+
 # Store reset codes temporarily (in production, use Redis or similar)
 reset_codes = {}
+
+async def send_welcome_email(user: dict):
+    """Send welcome email to new user"""
+    if not RESEND_API_KEY:
+        logger.warning("Resend API key not configured, skipping welcome email")
+        return
+    
+    try:
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #000; color: #fff;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #FF3B30; display: inline;">i</h1><h1 style="color: #34C759; display: inline;">'</h1><h1 style="color: #007AFF; display: inline;">M</h1><h1 style="color: #FFD60A; display: inline;">O</h1><h1 style="color: #34C759; display: inline;">s</h1>
+            </div>
+            <h2 style="color: #fff; text-align: center;">Welcome to iMOs, {user.get('name', 'there')}!</h2>
+            <p style="color: #ccc; line-height: 1.6; text-align: center;">
+                Thank you for signing up! You're now part of a community that believes in 
+                timeless relationship principles powered by modern tools.
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="https://app.imosapp.com/auth/login" 
+                   style="background-color: #007AFF; color: white; padding: 15px 40px; 
+                          text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    Get Started
+                </a>
+            </div>
+            <p style="color: #888; line-height: 1.6; text-align: center; font-size: 14px;">
+                If you have any questions, we're here to help!
+            </p>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; text-align: center;">
+                <p style="color: #666; font-size: 12px;">
+                    © 2026 iMOs. i'M Old School with modern tools.
+                </p>
+            </div>
+        </div>
+        """
+        
+        result = await asyncio.to_thread(resend.Emails.send, {
+            "from": f"iMOs <{SENDER_EMAIL}>",
+            "to": [user.get('email')],
+            "subject": "Welcome to iMOs! 🎉",
+            "html": html_content
+        })
+        
+        logger.info(f"Welcome email sent to {user.get('email')}: {result.get('id')}")
+        
+        # Log in database
+        await get_db().email_logs.insert_one({
+            "user_id": str(user.get('_id')),
+            "recipient_email": user.get('email'),
+            "recipient_name": user.get('name'),
+            "subject": "Welcome to iMOs! 🎉",
+            "status": "sent",
+            "resend_id": result.get('id'),
+            "sent_at": datetime.utcnow(),
+            "type": "welcome"
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to send welcome email: {str(e)}")
 
 async def notify_super_admin_of_new_user(new_user: dict):
     """Send SMS notification to super admin about new user signup"""
