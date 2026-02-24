@@ -422,11 +422,45 @@ export default function ThreadScreen() {
       setIsNewContact(false);
       setShowQuickContactPanel(false);
       
+      // If admin wants to create user account, do that too
+      if (createUserAccount && newUserEmail) {
+        await createUserAccountForContact();
+      }
+      
       return newContactId;
     } catch (error) {
       console.error('Error creating contact:', error);
       // Don't block message sending if contact creation fails
       return null;
+    }
+  };
+
+  // Create user account (admin only)
+  const createUserAccountForContact = async () => {
+    if (!user?._id || !newUserEmail || !isAdmin) return;
+    
+    setCreatingUser(true);
+    try {
+      const userData = {
+        name: `${newContactFirstName} ${newContactLastName}`.trim() || contactPhone,
+        email: newUserEmail.trim().toLowerCase(),
+        phone: contactPhone,
+        role: newUserRole,
+        organization_id: user.organization_id,
+        store_id: user.store_id,
+        added_by: user._id,
+      };
+
+      await api.post('/admin/users', userData);
+      showSimpleAlert(
+        'User Created', 
+        `${userData.name} has been added. They will receive a welcome SMS with login instructions.`
+      );
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      showSimpleAlert('Error', error.response?.data?.detail || 'Failed to create user account');
+    } finally {
+      setCreatingUser(false);
     }
   };
   
