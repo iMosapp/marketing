@@ -242,11 +242,15 @@ export default function UsersScreen() {
       style={[styles.userCard, item.is_active === false && styles.inactiveCard]}
       onPress={() => router.push(`/admin/users/${item._id}`)}
     >
-      <View style={[styles.userAvatar, { backgroundColor: (ROLE_COLORS[item.role] || '#8E8E93') + '30' }]}>
-        <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] || '#8E8E93' }]}>
-          {item.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '?'}
-        </Text>
-      </View>
+      {item.photo_url ? (
+        <Image source={{ uri: item.photo_url }} style={styles.userAvatarPhoto} />
+      ) : (
+        <View style={[styles.userAvatar, { backgroundColor: (ROLE_COLORS[item.role] || '#8E8E93') + '30' }]}>
+          <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] || '#8E8E93' }]}>
+            {item.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '?'}
+          </Text>
+        </View>
+      )}
       <View style={styles.userInfo}>
         <Text style={[styles.userName, item.is_active === false && styles.inactiveText]}>{item.name}</Text>
         <Text style={styles.userEmail}>{item.email}</Text>
