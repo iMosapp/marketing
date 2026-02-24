@@ -239,6 +239,7 @@ export default function LoginScreen() {
                 resizeMode="contain"
               />
             </View>
+            <Text style={styles.tagline}>Relationship Management System</Text>
           </View>
           
           <View style={styles.form}>
