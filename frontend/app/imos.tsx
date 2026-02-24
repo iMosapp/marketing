@@ -251,15 +251,15 @@ export default function IMOSLandingPage() {
             {/* Colorful Tagline */}
             <View style={styles.taglineContainer}>
               <Text style={styles.taglineText}>
-                <Text style={styles.taglineI}>I</Text>
+                <Text style={styles.taglineI}>i</Text>
                 <Text style={styles.taglineApostrophe}>'</Text>
-                <Text style={styles.taglineM}>m</Text>
+                <Text style={styles.taglineM}>M</Text>
                 <Text style={styles.taglineSpace}> </Text>
                 <Text style={styles.taglineOld}>Old</Text>
                 <Text style={styles.taglineSpace}> </Text>
-                <Text style={styles.taglineSchool}>School</Text>
+                <Text style={styles.taglineSchool}>school</Text>
               </Text>
-              <Text style={styles.taglineSubtext}>With a modern twist.</Text>
+              <Text style={styles.taglineSubtext}>with modern tools.</Text>
             </View>
             
             <Text style={styles.heroSubtitle}>
@@ -275,8 +275,7 @@ export default function IMOSLandingPage() {
                 <Ionicons name="arrow-forward" size={20} color="#000" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.secondaryButton} onPress={handleScheduleDemo}>
-                <Ionicons name="play-circle" size={24} color={COLORS.textPrimary} />
-                <Text style={styles.secondaryButtonText}>Watch Demo</Text>
+                <Text style={styles.secondaryButtonText}>Schedule a Demo</Text>
               </TouchableOpacity>
             </View>
             
