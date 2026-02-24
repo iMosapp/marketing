@@ -30,6 +30,32 @@ export default function TabLayout() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   
+  // Team chat unread count
+  const [teamUnreadCount, setTeamUnreadCount] = useState(0);
+  
+  // Fetch team unread count periodically
+  const fetchTeamUnreadCount = useCallback(async () => {
+    if (!user?._id) return;
+    
+    try {
+      const response = await api.get(`/team-chat/channels?user_id=${user._id}`);
+      if (response.data.success) {
+        const total = response.data.channels.reduce((sum: number, ch: any) => sum + (ch.unread_count || 0), 0);
+        setTeamUnreadCount(total);
+      }
+    } catch (error) {
+      // Silently fail - just don't show badge
+    }
+  }, [user?._id]);
+  
+  useEffect(() => {
+    if (mounted && user?._id) {
+      fetchTeamUnreadCount();
+      const interval = setInterval(fetchTeamUnreadCount, 10000); // Poll every 10 seconds
+      return () => clearInterval(interval);
+    }
+  }, [mounted, user?._id, fetchTeamUnreadCount]);
+  
   // Protect tabs - redirect to login if not authenticated
   useEffect(() => {
     if (mounted && !isLoading && !isAuthenticated) {
