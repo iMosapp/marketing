@@ -224,8 +224,15 @@ export default function MyAccountScreen() {
     {
       icon: 'card',
       title: 'My Digital Card',
-      subtitle: 'Edit bio, socials & preview',
+      subtitle: 'View & share your card',
       color: '#5856D6',
+      onPress: () => router.push(`/card/${user?._id}`),
+    },
+    {
+      icon: 'create',
+      title: 'Edit Digital Card',
+      subtitle: 'Update bio, photo & socials',
+      color: '#007AFF',
       onPress: () => router.push('/settings/my-profile'),
     },
     {
