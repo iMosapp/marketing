@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   },
   dialPadWrapper: {
     paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingBottom: 70,
   },
   dialPad: {
     gap: 12,
