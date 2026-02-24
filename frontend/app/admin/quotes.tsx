@@ -178,7 +178,7 @@ export default function QuotesListPage() {
             <TouchableOpacity
               key={quote._id}
               style={styles.quoteCard}
-              onPress={() => {/* Could navigate to quote detail */}}
+              onPress={() => router.push(`/admin/quote/${quote._id}`)}
               data-testid={`quote-${quote.quote_number}`}
             >
               <View style={styles.quoteHeader}>
