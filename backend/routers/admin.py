@@ -710,13 +710,27 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     result = await get_db().users.insert_one(user_dict)
     user_id = str(result.inserted_id)
     
-    # TODO: Send actual email when email service is configured
-    # For now, we'll just return success and show the temp password if not sending invite
+    # Send invite email if requested
     invite_sent = False
-    if send_invite:
-        # In production, integrate with SendGrid/SES here
-        logger.info(f"Would send invite email to {email} with temp password")
-        invite_sent = True  # Mocked for now
+    if send_invite and email:
+        # Get inviter name for email
+        inviter_name = None
+        if x_user_id:
+            inviter = await get_db().users.find_one({"_id": ObjectId(x_user_id)})
+            if inviter:
+                inviter_name = inviter.get('name')
+        
+        invite_sent = await send_invite_email(
+            email=email,
+            name=name,
+            temp_password=temp_password,
+            role=user_role,
+            inviter_name=inviter_name
+        )
+        if invite_sent:
+            logger.info(f"Invite email sent to {email}")
+        else:
+            logger.warning(f"Failed to send invite email to {email}")
     
     return {
         "success": True,
@@ -728,7 +742,7 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "store_id": store_id,
         "invite_sent": invite_sent,
         "temp_password": temp_password if not send_invite else None,
-        "message": f"User created successfully. {'Invite email sent.' if send_invite else 'Share the temporary password securely.'}"
+        "message": f"User created successfully. {'Invite email sent.' if invite_sent else 'Share the temporary password securely.'}"
     }
 
 
