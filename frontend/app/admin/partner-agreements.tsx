@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { showSimpleAlert } from '../../services/alert';
 
 interface Template {
   id: string;
