@@ -647,6 +647,15 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginBottom: 2,
   },
+  profileNumberContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  profileLogoSmall: {
+    width: 32,
+    height: 12,
+  },
   profileNumber: {
     fontSize: 12,
     color: '#007AFF',
