@@ -1129,6 +1129,17 @@ export default function ThreadScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.accent} />
         </TouchableOpacity>
         
+        {/* Contact Avatar */}
+        {contactPhoto ? (
+          <Image source={{ uri: contactPhoto }} style={styles.headerAvatar} />
+        ) : (
+          <View style={[styles.headerAvatarPlaceholder, { backgroundColor: colors.accent }]}>
+            <Text style={styles.headerAvatarText}>
+              {contactName.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?'}
+            </Text>
+          </View>
+        )}
+        
         <View style={styles.headerInfo}>
           <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
           <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
