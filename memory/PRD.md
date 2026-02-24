@@ -175,6 +175,21 @@ iMos is a business management app for retail/service businesses. Key features in
   - **Verified:** 100% test pass rate - signup creates user, sends welcome email, redirects to onboarding
   - **Test Report:** `/app/test_reports/iteration_11.json`
 
+### Profile Photos/Avatars Feature (COMPLETED - Feb 24, 2026)
+- [x] **Profile photos now follow users/contacts everywhere in the app**
+  - Avatars show uploaded photos when available, fallback to color-coded initials
+  - **Updated Components:**
+    - `frontend/app/(tabs)/inbox.tsx` - Conversation list shows contact photos
+    - `frontend/app/(tabs)/contacts.tsx` - Already supported photos
+    - `frontend/app/thread/[id].tsx` - Thread header shows contact avatar
+    - `frontend/app/admin/users.tsx` - Admin user list shows photos
+    - `frontend/app/admin/leaderboard.tsx` - Leaderboard shows user photos
+    - `frontend/app/my-rankings.tsx` - Rankings shows user photos
+  - **New Component:** `frontend/components/Avatar.tsx` - Reusable avatar with photo/initials support
+  - **Backend APIs updated:** All relevant endpoints now return photo fields
+  - **Verified:** 100% test pass rate (9/9 tests)
+  - **Test Report:** `/app/test_reports/iteration_12.json`
+
 ### UI/UX Fixes (COMPLETED - Feb 24, 2026)
 - [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
   - WebIconButton component renders native HTML `<button>` on web for proper click handling
