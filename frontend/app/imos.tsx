@@ -248,6 +248,11 @@ export default function IMOSLandingPage() {
         <View style={styles.heroRow}>
           {/* Left side - Text content */}
           <View style={styles.heroTextContent}>
+            {/* Category Badge */}
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>RELATIONSHIP MANAGEMENT SYSTEM</Text>
+            </View>
+            
             {/* Colorful Tagline */}
             <View style={styles.taglineContainer}>
               <Text style={styles.taglineText}>
