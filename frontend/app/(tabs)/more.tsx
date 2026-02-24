@@ -91,6 +91,16 @@ export default function MoreScreen() {
   
   const menuItems = [
     {
+      id: 'training-hub',
+      icon: 'school',
+      title: 'Training Hub',
+      subtitle: 'Learn how to use iMos',
+      onPress: () => router.push('/training-hub'),
+      color: '#FF9500',
+      alwaysShow: true,
+    },
+    {
+      id: 'ask-jessi',
       icon: 'sparkles',
       title: 'Ask Jessi',
       subtitle: 'Your AI assistant for iMos help',
@@ -98,6 +108,7 @@ export default function MoreScreen() {
       color: '#C9A962',
     },
     {
+      id: 'digital-card',
       icon: 'card',
       title: 'My Digital Card',
       subtitle: 'Photo, bio, socials & card preview',
@@ -105,6 +116,7 @@ export default function MoreScreen() {
       color: '#007AFF',
     },
     {
+      id: 'ai-persona',
       icon: 'person',
       title: 'AI Persona Settings',
       subtitle: 'Edit your AI communication style',
@@ -112,6 +124,7 @@ export default function MoreScreen() {
       color: '#AF52DE',
     },
     {
+      id: 'tasks',
       icon: 'checkmark-done',
       title: 'Tasks & Reminders',
       subtitle: 'Manage follow-ups and to-dos',
@@ -119,6 +132,7 @@ export default function MoreScreen() {
       color: '#34C759',
     },
     {
+      id: 'notifications',
       icon: 'notifications',
       title: 'Notifications',
       subtitle: 'Manage alerts and escalations',
@@ -126,6 +140,7 @@ export default function MoreScreen() {
       color: '#FF9500',
     },
     {
+      id: 'broadcast',
       icon: 'megaphone',
       title: 'Broadcast',
       subtitle: 'One-time mass messaging',
@@ -133,6 +148,7 @@ export default function MoreScreen() {
       color: '#FF9500',
     },
     {
+      id: 'lead-sources',
       icon: 'git-branch',
       title: 'Lead Sources',
       subtitle: 'Manage inbound leads & routing',
@@ -140,6 +156,7 @@ export default function MoreScreen() {
       color: '#5856D6',
     },
     {
+      id: 'sms-campaigns',
       icon: 'chatbubbles',
       title: 'SMS Campaigns',
       subtitle: 'Automated SMS follow-ups',
@@ -147,6 +164,7 @@ export default function MoreScreen() {
       color: '#FF2D55',
     },
     {
+      id: 'email-campaigns',
       icon: 'mail',
       title: 'Email Campaigns',
       subtitle: 'Automated email follow-ups',
@@ -154,6 +172,7 @@ export default function MoreScreen() {
       color: '#AF52DE',
     },
     {
+      id: 'campaign-dashboard',
       icon: 'speedometer',
       title: 'Campaign Dashboard',
       subtitle: 'View enrollments and pending messages',
@@ -161,6 +180,7 @@ export default function MoreScreen() {
       color: '#5AC8FA',
     },
     {
+      id: 'analytics',
       icon: 'stats-chart',
       title: 'Analytics',
       subtitle: 'View your performance metrics',
@@ -168,6 +188,7 @@ export default function MoreScreen() {
       color: '#34C759',
     },
     {
+      id: 'reports',
       icon: 'bar-chart',
       title: 'Reports',
       subtitle: 'Detailed performance reports',
@@ -175,6 +196,7 @@ export default function MoreScreen() {
       color: '#007AFF',
     },
     {
+      id: 'security',
       icon: 'shield-checkmark',
       title: 'Security',
       subtitle: 'Face ID, password settings',
@@ -182,6 +204,7 @@ export default function MoreScreen() {
       color: '#FF3B30',
     },
     {
+      id: 'sms-email-toggle',
       icon: 'swap-horizontal-outline',
       title: 'SMS / Email Toggle',
       subtitle: 'Choose toggle style and default mode',
