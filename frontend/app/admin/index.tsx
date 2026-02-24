@@ -727,6 +727,116 @@ export default function AdminDashboard() {
           <ActivityTicker activities={activities} />
         )}
         
+        {/* Quick Stats Cards - Super Admin Only */}
+        {isSuperAdmin && (
+          <View style={styles.quickStatsContainer}>
+            <Text style={styles.quickStatsTitle}>Quick Overview</Text>
+            <View style={styles.quickStatsGrid}>
+              <TouchableOpacity 
+                style={styles.quickStatCard}
+                onPress={() => router.push('/admin/organizations')}
+                data-testid="stat-organizations"
+              >
+                <View style={[styles.quickStatIcon, { backgroundColor: '#007AFF20' }]}>
+                  <Ionicons name="business" size={24} color="#007AFF" />
+                </View>
+                <Text style={styles.quickStatValue}>
+                  {(stats?.orgs_active || 0) + (stats?.orgs_inactive || 0)}
+                </Text>
+                <Text style={styles.quickStatLabel}>Organizations</Text>
+                <Text style={styles.quickStatSubtext}>
+                  {stats?.orgs_active || 0} active
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickStatCard}
+                onPress={() => router.push('/admin/stores')}
+                data-testid="stat-accounts"
+              >
+                <View style={[styles.quickStatIcon, { backgroundColor: '#34C75920' }]}>
+                  <Ionicons name="storefront" size={24} color="#34C759" />
+                </View>
+                <Text style={styles.quickStatValue}>
+                  {(stats?.stores_active || 0) + (stats?.stores_inactive || 0)}
+                </Text>
+                <Text style={styles.quickStatLabel}>Accounts</Text>
+                <Text style={styles.quickStatSubtext}>
+                  {stats?.stores_active || 0} active
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickStatCard}
+                onPress={() => router.push('/admin/users')}
+                data-testid="stat-users"
+              >
+                <View style={[styles.quickStatIcon, { backgroundColor: '#FF950020' }]}>
+                  <Ionicons name="people" size={24} color="#FF9500" />
+                </View>
+                <Text style={styles.quickStatValue}>
+                  {(stats?.users_active || 0) + (stats?.users_inactive || 0)}
+                </Text>
+                <Text style={styles.quickStatLabel}>Users</Text>
+                <Text style={styles.quickStatSubtext}>
+                  {stats?.users_active || 0} active
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickStatCard}
+                onPress={() => router.push('/admin/directory')}
+                data-testid="stat-employees"
+              >
+                <View style={[styles.quickStatIcon, { backgroundColor: '#AF52DE20' }]}>
+                  <Ionicons name="person" size={24} color="#AF52DE" />
+                </View>
+                <Text style={styles.quickStatValue}>
+                  {stats?.total_employees || stats?.users_active || 0}
+                </Text>
+                <Text style={styles.quickStatLabel}>Employees</Text>
+                <Text style={styles.quickStatSubtext}>
+                  Company directory
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickStatCard}
+                onPress={() => router.push('/admin/partner-agreements')}
+                data-testid="stat-agreements"
+              >
+                <View style={[styles.quickStatIcon, { backgroundColor: '#FF2D5520' }]}>
+                  <Ionicons name="document-text" size={24} color="#FF2D55" />
+                </View>
+                <Text style={styles.quickStatValue}>
+                  {stats?.partner_agreements || 0}
+                </Text>
+                <Text style={styles.quickStatLabel}>Agreements</Text>
+                <Text style={styles.quickStatSubtext}>
+                  Partner contracts
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickStatCard}
+                onPress={() => router.push('/admin/individuals')}
+                data-testid="stat-individuals"
+              >
+                <View style={[styles.quickStatIcon, { backgroundColor: '#5856D620' }]}>
+                  <Ionicons name="person-circle" size={24} color="#5856D6" />
+                </View>
+                <Text style={styles.quickStatValue}>
+                  {(stats?.individuals_active || 0) + (stats?.individuals_inactive || 0)}
+                </Text>
+                <Text style={styles.quickStatLabel}>Individuals</Text>
+                <Text style={styles.quickStatSubtext}>
+                  {stats?.individuals_active || 0} active
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        
         {/* Time Filter - show above data section */}
         {(isSuperAdmin || isOrgAdmin || isStoreManager) && (
           <View style={styles.filterRow}>
