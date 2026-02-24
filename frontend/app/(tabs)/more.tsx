@@ -54,29 +54,43 @@ export default function MoreScreen() {
   };
   
   const handleLogout = async () => {
-    // On web/mobile Safari, skip confirm dialog for reliability
-    if (Platform.OS === 'web') {
+    // Always show confirmation dialog for logout
+    const confirmLogout = () => {
+      if (Platform.OS === 'web') {
+        // Use native browser confirm on web
+        const confirmed = window.confirm('Are you sure you want to log out?');
+        if (confirmed) {
+          performLogout();
+        }
+      } else {
+        showConfirm(
+          'Log Out',
+          'Are you sure you want to log out?',
+          performLogout,
+          undefined,
+          'Log Out',
+          'Cancel'
+        );
+      }
+    };
+    
+    const performLogout = async () => {
       try {
         await logout();
-        router.replace('/auth/login');
+        if (Platform.OS === 'web') {
+          window.location.href = '/auth/login';
+        } else {
+          router.replace('/auth/login');
+        }
       } catch (e) {
         console.error('Logout error:', e);
-        // Force redirect anyway
-        window.location.href = '/auth/login';
+        if (Platform.OS === 'web') {
+          window.location.href = '/auth/login';
+        }
       }
-    } else {
-      showConfirm(
-        'Log Out',
-        'Are you sure you want to log out?',
-        async () => {
-          await logout();
-          router.replace('/auth/login');
-        },
-        undefined,
-        'Log Out',
-        'Cancel'
-      );
-    }
+    };
+    
+    confirmLogout();
   };
   
   // Check if user has admin access
