@@ -559,19 +559,6 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={{ marginHorizontal: 16, marginTop: 24 }}>
-          <WebSafeButton
-            onPress={handleLogout}
-            variant="secondary"
-            size="medium"
-            fullWidth
-            testID="logout-button"
-          >
-            <Ionicons name="log-out" size={20} color="#FF3B30" />
-            <Text style={styles.logoutText}>Log Out</Text>
-          </WebSafeButton>
-        </View>
-        
         <Text style={styles.version}>iMos v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
