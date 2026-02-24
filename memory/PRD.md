@@ -593,3 +593,54 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 - **Netlify:** Marketing site hosting (active)
 - **Twilio:** SMS/MMS (credentials configured, pending toll-free verification)
 - **EMERGENT_LLM_KEY:** Used for Jessie AI assistant (GPT-5.2 + OpenAI TTS)
+
+
+## Completed This Session (Feb 24, 2026 - Evening)
+
+### "More" Page Reorganization (COMPLETED - Feb 24, 2026)
+- [x] **Completely redesigned "More" page for simplicity**
+  - User requested: "I want this app to be extremely simple and user-friendly to avoid confusion"
+  - Consolidated 35+ menu items into 8 collapsible sections
+  - **Sections:**
+    1. **Administration** (10 items) - Super admin only: Admin Panel, Pending Users, Partner Agreements, Company Directory, Shared Inboxes, Bulk Transfer, Phone Assignments, View Quotes, Create Quote, Discount Codes
+    2. **Essentials** (3 items) - Expanded by default: Training Hub, Ask Jessi, Tasks & Reminders
+    3. **Communication** (4 items) - Broadcast, SMS Campaigns, Email Campaigns, Campaign Dashboard
+    4. **Templates & Branding** (4 items) - SMS Templates, Email Templates, Brand Kit, Congrats Cards
+    5. **Performance** (3-4 items) - Analytics, Reports, Email Analytics, My Rankings (independent users)
+    6. **Contacts & Leads** (4 items) - Lead Sources, Contact Tags, Review Links, Review Approvals
+    7. **Profile & AI** (2 items) - My Digital Card, AI Persona
+    8. **Settings** (6 items) - Security, Notifications, SMS/Email Toggle, Calendar, Integrations, Invite Team
+  - **Profile card** at top leads to My Account page
+  - **Legal section** condensed to inline "Terms of Service • Privacy Policy" links
+  - **Sign Out button** at bottom
+  - **Version info** with iMOs logo at bottom
+- [x] **Expand/collapse animations** using LayoutAnimation
+  - Smooth expand/collapse when tapping section headers
+  - Chevron icon rotates to indicate state (up = expanded, down = collapsed)
+  - Each section shows item count (e.g., "4 items")
+- [x] **Role-based visibility**
+  - Administration section only shows for super_admin users
+  - My Rankings only shows for independent users (no organization)
+- [x] **Removed old "Customize" feature** - No longer needed with collapsible sections
+- **Files Modified:**
+  - `frontend/app/(tabs)/more.tsx` - Complete rewrite with collapsible sections
+- **Test Report:** `/app/test_reports/iteration_14.json` - 100% pass rate (9/9 tests)
+
+## Known Issues / Blockers
+
+### DNS/SSL Custom Domain Issue (DIAGNOSED - Pending User Action)
+- **Problem:** User's custom domain `app.imosapp.com` is down due to SSL error
+- **Root Cause:** Cloudflare is interfering with Emergent's SSL provisioning
+- **Recommendation:** User should remove `imosapp.com` from Cloudflare and let Squarespace's DNS point directly to Emergent
+- **Status:** User confirmed they removed the domain from Cloudflare. Need to wait for DNS propagation and click "I have added DNS records" in Emergent dashboard
+
+### Mobile App Data Sync (DIAGNOSED - Client-Side Issue)
+- **Problem:** Photos and tags added on user's phone are not syncing to database
+- **Root Cause:** Backend APIs work correctly (verified via curl). Mobile app is likely outdated or pointing to wrong backend
+- **Fix Required:** User needs to reinstall the latest production build of the mobile app
+- **Status:** Backend verified working, awaiting user to update their mobile app
+
+### React Hydration Error #418 (Workaround In Place)
+- **Problem:** Expo for Web throws hydration errors on root route
+- **Current Fix:** Meta-refresh redirect from `/` to `/auth/login`
+- **Status:** Workaround works, but proper fix requires Expo investigation
