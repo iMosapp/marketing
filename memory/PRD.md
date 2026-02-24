@@ -168,6 +168,26 @@ iMos is a business management app for retail/service businesses. Key features in
 
 ## Completed This Session (Continued - Feb 24, 2026)
 
+### Voice Training for AI (COMPLETED - Feb 24, 2026)
+- [x] **Created Voice Training page** (`frontend/app/voice-training.tsx`)
+  - Modern, voice-first experience for training your AI
+  - 4-step guided flow: Intro, Hobbies, Family, Expertise
+  - Just tap and talk naturally - no forms to fill
+  - Examples provided to help get started
+  - AI extracts structured data (bio, hobbies, interests, specialties, etc.)
+  - "See Results" page shows what AI learned about you
+  - One-tap "Save to My AI Profile" button
+- [x] **Backend endpoint** (`/api/jessie/extract-profile`)
+  - Uses GPT-5.2 to parse natural speech into profile fields
+  - Context-aware extraction based on which question was answered
+- [x] **Updated My Account page** with Voice Training quick action
+- **Files Created:**
+  - `frontend/app/voice-training.tsx`
+- **Files Modified:**
+  - `backend/routers/jessie.py` - Added extract-profile endpoint
+  - `backend/services/jessie_service.py` - Added extract_profile_info function
+  - `frontend/app/my-account.tsx` - Added Voice Training card
+
 ### Contacts Page & Thread Bugs Fixed (COMPLETED - Feb 24, 2026)
 - [x] **Fixed white screen issue** - Thread page now uses dark mode for both SMS and Email
 - [x] **Added clear visual mode indicator** - New banner below header:
