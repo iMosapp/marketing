@@ -705,3 +705,16 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 ### Issue Status Update
 - **✅ RESOLVED:** Custom domain `app.imosapp.com` - User confirmed it's up and functioning
 - **⏸️ PENDING:** Mobile tag sync - Awaiting user verification
+
+### Administration Section Enhancement (COMPLETED - Feb 24, 2026)
+- **Issue:** User couldn't see Organizations, Accounts, and Users directly from the More page
+- **Fix:** Reorganized the Administration section to include direct links to:
+  - Admin Dashboard (overview & activity)
+  - Organizations (super_admin only)
+  - Accounts (org_admin and above)
+  - Users (all admins)
+  - Individuals (super_admin only)
+  - Plus all other admin tools (Pending Users, Partner Agreements, etc.)
+- **Files Modified:**
+  - `frontend/app/(tabs)/more.tsx` - Updated adminSection with direct navigation links
+- **Verified:** Administration section now shows 14 items with full infrastructure access
