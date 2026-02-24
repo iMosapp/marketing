@@ -552,6 +552,16 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
         
+        {/* Sign Out Button */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          data-testid="logout-button"
+        >
+          <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </TouchableOpacity>
+        
         <View style={styles.versionContainer}>
           <Image 
             source={require('../../assets/images/imos-logo-white-v3.png')}
