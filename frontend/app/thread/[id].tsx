@@ -296,12 +296,28 @@ export default function ThreadScreen() {
   const contactName = (contact_name as string) || 'Contact';
   const contactPhone = (contact_phone as string) || '';
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
+  const [contactPhoto, setContactPhoto] = useState<string | null>(null);
   
   useEffect(() => {
     if (user?._id && id) {
       ensureConversation();
+      loadContactInfo();
     }
   }, [id, user?._id]);
+  
+  // Load contact info including photo
+  const loadContactInfo = async () => {
+    if (!id) return;
+    try {
+      const response = await api.get(`/messages/conversation/${id}/info`);
+      if (response.data?.contact_photo) {
+        setContactPhoto(response.data.contact_photo);
+      }
+    } catch (error) {
+      // Contact photo not available, that's ok
+      console.log('Contact photo not available');
+    }
+  };
   
   // Ensure we have a conversation (create if needed)
   const ensureConversation = async () => {
