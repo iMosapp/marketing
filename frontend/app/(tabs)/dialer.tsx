@@ -449,14 +449,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 20,
+    gap: 16,
   },
   headerButton: {
-    padding: 12,
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 4,
   },
   dialerContainer: {
     flex: 1,
