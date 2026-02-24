@@ -17,7 +17,8 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { getOnboardingSlidesForRole, OnboardingSlide } from './slideLibraries';
+import { getOnboardingSlidesForRole } from './slideLibraries';
+import { OnboardingSlide } from './types';
 
 const { width } = Dimensions.get('window');
 
