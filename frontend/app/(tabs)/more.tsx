@@ -690,14 +690,28 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
-  profileCard: {
+  profileCardContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 16,
+    gap: 8,
+  },
+  profileCard: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#1C1C1E',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  profileSignOutBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileAvatarContainer: {
     position: 'relative',
