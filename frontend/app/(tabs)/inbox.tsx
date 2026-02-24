@@ -1264,11 +1264,15 @@ export default function InboxScreen() {
                   onPress={() => startConversation(item)}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.contactAvatar, { backgroundColor: colors.elevated }]}>
-                    <Text style={[styles.contactAvatarText, { color: colors.textPrimary }]}>
-                      {item.first_name?.[0]}{item.last_name?.[0] || ''}
-                    </Text>
-                  </View>
+                  {item.photo ? (
+                    <Image source={{ uri: item.photo }} style={styles.contactAvatarPhoto} />
+                  ) : (
+                    <View style={[styles.contactAvatar, { backgroundColor: colors.elevated }]}>
+                      <Text style={[styles.contactAvatarText, { color: colors.textPrimary }]}>
+                        {item.first_name?.[0]}{item.last_name?.[0] || ''}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.contactInfo}>
                     <Text style={[styles.contactNameModal, { color: colors.textPrimary }]}>
                       {item.first_name} {item.last_name || ''}
