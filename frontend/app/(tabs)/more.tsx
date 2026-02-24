@@ -25,15 +25,28 @@ export default function MoreScreen() {
   const { user, logout, isImpersonating, stopImpersonation, originalUser } = useAuthStore();
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
+  const [hiddenItems, setHiddenItems] = useState<Set<string>>(new Set());
   
-  // Fetch pending users count for super admins
+  // Load hidden items and pending count
   useFocusEffect(
     useCallback(() => {
+      loadHiddenItems();
       if (user?.role === 'super_admin' || originalUser?.role === 'super_admin') {
         fetchPendingCount();
       }
     }, [user?.role, originalUser?.role])
   );
+  
+  const loadHiddenItems = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(HIDDEN_ITEMS_KEY);
+      if (saved) {
+        setHiddenItems(new Set(JSON.parse(saved)));
+      }
+    } catch (error) {
+      console.error('Failed to load hidden items:', error);
+    }
+  };
   
   const fetchPendingCount = async () => {
     try {
