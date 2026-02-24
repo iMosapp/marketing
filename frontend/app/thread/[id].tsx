@@ -580,7 +580,7 @@ export default function ThreadScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     // Build the card URL - use the api baseURL and strip /api
-    const baseUrl = api.defaults.baseURL?.replace('/api', '') || 'https://agreements-mgmt.preview.emergentagent.com';
+    const baseUrl = api.defaults.baseURL?.replace('/api', '') || 'https://jessi-ai-training.preview.emergentagent.com';
     let cardUrl = `${baseUrl}/card/${user._id}`;
     
     // Add campaign and contact params for tracking
@@ -611,7 +611,7 @@ export default function ThreadScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     // Build the vCard download URL
-    const baseUrl = api.defaults.baseURL?.replace('/api', '') || 'https://agreements-mgmt.preview.emergentagent.com';
+    const baseUrl = api.defaults.baseURL?.replace('/api', '') || 'https://jessi-ai-training.preview.emergentagent.com';
     const vcardUrl = `${baseUrl}/api/card/vcard/${user._id}`;
     
     // Insert message with link

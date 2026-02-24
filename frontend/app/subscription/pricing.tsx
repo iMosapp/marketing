@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://agreements-mgmt.preview.emergentagent.com';
+        : 'https://jessi-ai-training.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,
