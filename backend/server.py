@@ -16,7 +16,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Import routers (after env is loaded)
-from routers import auth, contacts, tasks, messages, calls, campaigns, admin, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, notifications, webhooks, inventory_webhooks, demo_requests
+from routers import auth, contacts, tasks, messages, calls, campaigns, admin, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, notifications, webhooks, inventory_webhooks, demo_requests, team_chat
 from routers.database import get_db
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
