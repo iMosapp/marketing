@@ -290,7 +290,7 @@ const HowItWorks = () => (
 const plans = [
   {
     name: 'Starter',
-    price: '29',
+    price: '49',
     description: 'Perfect for individual sales reps',
     features: [
       '500 SMS messages/month',
@@ -364,9 +364,12 @@ const Pricing = () => (
                 </li>
               ))}
             </ul>
-            <button className={`btn ${plan.popular ? 'btn-primary' : 'btn-outline'} btn-full`}>
+            <a 
+              href={plan.price === 'Custom' ? '#demo-form' : 'https://app.imosapp.com/auth/signup'}
+              className={`btn ${plan.popular ? 'btn-primary' : 'btn-outline'} btn-full`}
+            >
               {plan.price === 'Custom' ? 'Contact Sales' : 'Start Free Trial'}
-            </button>
+            </a>
           </div>
         ))}
       </div>
