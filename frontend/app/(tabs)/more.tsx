@@ -388,7 +388,14 @@ export default function MoreScreen() {
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
             <Text style={styles.profileEmail}>{user?.email || ''}</Text>
-            <Text style={styles.profileNumber}>iMos: {user?.mvpline_number || '+1555XXXXXXX'}</Text>
+            <View style={styles.profileNumberContainer}>
+              <Image 
+                source={require('../../assets/images/imos-logo-white-v3.png')}
+                style={styles.profileLogoSmall}
+                resizeMode="contain"
+              />
+              <Text style={styles.profileNumber}>{user?.mvpline_number || '+1555XXXXXXX'}</Text>
+            </View>
             {user?.role && user.role !== 'user' && (
               <View style={styles.roleBadge}>
                 <Ionicons name="shield-checkmark" size={12} color="#34C759" />
