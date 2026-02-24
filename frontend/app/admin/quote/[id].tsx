@@ -80,9 +80,9 @@ export default function QuoteDetailScreen() {
       });
       setQuote({ ...quote, notes: editedNotes });
       setShowEditModal(false);
-      Alert.alert('Success', 'Quote updated');
+      showSimpleAlert('Success', 'Quote updated');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update quote');
+      showSimpleAlert('Error', 'Failed to update quote');
     } finally {
       setSaving(false);
     }
@@ -91,52 +91,45 @@ export default function QuoteDetailScreen() {
   const handleResend = async () => {
     if (!quote) return;
     
-    Alert.alert(
+    showConfirm(
       'Resend Quote',
       `Send quote ${quote.quote_number} to ${quote.customer?.email || 'customer'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Resend',
-          onPress: async () => {
-            setSending(true);
-            try {
-              await api.post(`/subscriptions/quotes/${quote._id}/send`);
-              Alert.alert('Success', 'Quote resent successfully');
-              loadQuote();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to resend quote');
-            } finally {
-              setSending(false);
-            }
-          }
+      async () => {
+        setSending(true);
+        try {
+          await api.post(`/subscriptions/quotes/${quote._id}/send`);
+          showSimpleAlert('Success', 'Quote resent successfully');
+          loadQuote();
+        } catch (error) {
+          showSimpleAlert('Error', 'Failed to resend quote');
+        } finally {
+          setSending(false);
         }
-      ]
+      },
+      undefined,
+      'Resend',
+      'Cancel'
     );
   };
 
   const handleDelete = async () => {
     if (!quote) return;
     
-    Alert.alert(
+    showConfirm(
       'Delete Quote',
       `Are you sure you want to delete quote ${quote.quote_number}? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(`/subscriptions/quotes/${quote._id}`);
-              Alert.alert('Success', 'Quote deleted');
-              router.back();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete quote');
-            }
-          }
+      async () => {
+        try {
+          await api.delete(`/subscriptions/quotes/${quote._id}`);
+          showSimpleAlert('Success', 'Quote deleted');
+          router.back();
+        } catch (error) {
+          showSimpleAlert('Error', 'Failed to delete quote');
         }
-      ]
+      },
+      undefined,
+      'Delete',
+      'Cancel'
     );
   };
 
