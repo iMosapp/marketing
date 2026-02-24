@@ -125,13 +125,13 @@ interface Template {
 
 export default function ThreadScreen() {
   const router = useRouter();
-  const { id, contact_name, contact_phone } = useLocalSearchParams();
+  const { id, contact_name, contact_phone, contact_email, mode } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const flatListRef = useRef<FlatList>(null);
   
-  // Color mode state
+  // Color mode state - ALWAYS dark mode now
   const [messageMode, setMessageMode] = useState<'sms' | 'email'>('sms');
-  const colors = messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK;
+  const colors = COLORS_DARK; // Always dark mode for consistency
   
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -159,10 +159,17 @@ export default function ThreadScreen() {
   const [selectedMedia, setSelectedMedia] = useState<{uri: string, type: string, name: string} | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
   
-  // Load message preferences to match inbox mode
+  // Load message preferences or use navigation mode
   useEffect(() => {
-    loadMessagePreferences();
-  }, []);
+    // If mode was passed from navigation, use that
+    if (mode === 'email' || mode === 'sms') {
+      setMessageMode(mode as 'sms' | 'email');
+      // Save to storage so it persists
+      AsyncStorage.setItem('message_mode', mode as string);
+    } else {
+      loadMessagePreferences();
+    }
+  }, [mode]);
   
   const loadMessagePreferences = async () => {
     try {
