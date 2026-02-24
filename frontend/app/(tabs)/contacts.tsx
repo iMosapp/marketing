@@ -433,6 +433,72 @@ export default function ContactsScreen() {
           )}
         />
       )}
+      
+      {/* Add Contact Modal */}
+      <Modal
+        visible={showAddContactModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAddContactModal(false)}
+      >
+        <View style={styles.addContactModalOverlay}>
+          <View style={styles.addContactModalContent}>
+            <View style={styles.addContactModalHeader}>
+              <Text style={styles.addContactModalTitle}>Add New Contact</Text>
+              <TouchableOpacity onPress={() => setShowAddContactModal(false)}>
+                <Ionicons name="close" size={24} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.addContactModalSubtitle}>
+              Enter the phone number to start
+            </Text>
+            
+            <View style={styles.addContactInputContainer}>
+              <Ionicons name="call-outline" size={20} color="#8E8E93" />
+              <TextInput
+                style={styles.addContactInput}
+                placeholder="Phone number"
+                placeholderTextColor="#6E6E73"
+                value={newContactPhone}
+                onChangeText={setNewContactPhone}
+                keyboardType="phone-pad"
+                autoFocus
+                data-testid="new-contact-phone-input"
+              />
+            </View>
+            
+            <Text style={styles.addContactHint}>
+              You'll be able to add name, photo, tags, and send a message in the next step
+            </Text>
+            
+            <View style={styles.addContactModalActions}>
+              <TouchableOpacity 
+                style={styles.addContactCancelBtn}
+                onPress={() => {
+                  setShowAddContactModal(false);
+                  setNewContactPhone('');
+                }}
+              >
+                <Text style={styles.addContactCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.addContactContinueBtn,
+                  !newContactPhone.trim() && styles.addContactContinueBtnDisabled
+                ]}
+                onPress={handleAddNewContact}
+                disabled={!newContactPhone.trim()}
+                data-testid="new-contact-continue-btn"
+              >
+                <Text style={styles.addContactContinueText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
