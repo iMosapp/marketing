@@ -379,12 +379,43 @@ export default function MoreScreen() {
     items: [
       {
         icon: 'shield-checkmark',
-        title: 'Admin Panel',
-        subtitle: 'Manage org & users',
+        title: 'Admin Dashboard',
+        subtitle: 'Overview & activity',
         onPress: () => router.push('/admin'),
         color: '#34C759',
       },
+      // Organizations - super_admin only
+      ...(isSuperAdmin ? [{
+        icon: 'business',
+        title: 'Organizations',
+        subtitle: 'Manage organizations',
+        onPress: () => router.push('/admin/organizations'),
+        color: '#007AFF',
+      }] : []),
+      // Accounts (Stores) - org_admin and above
+      ...(isSuperAdmin || user?.role === 'org_admin' ? [{
+        icon: 'storefront',
+        title: 'Accounts',
+        subtitle: 'Manage store accounts',
+        onPress: () => router.push('/admin/stores'),
+        color: '#34C759',
+      }] : []),
+      // Users - org_admin and above
+      ...(isSuperAdmin || user?.role === 'org_admin' || user?.role === 'store_manager' ? [{
+        icon: 'people',
+        title: 'Users',
+        subtitle: 'Manage team members',
+        onPress: () => router.push('/admin/users'),
+        color: '#FF9500',
+      }] : []),
       ...(isSuperAdmin ? [
+        {
+          icon: 'person',
+          title: 'Individuals',
+          subtitle: 'Independent users',
+          onPress: () => router.push('/admin/individuals'),
+          color: '#AF52DE',
+        },
         {
           icon: 'person-add',
           title: 'Pending Users',
