@@ -319,61 +319,139 @@ interface OnboardingSlide {
 }
 
 const SLIDES: OnboardingSlide[] = [
-  // WELCOME
+  // ================== WELCOME ==================
   {
     id: 'welcome',
     type: 'welcome',
     title: 'Welcome to iMOs!',
     subtitle: 'Your Virtual Partner Line',
-    description: 'You\'re about to unlock something incredible - a personal AI assistant that works 24/7, sounds just like YOU, and helps you close more deals.',
+    description: 'Let\'s take a quick tour so you know where everything is and can hit the ground running.',
     icon: 'rocket',
     iconColor: '#C9A962',
     bgGradient: ['#1A1A2E', '#16213E'],
     benefits: [
-      'Never miss a lead again',
-      'AI that talks like YOU',
-      'Close deals while you sleep',
+      'Quick 2-minute walkthrough',
+      'Learn the key features',
+      'Start closing deals faster',
     ],
   },
   
-  // VERIFY PROFILE - New slide for profile verification
+  // ================== PROFILE VERIFICATION ==================
   {
     id: 'verify_profile',
     type: 'interactive',
     title: 'Verify Your Info',
     subtitle: 'Let\'s Make Sure We Got It Right',
-    description: 'Take a moment to review and complete your profile. This info powers your AI assistant and digital business card.',
+    description: 'This info powers your AI assistant and digital business card.',
     icon: 'checkmark-circle',
     iconColor: '#34C759',
     bgGradient: ['#0F2E1A', '#1A2E1A'],
     interactiveType: 'multi_input',
     inputFields: [
-      { key: 'name', label: 'Your Name', placeholder: 'Full name as you want customers to see it' },
+      { key: 'name', label: 'Your Name', placeholder: 'Full name as customers will see it' },
       { key: 'title', label: 'Your Title/Role', placeholder: 'e.g. Sales Consultant, Finance Manager' },
       { key: 'bio', label: 'Short Bio (for your business card)', placeholder: 'A brief intro about yourself...', multiline: true },
     ],
   },
-  
-  // AI PERSONA INTRO - Why it matters
+
+  // ================== APP NAVIGATION ==================
   {
-    id: 'ai_intro',
+    id: 'nav_overview',
     type: 'feature',
-    title: 'Meet Your AI Clone',
-    subtitle: 'The Magic Behind iMOs',
-    description: 'Your Virtual Assistant isn\'t just any chatbot. It learns YOUR personality and responds to customers as if it\'s really you.',
-    icon: 'sparkles',
-    iconColor: '#AF52DE',
-    bgGradient: ['#1A0F2E', '#2D1B4E'],
-    demoComponent: 'ai_clone',
+    title: 'Your Home Base',
+    subtitle: 'The Bottom Navigation Bar',
+    description: 'Everything you need is at the bottom of your screen. Five tabs to run your business:',
+    icon: 'apps',
+    iconColor: '#007AFF',
+    bgGradient: ['#0F1A2E', '#1A2E4E'],
+    benefits: [
+      '📥 Inbox - All your customer conversations',
+      '👥 Contacts - Your customer database',
+      '📞 Keypad - Make & receive calls',
+      '💬 Team - Chat with your coworkers',
+      '⚙️ More - All settings & features',
+    ],
   },
-  
-  // AI PERSONA SETUP - Communication Style
+
+  // ================== INBOX WALKTHROUGH ==================
+  {
+    id: 'inbox_tour',
+    type: 'feature',
+    title: 'Your Inbox',
+    subtitle: 'Where Conversations Live',
+    description: 'This is your command center. Every text, every lead, every customer interaction - all in one place.',
+    icon: 'chatbubbles',
+    iconColor: '#007AFF',
+    bgGradient: ['#0F1A2E', '#16213E'],
+    benefits: [
+      '🔵 Blue messages = You sent them',
+      '⚪ Gray messages = Customer responses',
+      '✨ Tap any conversation to continue chatting',
+      '➕ "New Message" button to start fresh',
+    ],
+  },
+
+  // ================== CONTACTS WALKTHROUGH ==================
+  {
+    id: 'contacts_tour',
+    type: 'feature',
+    title: 'Your Contacts',
+    subtitle: 'Your Customer Database',
+    description: 'Everyone you\'ve ever talked to is here. Search, filter by tags, and tap to message anyone instantly.',
+    icon: 'people',
+    iconColor: '#34C759',
+    bgGradient: ['#0F2E1A', '#1A2E1A'],
+    benefits: [
+      '🔍 Search by name or phone number',
+      '🏷️ Filter contacts by tags',
+      '➕ Add new contacts with the + button',
+      '📱 Tap any contact to text or call',
+    ],
+  },
+
+  // ================== NEW MESSAGE FLOW ==================
+  {
+    id: 'new_message_flow',
+    type: 'feature',
+    title: 'Starting a Conversation',
+    subtitle: 'How to Text New People',
+    description: 'When you meet someone new, here\'s how to add them and start chatting:',
+    icon: 'create',
+    iconColor: '#FF9500',
+    bgGradient: ['#2E1F0F', '#1A1A1A'],
+    benefits: [
+      '1️⃣ Tap "New Message" in Inbox',
+      '2️⃣ Type their phone number',
+      '3️⃣ Add their name, photo & tags',
+      '4️⃣ Send your message - contact saves automatically!',
+    ],
+  },
+
+  // ================== AI ASSISTANT INTRO ==================
+  {
+    id: 'ai_assistant',
+    type: 'feature',
+    title: 'Meet Jessi',
+    subtitle: 'Your AI Assistant',
+    description: 'Jessi is your personal AI that responds to customers when you\'re busy. She learns your style and sounds just like you!',
+    icon: 'sparkles',
+    iconColor: '#C9A962',
+    bgGradient: ['#2E2A1A', '#1A1A1A'],
+    benefits: [
+      '🤖 Responds to customers 24/7',
+      '🎯 Learns YOUR communication style',
+      '💬 Suggests responses for you',
+      '📍 Find her in More → Ask Jessi',
+    ],
+  },
+
+  // ================== AI STYLE SETUP ==================
   {
     id: 'ai_style',
     type: 'ai_setup',
     title: 'How Do You Talk?',
-    subtitle: 'Set Your Communication Style',
-    description: 'Help your AI match your vibe. Are you formal and professional, or casual and friendly?',
+    subtitle: 'Set Jessi\'s Communication Style',
+    description: 'Help Jessi match your vibe. How do you usually talk to customers?',
     icon: 'chatbubble-ellipses',
     iconColor: '#007AFF',
     bgGradient: ['#0F1A2E', '#1A2E4E'],
@@ -385,32 +463,14 @@ const SLIDES: OnboardingSlide[] = [
       { id: 'laid_back', label: 'Laid Back', description: 'Relaxed, easy-going, chill', icon: 'cafe' },
     ],
   },
-  
-  // AI PERSONA SETUP - Personal Info
-  {
-    id: 'ai_bio',
-    type: 'ai_setup',
-    title: 'Tell Us About You',
-    subtitle: 'The Secret Sauce',
-    description: 'The more your AI knows, the more natural it sounds. Customers will swear they\'re talking to the real you!',
-    icon: 'person',
-    iconColor: '#FFD60A',
-    bgGradient: ['#2E2A1A', '#1A1A1A'],
-    interactiveType: 'multi_input',
-    inputFields: [
-      { key: 'hobbies', label: 'Your Hobbies & Interests', placeholder: 'Golf, fishing, cars, cooking...', multiline: false },
-      { key: 'family', label: 'Family Info (Optional)', placeholder: 'Dad of 2, married 10 years...', multiline: false },
-      { key: 'fun_facts', label: 'Fun Facts About You', placeholder: 'I make the best BBQ in Texas, huge Cowboys fan...', multiline: true },
-    ],
-  },
-  
-  // AI INTRO STYLE
+
+  // ================== AI GREETING SETUP ==================
   {
     id: 'ai_greeting',
     type: 'ai_setup',
-    title: 'Your AI Introduction',
-    subtitle: 'How Should Your VA Introduce Itself?',
-    description: 'When a customer texts and you\'re busy, your AI jumps in. How should it greet them?',
+    title: 'How Should Jessi Introduce Herself?',
+    subtitle: 'When Customers Text You',
+    description: 'When you\'re busy, Jessi jumps in. How should she greet your customers?',
     icon: 'hand-right',
     iconColor: '#34C759',
     bgGradient: ['#0F2E1A', '#1A2E1A'],
@@ -421,83 +481,116 @@ const SLIDES: OnboardingSlide[] = [
       { id: 'helper', label: 'Helpful & Direct', description: '"Thanks for reaching out! [Name] is with a customer..."', icon: 'chatbubble' },
     ],
   },
-  
-  // FEATURE: AI Suggested Responses
+
+  // ================== MORE MENU TOUR ==================
   {
-    id: 'ai_suggestions',
+    id: 'more_menu_tour',
     type: 'feature',
-    title: 'AI-Powered Responses',
-    subtitle: 'Never Stuck on What to Say',
-    description: 'Your AI suggests perfect responses based on the conversation. One tap and you\'re done!',
-    icon: 'bulb',
-    iconColor: '#FF9500',
-    bgGradient: ['#2E1F0F', '#1A1A1A'],
-    demoComponent: 'ai_suggestions',
+    title: 'The More Menu',
+    subtitle: 'Your Feature Hub',
+    description: 'Tap "More" at the bottom to find all the powerful features organized by category:',
+    icon: 'grid',
+    iconColor: '#AF52DE',
+    bgGradient: ['#1A0F2E', '#2D1B4E'],
+    benefits: [
+      '📚 Training Hub - Learn how to use iMOs',
+      '✨ Ask Jessi - Get help from your AI',
+      '📣 Broadcast - Send mass messages',
+      '📧 Templates - Pre-written responses',
+      '📊 Analytics - Track your performance',
+    ],
   },
-  
-  // FEATURE: Congrats Cards
+
+  // ================== CONGRATS CARDS ==================
   {
     id: 'congrats_cards',
     type: 'feature',
     title: 'Congrats Cards',
-    subtitle: 'Make Every Customer Feel Special',
-    description: 'Snap a photo, create a beautiful thank-you card, and send it instantly. They\'ll share it on social media!',
+    subtitle: 'Make Customers Feel Special',
+    description: 'Just sold a car? Snap a photo, create a beautiful thank-you card, and send it! Find it in: More → Templates & Branding → Congrats Cards',
     icon: 'gift',
     iconColor: '#FF2D55',
     bgGradient: ['#2E0F1A', '#1A1A1A'],
     demoComponent: 'congrats_card',
   },
-  
-  // FEATURE: Digital Business Card
+
+  // ================== DIGITAL BUSINESS CARD ==================
   {
     id: 'digital_card',
     type: 'feature',
-    title: 'Digital Business Card',
-    subtitle: 'Always in Their Pocket',
-    description: 'One QR code, all your info. Customers scan it and have everything saved forever!',
+    title: 'Your Digital Business Card',
+    subtitle: 'Never Run Out of Cards Again',
+    description: 'Your personal QR code that customers can scan. Edit it at: More → Profile & AI → My Digital Card',
     icon: 'qr-code',
     iconColor: '#5856D6',
     bgGradient: ['#1A0F2E', '#1A1A2E'],
     demoComponent: 'digital_card',
   },
-  
-  // FEATURE: Voice-to-Text
-  {
-    id: 'voice_to_text',
-    type: 'feature',
-    title: 'Voice-to-Text Magic',
-    subtitle: 'Talk, Don\'t Type',
-    description: 'Tap the mic and speak naturally. Your words become perfectly written messages!',
-    icon: 'mic',
-    iconColor: '#FF3B30',
-    bgGradient: ['#2E0F0F', '#1A1A1A'],
-    demoComponent: 'voice_to_text',
-  },
-  
-  // FEATURE: Campaigns
+
+  // ================== CAMPAIGNS ==================
   {
     id: 'campaigns',
     type: 'feature',
-    title: 'Automated Campaigns',
+    title: 'Automated Follow-Up',
     subtitle: 'Set It and Forget It',
-    description: 'After a sale, your AI automatically follows up. You close deals, we handle follow-up.',
+    description: 'Create campaigns that automatically follow up with customers after a sale. Find it: More → Communication → SMS/Email Campaigns',
     icon: 'rocket',
     iconColor: '#007AFF',
     bgGradient: ['#0F1A2E', '#1A2E4E'],
     demoComponent: 'campaigns',
   },
-  
-  // ACTION: Import Contacts
+
+  // ================== QUICK TIPS ==================
+  {
+    id: 'quick_tips',
+    type: 'feature',
+    title: 'Pro Tips',
+    subtitle: 'Get the Most Out of iMOs',
+    description: 'A few quick tips to make your life easier:',
+    icon: 'bulb',
+    iconColor: '#FFD60A',
+    bgGradient: ['#2E2A1A', '#1A1A1A'],
+    benefits: [
+      '🎤 Tap the mic icon to use voice-to-text',
+      '⚡ Use templates for faster responses',
+      '🏷️ Tag contacts to stay organized',
+      '📞 Your iMOs number is your virtual line',
+      '❓ Stuck? Ask Jessi for help anytime!',
+    ],
+  },
+
+  // ================== IMPORT CONTACTS ==================
   {
     id: 'import_contacts',
     type: 'action',
     title: 'Import Your Contacts',
     subtitle: 'Bring Your Network',
-    description: 'Import your entire phone contact list in seconds. Your AI will help you stay connected with everyone.',
+    description: 'Import your existing contacts so you\'re ready to go. You can always do this later from: Contacts → Import button',
     icon: 'people-circle',
     iconColor: '#34C759',
     bgGradient: ['#0F2E1A', '#1A2E1A'],
     interactiveType: 'import',
+    actionButton: { label: 'Import Contacts', route: '/contacts/import' },
+  },
+
+  // ================== COMPLETE ==================
+  {
+    id: 'complete',
+    type: 'complete',
+    title: 'You\'re All Set!',
+    subtitle: 'Time to Start Closing Deals',
+    description: 'You now know the basics. Remember, you can always tap "More → Training Hub" if you need help!',
+    icon: 'checkmark-done-circle',
+    iconColor: '#34C759',
+    bgGradient: ['#0F2E1A', '#1A2E1A'],
+    benefits: [
+      '✅ Profile setup complete',
+      '✅ AI assistant configured',
+      '✅ Ready to message customers',
+      '🚀 Let\'s go make some sales!',
+    ],
+  },
+];
     actionButton: { label: 'Import Contacts', route: '/contacts/import' },
     benefits: [
       'One-tap import',
