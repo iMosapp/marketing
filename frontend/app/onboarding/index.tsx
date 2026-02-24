@@ -529,6 +529,130 @@ export default function OnboardingScreen() {
     );
   };
 
+  // Add a new team member input row
+  const addTeamMember = () => {
+    setTeamInvites([...teamInvites, { name: '', email: '', phone: '' }]);
+  };
+
+  // Remove a team member input row
+  const removeTeamMember = (index: number) => {
+    if (teamInvites.length > 1) {
+      setTeamInvites(teamInvites.filter((_, i) => i !== index));
+    }
+  };
+
+  // Update a team member field
+  const updateTeamMember = (index: number, field: string, value: string) => {
+    const updated = [...teamInvites];
+    updated[index] = { ...updated[index], [field]: value };
+    setTeamInvites(updated);
+  };
+
+  // Send team invites
+  const sendTeamInvites = async () => {
+    const validInvites = teamInvites.filter(i => i.name && (i.email || i.phone));
+    if (validInvites.length === 0) {
+      handleNext();
+      return;
+    }
+
+    setSendingInvites(true);
+    try {
+      for (const invite of validInvites) {
+        await api.post('/admin/users/create', {
+          name: invite.name,
+          email: invite.email || undefined,
+          phone: invite.phone || undefined,
+          role: currentSlide.inviteRole || 'user',
+          organization_id: user?.organization_id,
+          store_id: currentSlide.inviteRole === 'user' ? user?.store_id : undefined,
+          send_invite: true,
+        });
+      }
+      setInvitesSent(true);
+      setTimeout(() => {
+        handleNext();
+      }, 1500);
+    } catch (error) {
+      console.error('Error sending invites:', error);
+      // Still allow proceeding
+      handleNext();
+    } finally {
+      setSendingInvites(false);
+    }
+  };
+
+  const renderTeamInvite = () => {
+    const inviteTitle = currentSlide.inviteTitle || 'Team Member';
+    
+    return (
+      <ScrollView style={styles.teamInviteContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.teamInviteHeader}>
+          <Ionicons name="people-circle" size={48} color={currentSlide.iconColor} />
+          <Text style={styles.teamInviteTitle}>Add Your {inviteTitle}s</Text>
+          <Text style={styles.teamInviteSubtitle}>
+            Enter their details below. They'll receive an invite to join.
+          </Text>
+        </View>
+
+        {teamInvites.map((member, index) => (
+          <View key={index} style={styles.teamMemberCard}>
+            <View style={styles.teamMemberHeader}>
+              <Text style={styles.teamMemberNumber}>{inviteTitle} {index + 1}</Text>
+              {teamInvites.length > 1 && (
+                <TouchableOpacity onPress={() => removeTeamMember(index)}>
+                  <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <TextInput
+              style={styles.teamInput}
+              placeholder="Full Name"
+              placeholderTextColor="#6E6E73"
+              value={member.name}
+              onChangeText={(text) => updateTeamMember(index, 'name', text)}
+            />
+            <TextInput
+              style={styles.teamInput}
+              placeholder="Email Address"
+              placeholderTextColor="#6E6E73"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={member.email}
+              onChangeText={(text) => updateTeamMember(index, 'email', text)}
+            />
+            <TextInput
+              style={styles.teamInput}
+              placeholder="Phone Number"
+              placeholderTextColor="#6E6E73"
+              keyboardType="phone-pad"
+              value={member.phone}
+              onChangeText={(text) => updateTeamMember(index, 'phone', text)}
+            />
+          </View>
+        ))}
+
+        <TouchableOpacity style={styles.addMemberButton} onPress={addTeamMember}>
+          <Ionicons name="add-circle" size={24} color="#007AFF" />
+          <Text style={styles.addMemberText}>Add Another {inviteTitle}</Text>
+        </TouchableOpacity>
+
+        {invitesSent && (
+          <View style={styles.inviteSuccessMessage}>
+            <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+            <Text style={styles.inviteSuccessText}>Invites sent successfully!</Text>
+          </View>
+        )}
+
+        {currentSlide.skipable && (
+          <TouchableOpacity onPress={handleNext} style={styles.skipInviteLink}>
+            <Text style={styles.skipInviteLinkText}>Skip for now - I'll invite them later</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    );
+  };
+
   const renderActionButton = () => {
     if (!currentSlide.actionButton) return null;
     
@@ -557,6 +681,9 @@ export default function OnboardingScreen() {
     }
     if (currentSlide.interactiveType === 'import') {
       return renderActionButton();
+    }
+    if (currentSlide.interactiveType === 'team_invite' || currentSlide.type === 'team_invite') {
+      return renderTeamInvite();
     }
     return null;
   };
