@@ -50,7 +50,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
     else:
         query = base_filter
     
-    contacts = await get_db().contacts.find(query).to_list(1000)
+    contacts = await get_db().contacts.find(query).limit(500).to_list(500)
     return [Contact(**{**contact, "_id": str(contact["_id"])}) for contact in contacts]
 
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
@@ -124,7 +124,7 @@ async def get_contact_referrals(user_id: str, contact_id: str):
             base_filter,
             {"referred_by": contact_id}
         ]
-    }).to_list(1000)
+    }).limit(100).to_list(100)
     
     return [{
         "_id": str(r["_id"]),
