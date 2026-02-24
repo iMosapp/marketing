@@ -222,13 +222,6 @@ export default function MyAccountScreen() {
 
   const quickActions = [
     {
-      icon: 'camera',
-      title: 'Change Photo',
-      subtitle: 'Update your profile picture',
-      color: '#007AFF',
-      onPress: showPhotoOptions,
-    },
-    {
       icon: 'card',
       title: 'My Digital Card',
       subtitle: 'Edit bio, socials & preview',
@@ -248,6 +241,13 @@ export default function MyAccountScreen() {
       subtitle: 'Chat with your AI assistant',
       color: '#C9A962',
       onPress: () => router.push('/jessie'),
+    },
+    {
+      icon: 'person',
+      title: 'AI Persona',
+      subtitle: 'Communication style settings',
+      color: '#AF52DE',
+      onPress: () => router.push('/settings/persona'),
     },
   ];
 
