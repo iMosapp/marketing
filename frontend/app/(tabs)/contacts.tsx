@@ -40,6 +40,10 @@ export default function ContactsScreen() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   
+  // Add Contact Modal state
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [newContactPhone, setNewContactPhone] = useState('');
+  
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
   
