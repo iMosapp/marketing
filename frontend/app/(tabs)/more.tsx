@@ -918,28 +918,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#3A3A3C',
   },
-  // Logout Button
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 14,
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    gap: 8,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF3B30',
-  },
   versionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
+    marginBottom: 8,
     gap: 6,
   },
   versionLogo: {
