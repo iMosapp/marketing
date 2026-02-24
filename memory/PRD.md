@@ -153,8 +153,9 @@ iMos is a business management app for retail/service businesses. Key features in
 - [x] **FIXED: Auth State Persistence** - Login now persists on navigation/refresh via AsyncStorage
 - [x] **FIXED: Root URL Black Screen** - Added HTML meta redirect to `/auth/login` as workaround for Expo web hydration issue
 - [x] **FIXED: Settings Pages Loading** - Templates, Tags, Calendar, Integrations all fixed (race condition)
+- [x] **FIXED: Quote Management** - View, edit, delete, resend functionality now working with web-compatible alerts
+- [x] **FIXED: Partner Agreements Management** - Admin detail page with edit, delete, send functionality
 - [ ] **React Hydration Error #418** - Root cause still exists in Expo web, but workaround in place
-- [ ] Quote drafts view/edit/delete functionality
 - [ ] Complete broadcast sending logic (needs Twilio)
 - [ ] Populate Reports section with real data (currently hardcoded)
 
