@@ -604,6 +604,12 @@ export default function OnboardingScreen() {
   const [completing, setCompleting] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   
+  // Get role-based slides
+  const SLIDES = useMemo(() => {
+    const role = user?.role || 'user';
+    return getOnboardingSlidesForRole(role);
+  }, [user?.role]);
+  
   // User inputs
   const [communicationStyle, setCommunicationStyle] = useState('friendly');
   const [aiGreeting, setAiGreeting] = useState('assistant');
