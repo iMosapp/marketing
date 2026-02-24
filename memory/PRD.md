@@ -227,6 +227,20 @@ iMos is a business management app for retail/service businesses. Key features in
     - `frontend/app/(tabs)/team.tsx` - Team Chat UI
   - **Database Collections:** `team_channels`, `team_messages`, `team_read_status`
 
+- [x] **Quick Alert Button (Floating Panic Button)**
+  - Red floating button with lightning bolt appears on all screens
+  - Pulsing animation to draw attention
+  - **Preset Alerts (one-tap send):**
+    - "Customer waiting at front"
+    - "Need backup on sales floor"
+    - "Manager to register please"
+    - "Team huddle in 5 minutes"
+    - "Phone call holding - who can take?"
+    - "Customer arrived for pickup"
+  - Custom message option for anything else
+  - Broadcasts to entire team with notification
+  - **Files Created:** `frontend/components/QuickAlertButton.tsx`
+
 ### UI/UX Fixes (COMPLETED - Feb 24, 2026)
 - [x] **Keypad Search Button Fix** - Search and History buttons now work correctly on web
   - WebIconButton component renders native HTML `<button>` on web for proper click handling
