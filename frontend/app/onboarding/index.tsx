@@ -336,6 +336,24 @@ const SLIDES: OnboardingSlide[] = [
     ],
   },
   
+  // VERIFY PROFILE - New slide for profile verification
+  {
+    id: 'verify_profile',
+    type: 'interactive',
+    title: 'Verify Your Info',
+    subtitle: 'Let\'s Make Sure We Got It Right',
+    description: 'Take a moment to review and complete your profile. This info powers your AI assistant and digital business card.',
+    icon: 'checkmark-circle',
+    iconColor: '#34C759',
+    bgGradient: ['#0F2E1A', '#1A2E1A'],
+    interactiveType: 'multi_input',
+    inputFields: [
+      { key: 'name', label: 'Your Name', placeholder: 'Full name as you want customers to see it' },
+      { key: 'title', label: 'Your Title/Role', placeholder: 'e.g. Sales Consultant, Finance Manager' },
+      { key: 'bio', label: 'Short Bio (for your business card)', placeholder: 'A brief intro about yourself...', multiline: true },
+    ],
+  },
+  
   // AI PERSONA INTRO - Why it matters
   {
     id: 'ai_intro',
