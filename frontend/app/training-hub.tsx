@@ -111,6 +111,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'voice-training',
     icon: 'recording',
+    iconColor: '#AF52DE',
     title: 'Voice Training Your AI',
     description: 'Train AI to sound like you',
     duration: '5 min',
@@ -122,6 +123,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'congrats-cards',
     icon: 'gift',
+    iconColor: '#FF2D55',
     title: 'Congrats Cards',
     description: 'Celebrate customer purchases',
     duration: '3 min',
@@ -131,6 +133,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'review-links',
     icon: 'star',
+    iconColor: '#FFD60A',
     title: 'Getting Customer Reviews',
     description: 'Build your reputation with reviews',
     duration: '3 min',
@@ -141,6 +144,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'lead-management',
     icon: 'funnel',
+    iconColor: '#5AC8FA',
     title: 'Managing Leads',
     description: 'Track and convert leads effectively',
     duration: '5 min',
@@ -151,6 +155,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'sms-campaigns',
     icon: 'chatbubbles',
+    iconColor: '#FF9500',
     title: 'SMS Campaigns',
     description: 'Automated text follow-ups',
     duration: '4 min',
@@ -161,6 +166,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'email-campaigns',
     icon: 'mail-unread',
+    iconColor: '#AF52DE',
     title: 'Email Campaigns',
     description: 'Professional email sequences',
     duration: '4 min',
@@ -172,6 +178,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'team-chat',
     icon: 'people',
+    iconColor: '#34C759',
     title: 'Team Communication',
     description: 'Chat with your team internally',
     duration: '3 min',
