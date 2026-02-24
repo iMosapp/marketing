@@ -1613,6 +1613,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarPhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   avatarWithRing: {
     width: 38,
     height: 38,
