@@ -632,6 +632,11 @@ export default function OnboardingScreen() {
     try {
       await api.post('/auth/complete-onboarding', {
         user_id: user?._id,
+        // Profile verification data
+        name: profileInputs.name || user?.name,
+        title: profileInputs.title,
+        bio: profileInputs.bio,
+        // AI persona data
         communication_style: communicationStyle,
         ai_greeting_style: aiGreeting,
         hobbies: bioInputs.hobbies,
@@ -639,7 +644,10 @@ export default function OnboardingScreen() {
         fun_facts: bioInputs.fun_facts,
       });
       
-      updateUser({ onboarding_complete: true });
+      updateUser({ 
+        onboarding_complete: true,
+        name: profileInputs.name || user?.name,
+      });
       router.replace('/(tabs)/inbox');
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
