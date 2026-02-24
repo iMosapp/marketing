@@ -55,3 +55,32 @@
 | 699e2f538dabd9b79df28e7a | TEST_Chloe Campbell | chloe.campbell.sandy@sunshineauto.test | user | Sandy | 7xyDiW300Ger |
 | 699e2f538dabd9b79df28e7b | TEST_Sebastian Mitchell | sebastian.mitchell.sandy@sunshineauto.test | user | Sandy | tIehfkhoj4hn |
 | 699e2f538dabd9b79df28e7c | TEST_Ella Rivera | ella.rivera.sandy@sunshineauto.test | user | Sandy | gCNk59EPMoBM |
+
+---
+
+## CLEANUP SCRIPT
+To remove all test data, run the following MongoDB commands:
+
+```javascript
+// Connect to MongoDB and run:
+db.organizations.deleteMany({ name: /^TEST_/ });
+db.stores.deleteMany({ name: /^TEST_/ });
+db.users.deleteMany({ name: /^TEST_/ });
+db.contacts.deleteMany({ name: /^TEST_/ });
+db.messages.deleteMany({ user_id: { $in: db.users.find({ name: /^TEST_/ }).map(u => u._id.toString()) } });
+```
+
+Or use the API (as super_admin):
+```bash
+# Delete all test users first
+curl -X DELETE "$API_URL/api/admin/cleanup/test-data" -H "Authorization: Bearer $TOKEN"
+```
+
+## SUMMARY
+- **Organization:** TEST_Sunshine Auto Group
+- **Stores:** 5 locations
+- **Org Admin:** 1 (Sarah Mitchell)
+- **Store Managers:** 5
+- **Salespeople:** 30 (6 per store)
+- **Total Test Users:** 36
+
