@@ -96,7 +96,9 @@ async def google_calendar_callback(code: str, state: str):
         )
         
         # Redirect back to app with success
-        frontend_url = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://imos-deploy-prep.preview.emergentagent.com')
+        frontend_url = os.environ.get('EXPO_PUBLIC_BACKEND_URL')
+        if not frontend_url:
+            frontend_url = os.environ.get('REACT_APP_BACKEND_URL', '')
         return RedirectResponse(f"{frontend_url}/settings/calendar?connected=true")
         
     except Exception as e:
