@@ -450,6 +450,42 @@ h1, h2, h3, h4, h5, h6 {
   color: #007AFF;
 }
 
+/* Colorful "I'm Old School" Tagline */
+.tagline-colorful {
+  display: inline;
+  font-size: clamp(48px, 8vw, 72px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.tagline-red {
+  color: #FF3B30;
+}
+
+.tagline-blue {
+  color: #007AFF;
+}
+
+.tagline-yellow {
+  color: #FFD60A;
+}
+
+.tagline-green {
+  color: #34C759;
+}
+
+.tagline-white {
+  color: #FFFFFF;
+}
+
+.hero-tagline-sub {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 600;
+  color: #34C759;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
 .hero-title-purple {
   color: #9B7BC7;
 }
