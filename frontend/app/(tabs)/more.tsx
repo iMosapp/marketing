@@ -542,7 +542,14 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
         
-        <Text style={styles.version}>iMos v1.0.0</Text>
+        <View style={styles.versionContainer}>
+          <Image 
+            source={require('../../assets/images/imos-logo-white-v3.png')}
+            style={styles.versionLogo}
+            resizeMode="contain"
+          />
+          <Text style={styles.version}>v1.0.0</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
