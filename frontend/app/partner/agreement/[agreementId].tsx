@@ -660,6 +660,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  paymentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C1E',
+  },
+  paymentHeaderTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFF',
+  },
   paymentContent: {
     flex: 1,
     justifyContent: 'center',
