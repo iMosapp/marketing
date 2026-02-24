@@ -87,7 +87,7 @@ export default function TeamChatScreen() {
   // Create channel modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
-  const [newChannelType, setNewChannelType] = useState<'org' | 'store' | 'custom'>('store');
+  const [newChannelType, setNewChannelType] = useState<'org' | 'store' | 'custom'>('org');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
