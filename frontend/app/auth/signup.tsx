@@ -13,12 +13,20 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Organization {
   _id: string;
@@ -44,6 +52,16 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  
+  // Optional fields
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [bio, setBio] = useState('');
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: '',
+    facebook: '',
+    linkedin: '',
+  });
   
   const isIndependent = selectedOrg?._id === 'independent';
   
