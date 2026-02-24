@@ -686,3 +686,22 @@ Include `X-API-Key` header with the API key provided when creating the lead sour
 - All deployment checks passed
 - No hardcoded URLs
 - Environment variables configured correctly
+
+## Completed This Session (Feb 24, 2026 - Late Night)
+
+### Digital Card Navigation Fix (COMPLETED)
+- **Issue:** "My Digital Card" quick action was not navigating to the correct page, and the card preview page lacked a back button
+- **Fixes Applied:**
+  1. Verified "My Digital Card" quick action in `my-account.tsx` correctly navigates to `/card/{user_id}`
+  2. Added header with "Back" button to `card/[userId].tsx`
+  3. Header shows "My Digital Card" title with gold chevron-back icon
+  4. Back button navigates to previous screen using `router.back()`
+- **Files Modified:**
+  - `frontend/app/card/[userId].tsx` - Added header with back button and accessibility role
+- **Verified:** Navigation flow tested end-to-end
+  - My Account → My Digital Card → Card Preview page (shows user card with photo, contact info, QR code)
+  - Back button returns to My Account page
+
+### Issue Status Update
+- **✅ RESOLVED:** Custom domain `app.imosapp.com` - User confirmed it's up and functioning
+- **⏸️ PENDING:** Mobile tag sync - Awaiting user verification
