@@ -450,6 +450,13 @@ const styles = StyleSheet.create({
     width: 320,
     height: 120,
     maxWidth: '100%',
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#8E8E93',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
     marginBottom: 24,
   },
   logoText: {
