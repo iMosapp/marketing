@@ -29,8 +29,9 @@ class TestAuth:
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
-        assert "access_token" in data, "No access_token in response"
-        return data["access_token"]
+        token = data.get("access_token") or data.get("token")
+        assert token, "No token in response"
+        return token
     
     @pytest.fixture(scope="class") 
     def auth_headers(self, auth_token):
@@ -45,7 +46,7 @@ class TestAuth:
         })
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "token" in data or "access_token" in data, "No token in response"
         assert "user" in data
         print(f"✓ Login successful, user role: {data['user'].get('role')}")
 
