@@ -7,6 +7,9 @@ from bson import ObjectId
 from datetime import datetime
 from typing import Optional
 import logging
+import os
+import asyncio
+import resend
 
 from models import Organization, OrganizationCreate, Store, StoreCreate
 from routers.database import get_db, get_user_by_id
@@ -23,6 +26,72 @@ from routers.rbac import (
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 logger = logging.getLogger(__name__)
+
+# Initialize Resend for invite emails
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com")
+
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+
+
+async def send_invite_email(email: str, name: str, temp_password: str, role: str, inviter_name: str = None):
+    """Send invite email to new user"""
+    if not RESEND_API_KEY:
+        logger.warning("Resend API key not configured, skipping invite email")
+        return False
+    
+    role_title = {
+        'org_admin': 'Organization Administrator',
+        'store_manager': 'Store Manager',
+        'user': 'Team Member'
+    }.get(role, 'Team Member')
+    
+    login_url = f"{APP_URL}/auth/login"
+    
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, {
+            "from": SENDER_EMAIL,
+            "to": email,
+            "subject": f"You're Invited to Join iMOs as {role_title}",
+            "html": f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #C9A962; margin: 0;">iMOs</h1>
+                    <p style="color: #666; margin-top: 5px;">Relationship Management System</p>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 16px; color: white;">
+                    <h2 style="margin-top: 0;">Welcome, {name}!</h2>
+                    <p>You've been invited to join iMOs as a <strong>{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin: 20px 0;">
+                        <p style="margin: 0 0 10px 0;"><strong>Your Login Credentials:</strong></p>
+                        <p style="margin: 5px 0;">Email: <code style="background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;">{email}</code></p>
+                        <p style="margin: 5px 0;">Temporary Password: <code style="background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;">{temp_password}</code></p>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.7);">You'll be prompted to create a new password when you first log in.</p>
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        <a href="{login_url}" style="display: inline-block; background: #C9A962; color: #000; padding: 14px 32px; text-decoration: none; border-radius: 30px; font-weight: 600;">
+                            Get Started
+                        </a>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; color: #888; font-size: 12px;">
+                    <p>iMOs - Your Virtual Partner Line</p>
+                </div>
+            </div>
+            """
+        })
+        logger.info(f"Invite email sent to {email}, resend_id: {result.get('id')}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send invite email to {email}: {str(e)}")
+        return False
 
 
 async def get_requesting_user(x_user_id: str = Header(None, alias="X-User-ID")) -> dict:
