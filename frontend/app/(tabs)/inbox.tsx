@@ -1108,22 +1108,22 @@ export default function InboxScreen() {
             onPress={() => handleFilterPress(f)}
             activeOpacity={0.7}
           >
-            {f === 'ai' && (
-              <Ionicons 
-                name="sparkles" 
-                size={11} 
-                color="#34C759"
-                style={{ marginRight: 4 }}
+            {f === 'ai' ? (
+              <Image 
+                source={require('../../assets/images/imos-logo-white-v3.png')}
+                style={styles.imosLogoFilter}
+                resizeMode="contain"
               />
+            ) : (
+              <Text
+                style={[
+                  styles.filterText,
+                  filter === f && styles.filterTextActive,
+                ]}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </Text>
             )}
-            <Text
-              style={[
-                styles.filterText,
-                filter === f && styles.filterTextActive,
-              ]}
-            >
-              {f === 'ai' ? 'iMos' : f.charAt(0).toUpperCase() + f.slice(1)}
-            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
