@@ -143,3 +143,29 @@ async def get_session(user_id: str):
         return session
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ProfileExtractRequest(BaseModel):
+    user_id: str
+    text: str
+    context: str = "intro"  # intro, hobbies, family, expertise
+
+
+@router.post("/extract-profile")
+async def extract_profile_from_voice(data: ProfileExtractRequest):
+    """
+    Extract structured profile information from voice transcription.
+    Uses AI to parse natural speech into profile fields.
+    """
+    from services.jessie_service import extract_profile_info
+    
+    try:
+        extracted = await extract_profile_info(data.text, data.context)
+        return {
+            "success": True,
+            "extracted": extracted,
+            "context": data.context
+        }
+    except Exception as e:
+        print(f"Profile extraction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
