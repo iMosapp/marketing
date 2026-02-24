@@ -166,6 +166,39 @@ iMos is a business management app for retail/service businesses. Key features in
 ### P3 (Low Priority/Future)
 - [ ] App Store submission prep (icons, splash screens)
 
+## Completed This Session (Continued - Feb 24, 2026)
+
+### Quotes & Partner Agreements Management (COMPLETED - Feb 24, 2026)
+- [x] **Quote Management - Full CRUD Operations**
+  - **Quote Detail Page** (`frontend/app/admin/quote/[id].tsx`)
+    - Back button to navigate to quotes list
+    - Edit button for updating notes
+    - Delete button (only for draft quotes)
+    - Resend button to send quote to customer
+  - **Web-Compatible Alerts** - Fixed silent failures on web
+    - Uses `showAlert`, `showSimpleAlert`, `showConfirm` from `services/alert.ts`
+    - Uses `window.confirm/alert` for web, `Alert.alert` for native
+  - **Backend Endpoints Added:**
+    - `PATCH /api/subscriptions/quotes/{id}` - Update quote (notes, status)
+    - `POST /api/subscriptions/quotes/{id}/send` - Send/resend quote to customer
+  - **Test Report:** `/app/test_reports/iteration_13.json`
+
+- [x] **Partner Agreement Management - New Admin Detail Page**
+  - **New Page Created:** `frontend/app/admin/partner-agreement/[id].tsx`
+    - Full agreement details view
+    - Back button for navigation
+    - Edit button to update partner info
+    - Copy Agreement Link button
+    - Send to Partner button
+    - Delete Agreement button (only for non-signed agreements)
+  - **Backend Endpoints Added:**
+    - `DELETE /api/partners/agreements/{id}` - Delete non-signed agreements
+    - `POST /api/partners/agreements/{id}/send` - Send agreement link to partner
+  - **Fixed API to return** `created_at` and `sent_at` fields in agreement details
+  - **Updated List Page** (`frontend/app/admin/partner-agreements.tsx`)
+    - Agreements now link to admin detail page instead of signing page
+    - Uses web-compatible alerts
+
 ## Completed This Session (Feb 24, 2026)
 
 ### Critical Bug Fixes (COMPLETED - Feb 24, 2026)
