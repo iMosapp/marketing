@@ -22,6 +22,7 @@ const IS_WEB = Platform.OS === 'web';
 interface TrainingTopic {
   id: string;
   icon: string;
+  iconColor: string;
   title: string;
   description: string;
   duration?: string;
@@ -35,6 +36,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'getting-started',
     icon: 'rocket',
+    iconColor: '#FF9500',
     title: 'Getting Started with iMos',
     description: 'Learn the basics and set up your account',
     duration: '5 min',
@@ -44,6 +46,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'profile-setup',
     icon: 'person-circle',
+    iconColor: '#5856D6',
     title: 'Setting Up Your Profile',
     description: 'Create your digital business card',
     duration: '3 min',
@@ -55,6 +58,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'inbox-basics',
     icon: 'mail',
+    iconColor: '#007AFF',
     title: 'Inbox & Conversations',
     description: 'Manage customer messages like a pro',
     duration: '4 min',
@@ -64,6 +68,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'templates',
     icon: 'document-text',
+    iconColor: '#34C759',
     title: 'Using Message Templates',
     description: 'Save time with pre-written messages',
     duration: '3 min',
@@ -74,6 +79,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'voice-to-text',
     icon: 'mic',
+    iconColor: '#FF3B30',
     title: 'Voice-to-Text Messaging',
     description: 'Speak your messages instead of typing',
     duration: '2 min',
@@ -84,6 +90,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'jessi-ai',
     icon: 'sparkles',
+    iconColor: '#C9A962',
     title: 'Using Jessi AI Assistant',
     description: 'Get AI help for any task',
     duration: '5 min',
@@ -94,6 +101,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
   {
     id: 'ai-suggestions',
     icon: 'bulb',
+    iconColor: '#FFD60A',
     title: 'AI Message Suggestions',
     description: 'Let AI help craft perfect responses',
     duration: '3 min',
