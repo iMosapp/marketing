@@ -562,6 +562,11 @@ export default function ThreadScreen() {
     try {
       setSending(true);
       
+      // If this is a new contact, create the contact first
+      if (isNewContact && !contactCreated) {
+        await createQuickContact();
+      }
+      
       // Optimistically add the message to the UI
       const optimisticMessage: Message = {
         _id: `temp_${Date.now()}`,
