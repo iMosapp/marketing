@@ -2029,6 +2029,34 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 8,
   },
+  modeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  modeBannerText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+  },
+  modeSwitchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  modeSwitchText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
