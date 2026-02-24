@@ -557,6 +557,24 @@ export default function OnboardingScreen() {
     fun_facts: '',
   });
   
+  // Profile verification inputs (pre-filled from user data)
+  const [profileInputs, setProfileInputs] = useState({
+    name: '',
+    title: '',
+    bio: '',
+  });
+  
+  // Pre-fill profile inputs with user data
+  useEffect(() => {
+    if (user) {
+      setProfileInputs({
+        name: user.name || '',
+        title: user.persona?.title || '',
+        bio: user.persona?.bio || '',
+      });
+    }
+  }, [user]);
+  
   const currentSlide = SLIDES[currentIndex];
   const isLastSlide = currentIndex === SLIDES.length - 1;
   const progress = (currentIndex + 1) / SLIDES.length;
