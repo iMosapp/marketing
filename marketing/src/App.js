@@ -583,8 +583,8 @@ const Footer = () => (
         
         <div className="footer-links">
           <h4>Legal</h4>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
+          <a href="https://app.imosapp.com/privacy">Privacy Policy</a>
+          <a href="https://app.imosapp.com/terms">Terms of Service</a>
           <a href="#">Cookie Policy</a>
           <a href="#">GDPR</a>
         </div>
