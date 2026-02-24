@@ -15,7 +15,11 @@ router = APIRouter(prefix="/demo-requests", tags=["Demo Requests"])
 
 # MongoDB connection
 def get_db():
-    client = MongoClient(os.environ.get("MONGO_URL", "mongodb://localhost:27017"))
+    mongo_url = os.environ.get("MONGO_URL")
+    if not mongo_url:
+        logger.error("MONGO_URL not found in environment")
+        raise HTTPException(status_code=500, detail="Database not configured")
+    client = MongoClient(mongo_url)
     return client[os.environ.get("DB_NAME", "test_database")]
 
 class DemoRequest(BaseModel):

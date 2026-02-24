@@ -20,9 +20,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
-# MongoDB connection
+# MongoDB connection - uses environment variable, no localhost fallback
 def get_db():
-    client = MongoClient(os.environ.get("MONGO_URL", "mongodb://localhost:27017"))
+    mongo_url = os.environ.get("MONGO_URL")
+    if not mongo_url:
+        raise Exception("MONGO_URL not configured")
+    client = MongoClient(mongo_url)
     return client[os.environ.get("DB_NAME", "test_database")]
 
 
