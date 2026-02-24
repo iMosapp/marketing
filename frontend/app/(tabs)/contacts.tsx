@@ -321,7 +321,10 @@ export default function ContactsScreen() {
           >
             <Ionicons name="download-outline" size={26} color="#007AFF" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/contact/new')}>
+          <TouchableOpacity 
+            onPress={() => setShowAddContactModal(true)}
+            data-testid="add-contact-btn"
+          >
             <Ionicons name="add-circle" size={32} color="#007AFF" />
           </TouchableOpacity>
         </View>
