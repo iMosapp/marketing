@@ -10,8 +10,8 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - iMOs logo | Features | Solutions | Resources | Pricing | **Sign In** (outlined) | **Get Demo** (gold)
 
 ### Key CTAs
-- "Schedule a Demo" → `/imos/demo` (lead capture form)
-- "Start 14-Day Free Trial" → `/auth/signup`
+- "Schedule a Demo" -> `/imos/demo` (lead capture form)
+- "Start 14-Day Free Trial" -> `/auth/signup`
 
 ### Page Structure
 ```
@@ -48,12 +48,17 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] /imos/login and /imos/signup redirect to actual auth pages (Feb 2026)
 - [x] Team Chat: delete channel & clear history functionality (Feb 2026)
 - [x] Inbox: removed SMS/Email toggle pills from header (Feb 2026)
+- [x] Avatar system fixed - auto-backfill thumbnails from raw photos (Feb 2026)
+- [x] Image quality upgraded to 1080px for outbound sharing (Feb 2026)
+- [x] Contact list avatar backfill: auto-generates thumbnails for contacts with raw photo but missing photo_thumbnail (Feb 25, 2026)
 
 ## Known Issues
 - Twilio SMS MOCKED
 - React Hydration Error #418
+- Email invite URL is hardcoded to `https://app.imosapp.com` (tech debt)
 
 ## Upcoming
+- (P1) Fix hardcoded email URL with centralized config
 - (P1) Voice Help Assistant Backend
 - (P1) White-Label System (custom domains, org branding)
 
@@ -70,3 +75,18 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 
 ## Credentials
 - Super Admin: forest@imosapp.com / Admin123!
+
+## 3rd Party Integrations
+- MongoDB Atlas: Primary database
+- Resend: Transactional and user-initiated emails (working)
+- Twilio: SMS messaging (MOCKED)
+- OpenAI: "Jessi" AI assistant
+
+## Key DB Schema
+- **contacts:** `{..., photo: <base64_string>, photo_url: <string>, photo_thumbnail: <string>}`
+  - `photo`: large original upload (used for processing, excluded from list queries)
+  - `photo_url`: thumbnail for display
+  - `photo_thumbnail`: 96px version for UI avatars
+- **contact_photos:** `{contact_id, user_id, photo_full: <1080px_base64>, updated_at}`
+  - Stores high-res versions separately to keep contacts collection lightweight
+- **users:** Same photo structure as contacts
