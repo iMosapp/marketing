@@ -152,9 +152,10 @@ export default function ThreadScreen() {
   useEffect(() => {
     // If mode was passed from navigation, use that
     if (mode === 'email' || mode === 'sms') {
-      setMessageMode(mode as 'sms' | 'email');
-      // Save to storage so it persists
-      AsyncStorage.setItem('message_mode', mode as string);
+      // Auto-fallback to SMS if contact has no email
+      const effectiveMode = (mode === 'email' && !contact_email) ? 'sms' : mode as 'sms' | 'email';
+      setMessageMode(effectiveMode);
+      AsyncStorage.setItem('message_mode', effectiveMode);
     } else {
       loadMessagePreferences();
     }
@@ -164,7 +165,9 @@ export default function ThreadScreen() {
     try {
       const savedMode = await AsyncStorage.getItem('message_mode');
       if (savedMode === 'sms' || savedMode === 'email') {
-        setMessageMode(savedMode);
+        // Auto-fallback to SMS if contact has no email
+        const effectiveMode = (savedMode === 'email' && !contact_email) ? 'sms' : savedMode;
+        setMessageMode(effectiveMode);
       }
     } catch (error) {
       // Fallback to SMS mode
