@@ -43,6 +43,10 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] True black background everywhere
 - [x] Responsive mobile + desktop
 - [x] Admin App Directory updated with all 57 public /imos/ pages (Feb 2026)
+- [x] "Sales Presentation" renamed to "Why Use iMOs" (Feb 2026)
+- [x] All email invite URLs updated to public /imos/ domain (Feb 2026)
+- [x] /imos/login and /imos/signup redirect to actual auth pages (Feb 2026)
+- [x] Public site header/footer/CTAs use branded /imos/ URLs (Feb 2026)
 
 ## Known Issues
 - Twilio SMS MOCKED
