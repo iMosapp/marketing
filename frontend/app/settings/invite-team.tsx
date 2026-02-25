@@ -26,6 +26,7 @@ export default function InviteTeamScreen() {
   const [sending, setSending] = useState(false);
   const [inviteLink, setInviteLink] = useState<any>(null);
   const [shares, setShares] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Form state
   const [recipientPhone, setRecipientPhone] = useState('');
