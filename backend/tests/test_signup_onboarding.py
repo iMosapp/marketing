@@ -12,7 +12,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://cascading-invites.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://more-page-ui.preview.emergentagent.com')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@mvpline.com"

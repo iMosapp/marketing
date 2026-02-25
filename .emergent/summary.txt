@@ -1,194 +1,169 @@
 <analysis>**original_problem_statement:**
-The user's goal for this session was to continue enhancing their CRM application with a strong focus on UI/UX simplification, workflow uniformity, and new user experience.
-
-1.  **Reorganize More Page (P0):** Consolidate the cluttered More page into organized, collapsible sections. (Completed)
-2.  **Fix Contact Photos (P0):** Resolve an issue where contact photos were not appearing in the contact list, inbox, or thread headers. This involved debugging the frontend display logic and fixing a missing backend API endpoint for photo uploads. (Completed)
-3.  **Streamline Contact Creation (P0):** Implement a Quick Contact Creation panel that appears in the message thread when texting a new number. This allows adding a name, photo, and tags without leaving the conversation. The new contact is saved automatically when the first message is sent. (Completed)
-4.  **Unify Add Contact Flow (P1):** Ensure that clicking the + button on the Contacts page follows the same streamlined Quick Contact Creation workflow as starting a new message. (Completed)
-5.  **Admin User Creation (P1):** Enhance the Quick Contact Creation panel for admins, adding an optional section to create a full user account (with email and role) for the new contact simultaneously. (Completed)
-6.  **Enhance New User Sign-Up (P1):** Add optional fields (Photo, Bio, Social Links) to the main sign-up form to pre-populate user profiles. (Completed)
-7.  **Implement Profile Verification (P1):** Add a Verify Your Info step to the beginning of the onboarding flow for new users to confirm or complete the profile information they provided during sign-up. (Completed)
-8.  **Redesign Onboarding Experience (P0):** Overhaul the entire onboarding process, transforming it from a simple settings configuration wizard into a comprehensive, 16-step guided walkthrough of the app's key features and layout. (Completed)
-9.  **UI/UX Polish & Fixes (P1/P2):**
-    *   Fix the photo upload on the My Account page, removing a redundant button and correcting the web file picker logic. (Completed)
-    *   Add varied, colorful icons to the Training Hub for better visual appeal. (Completed)
-    *   Enlarge the iMOs logo in the inbox filter pills for better visibility. (Completed)
-    *   Remove a duplicate More New tab from the bottom navigation. (Completed)
-    *   Move the Sign Out button from the bottom of the More page to the user's profile card to prevent accidental taps. (Completed)
-    *   Add a Relationship Management System tagline to the login page. (Completed)
-    *   Add a category badge to the marketing site's hero section. (Completed)
-10. **Fix Digital Card Flow (P0):** The user requested that the My Digital Card quick action go directly to the card preview and that a missing Back button be added to that page and others. (In Progress)
+The user's initial goal was to fix a broken logo in invitation emails. This led to a series of fixes for the email template, including adding a tagline and correcting the Get Started link. The scope then expanded significantly to include several major feature requests and bug fixes:
+1.  **Add Email to Contact Creation:** Enhance the Add Contact modal to include an  field. (Completed)
+2.  **'More' Page UI/UX Fixes:**
+    -   Remove the redundant More page title. (Completed)
+    -   Relocate the Invite Team link to the Administration section for better visibility. (Completed)
+    -   Ensure all collapsible sections on the page are closed by default on login. (Completed)
+3.  **Fix 'Invite Team' Workflow:** The Invite Team page was non-functional. It was completely rebuilt with a direct user creation form that reliably sends invites via the existing admin API. (Completed)
+4.  **Optimize Contacts Page Performance:** The user reported the contacts page was slow. This was traced to fetching full-size base64 images in the list view. A full-stack optimization was performed. (Completed)
+5.  **Uniform Phone Number Styling:** Remove hyperlink underlines from phone numbers in the contacts list. (Completed)
+6.  **Implement Automated Campaigns:** A multi-part feature request to build a system for:
+    -   Date-triggered recurring campaigns (birthdays, anniversaries).
+    -   Tag-triggered campaigns (e.g., applying a sold tag enrolls a contact in a follow-up sequence). (In Progress)
+7.  **Increase Avatar Size:** Make the avatar pills in the inbox list larger. (Completed)
+8.  **Refactor 'More' Page UI:** The final request was to change the layout of the 'More' page to use nested, indented dropdowns for all sections to improve clarity and navigation. (In Progress)
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-featured CRM. In this session, a massive number of features and UI/UX improvements were completed. Key additions include a completely redesigned and streamlined More page, a powerful Quick Contact Creation workflow available from both the Inbox and Contacts pages, an enhanced user creation flow for admins, and a brand-new, comprehensive 16-step guided tour for new user onboarding. Numerous bugs related to photo display and uploads were fixed, and many small but impactful UI polish tasks were completed across the app. The agent was in the middle of fixing the navigation flow for the My Digital Card feature.
+The application is a CRM with robust user and contact management. In this session, the email invitation system was fixed and enhanced with proper branding. The Invite Team workflow was entirely rebuilt to be functional and intuitive.
+
+Most significantly, a major performance bottleneck on the Contacts page was resolved. A new thumbnail system was implemented, where large contact photos are stored separately and only small thumbnails are loaded in list views. This reduced the API payload by over 99% and made the page significantly faster. The frontend of the contacts page was also heavily optimized with debouncing, memoization, and other React performance patterns.
+
+The foundation for a powerful marketing automation feature (date and tag-triggered campaigns) has been laid, with backend models, APIs, and a frontend settings page created. The final task was a UI overhaul of the More page, which is currently in progress.
 
 **Last working item**:
--   **Last item agent was working:** The user requested two fixes related to the My Digital Card feature on the My Account page:
-    1.  The My Digital Card quick action should navigate directly to the card preview page () instead of the edit page.
-    2.  A Back button is missing on the card preview page, preventing users from returning to the previous screen.
+-   **Last item agent was working:** Refactoring the 'More' page UI to use a nested, indented card style for all sections, as requested by the user with a reference image. The agent had analyzed the existing code in  and was preparing to implement the new component structure.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The test should navigate to , click the My Digital Card quick action, verify it navigates to , confirm a Back button exists, and confirm clicking it returns the user to the My Account page.
+-   **Which testing method agent to use?** Frontend testing agent. The test should verify the new UI layout on the 'More' page, ensuring all top-level sections are collapsible cards and their child items appear as indented card rows within them.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** (P0) Fix My Digital Card quick action and add missing Back buttons.
--   **Issue 2:** (P0) Custom domain  is down.
--   **Issue 3:** (P1) Mobile data for  may not be syncing.
--   **Issue 4:** (P2) React Hydration Error #418 persists.
+-   **Issue 1:** (P0) Refactor 'More' page UI to use nested, indented cards.
+-   **Issue 2:** (P1) Mobile app data for  may not be syncing.
+-   **Issue 3:** (P2) React Hydration Error #418 persists.
 
 **Issues Detail:**
--   **Issue 1: Fix My Digital Card quick action and add missing Back buttons.**
-    -   **Attempted fixes:** The agent identified the correct link for the card preview () and began editing  to change the  for the quick action link.
+-   **Issue 1: Refactor 'More' page UI.**
+    -   **Attempted fixes:** The agent analyzed  and the reference styles in . No code changes were made yet.
     -   **Next debug checklist:**
-        1.  Finish modifying the  in .
-        2.  Open .
-        3.  Add a Back button component (likely using ) to the page's header or layout.
-        4.  Test the complete user flow.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves user navigation and fixes a dead-end UI.
+        1.  Modify .
+        2.  Refactor the rendering logic to wrap each section (e.g., Administration) in a collapsible parent .
+        3.  When expanded, render the section's items (e.g., Admin Dashboard) as individual, indented  rows, each with a right chevron icon, mimicking the style of the  page.
+    -   **Why fix this issue and what will be achieved with the fix?** To improve UI/UX consistency and make the navigation hierarchy on the 'More' page clearer, matching the user's explicit design request.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Frontend.
     -   **Blocked on other issue:** None.
 
--   **Issue 2: Custom domain is down due to SSL/DNS error.**
-    -   **Attempted fixes:** In the previous session, the agent diagnosed a Cloudflare conflict. In this session, the user confirmed they removed the domain from Cloudflare. However, this was never followed up on, and the work was deprioritized in favor of feature development.
-    -   **Next debug checklist:**
-        1.  Ask the user to manually test if  is now working.
-        2.  If it is not, the issue may be between Squarespace DNS and Emergent. Call the  for platform-specific help.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a production blocker preventing access to the application via its primary domain.
+-   **Issue 2: Mobile app data for  may not be syncing.**
+    -   **Attempted fixes:** None in this session.
+    -   **Next debug checklist:** Ask the user to re-verify the issue on their mobile browser. If it persists, inspect the  endpoint and frontend form submission logic.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures data integrity across devices.
     -   **Status:** BLOCKED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** N/A (Manual browser test by user)
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on other issue:** User verification.
 
--   **Issue 3: Mobile app data is not syncing to the database.**
-    -   **Attempted fixes:** The agent correctly diagnosed that photo uploads were failing due to a missing backend endpoint and fixed it. However, the original report also mentioned *tags* not saving. The agent incorrectly assumed the user was on a native mobile build, but the user clarified they use the web app on their phone's browser.
-    -   **Next debug checklist:**
-        1.  Ask the user to confirm if adding *tags* to a contact from their phone's web browser is now working correctly.
-        2.  If not, investigate the tag-saving mechanism in the contact forms to check for any mobile-browser-specific issues.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures data consistency across all user devices.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** User verification on a mobile device.
-    -   **Blocked on other issue:** User verification.
-
--   **Issue 4: React Hydration Error #418.**
-    -   **Attempted fixes:** None in this session. A meta-refresh tag workaround is still in place.
-    -   **Why fix this issue and what will be achieved with the fix?** To remove a temporary hack and improve app stability and performance.
+-   **Issue 3: React Hydration Error #418.**
+    -   **Attempted fixes:** None. The temporary meta-refresh tag workaround is still in place.
+    -   **Why fix this issue and what will be achieved with the fix?** To remove a technical debt hack and improve app stability.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Frontend.
 
 **In progress Task List**:
--   **Task 1: Fix Digital Card Flow and Add Back Buttons (P0)**
-    -   **Where to resume:** Continue editing  to update the link, then move to  to implement the Back button.
-    -   **What will be achieved with this?** A seamless and intuitive navigation flow for viewing and returning from the digital business card.
+-   **Task 1: Complete Date-Triggered & Tag-Triggered Campaign Feature (P1)**
+    -   **Where to resume:** The backend infrastructure is partially built (, auto-tagging in ). The core scheduling logic (a cron job or background task to check dates and send messages) needs to be implemented and activated. The frontend settings page at  may need refinement and state management logic.
+    -   **What will be achieved with this?** A powerful, automated marketing feature that sends messages for birthdays, anniversaries, and holidays, and enrolls contacts in campaigns when specific tags are applied.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Should Test frontend/backend/both after fix?** Both.
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks:**
-  - (P1) **Implement Voice Help Assistant Backend:** The UI is built; the backend logic to process questions and return answers needs to be implemented.
-- **Future Tasks:**
-  - (P2) Populate **Training Hub** with actual video content.
-  - (P2) Verify avatar consistency in the inbox search dropdown.
-  - (P2) Enable Lead Notification System ().
-  - (P2) Build out the full Inventory Management Module.
-  - (P2) Create a Searchable Training Manual.
-  - (P2) Populate Reports & Analytics section.
+-   **Upcoming Tasks:**
+    -   (P1) **Implement Voice Help Assistant Backend:** The UI is built; the backend logic needs implementation.
+-   **Future Tasks:**
+    -   (P2) Populate **Training Hub** with actual video content.
+    -   (P2) Enable Lead Notification System ().
+    -   (P2) Build out the full Inventory Management Module.
+    -   (P2) Create a Searchable Training Manual.
+    -   (P2) Populate Reports & Analytics section.
 
 **Completed work in this session**
--   **More Page Reorganization:** Replaced a long list of 35+ items with clean, collapsible sections. Tested and verified.
--   **Contact Photo Display & Upload:** Fixed bugs preventing photos from showing in lists/headers and fixed the backend API () to allow photo uploads from My Account.
--   **Quick Contact Creation:** Built a new UI panel in the message thread to create contacts on the fly, which auto-saves when the first message is sent.
--   **Unified Add Contact Flow:** Modified the Contacts page + button to use the same Quick Contact Creation workflow.
--   **Admin Quick User Creation:** Added an optional Create User Account section to the Quick Contact panel for admin roles.
--   **Enhanced Onboarding & Sign-up:** Revamped the sign-up form with optional fields and created a Profile Verification step. Redesigned the entire onboarding flow into a 16-step guided app tour.
--   **UI/UX Polish:**
-    -   Removed duplicate More New tab and moved the Sign Out button.
-    -   Added colorful icons to the Training Hub.
-    -   Enlarged the iMOs filter button in the inbox.
-    -   Added taglines to the Login page and Marketing site.
+-   **Email Branding & Functionality:** Fixed the user invite email by embedding the logo with CID, adding a tagline, and ensuring the Get Started link works.
+-   **Contact Management:** Added an Email field to the Add Contact modal and removed underlines from phone numbers.
+-   **'More' Page & Navigation:** Removed the More title, moved Invite Team to Administration, and made sections collapsed by default.
+-   **Invite Team Workflow:** Rebuilt the Invite Team page, making it fully functional.
+-   **Performance Optimization (Contacts Page):** Implemented a full-stack fix by creating a photo thumbnail system and optimizing frontend rendering, resulting in a >99% reduction in data loaded and a much faster UI.
+-   **UI/UX:** Increased the size of avatar pills in the inbox.
+-   **Campaign Automation Foundation:** Created the backend and frontend foundations for date-triggered and tag-triggered campaigns.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: React Hydration Error #418.** (Carried over)
--   **Issue 2: Avatar consistency in inbox search dropdown.** (Carried over from previous fork, not addressed)
--   **Issue 3: Leaderboard toggle functionality.** (Carried over from previous fork, not addressed)
+-   **Issue 1:** Avatar consistency in the inbox search dropdown.
+-   **Issue 2:** Leaderboard toggle functionality is not fully tested or verified.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** React Hydration Error #418.
--   **Recurrence count:** 6+
+-   **Recurrence count:** 8+
 -   **Status:** NOT STARTED
 
 **Code Architecture**
-
+photo_thumbnail
 
 **Key Technical Concepts**
--   **Conditional UI Rendering:** Showing/hiding the Quick Contact Panel and the admin-only Create User Account section within it based on component state and user role.
--   **Stateful Multi-Step Wizard:** The redesigned onboarding flow () uses state to manage progress through 16 different slides, some informational and some interactive.
--   **Client-Side Navigation with Parameters:** Passing the  URL as a search parameter when navigating to a new thread to ensure the photo appears instantly.
--   **Backend API Extension:** Identifying and fixing a critical bug by adding a  endpoint in  to handle profile photo updates, which was missing from the API.
--   **React Native Web Workarounds:** Addressed framework-specific issues like making  clickable in tests () and implementing a manual base64 file reader for  on the web.
+-   **Performance Optimization (Full-Stack):** A key achievement was improving page load speed by implementing frontend best practices (memoization, debouncing) and backend architectural changes (query projection, a new thumbnail data system).
+-   **Email Image Embedding (CID):** Solved a persistent email branding issue by using the industry-standard Content-ID (CID) inline attachment method via Resend.
+-   **Data Architecture for Performance:** Introduced a  system to separate small avatars from large, high-resolution images, drastically reducing API payload size and improving perceived performance.
+-   **Automated Workflows (Backend):** The foundation for a marketing automation system was built by adding logic to  that automatically applies tags and enrolls users in campaigns based on data changes.
 
 **key DB schema**
--   **users:** The schema was not altered, but usage was expanded. The , , , and  fields are now populated during sign-up and onboarding, making profiles more complete from the start.
+-   **contacts:** A  (string, base64) field was added to store small avatars. The large  field is no longer fetched in list views.
+-   **contact_photos:** (New Collection) Stores high-resolution contact photos. Schema: .
+-   **date_trigger_configs:** (New Collection) Stores configurations for date-based campaigns. Schema: .
 
 **All files of reference**
--   : **(In Progress)** Being edited to fix the My Digital Card link.
--   : **(Next Step)** Needs a Back button added.
--   : **(Heavily Modified)** The core of the new contact creation workflow. Contains the logic for the Quick Contact Panel and the Create User panel.
--   : **(Heavily Modified)** Contains the new 16-step guided app tour.
--   : **(Heavily Modified)** Contains the new collapsible section layout.
--   : **(Modified)** Contains the new  endpoint that fixed the user photo upload functionality.
+-   : **(In Progress)** The primary file for the next task: a major UI refactor.
+-   : **(Heavily Modified)** A reference for the successful frontend performance optimizations.
+-   : **(Heavily Modified)** The core of the backend performance fix and new campaign automation logic.
+-   : **(Modified)** Contains the final, working email invitation logic.
+-   : **(Heavily Modified)** The rebuilt, functional invite page.
+-   : **(Created)** The new backend service for the date-triggered campaign feature.
 
 **Critical Info for New Agent**
--   The user is very hands-on and frequently provides new high-priority tasks, often interrupting the planned work. Be prepared to pivot quickly from the planned task list.
--   The highest priority *technical debt* item is the **Custom Domain (Issue #2)**. It was reported as a P0, the user took the requested action (removing Cloudflare), but the agent never followed up to verify the fix. This should be addressed immediately after the current task.
--   The mobile sync issue diagnosis was flawed. The user is on the web app via a phone browser. The photo part of the issue is likely fixed, but  may still be failing. This needs re-verification with the user.
--   The file  is now a critical and complex component. Changes to it should be made carefully.
+-   Your immediate task is to refactor the UI of the More page (). The goal is to replace the current list with nested, indented cards for a clearer hierarchy, using the  page () as a style reference.
+-   The performance of the app, especially concerning images, is a high priority for the user. The new  architecture is critical. Ensure list views continue to use thumbnails and only detail/special views load high-resolution images.
+-   The date-triggered and tag-triggered campaign feature is a significant piece of work that is only partially complete. The backend needs a scheduling mechanism, and the frontend needs to be fully wired up.
 
 **documents and test reports created in this job**
+-    (Updated)
 -   
--    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** On the quick actions in my account, when I click on My Digital Card, I want it to be the actual card... also theres no back button". *(Status: IN PROGRESS)*
-2.  **User:** "Im still having an issue... Saving a photo to my contact. Its not actually saving it for me." *(Status: COMPLETED - Backend API fixed)*
-3.  **User:** Requests adding "Relationship Management System" to the marketing site hero page. *(Status: COMPLETED)*
-4.  **User:** Requests adding "relationship management system" tagline to the login page. *(Status: COMPLETED)*
-5.  **User:** "Across the bottom, you have More and More New. Whats that all about? And... move the Sign Out button. *(Status: COMPLETED)*
-6.  **User:** Lets make that bigger so the IMOS letters and sizing look similar to what you have in the other pills." *(Status: COMPLETED)*
-7.  **User:** "In the training hub all the icons... are just blue. Lets update all of those icons to match the look and feel. *(Status: COMPLETED)*
-8.  **User:** In the My Account tab... get rid of the Add Photo and just leave the camera icon... its not saving the picture." *(Status: COMPLETED)*
-9.  **User:** "I think thats good for now. I want to deploy this. *(Status: Addressed - a few more fixes were done first)*
-10. **User:** Recreate... the onboarding deck, make the look and feel... more like how you would walk through the tool. *(Status: COMPLETED)*
+1.  **User:** go even a bit bigger - *Status: COMPLETED*
+2.  **User:** the imos pill in inbox letters need to be ½ again bigger - *Status: COMPLETED*
+3.  **User:** (rephrased) Restore context and continue work on date-triggered and tag-triggered campaigns. - *Status: IN PROGRESS*
+4.  **User:** I dont know whats happening. Go back and read the last conversation. Pick up work where you left off. - *Status: IN PROGRESS*
+5.  **User:** I accidentally stopped a process. Go back and read that process before you include my next one... - *Status: Handled*
+6.  **User:** (rephrased) A feature to apply a campaign to a contact when a tag is applied is missing/broken. - *Status: IN PROGRESS (as part of automation task)*
+7.  **User:** (rephrased) New Feature: Automated recurring campaigns for birthdays, anniversaries, and holidays. - *Status: IN PROGRESS*
+8.  **User:** some numbers are underlined and some arent in contacts.. make it uniform. i prefer them not be underlined at all. - *Status: COMPLETED*
+9.  **User:** optimize code and database to run as efficient as possible.. the last update caused contacts page to run slow and clunky - *Status: COMPLETED*
+10. **User:** One more fix. When I log out and back in and it takes me to the More page, Essentials is open every time. Have it closed... - *Status: COMPLETED*
 
 **Project Health Check:**
 -   **Broken:**
-    -   Custom domain  access is still unverified and likely broken.
-    -   Data sync for  from a mobile browser is unverified.
+    -   The UI of the 'More' page does not meet the user's latest design specifications.
 -   **Mocked:**
     -   Twilio SMS functionality.
 
 **3rd Party Integrations**
 -   **MongoDB Atlas:** Primary database.
--   **Resend:** Transactional emails.
--   **Twilio:** SMS messaging (in MOCK mode).
--   **Cloudflare:** DNS/SSL proxy (supposedly removed by the user but needs verification).
--   **OpenAI:** Used on the backend for the Jessi AI persona.
+-   **Resend:** Live integration for sending transactional emails.
+-   **Twilio:** SMS messaging (currently in MOCK mode).
+-   **OpenAI:** Used for the Jessi AI assistant feature.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (for the More page reorganization).
+-   **Testing agent used after significant changes:** YES. The agent used the testing agent to validate the reworked Invite Team page and the initial implementation of the date-triggers feature.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** None.
+-   **Known regressions:** None identified in this session.
 
 **Credentials to test flow:**
 -   **Super Admin:**  / 
+-   **Test User Invite Email:** 
+-   Additional test user credentials can be found in .
 
 **What agent forgot to execute**
--   **Follow-up on Custom Domain Fix:** The agent did not verify if removing Cloudflare resolved the P0 domain issue.
--   **Carry-over tasks from previous fork:** The agent once again did not address verifying avatars in the inbox search dropdown or re-testing the leaderboard toggle.</analysis>
+-   The agent did not address the long-standing carry-over tasks from previous sessions: verifying mobile  data sync, checking avatar consistency in the inbox search, or testing the leaderboard toggle functionality. These remain on the backlog.</analysis>
