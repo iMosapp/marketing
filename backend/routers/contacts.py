@@ -245,25 +245,105 @@ async def import_contacts(user_id: str, contacts: List[ContactCreate]):
 
 @router.post("/{user_id}/{contact_id}/photo")
 async def upload_contact_photo(user_id: str, contact_id: str, photo_data: dict):
-    """Upload a photo for a contact"""
+    """Upload a photo for a contact. Generates a tiny thumbnail for avatars
+    and stores the high-res version separately for congrats cards/emails."""
     base_filter = await get_data_filter(user_id)
+    db = get_db()
     
-    photo_url = photo_data.get('photo_url')
+    photo_url = photo_data.get('photo_url') or photo_data.get('photo')
     if not photo_url:
-        raise HTTPException(status_code=400, detail="photo_url is required")
+        raise HTTPException(status_code=400, detail="photo_url or photo is required")
+    
+    update_fields = {"updated_at": datetime.utcnow()}
+    
+    # If it's base64 data, generate a thumbnail
+    if photo_url.startswith('data:') or len(photo_url) > 1000:
+        try:
+            thumbnail, high_res = await _process_photo(photo_url)
+            update_fields["photo_thumbnail"] = thumbnail  # ~5KB for avatars
+            update_fields["photo_url"] = thumbnail  # Use thumbnail as default
+            # Store high-res in separate collection to keep contacts lightweight
+            await db.contact_photos.update_one(
+                {"contact_id": contact_id},
+                {"$set": {"contact_id": contact_id, "user_id": user_id, "photo_full": high_res, "updated_at": datetime.utcnow()}},
+                upsert=True
+            )
+        except Exception as e:
+            logger.error(f"Photo processing failed: {e}")
+            update_fields["photo_url"] = photo_url
+    else:
+        update_fields["photo_url"] = photo_url
     
     try:
-        result = await get_db().contacts.update_one(
+        result = await db.contacts.update_one(
             {"$and": [{"_id": ObjectId(contact_id)}, base_filter]},
-            {"$set": {"photo_url": photo_url, "updated_at": datetime.utcnow()}}
+            {"$set": update_fields}
         )
     except:
-        result = await get_db().contacts.update_one(
+        result = await db.contacts.update_one(
             {"$and": [{"_id": contact_id}, base_filter]},
-            {"$set": {"photo_url": photo_url, "updated_at": datetime.utcnow()}}
+            {"$set": update_fields}
         )
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
     
-    return {"message": "Photo uploaded successfully", "photo_url": photo_url}
+    return {"message": "Photo uploaded successfully", "photo_url": update_fields.get("photo_url", "")}
+
+
+@router.get("/{user_id}/{contact_id}/photo/full")
+async def get_full_photo(user_id: str, contact_id: str):
+    """Get the high-resolution photo for congrats cards, emails, or third-party use"""
+    db = get_db()
+    photo_doc = await db.contact_photos.find_one({"contact_id": contact_id}, {"_id": 0, "photo_full": 1})
+    if not photo_doc or not photo_doc.get("photo_full"):
+        # Fallback: try the contact's photo field directly
+        try:
+            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 1, "photo_url": 1})
+        except:
+            contact = await db.contacts.find_one({"_id": contact_id}, {"photo": 1, "photo_url": 1})
+        if contact and contact.get("photo"):
+            return {"photo": contact["photo"]}
+        elif contact and contact.get("photo_url"):
+            return {"photo": contact["photo_url"]}
+        raise HTTPException(status_code=404, detail="No high-res photo found")
+    return {"photo": photo_doc["photo_full"]}
+
+
+async def _process_photo(photo_data: str) -> tuple:
+    """Process a photo: generate a tiny thumbnail and a reasonable high-res version.
+    Returns (thumbnail_base64, highres_base64)"""
+    import base64
+    from PIL import Image
+    import io
+    
+    # Extract base64 data
+    if photo_data.startswith('data:'):
+        header, b64data = photo_data.split(',', 1)
+        prefix = header + ','
+    else:
+        b64data = photo_data
+        prefix = 'data:image/jpeg;base64,'
+    
+    img_bytes = base64.b64decode(b64data)
+    img = Image.open(io.BytesIO(img_bytes))
+    
+    # Convert to RGB if needed
+    if img.mode in ('RGBA', 'P'):
+        img = img.convert('RGB')
+    
+    # Generate thumbnail (48x48 for avatars, ~3-5KB)
+    thumb = img.copy()
+    thumb.thumbnail((96, 96), Image.LANCZOS)
+    thumb_buffer = io.BytesIO()
+    thumb.save(thumb_buffer, 'JPEG', quality=60, optimize=True)
+    thumb_b64 = prefix + base64.b64encode(thumb_buffer.getvalue()).decode()
+    
+    # Generate high-res (max 800px wide for congrats cards/emails, ~50-100KB)
+    highres = img.copy()
+    highres.thumbnail((800, 800), Image.LANCZOS)
+    highres_buffer = io.BytesIO()
+    highres.save(highres_buffer, 'JPEG', quality=85, optimize=True)
+    highres_b64 = prefix + base64.b64encode(highres_buffer.getvalue()).decode()
+    
+    return thumb_b64, highres_b64
