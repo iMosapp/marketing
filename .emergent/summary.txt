@@ -1,169 +1,179 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to fix a broken logo in invitation emails. This led to a series of fixes for the email template, including adding a tagline and correcting the Get Started link. The scope then expanded significantly to include several major feature requests and bug fixes:
-1.  **Add Email to Contact Creation:** Enhance the Add Contact modal to include an  field. (Completed)
-2.  **'More' Page UI/UX Fixes:**
-    -   Remove the redundant More page title. (Completed)
-    -   Relocate the Invite Team link to the Administration section for better visibility. (Completed)
-    -   Ensure all collapsible sections on the page are closed by default on login. (Completed)
-3.  **Fix 'Invite Team' Workflow:** The Invite Team page was non-functional. It was completely rebuilt with a direct user creation form that reliably sends invites via the existing admin API. (Completed)
-4.  **Optimize Contacts Page Performance:** The user reported the contacts page was slow. This was traced to fetching full-size base64 images in the list view. A full-stack optimization was performed. (Completed)
-5.  **Uniform Phone Number Styling:** Remove hyperlink underlines from phone numbers in the contacts list. (Completed)
-6.  **Implement Automated Campaigns:** A multi-part feature request to build a system for:
-    -   Date-triggered recurring campaigns (birthdays, anniversaries).
-    -   Tag-triggered campaigns (e.g., applying a sold tag enrolls a contact in a follow-up sequence). (In Progress)
-7.  **Increase Avatar Size:** Make the avatar pills in the inbox list larger. (Completed)
-8.  **Refactor 'More' Page UI:** The final request was to change the layout of the 'More' page to use nested, indented dropdowns for all sections to improve clarity and navigation. (In Progress)
+The user's initial goal for this session was to address several items from the roadmap. The conversation quickly focused on a series of critical bug fixes and usability improvements.
+
+1.  **Fix Email Invitations:** The primary and most persistent issue was that email invitations for new users contained incorrect links, pointing to old, inactive preview environments instead of the live production URL (). This was a major source of user frustration.
+2.  **Fix Email Sending:** The user discovered that team member invites sent from the application were not being delivered at all due to a configuration issue with the Resend API key.
+3.  **Team Chat Management:** Add the ability for users to delete team chat channels and clear chat history.
+4.  **Inbox UI/UX:**
+    *   Remove the redundant SMS/Email toggle pills from the top of the inbox.
+    *   Implement a clean, non-disruptive way to prompt users to add a contact's email if they try to send an email to a contact without one, replacing the ugly system alert box.
+5.  **Avatar System:** Fix a bug where avatars for contacts and users were not appearing anywhere in the app. The issue stemmed from the app loading large, full-size photos instead of the optimized thumbnails.
+6.  **Image Quality:** Ensure that all images sent to customers (via MMS, email, congrats cards) are of high enough quality for social media sharing.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a CRM with robust user and contact management. In this session, the email invitation system was fixed and enhanced with proper branding. The Invite Team workflow was entirely rebuilt to be functional and intuitive.
-
-Most significantly, a major performance bottleneck on the Contacts page was resolved. A new thumbnail system was implemented, where large contact photos are stored separately and only small thumbnails are loaded in list views. This reduced the API payload by over 99% and made the page significantly faster. The frontend of the contacts page was also heavily optimized with debouncing, memoization, and other React performance patterns.
-
-The foundation for a powerful marketing automation feature (date and tag-triggered campaigns) has been laid, with backend models, APIs, and a frontend settings page created. The final task was a UI overhaul of the More page, which is currently in progress.
+The application is a full-stack Relationship Management System (RMS) named iMOs. This session was dedicated to critical bug fixing and polishing existing features. The backend's email invitation system has been completely overhauled to use the correct production URL. All email-sending functionality is now confirmed to be working via the Resend integration. The Team Chat feature now includes management options to delete channels and clear history. The Inbox UI has been improved by removing redundant toggles and adding a clean, inline prompt for missing contact emails. Most importantly, the avatar system has been repaired across the application to use lightweight thumbnails for performance, and the image processing pipeline ensures high-quality images are used for all outbound communications.
 
 **Last working item**:
--   **Last item agent was working:** Refactoring the 'More' page UI to use a nested, indented card style for all sections, as requested by the user with a reference image. The agent had analyzed the existing code in  and was preparing to implement the new component structure.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The test should verify the new UI layout on the 'More' page, ensuring all top-level sections are collapsible cards and their child items appear as indented card rows within them.
+-   **Last item agent was working:** The agent completed a comprehensive fix of the outbound image quality. This involved updating the photo processing logic to generate 1080px high-resolution images for social sharing, while ensuring internal avatars use small 96px thumbnails for fast loading. The agent verified that Congrats Cards, MMS, and direct emails all use the appropriate high-quality image versions. The user then asked about renaming  to , but decided against it.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** Y
+-   **Which testing method agent to use?** Frontend testing agent and Backend testing agent.
+    -   **Frontend:** Log in and verify that contact avatars now appear correctly in the inbox list, conversation view, and search results.
+    -   **Backend:** Use curl to trigger a congrats card creation and an MMS send, then inspect the generated image URLs/files to confirm they are high-resolution (1080px).
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** (P0) Refactor 'More' page UI to use nested, indented cards.
--   **Issue 2:** (P1) Mobile app data for  may not be syncing.
--   **Issue 3:** (P2) React Hydration Error #418 persists.
+-   **Issue 1:** (P0) Production deployment is running old, broken code.
+-   **Issue 2:** (P1) The fix for email URLs is a hardcoded value.
+-   **Issue 3:** (P2) Build the full white-labeling system (custom domains, org branding).
+-   **Issue 4:** (P2) Mobile app data for  may not be syncing.
+-   **Issue 5:** (P2) React Hydration Error #418 persists.
 
 **Issues Detail:**
--   **Issue 1: Refactor 'More' page UI.**
-    -   **Attempted fixes:** The agent analyzed  and the reference styles in . No code changes were made yet.
-    -   **Next debug checklist:**
-        1.  Modify .
-        2.  Refactor the rendering logic to wrap each section (e.g., Administration) in a collapsible parent .
-        3.  When expanded, render the section's items (e.g., Admin Dashboard) as individual, indented  rows, each with a right chevron icon, mimicking the style of the  page.
-    -   **Why fix this issue and what will be achieved with the fix?** To improve UI/UX consistency and make the navigation hierarchy on the 'More' page clearer, matching the user's explicit design request.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+-   **Issue 1: Production deployment is running old, broken code.**
+    -   **Attempted fixes:** All fixes were implemented in the preview environment. The user has been repeatedly told that a deployment is required.
+    -   **Next debug checklist:** The user needs to deploy the application. All critical issues reported by the user in this session (broken email links, unsent invites, missing avatars) are resolved in the current build but not on .
+    -   **Why fix this issue and what will be achieved with the fix?** This is the highest priority. Deploying will make the application functional for the user and resolve all the major frustrations from this session.
+    -   **Status:** BLOCKED (on user action)
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on other issue:** None.
 
--   **Issue 2: Mobile app data for  may not be syncing.**
-    -   **Attempted fixes:** None in this session.
-    -   **Next debug checklist:** Ask the user to re-verify the issue on their mobile browser. If it persists, inspect the  endpoint and frontend form submission logic.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures data integrity across devices.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** User verification.
-
--   **Issue 3: React Hydration Error #418.**
-    -   **Attempted fixes:** None. The temporary meta-refresh tag workaround is still in place.
-    -   **Why fix this issue and what will be achieved with the fix?** To remove a technical debt hack and improve app stability.
+-   **Issue 2: The fix for email URLs is a hardcoded value.**
+    -   **Attempted fixes:** The agent tried multiple times to use environment variables (, ) to dynamically generate the email links. All attempts failed due to misconfigured paths or the variables not being loaded correctly, causing the system to fall back to a dead link. As a final, user-approved measure, the agent hardcoded  directly into the Python code.
+    -   **Next debug checklist:**
+        1.  Investigate why  is not correctly loading the  from the backend  file at the time the mailer functions are defined.
+        2.  Create a centralized configuration module (e.g., ) that loads all environment variables once at startup and exports them as constants.
+        3.  Refactor , , and  to import the  from this new config module instead of hardcoding it.
+    -   **Why fix this issue and what will be achieved with the fix?** Removes technical debt and makes the application more maintainable. Relying on a hardcoded URL will cause issues when moving to staging or other environments.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 3: Build the full white-labeling system.**
+    -   **Status:** NOT STARTED (From previous fork)
+-   **Issue 4: Mobile app data for  may not be syncing.**
+    -   **Status:** BLOCKED (On user verification, from previous fork)
+    -   **Is recurring issue?** Y
+-   **Issue 5: React Hydration Error #418.**
+    -   **Status:** NOT STARTED (From previous fork)
+    -   **Is recurring issue?** Y
 
 **In progress Task List**:
--   **Task 1: Complete Date-Triggered & Tag-Triggered Campaign Feature (P1)**
-    -   **Where to resume:** The backend infrastructure is partially built (, auto-tagging in ). The core scheduling logic (a cron job or background task to check dates and send messages) needs to be implemented and activated. The frontend settings page at  may need refinement and state management logic.
-    -   **What will be achieved with this?** A powerful, automated marketing feature that sends messages for birthdays, anniversaries, and holidays, and enrolls contacts in campaigns when specific tags are applied.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both.
+None. The last active task (image quality/avatar fix) is complete pending user verification.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   (P1) **Implement Voice Help Assistant Backend:** The UI is built; the backend logic needs implementation.
+    -   (P1) Implement Voice Help Assistant Backend.
 -   **Future Tasks:**
-    -   (P2) Populate **Training Hub** with actual video content.
-    -   (P2) Enable Lead Notification System ().
+    -   (P2) Populate Training Hub with actual video content.
+    -   (P2) Enable the Lead Notification System ().
     -   (P2) Build out the full Inventory Management Module.
     -   (P2) Create a Searchable Training Manual.
-    -   (P2) Populate Reports & Analytics section.
+    -   (P2) Populate the Reports & Analytics section.
 
 **Completed work in this session**
--   **Email Branding & Functionality:** Fixed the user invite email by embedding the logo with CID, adding a tagline, and ensuring the Get Started link works.
--   **Contact Management:** Added an Email field to the Add Contact modal and removed underlines from phone numbers.
--   **'More' Page & Navigation:** Removed the More title, moved Invite Team to Administration, and made sections collapsed by default.
--   **Invite Team Workflow:** Rebuilt the Invite Team page, making it fully functional.
--   **Performance Optimization (Contacts Page):** Implemented a full-stack fix by creating a photo thumbnail system and optimizing frontend rendering, resulting in a >99% reduction in data loaded and a much faster UI.
--   **UI/UX:** Increased the size of avatar pills in the inbox.
--   **Campaign Automation Foundation:** Created the backend and frontend foundations for date-triggered and tag-triggered campaigns.
+-   **Admin App Directory:** Updated the directory to accurately list all 57 public  pages, and fixed a minor bug where two pages were missing.
+-   **Email Invite System (Major Fix):** Resolved a critical, recurring bug where invitation emails contained broken links. After multiple failed attempts to use environment variables, the live production URL was hardcoded into the backend to ensure correctness.
+-   **Email Sending (Major Fix):** Diagnosed and fixed an issue where team invites failed to send because the  was not being loaded correctly.
+-   **Team Chat Management:** Implemented backend endpoints (, ) and frontend UI to allow users to delete chat channels and clear history.
+-   **Inbox UI/UX:**
+    -   Removed the SMS/Email toggle pills from the inbox header.
+    -   Replaced a disruptive system alert with a clean, inline UI prompt for adding a contact's email when sending a message.
+-   **Avatar System (Major Fix):** Fixed a bug causing avatars to be missing app-wide. Updated 4 backend files (, , , ) to use the lightweight  field instead of the full-size  field, significantly improving performance.
+-   **Image Quality:** Upgraded the image processing pipeline to generate 1080px high-resolution photos for social media sharing and verified that all outbound messages (MMS, email, congrats cards) use these high-quality assets.
+-   **User Account Recovery:** Restored a user's password after it was accidentally wiped from the database.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1:** Avatar consistency in the inbox search dropdown.
--   **Issue 2:** Leaderboard toggle functionality is not fully tested or verified.
+-   **Issue 1: Leaderboard toggle functionality is not fully tested or verified.** (Carried over from previous fork)
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** React Hydration Error #418.
--   **Recurrence count:** 8+
--   **Status:** NOT STARTED
+    -   **Recurrence count:** 10+
+    -   **Status:** NOT STARTED
+-   **Issue recurrence in previous fork:** Mobile app data for  may not be syncing.
+    -   **Recurrence count:** 4
+    -   **Status:** BLOCKED
 
 **Code Architecture**
-photo_thumbnail
+
 
 **Key Technical Concepts**
--   **Performance Optimization (Full-Stack):** A key achievement was improving page load speed by implementing frontend best practices (memoization, debouncing) and backend architectural changes (query projection, a new thumbnail data system).
--   **Email Image Embedding (CID):** Solved a persistent email branding issue by using the industry-standard Content-ID (CID) inline attachment method via Resend.
--   **Data Architecture for Performance:** Introduced a  system to separate small avatars from large, high-resolution images, drastically reducing API payload size and improving perceived performance.
--   **Automated Workflows (Backend):** The foundation for a marketing automation system was built by adding logic to  that automatically applies tags and enrolls users in campaigns based on data changes.
+-   **Environment Variable Hell:** The session highlighted a critical issue where environment variables were not being loaded or accessed correctly at runtime, leading to silent failures. This forced the agent to use a hardcoded URL as a temporary fix.
+-   **Backend Data Refactoring:** The fix for the avatar system involved a significant refactor of multiple backend endpoints to switch from using a large data field () to an optimized one (), demonstrating the importance of correct data projection for performance.
+-   **Progressive Enhancement:** The change from a disruptive  to a smooth, inline email input form in the inbox is a prime example of improving user experience without breaking functionality.
+-   **Production vs. Preview Drift:** A core theme was the user experiencing bugs on the live  site that were already fixed in the agent's preview environment, emphasizing the need for frequent deployments.
 
 **key DB schema**
--   **contacts:** A  (string, base64) field was added to store small avatars. The large  field is no longer fetched in list views.
--   **contact_photos:** (New Collection) Stores high-resolution contact photos. Schema: .
--   **date_trigger_configs:** (New Collection) Stores configurations for date-based campaigns. Schema: .
+-   **contacts:** . A clear distinction is now enforced:  is the large original upload (used for processing),  is the 1080px version for sharing, and  is the 96px version for UI avatars.
+-   **users:** Same photo structure as contacts.
+
+**changes in tech stack**
+-   None.
 
 **All files of reference**
--   : **(In Progress)** The primary file for the next task: a major UI refactor.
--   : **(Heavily Modified)** A reference for the successful frontend performance optimizations.
--   : **(Heavily Modified)** The core of the backend performance fix and new campaign automation logic.
--   : **(Modified)** Contains the final, working email invitation logic.
--   : **(Heavily Modified)** The rebuilt, functional invite page.
--   : **(Created)** The new backend service for the date-triggered campaign feature.
+-    (Fixed email invite URL)
+-    (Fixed email invite URL)
+-    (Fixed email welcome URL)
+-    (Central location for URL logic that was repeatedly fixed)
+-    (Core fix for missing avatars in conversations)
+-    (Location of the new inline email prompt UI)
+-    (Location of the photo processing logic that was upgraded)
+-    (New endpoints for team chat management)
+
+**Areas that need refactoring**:
+-   The hardcoded  URL in , ,  and  is a major piece of technical debt. A robust, centralized configuration system needs to be implemented to handle environment-specific variables properly.
+
+**key api endpoints**
+-   : Sends admin invitation emails. (Fixed)
+-   : Sends team member invitation emails. (Fixed)
+-   : Sends a direct email from the inbox. (Verified)
+-   : Sends a message in a conversation (handles both SMS and Email). (Verified)
+-   : Deletes a team chat channel. (Newly Added)
+-   : Clears all messages in a channel. (Newly Added)
 
 **Critical Info for New Agent**
--   Your immediate task is to refactor the UI of the More page (). The goal is to replace the current list with nested, indented cards for a clearer hierarchy, using the  page () as a style reference.
--   The performance of the app, especially concerning images, is a high priority for the user. The new  architecture is critical. Ensure list views continue to use thumbnails and only detail/special views load high-resolution images.
--   The date-triggered and tag-triggered campaign feature is a significant piece of work that is only partially complete. The backend needs a scheduling mechanism, and the frontend needs to be fully wired up.
+-   **The user's production site () is running old, broken code.** Any bug report from the user about the live site is likely something you have already fixed. Your first response should be to remind the user to deploy the latest version from this session. Do not start debugging issues on the live site.
+-   **The email invite URL is hardcoded.** This was a deliberate choice to resolve extreme user frustration after multiple failed attempts with environment variables. While this is technical debt, be cautious about changing it unless you have a guaranteed fix for the underlying environment variable loading issue. Any regression on email links will be met with severe frustration.
+-   The user's password () was wiped and restored during this session. Be aware of this if any login issues are reported.
 
 **documents and test reports created in this job**
--    (Updated)
 -   
+-    (Updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** go even a bit bigger - *Status: COMPLETED*
-2.  **User:** the imos pill in inbox letters need to be ½ again bigger - *Status: COMPLETED*
-3.  **User:** (rephrased) Restore context and continue work on date-triggered and tag-triggered campaigns. - *Status: IN PROGRESS*
-4.  **User:** I dont know whats happening. Go back and read the last conversation. Pick up work where you left off. - *Status: IN PROGRESS*
-5.  **User:** I accidentally stopped a process. Go back and read that process before you include my next one... - *Status: Handled*
-6.  **User:** (rephrased) A feature to apply a campaign to a contact when a tag is applied is missing/broken. - *Status: IN PROGRESS (as part of automation task)*
-7.  **User:** (rephrased) New Feature: Automated recurring campaigns for birthdays, anniversaries, and holidays. - *Status: IN PROGRESS*
-8.  **User:** some numbers are underlined and some arent in contacts.. make it uniform. i prefer them not be underlined at all. - *Status: COMPLETED*
-9.  **User:** optimize code and database to run as efficient as possible.. the last update caused contacts page to run slow and clunky - *Status: COMPLETED*
-10. **User:** One more fix. When I log out and back in and it takes me to the More page, Essentials is open every time. Have it closed... - *Status: COMPLETED*
+10. **User:** Verify all of this is fixed before any emails send out... - **COMPLETED:** Agent performed a full audit of all email and SMS sending paths.
+9.  **User:** ...the avatar images...are not showing... - **COMPLETED:** Agent found the root cause (using heavy  instead of ) and fixed it across 4 backend files.
+8.  **User:** make sure the photos used to send to a customer...are large enough to render with quality... - **COMPLETED:** Agent upgraded the photo processing pipeline to produce 1080px images for sharing and verified outbound messages use them.
+7.  **User:** why dont we use /home instead of /imoss for that?" - **REJECTED:** User discussed the pros and cons with the agent and decided to keep `/imos`.
+6.  **User:** "All right, lets leave it. Lets move on to the next tasks." - **COMPLETED:** Agent presented the roadmap.
+5.  **User:** "when adding a new contact the input form is nasty" - **COMPLETED:** Agent identified the UI issues from the screenshot and fixed the styling.
+4.  **User:** "...its saying that my username and password do not exist... - **COMPLETED:** Agent found the password hash was wiped and restored it immediately.
+3.  **User:** when trying to send this out over email im getting an error" (`[object Object]`) - **COMPLETED:** Agent fixed the frontend error handling and the backend issue causing relative URLs.
+2.  **User:** "...every single user in the system, their email would be configured the exact same way to send out through Resend..." - **COMPLETED:** Agent confirmed this is how the system is designed and works.
+1.  **User:** "Lets have a warning message if someones trying to toggle email on, but if that contact doesnt have an email... - **COMPLETED:** This led to the agent first implementing an alert, and then, based on user feedback, replacing it with a much cleaner inline email input form.
 
 **Project Health Check:**
--   **Broken:**
-    -   The UI of the 'More' page does not meet the user's latest design specifications.
--   **Mocked:**
-    -   Twilio SMS functionality.
+-   **Broken:** The current **production deployment is broken.** It has old code with non-functional email invites, missing API keys, and missing avatars. The code in *this* environment is fixed and waiting for deployment.
+-   **Mocked:** Twilio SMS functionality is still mocked. Outbound SMS messages are logged with a mock SID but are not actually sent.
 
 **3rd Party Integrations**
 -   **MongoDB Atlas:** Primary database.
--   **Resend:** Live integration for sending transactional emails.
--   **Twilio:** SMS messaging (currently in MOCK mode).
--   **OpenAI:** Used for the Jessi AI assistant feature.
+-   **Resend:** Used for all transactional and user-initiated emails. Confirmed working.
+-   **Twilio:** Used for all SMS messaging (currently in MOCK mode).
+-   **OpenAI:** Powers the Jessi AI assistant feature.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. The agent used the testing agent to validate the reworked Invite Team page and the initial implementation of the date-triggers feature.
+-   **Testing agent used after significant changes:** YES. Used to test the team chat deletion and inbox pill removal.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** None identified in this session.
+-   **Known regressions:** None in the current build. The production site has numerous regressions compared to this build.
 
 **Credentials to test flow:**
 -   **Super Admin:**  / 
--   **Test User Invite Email:** 
--   Additional test user credentials can be found in .
 
 **What agent forgot to execute**
--   The agent did not address the long-standing carry-over tasks from previous sessions: verifying mobile  data sync, checking avatar consistency in the inbox search, or testing the leaderboard toggle functionality. These remain on the backlog.</analysis>
+-   The agent did not address the long-standing backlog item of testing the leaderboard toggle functionality. All other user requests in this session were addressed.</analysis>

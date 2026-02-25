@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://staff-links.preview.emergentagent.com';
+        : 'https://email-invite-patch.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,

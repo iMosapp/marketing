@@ -18,7 +18,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://staff-links.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://email-invite-patch.preview.emergentagent.com').rstrip('/')
 if BASE_URL and not BASE_URL.startswith('http'):
     BASE_URL = f"https://{BASE_URL}"
 
