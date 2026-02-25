@@ -476,46 +476,81 @@ export default function ContactsScreen() {
         visible={showAddContactModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowAddContactModal(false)}
+        onRequestClose={resetAddContactModal}
       >
         <View style={styles.addContactModalOverlay}>
           <View style={styles.addContactModalContent}>
             <View style={styles.addContactModalHeader}>
               <Text style={styles.addContactModalTitle}>Add New Contact</Text>
-              <TouchableOpacity onPress={() => setShowAddContactModal(false)}>
+              <TouchableOpacity onPress={resetAddContactModal}>
                 <Ionicons name="close" size={24} color="#8E8E93" />
               </TouchableOpacity>
             </View>
             
             <Text style={styles.addContactModalSubtitle}>
-              Enter the phone number to start
+              Fill in their details while you're with them
             </Text>
             
-            <View style={styles.addContactInputContainer}>
-              <Ionicons name="call-outline" size={20} color="#8E8E93" />
-              <TextInput
-                style={styles.addContactInput}
-                placeholder="Phone number"
-                placeholderTextColor="#6E6E73"
-                value={newContactPhone}
-                onChangeText={setNewContactPhone}
-                keyboardType="phone-pad"
-                autoFocus
-                data-testid="new-contact-phone-input"
-              />
+            <View style={{ gap: 10 }}>
+              <View style={styles.addContactNameRow}>
+                <View style={[styles.addContactInputContainer, { flex: 1 }]}>
+                  <Ionicons name="person-outline" size={18} color="#8E8E93" />
+                  <TextInput
+                    style={styles.addContactInput}
+                    placeholder="First name"
+                    placeholderTextColor="#6E6E73"
+                    value={newContactFirstName}
+                    onChangeText={setNewContactFirstName}
+                    autoCapitalize="words"
+                    autoFocus
+                    data-testid="new-contact-first-name-input"
+                  />
+                </View>
+                <View style={[styles.addContactInputContainer, { flex: 1 }]}>
+                  <TextInput
+                    style={styles.addContactInput}
+                    placeholder="Last name"
+                    placeholderTextColor="#6E6E73"
+                    value={newContactLastName}
+                    onChangeText={setNewContactLastName}
+                    autoCapitalize="words"
+                    data-testid="new-contact-last-name-input"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.addContactInputContainer}>
+                <Ionicons name="call-outline" size={18} color="#8E8E93" />
+                <TextInput
+                  style={styles.addContactInput}
+                  placeholder="Phone number"
+                  placeholderTextColor="#6E6E73"
+                  value={newContactPhone}
+                  onChangeText={setNewContactPhone}
+                  keyboardType="phone-pad"
+                  data-testid="new-contact-phone-input"
+                />
+              </View>
+
+              <View style={styles.addContactInputContainer}>
+                <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+                <TextInput
+                  style={styles.addContactInput}
+                  placeholder="Email (optional)"
+                  placeholderTextColor="#6E6E73"
+                  value={newContactEmail}
+                  onChangeText={setNewContactEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  data-testid="new-contact-email-input"
+                />
+              </View>
             </View>
-            
-            <Text style={styles.addContactHint}>
-              You'll be able to add name, photo, tags, and send a message in the next step
-            </Text>
             
             <View style={styles.addContactModalActions}>
               <TouchableOpacity 
                 style={styles.addContactCancelBtn}
-                onPress={() => {
-                  setShowAddContactModal(false);
-                  setNewContactPhone('');
-                }}
+                onPress={resetAddContactModal}
               >
                 <Text style={styles.addContactCancelText}>Cancel</Text>
               </TouchableOpacity>
@@ -526,11 +561,17 @@ export default function ContactsScreen() {
                   !newContactPhone.trim() && styles.addContactContinueBtnDisabled
                 ]}
                 onPress={handleAddNewContact}
-                disabled={!newContactPhone.trim()}
-                data-testid="new-contact-continue-btn"
+                disabled={!newContactPhone.trim() || savingContact}
+                data-testid="new-contact-save-btn"
               >
-                <Text style={styles.addContactContinueText}>Continue</Text>
-                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                {savingContact ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Text style={styles.addContactContinueText}>Save & Message</Text>
+                    <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
