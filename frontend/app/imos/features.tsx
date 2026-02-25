@@ -128,6 +128,7 @@ export default function FeaturesScreen() {
             <Text style={styles.ctaBtnText}>View Sales Presentation</Text>
           </TouchableOpacity>
         </View>
+        </View>
       </ScrollView>
     </View>
   );
