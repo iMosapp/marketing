@@ -93,12 +93,12 @@ export default function ImosHome() {
 
             {/* CTA */}
             <View style={s.heroCTAs}>
-              <TouchableOpacity style={s.primaryBtn} onPress={() => navigate('/imos/salespresentation')} data-testid="hero-presentation-btn">
-                <Ionicons name="play-circle" size={20} color="#000" />
-                <Text style={s.primaryBtnText}>View Sales Deck</Text>
+              <TouchableOpacity style={s.primaryBtn} onPress={() => navigate('/imos/demo')} data-testid="hero-demo-btn">
+                <Ionicons name="calendar" size={20} color="#000" />
+                <Text style={s.primaryBtnText}>Schedule a Demo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="hero-signup-btn">
-                <Text style={s.secondaryBtnText}>Sign Up Free</Text>
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="hero-trial-btn">
+                <Text style={s.secondaryBtnText}>Start 14-Day Free Trial</Text>
                 <Ionicons name="arrow-forward" size={16} color="#C9A962" />
               </TouchableOpacity>
             </View>
@@ -147,7 +147,6 @@ export default function ImosHome() {
             </View>
           ))}
 
-          {/* ========== BOTTOM CTA ========== */}
           <View style={s.bottomCTA}>
             <Text style={[s.bottomCTATitle, isDesktop && { fontSize: 36 }]}>
               Ready to Transform Your Team?
@@ -156,14 +155,12 @@ export default function ImosHome() {
               See why forward-thinking organizations trust iMOs to build lasting customer relationships.
             </Text>
             <View style={s.bottomCTABtns}>
-              <TouchableOpacity style={s.primaryBtn} onPress={() => {
-                if (Platform.OS === 'web') window.open('mailto:forest@imosapp.com?subject=iMOs%20Demo%20Request', '_blank');
-              }} data-testid="bottom-demo-btn">
-                <Ionicons name="mail" size={20} color="#000" />
-                <Text style={s.primaryBtnText}>Request a Demo</Text>
+              <TouchableOpacity style={s.primaryBtn} onPress={() => navigate('/imos/demo')} data-testid="bottom-demo-btn">
+                <Ionicons name="calendar" size={20} color="#000" />
+                <Text style={s.primaryBtnText}>Schedule a Demo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="bottom-signup-btn">
-                <Text style={s.secondaryBtnText}>Sign Up Free</Text>
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="bottom-trial-btn">
+                <Text style={s.secondaryBtnText}>Start 14-Day Free Trial</Text>
                 <Ionicons name="arrow-forward" size={16} color="#C9A962" />
               </TouchableOpacity>
             </View>
