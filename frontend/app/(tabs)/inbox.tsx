@@ -955,6 +955,7 @@ export default function InboxScreen() {
           </View>
         </View>
         <View style={styles.headerButtons}>
+          <NotificationBell />
           <WebIconButton 
             onPress={() => { triggerHaptic('light'); router.push('/search'); }} 
             iconName="search"
