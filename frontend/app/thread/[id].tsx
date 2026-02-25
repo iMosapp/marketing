@@ -120,7 +120,7 @@ export default function ThreadScreen() {
   
   // Color mode state - ALWAYS dark mode now
   const [messageMode, setMessageMode] = useState<'sms' | 'email'>('sms');
-  const colors = COLORS_DARK; // Always dark mode for consistency
+  const colors = COLORS;
   
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
