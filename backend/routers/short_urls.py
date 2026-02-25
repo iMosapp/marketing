@@ -24,16 +24,11 @@ def generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     return ''.join(random.choices(SHORT_CODE_CHARS, k=length))
 
 def get_short_url_base() -> str:
-    """Get the base URL for short links. Easy to change for rebranding."""
-    # Check for custom short domain first
+    """Get the base URL for short links."""
     short_domain = os.environ.get('SHORT_URL_DOMAIN')
     if short_domain:
         return short_domain.rstrip('/')
-    
-    # Use the preview URL base
-    # This will be set to the final domain (app.imosapp.com) in production
-    base_url = os.environ.get('BASE_URL') or os.environ.get('REACT_APP_BACKEND_URL', '')
-    return base_url.rstrip('/')
+    return "https://app.imosapp.com"
 
 async def create_short_url(
     original_url: str,
