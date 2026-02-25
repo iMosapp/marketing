@@ -42,15 +42,16 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] 14-day free trial messaging across all CTAs
 - [x] True black background everywhere
 - [x] Responsive mobile + desktop
-- [x] Admin App Directory updated with all 57 public /imos/ pages (Feb 2026)
-- [x] "Sales Presentation" renamed to "Why Use iMOs" (Feb 2026)
-- [x] All email invite URLs updated to public /imos/ domain (Feb 2026)
-- [x] /imos/login and /imos/signup redirect to actual auth pages (Feb 2026)
-- [x] Team Chat: delete channel & clear history functionality (Feb 2026)
-- [x] Inbox: removed SMS/Email toggle pills from header (Feb 2026)
-- [x] Avatar system fixed - auto-backfill thumbnails from raw photos (Feb 2026)
-- [x] Image quality upgraded to 1080px for outbound sharing (Feb 2026)
+- [x] Admin App Directory updated with all 57 public /imos/ pages
+- [x] All email invite URLs updated to public /imos/ domain
+- [x] /imos/login and /imos/signup redirect to actual auth pages
+- [x] Team Chat: delete channel & clear history functionality
+- [x] Inbox: removed SMS/Email toggle pills from header
+- [x] Avatar system fixed - auto-backfill thumbnails from raw photos
+- [x] Image quality upgraded to 1080px for outbound sharing
 - [x] Contact list avatar backfill: auto-generates thumbnails for contacts with raw photo but missing photo_thumbnail (Feb 25, 2026)
+- [x] Training Hub: Populated with 16 topics across 6 categories (Getting Started, Messaging, AI Features, Sales Tools, Campaigns, Team Features) with step-by-step instructions, video embed support, voice/text AI help (Feb 25, 2026)
+- [x] SOPs: Fixed "MVPLine" branding to "iMOs" across all 13 SOPs in database and seed data. Admin > Training & SOPs page verified working (Feb 25, 2026)
 
 ## Known Issues
 - Twilio SMS MOCKED
@@ -63,14 +64,12 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - (P1) White-Label System (custom domains, org branding)
 
 ## Future/Backlog (P2)
-- Populate Training Hub with actual video content
 - Enable Lead Notification System
 - Build full Inventory Management Module
 - Create Searchable Training Manual
 - Populate Reports & Analytics section
 - Fix React Hydration Error #418
 - Verify mobile tags data sync
-- Check avatar consistency in inbox search dropdown
 - Test leaderboard toggle functionality
 
 ## Credentials
@@ -88,5 +87,5 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
   - `photo_url`: thumbnail for display
   - `photo_thumbnail`: 96px version for UI avatars
 - **contact_photos:** `{contact_id, user_id, photo_full: <1080px_base64>, updated_at}`
-  - Stores high-res versions separately to keep contacts collection lightweight
+- **sops:** `{title, summary, department, category, is_required_reading, estimated_time, difficulty, tags, steps, related_sops, ...}`
 - **users:** Same photo structure as contacts
