@@ -435,8 +435,15 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Index creation skipped: {e}")
     
+    # Start the background campaign scheduler
+    try:
+        from scheduler import start_scheduler
+        start_scheduler()
+        logger.info("Campaign scheduler started")
+    except Exception as e:
+        logger.warning(f"Scheduler start failed (non-fatal): {e}")
+
     logger.info("iMOs API v2.0 started")
-    # Database connection will happen lazily on first request
 
 async def seed_admin_user(db):
     """Create default admin user if no users exist in database"""
