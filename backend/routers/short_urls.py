@@ -1,5 +1,5 @@
 """
-URL Shortener for MVPLine
+URL Shortener for iMOs
 Generates short codes for business cards, congrats cards, and other shareable links.
 """
 from fastapi import APIRouter, HTTPException, Request

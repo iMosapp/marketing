@@ -1,5 +1,5 @@
 """
-MVPLine Demo Data Seeder
+iMOs Demo Data Seeder
 Populates the database with realistic demo data for testing all features.
 """
 import asyncio
