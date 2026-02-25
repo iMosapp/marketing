@@ -992,7 +992,11 @@ export default function ThreadScreen() {
       // Error haptic feedback
       if (!IS_WEB) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.error('Error creating congrats card:', error);
-      showSimpleAlert('Error', error.response?.data?.detail || 'Failed to create congrats card');
+      const errMsg = typeof error === 'string' ? error 
+        : error?.response?.data?.detail 
+        || error?.message 
+        || 'Failed to create congrats card';
+      showSimpleAlert('Error', errMsg);
     } finally {
       setCreatingCongratsCard(false);
     }
