@@ -377,6 +377,13 @@ export default function InviteTeamScreen() {
                     {getRoleLabel(member.role)}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteMember(member._id, member.name)}
+                  data-testid={`delete-member-${member._id}`}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                </TouchableOpacity>
               </View>
             ))
           )}
