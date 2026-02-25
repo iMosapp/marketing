@@ -97,7 +97,7 @@ export default function ImosHome() {
                 <Ionicons name="calendar" size={20} color="#000" />
                 <Text style={s.primaryBtnText}>Schedule a Demo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="hero-trial-btn">
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/imos/signup')} data-testid="hero-trial-btn">
                 <Text style={s.secondaryBtnText}>Start 14-Day Free Trial</Text>
                 <Ionicons name="arrow-forward" size={16} color="#C9A962" />
               </TouchableOpacity>
@@ -159,7 +159,7 @@ export default function ImosHome() {
                 <Ionicons name="calendar" size={20} color="#000" />
                 <Text style={s.primaryBtnText}>Schedule a Demo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="bottom-trial-btn">
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/imos/signup')} data-testid="bottom-trial-btn">
                 <Text style={s.secondaryBtnText}>Start 14-Day Free Trial</Text>
                 <Ionicons name="arrow-forward" size={16} color="#C9A962" />
               </TouchableOpacity>
