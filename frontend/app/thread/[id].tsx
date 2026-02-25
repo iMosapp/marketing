@@ -597,11 +597,7 @@ export default function ThreadScreen() {
     
     // Block email send if contact has no email
     if (messageMode === 'email' && !contact_email) {
-      Alert.alert(
-        'No Email Address',
-        'This contact doesn\'t have an email address. Please add one to send emails.',
-        [{ text: 'OK', style: 'cancel' }]
-      );
+      setShowEmailPrompt(true);
       return;
     }
     
