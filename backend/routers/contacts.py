@@ -125,7 +125,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
         ids = [c['_id'] for c in needs_backfill]
         # Fetch only the photo field for these contacts
         photo_docs = await db.contacts.find(
-            {"_id": {"$in": ids}, "photo": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"_id": {"$in": ids}, "photo": {"$exists": True, "$nin": [None, "", "None"]}},
             {"_id": 1, "photo": 1}
         ).to_list(len(ids))
         
