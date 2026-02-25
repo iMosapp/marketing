@@ -635,6 +635,7 @@ export default function ThreadScreen() {
       const messagePayload: any = {
         conversation_id: convId,
         content: contentToSend,
+        channel: messageMode,
       };
       
       // Include template tracking info if a template was used
