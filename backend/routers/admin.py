@@ -67,7 +67,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
         "subject": f"You're Invited to Join iMOs as {role_title}",
         "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-                <div style="text-align: center; margin-bottom: 20px; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 20px; padding: 20px; background-color: #1A1A2E; border-radius: 16px 16px 0 0;">
                     <img src="cid:imos-logo" alt="iMOs" width="150" style="max-width: 150px; height: auto;" />
                     <p style="margin: 8px 0 0 0; font-size: 13px; color: #ffffff; letter-spacing: 1px;">Relationship Management System</p>
                 </div>
