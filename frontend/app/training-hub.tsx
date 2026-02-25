@@ -44,7 +44,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Learn the basics and set up your account',
     duration: '5 min',
     category: 'Getting Started',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Welcome to iMOs! This guide will walk you through setting up your profile, understanding the main features, and making your first connection with a customer.',
     steps: [
       'Log in to your iMOs account using the credentials provided by your admin.',
