@@ -555,10 +555,6 @@ export default function MoreScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>More</Text>
-        </View>
-        
         {/* Impersonation Banner */}
         {isImpersonating && (
           <TouchableOpacity 
