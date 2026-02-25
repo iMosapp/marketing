@@ -962,12 +962,20 @@ export default function ThreadScreen() {
         setCongratsPhoto(null);
         setCongratsCustomerName('');
         setCongratsCustomMessage('');
+        setCongratsSelectedTags([]);
         
-        // Show success message - mention if contact photo was updated
+        // Show success message
+        const tagMsg = congratsSelectedTags.length > 0
+          ? `\n\nTags applied: ${congratsSelectedTags.join(', ')}${
+              congratsSelectedTags.some(t => getCampaignForTag(t))
+                ? ' - Campaign auto-started!'
+                : ''
+            }`
+          : '';
         const photoUpdateMsg = response.data.contact_photo_updated 
           ? "\n\nContact's profile photo has been updated!"
           : "";
-        showSimpleAlert('Card Created!', `The congrats card link has been added to your message. Hit send to share it!${photoUpdateMsg}`);
+        showSimpleAlert('Card Created!', `The congrats card link has been added to your message. Hit send to share it!${photoUpdateMsg}${tagMsg}`);
       }
     } catch (error: any) {
       // Error haptic feedback
