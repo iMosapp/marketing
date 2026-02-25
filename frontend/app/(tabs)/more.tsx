@@ -46,7 +46,7 @@ export default function MoreScreen() {
   const { user, logout, isImpersonating, stopImpersonation, originalUser } = useAuthStore();
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['essentials']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   
   // Load pending count for super admins
   useFocusEffect(
