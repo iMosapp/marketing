@@ -334,6 +334,18 @@ const TRAINING_TOPICS: TrainingTopic[] = [
 
 // Video embed component for web
 const VideoEmbed = ({ url }: { url: string }) => {
+  // Empty URL - show "coming soon" placeholder
+  if (!url) {
+    return (
+      <View style={styles.videoPlaceholder}>
+        <View style={[styles.playButton, { backgroundColor: '#3A3A3C' }]}>
+          <Ionicons name="videocam" size={28} color="#8E8E93" />
+        </View>
+        <Text style={styles.videoPlaceholderText}>Training video coming soon</Text>
+      </View>
+    );
+  }
+
   if (!IS_WEB) {
     return (
       <TouchableOpacity
