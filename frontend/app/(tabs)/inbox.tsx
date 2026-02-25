@@ -588,7 +588,7 @@ export default function InboxScreen() {
   
   const renderConversation = ({ item }: { item: any }) => {
     const contactName = item.contact?.name || 'Unknown';
-    const contactPhoto = item.contact?.photo || null;
+    const contactPhoto = item.contact?.photo_thumbnail || item.contact?.photo_url || null;
     const contactInitials = contactName
       .split(' ')
       .map((n: string) => n[0] || '')
