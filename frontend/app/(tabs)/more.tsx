@@ -181,6 +181,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/campaigns/dashboard'),
           color: '#5AC8FA',
         },
+        {
+          icon: 'calendar-outline',
+          title: 'Date Triggers',
+          subtitle: 'Birthdays, anniversaries, holidays',
+          onPress: () => router.push('/settings/date-triggers'),
+          color: '#FF9500',
+        },
       ],
     },
     // Templates & Branding
