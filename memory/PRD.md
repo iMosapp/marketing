@@ -31,29 +31,31 @@ iMOs is a business management / CRM app for retail/service businesses. Key featu
 ```
 /app
 ├── backend/              # FastAPI + MongoDB
-│   ├── server.py         # Main entry point, includes branding/logo endpoint
+│   ├── server.py         # Main entry, branding/logo endpoint
 │   ├── routers/
-│   │   ├── admin.py      # User management, Resend email invites (CID logo)
-│   │   ├── contacts.py   # Contact CRUD
+│   │   ├── admin.py      # User mgmt, Resend email invites (CID logo)
+│   │   ├── contacts.py   # Contact CRUD (supports email field)
 │   │   ├── users.py      # User profile, onboarding completion
+│   │   ├── team_invite.py # Team invite link system
 │   │   ├── lead_sources.py
-│   │   ├── notifications.py
-│   │   └── demo_requests.py
+│   │   └── notifications.py
 │   ├── models.py         # Pydantic models
 │   └── static/           # Email assets (imos-logo-email.png)
 ├── frontend/             # React Native/Expo (web export)
 │   ├── app/
-│   │   ├── admin/        # Admin dashboard with collapsible sections + Quick Stats
+│   │   ├── admin/        # Admin dashboard, collapsible sections, Quick Stats
 │   │   ├── card/         # Digital business card with Share Contact modal
 │   │   ├── (tabs)/
-│   │   │   ├── contacts.tsx  # Contact list + expanded Add Contact modal
+│   │   │   ├── contacts.tsx  # Contact list + Add Contact modal (name, phone, email)
 │   │   │   ├── inbox.tsx
-│   │   │   └── more.tsx      # Direct admin links
+│   │   │   └── more.tsx      # No title, profile first, Invite Team in Administration
+│   │   ├── settings/
+│   │   │   └── invite-team.tsx  # Fixed: graceful error handling, admin quick-create
 │   │   └── onboarding/
 │   │       ├── index.tsx         # Role-based onboarding + cascading invites
-│   │       ├── slideLibraries.ts # Slide content per role
+│   │       ├── slideLibraries.ts
 │   │       └── types.ts
-│   └── services/api.ts   # API service layer
+│   └── services/api.ts
 ```
 
 ## 3rd Party Integrations
@@ -75,14 +77,26 @@ iMOs is a business management / CRM app for retail/service businesses. Key featu
 - [x] Cascading invite system (onboarding -> invite team)
 - [x] Live email invites via Resend with CID-embedded logo
 - [x] "Relationship Management System" tagline in email header
-- [x] Email field in Add Contact modal (Feb 2026)
+- [x] Email field in Add Contact modal (Feb 25, 2026)
 - [x] Direct admin links on More page
+- [x] Removed "More" title - profile card first (Feb 25, 2026)
+- [x] Moved Invite Team to Administration section (Feb 25, 2026)
+- [x] Fixed Invite Team page "Loading..." bug (Feb 25, 2026)
+- [x] Backend /api/branding/logo endpoint for email images (Feb 25, 2026)
 
 ## Known Issues
 - React Hydration Error #418 (recurring, meta-refresh workaround in place)
 - Mobile `tags` data sync (needs user verification)
 - Avatar consistency in inbox search dropdown
 - Twilio SMS is MOCKED
+
+## Upcoming Tasks
+- (P1) Implement Voice Help Assistant backend (UI already built)
+- (P2) Populate Training Hub with video content
+- (P2) Enable Lead Notification System
+- (P2) Build Inventory Management Module
+- (P2) Create Searchable Training Manual
+- (P2) Populate Reports & Analytics section
 
 ## Credentials
 - Super Admin: forest@imosapp.com / Admin123!
