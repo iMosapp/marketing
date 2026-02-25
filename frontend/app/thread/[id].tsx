@@ -165,7 +165,6 @@ export default function ThreadScreen() {
     try {
       const savedMode = await AsyncStorage.getItem('message_mode');
       if (savedMode === 'sms' || savedMode === 'email') {
-        // Auto-fallback to SMS if contact has no email
         const effectiveMode = (savedMode === 'email' && !contact_email) ? 'sms' : savedMode;
         setMessageMode(effectiveMode);
       }
@@ -598,7 +597,7 @@ export default function ThreadScreen() {
     if (!contentToSend || !user) return;
     
     // Block email send if contact has no email
-    if (messageMode === 'email' && !contact_email) {
+    if (messageMode === 'email' && !hasEmail) {
       setShowEmailPrompt(true);
       return;
     }
@@ -1436,7 +1435,7 @@ export default function ThreadScreen() {
           style={styles.modeSwitchButton}
           onPress={() => {
             const newMode = messageMode === 'sms' ? 'email' : 'sms';
-            if (newMode === 'email' && !contact_email) {
+            if (newMode === 'email' && !hasEmail) {
               setShowEmailPrompt(true);
               return;
             }
