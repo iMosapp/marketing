@@ -1171,6 +1171,40 @@ async def twilio_inbound_webhook(request: Request):
         await db.messages.insert_one(message)
         logger.info(f"Saved inbound message to conversation {conversation_id} ({inbox_name})")
         
+        # ── Real-time notification via WebSocket ──
+        try:
+            from websocket_manager import manager as ws_manager
+            contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or from_phone
+            ws_payload = {
+                "type": "new_customer_message",
+                "conversation_id": conversation_id,
+                "contact_name": contact_name,
+                "contact_phone": from_phone,
+                "message_preview": body[:100] if body else "(media)",
+                "has_media": len(media_urls) > 0,
+            }
+            await ws_manager.send_to_user(user_id, ws_payload)
+            
+            # Also create a persistent notification
+            notif = {
+                "user_id": user_id,
+                "type": "new_message",
+                "title": f"New message from {contact_name}",
+                "message": body[:100] if body else "Sent media",
+                "conversation_id": conversation_id,
+                "contact_id": contact_id,
+                "contact_name": contact_name,
+                "contact_phone": from_phone,
+                "read": False,
+                "created_at": datetime.utcnow().isoformat(),
+            }
+            await db.notifications.insert_one(notif)
+            
+            # Notify via WS to update badge
+            await ws_manager.send_to_user(user_id, {"type": "notification_update", "reason": "new_message"})
+        except Exception as notify_err:
+            logger.error(f"Notification error: {notify_err}")
+        
         # Return empty TwiML response (we don't auto-reply)
         return Response(
             content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
