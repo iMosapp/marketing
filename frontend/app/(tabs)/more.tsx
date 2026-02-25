@@ -641,6 +641,9 @@ export default function MoreScreen() {
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
           
+          {/* Notification Bell */}
+          <NotificationBell />
+          
           {/* Sign Out button on profile card */}
           <TouchableOpacity
             style={styles.profileSignOutBtn}
