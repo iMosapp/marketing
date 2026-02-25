@@ -111,7 +111,7 @@ api_router.include_router(app_directory.router)
 api_router.include_router(scheduler_admin.router)
 
 # ============= WEBSOCKET ENDPOINT =============
-@app.websocket("/ws/{user_id}")
+@app.websocket("/api/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):
     await ws_manager.connect(websocket, user_id)
     try:
