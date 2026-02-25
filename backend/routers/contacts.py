@@ -13,6 +13,59 @@ from routers.database import get_db, get_data_filter, increment_user_stat
 router = APIRouter(prefix="/contacts", tags=["Contacts"])
 logger = logging.getLogger(__name__)
 
+
+async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):
+    """Auto-enroll contact in campaigns whose trigger_tag matches any of the contact's tags"""
+    db = get_db()
+    contact_tags = contact_data.get('tags', [])
+    if not contact_tags:
+        return
+    
+    try:
+        # Find active campaigns with trigger_tags matching this contact's tags
+        campaigns = await db.campaigns.find({
+            "user_id": user_id,
+            "active": True,
+            "trigger_tag": {"$in": contact_tags}
+        }).to_list(50)
+        
+        for campaign in campaigns:
+            campaign_id = str(campaign['_id'])
+            # Check if already enrolled
+            existing = await db.campaign_enrollments.find_one({
+                "campaign_id": campaign_id,
+                "contact_id": contact_id,
+                "status": {"$in": ["active", "completed"]}
+            })
+            if existing:
+                continue
+            
+            # Get contact info for enrollment
+            contact = contact_data
+            contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+            
+            sequences = campaign.get('sequences', [])
+            enrollment = {
+                "user_id": user_id,
+                "campaign_id": campaign_id,
+                "campaign_name": campaign.get('name', ''),
+                "contact_id": contact_id,
+                "contact_name": contact_name,
+                "contact_phone": contact.get('phone', ''),
+                "current_step": 1,
+                "total_steps": len(sequences),
+                "status": "active",
+                "enrolled_at": datetime.utcnow(),
+                "next_send_at": datetime.utcnow(),
+                "messages_sent": [],
+                "trigger_type": "tag",
+                "trigger_tag": campaign.get('trigger_tag', '')
+            }
+            await db.campaign_enrollments.insert_one(enrollment)
+            logger.info(f"Auto-enrolled {contact_name} in campaign '{campaign.get('name')}' via tag '{campaign.get('trigger_tag')}'")
+    except Exception as e:
+        logger.error(f"Tag campaign enrollment check failed: {e}")
+
 @router.post("/{user_id}", response_model=Contact)
 async def create_contact(user_id: str, contact_data: ContactCreate):
     """Create a new contact"""
