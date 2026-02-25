@@ -95,15 +95,23 @@ async def get_contact(user_id: str, contact_id: str):
 @router.put("/{user_id}/{contact_id}")
 async def update_contact(user_id: str, contact_id: str, contact_data: ContactCreate):
     """Update a contact with role-based access check"""
-    # Get role-based data filter
     base_filter = await get_data_filter(user_id)
     
     update_dict = contact_data.dict()
     update_dict['updated_at'] = datetime.utcnow()
     
+    # Auto-tag based on date fields
+    existing_tags = set(update_dict.get('tags', []))
+    if update_dict.get('birthday'):
+        existing_tags.add('Birthday')
+    if update_dict.get('anniversary'):
+        existing_tags.add('Anniversary')
+    if update_dict.get('date_sold'):
+        existing_tags.add('Sold Date')
+    update_dict['tags'] = list(existing_tags)
+    
     # If setting a referrer, update the referrer's count
     if contact_data.referred_by:
-        # Increment referrer's referral_count (only if accessible)
         await get_db().contacts.update_one(
             {"$and": [{"_id": contact_data.referred_by}, base_filter]},
             {"$inc": {"referral_count": 1}}
@@ -122,6 +130,9 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
+    
+    # Auto-enroll in tag-triggered campaigns
+    await _check_tag_campaign_enrollment(user_id, contact_id, update_dict)
     
     return {"message": "Contact updated successfully"}
 
