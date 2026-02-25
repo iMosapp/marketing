@@ -370,7 +370,9 @@ export default function TeamChatScreen() {
           setSelectedChannel(item);
           loadMembers();
         }}
+        onLongPress={() => showChannelActions(item)}
         activeOpacity={0.7}
+        data-testid={`channel-${item.id}`}
       >
         <View style={styles.channelIcon}>
           {item.avatar ? (
