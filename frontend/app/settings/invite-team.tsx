@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
