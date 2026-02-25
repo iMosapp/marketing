@@ -4,7 +4,7 @@
 iMOs is a business management / CRM app for retail/service businesses. Key features include:
 - User/team management with role-based invite flows (cascading invites)
 - Store management with organizational hierarchy
-- SMS/messaging capabilities (Twilio - mocked)
+- SMS/messaging capabilities (Twilio)
 - Partner agreements, Review management
 - AI assistant (Jessi)
 - Lead Sources & Routing system
@@ -12,57 +12,59 @@ iMOs is a business management / CRM app for retail/service businesses. Key featu
 - Role-based onboarding (Org Admin, Store Manager, Salesperson)
 - Date-triggered campaigns (birthdays, anniversaries, sold dates, holidays)
 - Tag-triggered campaign auto-enrollment
+- App Directory for super admins to browse & share all app pages
 
 ## Current Architecture
 ```
 /app
 ├── backend/
-│   ├── server.py              # Main entry, branding/logo, DB indexes on startup
+│   ├── server.py              # Main entry, DB indexes on startup
 │   ├── routers/
-│   │   ├── admin.py           # User mgmt, Resend email invites (CID logo)
-│   │   ├── contacts.py        # Contact CRUD, auto-tagging, tag-campaign enrollment
-│   │   ├── date_triggers.py   # Date triggers config, holidays, processing
+│   │   ├── admin.py           # User mgmt, Resend email invites (dynamic URL)
+│   │   ├── app_directory.py   # NEW: Page sharing via email/SMS
+│   │   ├── contacts.py        # Contact CRUD, auto-tagging, thumbnails
+│   │   ├── date_triggers.py   # Date triggers config, holidays
 │   │   ├── campaigns.py       # Campaigns with trigger_tag support
-│   │   ├── users.py           # User profile, onboarding
-│   │   └── team_invite.py     # Team invite links
-│   ├── models.py              # Pydantic models
-│   └── static/                # Email assets
+│   │   └── ...
+│   ├── models.py
+│   └── static/
 ├── frontend/
 │   ├── app/
 │   │   ├── (tabs)/
-│   │   │   ├── contacts.tsx   # Optimized: debounce, memoized, FlatList perf
-│   │   │   └── more.tsx       # REFACTORED: Nested indented card-style dropdowns
+│   │   │   ├── contacts.tsx   # Optimized: debounce, memoized, FlatList
+│   │   │   └── more.tsx       # Nested indented card-style dropdowns
+│   │   ├── admin/
+│   │   │   └── app-directory.tsx  # NEW: Page catalog with share functionality
 │   │   ├── settings/
-│   │   │   ├── date-triggers.tsx  # Dates & Holidays config tabs
-│   │   │   └── invite-team.tsx    # Direct invite form
-│   │   └── contact/[id].tsx   # Auto-tagging, campaign enrollment on save
+│   │   │   ├── date-triggers.tsx
+│   │   │   └── invite-team.tsx
+│   │   └── ...
 │   └── services/api.ts
 ```
 
 ## What's Been Implemented
 - [x] Email invites with CID-embedded iMOs logo + tagline
 - [x] Add Contact modal with email field
-- [x] More page: no title, Invite Team in Administration
+- [x] More page: nested indented card-style dropdowns (Feb 2026)
 - [x] Invite Team page rebuilt with working form
 - [x] Contacts page performance optimization (thumbnail system)
 - [x] Phone number underlines removed
-- [x] Date-triggered campaigns (birthday/anniversary/sold date/holidays)
+- [x] Date-triggered campaigns foundation
 - [x] Auto-tagging on contact date saves
 - [x] Tag-triggered campaign auto-enrollment
 - [x] Holiday picker (14 US holidays)
-- [x] Date Triggers settings page
 - [x] Avatar pills size increase in inbox
-- [x] More page UI refactored to nested indented card-style dropdowns (Feb 2026)
+- [x] **App Directory panel** - 57 pages, 11 categories, Preview/Copy/Share (Feb 2026)
+- [x] **Email link fix** - Dynamic URL detection for preview vs production (Feb 2026)
 
 ## Known Issues
 - React Hydration Error #418 (meta-refresh workaround)
 - Mobile tags sync (needs user verification)
-- Twilio SMS is MOCKED
+- Twilio SMS integration (real, but may need verification)
 - Avatar consistency in inbox search dropdown (unverified)
-- Leaderboard toggle functionality (untested)
 
 ## In Progress Tasks
-- (P1) Complete Date-Triggered & Tag-Triggered Campaign Feature (backend scheduling/cron needed)
+- (P1) Complete Campaign Automation (backend cron/scheduling needed)
 
 ## Upcoming Tasks
 - (P1) Implement Voice Help Assistant backend
