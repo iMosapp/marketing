@@ -420,7 +420,7 @@ async def startup_event():
     try:
         from routers.database import get_db
         db = get_db()
-        if db:
+        if db is not None:
             await db.contacts.create_index("user_id")
             await db.contacts.create_index([("first_name", 1)])
             await db.contacts.create_index([("user_id", 1), ("first_name", 1)])
