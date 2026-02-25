@@ -724,9 +724,9 @@ async def get_conversation_info(conversation_id: str):
     contact_id = conv.get("contact_id")
     if contact_id:
         try:
-            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 0})
             if contact:
-                result["contact_photo"] = contact.get("photo")
+                result["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
                 result["contact_name"] = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or result["contact_name"]
         except:
             pass
