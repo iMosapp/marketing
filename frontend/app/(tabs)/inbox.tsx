@@ -1650,7 +1650,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 22,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
