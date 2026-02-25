@@ -130,6 +130,32 @@ export default function InviteTeamScreen() {
     }
   };
 
+  const getInviteText = () => {
+    if (!inviteResult) return '';
+    return `Hey ${inviteResult.name}! You've been invited to join iMOs as a ${inviteResult.role}.\n\nHere are your login credentials:\nEmail: ${inviteResult.email}\nPassword: ${inviteResult.password}\n\nLogin here: https://app.imosapp.com/imos/login\n\nYou'll be asked to set a new password on first login.`;
+  };
+
+  const handleCopyInvite = async () => {
+    const text = getInviteText();
+    try {
+      if (Platform.OS === 'web') {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await Clipboard.setStringAsync(text);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (e) {
+      showSimpleAlert('Copy Failed', 'Could not copy to clipboard');
+    }
+  };
+
+  const handleNewInvite = () => {
+    setInviteResult(null);
+    setSuccessMessage('');
+    setCopied(false);
+  };
+
   const getRoleBadgeColor = (r: string) => {
     switch (r) {
       case 'super_admin': return '#FF3B30';
