@@ -234,19 +234,6 @@ export default function TabLayout() {
 
   return (
     <>
-      {/* Notification bell - floating top right */}
-      {mounted && user && (
-        <View style={bellStyles.container}>
-          <NotificationBell
-            unreadCount={unreadCount}
-            notifications={notifications}
-            onMarkAllRead={markAllRead}
-            onNotificationPress={handleNotificationPress}
-            onRefresh={refreshNotifications}
-          />
-        </View>
-      )}
-      
       <Tabs
         initialRouteName={getInitialTab(user?.role)}
         screenOptions={{
