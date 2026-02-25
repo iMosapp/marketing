@@ -111,9 +111,9 @@ export default function FeaturesScreen() {
           {/* CTA */}
           <View style={s.cta}>
             <Text style={s.ctaTitle}>See it in action</Text>
-            <TouchableOpacity style={s.ctaBtn} onPress={() => router.push('/imos/salespresentation' as any)} data-testid="features-presentation-btn">
-              <Ionicons name="play-circle" size={20} color="#000" />
-              <Text style={s.ctaBtnText}>View Sales Presentation</Text>
+            <TouchableOpacity style={s.ctaBtn} onPress={() => router.push('/imos/demo' as any)} data-testid="features-demo-btn">
+              <Ionicons name="calendar" size={20} color="#000" />
+              <Text style={s.ctaBtnText}>Schedule a Demo</Text>
             </TouchableOpacity>
           </View>
 
