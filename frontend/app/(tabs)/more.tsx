@@ -377,6 +377,13 @@ export default function MoreScreen() {
         onPress: () => router.push('/admin'),
         color: '#34C759',
       },
+      {
+        icon: 'person-add',
+        title: 'Invite Team',
+        subtitle: 'Send invitations',
+        onPress: () => router.push('/settings/invite-team'),
+        color: '#C9A962',
+      },
       // Organizations - super_admin only
       ...(isSuperAdmin ? [{
         icon: 'business',
