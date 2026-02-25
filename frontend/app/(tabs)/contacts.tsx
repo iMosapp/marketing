@@ -54,13 +54,17 @@ export default function ContactsScreen() {
   
   // Check if user has restricted access
   const isPending = user?.status === 'pending';
+  const userId = user?._id;
+  const searchTimer = useRef<any>(null);
+  const initialLoadDone = useRef(false);
   
   useEffect(() => {
-    if (!isPending) {
+    if (!isPending && userId) {
       loadContacts();
       loadTags();
+      initialLoadDone.current = true;
     }
-  }, [user, isPending]);
+  }, [userId, isPending]);
   
   const loadTags = async () => {
     if (!user?._id) return;
