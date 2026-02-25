@@ -87,9 +87,15 @@ export default function PricingScreen() {
                 )}
                 <Text style={s.planName}>{plan.name}</Text>
                 <View style={s.priceRow}>
-                  <Text style={s.priceSymbol}>$</Text>
-                  <Text style={s.priceValue}>{'price' in plan ? plan.price : (plan as any).pricePerUser}</Text>
-                  <Text style={s.priceUnit}>{'pricePerUser' in plan ? '/user/mo' : '/mo'}</Text>
+                  {('price' in plan && plan.price !== null) || 'pricePerUser' in plan ? (
+                    <>
+                      <Text style={s.priceSymbol}>$</Text>
+                      <Text style={s.priceValue}>{'price' in plan ? plan.price : (plan as any).pricePerUser}</Text>
+                      <Text style={s.priceUnit}>{'pricePerUser' in plan ? '/user/mo' : '/mo'}</Text>
+                    </>
+                  ) : (
+                    <Text style={s.priceCustom}>Contact Us</Text>
+                  )}
                 </View>
                 {'minUsers' in plan && (
                   <Text style={s.minUsers}>Min {(plan as any).minUsers} users</Text>
