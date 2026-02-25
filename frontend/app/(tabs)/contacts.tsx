@@ -347,7 +347,7 @@ export default function ContactsScreen() {
       </View>
     </TouchableOpacity>
     );
-  };
+  }, [tagMap, router, user]);
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
