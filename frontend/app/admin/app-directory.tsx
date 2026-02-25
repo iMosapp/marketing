@@ -57,6 +57,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Pricing Plans', description: 'Subscription tiers', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Solutions Hub', description: 'Browse solutions', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
+      { name: 'Presentation (Redirect)', description: 'Redirects to Sales Presentation', path: '/imos/presentation', icon: 'arrow-forward-outline', color: '#8E8E93', requiresAuth: false, audience: 'Prospects, investors' },
     ],
   },
   {
@@ -174,6 +175,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Partner Agreements', description: 'Reseller contracts', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', requiresAuth: false, audience: 'Super Admin' },
       { name: 'Billing', description: 'Subscription & billing info', path: '/imos/billing', icon: 'card-outline', color: '#34C759', requiresAuth: false, audience: 'Admins' },
       { name: 'Activity Feed', description: 'Recent admin activity', path: '/imos/activity-feed', icon: 'pulse-outline', color: '#FF2D55', requiresAuth: false, audience: 'Admins' },
+      { name: 'App Directory (Public)', description: 'Public page index (unlisted)', path: '/imos/app-directory', icon: 'albums-outline', color: '#8E8E93', requiresAuth: false, audience: 'Internal / Unlisted' },
     ],
   },
   {
