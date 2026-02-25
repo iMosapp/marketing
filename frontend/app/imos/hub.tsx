@@ -19,7 +19,7 @@ const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: Pub
     icon: 'diamond',
     color: '#C9A962',
     pages: [
-      { title: 'Sales Presentation', description: 'Interactive deck showcasing iMOs capabilities', icon: 'easel', color: '#C9A962', path: '/imos/salespresentation', badge: 'Featured' },
+      { title: 'Why Use iMOs', description: 'Interactive deck showcasing iMOs capabilities', icon: 'easel', color: '#C9A962', path: '/imos/salespresentation', badge: 'Featured' },
       { title: 'Features Overview', description: 'Explore what iMOs can do for your team', icon: 'apps', color: '#007AFF', path: '/imos/features' },
       { title: 'Pricing Plans', description: 'Subscription tiers and pricing', icon: 'pricetag', color: '#34C759', path: '/imos/pricing' },
     ],

@@ -53,11 +53,11 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'iMOs Home', description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Everyone' },
       { name: 'Schedule a Demo', description: 'Lead capture form', path: '/imos/demo', icon: 'calendar-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects' },
-      { name: 'Sales Presentation', description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
+      { name: 'Why Use iMOs', description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Pricing Plans', description: 'Subscription tiers', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Solutions Hub', description: 'Browse solutions', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
-      { name: 'Presentation (Redirect)', description: 'Redirects to Sales Presentation', path: '/imos/presentation', icon: 'arrow-forward-outline', color: '#8E8E93', requiresAuth: false, audience: 'Prospects, investors' },
+      { name: 'Presentation (Redirect)', description: 'Redirects to Why Use iMOs', path: '/imos/presentation', icon: 'arrow-forward-outline', color: '#8E8E93', requiresAuth: false, audience: 'Prospects, investors' },
     ],
   },
   {
