@@ -100,19 +100,19 @@ export default function ContactsScreen() {
     );
   }
   
-  const loadContacts = async () => {
-    if (!user) return;
+  const loadContacts = useCallback(async () => {
+    if (!userId) return;
     
     try {
-      setLoading(true);
-      const data = await contactsAPI.getAll(user._id, search || undefined);
+      if (!initialLoadDone.current) setLoading(true);
+      const data = await contactsAPI.getAll(userId, search || undefined);
       setContacts(data);
     } catch (error) {
       console.error('Failed to load contacts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, search]);
   
   const onRefresh = async () => {
     setRefreshing(true);
