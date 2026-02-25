@@ -124,6 +124,7 @@ export default function InviteTeamScreen() {
       case 'super_admin': return '#FF3B30';
       case 'org_admin': return '#007AFF';
       case 'store_manager': return '#34C759';
+      case 'individual': return '#AF52DE';
       default: return '#8E8E93';
     }
   };
@@ -133,6 +134,7 @@ export default function InviteTeamScreen() {
       case 'super_admin': return 'Super Admin';
       case 'org_admin': return 'Org Admin';
       case 'store_manager': return 'Manager';
+      case 'individual': return 'Individual';
       default: return 'Team Member';
     }
   };
