@@ -3,58 +3,57 @@
 ## Original Problem Statement
 iMOs is a **Relationship Management System (RMS)** for retail/service businesses.
 
-## Current Architecture
+## Public Marketing Site Architecture
+All 56 pages live at `app.imosapp.com/imos/...` — no auth required.
+
+### Page Types
+1. **Full Pages** (10): Main hero, features, pricing, sales presentation, onboarding preview, app directory, hub, privacy, terms
+2. **Static Preview Pages** (43): Each authenticated feature has a public preview with phone mockup, description, bullets, and "Sign Up Free" CTA
+3. **Campaign Subfolder** (3): /campaigns, /campaigns/email, /campaigns/dashboard
+
+### File Structure
 ```
-/app/frontend/app/imos/          # ALL PUBLIC PAGES (no auth required)
-├── _layout.tsx                  # Stack layout
-├── _components.tsx              # Shared ImosHeader + ImosFooter
-├── index.tsx                    # Main marketing page (Calldrip-style hero)
-├── hub.tsx                      # Page hub with quick links
-├── app-directory.tsx            # Full 55-page catalog with search, copy, share
-├── onboarding-preview.tsx       # 5-role onboarding walkthrough
-├── salespresentation.tsx        # 10-slide interactive sales deck
-├── features.tsx                 # Feature showcase (5 sections, 20 features)
-├── pricing.tsx                  # Individual/Store pricing tabs
-├── privacy.tsx                  # Privacy policy
-├── terms.tsx                    # Terms of service
-└── presentation.tsx             # Redirect → salespresentation
+/app/frontend/app/imos/
+├── _layout.tsx           # Stack layout
+├── _components.tsx       # Shared ImosHeader + ImosFooter (true black #000)
+├── _preview.tsx          # Reusable PreviewPage component with 5 mockup types
+├── _pagedata.ts          # All 43 preview page configurations centralized
+├── index.tsx             # Main marketing hero page
+├── hub.tsx               # Quick page links
+├── app-directory.tsx     # Full 55-page catalog with search/copy/share
+├── onboarding-preview.tsx # 5-role onboarding walkthrough
+├── salespresentation.tsx # 10-slide sales deck
+├── features.tsx          # Feature showcase
+├── pricing.tsx           # Individual/Store pricing
+├── privacy.tsx / terms.tsx # Legal
+├── campaigns/            # Campaign subfolder
+│   ├── _layout.tsx
+│   ├── index.tsx / email.tsx / dashboard.tsx
+└── [43 preview pages]    # inbox, contacts, dialer, team, etc.
 ```
+
+## Design System
+- **Background**: True black `#000`
+- **Accent**: Gold `#C9A962`
+- **Header**: Sticky, iMOs logo + nav (Home, Features, Pricing, Directory, Presentation) + Login/Signup
+- **Footer**: Logo, Product/Company/Get Started columns, copyright
+- **Mockup types**: list, stats, chat, cards, form
 
 ## What's Been Implemented
 - [x] Full RMS with contacts, messaging, campaigns, AI assistant
-- [x] Email invites, contact management, team hierarchy
-- [x] CRM → RMS rebrand, MVPLine → iMOs rebrand
-- [x] Automated Campaign Scheduler (APScheduler: daily date triggers + 15m campaign steps)
-- [x] **Complete Public Marketing Site at /imos/** (Feb 25, 2026)
-  - Main hero: "Old School Relationship Building. Modern Tools." (Calldrip-inspired)
-  - Shared header: Home, Features, Pricing, Directory, Presentation + Sign Up / Log In
-  - Shared footer: Product, Company, Get Started sections
-  - /imos/app-directory: 55-page catalog across 11 categories with search, copy (app.imosapp.com URLs), share
-  - /imos/onboarding-preview: 5-role interactive onboarding walkthrough
-  - /imos/salespresentation: 10-slide fullscreen sales deck with keyboard nav
-  - /imos/features, /imos/pricing, /imos/privacy, /imos/terms
-  - Fully responsive (mobile hamburger menu, desktop full nav)
-
-## Public Page Routes (app.imosapp.com)
-| Route | Description |
-|-------|-------------|
-| /imos | Main marketing page |
-| /imos/app-directory | Full 55-page catalog with search & share |
-| /imos/onboarding-preview | 5-role onboarding walkthrough |
-| /imos/hub | Quick page links |
-| /imos/salespresentation | Sales deck (10 slides) |
-| /imos/features | Feature showcase |
-| /imos/pricing | Pricing plans |
-| /imos/privacy | Privacy policy |
-| /imos/terms | Terms of service |
+- [x] Automated Campaign Scheduler (APScheduler)
+- [x] 56 public pages at /imos/ (all verified working)
+- [x] True black background across all public pages
+- [x] 5 mockup types for authenticated feature previews
+- [x] Responsive mobile + desktop design
 
 ## Known Issues
 - React Hydration Error #418 (meta-refresh workaround)
 - Mobile tags sync (needs user verification)
 - Twilio SMS is MOCKED
 
-## In Progress / Upcoming
-- (P1) **White-Label System** — Org branding, custom domains
+## Upcoming
+- (P1) White-Label System
 - (P1) Voice Help Assistant backend
 - (P2) Training Hub content, Lead Notifications, Inventory, Reports
 
