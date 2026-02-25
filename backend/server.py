@@ -107,6 +107,7 @@ api_router.include_router(demo_requests.router)
 api_router.include_router(team_chat.router)
 api_router.include_router(date_triggers.router)
 api_router.include_router(app_directory.router)
+api_router.include_router(scheduler_admin.router)
 
 # ============= USER SETTINGS ENDPOINTS (kept here for URL compatibility) =============
 @api_router.get("/users/{user_id}/leaderboard-settings")
