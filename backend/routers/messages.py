@@ -216,8 +216,64 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     result = await get_db().messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
     
-    # Send via Twilio
-    if to_phone:
+    channel = message_data.channel or 'sms'
+    
+    if channel == 'email':
+        # Send via Resend (email)
+        contact = await get_db().contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
+        contact_email = contact.get('email') if contact else None
+        
+        if contact_email:
+            try:
+                import resend as resend_mod
+                RESEND_KEY = os.environ.get("RESEND_API_KEY")
+                SENDER = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+                if RESEND_KEY:
+                    resend_mod.api_key = RESEND_KEY
+                    user_doc = await get_db().users.find_one({"_id": ObjectId(user_id)})
+                    sender_name = user_doc.get('name', 'iMOs') if user_doc else 'iMOs'
+                    contact_name = contact.get('name', contact.get('first_name', ''))
+                    
+                    email_html = f"""
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #111; color: #fff;">
+                        <div style="background: #1A1A2E; border-radius: 12px; padding: 24px;">
+                            <p style="font-size: 15px; line-height: 1.6; color: #ccc; white-space: pre-wrap;">{message_data.content}</p>
+                        </div>
+                        <p style="margin-top: 16px; font-size: 12px; color: #666; text-align: center;">
+                            Sent by {sender_name} via iMOs
+                        </p>
+                    </div>
+                    """
+                    
+                    email_result = await asyncio.to_thread(resend_mod.Emails.send, {
+                        "from": SENDER,
+                        "to": contact_email,
+                        "subject": f"Message from {sender_name}",
+                        "html": email_html,
+                    })
+                    message['status'] = 'sent'
+                    message['channel'] = 'email'
+                    message['resend_id'] = email_result.get('id')
+                    logger.info(f"Email sent to {contact_email}: {message_data.content[:50]}...")
+                else:
+                    message['status'] = 'failed'
+                    message['error'] = 'Email service not configured'
+            except Exception as e:
+                message['status'] = 'failed'
+                message['error'] = str(e)
+                logger.error(f"Email failed to {contact_email}: {e}")
+        else:
+            message['status'] = 'failed'
+            message['error'] = 'No email address for contact'
+            logger.warning(f"No email for contact in conversation {conversation_id}")
+        
+        await get_db().messages.update_one(
+            {"_id": ObjectId(message['_id'])},
+            {"$set": {"status": message['status'], "channel": "email", "resend_id": message.get('resend_id')}}
+        )
+    elif to_phone:
+        # Send via Twilio (SMS)
+        message['channel'] = 'sms'
         sms_result = await send_sms(to_phone, message_data.content)
         
         if sms_result.get('success'):
