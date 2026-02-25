@@ -383,6 +383,19 @@ export default function TabLayout() {
         }}
       />
       </Tabs>
+      
+      {/* Notification bell - floating top right, rendered AFTER tabs for z-index */}
+      {mounted && user && (
+        <View style={bellStyles.container} pointerEvents="box-none">
+          <NotificationBell
+            unreadCount={unreadCount}
+            notifications={notifications}
+            onMarkAllRead={markAllRead}
+            onNotificationPress={handleNotificationPress}
+            onRefresh={refreshNotifications}
+          />
+        </View>
+      )}
     </>
   );
 }
