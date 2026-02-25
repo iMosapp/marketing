@@ -134,13 +134,13 @@ export function PreviewPage({ config }: { config: PreviewConfig }) {
 
               <View style={s.ctaBox}>
                 <Text style={s.ctaTitle}>Ready to use {config.title}?</Text>
-                <Text style={s.ctaSub}>Sign up for free and get instant access.</Text>
+                <Text style={s.ctaSub}>Start your 14-day free trial. No commitment.</Text>
                 <TouchableOpacity style={s.ctaBtn} onPress={() => router.push('/auth/signup' as any)} data-testid="preview-signup-btn">
                   <Ionicons name="arrow-forward-circle" size={20} color="#000" />
-                  <Text style={s.ctaBtnText}>Sign Up Free</Text>
+                  <Text style={s.ctaBtnText}>Start 14-Day Free Trial</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.ctaSecondary} onPress={() => router.push('/imos/salespresentation' as any)}>
-                  <Text style={s.ctaSecondaryText}>View Sales Deck</Text>
+                <TouchableOpacity style={s.ctaSecondary} onPress={() => router.push('/imos/demo' as any)}>
+                  <Text style={s.ctaSecondaryText}>Schedule a Demo Instead</Text>
                   <Ionicons name="arrow-forward" size={14} color="#C9A962" />
                 </TouchableOpacity>
               </View>
