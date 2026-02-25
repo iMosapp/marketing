@@ -261,8 +261,8 @@ export default function ContactsScreen() {
       style={styles.contactItem}
       onPress={() => router.push(`/contact/${item._id}`)}
     >
-      {item.photo ? (
-        <Image source={{ uri: item.photo }} style={styles.photoAvatar} />
+      {(item.photo_thumbnail || item.photo_url) ? (
+        <Image source={{ uri: item.photo_thumbnail || item.photo_url }} style={styles.photoAvatar} />
       ) : (
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
