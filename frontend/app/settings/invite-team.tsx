@@ -329,6 +329,8 @@ export default function InviteTeamScreen() {
               </>
             )}
           </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Recent Team Members */}
