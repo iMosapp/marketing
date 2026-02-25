@@ -45,7 +45,7 @@ async def send_welcome_email(user: dict):
                 timeless relationship principles powered by modern tools.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-                <a href="{os.environ.get('APP_URL', 'https://app.imosapp.com')}/auth/login" 
+                <a href="{os.environ.get('APP_URL', 'https://app.imosapp.com')}/imos/login" 
                    style="background-color: #007AFF; color: white; padding: 15px 40px; 
                           text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                     Get Started

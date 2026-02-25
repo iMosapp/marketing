@@ -68,7 +68,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
         'user': 'Team Member'
     }.get(role, 'Team Member')
     
-    login_url = f"{APP_URL}/auth/login"
+    login_url = f"{APP_URL}/imos/login"
     
     # Read the optimized logo and encode for CID attachment
     logo_b64 = ""
