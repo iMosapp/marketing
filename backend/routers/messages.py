@@ -73,16 +73,16 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         
         # Get contact info
         try:
-            contact = await db.contacts.find_one({"_id": ObjectId(conv['contact_id'])})
+            contact = await db.contacts.find_one({"_id": ObjectId(conv['contact_id'])}, {"photo": 0})
         except:
-            contact = await db.contacts.find_one({"_id": conv['contact_id']})
+            contact = await db.contacts.find_one({"_id": conv['contact_id']}, {"photo": 0})
         
         if contact:
             conv['contact'] = {
                 "id": str(contact['_id']),
                 "name": f"{contact['first_name']} {contact.get('last_name', '')}".strip(),
                 "phone": contact['phone'],
-                "photo": contact.get('photo')  # Include contact photo for avatar display
+                "photo": contact.get('photo_thumbnail') or contact.get('photo_url')
             }
         
         # Get last message
