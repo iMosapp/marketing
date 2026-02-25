@@ -3414,6 +3414,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
+  // Congrats Tag Picker Styles
+  congratsTagSection: {
+    marginBottom: 12,
+  },
+  congratsTagEmpty: {
+    color: '#6E6E73',
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  congratsTagGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  congratsTagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#2C2C2E',
+    borderWidth: 1,
+    borderColor: '#3A3A3C',
+  },
+  congratsTagText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  congratsCampaignBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF950020',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  congratsCampaignNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FF950015',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+  },
+  congratsCampaignNoteText: {
+    fontSize: 12,
+    color: '#FF9500',
+    flex: 1,
+  },
   // Quick Contact Panel Styles
   quickContactPanel: {
     backgroundColor: '#1C1C1E',
