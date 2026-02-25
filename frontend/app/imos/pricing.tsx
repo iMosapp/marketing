@@ -109,8 +109,8 @@ export default function PricingScreen() {
                     </View>
                   ))}
                 </View>
-                <TouchableOpacity style={[s.planBtn, plan.badge ? s.planBtnFeatured : undefined]} onPress={() => router.push('/auth/signup' as any)} data-testid={`plan-${plan.name.toLowerCase()}`}>
-                  <Text style={[s.planBtnText, plan.badge ? { color: '#000' } : undefined]}>Get Started</Text>
+                <TouchableOpacity style={[s.planBtn, plan.badge ? s.planBtnFeatured : undefined]} onPress={() => plan.price === null ? router.push('/imos/demo' as any) : router.push('/auth/signup' as any)} data-testid={`plan-${plan.name.toLowerCase()}`}>
+                  <Text style={[s.planBtnText, plan.badge ? { color: '#000' } : undefined]}>{plan.price === null ? 'Contact Sales' : 'Get Started'}</Text>
                 </TouchableOpacity>
               </View>
             ))}
