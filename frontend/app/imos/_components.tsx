@@ -176,6 +176,8 @@ const styles = StyleSheet.create({
   navLinkActive: { color: '#C9A962', fontWeight: '600' },
   ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   loginLink: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
+  signInBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
+  signInBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   signupBtn: { backgroundColor: '#C9A962', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
   signupBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
   hamburger: { padding: 4 },
