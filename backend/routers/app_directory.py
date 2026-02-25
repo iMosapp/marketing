@@ -11,7 +11,7 @@ from typing import Optional
 
 import resend
 
-from database import get_db
+from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 
