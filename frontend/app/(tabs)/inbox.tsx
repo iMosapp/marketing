@@ -452,7 +452,7 @@ export default function InboxScreen() {
       params: {
         contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
         contact_phone: contact.phone,
-        contact_photo: contact.photo || '',
+        contact_photo: contact.photo_thumbnail || contact.photo_url || '',
       }
     });
   };
