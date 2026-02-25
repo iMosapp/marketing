@@ -125,7 +125,7 @@ export default function FeaturesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A12' },
+  container: { flex: 1, backgroundColor: '#000' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 32 },
   label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },

@@ -437,7 +437,7 @@ export default function AppDirectoryScreen() {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A12' },
+  container: { flex: 1, backgroundColor: '#000' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 16, paddingHorizontal: 20 },
   label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
@@ -469,7 +469,7 @@ const st = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { color: '#8E8E93', fontSize: 16, marginTop: 12 },
   emptySubtext: { color: '#6E6E73', fontSize: 13, marginTop: 4 },
-  modalContainer: { flex: 1, backgroundColor: '#0A0A12' },
+  modalContainer: { flex: 1, backgroundColor: '#000' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
   modalCancel: { fontSize: 16, color: '#007AFF' },
   modalTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },

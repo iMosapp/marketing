@@ -153,7 +153,7 @@ export function ImosFooter() {
 const styles = StyleSheet.create({
   /* ===== HEADER ===== */
   headerOuter: {
-    backgroundColor: '#0A0A12',
+    backgroundColor: '#000',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
     ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100 } : {}),
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   hamburger: { padding: 4 },
   /* Mobile Menu */
   mobileMenu: {
-    backgroundColor: '#0A0A12',
+    backgroundColor: '#000',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.06)',
     paddingHorizontal: 20,

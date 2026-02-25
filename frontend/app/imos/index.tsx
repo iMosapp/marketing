@@ -177,7 +177,7 @@ export default function ImosHome() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A12' },
+  container: { flex: 1, backgroundColor: '#000' },
   scroll: { paddingBottom: 0 },
 
   /* HERO */
