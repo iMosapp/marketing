@@ -255,6 +255,33 @@ async def get_pending_action_notification(user_id: str = Query(...)):
 
 # ============ UPDATE NOTIFICATIONS ============
 
+@router.post("/mark-all-read")
+async def mark_all_as_read(user_id: str = Query(...)):
+    """Mark all notifications as read for a user"""
+    db = get_db()
+    
+    # Get user's teams
+    user_teams = []
+    teams = list(db.teams.find({"members": user_id}))
+    user_teams.extend([str(t["_id"]) for t in teams])
+    shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
+    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
+    
+    result = db.notifications.update_many(
+        {
+            "$or": [
+                {"user_id": user_id},
+                {"team_id": {"$in": user_teams}, "user_id": None}
+            ],
+            "read": False,
+            "dismissed": False
+        },
+        {"$set": {"read": True}}
+    )
+    
+    return {"success": True, "marked_count": result.modified_count}
+
+
 @router.post("/{notification_id}/read")
 async def mark_as_read(notification_id: str):
     """Mark a notification as read"""
