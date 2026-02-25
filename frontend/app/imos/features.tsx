@@ -69,12 +69,15 @@ const FEATURE_SECTIONS = [
 
 export default function FeaturesScreen() {
   const router = useRouter();
+  const { width: screenW } = useWindowDimensions();
+  const isDesktop = screenW > 700;
 
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0A0A1A', '#1A1A2E', '#0A0A1A']} style={StyleSheet.absoluteFill} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={isDesktop ? { maxWidth: 800, alignSelf: 'center', width: '100%' } : undefined}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="features-back">
