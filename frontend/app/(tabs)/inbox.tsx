@@ -1265,8 +1265,8 @@ export default function InboxScreen() {
                   onPress={() => startConversation(item)}
                   activeOpacity={0.7}
                 >
-                  {item.photo ? (
-                    <Image source={{ uri: item.photo }} style={styles.contactAvatarPhoto} />
+                  {(item.photo_thumbnail || item.photo_url || item.photo) ? (
+                    <Image source={{ uri: item.photo_thumbnail || item.photo_url || item.photo }} style={styles.contactAvatarPhoto} />
                   ) : (
                     <View style={[styles.contactAvatar, { backgroundColor: colors.elevated }]}>
                       <Text style={[styles.contactAvatarText, { color: colors.textPrimary }]}>
