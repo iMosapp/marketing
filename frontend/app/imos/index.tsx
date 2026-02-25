@@ -1,377 +1,248 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Dimensions, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ImosHeader, ImosFooter } from './_components';
 
-const APP_URL = process.env.REACT_APP_BACKEND_URL || '';
+const HERO_FEATURES = [
+  { icon: 'camera', color: '#34C759', label: 'Congrats Cards' },
+  { icon: 'chatbubbles', color: '#007AFF', label: 'Smart Messaging' },
+  { icon: 'repeat', color: '#FF9500', label: 'Automated Campaigns' },
+  { icon: 'sparkles', color: '#AF52DE', label: 'AI Assistant' },
+  { icon: 'trophy', color: '#FFD60A', label: 'Leaderboards' },
+];
 
-type PublicPage = {
-  title: string;
-  description: string;
-  icon: string;
-  color: string;
-  path: string;
-  badge?: string;
-};
+const STATS = [
+  { value: '100%', label: 'of customer milestones captured automatically' },
+  { value: '3x', label: 'faster new hire onboarding with guided training' },
+  { value: '24/7', label: 'automated follow-up campaigns running for you' },
+];
 
-const PUBLIC_PAGES: { category: string; icon: string; color: string; pages: PublicPage[] }[] = [
+const HOW_IT_WORKS = [
   {
-    category: 'Learn About iMOs',
-    icon: 'diamond',
-    color: '#C9A962',
-    pages: [
-      { title: 'Sales Presentation', description: 'Interactive deck showcasing iMOs capabilities', icon: 'easel', color: '#C9A962', path: '/imos/presentation', badge: 'Featured' },
-      { title: 'Features Overview', description: 'Explore what iMOs can do for your team', icon: 'apps', color: '#007AFF', path: '/imos/features' },
-      { title: 'Pricing Plans', description: 'Subscription tiers and pricing', icon: 'pricetag', color: '#34C759', path: '/subscription/pricing' },
-    ],
+    tag: 'CONGRATS CARDS',
+    title: 'One Photo Starts a Lifetime of Loyalty.',
+    desc: 'Your salesperson snaps a congrats photo. A branded card is created that customers share on social media. The contact is tagged, the campaign starts, and follow-ups happen forever — automatically.',
+    bullets: ['Branded shareable cards', 'Auto-tag & campaign enrollment', 'Social media amplification'],
+    icon: 'camera',
+    color: '#34C759',
   },
   {
-    category: 'Get Started',
+    tag: 'SMART MESSAGING',
+    title: 'Deliver Personalized Messages That Build Real Relationships.',
+    desc: 'SMS and email from one unified inbox. AI-powered response suggestions that sound like your team wrote them. Never leave a customer waiting.',
+    bullets: ['Unified SMS & email inbox', 'AI response suggestions', 'Mobile-friendly (iOS, Android)'],
+    icon: 'chatbubbles',
+    color: '#007AFF',
+  },
+  {
+    tag: 'AUTOMATED CAMPAIGNS',
+    title: 'Set It and Never Forget a Customer Again.',
+    desc: 'Birthday messages, anniversary follow-ups, holiday greetings, sold-date sequences — all automated. Customers feel remembered without any manual effort from your team.',
+    bullets: ['Birthdays & anniversaries', '14+ holiday templates', 'Tag-triggered multi-step workflows'],
     icon: 'rocket',
     color: '#FF9500',
-    pages: [
-      { title: 'Sign Up', description: 'Create your iMOs account', icon: 'person-add', color: '#34C759', path: '/auth/signup' },
-      { title: 'Log In', description: 'Access your dashboard', icon: 'log-in', color: '#007AFF', path: '/auth/login' },
-      { title: 'Forgot Password', description: 'Reset your credentials', icon: 'key', color: '#FF9500', path: '/auth/forgot-password' },
-    ],
   },
   {
-    category: 'Legal & Compliance',
+    tag: 'MANAGEMENT & COACHING',
+    title: 'Complete Visibility Without Micromanaging.',
+    desc: 'Real-time leaderboards, activity feeds across your entire team, broadcast messages, and onboarding that gets new hires productive in days — not weeks.',
+    bullets: ['Real-time leaderboards', 'Team activity feeds', 'Guided role-based onboarding'],
     icon: 'shield-checkmark',
-    color: '#8E8E93',
-    pages: [
-      { title: 'Privacy Policy', description: 'How we protect your data', icon: 'shield', color: '#5856D6', path: '/privacy' },
-      { title: 'Terms of Service', description: 'Usage terms and conditions', icon: 'document-text', color: '#8E8E93', path: '/terms' },
-    ],
+    color: '#AF52DE',
   },
 ];
 
-// Phone Mockup Component with visible silver frame
-function PhoneMockup() {
-  return (
-    <View style={phoneStyles.frame}>
-      {/* Silver bezel frame */}
-      <View style={phoneStyles.bezel}>
-        {/* Notch */}
-        <View style={phoneStyles.notch}>
-          <View style={phoneStyles.notchPill} />
-        </View>
-        {/* Screen */}
-        <View style={phoneStyles.screen}>
-          {/* Status bar */}
-          <View style={phoneStyles.statusBar}>
-            <Text style={phoneStyles.statusTime}>9:41</Text>
-            <View style={phoneStyles.statusIcons}>
-              <Ionicons name="cellular" size={12} color="#FFF" />
-              <Ionicons name="wifi" size={12} color="#FFF" />
-              <Ionicons name="battery-full" size={12} color="#FFF" />
-            </View>
-          </View>
-          {/* iMOs header */}
-          <View style={phoneStyles.appHeader}>
-            <Text style={phoneStyles.appName}>
-              <Text style={{color:'#FF3B30'}}>i</Text>
-              <Text style={{color:'#FFD60A'}}>M</Text>
-              <Text style={{color:'#34C759'}}>O</Text>
-              <Text style={{color:'#007AFF'}}>s</Text>
-            </Text>
-          </View>
-          {/* Messages */}
-          <View style={phoneStyles.messages}>
-            <View style={phoneStyles.msgOut}>
-              <Text style={phoneStyles.msgOutText}>Hey Sarah! It's been a year since you got your car! How's it treating you?</Text>
-              <Text style={phoneStyles.msgTime}>10:32 AM</Text>
-            </View>
-            <View style={phoneStyles.msgIn}>
-              <Text style={phoneStyles.msgInText}>Already a year?! It's been amazing! Best decision I made</Text>
-              <Text style={phoneStyles.msgTimeIn}>10:34 AM</Text>
-            </View>
-            <View style={phoneStyles.msgOut}>
-              <Text style={phoneStyles.msgOutText}>So glad! We're running a service special this month too</Text>
-              <Text style={phoneStyles.msgTime}>10:35 AM</Text>
-            </View>
-            <View style={phoneStyles.msgIn}>
-              <Text style={phoneStyles.msgInText}>Perfect timing — I'll stop by Saturday!</Text>
-              <Text style={phoneStyles.msgTimeIn}>10:37 AM</Text>
-            </View>
-          </View>
-          {/* Input bar */}
-          <View style={phoneStyles.inputBar}>
-            <View style={phoneStyles.inputField}>
-              <Text style={phoneStyles.inputPlaceholder}>Message...</Text>
-            </View>
-            <View style={phoneStyles.sendBtn}>
-              <Ionicons name="arrow-up" size={14} color="#FFF" />
-            </View>
-          </View>
-        </View>
-        {/* Home indicator */}
-        <View style={phoneStyles.homeBar} />
-      </View>
-    </View>
-  );
-}
-
-const phoneStyles = StyleSheet.create({
-  frame: { alignItems: 'center', justifyContent: 'center' },
-  bezel: {
-    width: 220,
-    height: 440,
-    borderRadius: 32,
-    backgroundColor: '#2A2A2E',
-    borderWidth: 3,
-    borderColor: '#888',
-    padding: 6,
-    // Shadow for depth
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1)',
-    } : {}),
-  },
-  notch: { alignItems: 'center', paddingVertical: 4 },
-  notchPill: { width: 60, height: 6, borderRadius: 3, backgroundColor: '#1A1A1E' },
-  screen: {
-    flex: 1,
-    backgroundColor: '#0A0A12',
-    borderRadius: 22,
-    overflow: 'hidden',
-    padding: 8,
-  },
-  statusBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, paddingBottom: 4 },
-  statusTime: { fontSize: 10, fontWeight: '600', color: '#FFF' },
-  statusIcons: { flexDirection: 'row', gap: 3 },
-  appHeader: { alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#1C1C2E', marginBottom: 6 },
-  appName: { fontSize: 14, fontWeight: '800' },
-  messages: { flex: 1, gap: 6 },
-  msgOut: { alignSelf: 'flex-end', backgroundColor: '#007AFF', borderRadius: 14, borderBottomRightRadius: 4, paddingHorizontal: 10, paddingVertical: 6, maxWidth: '82%' },
-  msgOutText: { fontSize: 9, color: '#FFF', lineHeight: 13 },
-  msgTime: { fontSize: 7, color: 'rgba(255,255,255,0.5)', alignSelf: 'flex-end', marginTop: 2 },
-  msgIn: { alignSelf: 'flex-start', backgroundColor: '#2C2C3E', borderRadius: 14, borderBottomLeftRadius: 4, paddingHorizontal: 10, paddingVertical: 6, maxWidth: '82%' },
-  msgInText: { fontSize: 9, color: '#FFF', lineHeight: 13 },
-  msgTimeIn: { fontSize: 7, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  inputBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#1C1C2E' },
-  inputField: { flex: 1, backgroundColor: '#1C1C2E', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
-  inputPlaceholder: { fontSize: 9, color: '#6E6E73' },
-  sendBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center' },
-  homeBar: { alignSelf: 'center', width: 80, height: 4, borderRadius: 2, backgroundColor: '#555', marginTop: 6 },
-});
-
-export default function ImosHubScreen() {
+export default function ImosHome() {
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
-  const isDesktop = screenWidth > 900;
-  const isTablet = screenWidth > 600 && screenWidth <= 900;
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
+  const isWide = width > 1000;
+  const maxW = isWide ? 1100 : isDesktop ? 900 : undefined;
 
-  const navigateTo = (path: string) => {
-    router.push(path as any);
-  };
-
-  const contentMaxWidth = isDesktop ? 960 : isTablet ? 720 : undefined;
+  const navigate = (path: string) => router.push(path as any);
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={['#0A0A1A', '#1A1A2E', '#0A0A1A']} style={StyleSheet.absoluteFill} />
+    <View style={s.container}>
+      <ImosHeader />
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <View style={maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined}>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Centered content wrapper */}
-        <View style={[styles.contentWrap, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}>
+          {/* ========== HERO ========== */}
+          <View style={[s.hero, isDesktop && s.heroDesktop]}>
+            <Text style={[s.heroLabel, isDesktop && { fontSize: 14 }]}>RELATIONSHIP MANAGEMENT SYSTEM</Text>
+            <Text style={[s.heroTitle, isDesktop && { fontSize: 52, lineHeight: 58 }]}>
+              Old School Relationship Building.{'\n'}
+              <Text style={{ color: '#C9A962' }}>Modern Tools.</Text>
+            </Text>
+            <Text style={[s.heroSub, isDesktop && { fontSize: 18, maxWidth: 560 }]}>
+              Empower your sales teams with the tools they need to build lasting customer relationships. Every moment captured. Every follow-up automated. Every customer remembered.
+            </Text>
 
-          {/* Hero */}
-          <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
-            <View style={[styles.heroText, isDesktop && { flex: 1, alignItems: 'flex-start' }]}>
-              <View style={styles.logoBadge}>
-                <Text style={styles.logoI}>i</Text>
-                <Text style={styles.logoM}>M</Text>
-                <Text style={styles.logoO}>O</Text>
-                <Text style={styles.logoS}>s</Text>
-              </View>
-              <Text style={styles.tagline}>Relationship Management System</Text>
-              <Text style={[styles.heroDesc, isDesktop && { textAlign: 'left' }]}>
-                Empower your sales teams with tools that help them be the best in the business. Every customer relationship starts with a moment — iMOs ensures no moment is ever missed.
-              </Text>
-              <TouchableOpacity
-                style={styles.heroBtn}
-                onPress={() => navigateTo('/imos/presentation')}
-                data-testid="view-presentation-btn"
-              >
-                <Ionicons name="play-circle" size={22} color="#000" />
-                <Text style={styles.heroBtnText}>View Presentation</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Phone Mockup - visible on tablet+ */}
-            {(isDesktop || isTablet) && (
-              <View style={styles.phoneWrap}>
-                <PhoneMockup />
-              </View>
-            )}
-          </View>
-
-          {/* Value Props */}
-          <View style={[styles.valueProps, isDesktop && styles.valuePropsDesktop]}>
-            {[
-              { icon: 'camera', color: '#34C759', title: 'Snap & Start', desc: 'One photo starts a lifetime of customer touchpoints' },
-              { icon: 'repeat', color: '#007AFF', title: 'Never Forget', desc: 'Automated birthday, anniversary & sold date campaigns' },
-              { icon: 'people', color: '#FF9500', title: 'Team Empowerment', desc: 'Tools that make your sales team unstoppable' },
-              { icon: 'trending-up', color: '#AF52DE', title: 'Measurable Results', desc: 'More deals, better retention, real performance data' },
-            ].map((p, i) => (
-              <View key={i} style={[styles.valueProp, isDesktop && styles.valuePropDesktop]}>
-                <View style={[styles.valueIcon, { backgroundColor: `${p.color}15` }]}>
-                  <Ionicons name={p.icon as any} size={24} color={p.color} />
+            {/* Feature Icons Row */}
+            <View style={[s.heroIcons, isDesktop && { gap: 32 }]}>
+              {HERO_FEATURES.map((f) => (
+                <View key={f.label} style={s.heroIconItem}>
+                  <View style={[s.heroIconCircle, { backgroundColor: `${f.color}15` }]}>
+                    <Ionicons name={f.icon as any} size={isDesktop ? 24 : 20} color={f.color} />
+                  </View>
+                  <Text style={s.heroIconLabel}>{f.label}</Text>
                 </View>
-                <Text style={styles.valueTitle}>{p.title}</Text>
-                <Text style={styles.valueDesc}>{p.desc}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Mobile Phone Mockup */}
-          {!isDesktop && !isTablet && (
-            <View style={styles.phoneMobileWrap}>
-              <PhoneMockup />
+              ))}
             </View>
-          )}
 
-          {/* Page Directory */}
-          {PUBLIC_PAGES.map((section) => (
-            <View key={section.category} style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIcon, { backgroundColor: `${section.color}20` }]}>
-                  <Ionicons name={section.icon as any} size={18} color={section.color} />
-                </View>
-                <Text style={styles.sectionTitle}>{section.category}</Text>
-              </View>
-              <View style={isDesktop ? styles.pageGridDesktop : undefined}>
-                {section.pages.map((page) => (
-                  <TouchableOpacity
-                    key={page.path}
-                    style={[styles.pageCard, isDesktop && styles.pageCardDesktop]}
-                    onPress={() => navigateTo(page.path)}
-                    activeOpacity={0.7}
-                    data-testid={`hub-${page.title.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <View style={[styles.pageIcon, { backgroundColor: `${page.color}15` }]}>
-                      <Ionicons name={page.icon as any} size={20} color={page.color} />
-                    </View>
-                    <View style={styles.pageInfo}>
-                      <Text style={styles.pageTitle}>{page.title}</Text>
-                      <Text style={styles.pageDesc}>{page.description}</Text>
-                    </View>
-                    {page.badge && (
-                      <View style={styles.pageBadge}>
-                        <Text style={styles.pageBadgeText}>{page.badge}</Text>
-                      </View>
-                    )}
-                    <Ionicons name="chevron-forward" size={18} color="#6E6E73" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          ))}
-
-          {/* Contact CTA */}
-          <View style={styles.contactSection}>
-            <Text style={styles.contactTitle}>Ready to get started?</Text>
-            <Text style={styles.contactDesc}>See how iMOs can transform your team's performance and customer relationships.</Text>
-            <View style={styles.contactBtns}>
-              <TouchableOpacity style={styles.primaryBtn} onPress={() => {
-                if (Platform.OS === 'web') window.open('mailto:forest@imosapp.com?subject=iMOs%20Inquiry', '_blank');
-              }} data-testid="contact-email-btn">
-                <Ionicons name="mail" size={18} color="#000" />
-                <Text style={styles.primaryBtnText}>Contact Us</Text>
+            {/* CTA */}
+            <View style={s.heroCTAs}>
+              <TouchableOpacity style={s.primaryBtn} onPress={() => navigate('/imos/salespresentation')} data-testid="hero-presentation-btn">
+                <Ionicons name="play-circle" size={20} color="#000" />
+                <Text style={s.primaryBtnText}>View Sales Deck</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigateTo('/auth/signup')} data-testid="signup-btn">
-                <Text style={styles.secondaryBtnText}>Sign Up Free</Text>
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="hero-signup-btn">
+                <Text style={s.secondaryBtnText}>Sign Up Free</Text>
                 <Ionicons name="arrow-forward" size={16} color="#C9A962" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <View style={styles.footerLogo}>
-              <Text style={[styles.fChar, { color: '#FF3B30' }]}>i</Text>
-              <Text style={[styles.fChar, { color: '#FFD60A' }]}>M</Text>
-              <Text style={[styles.fChar, { color: '#34C759' }]}>O</Text>
-              <Text style={[styles.fChar, { color: '#007AFF' }]}>s</Text>
-            </View>
-            <Text style={styles.footerText}>Relationship Management System</Text>
-            <Text style={styles.footerCopy}>&copy; {new Date().getFullYear()} iMOs. All rights reserved.</Text>
+          {/* ========== STATS ========== */}
+          <View style={[s.statsSection, isDesktop && s.statsDesktop]}>
+            {STATS.map((stat, i) => (
+              <View key={i} style={[s.statCard, isDesktop && { flex: 1 }]}>
+                <Text style={s.statValue}>{stat.value}</Text>
+                <Text style={s.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
           </View>
+
+          {/* ========== HOW IT WORKS ========== */}
+          <View style={s.howSection}>
+            <Text style={[s.sectionLabel]}>HOW IT WORKS</Text>
+            <Text style={[s.sectionTitle, isDesktop && { fontSize: 36 }]}>
+              Everything Your Team Needs to Win
+            </Text>
+          </View>
+
+          {HOW_IT_WORKS.map((item, i) => (
+            <View key={i} style={[s.featureRow, isDesktop && s.featureRowDesktop, isDesktop && i % 2 === 1 && { flexDirection: 'row-reverse' }]}>
+              {/* Icon/Visual Side */}
+              <View style={[s.featureVisual, isDesktop && { flex: 1 }]}>
+                <View style={[s.featureBigIcon, { backgroundColor: `${item.color}10`, borderColor: `${item.color}20` }]}>
+                  <Ionicons name={item.icon as any} size={isDesktop ? 64 : 48} color={item.color} />
+                </View>
+              </View>
+              {/* Text Side */}
+              <View style={[s.featureText, isDesktop && { flex: 1 }]}>
+                <Text style={[s.featureTag, { color: item.color }]}>{item.tag}</Text>
+                <Text style={[s.featureTitle, isDesktop && { fontSize: 28 }]}>{item.title}</Text>
+                <Text style={s.featureDesc}>{item.desc}</Text>
+                <View style={s.bulletList}>
+                  {item.bullets.map((b, bi) => (
+                    <View key={bi} style={s.bulletRow}>
+                      <Ionicons name="checkmark-circle" size={18} color={item.color} />
+                      <Text style={s.bulletText}>{b}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          ))}
+
+          {/* ========== BOTTOM CTA ========== */}
+          <View style={s.bottomCTA}>
+            <Text style={[s.bottomCTATitle, isDesktop && { fontSize: 36 }]}>
+              Ready to Transform Your Team?
+            </Text>
+            <Text style={s.bottomCTASub}>
+              See why forward-thinking organizations trust iMOs to build lasting customer relationships.
+            </Text>
+            <View style={s.bottomCTABtns}>
+              <TouchableOpacity style={s.primaryBtn} onPress={() => {
+                if (Platform.OS === 'web') window.open('mailto:forest@imosapp.com?subject=iMOs%20Demo%20Request', '_blank');
+              }} data-testid="bottom-demo-btn">
+                <Ionicons name="mail" size={20} color="#000" />
+                <Text style={s.primaryBtnText}>Request a Demo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/auth/signup')} data-testid="bottom-signup-btn">
+                <Text style={s.secondaryBtnText}>Sign Up Free</Text>
+                <Ionicons name="arrow-forward" size={16} color="#C9A962" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
         </View>
+        <ImosFooter />
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  scroll: { paddingBottom: 40 },
-  contentWrap: { paddingHorizontal: 16 },
-  // Hero
-  hero: { alignItems: 'center', paddingTop: Platform.OS === 'web' ? 48 : 72, paddingBottom: 32 },
-  heroDesktop: { flexDirection: 'row', alignItems: 'center', gap: 40, paddingTop: 60, paddingBottom: 48 },
-  heroText: { alignItems: 'center' },
-  logoBadge: { flexDirection: 'row', marginBottom: 8 },
-  logoI: { fontSize: 48, fontWeight: '900', color: '#FF3B30' },
-  logoM: { fontSize: 48, fontWeight: '900', color: '#FFD60A' },
-  logoO: { fontSize: 48, fontWeight: '900', color: '#34C759' },
-  logoS: { fontSize: 48, fontWeight: '900', color: '#007AFF' },
-  tagline: { fontSize: 13, color: '#8E8E93', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 },
-  heroDesc: { fontSize: 17, color: 'rgba(255,255,255,0.8)', textAlign: 'center', lineHeight: 26, maxWidth: 440, marginBottom: 28 },
-  heroBtn: {
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0A0A12' },
+  scroll: { paddingBottom: 0 },
+
+  /* HERO */
+  hero: { alignItems: 'center', paddingTop: 48, paddingBottom: 40, paddingHorizontal: 20 },
+  heroDesktop: { paddingTop: 72, paddingBottom: 56 },
+  heroLabel: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 16 },
+  heroTitle: { fontSize: 32, fontWeight: '900', color: '#FFF', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
+  heroSub: { fontSize: 16, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
+  heroIcons: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginBottom: 36 },
+  heroIconItem: { alignItems: 'center', gap: 6, width: 90 },
+  heroIconCircle: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  heroIconLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontWeight: '500' },
+  heroCTAs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
+  primaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#C9A962', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
   },
-  heroBtnText: { fontSize: 16, fontWeight: '700', color: '#000' },
-  phoneWrap: { alignItems: 'center' },
-  phoneMobileWrap: { alignItems: 'center', paddingVertical: 24 },
-  // Value Props
-  valueProps: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 32 },
-  valuePropsDesktop: { gap: 16 },
-  valueProp: {
-    width: '46%',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
-    padding: 16,
+  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
+  secondaryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 14, paddingHorizontal: 24, borderRadius: 28,
+    borderWidth: 1, borderColor: 'rgba(201,169,98,0.3)',
+  },
+  secondaryBtnText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
+
+  /* STATS */
+  statsSection: {
+    flexDirection: 'column', gap: 12, paddingHorizontal: 20, paddingVertical: 32,
+    backgroundColor: 'rgba(255,255,255,0.02)', borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  statsDesktop: { flexDirection: 'row', gap: 20, paddingVertical: 40 },
+  statCard: {
+    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 24,
+    alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  statValue: { fontSize: 40, fontWeight: '900', color: '#C9A962', marginBottom: 6 },
+  statLabel: { fontSize: 14, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 20 },
+
+  /* HOW IT WORKS */
+  howSection: { alignItems: 'center', paddingTop: 48, paddingBottom: 16, paddingHorizontal: 20 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
+  sectionTitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', lineHeight: 36 },
+
+  featureRow: { paddingHorizontal: 20, paddingVertical: 32, gap: 24 },
+  featureRowDesktop: { flexDirection: 'row', alignItems: 'center', gap: 48, paddingVertical: 48 },
+  featureVisual: { alignItems: 'center' },
+  featureBigIcon: {
+    width: 140, height: 140, borderRadius: 32, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
-  valuePropDesktop: { width: '22%' },
-  valueIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  valueTitle: { fontSize: 15, fontWeight: '600', color: '#FFF', marginBottom: 4 },
-  valueDesc: { fontSize: 12, color: '#8E8E93', lineHeight: 17 },
-  // Sections
-  section: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10, paddingLeft: 4 },
-  sectionIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  pageGridDesktop: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  pageCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 8,
-    borderWidth: 1, borderColor: '#2C2C2E',
+  featureText: {},
+  featureTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
+  featureTitle: { fontSize: 22, fontWeight: '800', color: '#FFF', lineHeight: 30, marginBottom: 12 },
+  featureDesc: { fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 23, marginBottom: 16 },
+  bulletList: { gap: 8 },
+  bulletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  bulletText: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+
+  /* BOTTOM CTA */
+  bottomCTA: {
+    alignItems: 'center', paddingVertical: 56, paddingHorizontal: 20,
+    backgroundColor: 'rgba(201,169,98,0.04)', borderTopWidth: 1, borderColor: 'rgba(201,169,98,0.1)',
   },
-  pageCardDesktop: { width: '48%', marginBottom: 0 },
-  pageIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  pageInfo: { flex: 1 },
-  pageTitle: { fontSize: 15, fontWeight: '600', color: '#FFF' },
-  pageDesc: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
-  pageBadge: { backgroundColor: '#C9A96225', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginRight: 8 },
-  pageBadgeText: { fontSize: 10, fontWeight: '600', color: '#C9A962' },
-  // Contact CTA
-  contactSection: { alignItems: 'center', paddingVertical: 40, marginTop: 8 },
-  contactTitle: { fontSize: 24, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 10 },
-  contactDesc: { fontSize: 14, color: '#8E8E93', textAlign: 'center', lineHeight: 21, maxWidth: 360, marginBottom: 24 },
-  contactBtns: { flexDirection: 'row', gap: 12 },
-  primaryBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24 },
-  primaryBtnText: { fontSize: 15, fontWeight: '600', color: '#000' },
-  secondaryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1, borderColor: '#C9A96240' },
-  secondaryBtnText: { fontSize: 15, fontWeight: '500', color: '#C9A962' },
-  // Footer
-  footer: { alignItems: 'center', paddingTop: 40, paddingBottom: 20, borderTopWidth: 1, borderTopColor: '#1C1C1E' },
-  footerLogo: { flexDirection: 'row', marginBottom: 4 },
-  fChar: { fontSize: 20, fontWeight: '800' },
-  footerText: { fontSize: 11, color: '#6E6E73', letterSpacing: 1, marginBottom: 8 },
-  footerCopy: { fontSize: 11, color: '#3A3A3C' },
+  bottomCTATitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
+  bottomCTASub: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
+  bottomCTABtns: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
 });
