@@ -1851,7 +1851,9 @@ export default function ThreadScreen() {
                     width: 36,
                     height: 36,
                     borderRadius: 18,
-                    backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia ? '#007AFF' : '#3A3A3C',
+                    backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia 
+                      ? (messageMode === 'sms' ? '#007AFF' : '#34C759') 
+                      : '#3A3A3C',
                     border: 'none',
                     cursor: (!message.trim() && !selectedMedia) || sending || sendingMedia ? 'not-allowed' : 'pointer',
                     display: 'flex',
@@ -1863,7 +1865,7 @@ export default function ThreadScreen() {
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
                     <Ionicons
-                      name="send"
+                      name={messageMode === 'sms' ? 'send' : 'mail'}
                       size={18}
                       color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
                     />
