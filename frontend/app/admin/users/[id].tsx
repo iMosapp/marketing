@@ -294,7 +294,7 @@ export default function UserDetailScreen() {
     if (!user) return;
     showConfirm(
       'Delete User',
-      `Are you sure you want to permanently delete "${user.name}"? This action cannot be undone. All their data, conversations, and contacts will be removed.`,
+      `Are you sure you want to permanently delete "${user.name}"? This action cannot be undone.\n\nAll their data, conversations, and contacts will be removed from the system.\n\nNote: Personal contacts uploaded or downloaded by this user will NOT transfer to the organization or store. They belong to the individual user.`,
       async () => {
         setActionLoading(true);
         try {
