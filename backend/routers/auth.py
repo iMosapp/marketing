@@ -110,7 +110,7 @@ async def notify_super_admin_of_new_user(new_user: dict):
             if org:
                 org_name = org.get("name", "Unknown")
         
-        message = f"🆕 New MVPLine Signup!\n\nName: {new_user.get('name', 'Unknown')}\nEmail: {new_user.get('email', 'Unknown')}\nRole: {new_user.get('requested_role', 'Not specified')}\nOrg: {org_name}\n\nReview in Admin Panel → Pending Users"
+        message = f"New iMOs Signup!\n\nName: {new_user.get('name', 'Unknown')}\nEmail: {new_user.get('email', 'Unknown')}\nRole: {new_user.get('requested_role', 'Not specified')}\nOrg: {org_name}\n\nReview in Admin Panel → Pending Users"
         
         # Send via Twilio (check if we have credentials)
         twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
@@ -514,7 +514,7 @@ async def notify_onboarding_complete(user: dict):
             "user_id": manager_id,
             "type": "onboarding_complete",
             "title": "Training Completed!",
-            "message": f"{user_name} has completed their onboarding training and is ready to start using MVPLine!",
+            "message": f"{user_name} has completed their onboarding training and is ready to start using iMOs!",
             "related_user_id": str(user.get("_id")),
             "related_user_name": user_name,
             "priority": "urgent",
@@ -546,7 +546,7 @@ async def send_onboarding_notification_sms(manager: dict, user_name: str):
     if not manager_phone or not from_number:
         return
     
-    message = f"🎓 Training Complete!\n\n{user_name} has completed their MVPLine onboarding and is ready to start!"
+    message = f"Training Complete!\n\n{user_name} has completed their iMOs onboarding and is ready to start!"
     
     try:
         from twilio.rest import Client
