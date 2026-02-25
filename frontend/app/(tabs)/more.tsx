@@ -494,20 +494,16 @@ export default function MoreScreen() {
   // Combine all sections
   const allSections = adminSection ? [adminSection, ...sections] : sections;
 
-  const renderMenuItem = (item: MenuItem, index: number, isLast: boolean) => (
+  const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity
       key={`${item.title}-${index}`}
-      style={[styles.menuItem, isLast && { borderBottomWidth: 0 }]}
+      style={styles.menuItemCard}
       onPress={item.onPress}
+      activeOpacity={0.7}
       data-testid={`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
     >
       <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-        <Ionicons name={item.icon as any} size={22} color={item.color} />
-        {item.badge && item.badge > 0 && (
-          <View style={styles.badgeDot}>
-            <Text style={styles.badgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
-          </View>
-        )}
+        <Ionicons name={item.icon as any} size={20} color={item.color} />
       </View>
       <View style={styles.menuContent}>
         <Text style={styles.menuTitle}>{item.title}</Text>
@@ -518,7 +514,7 @@ export default function MoreScreen() {
           <Text style={styles.notificationBadgeText}>{item.badge}</Text>
         </View>
       )}
-      <Ionicons name="chevron-forward" size={18} color="#6E6E73" />
+      <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
     </TouchableOpacity>
   );
 
@@ -527,9 +523,10 @@ export default function MoreScreen() {
     const itemCount = section.items.length;
 
     return (
-      <View key={section.id} style={styles.collapsibleSection} data-testid={`section-${section.id}`}>
+      <View key={section.id} style={styles.sectionWrapper} data-testid={`section-${section.id}`}>
+        {/* Section Header Card */}
         <TouchableOpacity
-          style={styles.sectionHeader}
+          style={styles.sectionHeaderCard}
           onPress={() => toggleSection(section.id)}
           activeOpacity={0.7}
           data-testid={`section-header-${section.id}`}
@@ -537,9 +534,9 @@ export default function MoreScreen() {
           <View style={[styles.sectionIcon, { backgroundColor: `${section.color}20` }]}>
             <Ionicons name={section.icon as any} size={20} color={section.color} />
           </View>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitleText}>{section.title}</Text>
-            <Text style={styles.sectionCount}>{itemCount} items</Text>
+          <Text style={styles.sectionTitleText}>{section.title}</Text>
+          <View style={[styles.countBadge, { backgroundColor: `${section.color}20` }]}>
+            <Text style={[styles.countText, { color: section.color }]}>{itemCount}</Text>
           </View>
           <Ionicons 
             name={isExpanded ? 'chevron-up' : 'chevron-down'} 
@@ -548,12 +545,9 @@ export default function MoreScreen() {
           />
         </TouchableOpacity>
         
-        {isExpanded && (
-          <View style={styles.sectionContent}>
-            {section.items.map((item, index) => 
-              renderMenuItem(item, index, index === section.items.length - 1)
-            )}
-          </View>
+        {/* Indented Child Item Cards */}
+        {isExpanded && section.items.map((item, index) => 
+          renderMenuItem(item, index)
         )}
       </View>
     );
