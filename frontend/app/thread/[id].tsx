@@ -32,7 +32,7 @@ import { showSimpleAlert } from '../../services/alert';
 const IS_WEB = Platform.OS === 'web';
 
 // Dark Mode Colors
-const COLORS_DARK = {
+const COLORS = {
   background: '#000000',
   surface: '#1C1C1E',
   elevated: '#2C2C2E',
@@ -40,17 +40,6 @@ const COLORS_DARK = {
   textPrimary: '#FFFFFF',
   textSecondary: '#8E8E93',
   border: '#2C2C2E',
-};
-
-// Light Mode Colors  
-const COLORS_LIGHT = {
-  background: '#F2F2F7',
-  surface: '#FFFFFF',
-  elevated: '#E5E5EA',
-  accent: '#007AFF',
-  textPrimary: '#000000',
-  textSecondary: '#6E6E73',
-  border: 'rgba(0, 0, 0, 0.1)',
 };
 
 // Web-safe button component for toolbar
