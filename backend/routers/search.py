@@ -60,7 +60,7 @@ async def global_search(
             ]
         }
         
-        contacts = await get_db().contacts.find(contact_query).limit(limit).to_list(limit)
+        contacts = await get_db().contacts.find(contact_query, {"photo": 0}).limit(limit).to_list(limit)
         
         for contact in contacts:
             results["contacts"].append({
