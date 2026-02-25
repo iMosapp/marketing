@@ -344,7 +344,7 @@ async def send_message(request: SendMessageRequest):
                 notification_doc = {
                     "user_id": member_id,
                     "type": "team_broadcast",
-                    "title": f"📢 {sender.get('name', 'Someone')} sent a broadcast",
+                    "title": f"Broadcast from {sender.get('name', 'Someone')}",
                     "body": request.content[:100],
                     "channel_id": request.channel_id,
                     "message_id": str(result.inserted_id),
@@ -352,6 +352,35 @@ async def send_message(request: SendMessageRequest):
                     "read": False
                 }
                 await db.notifications.insert_one(notification_doc)
+    
+    # ── Real-time WebSocket broadcast to channel members ──
+    from websocket_manager import manager as ws_manager
+    ws_payload = {
+        "type": "team_chat_message",
+        "channel_id": request.channel_id,
+        "channel_name": channel.get("name", ""),
+        "message": {
+            "id": str(result.inserted_id),
+            "sender_id": request.sender_id,
+            "sender_name": sender.get("name", "Unknown"),
+            "sender_photo": sender.get("photo_url"),
+            "content": request.content,
+            "mentions": request.mentions or [],
+            "is_broadcast": request.is_broadcast,
+            "created_at": message_doc["created_at"].isoformat(),
+        },
+    }
+    # Send to all channel members except sender
+    recipients = [m for m in channel.get("members", []) if m != request.sender_id]
+    await ws_manager.send_to_users(recipients, ws_payload)
+    
+    # Also send notification payloads for unread badge updates
+    notif_payload = {
+        "type": "notification_update",
+        "reason": "team_chat",
+        "channel_id": request.channel_id,
+    }
+    await ws_manager.send_to_users(recipients, notif_payload)
     
     return {
         "success": True,
