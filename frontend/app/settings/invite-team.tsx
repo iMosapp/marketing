@@ -325,7 +325,7 @@ export default function InviteTeamScreen() {
             ) : (
               <>
                 <Ionicons name="send" size={18} color="#000" />
-                <Text style={styles.sendButtonText}>Send Invite Email</Text>
+                <Text style={styles.sendButtonText}>Create & Copy Invite</Text>
               </>
             )}
           </TouchableOpacity>
