@@ -43,7 +43,11 @@ export default function ContactsScreen() {
   
   // Add Contact Modal state
   const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [newContactFirstName, setNewContactFirstName] = useState('');
+  const [newContactLastName, setNewContactLastName] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
   
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
