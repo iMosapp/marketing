@@ -857,6 +857,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 10,
   },
+  addContactNameRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   addContactInput: {
     flex: 1,
     fontSize: 17,
