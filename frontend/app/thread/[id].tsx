@@ -928,9 +928,17 @@ export default function ThreadScreen() {
         if (congratsSelectedTags.length > 0 && (id || createdContactId)) {
           const contactId = id || createdContactId;
           try {
-            await api.patch(`/contacts/${contactId}`, {
-              tags: congratsSelectedTags,
-            }, { headers: { 'X-User-ID': user._id } });
+            // Fetch current contact data first
+            const contactRes = await api.get(`/contacts/${user._id}/${contactId}`);
+            const currentContact = contactRes.data;
+            // Merge new tags with existing
+            const existingTags = currentContact.tags || [];
+            const mergedTags = [...new Set([...existingTags, ...congratsSelectedTags])];
+            // Update contact with merged tags via PUT
+            await api.put(`/contacts/${user._id}/${contactId}`, {
+              ...currentContact,
+              tags: mergedTags,
+            });
             
             const matchingCampaigns = congratsSelectedTags
               .map(t => getCampaignForTag(t))
