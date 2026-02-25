@@ -42,14 +42,26 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] 14-day free trial messaging across all CTAs
 - [x] True black background everywhere
 - [x] Responsive mobile + desktop
+- [x] Admin App Directory updated with all 57 public /imos/ pages (Feb 2026)
 
 ## Known Issues
 - Twilio SMS MOCKED
 - React Hydration Error #418
 
 ## Upcoming
-- (P1) White-Label System
-- (P1) Voice Help Assistant
+- (P1) Voice Help Assistant Backend
+- (P1) White-Label System (custom domains, org branding)
+
+## Future/Backlog (P2)
+- Populate Training Hub with actual video content
+- Enable Lead Notification System
+- Build full Inventory Management Module
+- Create Searchable Training Manual
+- Populate Reports & Analytics section
+- Fix React Hydration Error #418
+- Verify mobile tags data sync
+- Check avatar consistency in inbox search dropdown
+- Test leaderboard toggle functionality
 
 ## Credentials
 - Super Admin: forest@imosapp.com / Admin123!
