@@ -34,20 +34,20 @@ export default function InviteTeamScreen() {
   const getRoleOptions = () => {
     if (user?.role === 'super_admin') {
       return [
-        { value: 'org_admin', label: 'Org Admin' },
-        { value: 'store_manager', label: 'Store Manager' },
-        { value: 'user', label: 'Team Member' },
-        { value: 'individual', label: 'Individual' },
+        { value: 'org_admin', label: 'Org Admin', icon: 'shield-checkmark', desc: 'Full org access', color: '#007AFF' },
+        { value: 'store_manager', label: 'Store Manager', icon: 'storefront', desc: 'Manages a store', color: '#34C759' },
+        { value: 'user', label: 'Team Member', icon: 'person', desc: 'Standard access', color: '#C9A962' },
+        { value: 'individual', label: 'Individual', icon: 'person-circle', desc: 'Solo account', color: '#AF52DE' },
       ];
     }
     if (user?.role === 'org_admin') {
       return [
-        { value: 'store_manager', label: 'Store Manager' },
-        { value: 'user', label: 'Team Member' },
+        { value: 'store_manager', label: 'Store Manager', icon: 'storefront', desc: 'Manages a store', color: '#34C759' },
+        { value: 'user', label: 'Team Member', icon: 'person', desc: 'Standard access', color: '#C9A962' },
       ];
     }
     return [
-      { value: 'user', label: 'Team Member' },
+      { value: 'user', label: 'Team Member', icon: 'person', desc: 'Standard access', color: '#C9A962' },
     ];
   };
 
