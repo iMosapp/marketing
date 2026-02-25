@@ -687,6 +687,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     marginBottom: 4,
+    textDecorationLine: 'none',
   },
   tags: {
     flexDirection: 'row',
