@@ -164,8 +164,8 @@ export default function ContactsScreen() {
     }
   };
   
-  // Handle adding a new contact - navigate to thread with Quick Contact Panel
-  const handleAddNewContact = () => {
+  // Handle adding a new contact - create via API then navigate to thread
+  const handleAddNewContact = async () => {
     if (!newContactPhone.trim()) {
       showSimpleAlert('Phone Required', 'Please enter a phone number');
       return;
@@ -177,17 +177,48 @@ export default function ContactsScreen() {
       phone = '+1' + phone.replace(/\D/g, '');
     }
     
-    setShowAddContactModal(false);
-    setNewContactPhone('');
+    const firstName = newContactFirstName.trim() || phone;
+    const lastName = newContactLastName.trim();
     
-    // Navigate to thread with the phone number - Quick Contact Panel will show
-    router.push({
-      pathname: `/thread/${phone}`,
-      params: {
-        contact_name: phone,
-        contact_phone: phone,
-      }
-    });
+    setSavingContact(true);
+    try {
+      await contactsAPI.create(user._id, {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        email: newContactEmail.trim().toLowerCase() || undefined,
+      });
+      
+      setShowAddContactModal(false);
+      setNewContactFirstName('');
+      setNewContactLastName('');
+      setNewContactPhone('');
+      setNewContactEmail('');
+      
+      // Refresh contacts list
+      loadContacts();
+      
+      // Navigate to thread
+      router.push({
+        pathname: `/thread/${phone}`,
+        params: {
+          contact_name: `${firstName} ${lastName}`.trim(),
+          contact_phone: phone,
+        }
+      });
+    } catch (err: any) {
+      showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to save contact');
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
+  const resetAddContactModal = () => {
+    setShowAddContactModal(false);
+    setNewContactFirstName('');
+    setNewContactLastName('');
+    setNewContactPhone('');
+    setNewContactEmail('');
   };
   
   // Filter contacts by selected tag
