@@ -23,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { messagesAPI, contactsAPI, emailAPI } from '../../services/api';
