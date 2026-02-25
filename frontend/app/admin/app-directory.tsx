@@ -24,7 +24,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const APP_URL = process.env.REACT_APP_BACKEND_URL || '';
+const APP_URL = 'https://app.imosapp.com';
 
 type PageEntry = {
   name: string;
@@ -33,7 +33,7 @@ type PageEntry = {
   icon: string;
   color: string;
   requiresAuth: boolean;
-  audience: string; // who this is for
+  audience: string;
 };
 
 type Category = {
@@ -46,31 +46,27 @@ type Category = {
 
 const PAGE_CATALOG: Category[] = [
   {
-    id: 'public',
-    title: 'Public Pages',
-    icon: 'globe-outline',
-    color: '#34C759',
+    id: 'marketing',
+    title: 'Marketing & Sales',
+    icon: 'diamond-outline',
+    color: '#C9A962',
     pages: [
-      { name: 'iMOs Hub', description: 'Public hub — all public pages', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Investors, partners, prospects' },
-      { name: 'Sales Presentation', description: 'Interactive slide deck for prospects', path: '/imos/presentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors, partners' },
+      { name: 'iMOs Home', description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Everyone' },
+      { name: 'Schedule a Demo', description: 'Lead capture form', path: '/imos/demo', icon: 'calendar-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects' },
+      { name: 'Sales Presentation', description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', requiresAuth: false, audience: 'Prospects, customers' },
-      { name: 'Login', description: 'Sign in to iMOs', path: '/auth/login', icon: 'log-in-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
-      { name: 'Sign Up', description: 'Create a new account', path: '/auth/signup', icon: 'person-add-outline', color: '#34C759', requiresAuth: false, audience: 'New users' },
-      { name: 'Forgot Password', description: 'Reset password flow', path: '/auth/forgot-password', icon: 'key-outline', color: '#FF9500', requiresAuth: false, audience: 'Existing users' },
-      { name: 'Privacy Policy', description: 'Legal privacy information', path: '/privacy', icon: 'shield-outline', color: '#8E8E93', requiresAuth: false, audience: 'Everyone' },
-      { name: 'Terms of Service', description: 'Legal terms and conditions', path: '/terms', icon: 'document-text-outline', color: '#8E8E93', requiresAuth: false, audience: 'Everyone' },
-      { name: 'Pricing Plans', description: 'Subscription tiers', path: '/subscription/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
+      { name: 'Pricing Plans', description: 'Subscription tiers', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
+      { name: 'Solutions Hub', description: 'Browse solutions', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
     ],
   },
   {
     id: 'onboarding',
-    title: 'Onboarding',
+    title: 'Onboarding & Training',
     icon: 'rocket-outline',
     color: '#FF9500',
     pages: [
-      { name: 'Onboarding Preview', description: 'Preview all role onboarding flows', path: '/admin/onboarding-preview', icon: 'eye-outline', color: '#C9A962', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'User Onboarding', description: 'New user setup wizard', path: '/onboarding', icon: 'rocket-outline', color: '#FF9500', requiresAuth: true, audience: 'New team members' },
-      { name: 'Onboarding Settings', description: 'Configure onboarding flow', path: '/admin/onboarding-settings', icon: 'settings-outline', color: '#5856D6', requiresAuth: true, audience: 'Admins' },
+      { name: 'Onboarding Preview', description: 'Preview all 5 role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#C9A962', requiresAuth: false, audience: 'Admins, prospects' },
+      { name: 'Training Hub', description: 'Learn how to use iMOs', path: '/imos/training', icon: 'school-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -79,11 +75,11 @@ const PAGE_CATALOG: Category[] = [
     icon: 'apps-outline',
     color: '#007AFF',
     pages: [
-      { name: 'Inbox', description: 'Message conversations', path: '/(tabs)/inbox', icon: 'chatbubble-outline', color: '#007AFF', requiresAuth: true, audience: 'All users' },
-      { name: 'Contacts', description: 'Contact management', path: '/(tabs)/contacts', icon: 'people-outline', color: '#5856D6', requiresAuth: true, audience: 'All users' },
-      { name: 'Dialer / Keypad', description: 'Phone dialer', path: '/(tabs)/dialer', icon: 'keypad-outline', color: '#34C759', requiresAuth: true, audience: 'All users' },
-      { name: 'Team', description: 'Team chat & collaboration', path: '/(tabs)/team', icon: 'chatbubbles-outline', color: '#FF9500', requiresAuth: true, audience: 'All users' },
-      { name: 'More / Settings', description: 'Navigation hub', path: '/(tabs)/more', icon: 'menu-outline', color: '#8E8E93', requiresAuth: true, audience: 'All users' },
+      { name: 'Inbox', description: 'Message conversations & threads', path: '/imos/inbox', icon: 'chatbubble-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Contacts', description: 'Contact management & CRM', path: '/imos/contacts', icon: 'people-outline', color: '#5856D6', requiresAuth: false, audience: 'All users' },
+      { name: 'Dialer', description: 'Phone dialer & call log', path: '/imos/dialer', icon: 'keypad-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
+      { name: 'Team Chat', description: 'Team collaboration', path: '/imos/team', icon: 'chatbubbles-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
+      { name: 'More / Settings', description: 'Navigation hub', path: '/imos/more', icon: 'menu-outline', color: '#8E8E93', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -92,11 +88,11 @@ const PAGE_CATALOG: Category[] = [
     icon: 'megaphone-outline',
     color: '#FF2D55',
     pages: [
-      { name: 'Broadcast', description: 'Mass messaging', path: '/broadcast', icon: 'megaphone-outline', color: '#FF9500', requiresAuth: true, audience: 'All users' },
-      { name: 'SMS Campaigns', description: 'Automated SMS follow-ups', path: '/campaigns', icon: 'chatbubbles-outline', color: '#FF2D55', requiresAuth: true, audience: 'All users' },
-      { name: 'Email Campaigns', description: 'Automated email follow-ups', path: '/campaigns/email', icon: 'mail-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
-      { name: 'Campaign Dashboard', description: 'Campaign analytics & enrollments', path: '/campaigns/dashboard', icon: 'speedometer-outline', color: '#5AC8FA', requiresAuth: true, audience: 'All users' },
-      { name: 'Date Triggers', description: 'Birthday, anniversary, holiday campaigns', path: '/settings/date-triggers', icon: 'calendar-outline', color: '#FF9500', requiresAuth: true, audience: 'All users' },
+      { name: 'Broadcast', description: 'Mass messaging to team', path: '/imos/broadcast', icon: 'megaphone-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
+      { name: 'SMS Campaigns', description: 'Automated SMS follow-ups', path: '/imos/campaigns', icon: 'chatbubbles-outline', color: '#FF2D55', requiresAuth: false, audience: 'All users' },
+      { name: 'Email Campaigns', description: 'Automated email follow-ups', path: '/imos/campaigns/email', icon: 'mail-outline', color: '#AF52DE', requiresAuth: false, audience: 'All users' },
+      { name: 'Campaign Dashboard', description: 'Campaign analytics & enrollments', path: '/imos/campaigns/dashboard', icon: 'speedometer-outline', color: '#5AC8FA', requiresAuth: false, audience: 'All users' },
+      { name: 'Date Triggers', description: 'Birthday, anniversary, holiday campaigns', path: '/imos/date-triggers', icon: 'calendar-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -105,10 +101,10 @@ const PAGE_CATALOG: Category[] = [
     icon: 'color-palette-outline',
     color: '#AF52DE',
     pages: [
-      { name: 'SMS Templates', description: 'Pre-built SMS messages', path: '/settings/templates', icon: 'document-text-outline', color: '#FFD60A', requiresAuth: true, audience: 'All users' },
-      { name: 'Email Templates', description: 'Pre-built email designs', path: '/settings/email-templates', icon: 'mail-outline', color: '#34C759', requiresAuth: true, audience: 'All users' },
-      { name: 'Brand Kit', description: 'Email branding & colors', path: '/settings/brand-kit', icon: 'color-palette-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
-      { name: 'Congrats Cards', description: 'Thank you card templates', path: '/settings/congrats-template', icon: 'gift-outline', color: '#C9A962', requiresAuth: true, audience: 'All users' },
+      { name: 'SMS Templates', description: 'Pre-built SMS messages', path: '/imos/templates', icon: 'document-text-outline', color: '#FFD60A', requiresAuth: false, audience: 'All users' },
+      { name: 'Email Templates', description: 'Pre-built email designs', path: '/imos/email-templates', icon: 'mail-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
+      { name: 'Brand Kit', description: 'Email branding & colors', path: '/imos/brand-kit', icon: 'color-palette-outline', color: '#AF52DE', requiresAuth: false, audience: 'All users' },
+      { name: 'Congrats Cards', description: 'Thank you card templates', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -117,10 +113,10 @@ const PAGE_CATALOG: Category[] = [
     icon: 'stats-chart-outline',
     color: '#34C759',
     pages: [
-      { name: 'Analytics', description: 'Performance metrics', path: '/analytics', icon: 'stats-chart-outline', color: '#34C759', requiresAuth: true, audience: 'All users' },
-      { name: 'Reports', description: 'Detailed performance reports', path: '/reports', icon: 'bar-chart-outline', color: '#007AFF', requiresAuth: true, audience: 'All users' },
-      { name: 'Email Analytics', description: 'Opens, clicks, engagement', path: '/settings/email-analytics', icon: 'trending-up-outline', color: '#FF2D55', requiresAuth: true, audience: 'All users' },
-      { name: 'Leaderboard', description: 'Team performance rankings', path: '/admin/leaderboard', icon: 'trophy-outline', color: '#FFD60A', requiresAuth: true, audience: 'Team members' },
+      { name: 'Analytics', description: 'Performance metrics', path: '/imos/analytics', icon: 'stats-chart-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
+      { name: 'Reports', description: 'Detailed performance reports', path: '/imos/reports', icon: 'bar-chart-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Email Analytics', description: 'Opens, clicks, engagement', path: '/imos/email-analytics', icon: 'trending-up-outline', color: '#FF2D55', requiresAuth: false, audience: 'All users' },
+      { name: 'Leaderboard', description: 'Team performance rankings', path: '/imos/leaderboard', icon: 'trophy-outline', color: '#FFD60A', requiresAuth: false, audience: 'Team members' },
     ],
   },
   {
@@ -129,11 +125,10 @@ const PAGE_CATALOG: Category[] = [
     icon: 'people-outline',
     color: '#5856D6',
     pages: [
-      { name: 'Lead Sources', description: 'Inbound lead routing config', path: '/admin/lead-sources', icon: 'git-branch-outline', color: '#5856D6', requiresAuth: true, audience: 'Admins' },
-      { name: 'Contact Tags', description: 'Tag management', path: '/settings/tags', icon: 'pricetags-outline', color: '#FF9500', requiresAuth: true, audience: 'All users' },
-      { name: 'Review Links', description: 'Google, Facebook, Yelp links', path: '/settings/review-links', icon: 'star-outline', color: '#FFD60A', requiresAuth: true, audience: 'All users' },
-      { name: 'Review Approvals', description: 'Approve customer reviews', path: '/settings/review-approvals', icon: 'chatbubbles-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
-      { name: 'Import Contacts', description: 'Bulk import from CSV', path: '/contacts/import', icon: 'cloud-upload-outline', color: '#007AFF', requiresAuth: true, audience: 'All users' },
+      { name: 'Lead Sources', description: 'Inbound lead routing config', path: '/imos/lead-sources', icon: 'git-branch-outline', color: '#5856D6', requiresAuth: false, audience: 'Admins' },
+      { name: 'Contact Tags', description: 'Tag management', path: '/imos/tags', icon: 'pricetags-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
+      { name: 'Review Links', description: 'Google, Facebook, Yelp links', path: '/imos/review-links', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'All users' },
+      { name: 'Import Contacts', description: 'Bulk import from CSV', path: '/imos/import', icon: 'cloud-upload-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -142,11 +137,10 @@ const PAGE_CATALOG: Category[] = [
     icon: 'person-outline',
     color: '#FF9500',
     pages: [
-      { name: 'My Digital Card', description: 'Bio, socials & shareable card', path: '/settings/my-profile', icon: 'card-outline', color: '#007AFF', requiresAuth: true, audience: 'All users' },
-      { name: 'AI Persona', description: 'Communication style settings', path: '/settings/persona', icon: 'sparkles-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
-      { name: 'Ask Jessi', description: 'AI assistant', path: '/jessie', icon: 'sparkles-outline', color: '#C9A962', requiresAuth: true, audience: 'All users' },
-      { name: 'Training Hub', description: 'Learn how to use iMOs', path: '/training-hub', icon: 'school-outline', color: '#FF9500', requiresAuth: true, audience: 'All users' },
-      { name: 'My Account', description: 'Account settings & profile', path: '/my-account', icon: 'person-circle-outline', color: '#8E8E93', requiresAuth: true, audience: 'All users' },
+      { name: 'Digital Card', description: 'Bio, socials & shareable card', path: '/imos/digital-card', icon: 'card-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'AI Persona', description: 'Communication style settings', path: '/imos/persona', icon: 'sparkles-outline', color: '#AF52DE', requiresAuth: false, audience: 'All users' },
+      { name: 'Ask Jessi', description: 'AI assistant', path: '/imos/jessi', icon: 'sparkles-outline', color: '#C9A962', requiresAuth: false, audience: 'All users' },
+      { name: 'My Account', description: 'Account settings & profile', path: '/imos/account', icon: 'person-circle-outline', color: '#8E8E93', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -155,11 +149,10 @@ const PAGE_CATALOG: Category[] = [
     icon: 'settings-outline',
     color: '#8E8E93',
     pages: [
-      { name: 'Security', description: 'Passwords & authentication', path: '/settings/security', icon: 'shield-checkmark-outline', color: '#FF3B30', requiresAuth: true, audience: 'All users' },
-      { name: 'SMS / Email Toggle', description: 'Default messaging style', path: '/settings/toggle-style', icon: 'swap-horizontal-outline', color: '#5AC8FA', requiresAuth: true, audience: 'All users' },
-      { name: 'Calendar', description: 'Connect external calendars', path: '/settings/calendar', icon: 'calendar-outline', color: '#007AFF', requiresAuth: true, audience: 'All users' },
-      { name: 'Integrations', description: 'API keys & webhooks', path: '/settings/integrations', icon: 'git-network-outline', color: '#5856D6', requiresAuth: true, audience: 'All users' },
-      { name: 'Invite Team', description: 'Send team invitations', path: '/settings/invite-team', icon: 'person-add-outline', color: '#C9A962', requiresAuth: true, audience: 'Admins' },
+      { name: 'Security', description: 'Passwords & authentication', path: '/imos/security', icon: 'shield-checkmark-outline', color: '#FF3B30', requiresAuth: false, audience: 'All users' },
+      { name: 'Calendar', description: 'Connect external calendars', path: '/imos/calendar', icon: 'calendar-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Integrations', description: 'API keys & webhooks', path: '/imos/integrations', icon: 'git-network-outline', color: '#5856D6', requiresAuth: false, audience: 'All users' },
+      { name: 'Invite Team', description: 'Send team invitations', path: '/imos/invite-team', icon: 'person-add-outline', color: '#C9A962', requiresAuth: false, audience: 'Admins' },
     ],
   },
   {
@@ -168,21 +161,31 @@ const PAGE_CATALOG: Category[] = [
     icon: 'shield-checkmark-outline',
     color: '#FF3B30',
     pages: [
-      { name: 'Admin Dashboard', description: 'Overview & activity feed', path: '/admin', icon: 'shield-checkmark-outline', color: '#34C759', requiresAuth: true, audience: 'Admins' },
-      { name: 'Users', description: 'Manage team members', path: '/admin/users', icon: 'people-outline', color: '#FF9500', requiresAuth: true, audience: 'Admins' },
-      { name: 'Organizations', description: 'Manage organizations', path: '/admin/organizations', icon: 'business-outline', color: '#007AFF', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Accounts / Stores', description: 'Manage store accounts', path: '/admin/stores', icon: 'storefront-outline', color: '#34C759', requiresAuth: true, audience: 'Admins' },
-      { name: 'Pending Users', description: 'Approve new signups', path: '/admin/pending-users', icon: 'person-add-outline', color: '#FF3B30', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Individuals', description: 'Independent user management', path: '/admin/individuals', icon: 'person-outline', color: '#AF52DE', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Company Directory', description: 'Team roster & leaderboards', path: '/admin/directory', icon: 'people-outline', color: '#AF52DE', requiresAuth: true, audience: 'Admins' },
-      { name: 'Shared Inboxes', description: 'Phone number assignments', path: '/admin/shared-inboxes', icon: 'mail-outline', color: '#007AFF', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Bulk Transfer', description: 'Transfer contacts between users', path: '/admin/bulk-transfer', icon: 'swap-horizontal-outline', color: '#FF3B30', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Phone Assignments', description: 'Twilio number management', path: '/admin/phone-assignments', icon: 'call-outline', color: '#32ADE6', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Partner Agreements', description: 'Reseller contracts', path: '/admin/partner-agreements', icon: 'document-text-outline', color: '#FF9500', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Discount Codes', description: 'Manage promotional codes', path: '/admin/discount-codes', icon: 'ticket-outline', color: '#5856D6', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Quotes', description: 'View subscription quotes', path: '/admin/quotes', icon: 'documents-outline', color: '#30B0C7', requiresAuth: true, audience: 'Super Admin' },
-      { name: 'Billing', description: 'Subscription & billing info', path: '/admin/billing', icon: 'card-outline', color: '#34C759', requiresAuth: true, audience: 'Admins' },
-      { name: 'Activity Feed', description: 'Recent admin activity', path: '/admin/activity-feed', icon: 'pulse-outline', color: '#FF2D55', requiresAuth: true, audience: 'Admins' },
+      { name: 'Admin Dashboard', description: 'Overview & activity feed', path: '/imos/admin', icon: 'shield-checkmark-outline', color: '#34C759', requiresAuth: false, audience: 'Admins' },
+      { name: 'Users', description: 'Manage team members', path: '/imos/users', icon: 'people-outline', color: '#FF9500', requiresAuth: false, audience: 'Admins' },
+      { name: 'Organizations', description: 'Manage organizations', path: '/imos/organizations', icon: 'business-outline', color: '#007AFF', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Stores', description: 'Manage store accounts', path: '/imos/stores', icon: 'storefront-outline', color: '#34C759', requiresAuth: false, audience: 'Admins' },
+      { name: 'Pending Users', description: 'Approve new signups', path: '/imos/pending-users', icon: 'person-add-outline', color: '#FF3B30', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Individuals', description: 'Independent users', path: '/imos/individuals', icon: 'person-outline', color: '#AF52DE', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Company Directory', description: 'Team roster & leaderboards', path: '/imos/directory', icon: 'people-outline', color: '#AF52DE', requiresAuth: false, audience: 'Admins' },
+      { name: 'Shared Inboxes', description: 'Phone number assignments', path: '/imos/shared-inboxes', icon: 'mail-outline', color: '#007AFF', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Bulk Transfer', description: 'Transfer contacts between users', path: '/imos/bulk-transfer', icon: 'swap-horizontal-outline', color: '#FF3B30', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Phone Assignments', description: 'Twilio number management', path: '/imos/phone-assignments', icon: 'call-outline', color: '#32ADE6', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Partner Agreements', description: 'Reseller contracts', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Billing', description: 'Subscription & billing info', path: '/imos/billing', icon: 'card-outline', color: '#34C759', requiresAuth: false, audience: 'Admins' },
+      { name: 'Activity Feed', description: 'Recent admin activity', path: '/imos/activity-feed', icon: 'pulse-outline', color: '#FF2D55', requiresAuth: false, audience: 'Admins' },
+    ],
+  },
+  {
+    id: 'legal',
+    title: 'Legal & Auth',
+    icon: 'shield-outline',
+    color: '#8E8E93',
+    pages: [
+      { name: 'Privacy Policy', description: 'How we protect your data', path: '/imos/privacy', icon: 'shield-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
+      { name: 'Terms of Service', description: 'Usage terms and conditions', path: '/imos/terms', icon: 'document-text-outline', color: '#8E8E93', requiresAuth: false, audience: 'Everyone' },
+      { name: 'Login', description: 'Sign in to iMOs', path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Sign Up', description: 'Create a new account', path: '/imos/signup', icon: 'person-add-outline', color: '#34C759', requiresAuth: false, audience: 'New users' },
     ],
   },
 ];
