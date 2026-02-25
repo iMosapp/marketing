@@ -124,7 +124,7 @@ export function ImosFooter() {
             <TouchableOpacity onPress={() => navigate('/imos/features')}><Text style={styles.footerLink}>Features</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/pricing')}><Text style={styles.footerLink}>Pricing</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/salespresentation')}><Text style={styles.footerLink}>Sales Deck</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/hub')}><Text style={styles.footerLink}>All Pages</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/hub')}><Text style={styles.footerLink}>Solutions</Text></TouchableOpacity>
           </View>
           <View style={styles.footerCol}>
             <Text style={styles.footerColTitle}>Company</Text>

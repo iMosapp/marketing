@@ -30,7 +30,6 @@ const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: Pub
     color: '#FF9500',
     pages: [
       { title: 'Onboarding Preview', description: 'See the onboarding flow for all 5 roles', icon: 'eye', color: '#C9A962', path: '/imos/onboarding-preview', badge: 'Interactive' },
-      { title: 'App Directory', description: 'Full catalog of every page in iMOs', icon: 'folder', color: '#FF9500', path: '/imos/app-directory' },
     ],
   },
   {
