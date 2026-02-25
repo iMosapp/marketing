@@ -687,8 +687,22 @@ export default function TeamChatScreen() {
           </Text>
         </View>
         
-        <TouchableOpacity style={styles.chatHeaderAction}>
-          <Ionicons name="information-circle-outline" size={26} color={COLORS.accent} />
+        <TouchableOpacity 
+          style={styles.chatHeaderAction}
+          onPress={() => {
+            Alert.alert(
+              selectedChannel.name,
+              `${selectedChannel.member_count} member${selectedChannel.member_count !== 1 ? 's' : ''}`,
+              [
+                { text: 'Clear History', style: 'destructive', onPress: () => clearHistory(selectedChannel) },
+                { text: 'Delete Channel', style: 'destructive', onPress: () => deleteChannel(selectedChannel) },
+                { text: 'Cancel', style: 'cancel' },
+              ]
+            );
+          }}
+          data-testid="chat-options-btn"
+        >
+          <Ionicons name="ellipsis-vertical" size={22} color={COLORS.accent} />
         </TouchableOpacity>
       </View>
 
