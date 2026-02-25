@@ -132,7 +132,8 @@ export default function InviteTeamScreen() {
 
   const getInviteText = () => {
     if (!inviteResult) return '';
-    return `Hey ${inviteResult.name}! You've been invited to join iMOs as a ${inviteResult.role}.\n\nHere are your login credentials:\nEmail: ${inviteResult.email}\nPassword: ${inviteResult.password}\n\nLogin here: https://app.imosapp.com/imos/login\n\nYou'll be asked to set a new password on first login.`;
+    const loginLink = `https://app.imosapp.com/auth/login?email=${encodeURIComponent(inviteResult.email)}&password=${encodeURIComponent(inviteResult.password)}`;
+    return `Hey ${inviteResult.name}! You've been invited to join iMOs as a ${inviteResult.role}.\n\nTap the link below to log in:\n${loginLink}\n\nOr log in manually at https://app.imosapp.com/imos/login\nEmail: ${inviteResult.email}\nPassword: ${inviteResult.password}`;
   };
 
   const handleCopyInvite = async () => {
