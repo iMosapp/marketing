@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,8 @@ interface TrainingTopic {
   category: string;
   route?: string;
   content?: string;
+  videoUrl?: string;
+  steps?: string[];
 }
 
 const TRAINING_TOPICS: TrainingTopic[] = [
@@ -37,11 +40,18 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     id: 'getting-started',
     icon: 'rocket',
     iconColor: '#FF9500',
-    title: 'Getting Started with iMos',
+    title: 'Getting Started with iMOs',
     description: 'Learn the basics and set up your account',
     duration: '5 min',
     category: 'Getting Started',
-    content: 'Welcome to iMos! This guide will walk you through setting up your profile, understanding the main features, and making your first connection with a customer.',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    content: 'Welcome to iMOs! This guide will walk you through setting up your profile, understanding the main features, and making your first connection with a customer.',
+    steps: [
+      'Log in to your iMOs account using the credentials provided by your admin.',
+      'Complete your profile by adding your photo, bio, and contact information.',
+      'Explore the four main tabs: Inbox, Contacts, Keypad, and More.',
+      'Send your first message to a customer from the Contacts tab.',
+    ],
   },
   {
     id: 'profile-setup',
@@ -52,7 +62,32 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Getting Started',
     route: '/settings/my-profile',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Your digital card is your first impression. Add a professional photo, write a compelling bio, and link your social media to make it easy for customers to connect with you.',
+    steps: [
+      'Go to More > My Digital Card.',
+      'Upload a professional headshot photo.',
+      'Write a short bio that highlights your experience.',
+      'Add your social media links and review page URLs.',
+      'Share your card link in your email signature.',
+    ],
+  },
+  {
+    id: 'adding-contacts',
+    icon: 'people',
+    iconColor: '#34C759',
+    title: 'Adding & Managing Contacts',
+    description: 'Build your customer database from day one',
+    duration: '4 min',
+    category: 'Getting Started',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    content: 'Your contacts are the heart of iMOs. Learn how to add contacts manually, import from CSV, and organize them with tags for targeted follow-ups.',
+    steps: [
+      'Tap the + button on the Contacts tab to add a new contact.',
+      'Fill in their name, phone, and email.',
+      'Use the Import feature to bulk-upload contacts from a CSV file.',
+      'Add tags like "VIP", "Hot Lead", or "Service Due" to organize contacts.',
+    ],
   },
   // Messaging
   {
@@ -63,7 +98,15 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Manage customer messages like a pro',
     duration: '4 min',
     category: 'Messaging',
-    content: 'The inbox is your command center. Learn to switch between SMS and email modes, use AI suggestions, and manage multiple conversations efficiently.',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    content: 'The inbox is your command center. Learn to send SMS and email, use AI suggestions, and manage multiple conversations efficiently.',
+    steps: [
+      'Open the Inbox tab to see all your conversations.',
+      'Tap any conversation to view the full thread.',
+      'Use the compose bar at the bottom to type and send messages.',
+      'Toggle between SMS and Email modes using the icons.',
+      'Look for AI outcome badges (Hot Lead, Appt Set) to prioritize.',
+    ],
   },
   {
     id: 'templates',
@@ -74,7 +117,14 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Messaging',
     route: '/settings/templates',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Templates let you respond faster with consistent, professional messages. Create templates for common scenarios like follow-ups, greetings, and appointment confirmations.',
+    steps: [
+      'Go to More > Message Templates to create templates.',
+      'Use variables like {first_name} for personalization.',
+      'In any conversation, tap the template icon to insert one.',
+      'Create templates for: greetings, follow-ups, appointment confirmations, and thank-you messages.',
+    ],
   },
   {
     id: 'voice-to-text',
@@ -84,7 +134,15 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Speak your messages instead of typing',
     duration: '2 min',
     category: 'Messaging',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Tap the microphone icon in any message compose area to speak your message. The AI will transcribe it accurately, saving you time on long messages.',
+    steps: [
+      'Open any conversation thread.',
+      'Tap and hold the microphone icon to start recording.',
+      'Speak your message naturally.',
+      'Release to stop recording - AI transcribes it instantly.',
+      'Review and edit before hitting send.',
+    ],
   },
   // AI Features
   {
@@ -96,7 +154,14 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '5 min',
     category: 'AI Features',
     route: '/jessie',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Jessi is your personal AI assistant. Ask questions, get help drafting messages, or let Jessi suggest responses to customers based on conversation context.',
+    steps: [
+      'Go to More > Ask Jessi to open the AI assistant.',
+      'Type or speak your question about any iMOs feature.',
+      'Ask Jessi to draft messages for specific customer situations.',
+      'Use Jessi to get tips on sales techniques and follow-up strategies.',
+    ],
   },
   {
     id: 'ai-suggestions',
@@ -106,7 +171,14 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Let AI help craft perfect responses',
     duration: '3 min',
     category: 'AI Features',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'When viewing a conversation, watch for the AI suggestion bar. It analyzes the conversation and suggests contextually appropriate responses you can use or modify.',
+    steps: [
+      'Open any conversation to see AI-powered suggestions.',
+      'Tap the magic wand icon for response suggestions.',
+      'AI considers the full conversation context to suggest responses.',
+      'Edit the suggestion to add your personal touch before sending.',
+    ],
   },
   {
     id: 'voice-training',
@@ -117,7 +189,14 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '5 min',
     category: 'AI Features',
     route: '/voice-training',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'The AI learns your personality through voice training. Just talk naturally about yourself, and the AI will adapt to match your communication style.',
+    steps: [
+      'Go to More > Voice Training to start.',
+      'Record yourself talking naturally about your work and personality.',
+      'The AI analyzes your speaking style, vocabulary, and tone.',
+      'Future AI suggestions will match how you actually communicate.',
+    ],
   },
   // Sales Tools
   {
@@ -128,7 +207,15 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Celebrate customer purchases',
     duration: '3 min',
     category: 'Sales Tools',
-    content: 'After a sale, send a beautiful congrats card with the customer\'s photo. They can download it, share on social media, and leave reviews - all from one link!',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    content: "After a sale, send a beautiful congrats card with the customer's photo. They can download it, share on social media, and leave reviews - all from one link!",
+    steps: [
+      'Open a customer conversation after a sale.',
+      'Tap the gift/card icon to create a Congrats Card.',
+      "Add the customer's photo (take one with them!).",
+      'Customize your message and send it.',
+      'The customer gets a shareable card they can post on social media.',
+    ],
   },
   {
     id: 'review-links',
@@ -139,7 +226,14 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Sales Tools',
     route: '/settings/review-links',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Set up your review links to make it easy for satisfied customers to leave reviews on Google, Facebook, or other platforms.',
+    steps: [
+      'Go to More > Review Links to configure your review pages.',
+      'Add your Google Business, Facebook, and other review URLs.',
+      'After every positive interaction, share your review link.',
+      'Congrats Cards automatically include a review prompt.',
+    ],
   },
   {
     id: 'lead-management',
@@ -149,7 +243,15 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Track and convert leads effectively',
     duration: '5 min',
     category: 'Sales Tools',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Learn how to tag leads, set follow-up reminders, and use the lead routing system to never miss an opportunity.',
+    steps: [
+      'New leads appear in your Inbox with a "New Lead" badge.',
+      'Respond within 5 minutes for the best conversion rate.',
+      'Tag leads appropriately: Hot Lead, Warm, Appointment Set, etc.',
+      'Set a follow-up task if you can\'t close immediately.',
+      'Use Nurture Campaigns to automate long-term follow-ups.',
+    ],
   },
   // Campaigns
   {
@@ -161,7 +263,15 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '4 min',
     category: 'Campaigns',
     route: '/campaigns',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Set up automated SMS campaigns to nurture leads over time. Schedule messages, add personalization, and track engagement.',
+    steps: [
+      'Go to Campaigns from the More menu.',
+      'Tap "Create Campaign" and choose SMS type.',
+      'Write your message sequence (e.g., Day 1, Day 3, Day 7).',
+      'Set the trigger (tag-based, date-based, or manual enrollment).',
+      'Activate and monitor from the Campaign Dashboard.',
+    ],
   },
   {
     id: 'email-campaigns',
@@ -172,7 +282,15 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '4 min',
     category: 'Campaigns',
     route: '/campaigns/email',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Create branded email campaigns with your logo and colors. Perfect for longer-form content and professional follow-ups.',
+    steps: [
+      'Go to Campaigns > Email Campaigns.',
+      'Choose a template or start from scratch.',
+      'Add your content, images, and personalization variables.',
+      'Set the sending schedule and target audience.',
+      'Preview and activate the campaign.',
+    ],
   },
   // Team Features
   {
@@ -184,30 +302,87 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Team Features',
     route: '/team',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     content: 'Use the Team tab for internal communication. Create channels for different topics, mention team members, and keep customer info separate from team discussions.',
+    steps: [
+      'Open the Team tab from the bottom navigation.',
+      'Browse existing channels or create a new one.',
+      'Use channels for topics like "Deals", "Questions", "Announcements".',
+      'Tag team members with @ mentions for direct attention.',
+    ],
+  },
+  {
+    id: 'admin-panel',
+    icon: 'shield-checkmark',
+    iconColor: '#5856D6',
+    title: 'Admin Panel Overview',
+    description: 'For managers: manage your team and reports',
+    duration: '5 min',
+    category: 'Team Features',
+    route: '/admin',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    content: 'The Admin Panel gives managers tools to oversee their team, view performance metrics, approve users, and manage organizational settings.',
+    steps: [
+      'Go to More > Admin Panel.',
+      'View the dashboard for key metrics and recent activity.',
+      'Manage team members: add, edit roles, or deactivate accounts.',
+      'Check Leaderboards to track team performance.',
+      'Access Training & SOPs to manage internal documentation.',
+    ],
   },
 ];
+
+// Video embed component for web
+const VideoEmbed = ({ url }: { url: string }) => {
+  if (!IS_WEB) {
+    return (
+      <TouchableOpacity
+        style={styles.videoPlaceholder}
+        onPress={() => Linking.openURL(url.replace('/embed/', '/watch?v='))}
+      >
+        <View style={styles.playButton}>
+          <Ionicons name="play" size={32} color="#FFF" />
+        </View>
+        <Text style={styles.videoPlaceholderText}>Tap to watch video</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={styles.videoContainer}>
+      <iframe
+        src={url}
+        style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 } as any}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </View>
+  );
+};
 
 export default function TrainingHubScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
-  const [askingQuestion, setAskingQuestion] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [voiceQuestion, setVoiceQuestion] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
   const recordingRef = React.useRef<Audio.Recording | null>(null);
 
-  // Filter topics by search
-  const filteredTopics = searchQuery
-    ? TRAINING_TOPICS.filter(t => 
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : TRAINING_TOPICS;
+  const categories = [...new Set(TRAINING_TOPICS.map(t => t.category))];
+
+  // Filter topics by search and category
+  const filteredTopics = TRAINING_TOPICS.filter(t => {
+    const matchesSearch = !searchQuery ||
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || t.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   // Group by category
   const groupedTopics = filteredTopics.reduce((acc, topic) => {
@@ -217,11 +392,7 @@ export default function TrainingHubScreen() {
   }, {} as Record<string, TrainingTopic[]>);
 
   const handleTopicPress = (topic: TrainingTopic) => {
-    if (topic.route) {
-      router.push(topic.route as any);
-    } else {
-      setExpandedTopic(expandedTopic === topic.id ? null : topic.id);
-    }
+    setExpandedTopic(expandedTopic === topic.id ? null : topic.id);
   };
 
   const startVoiceQuestion = async () => {
@@ -231,15 +402,8 @@ export default function TrainingHubScreen() {
         showSimpleAlert('Permission Required', 'Please allow microphone access');
         return;
       }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       recordingRef.current = recording;
       setIsRecording(true);
     } catch (error) {
@@ -249,19 +413,14 @@ export default function TrainingHubScreen() {
 
   const stopVoiceQuestion = async () => {
     if (!recordingRef.current) return;
-
     setIsRecording(false);
     setProcessing(true);
-
     try {
       const recording = recordingRef.current;
       recordingRef.current = null;
-      
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-
       if (uri) {
-        // Transcribe
         const formData = new FormData();
         if (IS_WEB) {
           const response = await fetch(uri);
@@ -271,12 +430,10 @@ export default function TrainingHubScreen() {
           formData.append('file', { uri, type: 'audio/m4a', name: 'question.m4a' } as any);
         }
         formData.append('user_id', user?._id || '');
-
         const transcribeRes = await api.post('/voice/transcribe', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           timeout: 30000,
         });
-
         const question = transcribeRes.data.text || transcribeRes.data.transcription || '';
         if (question) {
           setVoiceQuestion(question);
@@ -299,7 +456,6 @@ export default function TrainingHubScreen() {
         message: `The user is asking for help with iMOs Relationship Management System. Here's their question: "${question}"\n\nPlease provide a helpful, concise answer explaining how to accomplish this in iMOs. If it involves a specific feature, mention where to find it in the app.`,
         context: 'training_help',
       }, { timeout: 30000 });
-
       setAiResponse(response.data.response || response.data.message || 'Let me help you with that...');
     } catch (error) {
       console.error('AI help error:', error);
@@ -313,7 +469,7 @@ export default function TrainingHubScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="training-hub-back">
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Training Hub</Text>
@@ -327,7 +483,7 @@ export default function TrainingHubScreen() {
             <Ionicons name="help-circle" size={28} color="#C9A962" />
             <View style={styles.voiceHelpText}>
               <Text style={styles.voiceHelpTitle}>Need Help?</Text>
-              <Text style={styles.voiceHelpSubtitle}>Ask anything about iMos by voice or text</Text>
+              <Text style={styles.voiceHelpSubtitle}>Ask anything about iMOs by voice or text</Text>
             </View>
           </View>
           
@@ -339,23 +495,22 @@ export default function TrainingHubScreen() {
               value={voiceQuestion}
               onChangeText={setVoiceQuestion}
               multiline
+              data-testid="training-ask-input"
             />
             <View style={styles.askButtons}>
               <TouchableOpacity
                 style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
                 onPress={isRecording ? stopVoiceQuestion : startVoiceQuestion}
                 disabled={processing}
+                data-testid="training-voice-btn"
               >
-                <Ionicons 
-                  name={isRecording ? 'stop' : 'mic'} 
-                  size={24} 
-                  color="#FFF" 
-                />
+                <Ionicons name={isRecording ? 'stop' : 'mic'} size={24} color="#FFF" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.askButton, !voiceQuestion.trim() && styles.askButtonDisabled]}
                 onPress={() => voiceQuestion.trim() && getAIHelp(voiceQuestion)}
                 disabled={!voiceQuestion.trim() || processing}
+                data-testid="training-ask-submit"
               >
                 {processing ? (
                   <ActivityIndicator size="small" color="#FFF" />
@@ -366,8 +521,7 @@ export default function TrainingHubScreen() {
             </View>
           </View>
 
-          {/* AI Response */}
-          {aiResponse && (
+          {aiResponse ? (
             <View style={styles.aiResponseContainer}>
               <View style={styles.aiResponseHeader}>
                 <Ionicons name="sparkles" size={18} color="#C9A962" />
@@ -382,7 +536,7 @@ export default function TrainingHubScreen() {
                 <Text style={styles.clearButtonText}>Clear</Text>
               </TouchableOpacity>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* Search */}
@@ -394,53 +548,110 @@ export default function TrainingHubScreen() {
             placeholderTextColor="#6E6E73"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            data-testid="training-search"
           />
-          {searchQuery && (
+          {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={20} color="#8E8E93" />
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
+
+        {/* Category Filter */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryFilterRow}
+        >
+          <TouchableOpacity
+            style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
+            onPress={() => setSelectedCategory(null)}
+          >
+            <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>All</Text>
+          </TouchableOpacity>
+          {categories.map(cat => (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+            >
+              <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* Topics */}
         {Object.entries(groupedTopics).map(([category, topics]) => (
           <View key={category} style={styles.categorySection}>
             <Text style={styles.categoryTitle}>{category}</Text>
-            {topics.map(topic => (
-              <TouchableOpacity
-                key={topic.id}
-                style={styles.topicCard}
-                onPress={() => handleTopicPress(topic)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.topicIcon, { backgroundColor: `${topic.iconColor}20` }]}>
-                  <Ionicons 
-                    name={topic.icon as any} 
-                    size={24} 
-                    color={topic.iconColor} 
-                  />
-                </View>
-                <View style={styles.topicContent}>
-                  <Text style={styles.topicTitle}>{topic.title}</Text>
-                  <Text style={styles.topicDescription}>{topic.description}</Text>
-                  {expandedTopic === topic.id && topic.content && (
-                    <View style={styles.expandedContent}>
-                      <Text style={styles.expandedText}>{topic.content}</Text>
+            {topics.map(topic => {
+              const isExpanded = expandedTopic === topic.id;
+              return (
+                <View key={topic.id}>
+                  <TouchableOpacity
+                    style={[styles.topicCard, isExpanded && styles.topicCardExpanded]}
+                    onPress={() => handleTopicPress(topic)}
+                    activeOpacity={0.7}
+                    data-testid={`training-topic-${topic.id}`}
+                  >
+                    <View style={[styles.topicIcon, { backgroundColor: `${topic.iconColor}20` }]}>
+                      <Ionicons name={topic.icon as any} size={24} color={topic.iconColor} />
                     </View>
-                  )}
+                    <View style={styles.topicContent}>
+                      <Text style={styles.topicTitle}>{topic.title}</Text>
+                      <Text style={styles.topicDescription}>{topic.description}</Text>
+                    </View>
+                    <View style={styles.topicMeta}>
+                      {topic.videoUrl ? (
+                        <View style={styles.videoBadge}>
+                          <Ionicons name="videocam" size={12} color="#FF2D55" />
+                        </View>
+                      ) : null}
+                      {topic.duration ? <Text style={styles.topicDuration}>{topic.duration}</Text> : null}
+                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                    </View>
+                  </TouchableOpacity>
+                  
+                  {/* Expanded Content */}
+                  {isExpanded ? (
+                    <View style={styles.expandedPanel}>
+                      {/* Video */}
+                      {topic.videoUrl ? <VideoEmbed url={topic.videoUrl} /> : null}
+                      
+                      {/* Text Content */}
+                      {topic.content ? <Text style={styles.expandedText}>{topic.content}</Text> : null}
+                      
+                      {/* Steps */}
+                      {topic.steps && topic.steps.length > 0 ? (
+                        <View style={styles.stepsContainer}>
+                          <Text style={styles.stepsTitle}>Quick Steps</Text>
+                          {topic.steps.map((step, idx) => (
+                            <View key={idx} style={styles.stepRow}>
+                              <View style={styles.stepBullet}>
+                                <Text style={styles.stepBulletText}>{idx + 1}</Text>
+                              </View>
+                              <Text style={styles.stepText}>{step}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+                      
+                      {/* Go To Feature Button */}
+                      {topic.route ? (
+                        <TouchableOpacity
+                          style={styles.goToButton}
+                          onPress={() => router.push(topic.route as any)}
+                          data-testid={`training-goto-${topic.id}`}
+                        >
+                          <Ionicons name="open-outline" size={16} color="#007AFF" />
+                          <Text style={styles.goToButtonText}>Open in App</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  ) : null}
                 </View>
-                <View style={styles.topicMeta}>
-                  {topic.duration && (
-                    <Text style={styles.topicDuration}>{topic.duration}</Text>
-                  )}
-                  <Ionicons 
-                    name={topic.route ? 'chevron-forward' : (expandedTopic === topic.id ? 'chevron-up' : 'chevron-down')} 
-                    size={18} 
-                    color="#8E8E93" 
-                  />
-                </View>
-              </TouchableOpacity>
-            ))}
+              );
+            })}
           </View>
         ))}
 
@@ -477,6 +688,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
+  // Voice Help
   voiceHelpSection: {
     backgroundColor: '#1C1C1E',
     borderRadius: 16,
@@ -489,9 +701,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
   },
-  voiceHelpText: {
-    flex: 1,
-  },
+  voiceHelpText: { flex: 1 },
   voiceHelpTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -575,6 +785,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
   },
+  // Search
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -583,13 +794,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#FFF',
   },
+  // Category Filter
+  categoryFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 16,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 20,
+  },
+  categoryChipActive: {
+    backgroundColor: '#007AFF',
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  categoryChipTextActive: {
+    color: '#FFF',
+  },
+  // Category Section
   categorySection: {
     marginBottom: 24,
   },
@@ -601,6 +836,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 12,
   },
+  // Topic Card
   topicCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -609,6 +845,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 10,
     gap: 14,
+  },
+  topicCardExpanded: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    marginBottom: 0,
   },
   topicIcon: {
     width: 48,
@@ -638,15 +879,116 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6E6E73',
   },
-  expandedContent: {
-    marginTop: 12,
-    paddingTop: 12,
+  videoBadge: {
+    backgroundColor: '#FF2D5520',
+    borderRadius: 10,
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Expanded Panel
+  expandedPanel: {
+    backgroundColor: '#1C1C1E',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    marginBottom: 10,
     borderTopWidth: 1,
     borderTopColor: '#2C2C2E',
   },
   expandedText: {
     fontSize: 14,
-    color: '#FFF',
+    color: '#E5E5E7',
     lineHeight: 22,
+    marginTop: 16,
+  },
+  // Video
+  videoContainer: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 16,
+    backgroundColor: '#000',
+  },
+  videoPlaceholder: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
+    backgroundColor: '#2C2C2E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  playButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FF2D55',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  videoPlaceholderText: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  // Steps
+  stepsContainer: {
+    marginTop: 16,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    padding: 16,
+  },
+  stepsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#C9A962',
+    marginBottom: 12,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    gap: 10,
+  },
+  stepBullet: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#007AFF30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  stepBulletText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#E5E5E7',
+    lineHeight: 20,
+  },
+  // Go To Button
+  goToButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF20',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 16,
+    gap: 8,
+  },
+  goToButtonText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });
