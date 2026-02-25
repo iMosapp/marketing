@@ -492,8 +492,8 @@ export default function ThreadScreen() {
       // This handles the case where id is a contact_id (new conversation)
       try {
         const contactResponse = await api.get(`/contacts/${user?._id}/${id}`);
-        if (contactResponse.data?.photo) {
-          setContactPhoto(contactResponse.data.photo);
+        if (contactResponse.data?.photo_thumbnail || contactResponse.data?.photo_url || contactResponse.data?.photo) {
+          setContactPhoto(contactResponse.data.photo_thumbnail || contactResponse.data.photo_url || contactResponse.data.photo);
         }
       } catch (e) {
         console.log('Contact photo not available');
