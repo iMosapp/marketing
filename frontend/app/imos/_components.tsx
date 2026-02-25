@@ -58,7 +58,7 @@ export function ImosHeader() {
             </View>
             {/* CTA */}
             <View style={styles.ctaRow}>
-              <TouchableOpacity onPress={() => navigate('/auth/login')} style={styles.signInBtn} data-testid="header-login-btn">
+              <TouchableOpacity onPress={() => navigate('/imos/login')} style={styles.signInBtn} data-testid="header-login-btn">
                 <Text style={styles.signInBtnText}>Sign In</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.signupBtn} onPress={() => navigate('/imos/demo')} data-testid="header-demo-btn">
@@ -83,7 +83,7 @@ export function ImosHeader() {
             </TouchableOpacity>
           ))}
           <View style={styles.mobileDivider} />
-          <TouchableOpacity onPress={() => navigate('/auth/login')} style={styles.mobileMenuItem}>
+          <TouchableOpacity onPress={() => navigate('/imos/login')} style={styles.mobileMenuItem}>
             <Text style={styles.mobileMenuText}>Sign In</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigate('/imos/demo')} style={[styles.mobileMenuItem, styles.mobileSignup]}>
