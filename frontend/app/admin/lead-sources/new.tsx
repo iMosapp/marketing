@@ -207,7 +207,7 @@ export default function NewLeadSourceScreen() {
             style={styles.input}
             value={formData.name}
             onChangeText={(text) => setFormData({ ...formData, name: text })}
-            placeholder="e.g., Facebook Ads, Website Form, CRM Import"
+            placeholder="e.g., Facebook Ads, Website Form, RMS Import"
             placeholderTextColor="#6E6E73"
           />
         </View>
@@ -384,7 +384,7 @@ export default function NewLeadSourceScreen() {
           <Ionicons name="information-circle" size={20} color="#007AFF" />
           <Text style={styles.infoText}>
             After creating this lead source, you'll receive a webhook URL and API key. 
-            Use these to send leads from external systems (CRMs, ad platforms, landing pages, etc.)
+            Use these to send leads from external systems (RMS platforms, ad platforms, landing pages, etc.)
           </Text>
         </View>
       </ScrollView>

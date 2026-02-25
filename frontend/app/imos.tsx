@@ -601,7 +601,7 @@ export default function IMOSLandingPage() {
           <View style={styles.faqItem}>
             <Text style={styles.faqQuestion}>Can I import my existing contacts?</Text>
             <Text style={styles.faqAnswer}>
-              Yes! Import contacts from your phone, spreadsheets (CSV/Excel), or sync from other CRMs like Salesforce, HubSpot, and more.
+              Yes! Import contacts from your phone, spreadsheets (CSV/Excel), or sync from other platforms like Salesforce, HubSpot, and more.
             </Text>
           </View>
           

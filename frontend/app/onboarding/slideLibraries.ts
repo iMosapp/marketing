@@ -361,7 +361,7 @@ export const SALESPERSON_SLIDES: OnboardingSlide[] = [
     type: 'feature',
     title: 'Your Sales Toolkit',
     subtitle: 'Everything You Need to Close',
-    description: 'iMOs is your personal CRM. Manage your contacts, conversations, and close more deals.',
+    description: 'iMOs is your personal Relationship Management System. Manage your contacts, conversations, and close more deals.',
     icon: 'briefcase',
     iconColor: '#007AFF',
     bgGradient: ['#0F1A2E', '#1A2E4E'],

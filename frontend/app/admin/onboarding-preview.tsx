@@ -22,7 +22,7 @@ const ROLE_OPTIONS = [
   { id: 'super_admin', label: 'Super Admin', icon: 'shield', color: '#FF3B30', description: 'Full platform access, org management', slideCount: ORG_ADMIN_SLIDES.length },
   { id: 'org_admin', label: 'Org Admin', icon: 'business', color: '#007AFF', description: 'Organization oversight, store management', slideCount: ORG_ADMIN_SLIDES.length },
   { id: 'store_manager', label: 'Store Manager', icon: 'storefront', color: '#34C759', description: 'Team leadership, store performance', slideCount: STORE_MANAGER_SLIDES.length },
-  { id: 'user', label: 'Salesperson', icon: 'person', color: '#FF9500', description: 'CRM tools, AI assistant, customer mgmt', slideCount: SALESPERSON_SLIDES.length },
+  { id: 'user', label: 'Salesperson', icon: 'person', color: '#FF9500', description: 'RMS tools, AI assistant, customer mgmt', slideCount: SALESPERSON_SLIDES.length },
   { id: 'individual', label: 'Individual', icon: 'person-circle', color: '#AF52DE', description: 'Independent user, no org affiliation', slideCount: SALESPERSON_SLIDES.length },
 ];
 

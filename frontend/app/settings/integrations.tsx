@@ -280,10 +280,10 @@ export default function IntegrationsScreen() {
     
     return (
       <View style={styles.tabContent}>
-        <Text style={styles.sectionTitle}>{type === 'crm' ? 'CRM Integrations' : 'DMS Integrations'}</Text>
+        <Text style={styles.sectionTitle}>{type === 'crm' ? 'RMS Integrations' : 'DMS Integrations'}</Text>
         <Text style={styles.sectionSubtitle}>
           {type === 'crm' 
-            ? 'Sync contacts and deals with your CRM' 
+            ? 'Sync contacts and deals with your RMS' 
             : 'Connect to dealer management systems'}
         </Text>
         
@@ -421,7 +421,7 @@ export default function IntegrationsScreen() {
         {[
           { key: 'api-keys', label: 'API Keys', icon: 'key' },
           { key: 'webhooks', label: 'Webhooks', icon: 'git-branch' },
-          { key: 'crm', label: 'CRM', icon: 'people' },
+          { key: 'crm', label: 'RMS', icon: 'people' },
           { key: 'dms', label: 'DMS', icon: 'car' },
           { key: 'docs', label: 'Docs', icon: 'document-text' },
         ].map((tab) => (

@@ -284,7 +284,7 @@ export default function ImportContactsScreen() {
             </View>
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>From CSV File</Text>
-              <Text style={styles.optionDesc}>Import from a spreadsheet or CRM export</Text>
+              <Text style={styles.optionDesc}>Import from a spreadsheet or RMS export</Text>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#8E8E93" />
           </TouchableOpacity>

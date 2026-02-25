@@ -296,7 +296,7 @@ export default function TrainingHubScreen() {
     try {
       const response = await api.post('/jessie/chat', {
         user_id: user?._id,
-        message: `The user is asking for help with iMos CRM. Here's their question: "${question}"\n\nPlease provide a helpful, concise answer explaining how to accomplish this in iMos. If it involves a specific feature, mention where to find it in the app.`,
+        message: `The user is asking for help with iMOs Relationship Management System. Here's their question: "${question}"\n\nPlease provide a helpful, concise answer explaining how to accomplish this in iMOs. If it involves a specific feature, mention where to find it in the app.`,
         context: 'training_help',
       }, { timeout: 30000 });
 
