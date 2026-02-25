@@ -239,6 +239,9 @@ export default function ContactsScreen() {
   const handleTagFilter = (tagName: string | null) => {
     setSelectedTag(tagName === selectedTag ? null : tagName);
   };
+
+  const keyExtractor = useCallback((item: any) => item._id || item.id, []);
+  const ListSeparator = useCallback(() => <View style={styles.separator} />, []);
   
   // Pre-build tag lookup map for O(1) access
   const tagMap = useMemo(() => {
