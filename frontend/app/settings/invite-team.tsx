@@ -92,6 +92,8 @@ export default function InviteTeamScreen() {
 
     setSending(true);
     setSuccessMessage('');
+    setInviteResult(null);
+    setCopied(false);
     try {
       const res = await api.post('/admin/users/create', {
         name: name.trim(),
@@ -107,8 +109,14 @@ export default function InviteTeamScreen() {
 
       const data = res.data;
       if (data.success) {
-        const inviteSent = data.invite_sent ? 'Email invitation sent!' : 'User created (email not configured).';
-        setSuccessMessage(`${name.trim()} has been invited as ${roleOptions.find(r => r.value === role)?.label}. ${inviteSent}`);
+        const roleName = roleOptions.find(r => r.value === role)?.label || 'Team Member';
+        setSuccessMessage(`${name.trim()} has been created as ${roleName}.`);
+        setInviteResult({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password: data.temp_password || '',
+          role: roleName,
+        });
         setName('');
         setEmail('');
         setRole('user');
