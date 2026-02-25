@@ -51,12 +51,15 @@ const PAGE_CATALOG: Category[] = [
     icon: 'globe-outline',
     color: '#34C759',
     pages: [
+      { name: 'iMOs Hub', description: 'Public hub — all public pages', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Investors, partners, prospects' },
+      { name: 'Sales Presentation', description: 'Interactive slide deck for prospects', path: '/imos/presentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors, partners' },
+      { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Login', description: 'Sign in to iMOs', path: '/auth/login', icon: 'log-in-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
       { name: 'Sign Up', description: 'Create a new account', path: '/auth/signup', icon: 'person-add-outline', color: '#34C759', requiresAuth: false, audience: 'New users' },
       { name: 'Forgot Password', description: 'Reset password flow', path: '/auth/forgot-password', icon: 'key-outline', color: '#FF9500', requiresAuth: false, audience: 'Existing users' },
       { name: 'Privacy Policy', description: 'Legal privacy information', path: '/privacy', icon: 'shield-outline', color: '#8E8E93', requiresAuth: false, audience: 'Everyone' },
       { name: 'Terms of Service', description: 'Legal terms and conditions', path: '/terms', icon: 'document-text-outline', color: '#8E8E93', requiresAuth: false, audience: 'Everyone' },
-      { name: 'iMOs Landing', description: 'Public marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Investors, partners, prospects' },
+      { name: 'Pricing Plans', description: 'Subscription tiers', path: '/subscription/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
     ],
   },
   {
