@@ -228,10 +228,13 @@ export default function ContactsScreen() {
     setNewContactEmail('');
   };
   
-  // Filter contacts by selected tag
-  const filteredContacts = selectedTag 
-    ? contacts.filter(c => c.tags && c.tags.includes(selectedTag))
-    : contacts;
+  // Filter contacts by selected tag - memoized
+  const filteredContacts = useMemo(() => 
+    selectedTag 
+      ? contacts.filter(c => c.tags && c.tags.includes(selectedTag))
+      : contacts,
+    [contacts, selectedTag]
+  );
 
   const handleTagFilter = (tagName: string | null) => {
     setSelectedTag(tagName === selectedTag ? null : tagName);
