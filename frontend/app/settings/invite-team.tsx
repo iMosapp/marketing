@@ -47,14 +47,16 @@ export default function InviteTeamScreen() {
     
     try {
       setLoading(true);
+      setLoadError(null);
       const [linkRes, sharesRes] = await Promise.all([
-        api.get(`/team-invite/user/${user._id}/invite-link`),
-        api.get(`/team-invite/shares/${user._id}`),
+        api.get(`/team-invite/user/${user._id}/invite-link`).catch(() => null),
+        api.get(`/team-invite/shares/${user._id}`).catch(() => null),
       ]);
-      setInviteLink(linkRes.data);
-      setShares(sharesRes.data);
-    } catch (error) {
+      if (linkRes?.data) setInviteLink(linkRes.data);
+      if (sharesRes?.data) setShares(sharesRes.data);
+    } catch (error: any) {
       console.error('Failed to load invite data:', error);
+      setLoadError(error?.response?.data?.detail || 'Failed to load invite data');
     } finally {
       setLoading(false);
     }
