@@ -202,23 +202,31 @@ export default function InviteTeamScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.inputLabel}>Role</Text>
             <View style={styles.roleSelector}>
-              {roleOptions.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[
-                    styles.roleOption,
-                    role === opt.value && styles.roleOptionActive,
-                  ]}
-                  onPress={() => setRole(opt.value)}
-                >
-                  <Text style={[
-                    styles.roleOptionText,
-                    role === opt.value && styles.roleOptionTextActive,
-                  ]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {roleOptions.map((opt) => {
+                const isActive = role === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.roleOption,
+                      isActive && styles.roleOptionActive,
+                      isActive && { borderColor: opt.color },
+                    ]}
+                    onPress={() => setRole(opt.value)}
+                  >
+                    <View style={[styles.roleIconWrap, { backgroundColor: (isActive ? opt.color : '#3A3A3C') + '25' }]}>
+                      <Ionicons name={opt.icon as any} size={18} color={isActive ? opt.color : '#8E8E93'} />
+                    </View>
+                    <View style={styles.roleTextWrap}>
+                      <Text style={[styles.roleOptionText, isActive && styles.roleOptionTextActive]}>{opt.label}</Text>
+                      <Text style={styles.roleDesc}>{opt.desc}</Text>
+                    </View>
+                    <View style={[styles.roleRadio, isActive && styles.roleRadioActive, isActive && { borderColor: opt.color }]}>
+                      {isActive ? <View style={[styles.roleRadioDot, { backgroundColor: opt.color }]} /> : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
