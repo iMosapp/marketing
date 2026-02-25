@@ -1403,9 +1403,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
   },
-  modeToggleWrapper: {
-    marginRight: 8,
-  },
   modeIndicatorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
