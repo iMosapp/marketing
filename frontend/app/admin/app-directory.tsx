@@ -65,6 +65,7 @@ const PAGE_CATALOG: Category[] = [
     icon: 'rocket-outline',
     color: '#FF9500',
     pages: [
+      { name: 'Onboarding Preview', description: 'Preview all role onboarding flows', path: '/admin/onboarding-preview', icon: 'eye-outline', color: '#C9A962', requiresAuth: true, audience: 'Super Admin' },
       { name: 'User Onboarding', description: 'New user setup wizard', path: '/onboarding', icon: 'rocket-outline', color: '#FF9500', requiresAuth: true, audience: 'New team members' },
       { name: 'Onboarding Settings', description: 'Configure onboarding flow', path: '/admin/onboarding-settings', icon: 'settings-outline', color: '#5856D6', requiresAuth: true, audience: 'Admins' },
     ],
