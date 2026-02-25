@@ -246,7 +246,7 @@ async def process_pending_campaign_steps():
                     continue
 
                 step = sequences[current_step - 1]
-                message_content = step.get("message", "")
+                message_content = step.get("message_template", "") or step.get("message", "")
 
                 # Queue message for sending
                 contact_phone = enrollment.get("contact_phone", "")
