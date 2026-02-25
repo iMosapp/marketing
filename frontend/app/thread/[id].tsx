@@ -590,6 +590,16 @@ export default function ThreadScreen() {
     const contentToSend = textToSend || message.trim();
     if (!contentToSend || !user) return;
     
+    // Block email send if contact has no email
+    if (messageMode === 'email' && !contact_email) {
+      Alert.alert(
+        'No Email Address',
+        'This contact doesn\'t have an email address. Please add one to send emails.',
+        [{ text: 'OK', style: 'cancel' }]
+      );
+      return;
+    }
+    
     // Light haptic when sending message
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
