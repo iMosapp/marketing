@@ -955,14 +955,6 @@ export default function InboxScreen() {
           </View>
         </View>
         <View style={styles.headerButtons}>
-          {/* Message Mode Toggle */}
-          <View style={styles.modeToggleWrapper}>
-            <MessageModeToggle
-              mode={messageMode}
-              onModeChange={handleModeChange}
-              style={toggleStyle}
-            />
-          </View>
           <WebIconButton 
             onPress={() => { triggerHaptic('light'); router.push('/search'); }} 
             iconName="search"
