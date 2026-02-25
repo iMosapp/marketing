@@ -30,6 +30,8 @@ export default function InviteTeamScreen() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
   const [successMessage, setSuccessMessage] = useState('');
+  const [inviteResult, setInviteResult] = useState<{ name: string; email: string; password: string; role: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Available roles based on current user's role
   const getRoleOptions = () => {
