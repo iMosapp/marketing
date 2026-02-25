@@ -3,6 +3,7 @@ MVPLine API Server - Main entry point
 Refactored to use modular routers for maintainability
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
