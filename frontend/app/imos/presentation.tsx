@@ -184,6 +184,8 @@ export default function PresentationScreen() {
   const [isFullscreen, setIsFullscreen] = useState(true);
   const slide = SLIDES[currentSlide];
   const progress = (currentSlide + 1) / SLIDES.length;
+  const { width: screenW } = useWindowDimensions();
+  const isWide = screenW > 700;
 
   const goNext = useCallback(() => {
     if (currentSlide < SLIDES.length - 1) setCurrentSlide(s => s + 1);
