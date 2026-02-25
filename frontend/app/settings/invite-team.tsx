@@ -579,4 +579,76 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  // Invite result card
+  inviteResultCard: {
+    gap: 16,
+  },
+  inviteResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  inviteResultTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#34C759',
+  },
+  inviteCredentials: {
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  credRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  credLabel: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  credValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  credDivider: {
+    height: 1,
+    backgroundColor: '#3A3A3C',
+    marginHorizontal: 16,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#C9A962',
+    paddingVertical: 16,
+    borderRadius: 25,
+    gap: 8,
+  },
+  copyButtonCopied: {
+    backgroundColor: '#1C1C1E',
+    borderWidth: 1.5,
+    borderColor: '#34C759',
+  },
+  copyButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  newInviteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  newInviteButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });
