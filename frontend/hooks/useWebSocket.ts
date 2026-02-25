@@ -30,7 +30,7 @@ export function useWebSocket() {
     const wsUrl = BACKEND_URL
       .replace(/^https:/, 'wss:')
       .replace(/^http:/, 'ws:')
-      + `/ws/${user._id}`;
+      + `/api/ws/${user._id}`;
 
     try {
       const ws = new WebSocket(wsUrl);
