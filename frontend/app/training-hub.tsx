@@ -62,7 +62,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Getting Started',
     route: '/settings/my-profile',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Your digital card is your first impression. Add a professional photo, write a compelling bio, and link your social media to make it easy for customers to connect with you.',
     steps: [
       'Go to More > My Digital Card.',
@@ -80,7 +80,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Build your customer database from day one',
     duration: '4 min',
     category: 'Getting Started',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Your contacts are the heart of iMOs. Learn how to add contacts manually, import from CSV, and organize them with tags for targeted follow-ups.',
     steps: [
       'Tap the + button on the Contacts tab to add a new contact.',
@@ -98,7 +98,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Manage customer messages like a pro',
     duration: '4 min',
     category: 'Messaging',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'The inbox is your command center. Learn to send SMS and email, use AI suggestions, and manage multiple conversations efficiently.',
     steps: [
       'Open the Inbox tab to see all your conversations.',
@@ -117,7 +117,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Messaging',
     route: '/settings/templates',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Templates let you respond faster with consistent, professional messages. Create templates for common scenarios like follow-ups, greetings, and appointment confirmations.',
     steps: [
       'Go to More > Message Templates to create templates.',
@@ -134,7 +134,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Speak your messages instead of typing',
     duration: '2 min',
     category: 'Messaging',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Tap the microphone icon in any message compose area to speak your message. The AI will transcribe it accurately, saving you time on long messages.',
     steps: [
       'Open any conversation thread.',
@@ -154,7 +154,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '5 min',
     category: 'AI Features',
     route: '/jessie',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Jessi is your personal AI assistant. Ask questions, get help drafting messages, or let Jessi suggest responses to customers based on conversation context.',
     steps: [
       'Go to More > Ask Jessi to open the AI assistant.',
@@ -171,7 +171,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Let AI help craft perfect responses',
     duration: '3 min',
     category: 'AI Features',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'When viewing a conversation, watch for the AI suggestion bar. It analyzes the conversation and suggests contextually appropriate responses you can use or modify.',
     steps: [
       'Open any conversation to see AI-powered suggestions.',
@@ -189,7 +189,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '5 min',
     category: 'AI Features',
     route: '/voice-training',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'The AI learns your personality through voice training. Just talk naturally about yourself, and the AI will adapt to match your communication style.',
     steps: [
       'Go to More > Voice Training to start.',
@@ -207,7 +207,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Celebrate customer purchases',
     duration: '3 min',
     category: 'Sales Tools',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: "After a sale, send a beautiful congrats card with the customer's photo. They can download it, share on social media, and leave reviews - all from one link!",
     steps: [
       'Open a customer conversation after a sale.',
@@ -226,7 +226,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Sales Tools',
     route: '/settings/review-links',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Set up your review links to make it easy for satisfied customers to leave reviews on Google, Facebook, or other platforms.',
     steps: [
       'Go to More > Review Links to configure your review pages.',
@@ -243,7 +243,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     description: 'Track and convert leads effectively',
     duration: '5 min',
     category: 'Sales Tools',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Learn how to tag leads, set follow-up reminders, and use the lead routing system to never miss an opportunity.',
     steps: [
       'New leads appear in your Inbox with a "New Lead" badge.',
@@ -263,7 +263,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '4 min',
     category: 'Campaigns',
     route: '/campaigns',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Set up automated SMS campaigns to nurture leads over time. Schedule messages, add personalization, and track engagement.',
     steps: [
       'Go to Campaigns from the More menu.',
@@ -282,7 +282,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '4 min',
     category: 'Campaigns',
     route: '/campaigns/email',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Create branded email campaigns with your logo and colors. Perfect for longer-form content and professional follow-ups.',
     steps: [
       'Go to Campaigns > Email Campaigns.',
@@ -302,7 +302,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '3 min',
     category: 'Team Features',
     route: '/team',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'Use the Team tab for internal communication. Create channels for different topics, mention team members, and keep customer info separate from team discussions.',
     steps: [
       'Open the Team tab from the bottom navigation.',
@@ -320,7 +320,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '5 min',
     category: 'Team Features',
     route: '/admin',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     content: 'The Admin Panel gives managers tools to oversee their team, view performance metrics, approve users, and manage organizational settings.',
     steps: [
       'Go to More > Admin Panel.',
