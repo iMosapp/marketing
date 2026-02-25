@@ -10,7 +10,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://birthday-campaigns.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://staff-links.preview.emergentagent.com')
 
 # Test user ID
 TEST_USER_ID = "69975a8b6ff748b1f9da6b57"
