@@ -18,6 +18,21 @@ from routers.database import get_db
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
+def _get_app_url():
+    """Get the correct app URL for email links."""
+    try:
+        with open("/app/frontend/.env") as f:
+            for line in f:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    url = line.split("=", 1)[1].strip().strip('"').rstrip("/")
+                    if ".preview.emergentagent.com" in url:
+                        return url
+    except Exception:
+        pass
+    return os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
+
+
+
 # Resend configuration
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
