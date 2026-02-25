@@ -445,6 +445,16 @@ async def startup_event():
 
     logger.info("iMOs API v2.0 started")
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    try:
+        from scheduler import stop_scheduler
+        stop_scheduler()
+        logger.info("Campaign scheduler stopped")
+    except Exception as e:
+        logger.warning(f"Scheduler stop failed: {e}")
+
+
 async def seed_admin_user(db):
     """Create default admin user if no users exist in database"""
     try:
