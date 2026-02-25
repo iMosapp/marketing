@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,185 +7,132 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
-  Share,
   Platform,
-  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { showSimpleAlert } from '../../services/alert';
 
 export default function InviteTeamScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [inviteLink, setInviteLink] = useState<any>(null);
-  const [shares, setShares] = useState<any>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [recentInvites, setRecentInvites] = useState<any[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
   
   // Form state
-  const [recipientPhone, setRecipientPhone] = useState('');
-  const [recipientName, setRecipientName] = useState('');
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [customMessage, setCustomMessage] = useState('');
-  const [showShareForm, setShowShareForm] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('user');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Available roles based on current user's role
+  const getRoleOptions = () => {
+    if (user?.role === 'super_admin') {
+      return [
+        { value: 'org_admin', label: 'Org Admin' },
+        { value: 'store_manager', label: 'Store Manager' },
+        { value: 'user', label: 'Team Member' },
+      ];
+    }
+    if (user?.role === 'org_admin') {
+      return [
+        { value: 'store_manager', label: 'Store Manager' },
+        { value: 'user', label: 'Team Member' },
+      ];
+    }
+    return [
+      { value: 'user', label: 'Team Member' },
+    ];
+  };
+
+  const roleOptions = getRoleOptions();
+
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      loadRecentInvites();
     }, [user?._id])
   );
-  
-  const loadData = async () => {
+
+  const loadRecentInvites = async () => {
     if (!user?._id) return;
-    
     try {
-      setLoading(true);
-      setLoadError(null);
-      const [linkRes, sharesRes] = await Promise.all([
-        api.get(`/team-invite/user/${user._id}/invite-link`).catch(() => null),
-        api.get(`/team-invite/shares/${user._id}`).catch(() => null),
-      ]);
-      if (linkRes?.data) setInviteLink(linkRes.data);
-      if (sharesRes?.data) setShares(sharesRes.data);
-    } catch (error: any) {
-      console.error('Failed to load invite data:', error);
-      setLoadError(error?.response?.data?.detail || 'Failed to load invite data');
+      setLoadingRecent(true);
+      const res = await api.get('/admin/users', { headers: { 'X-User-ID': user._id } });
+      // Show recently created users as "invites"
+      const recent = (res.data || [])
+        .filter((u: any) => u._id !== user._id)
+        .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+        .slice(0, 5);
+      setRecentInvites(recent);
+    } catch (error) {
+      console.error('Failed to load recent invites:', error);
     } finally {
-      setLoading(false);
+      setLoadingRecent(false);
     }
   };
-  
-  const copyToClipboard = async () => {
-    if (!inviteLink?.invite_url) return;
-    
-    try {
-      if (Platform.OS === 'web') {
-        await navigator.clipboard.writeText(inviteLink.invite_url);
-      } else {
-        Clipboard.setString(inviteLink.invite_url);
-      }
-      Alert.alert('Copied!', 'Invite link copied to clipboard');
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
-  };
-  
-  const shareNative = async () => {
-    if (!inviteLink?.invite_url) return;
-    
-    try {
-      await Share.share({
-        message: `Join our team! ${inviteLink.invite_url}`,
-        url: inviteLink.invite_url,
-      });
-    } catch (error) {
-      console.error('Share failed:', error);
-    }
-  };
-  
-  const sendViaSMS = async () => {
-    if (!recipientPhone.trim()) {
-      Alert.alert('Error', 'Please enter a phone number');
+
+  const handleSendInvite = async () => {
+    if (!name.trim()) {
+      showSimpleAlert('Name Required', 'Please enter the person\'s name');
       return;
     }
-    
+    if (!email.trim() || !email.includes('@')) {
+      showSimpleAlert('Valid Email Required', 'Please enter a valid email address');
+      return;
+    }
+
+    setSending(true);
+    setSuccessMessage('');
     try {
-      setSending(true);
-      const res = await api.post('/team-invite/share-via-sms', {
-        user_id: user?._id,
-        recipient_phone: recipientPhone.trim(),
-        recipient_name: recipientName.trim() || undefined,
+      const res = await api.post('/admin/users/create', {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: role,
+        send_invite: true,
+      }, {
+        headers: { 'X-User-ID': user?._id }
       });
-      
-      if (res.data.success) {
-        Alert.alert(
-          'Invite Sent!',
-          res.data.message_sent 
-            ? `SMS sent to ${recipientPhone}`
-            : 'Invite queued for delivery'
-        );
-        setRecipientPhone('');
-        setRecipientName('');
-        setShowShareForm(false);
-        // Refresh shares
-        loadData();
+
+      const data = res.data;
+      if (data.success) {
+        const inviteSent = data.invite_sent ? 'Email invitation sent!' : 'User created (email not configured).';
+        setSuccessMessage(`${name.trim()} has been invited as ${roleOptions.find(r => r.value === role)?.label}. ${inviteSent}`);
+        setName('');
+        setEmail('');
+        setRole('user');
+        loadRecentInvites();
       }
     } catch (error: any) {
-      console.error('Failed to send invite:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to send invite');
+      const detail = error?.response?.data?.detail || 'Failed to send invitation';
+      showSimpleAlert('Error', detail);
     } finally {
       setSending(false);
     }
   };
-  
-  const sendViaEmail = async () => {
-    if (!recipientEmail.trim()) {
-      Alert.alert('Error', 'Please enter an email address');
-      return;
-    }
-    
-    if (!recipientEmail.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-    
-    try {
-      setSending(true);
-      const res = await api.post('/team-invite/send-email-invite', {
-        store_id: user?.store_id,
-        created_by: user?._id,
-        recipient_email: recipientEmail.trim().toLowerCase(),
-        recipient_name: recipientName.trim() || undefined,
-        custom_message: customMessage.trim() || undefined,
-      });
-      
-      if (res.data.success) {
-        Alert.alert(
-          'Invite Sent!',
-          res.data.email_sent 
-            ? `Email invitation sent to ${recipientEmail}`
-            : res.data.message
-        );
-        setRecipientEmail('');
-        setRecipientName('');
-        setCustomMessage('');
-        setShowEmailForm(false);
-        loadData();
-      }
-    } catch (error: any) {
-      console.error('Failed to send email invite:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to send invite');
-    } finally {
-      setSending(false);
+
+  const getRoleBadgeColor = (r: string) => {
+    switch (r) {
+      case 'super_admin': return '#FF3B30';
+      case 'org_admin': return '#007AFF';
+      case 'store_manager': return '#34C759';
+      default: return '#8E8E93';
     }
   };
-  
-  const formatPhone = (phone: string) => {
-    // Simple phone formatting
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length === 10) {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+
+  const getRoleLabel = (r: string) => {
+    switch (r) {
+      case 'super_admin': return 'Super Admin';
+      case 'org_admin': return 'Org Admin';
+      case 'store_manager': return 'Manager';
+      default: return 'Team Member';
     }
-    return phone;
   };
-  
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C9A962" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-  
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -198,297 +145,126 @@ export default function InviteTeamScreen() {
       </View>
       
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Admin Quick Create - for admins who can create users directly */}
-        {(user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager') && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="person-add" size={22} color="#C9A962" />
-              <Text style={styles.sectionTitle}>Create & Invite User</Text>
-            </View>
-            <Text style={styles.sectionDescription}>
-              Create a new team member account and send them an email invitation with login credentials
-            </Text>
-            <TouchableOpacity
-              style={styles.sendSMSButton}
-              onPress={() => router.push('/admin/users')}
-            >
-              <Ionicons name="person-add" size={20} color="#000" />
-              <Text style={styles.sendSMSButtonText}>Go to User Management</Text>
-            </TouchableOpacity>
+        {/* Invite Form */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="person-add" size={22} color="#C9A962" />
+            <Text style={styles.sectionTitle}>Send Invitation</Text>
           </View>
-        )}
+          <Text style={styles.sectionDescription}>
+            Create a new team member and send them an email with login credentials
+          </Text>
 
-        {/* Your Invite Link - only show if available */}
-        {inviteLink?.invite_url && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="link" size={22} color="#C9A962" />
-            <Text style={styles.sectionTitle}>Your Invite Link</Text>
+          {successMessage ? (
+            <View style={styles.successBanner}>
+              <Ionicons name="checkmark-circle" size={22} color="#34C759" />
+              <Text style={styles.successText}>{successMessage}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Full Name *</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="person-outline" size={18} color="#8E8E93" />
+              <TextInput
+                style={styles.textInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="John Smith"
+                placeholderTextColor="#6E6E73"
+                autoCapitalize="words"
+              />
+            </View>
           </View>
-          
-          <View style={styles.linkBox}>
-            <Text style={styles.linkText} numberOfLines={1}>
-              {inviteLink.invite_url}
-            </Text>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Email Address *</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+              <TextInput
+                style={styles.textInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="john@company.com"
+                placeholderTextColor="#6E6E73"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
           </View>
-          
-          <View style={styles.linkActions}>
-            <TouchableOpacity style={styles.linkActionButton} onPress={copyToClipboard}>
-              <Ionicons name="copy-outline" size={20} color="#FFF" />
-              <Text style={styles.linkActionText}>Copy</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.linkActionButton} onPress={shareNative}>
-              <Ionicons name="share-outline" size={20} color="#FFF" />
-              <Text style={styles.linkActionText}>Share</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.usageStats}>
-            <Text style={styles.usageText}>
-              <Text style={styles.usageNumber}>{inviteLink?.uses_count || 0}</Text> people joined via this link
-            </Text>
-          </View>
-        </View>
-        )}
-        
-        {/* Send via SMS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="chatbubble-ellipses" size={22} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Send via SMS</Text>
-          </View>
-          <Text style={styles.sectionDescription}>
-            Share your invite link via SMS to track who clicks and joins
-          </Text>
-          
-          {!showShareForm ? (
-            <TouchableOpacity
-              style={styles.sendSMSButton}
-              onPress={() => setShowShareForm(true)}
-            >
-              <Ionicons name="paper-plane" size={20} color="#000" />
-              <Text style={styles.sendSMSButtonText}>Send Invite via SMS</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.shareForm}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone Number *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={recipientPhone}
-                  onChangeText={setRecipientPhone}
-                  placeholder="(555) 123-4567"
-                  placeholderTextColor="#6E6E73"
-                  keyboardType="phone-pad"
-                  autoFocus
-                />
-              </View>
-              
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Name (optional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={recipientName}
-                  onChangeText={setRecipientName}
-                  placeholder="John Smith"
-                  placeholderTextColor="#6E6E73"
-                  autoCapitalize="words"
-                />
-              </View>
-              
-              <View style={styles.formActions}>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Role</Text>
+            <View style={styles.roleSelector}>
+              {roleOptions.map((opt) => (
                 <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => setShowShareForm(false)}
+                  key={opt.value}
+                  style={[
+                    styles.roleOption,
+                    role === opt.value && styles.roleOptionActive,
+                  ]}
+                  onPress={() => setRole(opt.value)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.sendButton}
-                  onPress={sendViaSMS}
-                  disabled={sending}
-                >
-                  {sending ? (
-                    <ActivityIndicator size="small" color="#000" />
-                  ) : (
-                    <>
-                      <Ionicons name="send" size={18} color="#000" />
-                      <Text style={styles.sendButtonText}>Send</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
-        
-        {/* Send via Email */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="mail" size={22} color="#34C759" />
-            <Text style={styles.sectionTitle}>Send via Email</Text>
-          </View>
-          <Text style={styles.sectionDescription}>
-            Send a professional email invitation with a direct signup link
-          </Text>
-          
-          {!showEmailForm ? (
-            <TouchableOpacity
-              style={[styles.sendSMSButton, { backgroundColor: '#34C759' }]}
-              onPress={() => setShowEmailForm(true)}
-              data-testid="send-email-invite-btn"
-            >
-              <Ionicons name="mail" size={20} color="#FFF" />
-              <Text style={[styles.sendSMSButtonText, { color: '#FFF' }]}>Send Email Invite</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.shareForm}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Address *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={recipientEmail}
-                  onChangeText={setRecipientEmail}
-                  placeholder="colleague@company.com"
-                  placeholderTextColor="#6E6E73"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoFocus
-                  data-testid="email-invite-email-input"
-                />
-              </View>
-              
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Name (optional)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={recipientName}
-                  onChangeText={setRecipientName}
-                  placeholder="John Smith"
-                  placeholderTextColor="#6E6E73"
-                  autoCapitalize="words"
-                  data-testid="email-invite-name-input"
-                />
-              </View>
-              
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Personal Message (optional)</Text>
-                <TextInput
-                  style={[styles.textInput, { height: 80, textAlignVertical: 'top' }]}
-                  value={customMessage}
-                  onChangeText={setCustomMessage}
-                  placeholder="Looking forward to working with you!"
-                  placeholderTextColor="#6E6E73"
-                  multiline
-                  data-testid="email-invite-message-input"
-                />
-              </View>
-              
-              <View style={styles.formActions}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => {
-                    setShowEmailForm(false);
-                    setRecipientEmail('');
-                    setRecipientName('');
-                    setCustomMessage('');
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.sendButton, { backgroundColor: '#34C759' }]}
-                  onPress={sendViaEmail}
-                  disabled={sending}
-                  data-testid="email-invite-send-btn"
-                >
-                  {sending ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="send" size={18} color="#FFF" />
-                      <Text style={[styles.sendButtonText, { color: '#FFF' }]}>Send</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
-        
-        {/* Your Analytics */}
-        {shares && shares.stats && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="analytics" size={22} color="#34C759" />
-              <Text style={styles.sectionTitle}>Your Analytics</Text>
-            </View>
-            
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{shares.stats.total_shares}</Text>
-                <Text style={styles.statLabel}>Invites Sent</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{shares.stats.total_clicked}</Text>
-                <Text style={styles.statLabel}>Clicked</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{shares.stats.total_joined}</Text>
-                <Text style={styles.statLabel}>Joined</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: '#34C759' }]}>
-                  {shares.stats.conversion_rate}%
-                </Text>
-                <Text style={styles.statLabel}>Conversion</Text>
-              </View>
-            </View>
-          </View>
-        )}
-        
-        {/* Recent Shares */}
-        {shares?.shares && shares.shares.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="time" size={22} color="#8E8E93" />
-              <Text style={styles.sectionTitle}>Recent Shares</Text>
-            </View>
-            
-            {shares.shares.slice(0, 5).map((share: any, index: number) => (
-              <View key={share._id} style={styles.shareRow}>
-                <View style={styles.shareInfo}>
-                  <Text style={styles.shareName}>
-                    {share.recipient_name || 'Unknown'}
+                  <Text style={[
+                    styles.roleOptionText,
+                    role === opt.value && styles.roleOptionTextActive,
+                  ]}>
+                    {opt.label}
                   </Text>
-                  <Text style={styles.sharePhone}>{share.recipient_phone}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.sendButton, sending && { opacity: 0.6 }]}
+            onPress={handleSendInvite}
+            disabled={sending}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <>
+                <Ionicons name="send" size={18} color="#000" />
+                <Text style={styles.sendButtonText}>Send Invite Email</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Team Members */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="people" size={22} color="#007AFF" />
+            <Text style={styles.sectionTitle}>Recent Team Members</Text>
+          </View>
+
+          {loadingRecent ? (
+            <ActivityIndicator size="small" color="#C9A962" style={{ marginVertical: 20 }} />
+          ) : recentInvites.length === 0 ? (
+            <Text style={styles.emptyText}>No team members yet. Send your first invite above!</Text>
+          ) : (
+            recentInvites.map((member: any) => (
+              <View key={member._id} style={styles.memberRow}>
+                <View style={styles.memberAvatar}>
+                  <Text style={styles.memberAvatarText}>
+                    {(member.name || '?').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </Text>
                 </View>
-                <View style={styles.shareStatus}>
-                  {share.joined ? (
-                    <View style={[styles.statusBadge, { backgroundColor: '#34C759' }]}>
-                      <Ionicons name="checkmark-circle" size={14} color="#FFF" />
-                      <Text style={styles.statusText}>Joined</Text>
-                    </View>
-                  ) : share.clicked ? (
-                    <View style={[styles.statusBadge, { backgroundColor: '#007AFF' }]}>
-                      <Ionicons name="eye" size={14} color="#FFF" />
-                      <Text style={styles.statusText}>Clicked</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.statusBadge, { backgroundColor: '#8E8E93' }]}>
-                      <Ionicons name="hourglass" size={14} color="#FFF" />
-                      <Text style={styles.statusText}>Pending</Text>
-                    </View>
-                  )}
+                <View style={styles.memberInfo}>
+                  <Text style={styles.memberName}>{member.name}</Text>
+                  <Text style={styles.memberEmail}>{member.email}</Text>
+                </View>
+                <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(member.role) + '20' }]}>
+                  <Text style={[styles.roleBadgeText, { color: getRoleBadgeColor(member.role) }]}>
+                    {getRoleLabel(member.role)}
+                  </Text>
                 </View>
               </View>
-            ))}
-          </View>
-        )}
-        
+            ))
+          )}
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -499,11 +275,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -535,7 +306,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 17,
@@ -547,68 +318,22 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginBottom: 16,
   },
-  linkBox: {
-    backgroundColor: '#2C2C2E',
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
     borderRadius: 10,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  linkActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  linkActionButton: {
+  successText: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3C3C3E',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 8,
-  },
-  linkActionText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  usageStats: {
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  usageText: {
-    color: '#8E8E93',
+    color: '#34C759',
     fontSize: 14,
+    lineHeight: 20,
   },
-  usageNumber: {
-    color: '#C9A962',
-    fontWeight: '600',
-  },
-  sendSMSButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#C9A962',
-    paddingVertical: 14,
-    borderRadius: 25,
-    gap: 8,
-  },
-  sendSMSButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  shareForm: {
-    backgroundColor: '#2C2C2E',
-    borderRadius: 10,
-    padding: 16,
-  },
-  inputGroup: {
+  formGroup: {
     marginBottom: 16,
   },
   inputLabel: {
@@ -617,103 +342,104 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginBottom: 8,
   },
-  textInput: {
-    backgroundColor: '#3C3C3E',
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2C2C2E',
     borderRadius: 10,
-    padding: 14,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  textInput: {
+    flex: 1,
     fontSize: 16,
     color: '#FFF',
+    paddingVertical: 14,
   },
-  formActions: {
+  roleSelector: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: 8,
   },
-  cancelButton: {
+  roleOption: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#3C3C3E',
+    backgroundColor: '#2C2C2E',
   },
-  cancelButtonText: {
-    color: '#8E8E93',
-    fontSize: 15,
+  roleOptionActive: {
+    backgroundColor: '#C9A962',
+  },
+  roleOptionText: {
+    fontSize: 14,
     fontWeight: '500',
+    color: '#8E8E93',
+  },
+  roleOptionTextActive: {
+    color: '#000',
   },
   sendButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#C9A962',
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 25,
     gap: 8,
+    marginTop: 4,
   },
   sendButtonText: {
     color: '#000',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+  emptyText: {
+    color: '#6E6E73',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
-  statCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#2C2C2E',
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  shareRow: {
+  memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#2C2C2E',
+    gap: 12,
   },
-  shareInfo: {
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2C2C2E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  memberInfo: {
     flex: 1,
   },
-  shareName: {
+  memberName: {
+    color: '#FFF',
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
   },
-  sharePhone: {
-    fontSize: 13,
+  memberEmail: {
     color: '#8E8E93',
+    fontSize: 13,
     marginTop: 2,
   },
-  shareStatus: {
-    marginLeft: 12,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  roleBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
-    gap: 4,
+    borderRadius: 8,
   },
-  statusText: {
-    color: '#FFF',
+  roleBadgeText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
