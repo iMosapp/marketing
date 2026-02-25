@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { label: 'Home', path: '/imos' },
   { label: 'Features', path: '/imos/features' },
   { label: 'Pricing', path: '/imos/pricing' },
-  { label: 'Hub', path: '/imos/hub' },
+  { label: 'Directory', path: '/imos/app-directory' },
   { label: 'Presentation', path: '/imos/salespresentation' },
 ];
 

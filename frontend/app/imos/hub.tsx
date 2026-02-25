@@ -25,9 +25,18 @@ const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: Pub
     ],
   },
   {
-    category: 'Get Started',
+    category: 'Experience iMOs',
     icon: 'rocket',
     color: '#FF9500',
+    pages: [
+      { title: 'Onboarding Preview', description: 'See the onboarding flow for all 5 roles', icon: 'eye', color: '#C9A962', path: '/imos/onboarding-preview', badge: 'Interactive' },
+      { title: 'App Directory', description: 'Full catalog of every page in iMOs', icon: 'folder', color: '#FF9500', path: '/imos/app-directory' },
+    ],
+  },
+  {
+    category: 'Get Started',
+    icon: 'person-add',
+    color: '#34C759',
     pages: [
       { title: 'Sign Up', description: 'Create your iMOs account', icon: 'person-add', color: '#34C759', path: '/auth/signup' },
       { title: 'Log In', description: 'Access your dashboard', icon: 'log-in', color: '#007AFF', path: '/auth/login' },
