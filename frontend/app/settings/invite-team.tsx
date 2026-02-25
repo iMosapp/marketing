@@ -602,6 +602,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
   // Invite result card
   inviteResultCard: {
     gap: 16,
