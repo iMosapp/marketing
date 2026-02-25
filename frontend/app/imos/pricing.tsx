@@ -154,6 +154,7 @@ const s = StyleSheet.create({
   priceSymbol: { fontSize: 20, fontWeight: '700', color: '#C9A962', marginBottom: 4 },
   priceValue: { fontSize: 44, fontWeight: '900', color: '#FFF', lineHeight: 48 },
   priceUnit: { fontSize: 14, color: '#8E8E93', marginBottom: 8, marginLeft: 4 },
+  priceCustom: { fontSize: 32, fontWeight: '800', color: '#C9A962', lineHeight: 48 },
   minUsers: { fontSize: 12, color: '#FF9500', marginBottom: 8 },
   planDesc: { fontSize: 14, color: '#8E8E93', lineHeight: 20, marginBottom: 16 },
   featureList: { gap: 8, marginBottom: 20 },
