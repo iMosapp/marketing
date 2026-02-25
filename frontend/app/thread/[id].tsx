@@ -1475,14 +1475,12 @@ export default function ThreadScreen() {
             onPress={async () => {
               if (!promptEmail.includes('@') || !user) return;
               try {
-                // Find contact_id from the conversation
                 const convRes = await api.get(`/conversations/${actualConversationId || id}`);
                 const contactId = convRes.data?.contact_id;
                 if (contactId) {
                   await api.put(`/contacts/${user._id}/${contactId}`, { email: promptEmail.trim().toLowerCase() });
                 }
-                // Update local param so the guard passes
-                (contact_email as any) = promptEmail.trim().toLowerCase();
+                setSavedContactEmail(promptEmail.trim().toLowerCase());
                 setShowEmailPrompt(false);
                 setPromptEmail('');
                 setMessageMode('email');
