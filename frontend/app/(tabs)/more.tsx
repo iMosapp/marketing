@@ -570,10 +570,6 @@ export default function MoreScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Notification Bell - top right */}
-      <View style={styles.bellContainer}>
-        <NotificationBell />
-      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Impersonation Banner */}
         {isImpersonating && (
