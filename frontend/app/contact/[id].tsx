@@ -169,7 +169,7 @@ export default function ContactDetailScreen() {
         last_name: data.last_name || '',
         phone: data.phone || '',
         email: data.email || '',
-        photo: data.photo || null,
+        photo: data.photo_thumbnail || data.photo_url || data.photo || null,
         notes: data.notes || '',
         vehicle: data.vehicle || '',
         tags: data.tags || [],
