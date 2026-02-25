@@ -110,6 +110,19 @@ api_router.include_router(date_triggers.router)
 api_router.include_router(app_directory.router)
 api_router.include_router(scheduler_admin.router)
 
+# ============= WEBSOCKET ENDPOINT =============
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
+    await ws_manager.connect(websocket, user_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Client can send pings or other messages; we just keep the connection alive
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket, user_id)
+    except Exception:
+        ws_manager.disconnect(websocket, user_id)
+
 # ============= USER SETTINGS ENDPOINTS (kept here for URL compatibility) =============
 @api_router.get("/users/{user_id}/leaderboard-settings")
 async def get_leaderboard_settings(user_id: str):
