@@ -7,7 +7,7 @@ import requests
 import os
 import secrets
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://imos-ux-polish.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://cascading-invites.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 TEST_STORE_ID = "699637981b07c23426a5324a"
