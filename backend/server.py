@@ -51,6 +51,19 @@ async def root():
 async def api_health():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
+# ============= BRANDING / STATIC ASSETS =============
+@api_router.get("/branding/logo")
+async def get_branding_logo():
+    """Serve the iMOs logo for emails and public pages"""
+    logo_path = ROOT_DIR / "static" / "imos-logo-email.png"
+    if not logo_path.exists():
+        raise HTTPException(status_code=404, detail="Logo not found")
+    return FileResponse(
+        str(logo_path),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=31536000"}
+    )
+
 # ============= INCLUDE ROUTERS =============
 api_router.include_router(auth.router)
 api_router.include_router(contacts.router)
