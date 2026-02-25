@@ -1968,7 +1968,7 @@ async def get_users_for_phone_assignment():
 
 @router.put("/phone-assignments/users/{user_id}")
 async def update_user_phone_assignment(user_id: str, data: dict):
-    """Assign or update a user's MVPLine phone number"""
+    """Assign or update a user's iMOs phone number"""
     mvpline_number = data.get("mvpline_number")
     
     # If assigning a number, check it's not already assigned

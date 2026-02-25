@@ -184,7 +184,7 @@ class User(BaseModel):
     leaderboard_visible: bool = False
     compare_scope: str = "state"  # state, region, country
     
-    # MVPLine settings
+    # iMOs settings
     mvpline_number: Optional[str] = None
     persona: Optional[UserPersona] = None
     onboarding_complete: bool = False

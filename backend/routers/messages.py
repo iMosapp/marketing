@@ -841,7 +841,7 @@ async def find_inbox_owner(db, to_phone: str) -> dict:
     to_phone_digits = to_phone_normalized.replace("+", "")
     to_phone_no_country = to_phone_digits[1:] if to_phone_digits.startswith("1") and len(to_phone_digits) == 11 else to_phone_digits
     
-    # 1. Check if this is a user's personal MVPLine number
+    # 1. Check if this is a user's personal iMOs number
     user = await db.users.find_one({
         "$or": [
             {"mvpline_number": to_phone_normalized},
