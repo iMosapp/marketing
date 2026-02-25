@@ -332,18 +332,18 @@ async def _process_photo(photo_data: str) -> tuple:
     if img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
     
-    # Generate thumbnail (48x48 for avatars, ~3-5KB)
+    # Generate thumbnail (96x96 for avatars, ~3-5KB)
     thumb = img.copy()
     thumb.thumbnail((96, 96), Image.LANCZOS)
     thumb_buffer = io.BytesIO()
     thumb.save(thumb_buffer, 'JPEG', quality=60, optimize=True)
     thumb_b64 = prefix + base64.b64encode(thumb_buffer.getvalue()).decode()
     
-    # Generate high-res (max 800px wide for congrats cards/emails, ~50-100KB)
+    # Generate high-res (1080px for social media/email/MMS sharing)
     highres = img.copy()
-    highres.thumbnail((800, 800), Image.LANCZOS)
+    highres.thumbnail((1080, 1080), Image.LANCZOS)
     highres_buffer = io.BytesIO()
-    highres.save(highres_buffer, 'JPEG', quality=85, optimize=True)
+    highres.save(highres_buffer, 'JPEG', quality=92, optimize=True)
     highres_b64 = prefix + base64.b64encode(highres_buffer.getvalue()).decode()
     
     return thumb_b64, highres_b64
