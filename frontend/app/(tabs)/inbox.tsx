@@ -155,7 +155,7 @@ export default function InboxScreen() {
   
   // Message mode state (SMS vs Email)
   const [messageMode, setMessageMode] = useState<MessageModeType>('sms');
-  const [toggleStyle, setToggleStyle] = useState<ToggleStyle>('pill');
+  const [toggleStyle, setToggleStyle] = useState<string>('pill');
   
   // Get current colors based on mode
   const colors = messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK;
@@ -198,7 +198,7 @@ export default function InboxScreen() {
     }
   };
   
-  const handleModeChange = async (mode: MessageMode) => {
+  const handleModeChange = async (mode: MessageModeType) => {
     triggerHaptic('medium');
     setMessageMode(mode);
     // Save mode preference to AsyncStorage so other screens can use it
