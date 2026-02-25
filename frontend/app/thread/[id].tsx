@@ -2312,6 +2312,59 @@ export default function ThreadScreen() {
                     Your customer will receive a beautiful branded thank you card they can download and share on social media!
                   </Text>
                 </View>
+
+                {/* Tag & Campaign Picker */}
+                <Text style={styles.congratsLabel}>Apply Tags & Start Campaigns</Text>
+                <View style={styles.congratsTagSection}>
+                  {availableTags.length === 0 ? (
+                    <Text style={styles.congratsTagEmpty}>No tags created yet</Text>
+                  ) : (
+                    <View style={styles.congratsTagGrid}>
+                      {availableTags.map((tag) => {
+                        const isSelected = congratsSelectedTags.includes(tag.name);
+                        const linkedCampaign = getCampaignForTag(tag.name);
+                        return (
+                          <TouchableOpacity
+                            key={tag._id}
+                            style={[
+                              styles.congratsTagChip,
+                              isSelected && { backgroundColor: `${tag.color || '#C9A962'}25`, borderColor: tag.color || '#C9A962' },
+                            ]}
+                            onPress={() => toggleCongratsTag(tag.name)}
+                            data-testid={`congrats-tag-${tag.name.toLowerCase().replace(/\s+/g, '-')}`}
+                          >
+                            <Ionicons
+                              name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                              size={16}
+                              color={isSelected ? (tag.color || '#C9A962') : '#6E6E73'}
+                            />
+                            <Text style={[
+                              styles.congratsTagText,
+                              isSelected && { color: tag.color || '#C9A962' },
+                            ]}>{tag.name}</Text>
+                            {linkedCampaign && (
+                              <View style={styles.congratsCampaignBadge}>
+                                <Ionicons name="flash" size={10} color="#FF9500" />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                  {congratsSelectedTags.some(t => getCampaignForTag(t)) && (
+                    <View style={styles.congratsCampaignNote}>
+                      <Ionicons name="flash" size={16} color="#FF9500" />
+                      <Text style={styles.congratsCampaignNoteText}>
+                        Will auto-start: {congratsSelectedTags
+                          .map(t => getCampaignForTag(t))
+                          .filter(Boolean)
+                          .map(c => c!.name)
+                          .join(', ')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 
                 {/* Create Button */}
                 <TouchableOpacity
