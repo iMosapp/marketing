@@ -6,11 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 const PROD_BASE = 'https://app.imosapp.com';
 
 const NAV_LINKS = [
-  { label: 'Home', path: '/imos' },
   { label: 'Features', path: '/imos/features' },
+  { label: 'Solutions', path: '/imos/hub' },
+  { label: 'Resources', path: '/imos/app-directory' },
   { label: 'Pricing', path: '/imos/pricing' },
-  { label: 'Directory', path: '/imos/app-directory' },
-  { label: 'Presentation', path: '/imos/salespresentation' },
 ];
 
 export function getShareUrl(path: string) {
@@ -59,11 +58,11 @@ export function ImosHeader() {
             </View>
             {/* CTA */}
             <View style={styles.ctaRow}>
-              <TouchableOpacity onPress={() => navigate('/auth/login')} data-testid="header-login-btn">
-                <Text style={styles.loginLink}>Log In</Text>
+              <TouchableOpacity onPress={() => navigate('/auth/login')} style={styles.signInBtn} data-testid="header-login-btn">
+                <Text style={styles.signInBtnText}>Sign In</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.signupBtn} onPress={() => navigate('/auth/signup')} data-testid="header-signup-btn">
-                <Text style={styles.signupBtnText}>Sign Up Free</Text>
+              <TouchableOpacity style={styles.signupBtn} onPress={() => navigate('/imos/demo')} data-testid="header-demo-btn">
+                <Text style={styles.signupBtnText}>Get Demo</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -85,10 +84,10 @@ export function ImosHeader() {
           ))}
           <View style={styles.mobileDivider} />
           <TouchableOpacity onPress={() => navigate('/auth/login')} style={styles.mobileMenuItem}>
-            <Text style={styles.mobileMenuText}>Log In</Text>
+            <Text style={styles.mobileMenuText}>Sign In</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigate('/auth/signup')} style={[styles.mobileMenuItem, styles.mobileSignup]}>
-            <Text style={styles.mobileSignupText}>Sign Up Free</Text>
+          <TouchableOpacity onPress={() => navigate('/imos/demo')} style={[styles.mobileMenuItem, styles.mobileSignup]}>
+            <Text style={styles.mobileSignupText}>Get Demo</Text>
           </TouchableOpacity>
         </View>
       )}
