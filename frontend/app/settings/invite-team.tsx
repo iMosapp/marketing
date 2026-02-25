@@ -195,10 +195,58 @@ export default function InviteTeamScreen() {
             <Text style={styles.sectionTitle}>Send Invitation</Text>
           </View>
           <Text style={styles.sectionDescription}>
-            Create a new team member and send them an email with login credentials
+            Create a new team member and send them login credentials
           </Text>
 
-          {successMessage ? (
+          {/* Show invite result card OR the form */}
+          {inviteResult ? (
+            <View style={styles.inviteResultCard}>
+              <View style={styles.inviteResultHeader}>
+                <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                <Text style={styles.inviteResultTitle}>{successMessage}</Text>
+              </View>
+              
+              <View style={styles.inviteCredentials}>
+                <View style={styles.credRow}>
+                  <Text style={styles.credLabel}>Email</Text>
+                  <Text style={styles.credValue}>{inviteResult.email}</Text>
+                </View>
+                <View style={styles.credDivider} />
+                <View style={styles.credRow}>
+                  <Text style={styles.credLabel}>Password</Text>
+                  <Text style={styles.credValue}>{inviteResult.password}</Text>
+                </View>
+                <View style={styles.credDivider} />
+                <View style={styles.credRow}>
+                  <Text style={styles.credLabel}>Role</Text>
+                  <Text style={styles.credValue}>{inviteResult.role}</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.copyButton, copied && styles.copyButtonCopied]}
+                onPress={handleCopyInvite}
+                data-testid="copy-invite-btn"
+              >
+                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={copied ? '#34C759' : '#FFF'} />
+                <Text style={[styles.copyButtonText, copied && { color: '#34C759' }]}>
+                  {copied ? 'Copied! Paste in your text app' : 'Copy Invite Message'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.newInviteButton}
+                onPress={handleNewInvite}
+                data-testid="new-invite-btn"
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
+                <Text style={styles.newInviteButtonText}>Send Another Invite</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+
+          {successMessage && !inviteResult ? (
             <View style={styles.successBanner}>
               <Ionicons name="checkmark-circle" size={22} color="#34C759" />
               <Text style={styles.successText}>{successMessage}</Text>
