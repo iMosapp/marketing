@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ImosHeader, ImosFooter } from './_components';
 
 const FEATURE_SECTIONS = [
   {
@@ -31,7 +31,7 @@ const FEATURE_SECTIONS = [
   },
   {
     title: 'AI-Powered Intelligence',
-    subtitle: 'Jessi — your team\'s AI assistant',
+    subtitle: "Jessi — your team's AI assistant",
     icon: 'sparkles',
     color: '#AF52DE',
     features: [
@@ -69,84 +69,68 @@ const FEATURE_SECTIONS = [
 
 export default function FeaturesScreen() {
   const router = useRouter();
-  const { width: screenW } = useWindowDimensions();
-  const isDesktop = screenW > 700;
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
+  const maxW = isDesktop ? 900 : undefined;
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={['#0A0A1A', '#1A1A2E', '#0A0A1A']} style={StyleSheet.absoluteFill} />
+    <View style={s.container}>
+      <ImosHeader />
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <View style={maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined}>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={isDesktop ? { maxWidth: 800, alignSelf: 'center', width: '100%' } : undefined}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="features-back">
-            <Ionicons name="chevron-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <View style={styles.headerLogo}>
-            <Text style={[styles.logoChar, { color: '#FF3B30' }]}>i</Text>
-            <Text style={[styles.logoChar, { color: '#FFD60A' }]}>M</Text>
-            <Text style={[styles.logoChar, { color: '#34C759' }]}>O</Text>
-            <Text style={[styles.logoChar, { color: '#007AFF' }]}>s</Text>
+          <View style={s.titleSection}>
+            <Text style={s.label}>PLATFORM</Text>
+            <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Features</Text>
+            <Text style={s.subtitle}>Everything your team needs to build lasting customer relationships</Text>
           </View>
-          <View style={{ width: 36 }} />
-        </View>
 
-        <View style={styles.titleSection}>
-          <Text style={styles.pageTitle}>Features</Text>
-          <Text style={styles.pageSubtitle}>Everything your team needs to build lasting customer relationships</Text>
-        </View>
-
-        {FEATURE_SECTIONS.map((section, si) => (
-          <View key={si} style={styles.featureSection}>
-            <View style={styles.sectionHead}>
-              <View style={[styles.sectionIcon, { backgroundColor: `${section.color}15` }]}>
-                <Ionicons name={section.icon as any} size={28} color={section.color} />
-              </View>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <Text style={[styles.sectionSub, { color: section.color }]}>{section.subtitle}</Text>
-            </View>
-            <View style={[styles.featureGrid, isDesktop && { flexDirection: 'row', flexWrap: 'wrap' }]}>
-              {section.features.map((f, fi) => (
-                <View key={fi} style={[styles.featureCard, isDesktop && { width: '48%' }]}>
-                  <View style={[styles.featureIcon, { backgroundColor: `${section.color}12` }]}>
-                    <Ionicons name={f.icon as any} size={22} color={section.color} />
-                  </View>
-                  <Text style={styles.featureTitle}>{f.title}</Text>
-                  <Text style={styles.featureDesc}>{f.desc}</Text>
+          {FEATURE_SECTIONS.map((section, si) => (
+            <View key={si} style={s.featureSection}>
+              <View style={s.sectionHead}>
+                <View style={[s.sectionIcon, { backgroundColor: `${section.color}15` }]}>
+                  <Ionicons name={section.icon as any} size={28} color={section.color} />
                 </View>
-              ))}
+                <Text style={s.sectionTitle}>{section.title}</Text>
+                <Text style={[s.sectionSub, { color: section.color }]}>{section.subtitle}</Text>
+              </View>
+              <View style={[s.featureGrid, isDesktop && { flexDirection: 'row', flexWrap: 'wrap' }]}>
+                {section.features.map((f, fi) => (
+                  <View key={fi} style={[s.featureCard, isDesktop && { width: '48%' }]}>
+                    <View style={[s.featureIcon, { backgroundColor: `${section.color}12` }]}>
+                      <Ionicons name={f.icon as any} size={22} color={section.color} />
+                    </View>
+                    <Text style={s.featureTitle}>{f.title}</Text>
+                    <Text style={s.featureDesc}>{f.desc}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        {/* CTA */}
-        <View style={styles.cta}>
-          <Text style={styles.ctaTitle}>See it in action</Text>
-          <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/imos/presentation' as any)} data-testid="features-presentation-btn">
-            <Ionicons name="play-circle" size={20} color="#000" />
-            <Text style={styles.ctaBtnText}>View Sales Presentation</Text>
-          </TouchableOpacity>
+          {/* CTA */}
+          <View style={s.cta}>
+            <Text style={s.ctaTitle}>See it in action</Text>
+            <TouchableOpacity style={s.ctaBtn} onPress={() => router.push('/imos/salespresentation' as any)} data-testid="features-presentation-btn">
+              <Ionicons name="play-circle" size={20} color="#000" />
+              <Text style={s.ctaBtnText}>View Sales Presentation</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
-        </View>
+        <ImosFooter />
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  scroll: { paddingBottom: 60 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: Platform.OS === 'web' ? 20 : 56, paddingBottom: 8,
-  },
-  backBtn: { padding: 4 },
-  headerLogo: { flexDirection: 'row' },
-  logoChar: { fontSize: 22, fontWeight: '800' },
-  titleSection: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32 },
-  pageTitle: { fontSize: 32, fontWeight: '800', color: '#FFF', marginBottom: 8 },
-  pageSubtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 360 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0A0A12' },
+  scroll: { paddingBottom: 0 },
+  titleSection: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 32 },
+  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8 },
+  subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 360 },
   featureSection: { paddingHorizontal: 16, marginBottom: 36 },
   sectionHead: { alignItems: 'center', marginBottom: 18 },
   sectionIcon: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
