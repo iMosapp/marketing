@@ -192,6 +192,8 @@ export default function ThreadScreen() {
   // Congrats Card state
   const [showCongratsCardModal, setShowCongratsCardModal] = useState(false);
   const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [promptEmail, setPromptEmail] = useState('');
   const [congratsPhoto, setCongratsPhoto] = useState<{uri: string, type: string, name: string} | null>(null);
   const [congratsCustomerName, setCongratsCustomerName] = useState('');
   const [congratsCustomMessage, setCongratsCustomMessage] = useState('');
