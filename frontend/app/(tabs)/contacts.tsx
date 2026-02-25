@@ -275,7 +275,7 @@ export default function ContactsScreen() {
         <Text style={styles.contactName}>
           {item.first_name} {item.last_name || ''}
         </Text>
-        <Text style={styles.contactPhone}>{item.phone}</Text>
+        <Text style={styles.contactPhone} dataDetectorType="none">{item.phone}</Text>
         {contactTags.length > 0 && (
           <View style={styles.tags}>
             {contactTags.map((tag: { name: string; color: string }, index: number) => (
