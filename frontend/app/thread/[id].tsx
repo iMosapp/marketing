@@ -619,6 +619,7 @@ export default function ThreadScreen() {
         sender: 'user',
         timestamp: new Date().toISOString(),
         ai_generated: false,
+        channel: messageMode,
       };
       
       setMessages((prev) => [...prev, optimisticMessage]);
