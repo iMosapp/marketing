@@ -127,7 +127,7 @@ async def create_team_invite(data: TeamInviteCreate):
     
     # Generate full URL
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = _get_app_url()
     invite_url = f"{base_url}/imos/signup?invite={invite_code}"
     
     return {
@@ -282,7 +282,7 @@ async def join_team(data: TeamMemberJoin):
     
     # Generate training link
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = _get_app_url()
     training_link = f"{base_url}/imos/onboarding-preview"
     
     # Queue welcome SMS (if auto-send is enabled)
@@ -340,7 +340,7 @@ async def get_store_invites(store_id: str):
         creators = {str(c["_id"]): c.get("name", "Unknown") for c in creator_docs}
     
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = _get_app_url()
     
     result = []
     for invite in invites:
@@ -400,7 +400,7 @@ async def get_user_share_link(user_id: str):
     
     if existing:
         import os
-        base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+        base_url = _get_app_url()
         return {
             "invite_code": existing["invite_code"],
             "invite_url": f"{base_url}/imos/signup?invite={existing['invite_code']}",
@@ -435,7 +435,7 @@ async def get_user_share_link(user_id: str):
     await db.team_invites.insert_one(invite)
     
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = _get_app_url()
     
     return {
         "invite_code": invite_code,
@@ -523,7 +523,7 @@ async def share_invite_via_sms(data: ShareInviteViaSMS):
     
     # Build invite URL
     import os
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = _get_app_url()
     invite_url = f"{base_url}/imos/signup?invite={invite_code}"
     
     # Get onboarding settings for message template
@@ -781,7 +781,7 @@ async def send_email_invite(data: EmailInviteRequest):
     invite["_id"] = str(result.inserted_id)
     
     # Generate invite URL
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = _get_app_url()
     invite_url = f"{base_url}/imos/signup?invite={invite_code}"
     
     # Send email via Resend
