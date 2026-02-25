@@ -359,13 +359,6 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/integrations'),
           color: '#5856D6',
         },
-        {
-          icon: 'people-outline',
-          title: 'Invite Team',
-          subtitle: 'Send invites',
-          onPress: () => router.push('/settings/invite-team'),
-          color: '#34C759',
-        },
       ],
     },
   ];
