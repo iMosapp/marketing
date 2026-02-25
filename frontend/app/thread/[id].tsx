@@ -719,7 +719,7 @@ export default function ThreadScreen() {
       [
         { text: 'Take Photo', onPress: takePhoto },
         { text: 'Choose from Library', onPress: pickImage },
-        { text: 'Create Congrats Card', onPress: () => setShowCongratsCardModal(true) },
+        { text: 'Create Congrats Card', onPress: () => openCongratsModal() },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
@@ -1562,7 +1562,7 @@ export default function ThreadScreen() {
               style={styles.quickContactActionBtn}
               onPress={() => {
                 setCongratsCustomerName(`${newContactFirstName} ${newContactLastName}`.trim() || contactPhone);
-                setShowCongratsCardModal(true);
+                openCongratsModal();
               }}
               data-testid="quick-contact-congrats-btn"
             >
@@ -2185,7 +2185,7 @@ export default function ThreadScreen() {
               style={styles.photoOptionButton}
               onPress={() => {
                 setShowPhotoOptionsModal(false);
-                setShowCongratsCardModal(true);
+                openCongratsModal();
               }}
               data-testid="photo-option-congrats"
             >
