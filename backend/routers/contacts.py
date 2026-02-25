@@ -118,6 +118,43 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
     
     # Exclude heavy 'photo' field from list queries — use photo_thumbnail instead
     contacts = await db.contacts.find(query, {"photo": 0}).sort("first_name", 1).limit(500).to_list(500)
+    
+    # Auto-backfill: find contacts missing thumbnails but having a photo in DB
+    needs_backfill = [c for c in contacts if not c.get('photo_thumbnail') and not c.get('photo_url')]
+    if needs_backfill:
+        ids = [c['_id'] for c in needs_backfill]
+        # Fetch only the photo field for these contacts
+        photo_docs = await db.contacts.find(
+            {"_id": {"$in": ids}, "photo": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"_id": 1, "photo": 1}
+        ).to_list(len(ids))
+        
+        for pdoc in photo_docs:
+            photo_data = pdoc.get('photo', '')
+            if photo_data and len(photo_data) > 100:
+                try:
+                    thumbnail, high_res = await _process_photo(photo_data)
+                    await db.contacts.update_one(
+                        {"_id": pdoc['_id']},
+                        {"$set": {"photo_thumbnail": thumbnail, "photo_url": thumbnail}}
+                    )
+                    # Also store high-res separately
+                    cid = str(pdoc['_id'])
+                    await db.contact_photos.update_one(
+                        {"contact_id": cid},
+                        {"$set": {"contact_id": cid, "photo_full": high_res, "updated_at": datetime.utcnow()}},
+                        upsert=True
+                    )
+                    # Update the in-memory contact for this response
+                    for c in contacts:
+                        if c['_id'] == pdoc['_id']:
+                            c['photo_thumbnail'] = thumbnail
+                            c['photo_url'] = thumbnail
+                            break
+                    logger.info(f"Backfilled thumbnail for contact {cid}")
+                except Exception as e:
+                    logger.error(f"Failed to backfill thumbnail for {pdoc['_id']}: {e}")
+    
     return [Contact(**{**c, "_id": str(c["_id"])}) for c in contacts]
 
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
