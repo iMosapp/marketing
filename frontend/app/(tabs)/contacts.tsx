@@ -121,16 +121,19 @@ export default function ContactsScreen() {
     setRefreshing(false);
   };
   
-  const handleSearch = async (text: string) => {
+  const handleSearch = (text: string) => {
     setSearch(text);
-    if (text.length > 2 || text.length === 0) {
-      try {
-        const data = await contactsAPI.getAll(user?._id || '', text || undefined);
-        setContacts(data);
-      } catch (error) {
-        console.error('Search failed:', error);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      if (text.length > 2 || text.length === 0) {
+        try {
+          const data = await contactsAPI.getAll(userId || '', text || undefined);
+          setContacts(data);
+        } catch (error) {
+          console.error('Search failed:', error);
+        }
       }
-    }
+    }, 300);
   };
   
   const startConversation = async (contact: any) => {
