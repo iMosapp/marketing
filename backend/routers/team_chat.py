@@ -548,3 +548,76 @@ async def send_broadcast(
         "recipients_count": len(recipients),
         "notifications_sent": notifications_created
     }
+
+
+
+# ============ DELETE / CLEAR HISTORY ============
+
+@router.delete("/channels/{channel_id}")
+async def delete_channel(channel_id: str, user_id: str):
+    """Delete a channel and all its messages. Only channel creator or admins can delete."""
+    db = get_db()
+
+    try:
+        channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
+    except:
+        channel = None
+
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Check permission: creator or admin
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_creator = channel.get("created_by") == user_id
+    is_admin = user.get("role") in ("super_admin", "org_admin", "store_manager")
+
+    if not is_creator and not is_admin:
+        raise HTTPException(status_code=403, detail="Only the channel creator or an admin can delete this channel")
+
+    # Delete all messages in the channel
+    msg_result = await db.team_messages.delete_many({"channel_id": channel_id})
+    # Delete read status records
+    await db.team_read_status.delete_many({"channel_id": channel_id})
+    # Delete the channel itself
+    await db.team_channels.delete_one({"_id": ObjectId(channel_id)})
+
+    return {
+        "success": True,
+        "messages_deleted": msg_result.deleted_count,
+        "message": "Channel and all messages deleted"
+    }
+
+
+@router.delete("/channels/{channel_id}/messages")
+async def clear_channel_history(channel_id: str, user_id: str):
+    """Clear all message history in a channel. Only creator or admins can clear."""
+    db = get_db()
+
+    try:
+        channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
+    except:
+        channel = None
+
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_creator = channel.get("created_by") == user_id
+    is_admin = user.get("role") in ("super_admin", "org_admin", "store_manager")
+
+    if not is_creator and not is_admin:
+        raise HTTPException(status_code=403, detail="Only the channel creator or an admin can clear history")
+
+    result = await db.team_messages.delete_many({"channel_id": channel_id})
+
+    return {
+        "success": True,
+        "messages_deleted": result.deleted_count,
+        "message": "Chat history cleared"
+    }
