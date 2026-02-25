@@ -1,5 +1,5 @@
 """
-MVPLine API Server - Main entry point
+iMOs API Server - Main entry point
 Refactored to use modular routers for maintainability
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Request
@@ -21,7 +21,7 @@ from routers import auth, contacts, tasks, messages, calls, campaigns, admin, le
 from routers.database import get_db
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-app = FastAPI(title="MVPLine API", version="2.0", redirect_slashes=False)
+app = FastAPI(title="iMOs API", version="2.0", redirect_slashes=False)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -45,7 +45,7 @@ app.add_middleware(
 # ============= HEALTH CHECK =============
 @api_router.get("/")
 async def root():
-    return {"message": "MVPLine API", "version": "2.0"}
+    return {"message": "iMOs API", "version": "2.0"}
 
 @api_router.get("/health")
 async def api_health():
