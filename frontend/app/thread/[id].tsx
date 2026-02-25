@@ -204,6 +204,8 @@ export default function ThreadScreen() {
   const [congratsCustomerName, setCongratsCustomerName] = useState('');
   const [congratsCustomMessage, setCongratsCustomMessage] = useState('');
   const [creatingCongratsCard, setCreatingCongratsCard] = useState(false);
+  const [congratsSelectedTags, setCongratsSelectedTags] = useState<string[]>([]);
+  const [congratsCampaigns, setCongratsCampaigns] = useState<{id: string, name: string, trigger_tag: string}[]>([]);
 
   // Quick Contact Creation state (for new numbers)
   const [isNewContact, setIsNewContact] = useState(false);
