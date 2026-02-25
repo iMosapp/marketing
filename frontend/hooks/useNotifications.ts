@@ -1,117 +1,125 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
+import api from '../services/api';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
-interface LeadNotification {
+export interface AppNotification {
   id: string;
   type: string;
   title: string;
-  message: string;
-  conversation_id: string;
-  contact_id: string;
-  contact_name: string;
-  contact_phone: string;
+  message?: string;
+  body?: string;
+  user_id?: string;
+  conversation_id?: string;
+  contact_id?: string;
+  contact_name?: string;
+  contact_phone?: string;
   contact_email?: string;
   lead_source_name?: string;
+  channel_id?: string;
+  read: boolean;
   created_at: string;
 }
 
 interface UseNotificationsResult {
-  pendingNotification: LeadNotification | null;
+  notifications: AppNotification[];
   unreadCount: number;
   loading: boolean;
   refreshNotifications: () => Promise<void>;
-  clearPendingNotification: () => void;
+  markAsRead: (id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
+  clearAll: () => Promise<void>;
 }
 
-export function useNotifications(pollInterval: number = 5000): UseNotificationsResult {
+export function useNotifications(): UseNotificationsResult {
   const { user } = useAuthStore();
-  const [pendingNotification, setPendingNotification] = useState<LeadNotification | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchPendingNotification = useCallback(async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user?._id) return;
-    
     try {
-      const response = await fetch(
-        `${API_URL}/api/notifications/pending-action?user_id=${user._id}`
-      );
-      const data = await response.json();
-      
-      if (data.success && data.notification) {
-        setPendingNotification(data.notification);
+      const res = await api.get(`/notifications/?user_id=${user._id}&limit=50`);
+      const data = res.data;
+      if (data.success) {
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unread_count ?? (data.notifications || []).filter((n: any) => !n.read).length);
       }
-    } catch (error) {
-      console.error('Error fetching pending notification:', error);
+    } catch (e) {
+      // Silent fail
     }
   }, [user?._id]);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user?._id) return;
-    
     try {
-      const response = await fetch(
-        `${API_URL}/api/notifications/unread-count?user_id=${user._id}`
-      );
-      const data = await response.json();
-      setUnreadCount(data.count || 0);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
+      const res = await api.get(`/notifications/unread-count?user_id=${user._id}`);
+      setUnreadCount(res.data.count || 0);
+    } catch (e) {
+      // Silent fail
     }
   }, [user?._id]);
 
   const refreshNotifications = useCallback(async () => {
-    if (!user?._id) return;
     setLoading(true);
-    
+    await fetchNotifications();
+    setLoading(false);
+  }, [fetchNotifications]);
+
+  const markAsRead = useCallback(async (id: string) => {
     try {
-      await Promise.all([
-        fetchPendingNotification(),
-        fetchUnreadCount()
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?._id, fetchPendingNotification, fetchUnreadCount]);
+      await api.post(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (e) { /* silent */ }
+  }, []);
 
-  const clearPendingNotification = useCallback(() => {
-    setPendingNotification(null);
-    fetchUnreadCount();
-  }, [fetchUnreadCount]);
+  const markAllRead = useCallback(async () => {
+    if (!user?._id) return;
+    try {
+      await api.post(`/notifications/mark-all-read?user_id=${user._id}`);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (e) { /* silent */ }
+  }, [user?._id]);
 
-  // Start polling when user is logged in
+  const clearAll = useCallback(async () => {
+    if (!user?._id) return;
+    try {
+      await api.delete(`/notifications/clear-all?user_id=${user._id}`);
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (e) { /* silent */ }
+  }, [user?._id]);
+
+  // Initial fetch + poll every 15 seconds as fallback
   useEffect(() => {
     if (!user?._id) {
-      setPendingNotification(null);
+      setNotifications([]);
       setUnreadCount(0);
       return;
     }
-
-    // Initial fetch
     refreshNotifications();
+    const interval = setInterval(fetchUnreadCount, 15000);
+    return () => clearInterval(interval);
+  }, [user?._id, refreshNotifications, fetchUnreadCount]);
 
-    // Start polling
-    pollIntervalRef.current = setInterval(() => {
-      fetchPendingNotification();
-      fetchUnreadCount();
-    }, pollInterval);
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
-  }, [user?._id, pollInterval, refreshNotifications, fetchPendingNotification, fetchUnreadCount]);
+  // Listen for WebSocket notification_update events to refresh
+  const bumpUnread = useCallback(() => {
+    fetchUnreadCount();
+    fetchNotifications();
+  }, [fetchUnreadCount, fetchNotifications]);
 
   return {
-    pendingNotification,
+    notifications,
     unreadCount,
     loading,
     refreshNotifications,
-    clearPendingNotification,
+    markAsRead,
+    markAllRead,
+    clearAll,
+    // expose bumpUnread for websocket integration
+    ...(({ bumpUnread } as any)),
   };
 }
 
