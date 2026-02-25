@@ -1453,6 +1453,53 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </View>
       
+      {/* Inline Email Prompt */}
+      {showEmailPrompt && (
+        <View style={styles.emailPromptBanner} data-testid="email-prompt-banner">
+          <Ionicons name="mail-outline" size={20} color="#C9A962" />
+          <TextInput
+            style={styles.emailPromptInput}
+            placeholder="Enter customer's email address"
+            placeholderTextColor="#666"
+            value={promptEmail}
+            onChangeText={setPromptEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoFocus
+            data-testid="email-prompt-input"
+          />
+          <TouchableOpacity
+            style={[styles.emailPromptSave, !promptEmail.includes('@') && { opacity: 0.4 }]}
+            disabled={!promptEmail.includes('@')}
+            onPress={async () => {
+              if (!promptEmail.includes('@') || !user) return;
+              try {
+                // Find contact_id from the conversation
+                const convRes = await api.get(`/conversations/${actualConversationId || id}`);
+                const contactId = convRes.data?.contact_id;
+                if (contactId) {
+                  await api.put(`/contacts/${user._id}/${contactId}`, { email: promptEmail.trim().toLowerCase() });
+                }
+                // Update local param so the guard passes
+                (contact_email as any) = promptEmail.trim().toLowerCase();
+                setShowEmailPrompt(false);
+                setPromptEmail('');
+                setMessageMode('email');
+                AsyncStorage.setItem('message_mode', 'email');
+              } catch (e) {
+                console.error('Failed to save email:', e);
+              }
+            }}
+            data-testid="email-prompt-save-btn"
+          >
+            <Text style={styles.emailPromptSaveText}>Save</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); }} data-testid="email-prompt-close">
+            <Ionicons name="close" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Quick Contact Creation Panel */}
       {isNewContact && showQuickContactPanel && !contactCreated && (
         <View style={styles.quickContactPanel} data-testid="quick-contact-panel">
