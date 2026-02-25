@@ -37,7 +37,9 @@ if RESEND_API_KEY:
 
 
 async def send_invite_email(email: str, name: str, temp_password: str, role: str, inviter_name: str = None):
-    """Send invite email to new user"""
+    """Send invite email to new user with embedded logo via CID attachment"""
+    import base64 as b64_mod
+    
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured, skipping invite email")
         return False
@@ -49,17 +51,24 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
     }.get(role, 'Team Member')
     
     login_url = f"{APP_URL}/auth/login"
-    logo_url = f"{APP_URL}/api/branding/logo"
     
+    # Read the optimized logo and encode for CID attachment
+    logo_b64 = ""
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "imos-logo-email.png")
     try:
-        result = await asyncio.to_thread(resend.Emails.send, {
-            "from": SENDER_EMAIL,
-            "to": email,
-            "subject": f"You're Invited to Join iMOs as {role_title}",
-            "html": f"""
+        with open(logo_path, "rb") as f:
+            logo_b64 = b64_mod.b64encode(f.read()).decode()
+    except Exception as e:
+        logger.warning(f"Could not read logo file: {e}")
+    
+    email_payload = {
+        "from": SENDER_EMAIL,
+        "to": email,
+        "subject": f"You're Invited to Join iMOs as {role_title}",
+        "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
                 <div style="text-align: center; margin-bottom: 20px; padding: 20px;">
-                    <img src="{logo_url}" alt="iMOs" width="150" style="max-width: 150px; height: auto;" />
+                    <img src="cid:imos-logo" alt="iMOs" width="150" style="max-width: 150px; height: auto;" />
                 </div>
                 
                 <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 16px; color: white;">
@@ -95,7 +104,18 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
                 </div>
             </div>
             """
-        })
+    }
+    
+    # Add logo as inline CID attachment if available
+    if logo_b64:
+        email_payload["attachments"] = [{
+            "filename": "imos-logo.png",
+            "content": logo_b64,
+            "content_id": "imos-logo",
+        }]
+    
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, email_payload)
         logger.info(f"Invite email sent to {email}, resend_id: {result.get('id')}")
         return True
     except Exception as e:
