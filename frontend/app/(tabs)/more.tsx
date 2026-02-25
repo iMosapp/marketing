@@ -697,6 +697,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  bellContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 12 : 8,
+    right: 16,
+    zIndex: 9999,
+  },
   scrollContent: {
     paddingBottom: 32,
   },
