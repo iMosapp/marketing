@@ -136,8 +136,9 @@ export function ImosFooter() {
           </View>
           <View style={styles.footerCol}>
             <Text style={styles.footerColTitle}>Get Started</Text>
-            <TouchableOpacity onPress={() => navigate('/auth/signup')}><Text style={styles.footerLink}>Sign Up</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/auth/login')}><Text style={styles.footerLink}>Log In</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/demo')}><Text style={styles.footerLink}>Schedule a Demo</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/auth/signup')}><Text style={styles.footerLink}>Start 14-Day Free Trial</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/auth/login')}><Text style={styles.footerLink}>Sign In</Text></TouchableOpacity>
           </View>
         </View>
       </View>
