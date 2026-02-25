@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://more-page-ui.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://birthday-campaigns.preview.emergentagent.com')
 
 # Test data from review_request
 TEST_USER_ID = "69963e636d8473ba25695a34"

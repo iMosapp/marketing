@@ -151,7 +151,7 @@
   "should_main_agent_self_test": true,
   "context_for_next_testing_agent": "All main admin pages work. The primary issues are missing data pages linked from admin dashboard. The congrats-cards data page is the only one that exists. Consider either creating the missing pages or removing the links.",
   "login_flow": {
-    "url": "https://more-page-ui.preview.emergentagent.com/auth/login",
+    "url": "https://birthday-campaigns.preview.emergentagent.com/auth/login",
     "status": "Working correctly",
     "note": "Login redirects to /more page for super_admin role, then can navigate to /admin"
   }

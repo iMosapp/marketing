@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://more-page-ui.preview.emergentagent.com';
+        : 'https://birthday-campaigns.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,
