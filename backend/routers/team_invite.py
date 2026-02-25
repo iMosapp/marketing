@@ -112,7 +112,7 @@ async def create_team_invite(data: TeamInviteCreate):
     # Generate full URL
     import os
     base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
-    invite_url = f"{base_url}/join/{invite_code}"
+    invite_url = f"{base_url}/imos/signup?invite={invite_code}"
     
     return {
         "invite_code": invite_code,
@@ -331,7 +331,7 @@ async def get_store_invites(store_id: str):
         result.append({
             "_id": str(invite["_id"]),
             "invite_code": invite["invite_code"],
-            "invite_url": f"{base_url}/join/{invite['invite_code']}",
+            "invite_url": f"{base_url}/imos/signup?invite={invite['invite_code']}",
             "created_by_name": creators.get(invite.get("created_by"), "Unknown"),
             "created_at": invite.get("created_at"),
             "expires_at": invite.get("expires_at"),
@@ -387,7 +387,7 @@ async def get_user_share_link(user_id: str):
         base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
         return {
             "invite_code": existing["invite_code"],
-            "invite_url": f"{base_url}/join/{existing['invite_code']}",
+            "invite_url": f"{base_url}/imos/signup?invite={existing['invite_code']}",
             "expires_at": existing.get("expires_at").isoformat() if existing.get("expires_at") else None,
             "uses_count": existing.get("uses_count", 0),
         }
@@ -423,7 +423,7 @@ async def get_user_share_link(user_id: str):
     
     return {
         "invite_code": invite_code,
-        "invite_url": f"{base_url}/join/{invite_code}",
+        "invite_url": f"{base_url}/imos/signup?invite={invite_code}",
         "expires_at": expires_at.isoformat(),
         "uses_count": 0,
     }
@@ -508,7 +508,7 @@ async def share_invite_via_sms(data: ShareInviteViaSMS):
     # Build invite URL
     import os
     base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
-    invite_url = f"{base_url}/join/{invite_code}"
+    invite_url = f"{base_url}/imos/signup?invite={invite_code}"
     
     # Get onboarding settings for message template
     settings = await db.onboarding_settings.find_one({"store_id": store_id})
@@ -766,7 +766,7 @@ async def send_email_invite(data: EmailInviteRequest):
     
     # Generate invite URL
     base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
-    invite_url = f"{base_url}/join/{invite_code}"
+    invite_url = f"{base_url}/imos/signup?invite={invite_code}"
     
     # Send email via Resend
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
