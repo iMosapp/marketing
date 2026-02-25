@@ -32,20 +32,21 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
 def _get_app_url():
-    """Get the correct app URL - prefer APP_URL env, fall back to reading frontend config"""
-    app_url = os.environ.get("APP_URL", "")
-    if app_url:
-        return app_url.rstrip("/")
-    # Fallback: read from frontend .env
+    """Get the correct app URL for email links.
+    In preview environments, use the preview URL. In production, use APP_URL."""
+    # Check if we're in a preview environment by reading the frontend config
     try:
         fe_env = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", ".env")
         with open(fe_env) as f:
             for line in f:
                 if line.startswith("REACT_APP_BACKEND_URL="):
-                    return line.split("=", 1)[1].strip().strip('"').rstrip("/")
+                    preview_url = line.split("=", 1)[1].strip().strip('"').rstrip("/")
+                    if ".preview.emergentagent.com" in preview_url:
+                        return preview_url
     except Exception:
         pass
-    return "https://app.imosapp.com"
+    # Production: use configured APP_URL
+    return os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
 
 APP_URL = _get_app_url()
 
