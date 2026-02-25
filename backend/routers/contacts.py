@@ -21,8 +21,21 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     contact_dict['created_at'] = datetime.utcnow()
     contact_dict['updated_at'] = datetime.utcnow()
     
+    # Auto-tag based on date fields
+    existing_tags = set(contact_dict.get('tags', []))
+    if contact_dict.get('birthday'):
+        existing_tags.add('Birthday')
+    if contact_dict.get('anniversary'):
+        existing_tags.add('Anniversary')
+    if contact_dict.get('date_sold'):
+        existing_tags.add('Sold Date')
+    contact_dict['tags'] = list(existing_tags)
+    
     result = await get_db().contacts.insert_one(contact_dict)
     contact_dict['_id'] = result.inserted_id
+    
+    # Auto-enroll in tag-triggered campaigns
+    await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
     
     # Track stat for leaderboard
     await increment_user_stat(user_id, "contacts_added")
