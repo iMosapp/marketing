@@ -185,15 +185,6 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Activity Feed', description: 'Recent admin activity', path: '/admin/activity-feed', icon: 'pulse-outline', color: '#FF2D55', requiresAuth: true, audience: 'Admins' },
     ],
   },
-  {
-    id: 'subscription',
-    title: 'Subscription',
-    icon: 'card-outline',
-    color: '#30B0C7',
-    pages: [
-      { name: 'Pricing Plans', description: 'View subscription tiers', path: '/subscription/pricing', icon: 'pricetag-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, customers' },
-    ],
-  },
 ];
 
 export default function AppDirectoryScreen() {
