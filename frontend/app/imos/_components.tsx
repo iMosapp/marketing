@@ -8,7 +8,7 @@ const PROD_BASE = 'https://app.imosapp.com';
 const NAV_LINKS = [
   { label: 'Features', path: '/imos/features' },
   { label: 'Solutions', path: '/imos/hub' },
-  { label: 'Resources', path: '/imos/app-directory' },
+  { label: 'Resources', path: '/imos/training' },
   { label: 'Pricing', path: '/imos/pricing' },
 ];
 

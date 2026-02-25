@@ -22,7 +22,7 @@ const INDIVIDUAL_PLANS = [
   },
   {
     name: 'Elite',
-    price: 149,
+    price: null,
     interval: 'month',
     description: 'Full power for top performers',
     features: ['Everything in Professional', 'Unlimited campaigns', 'Priority AI responses', 'Custom campaign builder', 'Advanced reporting', 'Dedicated support'],
