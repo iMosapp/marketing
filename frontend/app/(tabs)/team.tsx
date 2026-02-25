@@ -276,6 +276,81 @@ export default function TeamChatScreen() {
     }
   };
 
+  // Delete channel
+  const deleteChannel = async (channel: Channel) => {
+    if (!user?._id) return;
+    
+    Alert.alert(
+      'Delete Channel',
+      `Delete "${channel.name}" and all its messages? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await api.delete(`/team-chat/channels/${channel.id}?user_id=${user._id}`);
+              if (response.data.success) {
+                if (selectedChannel?.id === channel.id) {
+                  setSelectedChannel(null);
+                }
+                loadChannels();
+                Alert.alert('Deleted', 'Channel and all messages deleted.');
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.detail || 'Failed to delete channel');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Clear chat history
+  const clearHistory = async (channel: Channel) => {
+    if (!user?._id) return;
+    
+    Alert.alert(
+      'Clear History',
+      `Clear all messages in "${channel.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await api.delete(`/team-chat/channels/${channel.id}/messages?user_id=${user._id}`);
+              if (response.data.success) {
+                if (selectedChannel?.id === channel.id) {
+                  setMessages([]);
+                }
+                Alert.alert('Cleared', `${response.data.messages_deleted} messages removed.`);
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.detail || 'Failed to clear history');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Show channel actions menu
+  const showChannelActions = (channel: Channel) => {
+    Alert.alert(
+      channel.name,
+      undefined,
+      [
+        { text: 'Open Chat', onPress: () => { setSelectedChannel(channel); loadMembers(); } },
+        { text: 'Clear History', style: 'destructive', onPress: () => clearHistory(channel) },
+        { text: 'Delete Channel', style: 'destructive', onPress: () => deleteChannel(channel) },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
   // Render channel list item
   const renderChannel = ({ item }: { item: Channel }) => {
     const getChannelIcon = () => {
