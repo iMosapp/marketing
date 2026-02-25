@@ -1423,6 +1423,16 @@ export default function ThreadScreen() {
           style={styles.modeSwitchButton}
           onPress={() => {
             const newMode = messageMode === 'sms' ? 'email' : 'sms';
+            if (newMode === 'email' && !contact_email) {
+              Alert.alert(
+                'No Email Address',
+                'This contact doesn\'t have an email address on file. Please add one before switching to Email mode.',
+                [
+                  { text: 'OK', style: 'cancel' },
+                ]
+              );
+              return;
+            }
             setMessageMode(newMode);
             AsyncStorage.setItem('message_mode', newMode);
           }}
