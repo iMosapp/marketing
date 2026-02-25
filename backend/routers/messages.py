@@ -401,12 +401,8 @@ async def send_mms_message(
     media_id = str(media_result.inserted_id)
     
     # Create publicly accessible URL for the media
-    backend_url = os.getenv("BACKEND_PUBLIC_URL", "")
-    if backend_url:
-        media_url = f"{backend_url}/api/messages/media/{media_id}"
-    else:
-        media_url = None
-        logger.warning("BACKEND_PUBLIC_URL not set - MMS media may not be delivered")
+    backend_url = "https://app.imosapp.com"
+    media_url = f"{backend_url}/api/messages/media/{media_id}"
     
     # Create message record
     message = {
