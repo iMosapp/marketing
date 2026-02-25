@@ -63,6 +63,19 @@ export default function LoginScreen() {
     checkBiometrics();
     // Load remembered email
     loadRememberedEmail();
+    
+    // Auto-fill from URL params (invite link)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlEmail = params.get('email');
+      const urlPassword = params.get('password');
+      if (urlEmail) setEmail(decodeURIComponent(urlEmail));
+      if (urlPassword) setPassword(decodeURIComponent(urlPassword));
+      // Clean URL params after reading
+      if (urlEmail || urlPassword) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
   
   const loadRememberedEmail = async () => {
