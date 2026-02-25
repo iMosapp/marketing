@@ -427,6 +427,8 @@ async def startup_event():
             await db.contacts.create_index([("user_id", 1), ("first_name", 1)])
             await db.users.create_index("email", unique=True, sparse=True)
             await db.users.create_index("role")
+            await db.contact_photos.create_index("contact_id", unique=True)
+            await db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)])
             logger.info("Database indexes created/verified")
     except Exception as e:
         logger.warning(f"Index creation skipped: {e}")
