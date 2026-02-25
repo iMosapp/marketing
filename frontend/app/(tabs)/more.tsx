@@ -385,6 +385,13 @@ export default function MoreScreen() {
         color: '#34C759',
       },
       {
+        icon: 'map-outline',
+        title: 'App Directory',
+        subtitle: 'Browse & share pages',
+        onPress: () => router.push('/admin/app-directory'),
+        color: '#5AC8FA',
+      },
+      {
         icon: 'person-add',
         title: 'Invite Team',
         subtitle: 'Send invitations',
