@@ -1,6 +1,6 @@
 """
 Subscriptions & Quotes Router
-Handles MVPLine subscription plans, quotes, and Stripe billing
+Handles iMOs subscription plans, quotes, and Stripe billing
 """
 from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
@@ -28,7 +28,7 @@ INDIVIDUAL_PLANS = {
         "trial_days": 7,
         "description": "Month-to-month flexibility",
         "features": [
-            "Full MVPLine access",
+            "Full iMOs access",
             "Unlimited contacts",
             "AI-powered messaging",
             "Campaign automation",
@@ -67,7 +67,7 @@ INDIVIDUAL_PLANS = {
         "regular_price": 100.00,
         "description": "Special offer for new customers",
         "features": [
-            "Full MVPLine access",
+            "Full iMOs access",
             "$50/month for first 3 months",
             "Then $100/month",
             "14-day free trial",
@@ -357,7 +357,7 @@ async def create_quote(data: dict):
     prepared_by = {
         "name": data.get("prepared_by_name", ""),
         "email": data.get("prepared_by_email", ""),
-        "company": data.get("our_company_name", "MVPLine"),
+        "company": data.get("our_company_name", "iMOs"),
         "address": data.get("our_company_address", ""),
     }
     
