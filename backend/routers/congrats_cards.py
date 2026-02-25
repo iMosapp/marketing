@@ -152,12 +152,36 @@ async def create_congrats_card(
             "user_id": salesman_id
         })
         
-        if contact and not contact.get("photo"):
-            # Update contact's photo with the congrats card photo
-            await db.contacts.update_one(
-                {"_id": contact["_id"]},
-                {"$set": {"photo": photo_url, "photo_source": "congrats_card"}}
-            )
+        if contact and not contact.get("photo_thumbnail"):
+            # Generate thumbnail + high-res from the congrats card photo
+            try:
+                from routers.contacts import _process_photo
+                thumbnail, high_res = await _process_photo(photo_url)
+                await db.contacts.update_one(
+                    {"_id": contact["_id"]},
+                    {"$set": {
+                        "photo_thumbnail": thumbnail,
+                        "photo_url": thumbnail,
+                        "photo_source": "congrats_card"
+                    }}
+                )
+                # Store full-res separately
+                await db.contact_photos.update_one(
+                    {"contact_id": str(contact["_id"])},
+                    {"$set": {
+                        "contact_id": str(contact["_id"]),
+                        "user_id": salesman_id,
+                        "photo_full": high_res,
+                        "updated_at": datetime.utcnow()
+                    }},
+                    upsert=True
+                )
+            except Exception as e:
+                # Fallback: store original as photo_url
+                await db.contacts.update_one(
+                    {"_id": contact["_id"]},
+                    {"$set": {"photo_url": photo_url, "photo_source": "congrats_card"}}
+                )
             contact_updated = True
             print(f"[CongratsCard] Updated contact {contact.get('first_name', '')} {contact.get('last_name', '')} avatar from congrats card photo")
     
