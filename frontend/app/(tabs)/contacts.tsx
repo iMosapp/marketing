@@ -460,9 +460,13 @@ export default function ContactsScreen() {
         <FlatList
           data={filteredContacts}
           renderItem={renderContact}
-          keyExtractor={(item) => item._id || item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={ListSeparator}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS !== 'web'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
