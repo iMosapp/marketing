@@ -1,3 +1,5 @@
-import { PreviewPage } from './_preview';
-import { PAGES } from './_pagedata';
-export default function P() { return <PreviewPage config={PAGES.login} />; }
+import { Redirect } from 'expo-router';
+
+export default function LoginRedirect() {
+  return <Redirect href="/auth/login" />;
+}
