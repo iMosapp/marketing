@@ -32,10 +32,9 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
 @router.get("/{user_id}", response_model=List[Contact])
 async def get_contacts(user_id: str, search: Optional[str] = None):
     """Get all contacts accessible to a user based on their role"""
-    # Get role-based data filter
+    db = get_db()
     base_filter = await get_data_filter(user_id)
     
-    # Build the final query
     if search:
         query = {
             "$and": [
@@ -50,8 +49,8 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
     else:
         query = base_filter
     
-    contacts = await get_db().contacts.find(query).limit(500).to_list(500)
-    return [Contact(**{**contact, "_id": str(contact["_id"])}) for contact in contacts]
+    contacts = await db.contacts.find(query).sort("first_name", 1).limit(500).to_list(500)
+    return [Contact(**{**c, "_id": str(c["_id"])}) for c in contacts]
 
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
 async def get_contact(user_id: str, contact_id: str):
