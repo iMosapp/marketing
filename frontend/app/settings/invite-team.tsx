@@ -250,6 +250,7 @@ export default function InviteTeamScreen() {
             </Text>
           </View>
         </View>
+        )}
         
         {/* Send via SMS */}
         <View style={styles.section}>
