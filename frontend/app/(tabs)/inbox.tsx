@@ -28,7 +28,6 @@ import { useAuthStore } from '../../store/authStore';
 import { messagesAPI, contactsAPI, emailAPI } from '../../services/api';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
 import AppointmentModal from '../../components/AppointmentModal';
-import MessageModeToggle, { MessageMode, ToggleStyle } from '../../components/MessageModeToggle';
 
 const IS_WEB = Platform.OS === 'web';
 
