@@ -684,6 +684,10 @@ export default function MoreScreen() {
           <Text style={styles.version}>v1.0.0</Text>
         </View>
       </ScrollView>
+      {/* Notification Bell - rendered after ScrollView to ensure it's on top */}
+      <View style={styles.bellContainer}>
+        <NotificationBell />
+      </View>
     </SafeAreaView>
   );
 }
