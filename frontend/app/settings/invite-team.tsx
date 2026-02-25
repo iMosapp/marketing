@@ -37,6 +37,7 @@ export default function InviteTeamScreen() {
         { value: 'org_admin', label: 'Org Admin' },
         { value: 'store_manager', label: 'Store Manager' },
         { value: 'user', label: 'Team Member' },
+        { value: 'individual', label: 'Individual' },
       ];
     }
     if (user?.role === 'org_admin') {
@@ -92,8 +93,11 @@ export default function InviteTeamScreen() {
       const res = await api.post('/admin/users/create', {
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        role: role,
+        role: role === 'individual' ? 'user' : role,
         send_invite: true,
+        // Individual = no org/store; otherwise inherit from current user context
+        ...(role !== 'individual' && user?.organization_id ? { organization_id: user.organization_id } : {}),
+        ...(role !== 'individual' && role === 'user' && user?.store_id ? { store_id: user.store_id } : {}),
       }, {
         headers: { 'X-User-ID': user?._id }
       });

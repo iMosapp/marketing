@@ -154,6 +154,13 @@ export default function MoreScreen() {
       color: '#007AFF',
       items: [
         {
+          icon: 'call',
+          title: 'Phone',
+          subtitle: 'Dialer & call log',
+          onPress: () => router.push('/(tabs)/dialer'),
+          color: '#32ADE6',
+        },
+        {
           icon: 'megaphone',
           title: 'Broadcast',
           subtitle: 'Mass messaging',
