@@ -964,6 +964,39 @@ export default function ThreadScreen() {
     setCongratsPhoto(null);
     setCongratsCustomerName('');
     setCongratsCustomMessage('');
+    setCongratsSelectedTags([]);
+  };
+
+  const openCongratsModal = async () => {
+    setShowCongratsCardModal(true);
+    setCongratsSelectedTags([]);
+    // Load campaigns with trigger_tags so we can show which campaigns tags activate
+    if (user?._id) {
+      try {
+        const res = await api.get(`/campaigns/${user._id}`);
+        const activeCampaigns = (res.data || [])
+          .filter((c: any) => c.active && c.trigger_tag)
+          .map((c: any) => ({ id: c._id, name: c.name, trigger_tag: c.trigger_tag }));
+        setCongratsCampaigns(activeCampaigns);
+      } catch { setCongratsCampaigns([]); }
+      // Ensure tags are loaded
+      if (availableTags.length === 0) {
+        try {
+          const response = await api.get(`/tags/${user._id}`);
+          setAvailableTags(response.data || []);
+        } catch {}
+      }
+    }
+  };
+
+  const toggleCongratsTag = (tagName: string) => {
+    setCongratsSelectedTags(prev =>
+      prev.includes(tagName) ? prev.filter(t => t !== tagName) : [...prev, tagName]
+    );
+  };
+
+  const getCampaignForTag = (tagName: string) => {
+    return congratsCampaigns.find(c => c.trigger_tag.toLowerCase() === tagName.toLowerCase());
   };
 
   const handleVoiceToText = async () => {
