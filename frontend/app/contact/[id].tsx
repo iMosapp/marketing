@@ -739,8 +739,8 @@ export default function ContactDetailScreen() {
               style={styles.photoContainer}
               onPress={showPhotoOptions}
             >
-              {contact.photo ? (
-                <Image source={{ uri: contact.photo }} style={styles.photo} />
+              {(contact.photo || contact.photo_thumbnail) ? (
+                <Image source={{ uri: contact.photo_thumbnail || contact.photo }} style={styles.photo} />
               ) : (
                 <View style={styles.photoPlaceholder}>
                   <Ionicons name="person" size={48} color="#8E8E93" />
