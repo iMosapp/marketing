@@ -267,7 +267,7 @@ async def join_team(data: TeamMemberJoin):
     # Generate training link
     import os
     base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
-    training_link = f"{base_url}/onboarding?token={secrets.token_urlsafe(16)}"
+    training_link = f"{base_url}/imos/onboarding-preview"
     
     # Queue welcome SMS (if auto-send is enabled)
     sms_queued = False
