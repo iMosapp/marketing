@@ -12,6 +12,7 @@ iMOs is a **Relationship Management System (RMS)** for retail/service businesses
 - App Directory for browsing & sharing all app pages
 - Interactive sales presentation for prospects/investors
 - White-label ready for organizations
+- Public marketing site at /imos/ with full page directory
 
 ## Current Architecture
 ```
@@ -20,30 +21,28 @@ iMOs is a **Relationship Management System (RMS)** for retail/service businesses
 │   ├── server.py               # Main entry, scheduler lifecycle
 │   ├── scheduler.py            # APScheduler: daily date triggers + 15m campaign steps
 │   ├── routers/
-│   │   ├── admin.py
-│   │   ├── app_directory.py
 │   │   ├── campaigns.py        # Campaign CRUD, enrollments, calculate_next_send_date
-│   │   ├── contacts.py
 │   │   ├── date_triggers.py    # Date trigger configs, holidays, process logic
 │   │   ├── messages.py         # Multi-channel SMS/Email sending
 │   │   ├── scheduler_admin.py  # /scheduler/status, manual triggers
 │   │   └── ...
-│   └── services/jessie_service.py
 ├── frontend/
 │   ├── app/
+│   │   ├── imos/               # PUBLIC MARKETING SITE (no auth required)
+│   │   │   ├── _layout.tsx     # Stack layout
+│   │   │   ├── _components.tsx # Shared ImosHeader + ImosFooter
+│   │   │   ├── index.tsx       # Main marketing page (Calldrip-style hero)
+│   │   │   ├── hub.tsx         # Page directory with share URLs
+│   │   │   ├── salespresentation.tsx  # 10-slide interactive sales deck
+│   │   │   ├── features.tsx    # Feature showcase (5 sections)
+│   │   │   ├── pricing.tsx     # Public pricing (Individual/Store tabs)
+│   │   │   ├── privacy.tsx     # Privacy policy
+│   │   │   ├── terms.tsx       # Terms of service
+│   │   │   └── presentation.tsx # Redirect → salespresentation
 │   │   ├── (tabs)/
-│   │   │   ├── contacts.tsx
-│   │   │   └── more.tsx
-│   │   ├── imos/               # PUBLIC PAGES HUB
-│   │   │   ├── index.tsx
-│   │   │   ├── presentation.tsx
-│   │   │   └── features.tsx
 │   │   ├── admin/
-│   │   │   ├── app-directory.tsx
-│   │   │   └── onboarding-preview.tsx
-│   │   └── settings/
-│   │       └── invite-team.tsx
-│   └── services/api.ts
+│   │   ├── settings/
+│   │   └── auth/
 ```
 
 ## What's Been Implemented
@@ -57,21 +56,23 @@ iMOs is a **Relationship Management System (RMS)** for retail/service businesses
 - [x] Campaign Tag & Enroll on congrats card
 - [x] Contact ownership warnings on deactivation/deletion
 - [x] CRM → RMS rebrand (all references)
-- [x] Public Pages Hub `/imos/` — hub, presentation, features
-- [x] Interactive Sales Presentation — 10 slides, keyboard nav
-- [x] Features Showcase — 5 sections, 20 features detailed
-- [x] Email link fix (dynamic URL detection)
-- [x] **Automated Campaign Scheduler** (Feb 25, 2026)
-  - APScheduler with 2 jobs: daily date triggers (8 AM UTC), campaign step processor (every 15m)
-  - Birthday, anniversary, sold-date, and holiday matching
-  - Deduplication via date_trigger_log
-  - Manual trigger endpoints for admin testing
-  - Health/status API: GET /api/scheduler/status
+- [x] Automated Campaign Scheduler (Feb 25, 2026)
+- [x] **Public Marketing Site at /imos/** (Feb 25, 2026)
+  - Main hero page: "Old School Relationship Building. Modern Tools." with Calldrip-style layout
+  - Shared header with nav (Home, Features, Pricing, Hub, Presentation) + Sign Up / Login
+  - Shared footer with Product, Company, Get Started link columns
+  - /imos/hub: Page directory with app.imosapp.com share URLs
+  - /imos/salespresentation: 10-slide interactive sales deck
+  - /imos/features: 5-section feature showcase
+  - /imos/pricing: Individual/Store pricing tabs
+  - /imos/privacy + /imos/terms: Legal pages
+  - Fully responsive (mobile hamburger menu, desktop full nav)
 
 ## Known Issues
 - React Hydration Error #418 (meta-refresh workaround)
 - Mobile tags sync (needs user verification)
 - Twilio SMS is MOCKED (messages queued to DB, not actually sent)
+- Minor: Privacy/Terms API content shows raw markdown (## and **) - needs renderer
 
 ## In Progress / Upcoming
 - (P1) **White-Label System** — Org branding, custom domains, "Powered by iMOs"
@@ -82,3 +83,12 @@ iMOs is a **Relationship Management System (RMS)** for retail/service businesses
 ## Credentials
 - Super Admin: forest@imosapp.com / Admin123!
 - Test invite: im4est@icloud.com
+
+## Public Page Routes (app.imosapp.com)
+- /imos — Main marketing page
+- /imos/hub — Page directory
+- /imos/salespresentation — Sales deck
+- /imos/features — Feature showcase
+- /imos/pricing — Pricing plans
+- /imos/privacy — Privacy policy
+- /imos/terms — Terms of service
