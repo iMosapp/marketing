@@ -189,7 +189,7 @@ DEMO_TASKS = [
     {"title": "Follow up with Emily", "description": "Check if she scheduled credit consultation", "type": "follow_up", "priority": "medium", "days_until_due": 2, "completed": False, "contact_idx": 2},
     {"title": "Send Michael trade-in offer", "description": "Formal offer for 2019 Accord trade", "type": "follow_up", "priority": "high", "days_until_due": 0, "completed": False, "contact_idx": 3},
     {"title": "Thank Amanda for review", "description": "She left a 5-star Google review", "type": "follow_up", "priority": "low", "days_until_due": 3, "completed": False, "contact_idx": 6},
-    {"title": "Update CRM notes", "description": "Weekly contact note updates", "type": "task", "priority": "low", "days_until_due": 5, "completed": True, "contact_idx": None},
+    {"title": "Update RMS notes", "description": "Weekly contact note updates", "type": "task", "priority": "low", "days_until_due": 5, "completed": True, "contact_idx": None},
     {"title": "Call Rachel about Civic", "description": "Confirm she can bring husband to test drive", "type": "call", "priority": "medium", "days_until_due": -1, "completed": True, "contact_idx": 10},
 ]
 

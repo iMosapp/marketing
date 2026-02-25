@@ -1,5 +1,5 @@
 """
-Webhooks router - handles incoming webhooks from external CRMs/systems
+Webhooks router - handles incoming webhooks from external RMS platforms/systems
 Supports user sync, contact sync, and custom event triggers
 """
 from fastapi import APIRouter, HTTPException, Header, Request, BackgroundTasks

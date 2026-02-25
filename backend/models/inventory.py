@@ -31,7 +31,7 @@ class InventoryCategory(str, Enum):
 
 class InventoryItemBase(BaseModel):
     """Base model for all inventory items"""
-    external_id: str  # ID from external CRM/system
+    external_id: str  # ID from external RMS/system
     name: str  # Display name (e.g., "2024 Honda Civic", "123 Main St")
     category: str = "item"  # vehicle, property, product, item, custom
     status: str = "available"  # available, sold, pending, reserved, off_market

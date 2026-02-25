@@ -27,7 +27,7 @@ If you are using the Service on behalf of a business or organization, you repres
 
 ## 2. Description of Service
 
-{COMPANY_NAME} provides a customer relationship management (CRM) and communication platform designed for sales professionals, including:
+{COMPANY_NAME} provides a relationship management system (RMS) and communication platform designed for sales professionals, including:
 
 - Contact management and organization
 - SMS/MMS messaging capabilities
@@ -318,7 +318,7 @@ PRIVACY_POLICY = f"""
 
 - OAuth providers (Google, etc.) for single sign-on
 - Payment processors for billing
-- CRM and DMS integrations you authorize
+- RMS and DMS integrations you authorize
 - Public business information
 
 ## 2. How We Use Your Information
@@ -375,7 +375,7 @@ We share information with vendors who help us operate the Service:
 
 With your authorization, we may share data with:
 
-- CRM systems you integrate
+- RMS systems you integrate
 - DMS platforms you connect
 - Calendar applications
 - Other third-party tools you enable

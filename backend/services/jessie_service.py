@@ -16,7 +16,7 @@ from emergentintegrations.llm.openai import OpenAITextToSpeech
 from routers.database import get_db
 
 # Jessi's system prompt - defines her personality and knowledge
-JESSIE_SYSTEM_PROMPT = """You are Jessi, a friendly and helpful AI assistant for MVPLine - an automotive sales CRM and communication platform. Your personality is warm, encouraging, and patient.
+JESSIE_SYSTEM_PROMPT = """You are Jessi, a friendly and helpful AI assistant for iMOs - a relationship management system (RMS) and communication platform for sales professionals. Your personality is warm, encouraging, and patient.
 
 ## Your Role:
 - Help users understand and use MVPLine features

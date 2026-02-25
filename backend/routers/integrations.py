@@ -1,5 +1,5 @@
 """
-Integrations router - API keys, webhooks, CRM/DMS connections
+Integrations router - API keys, webhooks, RMS/DMS connections
 Supports: Salesforce, HubSpot, DealerSocket, VinSolutions, Tekion, Pipedrive
 DMS: MyKarma, Xtime, CDK, Reynolds & Reynolds, Dealertrack
 """
@@ -70,7 +70,7 @@ CRM_PROVIDERS = {
     "salesforce": {
         "name": "Salesforce",
         "type": "crm",
-        "description": "World's #1 CRM platform",
+        "description": "World's #1 RMS platform",
         "auth_type": "oauth2",
         "supported_objects": ["contacts", "leads", "accounts", "opportunities", "activities"],
         "docs_url": "https://developer.salesforce.com/docs",
@@ -88,7 +88,7 @@ CRM_PROVIDERS = {
     "dealersocket": {
         "name": "DealerSocket",
         "type": "crm",
-        "description": "Automotive CRM and marketing solutions",
+        "description": "Automotive RMS and marketing solutions",
         "auth_type": "api_key",
         "supported_objects": ["customers", "vehicles", "opportunities", "activities"],
         "docs_url": "https://www.dealersocket.com/solutions/crm",
@@ -97,7 +97,7 @@ CRM_PROVIDERS = {
     "vinsolutions": {
         "name": "VinSolutions",
         "type": "crm",
-        "description": "Cox Automotive CRM for dealerships",
+        "description": "Cox Automotive RMS for dealerships",
         "auth_type": "api_key",
         "supported_objects": ["customers", "vehicles", "leads", "activities"],
         "docs_url": "https://www.vinsolutions.com",
@@ -115,7 +115,7 @@ CRM_PROVIDERS = {
     "pipedrive": {
         "name": "Pipedrive",
         "type": "crm",
-        "description": "Sales CRM & pipeline management",
+        "description": "Sales RMS & pipeline management",
         "auth_type": "api_key",
         "supported_objects": ["persons", "organizations", "deals", "activities"],
         "docs_url": "https://developers.pipedrive.com/docs",

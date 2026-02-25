@@ -510,7 +510,7 @@ async def get_inventory_item(
 async def get_inventory_webhook_config():
     """
     Get webhook configuration and example payloads for integration setup.
-    Share this with your CRM/inventory system to configure webhooks.
+    Share this with your RMS/inventory system to configure webhooks.
     """
     base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://app.imosapp.com")
     
