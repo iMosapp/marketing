@@ -156,6 +156,27 @@ export default function InviteTeamScreen() {
     setCopied(false);
   };
 
+  const handleDeleteMember = async (memberId: string, memberName: string) => {
+    showSimpleAlert('Delete User', `Remove ${memberName}? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/admin/users/${memberId}`, {
+              headers: { 'X-User-ID': user?._id },
+            });
+            loadRecentInvites();
+          } catch (error: any) {
+            const detail = error?.response?.data?.detail || 'Failed to delete user';
+            showSimpleAlert('Error', detail);
+          }
+        },
+      },
+    ]);
+  };
+
   const getRoleBadgeColor = (r: string) => {
     switch (r) {
       case 'super_admin': return '#FF3B30';
