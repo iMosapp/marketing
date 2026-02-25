@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
-APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
+APP_URL = "https://app.imosapp.com"
 
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
