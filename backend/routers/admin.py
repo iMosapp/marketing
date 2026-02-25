@@ -30,7 +30,24 @@ logger = logging.getLogger(__name__)
 # Initialize Resend for invite emails
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
-APP_URL = os.environ.get("APP_URL", "https://more-page-ui.preview.emergentagent.com")
+
+def _get_app_url():
+    """Get the correct app URL - prefer APP_URL env, fall back to reading frontend config"""
+    app_url = os.environ.get("APP_URL", "")
+    if app_url:
+        return app_url.rstrip("/")
+    # Fallback: read from frontend .env
+    try:
+        fe_env = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", ".env")
+        with open(fe_env) as f:
+            for line in f:
+                if line.startswith("REACT_APP_BACKEND_URL="):
+                    return line.split("=", 1)[1].strip().strip('"').rstrip("/")
+    except Exception:
+        pass
+    return "https://app.imosapp.com"
+
+APP_URL = _get_app_url()
 
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
