@@ -17,6 +17,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 import api from '../../services/api';
+import { NotificationBell } from '../../components/notifications/NotificationBell';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
