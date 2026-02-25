@@ -72,8 +72,18 @@ async def check_campaign_permission(user_id: str, action: str = "edit") -> dict:
     return {"allowed": False, "reason": "Unknown role"}
 
 def calculate_next_send_date(step: dict) -> datetime:
-    """Calculate when the next message should be sent based on step configuration"""
+    """Calculate when the next message should be sent based on step configuration.
+    Supports both legacy (delay_value/delay_unit) and model (delay_days/delay_months) fields.
+    """
     now = datetime.utcnow()
+
+    # Model-based fields take priority
+    delay_days = step.get('delay_days', 0)
+    delay_months = step.get('delay_months', 0)
+    if delay_days or delay_months:
+        return now + timedelta(days=delay_days + delay_months * 30)
+
+    # Legacy fields
     delay_value = step.get('delay_value', 1)
     delay_unit = step.get('delay_unit', 'days')
     
