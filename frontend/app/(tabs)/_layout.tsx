@@ -402,10 +402,11 @@ export default function TabLayout() {
 
 const bellStyles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: IS_WEB ? 'fixed' as any : 'absolute',
     top: IS_WEB ? 12 : 52,
     right: 16,
-    zIndex: 9999,
+    zIndex: 99999,
+    elevation: 99999,
   },
   wrapper: {
     position: 'relative',
