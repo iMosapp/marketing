@@ -1,20 +1,17 @@
 # iMOs - Product Requirements Document
 
 ## Original Problem Statement
-iMOs is a business management / CRM app for retail/service businesses. Key features include:
-- User/team management with role-based invite flows (cascading invites)
+iMOs is a **Relationship Management System (RMS)** for retail/service businesses. Key features include:
+- User/team management with role-based invite flows
 - Store management with organizational hierarchy
 - SMS/messaging capabilities (Twilio)
-- Partner agreements, Review management
 - AI assistant (Jessi)
-- Lead Sources & Routing system
-- Digital business card with sharing
-- Role-based onboarding (Org Admin, Store Manager, Salesperson)
-- Date-triggered campaigns (birthdays, anniversaries, sold dates, holidays)
-- Tag-triggered campaign auto-enrollment
-- App Directory for super admins to browse & share all app pages
-- Onboarding Preview for super admins to walk through each role's experience
-- Campaign Tag & Enroll on send (congrats card flow)
+- Lead Sources & Routing
+- Digital business card
+- Date-triggered & tag-triggered campaigns
+- App Directory for browsing & sharing all app pages
+- Interactive sales presentation for prospects/investors
+- White-label ready for organizations
 
 ## Current Architecture
 ```
@@ -22,72 +19,60 @@ iMOs is a business management / CRM app for retail/service businesses. Key featu
 ├── backend/
 │   ├── server.py
 │   ├── routers/
-│   │   ├── admin.py           # User mgmt, Resend email invites (dynamic URL)
+│   │   ├── admin.py           # User mgmt, Resend email invites
 │   │   ├── app_directory.py   # Page sharing via email/SMS
-│   │   ├── contacts.py        # Contact CRUD, auto-tagging, thumbnails, campaign enrollment
+│   │   ├── contacts.py        # Contact CRUD, auto-tagging, campaign enrollment
 │   │   ├── date_triggers.py   # Date triggers config, holidays
-│   │   ├── campaigns.py       # Campaigns with trigger_tag support
 │   │   └── ...
-│   ├── models.py
-│   └── static/
+│   └── services/jessie_service.py  # AI assistant (rebranded to RMS)
 ├── frontend/
 │   ├── app/
 │   │   ├── (tabs)/
-│   │   │   ├── contacts.tsx   # Optimized: debounce, memoized, FlatList
+│   │   │   ├── contacts.tsx   # Optimized, thumbnails
 │   │   │   └── more.tsx       # Nested indented cards, Phone in Communication
+│   │   ├── imos/              # PUBLIC PAGES HUB (no auth required)
+│   │   │   ├── index.tsx      # Hub landing page
+│   │   │   ├── presentation.tsx  # 10-slide interactive sales deck
+│   │   │   └── features.tsx   # Feature showcase (5 sections)
 │   │   ├── admin/
-│   │   │   ├── app-directory.tsx   # Page catalog with share functionality
-│   │   │   ├── onboarding-preview.tsx  # Interactive role walkthrough
-│   │   │   └── users/[id].tsx  # Contact ownership warnings
-│   │   ├── thread/[id].tsx    # Congrats card with tag picker + campaign enrollment
-│   │   ├── settings/
-│   │   │   ├── invite-team.tsx  # Individual role option for super admins
-│   │   │   ├── date-triggers.tsx
-│   │   │   └── ...
-│   │   └── onboarding/
-│   │       ├── index.tsx
-│   │       ├── slideLibraries.ts  # Role-specific onboarding slides
-│   │       └── types.ts
+│   │   │   ├── app-directory.tsx
+│   │   │   ├── onboarding-preview.tsx
+│   │   │   └── users/[id].tsx
+│   │   ├── thread/[id].tsx    # Congrats card + tag/campaign enrollment
+│   │   └── settings/
+│   │       ├── invite-team.tsx  # Individual role option
+│   │       └── ...
 │   └── services/api.ts
 ```
 
 ## What's Been Implemented
-- [x] Email invites with CID-embedded iMOs logo + tagline
-- [x] Add Contact modal with email field
+- [x] Email invites with CID-embedded logo
+- [x] Contacts page performance (thumbnail system)
 - [x] More page: nested indented card-style dropdowns
-- [x] Invite Team page rebuilt with working form
-- [x] Contacts page performance optimization (thumbnail system)
-- [x] Phone number underlines removed
-- [x] Date-triggered campaigns foundation
-- [x] Auto-tagging on contact date saves
-- [x] Tag-triggered campaign auto-enrollment
-- [x] Holiday picker (14 US holidays)
-- [x] Avatar pills size increase in inbox
-- [x] App Directory panel (57+ pages, 11 categories, Preview/Copy/Share)
-- [x] Email link fix (dynamic URL detection for preview vs production)
-- [x] Invite Team: Individual role option for Super Admin (no org required)
-- [x] Phone/Dialer added to Communication section on More page
-- [x] Onboarding Preview: interactive walkthrough for all 5 roles
-- [x] Campaign Tag & Enroll on congrats card send (tag picker + auto-enrollment)
-- [x] Contact ownership warnings on user deactivation/deletion
+- [x] App Directory (57+ pages, share via email/SMS)
+- [x] Invite Team: Individual role for Super Admin
+- [x] Phone/Dialer in Communication section
+- [x] Onboarding Preview (5 role walkthroughs)
+- [x] Campaign Tag & Enroll on congrats card
+- [x] Contact ownership warnings on deactivation/deletion
+- [x] **CRM → RMS rebrand** (all references across frontend + backend)
+- [x] **Public Pages Hub** `/imos/` — hub, presentation, features, pricing
+- [x] **Interactive Sales Presentation** — 10 slides, keyboard nav, shareable
+- [x] **Features Showcase** — 5 sections, 20 features detailed
+- [x] Email link fix (dynamic URL detection)
 
 ## Known Issues
 - React Hydration Error #418 (meta-refresh workaround)
 - Mobile tags sync (needs user verification)
-- Avatar consistency in inbox search dropdown (unverified)
+- Integrations page loading spinner for users without store_id
 
-## In Progress Tasks
-- (P1) Complete Campaign Automation backend (scheduling/cron for date triggers)
-
-## Upcoming Tasks
-- (P1) Implement Voice Help Assistant backend
-- (P1) Set up daily cron for date trigger processing
+## In Progress / Upcoming
+- (P0) **White-Label System** — Org branding, custom domains, "Powered by iMOs"
+- (P1) Campaign Automation backend (cron/scheduling)
+- (P1) Voice Help Assistant backend
 - (P2) Training Hub content
-- (P2) Lead Notification System
-- (P2) Inventory Management Module
-- (P2) Searchable Training Manual
-- (P2) Reports & Analytics
+- (P2) Lead Notifications, Inventory, Reports
 
 ## Credentials
 - Super Admin: forest@imosapp.com / Admin123!
-- Test invite email: im4est@icloud.com
+- Test invite: im4est@icloud.com
