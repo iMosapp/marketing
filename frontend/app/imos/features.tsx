@@ -106,9 +106,9 @@ export default function FeaturesScreen() {
               <Text style={styles.sectionTitle}>{section.title}</Text>
               <Text style={[styles.sectionSub, { color: section.color }]}>{section.subtitle}</Text>
             </View>
-            <View style={styles.featureGrid}>
+            <View style={[styles.featureGrid, isDesktop && { flexDirection: 'row', flexWrap: 'wrap' }]}>
               {section.features.map((f, fi) => (
-                <View key={fi} style={styles.featureCard}>
+                <View key={fi} style={[styles.featureCard, isDesktop && { width: '48%' }]}>
                   <View style={[styles.featureIcon, { backgroundColor: `${section.color}12` }]}>
                     <Ionicons name={f.icon as any} size={22} color={section.color} />
                   </View>
