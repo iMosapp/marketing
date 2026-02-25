@@ -240,12 +240,18 @@ export default function ContactsScreen() {
     setSelectedTag(tagName === selectedTag ? null : tagName);
   };
   
-  const renderContact = ({ item }: { item: any }) => {
-    // Find tag colors for this contact's tags
-    const contactTags = item.tags?.map((tagName: string) => {
-      const tagInfo = tags.find(t => t.name === tagName);
-      return tagInfo ? { name: tagName, color: tagInfo.color } : { name: tagName, color: '#8E8E93' };
-    }) || [];
+  // Pre-build tag lookup map for O(1) access
+  const tagMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    tags.forEach(t => { map[t.name] = t.color; });
+    return map;
+  }, [tags]);
+
+  const renderContact = useCallback(({ item }: { item: any }) => {
+    const contactTags = item.tags?.map((tagName: string) => ({
+      name: tagName,
+      color: tagMap[tagName] || '#8E8E93',
+    })) || [];
 
     return (
     <TouchableOpacity
