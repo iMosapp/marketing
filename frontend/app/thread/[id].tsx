@@ -924,6 +924,26 @@ export default function ThreadScreen() {
         // Success haptic feedback - feels satisfying!
         if (!IS_WEB) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
+        // Apply selected tags to the contact and trigger campaign enrollment
+        if (congratsSelectedTags.length > 0 && (id || createdContactId)) {
+          const contactId = id || createdContactId;
+          try {
+            await api.patch(`/contacts/${contactId}`, {
+              tags: congratsSelectedTags,
+            }, { headers: { 'X-User-ID': user._id } });
+            
+            const matchingCampaigns = congratsSelectedTags
+              .map(t => getCampaignForTag(t))
+              .filter(Boolean);
+            if (matchingCampaigns.length > 0) {
+              const campaignNames = matchingCampaigns.map(c => c!.name).join(', ');
+              console.log(`Tags applied, auto-enrolling in campaigns: ${campaignNames}`);
+            }
+          } catch (tagErr) {
+            console.error('Failed to apply tags:', tagErr);
+          }
+        }
+        
         // Get the card image URL for MMS
         const cardImageUrl = `${api.defaults.baseURL}/congrats/card/${response.data.card_id}/image`;
         
