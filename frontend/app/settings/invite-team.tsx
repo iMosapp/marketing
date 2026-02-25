@@ -198,7 +198,28 @@ export default function InviteTeamScreen() {
       </View>
       
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Your Invite Link */}
+        {/* Admin Quick Create - for admins who can create users directly */}
+        {(user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager') && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-add" size={22} color="#C9A962" />
+              <Text style={styles.sectionTitle}>Create & Invite User</Text>
+            </View>
+            <Text style={styles.sectionDescription}>
+              Create a new team member account and send them an email invitation with login credentials
+            </Text>
+            <TouchableOpacity
+              style={styles.sendSMSButton}
+              onPress={() => router.push('/admin/users')}
+            >
+              <Ionicons name="person-add" size={20} color="#000" />
+              <Text style={styles.sendSMSButtonText}>Go to User Management</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Your Invite Link - only show if available */}
+        {inviteLink?.invite_url && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="link" size={22} color="#C9A962" />
@@ -207,7 +228,7 @@ export default function InviteTeamScreen() {
           
           <View style={styles.linkBox}>
             <Text style={styles.linkText} numberOfLines={1}>
-              {inviteLink?.invite_url || 'Loading...'}
+              {inviteLink.invite_url}
             </Text>
           </View>
           
