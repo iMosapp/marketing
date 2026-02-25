@@ -772,7 +772,7 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "organization_id": organization_id,
         "store_id": store_id,
         "invite_sent": invite_sent,
-        "temp_password": temp_password if not send_invite else None,
+        "temp_password": temp_password,
         "message": f"User created successfully. {'Invite email sent.' if invite_sent else 'Share the temporary password securely.'}"
     }
 
