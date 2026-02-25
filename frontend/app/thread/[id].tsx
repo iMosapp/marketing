@@ -1871,7 +1871,11 @@ export default function ThreadScreen() {
                 </button>
               ) : (
                 <TouchableOpacity
-                  style={[styles.composerSendButton, ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled]}
+                  style={[
+                    styles.composerSendButton, 
+                    { backgroundColor: messageMode === 'sms' ? '#007AFF' : '#34C759' },
+                    ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled
+                  ]}
                   onPress={() => selectedMedia ? sendMMS() : handleSend()}
                   disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
                 >
@@ -1879,7 +1883,7 @@ export default function ThreadScreen() {
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
                     <Ionicons
-                      name="send"
+                      name={messageMode === 'sms' ? 'send' : 'mail'}
                       size={18}
                       color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
                     />
