@@ -305,6 +305,7 @@ class MessageCreate(BaseModel):
     template_id: Optional[str] = None
     template_type: Optional[str] = None  # review, referral, sold, greeting, follow_up, etc.
     template_name: Optional[str] = None
+    channel: Optional[str] = None  # 'sms' or 'email' - defaults to sms
 
 # Call Models
 class Call(BaseModel):
