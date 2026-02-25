@@ -224,7 +224,7 @@ export default function PresentationScreen() {
 
       {/* Slide Content */}
       <ScrollView contentContainerStyle={styles.slideScroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.slideBody}>
+        <View style={[styles.slideBody, isWide && { maxWidth: 640, alignSelf: 'center', width: '100%' }]}>
           {/* Icon */}
           <View style={[styles.iconWrap, { backgroundColor: `${slide.iconColor}15` }]}>
             <Ionicons name={slide.icon as any} size={52} color={slide.iconColor} />
