@@ -193,9 +193,12 @@ export default function UserDetailScreen() {
   const handleToggleActive = () => {
     if (!user) return;
     const newStatus = !user.is_active;
+    const contactWarning = !newStatus
+      ? '\n\nImportant: If this user uploaded or downloaded personal contacts into the app, those contacts will NOT remain with the organization or store. Personal contacts belong to the user.'
+      : '';
     showConfirm(
       newStatus ? 'Activate User' : 'Deactivate User',
-      `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} ${user.name}?`,
+      `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} ${user.name}?${contactWarning}`,
       async () => {
         try {
           await api.put(`/admin/users/${id}`, { is_active: newStatus });
