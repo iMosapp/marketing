@@ -31,22 +31,7 @@ logger = logging.getLogger(__name__)
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
-def _get_app_url():
-    """Get the correct app URL for email links.
-    In preview environments, use the preview URL. In production, use APP_URL."""
-    try:
-        fe_env = "/app/frontend/.env"
-        with open(fe_env) as f:
-            for line in f:
-                if line.startswith("REACT_APP_BACKEND_URL="):
-                    preview_url = line.split("=", 1)[1].strip().strip('"').rstrip("/")
-                    if ".preview.emergentagent.com" in preview_url:
-                        return preview_url
-    except Exception:
-        pass
-    return os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
-
-APP_URL = _get_app_url()
+APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
 
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY

@@ -18,20 +18,7 @@ from routers.database import get_db
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
-def _get_app_url():
-    """Get the correct app URL for email links."""
-    try:
-        with open("/app/frontend/.env") as f:
-            for line in f:
-                if line.startswith("REACT_APP_BACKEND_URL="):
-                    url = line.split("=", 1)[1].strip().strip('"').rstrip("/")
-                    if ".preview.emergentagent.com" in url:
-                        return url
-    except Exception:
-        pass
-    return os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
-
-
+APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com").rstrip("/")
 
 # Resend configuration
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
@@ -60,7 +47,7 @@ async def send_welcome_email(user: dict):
                 timeless relationship principles powered by modern tools.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-                <a href="{_get_app_url()}/imos/login" 
+                <a href="{APP_URL}/imos/login" 
                    style="background-color: #007AFF; color: white; padding: 15px 40px; 
                           text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                     Get Started
