@@ -415,6 +415,21 @@ app.include_router(short_urls.router)
 async def startup_event():
     logger.info("iMOs API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')}")
+    
+    # Create database indexes for performance
+    try:
+        from routers.database import get_db
+        db = get_db()
+        if db:
+            await db.contacts.create_index("user_id")
+            await db.contacts.create_index([("first_name", 1)])
+            await db.contacts.create_index([("user_id", 1), ("first_name", 1)])
+            await db.users.create_index("email", unique=True, sparse=True)
+            await db.users.create_index("role")
+            logger.info("Database indexes created/verified")
+    except Exception as e:
+        logger.warning(f"Index creation skipped: {e}")
+    
     logger.info("iMOs API v2.0 started")
     # Database connection will happen lazily on first request
 
