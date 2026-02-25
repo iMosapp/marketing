@@ -500,9 +500,9 @@ async def get_team_inbox(team_id: str, include_claimed: bool = False):
         # Try to get contact photo
         if c.get("contact_id"):
             try:
-                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])})
+                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
                 if contact:
-                    conv_data["contact_photo"] = contact.get("photo")
+                    conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
             except:
                 pass
         result.append(conv_data)
@@ -541,9 +541,9 @@ async def get_user_inbox(user_id: str):
         # Try to get contact photo
         if c.get("contact_id"):
             try:
-                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])})
+                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
                 if contact:
-                    conv_data["contact_photo"] = contact.get("photo")
+                    conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
             except:
                 pass
         result.append(conv_data)

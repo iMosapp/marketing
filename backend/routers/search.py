@@ -71,7 +71,7 @@ async def global_search(
                 "icon": "person",
                 "color": "#007AFF",
                 "tags": contact.get("tags", []),
-                "photo": contact.get("photo"),
+                "photo": contact.get("photo_thumbnail") or contact.get("photo_url"),
                 "match_field": _get_match_field(contact, q)
             })
     
