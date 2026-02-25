@@ -820,51 +820,53 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#34C759',
   },
-  // Collapsible Section Styles
-  collapsibleSection: {
+  // Section Wrapper
+  sectionWrapper: {
     marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    overflow: 'hidden',
+    marginBottom: 8,
   },
-  sectionHeader: {
+  // Section Header Card (standalone card)
+  sectionHeaderCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
     padding: 14,
+    marginBottom: 8,
   },
   sectionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  sectionTitleContainer: {
-    flex: 1,
   },
   sectionTitleText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+    flex: 1,
   },
-  sectionCount: {
-    fontSize: 12,
-    color: '#6E6E73',
-    marginTop: 1,
+  countBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
   },
-  sectionContent: {
-    borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+  countText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  menuItem: {
+  // Indented child item card
+  menuItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    backgroundColor: '#2C2C2E',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 6,
+    marginLeft: 16,
   },
   menuIcon: {
     width: 36,
@@ -873,7 +875,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-    position: 'relative',
   },
   menuContent: {
     flex: 1,
@@ -887,24 +888,6 @@ const styles = StyleSheet.create({
   menuSubtitle: {
     fontSize: 12,
     color: '#8E8E93',
-  },
-  badgeDot: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#FF3B30',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#1C1C1E',
-  },
-  badgeText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '700',
   },
   notificationBadge: {
     backgroundColor: '#FF3B30',
