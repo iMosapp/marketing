@@ -556,13 +556,9 @@ export default function UsersScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Success Modal with Credentials */}
-      <Modal
-        visible={!!createdUser}
-        animationType="fade"
-        transparent
-      >
-        <View style={styles.successOverlay}>
+      {/* Success Modal with Credentials - web-compatible */}
+      {!!createdUser && (Platform.OS === 'web' ? (
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }]}>
           <View style={styles.successModal}>
             <View style={styles.successIcon}>
               <Ionicons name="checkmark-circle" size={48} color="#34C759" />
@@ -624,7 +620,76 @@ export default function UsersScreen() {
             </WebSafeButton>
           </View>
         </View>
-      </Modal>
+      ) : (
+        <Modal
+          visible={true}
+          animationType="fade"
+          transparent
+        >
+          <View style={styles.successOverlay}>
+            <View style={styles.successModal}>
+              <View style={styles.successIcon}>
+                <Ionicons name="checkmark-circle" size={48} color="#34C759" />
+              </View>
+              
+              <Text style={styles.successTitle}>User Created!</Text>
+              <Text style={styles.successSubtitle}>
+                Share these credentials with {createdUser?.name}
+              </Text>
+              
+              <View style={styles.credentialsBox}>
+                <View style={styles.credentialRow}>
+                  <Text style={styles.credentialLabel}>Email:</Text>
+                  <Text style={styles.credentialValue}>{createdUser?.email}</Text>
+                </View>
+                {createdUser?.temp_password && (
+                  <View style={styles.credentialRow}>
+                    <Text style={styles.credentialLabel}>Password:</Text>
+                    <Text style={styles.credentialValue}>{createdUser?.temp_password}</Text>
+                  </View>
+                )}
+              </View>
+              
+              {createdUser?.temp_password && (
+                <View style={styles.successActions}>
+                  <WebSafeButton
+                    onPress={handleCopyPassword}
+                    variant="secondary"
+                    testID="copy-password"
+                    style={{ flex: 1 }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Ionicons name="copy-outline" size={18} color="#FFF" />
+                      <Text style={{ color: '#FFF', fontWeight: '600' }}>Copy Password</Text>
+                    </View>
+                  </WebSafeButton>
+                  
+                  <WebSafeButton
+                    onPress={handleCopyCredentials}
+                    variant="primary"
+                    testID="copy-all"
+                    style={{ flex: 1 }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Ionicons name="clipboard-outline" size={18} color="#FFF" />
+                      <Text style={{ color: '#FFF', fontWeight: '600' }}>Copy All</Text>
+                    </View>
+                  </WebSafeButton>
+                </View>
+              )}
+              
+              <WebSafeButton
+                onPress={handleCloseSuccessModal}
+                variant="ghost"
+                testID="close-success"
+                style={{ marginTop: 16 }}
+              >
+                <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>Done</Text>
+              </WebSafeButton>
+            </View>
+          </View>
+        </Modal>
+      ))}
     </SafeAreaView>
   );
 }
