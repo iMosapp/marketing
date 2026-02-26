@@ -1197,6 +1197,68 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
+  // Feedback Section
+  feedbackCard: {
+    backgroundColor: '#1A1A1C',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#2A2A2C',
+  },
+  feedbackLabel: {
+    fontSize: 15,
+    color: '#CCC',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  starRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  feedbackInput: {
+    backgroundColor: '#111',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    color: '#FFF',
+    borderWidth: 1,
+    borderColor: '#2A2A2C',
+    marginBottom: 10,
+  },
+  feedbackTextArea: {
+    height: 80,
+    textAlignVertical: 'top',
+    paddingTop: 14,
+  },
+  feedbackSubmitBtn: {
+    backgroundColor: '#C9A962',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  feedbackSubmitText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  feedbackSuccess: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  feedbackSuccessTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFF',
+    marginTop: 10,
+  },
+  feedbackSuccessText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 4,
+  },
   // Share Modal Styles
   modalOverlay: {
     flex: 1,
