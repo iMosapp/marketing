@@ -9,7 +9,8 @@ const HERO_FEATURES = [
   { icon: 'chatbubbles', color: '#007AFF', label: 'Smart Messaging' },
   { icon: 'repeat', color: '#FF9500', label: 'Automated Campaigns' },
   { icon: 'sparkles', color: '#AF52DE', label: 'AI Assistant' },
-  { icon: 'trophy', color: '#FFD60A', label: 'Leaderboards' },
+  { icon: 'star', color: '#FFD60A', label: 'Reviews' },
+  { icon: 'trophy', color: '#C9A962', label: 'Leaderboards' },
 ];
 
 const STATS = [
