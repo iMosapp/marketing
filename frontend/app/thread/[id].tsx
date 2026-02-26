@@ -972,11 +972,11 @@ export default function ThreadScreen() {
         }
         
         // Get the card image URL for MMS
-        const cardImageUrl = `${api.defaults.baseURL}/congrats/card/${response.data.card_id}/image`;
+        const cardImageUrl = `https://app.imosapp.com/api/congrats/card/${response.data.card_id}/image`;
         
-        // Use short URL if available, otherwise fall back to full URL
+        // Use short URL if available, otherwise fall back to production URL
         const cardUrl = response.data.short_url || response.data.card_url || 
-          `${api.defaults.baseURL?.replace('/api', '')}/congrats/${response.data.card_id}`;
+          `https://app.imosapp.com/congrats/${response.data.card_id}`;
         
         // Insert message with both the image and short link
         const firstName = congratsCustomerName.split(' ')[0];
