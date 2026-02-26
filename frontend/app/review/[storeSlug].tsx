@@ -27,6 +27,11 @@ export default function PublicReviewPage() {
   const { storeSlug, sp } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [storeData, setStoreData] = useState<any>(null);
+  const [fbRating, setFbRating] = useState(0);
+  const [fbName, setFbName] = useState('');
+  const [fbText, setFbText] = useState('');
+  const [fbSubmitted, setFbSubmitted] = useState(false);
+  const [fbSubmitting, setFbSubmitting] = useState(false);
 
   useEffect(() => {
     loadStoreData();
