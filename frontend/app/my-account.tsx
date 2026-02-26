@@ -33,8 +33,36 @@ export default function MyAccountScreen() {
       if (user?._id) {
         refreshUserData();
       }
-    }, [user?._id])
+      if (user?.store_id) {
+        fetchStoreSlug();
+      }
+    }, [user?._id, user?.store_id])
   );
+
+  const fetchStoreSlug = async () => {
+    try {
+      const res = await api.get(`/stores/${user?.store_id}`);
+      if (res.data?.slug) {
+        setStoreSlug(res.data.slug);
+      }
+    } catch (e) {}
+  };
+
+  const getReviewUrl = () => {
+    const slug = storeSlug || 'my-store';
+    const spParam = user?._id ? `?sp=${user._id}` : '';
+    return `${PROD_BASE}/review/${slug}${spParam}`;
+  };
+
+  const handleCopyReviewLink = async () => {
+    const url = getReviewUrl();
+    if (Platform.OS === 'web' && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+    }
+    setCopiedLink(true);
+    showSimpleAlert('Copied!', 'Review link copied to clipboard');
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
 
   const refreshUserData = async () => {
     try {
