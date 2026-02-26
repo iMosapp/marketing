@@ -401,12 +401,57 @@ export default function OrganizationDetailScreen() {
               <Ionicons name="storefront" size={20} color="#34C759" />
               <Text style={styles.sectionTitle}>Accounts ({hierarchy.stores.length})</Text>
               <TouchableOpacity 
+                style={styles.linkButton}
+                onPress={() => { setShowLinkStore(!showLinkStore); if (!showLinkStore) loadAvailableStores(); setLinkSearch(''); }}
+              >
+                <Ionicons name="link" size={18} color="#007AFF" />
+                <Text style={styles.linkButtonText}>Link Existing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
                 style={styles.addButton}
                 onPress={() => router.push(`/admin/stores?org=${id}`)}
               >
                 <Ionicons name="add-circle" size={24} color="#007AFF" />
               </TouchableOpacity>
             </View>
+            
+            {/* Link existing store panel */}
+            {showLinkStore && (
+              <View style={styles.linkPanel}>
+                <TextInput
+                  style={styles.linkSearchInput}
+                  placeholder="Search accounts to link..."
+                  placeholderTextColor="#8E8E93"
+                  value={linkSearch}
+                  onChangeText={setLinkSearch}
+                />
+                {loadingStores ? (
+                  <ActivityIndicator size="small" color="#007AFF" style={{ padding: 16 }} />
+                ) : availableStores.filter(s => !linkSearch || s.name?.toLowerCase().includes(linkSearch.toLowerCase())).length === 0 ? (
+                  <Text style={styles.linkEmptyText}>No unlinked accounts available</Text>
+                ) : (
+                  availableStores
+                    .filter(s => !linkSearch || s.name?.toLowerCase().includes(linkSearch.toLowerCase()))
+                    .slice(0, 10)
+                    .map((store: any) => (
+                      <TouchableOpacity 
+                        key={store._id} 
+                        style={styles.linkItem}
+                        onPress={() => linkStoreToOrg(store._id, store.name)}
+                      >
+                        <Ionicons name="storefront-outline" size={20} color="#34C759" />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.linkItemName}>{store.name}</Text>
+                          <Text style={styles.linkItemSub}>
+                            {store.organization_name || 'Unassigned'} · {store.user_count || 0} users
+                          </Text>
+                        </View>
+                        <Ionicons name="add-circle-outline" size={22} color="#007AFF" />
+                      </TouchableOpacity>
+                    ))
+                )}
+              </View>
+            )}
             
             {hierarchy.stores.length === 0 ? (
               <View style={styles.emptySection}>
