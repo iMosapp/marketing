@@ -387,7 +387,14 @@ export default function DigitalCardPage() {
                 <View style={styles.socialRow}>
                   {activeSocialLinks.map((platform) => {
                     const username = user.social_links[platform.key];
-                    const url = username.startsWith('http') ? username : `${platform.baseUrl}${username}`;
+                    let url;
+                    if (username.startsWith('http')) {
+                      url = username;
+                    } else if (platform.key === 'website') {
+                      url = `https://${username}`;
+                    } else {
+                      url = `${platform.baseUrl}${username}`;
+                    }
                     return (
                       <TouchableOpacity
                         key={platform.key}
