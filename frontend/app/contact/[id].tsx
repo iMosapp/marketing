@@ -1194,6 +1194,13 @@ export default function ContactDetailScreen() {
             />
           </View>
           
+          {!isNewContact && (
+            <TouchableOpacity onPress={handleDeleteContact} style={styles.deleteContactButton}>
+              <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+              <Text style={styles.deleteContactText}>Delete Contact</Text>
+            </TouchableOpacity>
+          )}
+          
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
