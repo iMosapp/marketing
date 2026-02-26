@@ -94,7 +94,7 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
 
         try:
             result = await asyncio.to_thread(resend.Emails.send, {
-                "from": SENDER_EMAIL,
+                "from": f"iMOs <{SENDER_EMAIL}>",
                 "to": data.recipient_email,
                 "subject": f"{sender_name} shared \"{data.page_name}\" with you from iMOs",
                 "html": html,

@@ -63,7 +63,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
         logger.warning(f"Could not read logo file: {e}")
     
     email_payload = {
-        "from": SENDER_EMAIL,
+        "from": f"iMOs <{SENDER_EMAIL}>",
         "to": email,
         "subject": f"You're Invited to Join iMOs as {role_title}",
         "html": f"""

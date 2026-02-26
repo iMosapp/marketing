@@ -252,7 +252,7 @@ async def send_email(request: SendEmailRequest, user_id: str):
     )
     
     params = {
-        "from": SENDER_EMAIL,
+        "from": f"iMOs <{SENDER_EMAIL}>",
         "to": [request.recipient_email],
         "subject": request.subject,
         "html": wrapped_html,
