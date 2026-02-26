@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const BACKEND_URL = Platform.OS === 'web' ? '' : (process.env.REACT_APP_BACKEND_URL || '');
 
 interface WebSocketMessage {
   type: string;

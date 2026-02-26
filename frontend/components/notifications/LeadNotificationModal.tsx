@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import * as Haptics from 'expo-haptics';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const API_URL = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
 
 interface LeadNotification {
   id: string;
