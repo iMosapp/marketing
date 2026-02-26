@@ -508,7 +508,7 @@ export default function DigitalCardPage() {
             {user.phone && (
               <TouchableOpacity
                 style={styles.quickActionButton}
-                onPress={() => Linking.openURL(`tel:${user.phone}`)}
+                onPress={() => openProtocolUrl(`tel:${user.phone}`)}
                 data-testid="quick-call-btn"
               >
                 <View style={styles.quickActionIcon}>
@@ -521,7 +521,7 @@ export default function DigitalCardPage() {
             {user.phone && (
               <TouchableOpacity
                 style={styles.quickActionButton}
-                onPress={() => Linking.openURL(`sms:${user.phone}`)}
+                onPress={() => openProtocolUrl(`sms:${user.phone}`)}
                 data-testid="quick-text-btn"
               >
                 <View style={styles.quickActionIcon}>
@@ -534,7 +534,7 @@ export default function DigitalCardPage() {
             {user.email && (
               <TouchableOpacity
                 style={styles.quickActionButton}
-                onPress={() => Linking.openURL(`mailto:${user.email}`)}
+                onPress={() => openProtocolUrl(`mailto:${user.email}`)}
                 data-testid="quick-email-btn"
               >
                 <View style={styles.quickActionIcon}>
