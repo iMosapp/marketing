@@ -176,7 +176,7 @@ export default function DigitalCardPage() {
 
   // Share via SMS
   const handleShareSMS = () => {
-    const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
+    const cardUrl = `https://app.imosapp.com/card/${userId}`;
     const message = `Check out my digital business card: ${cardUrl}`;
     Linking.openURL(`sms:?body=${encodeURIComponent(message)}`);
     setShowShareModal(false);
@@ -184,7 +184,7 @@ export default function DigitalCardPage() {
 
   // Share via Email
   const handleShareEmail = () => {
-    const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
+    const cardUrl = `https://app.imosapp.com/card/${userId}`;
     const subject = `${cardData?.user?.name || 'My'} Digital Business Card`;
     const body = `Hi!\n\nHere's my digital business card:\n${cardUrl}\n\nLooking forward to connecting!`;
     Linking.openURL(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
