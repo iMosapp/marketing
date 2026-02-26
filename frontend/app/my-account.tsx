@@ -56,11 +56,37 @@ export default function MyAccountScreen() {
 
   const handleCopyReviewLink = async () => {
     const url = getReviewUrl();
-    if (Platform.OS === 'web' && navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
+    try {
+      if (Platform.OS === 'web') {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(url);
+        } else {
+          // Fallback for iframes / older browsers
+          const ta = document.createElement('textarea');
+          ta.value = url;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+      }
+    } catch {
+      // Clipboard blocked (e.g. iframe) — use fallback
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {}
     }
     setCopiedLink(true);
-    showSimpleAlert('Copied!', 'Review link copied to clipboard');
+    showSimpleAlert('Copied!', url);
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
