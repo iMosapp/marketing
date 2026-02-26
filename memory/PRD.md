@@ -31,7 +31,15 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] **Team Chat Channel Search/Filter Bar** (Feb 26, 2026):
   - Added search input above channel list in Team Chat
   - Filters channels by name in real-time, clear button to reset
-- [x] **Org/Account/User Linking Verified** (Feb 26, 2026):
+- [x] **Inbox Email Prompt Fix** (Feb 26, 2026):
+  - Email prompt no longer shows when contact already has an email address
+  - Backend conversation info endpoint now returns contact_email
+  - Frontend loadContactInfo fetches email from contact record as fallback
+- [x] **Congrats Card Web Fix + Create Page** (Feb 26, 2026):
+  - Fixed "Object error" on web: FormData photo now uses fetch+blob conversion
+  - New "Create Congrats Card" page at /settings/create-congrats
+  - Accessible from More > Templates & Branding > Create Congrats Card
+  - Full sharing options after creation: Copy Link, Download, View Card, SMS, Email, Facebook, Twitter
   - Admin > Organizations, Accounts, Users pages all accessible
   - User detail page has Change Organization and Assign Store modals
   - **NEW: "Link Existing Account"** button on Org detail page — opens searchable panel of unlinked accounts, one-click to link
