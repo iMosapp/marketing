@@ -51,6 +51,14 @@ const HOW_IT_WORKS = [
     icon: 'shield-checkmark',
     color: '#AF52DE',
   },
+  {
+    tag: 'REVIEWS & REPUTATION',
+    title: 'Turn Happy Customers Into 5-Star Reviews.',
+    desc: 'One link sends customers to all your review sites. Share it via text, email, or your digital card. Track every click, collect direct feedback, and approve reviews before they go public.',
+    bullets: ['Podium-style review link pages', 'Click tracking per salesperson', 'Approval workflow for testimonials'],
+    icon: 'star',
+    color: '#FFD60A',
+  },
 ];
 
 export default function ImosHome() {
