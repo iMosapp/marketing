@@ -167,16 +167,32 @@ export default function UsersScreen() {
 
   const handleCopyPassword = async () => {
     if (createdUser?.temp_password) {
-      await Clipboard.setStringAsync(createdUser.temp_password);
-      Alert.alert('Copied', 'Password copied to clipboard');
+      try {
+        if (Platform.OS === 'web') {
+          await navigator.clipboard.writeText(createdUser.temp_password);
+        } else {
+          await Clipboard.setStringAsync(createdUser.temp_password);
+        }
+        showSimpleAlert('Copied', 'Password copied to clipboard');
+      } catch (e) {
+        showSimpleAlert('Error', 'Failed to copy to clipboard');
+      }
     }
   };
 
   const handleCopyCredentials = async () => {
     if (createdUser) {
       const credentials = `Email: ${createdUser.email}\nPassword: ${createdUser.temp_password}`;
-      await Clipboard.setStringAsync(credentials);
-      Alert.alert('Copied', 'Credentials copied to clipboard');
+      try {
+        if (Platform.OS === 'web') {
+          await navigator.clipboard.writeText(credentials);
+        } else {
+          await Clipboard.setStringAsync(credentials);
+        }
+        showSimpleAlert('Copied', 'Credentials copied to clipboard');
+      } catch (e) {
+        showSimpleAlert('Error', 'Failed to copy to clipboard');
+      }
     }
   };
 
