@@ -934,9 +934,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   timeFilterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 16,
     backgroundColor: '#2C2C2E',
   },
   timeFilterPillActive: {
