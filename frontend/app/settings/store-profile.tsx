@@ -578,6 +578,33 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginBottom: 12,
   },
+  slugRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  slugPrefix: {
+    fontSize: 12,
+    color: '#6E6E73',
+  },
+  slugInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#FFF',
+    fontWeight: '600',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  slugHint: {
+    fontSize: 11,
+    color: '#6E6E73',
+    marginTop: 6,
+    marginBottom: 4,
+  },
   reviewLinkBox: {
     flexDirection: 'row',
     alignItems: 'center',
