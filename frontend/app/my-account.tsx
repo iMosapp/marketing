@@ -17,6 +17,8 @@ import { useAuthStore } from '../store/authStore';
 import { showSimpleAlert, showConfirm } from '../services/alert';
 import api from '../services/api';
 
+const PROD_BASE = 'https://app.imosapp.com';
+
 export default function MyAccountScreen() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
