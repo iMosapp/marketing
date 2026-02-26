@@ -204,13 +204,22 @@ export default function DigitalCardPage() {
   // Share QR Code - uses short URL for cleaner sharing
   const handleShareQR = async () => {
     try {
-      // Use short URL if available, otherwise fall back to full URL
       const cardUrl = `https://app.imosapp.com/card/${userId}`;
-      await Share.share({
-        message: `Check out my digital business card: ${cardUrl}`,
-        url: cardUrl,
-        title: cardData?.user?.name ? `${cardData.user.name}'s Business Card` : 'My Business Card',
-      });
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: cardData?.user?.name ? `${cardData.user.name}'s Business Card` : 'My Business Card',
+            text: 'Check out my digital business card:',
+            url: cardUrl,
+          });
+        } else {
+          await navigator.clipboard.writeText(cardUrl);
+        }
+      } else {
+        await Share.share({
+          message: `Check out my digital business card: ${cardUrl}`,
+        });
+      }
     } catch (error) {
       console.error('Error sharing:', error);
     }
