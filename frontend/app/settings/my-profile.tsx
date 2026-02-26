@@ -25,6 +25,7 @@ import VoicemailRecorder from '../../components/VoicemailRecorder';
 const IS_WEB = Platform.OS === 'web';
 
 const SOCIAL_PLATFORMS = [
+  { key: 'website', label: 'Website', icon: 'globe-outline', color: '#34C759', prefix: '', placeholder: 'yourwebsite.com' },
   { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', prefix: 'facebook.com/', placeholder: 'yourprofile' },
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
   { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', prefix: 'linkedin.com/in/', placeholder: 'yourprofile' },
