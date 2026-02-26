@@ -704,12 +704,7 @@ export default function TeamChatScreen() {
           style={styles.chatHeaderAction}
           onPress={() => {
             if (Platform.OS === 'web') {
-              const action = window.prompt(
-                `${selectedChannel.name} (${selectedChannel.member_count} members)\n\nType an action:\n1 = Clear History\n2 = Delete Channel`,
-                ''
-              );
-              if (action === '1') clearHistory(selectedChannel);
-              else if (action === '2') deleteChannel(selectedChannel);
+              setShowChatMenu(!showChatMenu);
             } else {
               Alert.alert(
                 selectedChannel.name,
