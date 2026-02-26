@@ -785,20 +785,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  editBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#1C1C1E',
-  },
-  profileInfo: {
+  // Section Wrapper
     flex: 1,
   },
   profileName: {
