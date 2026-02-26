@@ -253,6 +253,24 @@ async def login(credentials: dict):
         except Exception:
             pass
     
+    # Include org slug for org-level features
+    if user.get('organization_id'):
+        try:
+            org = await get_db().organizations.find_one({"_id": ObjectId(user['organization_id'])}, {"slug": 1, "name": 1})
+            if org:
+                org_slug = org.get('slug')
+                if not org_slug and org.get('name'):
+                    import re
+                    org_slug = re.sub(r'[^a-z0-9]+', '-', org['name'].lower()).strip('-')
+                    await get_db().organizations.update_one(
+                        {"_id": ObjectId(user['organization_id'])},
+                        {"$set": {"slug": org_slug}}
+                    )
+                if org_slug:
+                    user['org_slug'] = org_slug
+        except Exception:
+            pass
+    
     return {
         "token": f"mock_token_{user['_id']}",
         "user": user
