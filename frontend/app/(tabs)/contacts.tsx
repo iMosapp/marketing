@@ -420,7 +420,7 @@ export default function ContactsScreen() {
       </View>
     </TouchableOpacity>
     );
-  }, [tagMap, router, user]);
+  }, [tagMap, router, user, selectMode, selectedIds]);
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
