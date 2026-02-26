@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Resend for invite emails
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
 
 APP_URL = "https://app.imosapp.com"
 
