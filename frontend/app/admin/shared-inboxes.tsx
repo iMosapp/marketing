@@ -51,7 +51,7 @@ export default function SharedInboxesPage() {
   
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAssignsetShowAssignModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedInbox, setSelectedInbox] = useState<SharedInbox | null>(null);
   
   // Create form

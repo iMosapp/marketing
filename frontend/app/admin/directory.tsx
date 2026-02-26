@@ -114,7 +114,7 @@ export default function DirectoryPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showMemberDetail, setShowMemberDetail] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [showKPIsetShowKPIModal] = useState(false);
+  const [showKPIModal, setShowKPIModal] = useState(false);
   const [kpiMember, setKpiMember] = useState<TeamMember | null>(null);
   
   // KPI Form

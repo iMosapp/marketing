@@ -61,7 +61,7 @@ export default function BulkTransferPage() {
   const [transferHistory, setTransferHistory] = useState<TransferHistory[]>([]);
   
   // Transfer state
-  const [showTransfersetShowTransferModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedFromUser, setSelectedFromUser] = useState<User | null>(null);
   const [selectedToUser, setSelectedToUser] = useState<User | null>(null);
   const [transferPreview, setTransferPreview] = useState<TransferPreview | null>(null);

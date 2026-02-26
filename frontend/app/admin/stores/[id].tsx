@@ -73,7 +73,7 @@ export default function StoreDetailScreen() {
   const [data, setData] = useState<StoreData | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editedStore, setEditedStore] = useState<any>({});
-  const [showAddUsersetShowAddUserModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
   // Campaign Permissions State

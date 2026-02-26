@@ -55,7 +55,7 @@ export default function PendingUsersScreen() {
   const [stores, setStores] = useState<Store[]>([]);
   
   // Approval modal
-  const [showApprovalsetShowApprovalModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [approvalData, setApprovalData] = useState({
     role: 'user',

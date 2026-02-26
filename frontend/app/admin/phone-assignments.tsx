@@ -52,7 +52,7 @@ export default function PhoneAssignmentsScreen() {
   const [activeTab, setActiveTab] = useState<'users' | 'shared'>('users');
   
   // Edit modal state
-  const [showEditsetShowEditModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<User | SharedInbox | null>(null);
   const [editingType, setEditingType] = useState<'user' | 'shared'>('user');
   const [phoneNumber, setPhoneNumber] = useState('');

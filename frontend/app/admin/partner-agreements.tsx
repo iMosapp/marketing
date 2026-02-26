@@ -46,7 +46,7 @@ export default function PartnerAgreementsScreen() {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [agreements, setAgreements] = useState<Agreement[]>([]);
-  const [showCreatesetShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   
   // New agreement form
