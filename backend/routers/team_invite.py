@@ -18,7 +18,7 @@ router = APIRouter(prefix="/team-invite", tags=["Team Invite"])
 logger = logging.getLogger(__name__)
 
 
-APP_URL = "https://app.imosapp.com"
+APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com")
 
 
 

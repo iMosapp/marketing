@@ -28,7 +28,7 @@ def get_short_url_base() -> str:
     short_domain = os.environ.get('SHORT_URL_DOMAIN')
     if short_domain:
         return short_domain.rstrip('/')
-    return "https://app.imosapp.com"
+    return os.environ.get("APP_URL", "https://app.imosapp.com")
 
 async def create_short_url(
     original_url: str,
