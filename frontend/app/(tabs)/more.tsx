@@ -794,6 +794,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  quickActionsContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  quickActionsLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8E8E93',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  quickActionTile: {
+    flex: 1,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+    textAlign: 'center',
+  },
   profileAvatarContainer: {
     position: 'relative',
     marginRight: 16,
