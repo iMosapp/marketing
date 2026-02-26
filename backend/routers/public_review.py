@@ -176,6 +176,8 @@ async def submit_feedback(store_slug: str, feedback: dict):
         "review_platform_clicked": feedback.get("platform_clicked"),
         "salesperson_id": feedback.get("salesperson_id"),
         "salesperson_name": feedback.get("salesperson_name"),
+        "source": feedback.get("source", "review_page"),
+        "approved": False,
         "created_at": datetime.now(timezone.utc),
     }
     
