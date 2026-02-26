@@ -49,6 +49,11 @@ export default function ContactsScreen() {
   const [newContactEmail, setNewContactEmail] = useState('');
   const [savingContact, setSavingContact] = useState(false);
   
+  // Selection & Delete state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
   
