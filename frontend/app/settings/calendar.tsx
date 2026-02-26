@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import * as Calendar from 'expo-calendar';
 import { getCalendars, getSelectedCalendarId, setSelectedCalendarId } from '../../src/utils/calendar';
+import { useToast } from '../components/common/Toast';
 
 export default function CalendarSettingsScreen() {
   const router = useRouter();
@@ -115,7 +117,7 @@ export default function CalendarSettingsScreen() {
       setNativeCalendarPermission(status);
       
       if (status === 'granted') {
-        Alert.alert('Success', 'Calendar access granted! Appointments will be added to your device calendar.');
+        showToast('Calendar access granted! Appointments will be added to your device calendar.');
       } else {
         Alert.alert('Permission Denied', 'Please enable calendar access in your device settings.');
       }

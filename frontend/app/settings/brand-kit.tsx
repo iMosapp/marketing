@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../components/common/Toast';
 
 const DEFAULT_COLORS = [
   '#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', 
@@ -98,7 +100,7 @@ export default function BrandKitSettings() {
       });
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Brand kit saved successfully!');
+      showToast('Brand kit saved successfully!');
     } catch (error) {
       console.error('Error saving brand kit:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

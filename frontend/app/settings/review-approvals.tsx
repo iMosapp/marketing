@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { useToast } from '../components/common/Toast';
 
 interface PendingReview {
   id: string;
@@ -59,7 +61,7 @@ export default function ReviewApprovalsScreen() {
     setProcessing(reviewId);
     try {
       await api.post(`/p/reviews/approve/${reviewId}`);
-      Alert.alert('Success', 'Review approved and will now be visible on your landing page.');
+      showToast('Review approved and will now be visible on your landing page.');
       setReviews(prev => prev.filter(r => r.id !== reviewId));
     } catch (error) {
       Alert.alert('Error', 'Failed to approve review');

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import api from '../../services/api';
 import { format, parse } from 'date-fns';
+import { useToast } from '../components/common/Toast';
 
 interface SequenceStep {
   id: string;
@@ -276,7 +278,7 @@ export default function CampaignDetailScreen() {
       
       await campaignsAPI.update(user!._id, id!, updateData);
       setHasChanges(false);
-      Alert.alert('Success', 'Campaign updated successfully');
+      showToast('Campaign updated successfully');
       
     } catch (error) {
       console.error('Failed to save campaign:', error);

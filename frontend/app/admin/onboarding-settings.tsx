@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { useToast } from '../components/common/Toast';
 
 // Color palette for branding
 const COLOR_OPTIONS = [
@@ -79,7 +81,7 @@ export default function OnboardingSettingsScreen() {
       setSaving(true);
       await api.put('/onboarding-settings/global', settings);
       setHasChanges(false);
-      Alert.alert('Success', 'Onboarding settings saved!');
+      showToast('Onboarding settings saved!');
     } catch (error) {
       console.error('Failed to save settings:', error);
       Alert.alert('Error', 'Failed to save settings');

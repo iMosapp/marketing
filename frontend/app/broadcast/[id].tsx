@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { useToast } from '../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -103,7 +105,7 @@ export default function BroadcastDetailScreen() {
     try {
       const res = await api.post(`/broadcast/${id}/duplicate?user_id=${user?._id}`);
       if (res.data.success) {
-        Alert.alert('Success', 'Broadcast duplicated');
+        showToast('Broadcast duplicated');
         router.push(`/broadcast/${res.data.broadcast.id}`);
       }
     } catch (error) {
@@ -124,7 +126,7 @@ export default function BroadcastDetailScreen() {
             setDeleting(true);
             try {
               await api.delete(`/broadcast/${id}?user_id=${user?._id}`);
-              Alert.alert('Success', 'Broadcast deleted');
+              showToast('Broadcast deleted');
               router.back();
             } catch (error: any) {
               Alert.alert('Error', error.response?.data?.detail || 'Failed to delete broadcast');

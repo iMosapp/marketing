@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../../services/api';
+import { useToast } from '../../components/common/Toast';
 
 export default function PartnerAgreementSigningPage() {
   const { agreementId, payment, session_id } = useLocalSearchParams();

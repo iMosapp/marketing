@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
+import { useToast } from '../components/common/Toast';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -73,7 +75,7 @@ export default function StoreProfileScreen() {
     setSaving(true);
     try {
       await api.put(`/admin/stores/${user.store_id}`, store);
-      Alert.alert('Saved!', 'Account profile updated');
+      showToast('Account profile updated');
     } catch (error) {
       Alert.alert('Error', 'Failed to save store profile');
     } finally {
@@ -350,7 +352,7 @@ export default function StoreProfileScreen() {
                 onPress={async () => {
                   const url = `https://app.imosapp.com/review/${store.slug || store._id}`;
                   await Clipboard.setStringAsync(url);
-                  Alert.alert('Copied!', 'Review page link copied to clipboard');
+                  showToast('Review page link copied to clipboard');
                 }}
               >
                 <Ionicons name="copy-outline" size={20} color="#007AFF" />

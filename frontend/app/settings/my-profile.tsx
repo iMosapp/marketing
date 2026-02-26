@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import VoicemailRecorder from '../../components/VoicemailRecorder';
+import { useToast } from '../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -114,7 +116,7 @@ export default function MyProfileScreen() {
     try {
       console.log('Saving profile:', JSON.stringify(profile, null, 2));
       await api.put(`/profile/${user._id}`, profile);
-      Alert.alert('Success', 'Profile saved successfully!');
+      showToast('Profile saved successfully!');
       // Update auth store with new user data
       updateUser({ ...user, name: profile.name, phone: profile.phone, title: profile.title });
       // Reset initial profile to mark as saved
@@ -185,7 +187,7 @@ export default function MyProfileScreen() {
       
       await api.put(`/profile/${user._id}`, { photo_url: photoUrl });
       setProfile(prev => ({ ...prev, photo_url: photoUrl }));
-      Alert.alert('Success', 'Photo uploaded!');
+      showToast('Photo uploaded!');
     } catch (error) {
       console.error('Upload error:', error);
       Alert.alert('Error', 'Failed to upload photo');

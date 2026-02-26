@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { useToast } from '../components/common/Toast';
 
 // Pre-built themes - just tap to select!
 const THEMES = [
@@ -85,7 +87,7 @@ export default function CongratsTemplateScreen() {
         accent_color: selectedTheme.accent,
         text_color: selectedTheme.text,
       });
-      Alert.alert('Saved!', 'Your congrats card template has been updated.');
+      showToast('Your congrats card template has been updated.');
     } catch (error) {
       Alert.alert('Error', 'Failed to save template');
     } finally {

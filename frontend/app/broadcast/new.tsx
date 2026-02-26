@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { useToast } from '../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -248,7 +250,7 @@ export default function NewBroadcastScreen() {
         if (sendNow) {
           // Send immediately
           await api.post(`/broadcast/${res.data.broadcast.id}/send?user_id=${user?._id}`);
-          Alert.alert('Success', 'Broadcast sent successfully!');
+          showToast('Broadcast sent successfully!');
         } else {
           Alert.alert('Success', scheduleType === 'later' ? 'Broadcast scheduled!' : 'Broadcast saved as draft');
         }

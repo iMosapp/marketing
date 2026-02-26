@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import {
+import { useToast } from '../components/common/Toast';
   checkBiometricSupport,
   enableBiometricLogin,
   disableBiometricLogin,
@@ -81,7 +83,7 @@ export default function SecuritySettingsScreen() {
               
               if (success) {
                 setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
-                Alert.alert('Success', `${biometricStatus.biometricLabel} login enabled!`);
+                showToast('${biometricStatus.biometricLabel} login enabled!');
               } else {
                 Alert.alert('Error', 'Failed to enable biometric login. Please try again.');
               }
@@ -129,7 +131,7 @@ export default function SecuritySettingsScreen() {
       
       if (success) {
         setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
-        Alert.alert('Success', `${biometricStatus.biometricLabel} login enabled!`);
+        showToast('${biometricStatus.biometricLabel} login enabled!');
       } else {
         Alert.alert('Note', 'To enable biometric login, please log out and log back in with your password.');
       }
@@ -177,7 +179,7 @@ export default function SecuritySettingsScreen() {
     setChangingPassword(true);
     try {
       await authAPI.changePassword(user?._id || '', currentPassword, newPassword);
-      Alert.alert('Success', 'Your password has been changed successfully');
+      showToast('Your password has been changed successfully');
       setShowPasswordModal(false);
       setCurrentPassword('');
       setNewPassword('');

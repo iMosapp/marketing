@@ -166,7 +166,7 @@ export default function LeadSourceDetailScreen() {
         if (IS_WEB) {
           showToast('Lead source updated successfully', 'success');
         } else {
-          Alert.alert('Success', 'Lead source updated');
+          showToast('Lead source updated');
         }
       }
     } catch (error) {
@@ -232,7 +232,7 @@ export default function LeadSourceDetailScreen() {
         if (IS_WEB) {
           showToast(`${label} copied to clipboard`, 'success');
         } else {
-          Alert.alert('Copied', `${label} copied to clipboard`);
+          showToast('${label} copied to clipboard');
         }
       }
     } catch (error) {

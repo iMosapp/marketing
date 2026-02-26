@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { WebModal } from '../../components/WebModal';
+import { useToast } from '../components/common/Toast';
 
 type TabType = 'api-keys' | 'webhooks' | 'crm' | 'dms' | 'docs';
 
@@ -141,7 +143,7 @@ export default function IntegrationsScreen() {
       setWebhooks(prev => [...prev, response.data]);
       setShowNewWebhookModal(false);
       setNewWebhook({ name: '', url: '', events: [] });
-      Alert.alert('Success', 'Webhook created');
+      showToast('Webhook created');
     } catch (error) {
       Alert.alert('Error', 'Failed to create webhook');
     }
@@ -163,7 +165,7 @@ export default function IntegrationsScreen() {
 
   const copyToClipboard = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    Alert.alert('Copied', 'Copied to clipboard');
+    showToast('Copied to clipboard');
   };
 
   const renderApiKeysTab = () => (

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import Toggle from '../../components/Toggle';
 import VoiceInput from '../../components/VoiceInput';
+import { useToast } from '../components/common/Toast';
 
 interface PersonaSettings {
   tone: 'professional' | 'friendly' | 'casual' | 'formal';
@@ -121,7 +123,7 @@ export default function PersonaSettings() {
     try {
       setSaving(true);
       await api.put(`/users/${user._id}/persona`, settings);
-      Alert.alert('Success', 'Your AI persona has been updated');
+      showToast('Your AI persona has been updated');
     } catch (error) {
       console.error('Error saving persona:', error);
       Alert.alert('Error', 'Failed to save settings');

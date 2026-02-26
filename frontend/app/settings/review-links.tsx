@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { useToast } from '../components/common/Toast';
 
 interface ReviewLinks {
   google: string | null;
@@ -79,7 +81,7 @@ export default function ReviewLinksScreen() {
     setSaving(true);
     try {
       await api.put(`/admin/stores/${user.store_id}/review-links`, links);
-      Alert.alert('Saved!', 'Review links updated successfully');
+      showToast('Review links updated successfully');
     } catch (error) {
       Alert.alert('Error', 'Failed to save review links');
     } finally {

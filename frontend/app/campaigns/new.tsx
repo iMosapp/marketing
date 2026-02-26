@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { const { showToast } = useToast();
+  useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +23,7 @@ import { campaignsAPI } from '../../services/api';
 import api from '../../services/api';
 import { format, addDays, addMonths } from 'date-fns';
 import { WebModal } from '../../components/WebModal';
+import { useToast } from '../components/common/Toast';
 
 interface SequenceStep {
   id: string;

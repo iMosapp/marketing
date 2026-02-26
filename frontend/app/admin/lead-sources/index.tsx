@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { const { showToast } = useToast();
+  useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
+import { useToast } from '../../components/common/Toast';
 
 interface LeadSource {
   id: string;
@@ -89,7 +91,7 @@ export default function LeadSourcesScreen() {
       // For web, use navigator.clipboard
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(text);
-        Alert.alert('Copied', `${label} copied to clipboard`);
+        showToast('${label} copied to clipboard');
       }
     } catch (error) {
       Alert.alert('Error', 'Could not copy to clipboard');
