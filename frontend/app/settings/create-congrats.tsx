@@ -161,7 +161,7 @@ export default function CreateCongratsCardPage() {
 
   const handleDownload = () => {
     if (!createdCard) return;
-    const imageUrl = `${api.defaults.baseURL}/congrats/card/${createdCard.card_id}/image`;
+    const imageUrl = `https://app.imosapp.com/api/congrats/card/${createdCard.card_id}/image`;
     if (IS_WEB) {
       window.open(imageUrl, '_blank');
     } else {
@@ -174,7 +174,7 @@ export default function CreateCongratsCardPage() {
     if (IS_WEB) {
       window.open(createdCard.share_url, '_blank');
     } else {
-      router.push(`/congrats/${createdCard.card_id}`);
+      Linking.openURL(createdCard.share_url);
     }
   };
 
