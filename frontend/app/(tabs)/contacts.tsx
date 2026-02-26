@@ -306,12 +306,31 @@ export default function ContactsScreen() {
       name: tagName,
       color: tagMap[tagName] || '#8E8E93',
     })) || [];
+    const isSelected = selectedIds.has(item._id);
 
     return (
     <TouchableOpacity
       style={styles.contactItem}
-      onPress={() => router.push(`/contact/${item._id}`)}
+      onPress={() => {
+        if (selectMode) {
+          toggleSelect(item._id);
+        } else {
+          router.push(`/contact/${item._id}`);
+        }
+      }}
+      onLongPress={() => {
+        if (!selectMode) {
+          setSelectMode(true);
+          setSelectedIds(new Set([item._id]));
+        }
+      }}
     >
+      {/* Checkbox in select mode */}
+      {selectMode && (
+        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+          {isSelected && <Ionicons name="checkmark" size={16} color="#FFF" />}
+        </View>
+      )}
       {(item.photo_thumbnail || item.photo_url) ? (
         <Image source={{ uri: item.photo_thumbnail || item.photo_url }} style={styles.photoAvatar} />
       ) : (
