@@ -704,7 +704,12 @@ export default function TeamChatScreen() {
           style={styles.chatHeaderAction}
           onPress={() => {
             if (Platform.OS === 'web') {
-              setShowChatMenu(!showChatMenu);
+              const action = window.prompt(
+                `${selectedChannel.name} (${selectedChannel.member_count} members)\n\nType an action:\n1 = Clear History\n2 = Delete Channel`,
+                ''
+              );
+              if (action === '1') clearHistory(selectedChannel);
+              else if (action === '2') deleteChannel(selectedChannel);
             } else {
               Alert.alert(
                 selectedChannel.name,
@@ -721,26 +726,6 @@ export default function TeamChatScreen() {
         >
           <Ionicons name="ellipsis-vertical" size={22} color={COLORS.accent} />
         </TouchableOpacity>
-        
-        {/* Web chat header dropdown */}
-        {Platform.OS === 'web' && showChatMenu && (
-          <View style={styles.chatHeaderDropdown}>
-            <TouchableOpacity 
-              style={styles.channelDropdownItem}
-              onPress={() => { setShowChatMenu(false); clearHistory(selectedChannel); }}
-            >
-              <Ionicons name="trash-outline" size={16} color="#FF9500" />
-              <Text style={[styles.channelDropdownText, { color: '#FF9500' }]}>Clear History</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.channelDropdownItem}
-              onPress={() => { setShowChatMenu(false); deleteChannel(selectedChannel); }}
-            >
-              <Ionicons name="close-circle-outline" size={16} color="#FF3B30" />
-              <Text style={[styles.channelDropdownText, { color: '#FF3B30' }]}>Delete Channel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* Messages */}
