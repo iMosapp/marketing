@@ -232,6 +232,52 @@ export default function ContactsScreen() {
     setNewContactPhone('');
     setNewContactEmail('');
   };
+
+  // Toggle contact selection
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Select/deselect all
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredContacts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredContacts.map(c => c._id)));
+    }
+  };
+
+  // Exit select mode
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  // Delete selected contacts
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    showConfirm(
+      'Delete Contacts',
+      `Are you sure you want to permanently delete ${selectedIds.size} contact${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`,
+      async () => {
+        setDeleting(true);
+        try {
+          await contactsAPI.bulkDelete(userId || '', Array.from(selectedIds));
+          exitSelectMode();
+          loadContacts();
+        } catch (err: any) {
+          showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to delete contacts');
+        } finally {
+          setDeleting(false);
+        }
+      }
+    );
+  };
   
   // Filter contacts by selected tag - memoized
   const filteredContacts = useMemo(() => 
