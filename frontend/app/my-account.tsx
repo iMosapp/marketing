@@ -65,7 +65,6 @@ export default function MyAccountScreen() {
         if (navigator.clipboard) {
           await navigator.clipboard.writeText(url);
         } else {
-          // Fallback for iframes / older browsers
           const ta = document.createElement('textarea');
           ta.value = url;
           ta.style.position = 'fixed';
@@ -77,7 +76,6 @@ export default function MyAccountScreen() {
         }
       }
     } catch {
-      // Clipboard blocked (e.g. iframe) — use fallback
       try {
         const ta = document.createElement('textarea');
         ta.value = url;
@@ -90,8 +88,46 @@ export default function MyAccountScreen() {
       } catch {}
     }
     setCopiedLink(true);
-    showSimpleAlert('Copied!', url);
     setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleShareViaSMS = () => {
+    const url = getReviewUrl();
+    const msg = `Hey! We'd love your feedback. Leave us a review here: ${url}`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a');
+      a.href = `sms:?body=${encodeURIComponent(msg)}`;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      Linking.openURL(`sms:?body=${encodeURIComponent(msg)}`);
+    }
+    setShowShareModal(false);
+  };
+
+  const handleShareViaEmail = () => {
+    const url = getReviewUrl();
+    const subject = 'We\'d love your feedback!';
+    const body = `Hi!\n\nThank you for your business. We'd really appreciate it if you could take a moment to leave us a review:\n\n${url}\n\nThank you!`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a');
+      a.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      Linking.openURL(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    }
+    setShowShareModal(false);
+  };
+
+  const handlePreviewReviewPage = () => {
+    const slug = storeSlug || 'my-store';
+    router.push(`/review/${slug}` as any);
+    setShowShareModal(false);
   };
 
   const refreshUserData = async () => {
