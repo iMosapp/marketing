@@ -602,9 +602,8 @@ export default function ContactDetailScreen() {
         await contactsAPI.update(user._id, id as string, contact);
       }
       
-      showAlert('Success', 'Contact saved!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showToast('Contact saved!');
+      router.back();
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || 'Failed to save contact';
       showSimpleAlert('Error', errorMessage);
