@@ -23,6 +23,22 @@ import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import api from '../../services/api';
 
+// Web-safe URL opener — Linking.openURL uses window.open('_blank')
+// which popup blockers intercept for sms: and mailto: protocols.
+// Using an anchor click or location.href is more reliable on web.
+const openProtocolUrl = (url: string) => {
+  if (Platform.OS === 'web') {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_self';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    Linking.openURL(url);
+  }
+};
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 40;
 const CARD_HEIGHT = 480;
