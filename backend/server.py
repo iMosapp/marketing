@@ -75,7 +75,7 @@ async def debug_db_info():
         "forest_exists": False,
     }
     
-    if db:
+    if db is not None:
         try:
             result["user_count"] = await db.users.count_documents({})
             forest = await db.users.find_one({"email": "forest@imosapp.com"}, {"_id": 0, "email": 1, "name": 1, "status": 1, "role": 1})
