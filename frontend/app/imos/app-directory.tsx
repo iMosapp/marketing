@@ -34,6 +34,17 @@ type Category = {
 
 const PAGE_CATALOG: Category[] = [
   {
+    id: 'public_pages',
+    title: 'Public Landing Pages',
+    icon: 'globe-outline',
+    color: '#34C759',
+    pages: [
+      { name: 'Review Links Page', description: 'Customer-facing review link hub (Podium-style)', path: '/review/imos-demo', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
+      { name: 'Digital Business Card', description: 'Shareable digital card for any team member', path: '/card/demo', icon: 'card-outline', color: '#007AFF', audience: 'Customers, prospects' },
+      { name: 'Congrats Card', description: 'Customer thank-you & congratulations card', path: '/congrats/demo', icon: 'gift-outline', color: '#C9A962', audience: 'Customers' },
+    ],
+  },
+  {
     id: 'marketing',
     title: 'Marketing & Sales',
     icon: 'diamond-outline',
