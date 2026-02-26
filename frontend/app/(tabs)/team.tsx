@@ -399,11 +399,12 @@ export default function TeamChatScreen() {
             <Text style={styles.unreadText}>{item.unread_count}</Text>
           </View>
         )}
+        </TouchableOpacity>
         
-        {/* 3-dot menu button */}
+        {/* 3-dot menu button — outside the tap area */}
         <TouchableOpacity
           style={styles.channelMenuBtn}
-          onPress={(e) => { e.stopPropagation(); showChannelActions(item); }}
+          onPress={() => showChannelActions(item)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="ellipsis-vertical" size={18} color={COLORS.textSecondary} />
