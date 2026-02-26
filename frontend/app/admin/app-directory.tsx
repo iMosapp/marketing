@@ -196,7 +196,7 @@ export default function AppDirectoryScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [sharesetShareModal] = useState<PageEntry | null>(null);
+  const [shareModal, setShareModal] = useState<PageEntry | null>(null);
   const [shareChannel, setShareChannel] = useState<'email' | 'sms'>('email');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
