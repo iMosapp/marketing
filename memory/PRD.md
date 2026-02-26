@@ -38,6 +38,17 @@ Full-stack Relationship Management System (RMS) for sales teams. Features includ
   - Business cards, congrats cards, QR codes, vCards, review links all use https://app.imosapp.com/
   - Removed all preview URL references from share/copy link code
   - Files fixed: card/[userId].tsx, thread/[id].tsx, congrats/[cardId].tsx, subscription/pricing.tsx
+- [x] **Eliminated short URL redirects for business cards** (Feb 26, 2026):
+  - Business cards previously shared as `https://app.imosapp.com/api/s/{code}` (backend redirect) which broke on production
+  - Now uses direct links: `https://app.imosapp.com/card/{userId}` — same clean format as congrats cards
+  - Removed shortUrl state and loadShortUrl API call from card/[userId].tsx
+  - All outgoing links now follow consistent direct-link pattern:
+    - Business cards: `https://app.imosapp.com/card/{userId}`
+    - Congrats cards: `https://app.imosapp.com/congrats/{cardId}`
+    - Review links: `https://app.imosapp.com/review/{storeSlug}`
+    - Invite links: `https://app.imosapp.com/auth/login?email=...`
+    - vCards: `https://app.imosapp.com/api/card/vcard/{userId}`
+  - Short URL service (`/api/s/`) still exists in backend for legacy links but is no longer generated for new shares
 - [x] **MONGO_URL deployment fix** (Feb 26, 2026):
   - Removed MONGO_URL from backend/.env to prevent overwriting production config on deploy
   - Created .env.local (gitignored) for preview environment
