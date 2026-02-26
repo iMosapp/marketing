@@ -6,7 +6,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://build-fix-16.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://link-tracker-36.preview.emergentagent.com').rstrip('/')
 
 @pytest.fixture(scope="module")
 def api_client():

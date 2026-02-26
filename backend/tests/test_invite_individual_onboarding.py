@@ -14,7 +14,7 @@ import uuid
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
     # Fallback for test discovery
-    BASE_URL = "https://build-fix-16.preview.emergentagent.com"
+    BASE_URL = "https://link-tracker-36.preview.emergentagent.com"
 
 
 class TestInviteIndividualFeature:
