@@ -229,6 +229,13 @@ export default function MyAccountScreen() {
       onPress: () => router.push(`/card/${user?._id}`),
     },
     {
+      icon: 'gift',
+      title: 'Create Congrats Card',
+      subtitle: 'Make & share a card',
+      color: '#C9A962',
+      onPress: () => router.push('/settings/create-congrats'),
+    },
+    {
       icon: 'create',
       title: 'Edit Digital Card',
       subtitle: 'Update bio, photo & socials',

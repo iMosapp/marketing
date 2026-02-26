@@ -653,35 +653,6 @@ export default function MoreScreen() {
             <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
           </TouchableOpacity>
         </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.quickActionsLabel}>QUICK ACTIONS</Text>
-          <View style={styles.quickActionsRow}>
-            <TouchableOpacity
-              style={styles.quickActionTile}
-              onPress={() => router.push('/settings/my-profile')}
-              activeOpacity={0.7}
-              data-testid="quick-action-digital-card"
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#007AFF20' }]}>
-                <Ionicons name="card" size={22} color="#007AFF" />
-              </View>
-              <Text style={styles.quickActionText}>My Digital Card</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickActionTile}
-              onPress={() => router.push('/settings/create-congrats')}
-              activeOpacity={0.7}
-              data-testid="quick-action-create-congrats"
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#C9A96220' }]}>
-                <Ionicons name="gift" size={22} color="#C9A962" />
-              </View>
-              <Text style={styles.quickActionText}>Create Congrats Card</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
         
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
