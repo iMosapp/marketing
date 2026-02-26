@@ -424,38 +424,73 @@ export default function ContactsScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Contacts</Text>
-        <View style={styles.headerButtons}>
-          {isWeb && (
-            <TouchableOpacity 
-              onPress={onRefresh}
-              style={styles.headerButton}
-              disabled={refreshing}
-            >
+      {/* Normal header or Select mode header */}
+      {selectMode ? (
+        <View style={styles.selectHeader}>
+          <TouchableOpacity onPress={exitSelectMode} style={styles.headerButton}>
+            <Ionicons name="close" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.selectHeaderTitle}>{selectedIds.size} selected</Text>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity onPress={toggleSelectAll} style={styles.headerButton}>
               <Ionicons 
-                name="refresh" 
+                name={selectedIds.size === filteredContacts.length ? "checkbox" : "square-outline"} 
                 size={24} 
-                color={refreshing ? "#4C4C4E" : "#007AFF"} 
+                color="#007AFF" 
               />
             </TouchableOpacity>
-          )}
-          <TouchableOpacity 
-            onPress={() => router.push('/contacts/import')}
-            style={styles.headerButton}
-          >
-            <Ionicons name="download-outline" size={26} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => setShowAddContactModal(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Add new contact"
-            data-testid="add-contact-button"
-          >
-            <Ionicons name="add-circle" size={32} color="#007AFF" />
-          </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={handleBulkDelete} 
+              style={styles.headerButton}
+              disabled={selectedIds.size === 0 || deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color="#FF3B30" />
+              ) : (
+                <Ionicons name="trash" size={24} color={selectedIds.size > 0 ? "#FF3B30" : "#4C4C4E"} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View style={styles.header}>
+          <Text style={styles.title}>Contacts</Text>
+          <View style={styles.headerButtons}>
+            {isWeb && (
+              <TouchableOpacity 
+                onPress={onRefresh}
+                style={styles.headerButton}
+                disabled={refreshing}
+              >
+                <Ionicons 
+                  name="refresh" 
+                  size={24} 
+                  color={refreshing ? "#4C4C4E" : "#007AFF"} 
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity 
+              onPress={() => setSelectMode(true)}
+              style={styles.headerButton}
+            >
+              <Ionicons name="checkbox-outline" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => router.push('/contacts/import')}
+              style={styles.headerButton}
+            >
+              <Ionicons name="download-outline" size={26} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => setShowAddContactModal(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add new contact"
+            >
+              <Ionicons name="add-circle" size={32} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
