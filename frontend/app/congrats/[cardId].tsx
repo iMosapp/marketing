@@ -122,8 +122,6 @@ export default function CongratsCardPage() {
       if (Platform.OS !== 'web') {
         Share.share({
           message: `${shareText}\n${shareUrl}`,
-          url: shareUrl,
-          title: cardData?.headline || 'Thank You Card',
         });
       }
     }
