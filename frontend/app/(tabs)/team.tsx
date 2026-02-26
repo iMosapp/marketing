@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   Image,
