@@ -25,12 +25,12 @@ import VoicemailRecorder from '../../components/VoicemailRecorder';
 const IS_WEB = Platform.OS === 'web';
 
 const SOCIAL_PLATFORMS = [
-  { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', placeholder: 'https://facebook.com/yourprofile' },
-  { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', placeholder: 'https://instagram.com/yourhandle' },
-  { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', placeholder: 'https://linkedin.com/in/yourprofile' },
-  { key: 'twitter', label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2', placeholder: 'https://twitter.com/yourhandle' },
-  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#000000', placeholder: 'https://tiktok.com/@yourhandle' },
-  { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#FF0000', placeholder: 'https://youtube.com/@yourchannel' },
+  { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', prefix: 'facebook.com/', placeholder: 'yourprofile' },
+  { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
+  { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', prefix: 'linkedin.com/in/', placeholder: 'yourprofile' },
+  { key: 'twitter', label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2', prefix: 'x.com/', placeholder: 'yourhandle' },
+  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#000000', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
+  { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#FF0000', prefix: 'youtube.com/@', placeholder: 'yourchannel' },
 ];
 
 export default function MyProfileScreen() {
