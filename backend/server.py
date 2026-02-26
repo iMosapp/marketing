@@ -70,7 +70,7 @@ async def debug_db_info():
     result = {
         "mongo_url_masked": masked_url,
         "db_name_env": db_name_env,
-        "actual_db_name": db.name if db else "NO CONNECTION",
+        "actual_db_name": db.name if db is not None else "NO CONNECTION",
         "user_count": 0,
         "forest_exists": False,
     }
