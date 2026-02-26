@@ -232,7 +232,7 @@ export default function ContactDetailScreen() {
     
     try {
       await campaignsAPI.enrollContact(user._id, campaign._id, id as string);
-      showSimpleAlert('Enrolled!', `Contact enrolled in "${campaign.name}"`);
+      showToast(`Enrolled in "${campaign.name}"`);
       loadCampaignsAndEnrollments();
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Failed to enroll contact';
