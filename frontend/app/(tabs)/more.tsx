@@ -802,15 +802,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#FFF',
     marginBottom: 2,
+    letterSpacing: 0.2,
+  },
+  profileTitle: {
+    fontSize: 11,
+    color: '#C9A962',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   profileEmail: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#8E8E93',
-    marginBottom: 2,
+    marginBottom: 1,
+  },
+  profilePhone: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
   profileNumberContainer: {
     flexDirection: 'row',
