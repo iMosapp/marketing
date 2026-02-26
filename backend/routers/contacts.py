@@ -228,6 +228,65 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     return {"message": "Contact updated successfully"}
 
+@router.delete("/{user_id}/{contact_id}")
+async def delete_contact(user_id: str, contact_id: str):
+    """Delete a single contact with role-based access check"""
+    db = get_db()
+    base_filter = await get_data_filter(user_id)
+    
+    try:
+        result = await db.contacts.delete_one({
+            "$and": [{"_id": ObjectId(contact_id)}, base_filter]
+        })
+    except Exception:
+        result = await db.contacts.delete_one({
+            "$and": [{"_id": contact_id}, base_filter]
+        })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    # Clean up related data
+    try:
+        await db.contact_photos.delete_many({"contact_id": contact_id})
+    except Exception:
+        pass
+    
+    return {"message": "Contact deleted successfully"}
+
+@router.post("/{user_id}/bulk-delete")
+async def bulk_delete_contacts(user_id: str, data: dict):
+    """Delete multiple contacts at once"""
+    db = get_db()
+    base_filter = await get_data_filter(user_id)
+    contact_ids = data.get("contact_ids", [])
+    
+    if not contact_ids:
+        raise HTTPException(status_code=400, detail="No contact IDs provided")
+    
+    # Convert to ObjectIds
+    obj_ids = []
+    for cid in contact_ids:
+        try:
+            obj_ids.append(ObjectId(cid))
+        except Exception:
+            obj_ids.append(cid)
+    
+    result = await db.contacts.delete_many({
+        "$and": [
+            {"_id": {"$in": obj_ids}},
+            base_filter
+        ]
+    })
+    
+    # Clean up related photos
+    try:
+        await db.contact_photos.delete_many({"contact_id": {"$in": contact_ids}})
+    except Exception:
+        pass
+    
+    return {"deleted": result.deleted_count, "requested": len(contact_ids)}
+
 @router.get("/{user_id}/{contact_id}/referrals")
 async def get_contact_referrals(user_id: str, contact_id: str):
     """Get all contacts referred by this contact with role-based access"""
