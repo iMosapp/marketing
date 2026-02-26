@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Alert,
   Platform,
+  Pressable,
   KeyboardAvoidingView,
   Image,
 } from 'react-native';
