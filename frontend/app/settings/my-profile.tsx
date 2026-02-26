@@ -830,6 +830,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFF',
   },
+  socialInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  socialPrefix: {
+    backgroundColor: '#2C2C2E',
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    justifyContent: 'center',
+  },
+  socialPrefixText: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  socialInput: {
+    flex: 1,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
   previewButton: {
     flexDirection: 'row',
     alignItems: 'center',
