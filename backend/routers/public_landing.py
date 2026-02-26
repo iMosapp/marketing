@@ -158,14 +158,26 @@ async def submit_review(
 @router.get("/reviews/pending/{user_id}")
 async def get_pending_reviews(user_id: str):
     """
-    Get pending reviews for approval
+    Get pending reviews for approval — includes both
+    salesperson-level and account-level (store) reviews.
     """
     db = get_db()
     
-    reviews = await db.customer_feedback.find({
-        "salesperson_id": user_id,
-        "approved": {"$ne": True}
-    }).sort("created_at", -1).to_list(50)
+    # Get user's store_id for account-level reviews
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "role": 1})
+    store_id = user.get("store_id") if user else None
+    
+    # Build filter: salesperson reviews OR store-level reviews (for managers/admins)
+    query_filter = {"approved": {"$ne": True}}
+    if store_id and user.get("role") in ("super_admin", "org_admin", "store_manager"):
+        query_filter["$or"] = [
+            {"salesperson_id": user_id},
+            {"store_id": store_id}
+        ]
+    else:
+        query_filter["salesperson_id"] = user_id
+    
+    reviews = await db.customer_feedback.find(query_filter).sort("created_at", -1).to_list(50)
     
     return [{
         "id": str(r["_id"]),
