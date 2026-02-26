@@ -373,13 +373,13 @@ async def admin_password_reset(data: dict):
     
     result = await get_db().users.update_one(
         {"email": email},
-        {"$set": {"password": new_password}}
+        {"$set": {"password": new_password, "status": "active", "is_active": True}}
     )
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return {"message": f"Password reset for {email}"}
+    return {"message": f"Password reset and account activated for {email}"}
 
 
 @router.post("/persona/{user_id}")
