@@ -8,6 +8,8 @@ import {
   Image,
   ActivityIndicator,
   Platform,
+  Linking,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +17,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../store/authStore';
 import { showSimpleAlert, showConfirm } from '../services/alert';
+import { WebModal } from '../components/WebModal';
 import api from '../services/api';
 
 const PROD_BASE = 'https://app.imosapp.com';
