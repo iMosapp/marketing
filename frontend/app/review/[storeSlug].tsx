@@ -207,7 +207,7 @@ export default function PublicReviewPage() {
           {/* Footer */}
           <TouchableOpacity 
             style={styles.footer}
-            onPress={() => Linking.openURL('https://app.imosapp.com')}
+            onPress={() => Linking.openURL('https://app.imosapp.com/imos')}
           >
             <Text style={styles.footerText}>Powered by </Text>
             <Text style={[styles.footerText, styles.footerBrand]}>iMOs</Text>
