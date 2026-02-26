@@ -29,12 +29,12 @@ const CARD_HEIGHT = 480;
 
 // Social platform icons with brand colors
 const SOCIAL_PLATFORMS = [
-  { key: 'facebook', icon: 'logo-facebook', color: '#1877F2' },
-  { key: 'instagram', icon: 'logo-instagram', color: '#E4405F' },
-  { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2' },
-  { key: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2' },
-  { key: 'youtube', icon: 'logo-youtube', color: '#FF0000' },
-  { key: 'tiktok', icon: 'logo-tiktok', color: '#000000' },
+  { key: 'facebook', icon: 'logo-facebook', color: '#1877F2', baseUrl: 'https://facebook.com/' },
+  { key: 'instagram', icon: 'logo-instagram', color: '#E4405F', baseUrl: 'https://instagram.com/' },
+  { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2', baseUrl: 'https://x.com/' },
+  { key: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2', baseUrl: 'https://linkedin.com/in/' },
+  { key: 'youtube', icon: 'logo-youtube', color: '#FF0000', baseUrl: 'https://youtube.com/@' },
+  { key: 'tiktok', icon: 'logo-tiktok', color: '#000000', baseUrl: 'https://tiktok.com/@' },
 ];
 
 export default function DigitalCardPage() {
