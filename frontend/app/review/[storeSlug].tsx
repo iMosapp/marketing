@@ -416,4 +416,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#94A3B8',
   },
+  footerUrl: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
 });
