@@ -525,6 +525,50 @@ export default function TeamChatScreen() {
           />
         )}
 
+        {/* Web channel action menu overlay */}
+        {Platform.OS === 'web' && channelMenuId && (
+          <Pressable 
+            style={{ position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9998 }}
+            onPress={() => setChannelMenuId(null)}
+          >
+            <View style={styles.channelDropdown}>
+              <TouchableOpacity 
+                style={styles.channelDropdownItem}
+                onPress={() => {
+                  const ch = channels.find(c => c.id === channelMenuId);
+                  setChannelMenuId(null);
+                  if (ch) { setSelectedChannel(ch); loadMembers(); }
+                }}
+              >
+                <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
+                <Text style={styles.channelDropdownText}>Open Chat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.channelDropdownItem}
+                onPress={() => {
+                  const ch = channels.find(c => c.id === channelMenuId);
+                  setChannelMenuId(null);
+                  if (ch) clearHistory(ch);
+                }}
+              >
+                <Ionicons name="trash-outline" size={16} color="#FF9500" />
+                <Text style={[styles.channelDropdownText, { color: '#FF9500' }]}>Clear History</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.channelDropdownItem}
+                onPress={() => {
+                  const ch = channels.find(c => c.id === channelMenuId);
+                  setChannelMenuId(null);
+                  if (ch) deleteChannel(ch);
+                }}
+              >
+                <Ionicons name="close-circle-outline" size={16} color="#FF3B30" />
+                <Text style={[styles.channelDropdownText, { color: '#FF3B30' }]}>Delete Channel</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        )}
+
         {/* Create Channel Panel (web-compatible, replaces Modal) */}
         {showCreateModal && (
           <View style={styles.createPanel}>
