@@ -379,7 +379,7 @@ export default function DigitalCardPage() {
                 {user.phone && (
                   <TouchableOpacity
                     style={styles.contactItem}
-                    onPress={() => Linking.openURL(`tel:${user.phone}`)}
+                    onPress={() => openProtocolUrl(`tel:${user.phone}`)}
                     data-testid="call-btn"
                   >
                     <Ionicons name="call" size={18} color="#C9A962" />
@@ -389,7 +389,7 @@ export default function DigitalCardPage() {
                 {user.email && (
                   <TouchableOpacity
                     style={styles.contactItem}
-                    onPress={() => Linking.openURL(`mailto:${user.email}`)}
+                    onPress={() => openProtocolUrl(`mailto:${user.email}`)}
                     data-testid="email-btn"
                   >
                     <Ionicons name="mail" size={18} color="#C9A962" />
