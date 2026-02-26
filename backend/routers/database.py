@@ -24,15 +24,16 @@ def get_db():
             _client = AsyncIOMotorClient(mongo_url)
             # Try to get database name from the MONGO_URL path first
             # (e.g. mongodb+srv://user:pass@host/my_database)
-            default_db = _client.get_default_database(default=None)
-            if default_db is not None:
+            try:
+                default_db = _client.get_default_database()
                 _db = default_db
                 logger.info(f"Database connected (from URL): {default_db.name}")
-            elif db_name:
-                _db = _client[db_name]
-                logger.info(f"Database connected (from DB_NAME): {db_name}")
-            else:
-                logger.error("No database name in MONGO_URL or DB_NAME")
+            except Exception:
+                if db_name:
+                    _db = _client[db_name]
+                    logger.info(f"Database connected (from DB_NAME): {db_name}")
+                else:
+                    logger.error("No database name in MONGO_URL or DB_NAME")
         else:
             logger.error("MONGO_URL not found in environment")
     return _db
