@@ -3197,3 +3197,73 @@ async def update_user_status(user_id: str, data: dict):
     
     return {"success": True, "status": status}
 
+
+
+def _resize_image(contents: bytes, max_size: int = 128) -> str:
+    """Resize image to avatar size and return base64 data URL."""
+    from PIL import Image
+    import io
+    img = Image.open(io.BytesIO(contents)).convert("RGBA")
+    img.thumbnail((max_size, max_size), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    return f"data:image/png;base64,{b64}"
+
+
+@router.post("/stores/{store_id}/upload-logo")
+async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
+    """Upload a logo for a store/account. Stores original + avatar."""
+    db = get_db()
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 5MB")
+
+    original_b64 = f"data:{file.content_type};base64,{base64.b64encode(contents).decode('utf-8')}"
+    avatar_b64 = _resize_image(contents, 128)
+
+    result = await db.stores.update_one(
+        {"_id": ObjectId(store_id)},
+        {"$set": {
+            "logo_url": original_b64,
+            "logo_avatar_url": avatar_b64,
+            "updated_at": datetime.utcnow(),
+        }}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    return {"success": True, "logo_url": original_b64, "logo_avatar_url": avatar_b64}
+
+
+@router.post("/organizations/{org_id}/upload-logo")
+async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
+    """Upload a logo for an organization. Stores original + avatar."""
+    db = get_db()
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 5MB")
+
+    original_b64 = f"data:{file.content_type};base64,{base64.b64encode(contents).decode('utf-8')}"
+    avatar_b64 = _resize_image(contents, 128)
+
+    result = await db.organizations.update_one(
+        {"_id": ObjectId(org_id)},
+        {"$set": {
+            "logo_url": original_b64,
+            "logo_avatar_url": avatar_b64,
+            "updated_at": datetime.utcnow(),
+        }}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    return {"success": True, "logo_url": original_b64, "logo_avatar_url": avatar_b64}
