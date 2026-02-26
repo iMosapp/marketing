@@ -92,6 +92,9 @@ export default function TeamChatScreen() {
   const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   
+  // Web-compatible menus
+  const [channelMenuId, setChannelMenuId] = useState<string | null>(null);
+  const [showChatMenu, setShowChatMenu] = useState(false);  
   // Refs
   const flatListRef = useRef<FlatList>(null);
   const messageInputRef = useRef<TextInput>(null);
