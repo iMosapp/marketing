@@ -94,7 +94,9 @@ export default function TeamChatScreen() {
   
   // Web-compatible menus
   const [channelMenuId, setChannelMenuId] = useState<string | null>(null);
-  const [showChatMenu, setShowChatMenu] = useState(false);  
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({top: 80, right: 16});
+  
   // Refs
   const flatListRef = useRef<FlatList>(null);
   const messageInputRef = useRef<TextInput>(null);
