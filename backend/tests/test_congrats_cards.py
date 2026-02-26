@@ -11,8 +11,8 @@ import requests
 import os
 import base64
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', '').rstrip('/')
-SALESMAN_ID = "69975a8b6ff748b1f9da6b57"  # Test user ID from iteration_18
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://congrats-card-fix.preview.emergentagent.com').rstrip('/')
+SALESMAN_ID = "699907444a076891982fab35"  # Super Admin user ID from test credentials
 
 # Test card ID that was pre-created by main agent
 EXISTING_CARD_ID = "6a304660-0e5"
