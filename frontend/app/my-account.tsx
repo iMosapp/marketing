@@ -37,20 +37,12 @@ export default function MyAccountScreen() {
       if (user?._id) {
         refreshUserData();
       }
-      if (user?.store_id) {
-        fetchStoreSlug();
+      // Use store_slug from user data (set at login)
+      if (user?.store_slug) {
+        setStoreSlug(user.store_slug);
       }
-    }, [user?._id, user?.store_id])
+    }, [user?._id, user?.store_slug])
   );
-
-  const fetchStoreSlug = async () => {
-    try {
-      const res = await api.get(`/admin/stores/${user?.store_id}`);
-      if (res.data?.slug) {
-        setStoreSlug(res.data.slug);
-      }
-    } catch (e) {}
-  };
 
   const getReviewUrl = () => {
     if (!storeSlug) return '';
