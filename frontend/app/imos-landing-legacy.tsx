@@ -156,7 +156,7 @@ export default function IMOSLandingPage() {
     
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || process.env.REACT_APP_BACKEND_URL || '';
+      const API_URL = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_API_URL || process.env.REACT_APP_BACKEND_URL || '');
       const response = await fetch(`${API_URL}/api/demo-requests`, {
         method: 'POST',
         headers: {
