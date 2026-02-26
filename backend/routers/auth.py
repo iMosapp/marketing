@@ -235,6 +235,13 @@ async def login(credentials: dict):
         user['organization_id'] = str(user['organization_id'])
     if user.get('store_id'):
         user['store_id'] = str(user['store_id'])
+        # Include store slug for review link generation
+        try:
+            store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1})
+            if store and store.get('slug'):
+                user['store_slug'] = store['slug']
+        except Exception:
+            pass
     
     return {
         "token": f"mock_token_{user['_id']}",
