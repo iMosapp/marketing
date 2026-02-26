@@ -237,9 +237,19 @@ async def login(credentials: dict):
         user['store_id'] = str(user['store_id'])
         # Include store slug for review link generation
         try:
-            store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1})
-            if store and store.get('slug'):
-                user['store_slug'] = store['slug']
+            store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
+            if store:
+                slug = store.get('slug')
+                # Auto-generate slug from store name if missing
+                if not slug and store.get('name'):
+                    import re
+                    slug = re.sub(r'[^a-z0-9]+', '-', store['name'].lower()).strip('-')
+                    await get_db().stores.update_one(
+                        {"_id": ObjectId(user['store_id'])},
+                        {"$set": {"slug": slug}}
+                    )
+                if slug:
+                    user['store_slug'] = slug
         except Exception:
             pass
     
