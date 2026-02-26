@@ -812,36 +812,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
   },
-  profileNumberContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  profileLogoSmall: {
-    width: 28,
-    height: 10,
-  },
-  profileNumber: {
-    fontSize: 11,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  roleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-    backgroundColor: '#34C75920',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  roleText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#34C759',
-  },
   // Section Wrapper
   sectionWrapper: {
     marginHorizontal: 16,
