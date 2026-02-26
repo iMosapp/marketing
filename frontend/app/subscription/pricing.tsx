@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://email-invite-patch.preview.emergentagent.com';
+        : 'https://chat-web-ui.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,

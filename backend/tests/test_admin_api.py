@@ -8,7 +8,7 @@ import os
 import time
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://email-invite-patch.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://chat-web-ui.preview.emergentagent.com')
 if BASE_URL and not BASE_URL.startswith('http'):
     BASE_URL = f"https://{BASE_URL}"
 
