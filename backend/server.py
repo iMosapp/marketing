@@ -12,9 +12,11 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-# Load environment - override=True so .env values take priority over platform-injected vars
+# Load environment
+# In production: .env values are the source of truth (no .env.local, no supervisor overrides)
+# In preview: supervisor injects MONGO_URL=localhost before process starts
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env', override=True)
+load_dotenv(ROOT_DIR / '.env', override=False)
 
 # Import routers (after env is loaded)
 from routers import auth, contacts, tasks, messages, calls, campaigns, admin, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin
