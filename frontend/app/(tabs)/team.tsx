@@ -1250,4 +1250,71 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     opacity: 0.5,
   },
+  // Channel row 3-dot menu button
+  channelMenuBtn: {
+    padding: 6,
+    marginLeft: 4,
+  },
+  // Channel dropdown menu (web)
+  channelDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 8,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    overflow: 'hidden',
+    minWidth: 180,
+    zIndex: 9999,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+    } : {
+      elevation: 10,
+    }),
+  },
+  channelDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  channelDropdownText: {
+    fontSize: 14,
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  // Chat header dropdown
+  chatHeaderDropdown: {
+    position: 'absolute',
+    top: 56,
+    right: 8,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    overflow: 'hidden',
+    minWidth: 180,
+    zIndex: 9999,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+    } : {
+      elevation: 10,
+    }),
+  },
+  // Create channel panel (replaces Modal)
+  createPanel: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.background,
+    zIndex: 9999,
+  },
+  createPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
 });
