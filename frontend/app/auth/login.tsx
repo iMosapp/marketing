@@ -123,13 +123,13 @@ export default function LoginScreen() {
     setLoginError('');
     
     if (!email || !password) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch {}
       setLoginError('Please fill in all fields');
       return;
     }
     
     // Light haptic on login button press
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
     
     setLoading(true);
     try {
@@ -139,7 +139,7 @@ export default function LoginScreen() {
       await saveRememberedEmail(email);
       
       // Success haptic on successful login
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
       
       // Get the user from store after login
       const loggedInUser = useAuthStore.getState().user;
@@ -161,7 +161,7 @@ export default function LoginScreen() {
         router.replace(defaultRoute as any);
       }
     } catch (error: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); } catch {}
       setLoginError('Invalid email or password');
     } finally {
       setLoading(false);
