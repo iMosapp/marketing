@@ -302,3 +302,7 @@ android-sdk/
 
 # Local environment overrides (never deploy)
 backend/.env.local
+-e 
+# Environment files
+*.env
+*.env.*
