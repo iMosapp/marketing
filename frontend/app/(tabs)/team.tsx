@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Modal,
+  Alert,
   Alert,
   Platform,
   KeyboardAvoidingView,
