@@ -720,6 +720,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  selectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#1C1C1E',
+    gap: 12,
+  },
+  selectHeaderTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#8E8E93',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
