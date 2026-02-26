@@ -66,11 +66,21 @@ Full-stack Relationship Management System (RMS) for sales teams. Features includ
 - Database: MongoDB (local in preview, Emergent-hosted in production)
 - 3rd Party: OpenAI (Jessi AI), Resend (email), Twilio (SMS - mocked)
 
+### Session - Feb 26, 2026 (Fork: Build Fix)
+- [x] **Fixed 4 broken Toast import paths** (Feb 26, 2026):
+  - `app/(tabs)/team.tsx`: `../components/common/Toast` → `../../components/common/Toast`
+  - `app/admin/onboarding-settings.tsx`: `../components/common/Toast` → `../../components/common/Toast`
+  - `app/admin/lead-sources/index.tsx`: `../../components/common/Toast` → `../../../components/common/Toast`
+  - `app/partner/agreement/[agreementId].tsx`: `../../components/common/Toast` → `../../../components/common/Toast`
+- [x] **Verified all session fixes intact**: Login, all 5 tabs, Website field, Congrats Cards, Lead Sources, Admin Dashboard, admin-reset endpoint
+- Testing: 100% pass rate (iteration_35.json)
+
 ## Known Issues
 - User account inactive status on production (needs admin reactivation)
 - Twilio SMS is in mock mode
 - React Hydration Error #418 (cosmetic, not blocking)
 - Password stored as plain text (security risk, needs bcrypt refactor)
+- ~25 files still use RN Modal instead of WebModal (non-blocking, buttons work via IS_WEB checks)
 
 ## Prioritized Backlog
 ### P0 (Critical)
