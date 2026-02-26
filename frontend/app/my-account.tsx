@@ -45,7 +45,7 @@ export default function MyAccountScreen() {
 
   const fetchStoreSlug = async () => {
     try {
-      const res = await api.get(`/stores/${user?.store_id}`);
+      const res = await api.get(`/admin/stores/${user?.store_id}`);
       if (res.data?.slug) {
         setStoreSlug(res.data.slug);
       }
