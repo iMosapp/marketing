@@ -1034,4 +1034,57 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  // Link existing account/user
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+    marginLeft: 'auto',
+    marginRight: 8,
+  },
+  linkButtonText: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  linkPanel: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  linkSearchInput: {
+    padding: 12,
+    fontSize: 15,
+    color: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  linkEmptyText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+    padding: 20,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  linkItemName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#FFF',
+  },
+  linkItemSub: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
 });
