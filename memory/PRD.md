@@ -22,6 +22,18 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
   - Fixed chat header dropdown menu (Clear History, Delete Channel)
   - Replaced Pressable overlay pattern with backdrop+dropdown siblings using responder system
   - Create Channel panel, channel row click, message input all verified working on web
+- [x] **Delete Contacts — Single + Bulk** (Feb 26, 2026):
+  - Backend: DELETE /api/contacts/{user_id}/{contact_id} and POST /api/contacts/{user_id}/bulk-delete
+  - Frontend: Select mode with checkboxes, select all, bulk delete with confirmation
+  - Long-press on contact enters select mode
+- [x] **Digital Card Layout — Social Links above Voice Recorder** (Feb 26, 2026):
+  - Reordered Social Media Links section above Voicemail Greeting in my-profile.tsx
+- [x] **Team Chat Channel Search/Filter Bar** (Feb 26, 2026):
+  - Added search input above channel list in Team Chat
+  - Filters channels by name in real-time, clear button to reset
+- [x] **Org/Account/User Linking Verified** (Feb 26, 2026):
+  - Admin > Organizations, Accounts, Users pages all accessible
+  - User detail page has Change Organization and Assign Store modals
 - [x] Inbox: removed SMS/Email toggle pills, inline email prompt
 - [x] Avatar system: auto-backfill thumbnails from raw photos (Feb 25, 2026)
 - [x] Image quality: 1080px for outbound sharing (Feb 25, 2026)
