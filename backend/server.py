@@ -54,6 +54,39 @@ async def root():
 async def api_health():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
+@api_router.get("/debug/db-info")
+async def debug_db_info():
+    """Temporary diagnostic endpoint to debug production database connection"""
+    db = get_db()
+    mongo_url = os.environ.get('MONGO_URL', 'NOT SET')
+    db_name_env = os.environ.get('DB_NAME', 'NOT SET')
+    
+    # Mask the MONGO_URL for security (show only host/db parts)
+    masked_url = mongo_url
+    if '@' in mongo_url:
+        parts = mongo_url.split('@')
+        masked_url = f"***@{parts[-1]}"
+    
+    result = {
+        "mongo_url_masked": masked_url,
+        "db_name_env": db_name_env,
+        "actual_db_name": db.name if db else "NO CONNECTION",
+        "user_count": 0,
+        "forest_exists": False,
+    }
+    
+    if db:
+        try:
+            result["user_count"] = await db.users.count_documents({})
+            forest = await db.users.find_one({"email": "forest@imosapp.com"}, {"_id": 0, "email": 1, "name": 1, "status": 1, "role": 1})
+            result["forest_exists"] = forest is not None
+            if forest:
+                result["forest_user"] = forest
+        except Exception as e:
+            result["error"] = str(e)
+    
+    return result
+
 # ============= BRANDING / STATIC ASSETS =============
 @api_router.get("/branding/logo")
 async def get_branding_logo():
