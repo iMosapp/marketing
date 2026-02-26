@@ -63,6 +63,25 @@ export default function PublicReviewPage() {
     Linking.openURL(url);
   };
 
+  const handleSubmitFeedback = async () => {
+    if (fbRating === 0) return;
+    setFbSubmitting(true);
+    try {
+      await api.post(`/review/submit/${storeSlug}`, {
+        customer_name: fbName.trim() || 'Anonymous',
+        rating: fbRating,
+        text_review: fbText.trim() || null,
+        salesperson_id: sp || null,
+        salesperson_name: storeData?.salesperson?.name || null,
+      });
+      setFbSubmitted(true);
+    } catch (e) {
+      console.error('Feedback error:', e);
+    } finally {
+      setFbSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
