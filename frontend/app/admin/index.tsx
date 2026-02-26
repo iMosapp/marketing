@@ -785,7 +785,7 @@ export default function AdminDashboard() {
 
               <TouchableOpacity 
                 style={styles.quickStatCard}
-                onPress={() => router.push('/admin/directory')}
+                onPress={() => router.push('/admin/users')}
                 data-testid="stat-employees"
               >
                 <View style={[styles.quickStatIcon, { backgroundColor: '#AF52DE20' }]}>
