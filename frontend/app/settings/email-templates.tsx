@@ -43,7 +43,7 @@ export default function EmailTemplatesSettings() {
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showsetShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [formName, setFormName] = useState('');
   const [formSubject, setFormSubject] = useState('');

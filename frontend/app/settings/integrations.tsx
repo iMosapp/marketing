@@ -40,7 +40,7 @@ const { showToast } = useToast();
   
   // API Keys
   const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [showNewKeysetShowNewKeyModal] = useState(false);
+  const [showNewKeyModal, setShowNewKeyModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [creatingKey, setCreatingKey] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
@@ -48,7 +48,7 @@ const { showToast } = useToast();
   // Webhooks
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [webhookEvents, setWebhookEvents] = useState<Record<string, string>>({});
-  const [showNewWebhooksetShowNewWebhookModal] = useState(false);
+  const [showNewWebhookModal, setShowNewWebhookModal] = useState(false);
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', events: [] as string[] });
   
   // Providers

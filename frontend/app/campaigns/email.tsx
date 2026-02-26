@@ -46,7 +46,7 @@ export default function EmailCampaignsPage() {
   const { user } = useAuthStore();
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showsetShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<EmailCampaign | null>(null);
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');

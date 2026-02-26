@@ -50,7 +50,7 @@ export default function SharedInboxesPage() {
   const [users, setUsers] = useState<User[]>([]);
   
   // Modals
-  const [showCreatesetShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAssignsetShowAssignModal] = useState(false);
   const [selectedInbox, setSelectedInbox] = useState<SharedInbox | null>(null);
   
