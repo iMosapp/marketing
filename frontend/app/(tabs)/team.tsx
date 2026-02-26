@@ -516,6 +516,7 @@ export default function TeamChatScreen() {
               loadMembers();
               setShowCreateModal(true);
             }}
+            data-testid="create-channel-btn"
           >
             <Ionicons name="add-circle" size={28} color={COLORS.accent} />
           </TouchableOpacity>
