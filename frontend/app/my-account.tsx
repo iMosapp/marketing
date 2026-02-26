@@ -53,9 +53,9 @@ export default function MyAccountScreen() {
   };
 
   const getReviewUrl = () => {
-    const slug = storeSlug || 'my-store';
+    if (!storeSlug) return '';
     const spParam = user?._id ? `?sp=${user._id}` : '';
-    return `${PROD_BASE}/review/${slug}${spParam}`;
+    return `${PROD_BASE}/review/${storeSlug}${spParam}`;
   };
 
   const handleCopyReviewLink = async () => {
