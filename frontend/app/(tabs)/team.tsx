@@ -1027,6 +1027,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
+
+  // Channel Search
+  channelSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  channelSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    padding: 0,
+  },
   emptyList: {
     flex: 1,
   },
