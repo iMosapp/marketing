@@ -468,19 +468,26 @@ async def startup_event():
     logger.info("iMOs API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
     
-    # Create database indexes for performance
+    # Create database indexes for performance (non-blocking)
     try:
+        import asyncio
         from routers.database import get_db
         db = get_db()
         if db is not None:
-            await db.contacts.create_index("user_id")
-            await db.contacts.create_index([("first_name", 1)])
-            await db.contacts.create_index([("user_id", 1), ("first_name", 1)])
-            await db.users.create_index("email", unique=True, sparse=True)
-            await db.users.create_index("role")
-            await db.contact_photos.create_index("contact_id", unique=True)
-            await db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)])
-            logger.info("Database indexes created/verified")
+            # Give index creation 15 seconds max, don't block startup
+            try:
+                await asyncio.wait_for(asyncio.gather(
+                    db.contacts.create_index("user_id"),
+                    db.contacts.create_index([("first_name", 1)]),
+                    db.contacts.create_index([("user_id", 1), ("first_name", 1)]),
+                    db.users.create_index("email", unique=True, sparse=True),
+                    db.users.create_index("role"),
+                    db.contact_photos.create_index("contact_id", unique=True),
+                    db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
+                ), timeout=15)
+                logger.info("Database indexes created/verified")
+            except asyncio.TimeoutError:
+                logger.warning("Index creation timed out - will retry on first request")
     except Exception as e:
         logger.warning(f"Index creation skipped: {e}")
     
