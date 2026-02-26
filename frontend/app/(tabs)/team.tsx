@@ -409,33 +409,6 @@ export default function TeamChatScreen() {
         >
           <Ionicons name="ellipsis-vertical" size={18} color={COLORS.textSecondary} />
         </TouchableOpacity>
-        
-        {/* Web dropdown menu */}
-        {Platform.OS === 'web' && channelMenuId === item.id && (
-          <View style={styles.channelDropdown}>
-            <TouchableOpacity 
-              style={styles.channelDropdownItem}
-              onPress={() => { setChannelMenuId(null); setSelectedChannel(item); loadMembers(); }}
-            >
-              <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
-              <Text style={styles.channelDropdownText}>Open Chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.channelDropdownItem}
-              onPress={() => { setChannelMenuId(null); clearHistory(item); }}
-            >
-              <Ionicons name="trash-outline" size={16} color="#FF9500" />
-              <Text style={[styles.channelDropdownText, { color: '#FF9500' }]}>Clear History</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.channelDropdownItem}
-              onPress={() => { setChannelMenuId(null); deleteChannel(item); }}
-            >
-              <Ionicons name="close-circle-outline" size={16} color="#FF3B30" />
-              <Text style={[styles.channelDropdownText, { color: '#FF3B30' }]}>Delete Channel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
