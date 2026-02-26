@@ -650,6 +650,42 @@ export default function MoreScreen() {
           </View>
         </View>
         
+        {/* Quick Settings Row - Account Setup */}
+        {(isSuperAdmin || user?.role === 'org_admin' || user?.role === 'store_manager') && (
+          <View style={styles.quickSettingsRow}>
+            <TouchableOpacity
+              style={styles.quickSettingsBtn}
+              onPress={() => router.push('/settings/store-profile' as any)}
+              data-testid="quick-account-setup"
+            >
+              <View style={[styles.quickSettingsIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="storefront" size={18} color="#34C759" />
+              </View>
+              <Text style={styles.quickSettingsLabel}>Account Setup</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickSettingsBtn}
+              onPress={() => router.push('/settings/brand-kit' as any)}
+              data-testid="quick-brand-kit"
+            >
+              <View style={[styles.quickSettingsIcon, { backgroundColor: '#C9A96220' }]}>
+                <Ionicons name="color-palette" size={18} color="#C9A962" />
+              </View>
+              <Text style={styles.quickSettingsLabel}>Brand Kit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickSettingsBtn}
+              onPress={() => router.push('/settings/review-links' as any)}
+              data-testid="quick-review-links"
+            >
+              <View style={[styles.quickSettingsIcon, { backgroundColor: '#FFD60A20' }]}>
+                <Ionicons name="star" size={18} color="#FFD60A" />
+              </View>
+              <Text style={styles.quickSettingsLabel}>Review Links</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
         
