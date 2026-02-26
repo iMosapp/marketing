@@ -567,18 +567,25 @@ export default function MyProfileScreen() {
                     <Ionicons name={platform.icon as any} size={20} color={platform.color} />
                     <Text style={styles.socialLabelText}>{platform.label}</Text>
                   </View>
-                  <TextInput
-                    style={styles.input}
-                    value={profile.social_links[platform.key] || ''}
-                    onChangeText={(text) => setProfile(prev => ({
-                      ...prev,
-                      social_links: { ...prev.social_links, [platform.key]: text }
-                    }))}
-                    placeholder={platform.placeholder}
-                    placeholderTextColor="#8E8E93"
-                    autoCapitalize="none"
-                    keyboardType="url"
-                  />
+                  <View style={styles.socialInputRow}>
+                    <View style={styles.socialPrefix}>
+                      <Text style={styles.socialPrefixText}>{platform.prefix}</Text>
+                    </View>
+                    <TextInput
+                      style={[styles.input, styles.socialInput]}
+                      value={profile.social_links[platform.key] || ''}
+                      onChangeText={(text) => {
+                        const cleaned = text.replace(/^@/, '');
+                        setProfile(prev => ({
+                          ...prev,
+                          social_links: { ...prev.social_links, [platform.key]: cleaned }
+                        }));
+                      }}
+                      placeholder={platform.placeholder}
+                      placeholderTextColor="#8E8E93"
+                      autoCapitalize="none"
+                    />
+                  </View>
                 </View>
               ))}
             </View>
