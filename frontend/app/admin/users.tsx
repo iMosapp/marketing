@@ -549,8 +549,69 @@ export default function UsersScreen() {
               </View>
             )}
           </ScrollView>
-        </SafeAreaView>
-      </Modal>
+          </View>
+        </View>
+      ) : (showAddModal && !createdUser) ? (
+        <Modal
+          visible={true}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowAddModal(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <WebSafeButton
+                onPress={() => { setShowAddModal(false); resetAddForm(); }}
+                variant="ghost"
+                testID="modal-cancel"
+              >
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </WebSafeButton>
+              <Text style={styles.modalTitle}>Add User</Text>
+              <WebSafeButton
+                onPress={handleCreateUser}
+                disabled={creating}
+                loading={creating}
+                variant="ghost"
+                testID="modal-create"
+              >
+                <Text style={styles.modalSave}>Create</Text>
+              </WebSafeButton>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.inputLabel}>Name *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Full name"
+                placeholderTextColor="#8E8E93"
+                value={newUserName}
+                onChangeText={setNewUserName}
+                autoCapitalize="words"
+              />
+              <Text style={styles.inputLabel}>Email *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="email@example.com"
+                placeholderTextColor="#8E8E93"
+                value={newUserEmail}
+                onChangeText={setNewUserEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Text style={styles.inputLabel}>Phone (optional)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="+1 555 123 4567"
+                placeholderTextColor="#8E8E93"
+                value={newUserPhone}
+                onChangeText={setNewUserPhone}
+                keyboardType="phone-pad"
+              />
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      ) : null)}
 
       {/* Success Modal with Credentials - web-compatible */}
       {!!createdUser && (Platform.OS === 'web' ? (
