@@ -785,7 +785,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  // Section Wrapper
+  // Profile Info
+  profileInfo: {
     flex: 1,
   },
   profileName: {
