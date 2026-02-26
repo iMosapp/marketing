@@ -426,6 +426,7 @@ export default function OrganizationDetailScreen() {
                         key={store._id} 
                         style={styles.linkItem}
                         onPress={() => linkStoreToOrg(store._id, store.name)}
+                        accessibilityRole="button"
                       >
                         <Ionicons name="storefront-outline" size={20} color="#34C759" />
                         <View style={{ flex: 1, marginLeft: 10 }}>
