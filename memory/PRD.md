@@ -39,7 +39,7 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
   - Fixed "Object error" on web: FormData photo now uses fetch+blob conversion
   - New "Create Congrats Card" page at /settings/create-congrats
   - Full sharing options after creation: Copy Link, Download, View Card, SMS, Email, Facebook, Twitter
-  - **Relocated to QUICK ACTIONS** under My Account at top of More page (next to "My Digital Card")
+  - **Relocated to My Account → QUICK ACTIONS** next to "My Digital Card", with "Edit Digital Card" moved down (Feb 26, 2026)
   - Admin > Organizations, Accounts, Users pages all accessible
   - User detail page has Change Organization and Assign Store modals
   - **NEW: "Link Existing Account"** button on Org detail page — opens searchable panel of unlinked accounts, one-click to link
