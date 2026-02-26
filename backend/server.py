@@ -15,6 +15,8 @@ from datetime import datetime
 # Load environment first
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+# Load local overrides (not committed to git) - these take priority
+load_dotenv(ROOT_DIR / '.env.local', override=True)
 
 # Import routers (after env is loaded)
 from routers import auth, contacts, tasks, messages, calls, campaigns, admin, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin
