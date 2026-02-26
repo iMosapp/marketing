@@ -505,6 +505,23 @@ export default function TeamChatScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Channel Search Bar */}
+        <View style={styles.channelSearchBar}>
+          <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+          <TextInput
+            style={styles.channelSearchInput}
+            value={channelSearch}
+            onChangeText={setChannelSearch}
+            placeholder="Search channels..."
+            placeholderTextColor={COLORS.textSecondary}
+          />
+          {channelSearch.length > 0 && (
+            <TouchableOpacity onPress={() => setChannelSearch('')}>
+              <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Channel List */}
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -512,7 +529,7 @@ export default function TeamChatScreen() {
           </View>
         ) : (
           <FlatList
-            data={channels}
+            data={filteredChannels}
             keyExtractor={(item) => item.id}
             renderItem={renderChannel}
             refreshControl={
