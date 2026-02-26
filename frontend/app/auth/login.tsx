@@ -64,8 +64,21 @@ export default function LoginScreen() {
     // Load remembered email
     loadRememberedEmail();
     
-    // Auto-fill from URL params (invite link)
+    // Auto-refresh if cached code is stale (fixes Cloudflare caching dead JS bundles)
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      fetch('/api/build-version')
+        .then(r => r.json())
+        .then(data => {
+          const stored = localStorage.getItem('imos_build_version');
+          if (stored && stored !== data.version) {
+            localStorage.setItem('imos_build_version', data.version);
+            window.location.reload();
+          } else {
+            localStorage.setItem('imos_build_version', data.version);
+          }
+        })
+        .catch(() => {});
+      
       const params = new URLSearchParams(window.location.search);
       const urlEmail = params.get('email');
       const urlPassword = params.get('password');
