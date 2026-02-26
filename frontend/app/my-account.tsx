@@ -250,11 +250,11 @@ export default function MyAccountScreen() {
       onPress: () => router.push('/voice-training'),
     },
     {
-      icon: 'sparkles',
-      title: 'Train Jessi AI',
-      subtitle: 'Chat with your AI assistant',
-      color: '#C9A962',
-      onPress: () => router.push('/jessie'),
+      icon: 'chatbubbles',
+      title: 'Review Approvals',
+      subtitle: 'Approve customer reviews',
+      color: '#AF52DE',
+      onPress: () => router.push('/settings/review-approvals'),
     },
     {
       icon: 'person',
