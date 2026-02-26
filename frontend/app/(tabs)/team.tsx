@@ -6,6 +6,10 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+  Platform,
   KeyboardAvoidingView,
   Image,
 } from 'react-native';
