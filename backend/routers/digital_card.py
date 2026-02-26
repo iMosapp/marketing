@@ -295,6 +295,11 @@ async def get_store_card_data(store_slug: str):
 
     store = await db.stores.find_one({"slug": store_slug})
     if not store:
+        # Fallback: try as org slug
+        org = await db.organizations.find_one({"slug": store_slug})
+        if org:
+            store = await db.stores.find_one({"organization_id": str(org["_id"])})
+    if not store:
         raise HTTPException(status_code=404, detail="Store not found")
 
     store_id = str(store["_id"])
