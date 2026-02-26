@@ -390,14 +390,10 @@ export default function UsersScreen() {
         />
       )}
 
-      {/* Add User Modal */}
-      <Modal
-        visible={showAddModal && !createdUser}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowAddModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
+      {/* Add User Modal - web-compatible */}
+      {(showAddModal && !createdUser) && (Platform.OS === 'web' ? (
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }]}>
+          <View style={[styles.modalContainer, { maxWidth: 500, maxHeight: '90vh', borderRadius: 16, overflow: 'hidden' }]}>
           <View style={styles.modalHeader}>
             <WebSafeButton
               onPress={() => { setShowAddModal(false); resetAddForm(); }}
