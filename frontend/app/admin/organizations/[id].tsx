@@ -246,23 +246,17 @@ export default function OrganizationDetailScreen() {
     }
   };
 
-  // Link a user to this org
+  // Link a user to this org — immediate action, no confirm dialog
   const linkUserToOrg = async (userId: string, userName: string) => {
-    showConfirm(
-      'Link User',
-      `Link "${userName}" to this organization?`,
-      async () => {
-        try {
-          await api.put(`/admin/users/${userId}`, { organization_id: id });
-          showSimpleAlert('Success', `${userName} linked to this organization`);
-          setShowLinkUser(false);
-          setLinkSearch('');
-          loadHierarchy();
-        } catch (error) {
-          showSimpleAlert('Error', 'Failed to link user');
-        }
-      }
-    );
+    try {
+      await api.put(`/admin/users/${userId}`, { organization_id: id });
+      showSimpleAlert('Success', `${userName} linked to this organization`);
+      setShowLinkUser(false);
+      setLinkSearch('');
+      loadHierarchy();
+    } catch (error) {
+      showSimpleAlert('Error', 'Failed to link user');
+    }
   };
   
   const renderUserBadge = (user: UserInfo, small = false) => (
