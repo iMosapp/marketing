@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -51,7 +51,8 @@ export default function CampaignDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
   
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [campaign, setCampaign] = useState<any>(null);

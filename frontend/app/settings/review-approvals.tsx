@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -32,7 +32,8 @@ interface PendingReview {
 export default function ReviewApprovalsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [reviews, setReviews] = useState<PendingReview[]>([]);
+const { showToast } = useToast();
+    const [reviews, setReviews] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);

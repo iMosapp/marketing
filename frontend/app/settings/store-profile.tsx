@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -34,7 +34,8 @@ const DEFAULT_HOURS = {
 export default function StoreProfileScreen() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [store, setStore] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);

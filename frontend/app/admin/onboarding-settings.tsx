@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -35,7 +35,8 @@ export default function OnboardingSettingsScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>(null);
   const [placeholders, setPlaceholders] = useState<any[]>([]);

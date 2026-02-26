@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -71,7 +71,8 @@ const DEFAULT_ESCALATION_KEYWORDS = ['urgent', 'emergency', 'complaint', 'refund
 export default function PersonaSettings() {
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<PersonaSettings>({
     tone: 'friendly',

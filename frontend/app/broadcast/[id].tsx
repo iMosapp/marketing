@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -48,7 +48,8 @@ export default function BroadcastDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
   
-  const [broadcast, setBroadcast] = useState<Broadcast | null>(null);
+const { showToast } = useToast();
+    const [broadcast, setBroadcast] = useState<Broadcast | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);

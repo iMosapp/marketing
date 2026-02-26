@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -25,7 +25,8 @@ export default function CalendarSettingsScreen() {
   const params = useLocalSearchParams();
   const { user } = useAuthStore();
   
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleEmail, setGoogleEmail] = useState<string | null>(null);
   const [nativeCalendarPermission, setNativeCalendarPermission] = useState<string>('undetermined');

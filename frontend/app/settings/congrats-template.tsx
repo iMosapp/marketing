@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -43,7 +43,8 @@ const HEADLINES = [
 export default function CongratsTemplateScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
   // Template settings

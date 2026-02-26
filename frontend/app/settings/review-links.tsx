@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -37,7 +37,8 @@ const REVIEW_PLATFORMS = [
 export default function ReviewLinksScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [links, setLinks] = useState<ReviewLinks>({
     google: null,

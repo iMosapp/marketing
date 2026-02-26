@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -39,7 +39,8 @@ const SOCIAL_PLATFORMS = [
 export default function MyProfileScreen() {
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [generatingBio, setGeneratingBio] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);

@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -34,7 +34,8 @@ interface Provider {
 export default function IntegrationsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<TabType>('api-keys');
+const { showToast } = useToast();
+    const [activeTab, setActiveTab] = useState<TabType>('api-keys');
   const [loading, setLoading] = useState(true);
   
   // API Keys

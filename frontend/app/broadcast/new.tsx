@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect } from 'react';
 import {
   View,
@@ -60,7 +60,8 @@ export default function NewBroadcastScreen() {
   const { user } = useAuthStore();
   
   // Form state
-  const [name, setName] = useState('');
+const { showToast } = useToast();
+    const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<{ uri: string; type: string; name: string }[]>([]);

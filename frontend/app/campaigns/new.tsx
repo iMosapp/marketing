@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState } from 'react';
 import {
   View,
@@ -37,7 +37,8 @@ export default function CampaignBuilderScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
-  const [campaign, setCampaign] = useState({
+const { showToast } = useToast();
+    const [campaign, setCampaign] = useState({
     name: '',
     type: 'check_in' as 'birthday' | 'anniversary' | 'check_in' | 'sold_followup' | 'custom',
     triggerTag: '',

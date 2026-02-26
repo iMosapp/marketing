@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -20,7 +20,8 @@ import { useToast } from '../../components/common/Toast';
 export default function PartnerAgreementSigningPage() {
   const { agreementId, payment, session_id } = useLocalSearchParams();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
   const [agreement, setAgreement] = useState<any>(null);
   const [signing, setSigning] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);

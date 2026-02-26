@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -33,7 +33,8 @@ interface LeadSource {
 export default function LeadSourcesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [sources, setSources] = useState<LeadSource[]>([]);
+const { showToast } = useToast();
+    const [sources, setSources] = useState<LeadSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
