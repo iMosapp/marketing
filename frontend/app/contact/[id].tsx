@@ -612,6 +612,23 @@ export default function ContactDetailScreen() {
       setSaving(false);
     }
   };
+
+  const handleDeleteContact = () => {
+    if (isNewContact) return;
+    showConfirm(
+      'Delete Contact',
+      `Delete "${contact.first_name}"? This cannot be undone.`,
+      async () => {
+        try {
+          await contactsAPI.delete(id as string);
+          showToast('Contact deleted');
+          router.back();
+        } catch (error: any) {
+          showSimpleAlert('Error', error?.response?.data?.detail || 'Failed to delete contact');
+        }
+      }
+    );
+  };
   
   const filteredContacts = allContacts.filter(c => {
     const name = `${c.first_name} ${c.last_name || ''}`.toLowerCase();
