@@ -778,40 +778,49 @@ export default function TeamChatScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Chat header dropdown menu (web) */}
+      {/* Chat header dropdown: backdrop + menu as siblings (web) */}
       {Platform.OS === 'web' && showChatMenu && selectedChannel && (
-        <View 
-          style={{
-            position: 'fixed' as any,
-            top: 56,
-            right: 8,
-            backgroundColor: '#2C2C2E',
-            borderRadius: 12,
-            overflow: 'hidden' as any,
-            minWidth: 180,
-            zIndex: 99999,
-            // @ts-ignore
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-          }}
-          data-testid="chat-action-menu"
-        >
-          <TouchableOpacity 
-            style={styles.channelDropdownItem}
-            onPress={() => { setShowChatMenu(false); clearHistory(selectedChannel); }}
-            data-testid="chat-clear-history-btn"
+        <>
+          <View 
+            style={{
+              position: 'fixed' as any,
+              top: 0, left: 0, right: 0, bottom: 0,
+              zIndex: 9998,
+              backgroundColor: 'transparent',
+            }}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={() => setShowChatMenu(false)}
+          />
+          <View 
+            style={{
+              position: 'fixed' as any,
+              top: 56,
+              right: 8,
+              backgroundColor: '#2C2C2E',
+              borderRadius: 12,
+              overflow: 'hidden' as any,
+              minWidth: 180,
+              zIndex: 99999,
+              // @ts-ignore
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            }}
           >
-            <Ionicons name="trash-outline" size={16} color="#FF9500" />
-            <Text style={[styles.channelDropdownText, { color: '#FF9500' }]}>Clear History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.channelDropdownItem}
-            onPress={() => { setShowChatMenu(false); deleteChannel(selectedChannel); }}
-            data-testid="chat-delete-channel-btn"
-          >
-            <Ionicons name="close-circle-outline" size={16} color="#FF3B30" />
-            <Text style={[styles.channelDropdownText, { color: '#FF3B30' }]}>Delete Channel</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={styles.channelDropdownItem}
+              onPress={() => { setShowChatMenu(false); clearHistory(selectedChannel); }}
+            >
+              <Ionicons name="trash-outline" size={16} color="#FF9500" />
+              <Text style={[styles.channelDropdownText, { color: '#FF9500' }]}>Clear History</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.channelDropdownItem}
+              onPress={() => { setShowChatMenu(false); deleteChannel(selectedChannel); }}
+            >
+              <Ionicons name="close-circle-outline" size={16} color="#FF3B30" />
+              <Text style={[styles.channelDropdownText, { color: '#FF3B30' }]}>Delete Channel</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       {/* Messages */}
