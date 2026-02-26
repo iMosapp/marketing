@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://congrats-card-fix.preview.emergentagent.com';
+        : 'https://app.imosapp.com';
       
       const checkoutData: any = {
         plan_id: planId,
