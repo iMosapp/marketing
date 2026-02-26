@@ -243,18 +243,18 @@ export default function MyAccountScreen() {
       onPress: () => router.push('/settings/my-profile'),
     },
     {
-      icon: 'mic',
-      title: 'Voice Training',
-      subtitle: 'Train AI with your voice',
-      color: '#FF3B30',
-      onPress: () => router.push('/voice-training'),
-    },
-    {
       icon: 'chatbubbles',
       title: 'Review Approvals',
       subtitle: 'Approve customer reviews',
       color: '#AF52DE',
       onPress: () => router.push('/settings/review-approvals'),
+    },
+    {
+      icon: 'mic',
+      title: 'Voice Training',
+      subtitle: 'Train AI with your voice',
+      color: '#FF3B30',
+      onPress: () => router.push('/voice-training'),
     },
     {
       icon: 'person',
