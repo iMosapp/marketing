@@ -95,6 +95,14 @@ export default function TeamChatScreen() {
   const [channelMenuId, setChannelMenuId] = useState<string | null>(null);
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({top: 80, right: 16});
+  const [channelSearch, setChannelSearch] = useState('');
+  
+  // Filtered channels based on search
+  const filteredChannels = useMemo(() => {
+    if (!channelSearch.trim()) return channels;
+    const q = channelSearch.toLowerCase();
+    return channels.filter(ch => ch.name.toLowerCase().includes(q));
+  }, [channels, channelSearch]);
   
   // Refs
   const flatListRef = useRef<FlatList>(null);
