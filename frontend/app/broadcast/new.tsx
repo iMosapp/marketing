@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
 

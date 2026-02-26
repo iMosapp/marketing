@@ -17,7 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import Toggle from '../../components/Toggle';
 import VoiceInput from '../../components/VoiceInput';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 interface PersonaSettings {
   tone: 'professional' | 'friendly' | 'casual' | 'formal';

@@ -22,7 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import api from '../../services/api';
 import { format, parse } from 'date-fns';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 interface SequenceStep {
   id: string;

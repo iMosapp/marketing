@@ -18,7 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import * as Calendar from 'expo-calendar';
 import { getCalendars, getSelectedCalendarId, setSelectedCalendarId } from '../../src/utils/calendar';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 export default function CalendarSettingsScreen() {
   const router = useRouter();

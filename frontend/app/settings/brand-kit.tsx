@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 const DEFAULT_COLORS = [
   '#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', 

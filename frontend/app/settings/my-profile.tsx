@@ -22,7 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import VoicemailRecorder from '../../components/VoicemailRecorder';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
 

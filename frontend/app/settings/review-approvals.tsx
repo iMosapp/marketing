@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 interface PendingReview {
   id: string;

@@ -18,7 +18,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { WebModal } from '../../components/WebModal';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../../components/common/Toast';
 
 type TabType = 'api-keys' | 'webhooks' | 'crm' | 'dms' | 'docs';
 
