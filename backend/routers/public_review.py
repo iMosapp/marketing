@@ -10,6 +10,16 @@ from routers.database import get_db
 router = APIRouter(prefix="/review", tags=["public-review"])
 
 
+async def find_store_by_slug(db, slug: str):
+    """Find a store by slug, falling back to org slug lookup."""
+    store = await db.stores.find_one({"slug": slug})
+    if not store:
+        org = await db.organizations.find_one({"slug": slug})
+        if org:
+            store = await db.stores.find_one({"organization_id": str(org["_id"])})
+    return store
+
+
 @router.get("/page/{store_slug}")
 async def get_review_page_data(store_slug: str, sp: str = None):
     """
