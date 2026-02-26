@@ -21,7 +21,11 @@ def get_db():
         mongo_url = os.environ.get('MONGO_URL')
         db_name = os.environ.get('DB_NAME')
         if mongo_url:
-            _client = AsyncIOMotorClient(mongo_url)
+            _client = AsyncIOMotorClient(
+                mongo_url,
+                serverSelectionTimeoutMS=30000,
+                connectTimeoutMS=30000,
+            )
             # Try to get database name from the MONGO_URL path first
             # (e.g. mongodb+srv://user:pass@host/my_database)
             try:
