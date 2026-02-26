@@ -714,11 +714,12 @@ async def get_conversation_info(conversation_id: str):
         "_id": str(conv["_id"]),
         "contact_name": conv.get("contact_name"),
         "contact_phone": conv.get("contact_phone"),
+        "contact_email": conv.get("contact_email"),
         "contact_photo": None,
         "status": conv.get("status", "active"),
     }
     
-    # Try to get contact photo
+    # Try to get contact photo and email
     contact_id = conv.get("contact_id")
     if contact_id:
         try:
@@ -726,6 +727,8 @@ async def get_conversation_info(conversation_id: str):
             if contact:
                 result["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
                 result["contact_name"] = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or result["contact_name"]
+                if not result["contact_email"] and contact.get("email"):
+                    result["contact_email"] = contact.get("email")
         except:
             pass
     
