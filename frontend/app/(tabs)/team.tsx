@@ -347,16 +347,19 @@ export default function TeamChatScreen() {
     };
 
     return (
-      <TouchableOpacity
+      <View
         style={[styles.channelItem, item.unread_count > 0 && styles.channelUnread]}
-        onPress={() => {
-          setSelectedChannel(item);
-          loadMembers();
-        }}
-        onLongPress={() => showChannelActions(item)}
-        activeOpacity={0.7}
         data-testid={`channel-${item.id}`}
       >
+        <TouchableOpacity
+          style={styles.channelTapArea}
+          onPress={() => {
+            setSelectedChannel(item);
+            loadMembers();
+          }}
+          onLongPress={() => showChannelActions(item)}
+          activeOpacity={0.7}
+        >
         <View style={styles.channelIcon}>
           {item.avatar ? (
             <Image source={{ uri: item.avatar }} style={styles.channelAvatar} />
