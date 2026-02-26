@@ -233,6 +233,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/congrats-template'),
           color: '#C9A962',
         },
+        {
+          icon: 'add-circle-outline',
+          title: 'Create Congrats Card',
+          subtitle: 'Make & share a card now',
+          onPress: () => router.push('/settings/create-congrats'),
+          color: '#34C759',
+        },
       ],
     },
     // Performance & Analytics
