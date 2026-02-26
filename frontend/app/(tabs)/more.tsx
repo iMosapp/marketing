@@ -557,9 +557,6 @@ export default function MoreScreen() {
             <Ionicons name={section.icon as any} size={20} color={section.color} />
           </View>
           <Text style={styles.sectionTitleText}>{section.title}</Text>
-          <View style={[styles.countBadge, { backgroundColor: `${section.color}20` }]}>
-            <Text style={[styles.countText, { color: section.color }]}>{itemCount}</Text>
-          </View>
           <Ionicons 
             name={isExpanded ? 'chevron-up' : 'chevron-down'} 
             size={20} 
