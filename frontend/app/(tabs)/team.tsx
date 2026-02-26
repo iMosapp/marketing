@@ -674,7 +674,7 @@ export default function TeamChatScreen() {
               )}
             </View>
           </View>
-        </Modal>
+        )}
       </SafeAreaView>
     );
   }
