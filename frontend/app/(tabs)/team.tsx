@@ -157,31 +157,6 @@ export default function TeamChatScreen() {
     }
   }, [selectedChannel, loadMessages]);
 
-  // Close menus on outside click (web)
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    if (!channelMenuId && !showChatMenu) return;
-    
-    const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target?.closest?.('[data-testid="channel-action-menu"]')) return;
-      if (target?.closest?.('[data-testid="chat-action-menu"]')) return;
-      if (target?.closest?.('[data-testid="channel-menu-btn"]')) return;
-      if (target?.closest?.('[data-testid="chat-options-btn"]')) return;
-      setChannelMenuId(null);
-      setShowChatMenu(false);
-    };
-    
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handler);
-    }, 10);
-    
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handler);
-    };
-  }, [channelMenuId, showChatMenu]);
-
   // Send message
   const sendMessage = async () => {
     if (!messageText.trim() || !selectedChannel || !user?._id || sending) return;
