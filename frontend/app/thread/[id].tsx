@@ -920,11 +920,20 @@ export default function ThreadScreen() {
       if (congratsCustomMessage.trim()) {
         formData.append('custom_message', congratsCustomMessage.trim());
       }
-      formData.append('photo', {
-        uri: congratsPhoto.uri,
-        type: congratsPhoto.type,
-        name: congratsPhoto.name,
-      } as any);
+      
+      // Handle photo differently for web vs mobile
+      if (IS_WEB) {
+        // On web, convert the URI to a Blob/File
+        const response = await fetch(congratsPhoto.uri);
+        const blob = await response.blob();
+        formData.append('photo', blob, congratsPhoto.name || 'photo.jpg');
+      } else {
+        formData.append('photo', {
+          uri: congratsPhoto.uri,
+          type: congratsPhoto.type,
+          name: congratsPhoto.name,
+        } as any);
+      }
 
       const response = await api.post('/congrats/create', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
