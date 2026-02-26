@@ -197,19 +197,28 @@ async def wrap_email_with_brand(html_content: str, user_id: str = None, store_id
     
     # Try to get brand kit from store, then org, then user
     if store_id:
-        store = await db.stores.find_one({"_id": ObjectId(store_id)})
-        if store:
-            brand_kit = store.get("email_brand_kit")
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+            if store:
+                brand_kit = store.get("email_brand_kit")
+        except Exception:
+            pass
     
     if not brand_kit and org_id:
-        org = await db.organizations.find_one({"_id": ObjectId(org_id)})
-        if org:
-            brand_kit = org.get("email_brand_kit")
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(org_id)})
+            if org:
+                brand_kit = org.get("email_brand_kit")
+        except Exception:
+            pass
     
     if not brand_kit and user_id:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if user:
-            brand_kit = user.get("email_brand_kit")
+        try:
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            if user:
+                brand_kit = user.get("email_brand_kit")
+        except Exception:
+            pass
     
     header, footer = get_brand_wrapper(brand_kit)
     
