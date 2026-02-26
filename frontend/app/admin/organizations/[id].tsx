@@ -212,23 +212,17 @@ export default function OrganizationDetailScreen() {
     }
   };
 
-  // Link a store to this org
+  // Link a store to this org — immediate action, no confirm dialog
   const linkStoreToOrg = async (storeId: string, storeName: string) => {
-    showConfirm(
-      'Link Account',
-      `Link "${storeName}" to this organization?`,
-      async () => {
-        try {
-          await api.put(`/admin/stores/${storeId}`, { organization_id: id });
-          showSimpleAlert('Success', `${storeName} linked to this organization`);
-          setShowLinkStore(false);
-          setLinkSearch('');
-          loadHierarchy();
-        } catch (error) {
-          showSimpleAlert('Error', 'Failed to link account');
-        }
-      }
-    );
+    try {
+      await api.put(`/admin/stores/${storeId}`, { organization_id: id });
+      showSimpleAlert('Success', `${storeName} linked to this organization`);
+      setShowLinkStore(false);
+      setLinkSearch('');
+      loadHierarchy();
+    } catch (error) {
+      showSimpleAlert('Error', 'Failed to link account');
+    }
   };
 
   // Load users not in this org
