@@ -29,6 +29,7 @@ export default function MyAccountScreen() {
   const [photoUrl, setPhotoUrl] = useState(user?.photo_url || null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Refresh user data when screen focuses
   useFocusEffect(
