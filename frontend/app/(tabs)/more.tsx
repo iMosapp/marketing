@@ -840,16 +840,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     flex: 1,
   },
-  countBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  countText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
   // Indented child item card
   menuItemCard: {
     flexDirection: 'row',
