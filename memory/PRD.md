@@ -1,5 +1,11 @@
 # iMOs - Product Requirements Document
 
+## CRITICAL — DO NOT MODIFY (Production will break)
+- **backend/.env** MUST contain `MONGO_URL` with the production Atlas connection string. NEVER remove it.
+- **backend/server.py** MUST use `load_dotenv(override=True)`. NEVER change to `override=False`. The Emergent platform injects `MONGO_URL=localhost` which is WRONG for production.
+- **backend/.env.local** MUST NOT be loaded. It was removed because it gets deployed to production and overrides the correct MONGO_URL.
+- **DB_NAME** in `.env` MUST be `imos-admin-test_database` — this is the production database name.
+
 ## Original Problem Statement
 Full-stack Relationship Management System (RMS) for sales teams. Features include contacts management, team chat, digital business cards, congrats cards, AI assistant (Jessi), admin panel, lead routing, and more.
 
