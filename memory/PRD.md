@@ -42,12 +42,15 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - Twilio SMS MOCKED
 - React Hydration Error #418
 - Email invite URL is hardcoded to `https://app.imosapp.com` (INTENTIONAL — do not change)
+- Authentication uses plain-text passwords (security risk, bcrypt refactor planned)
 
 ## Upcoming
 - (P1) Push notifications for mobile (Phase 2 — Expo Push)
 - (P1) Voice Help Assistant Backend
+- (P1) Refactor authentication to use hashed passwords (bcrypt)
 
 ## Future/Backlog (P2)
+- WhatsApp Integration
 - White-Label System (custom domains, org branding)
 - Enable Lead Notification System advanced features
 - Build full Inventory Management Module
