@@ -205,10 +205,14 @@ export default function PublicReviewPage() {
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.footer}
+            onPress={() => Linking.openURL('https://app.imosapp.com')}
+          >
             <Text style={styles.footerText}>Powered by </Text>
             <Text style={[styles.footerText, styles.footerBrand]}>iMOs</Text>
-          </View>
+            <Text style={styles.footerUrl}> — app.imosapp.com</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
