@@ -578,6 +578,7 @@ export default function OrganizationDetailScreen() {
                         key={user._id} 
                         style={styles.linkItem}
                         onPress={() => linkUserToOrg(user._id, user.name || user.email)}
+                        accessibilityRole="button"
                       >
                         <Ionicons name="person-outline" size={20} color="#007AFF" />
                         <View style={{ flex: 1, marginLeft: 10 }}>
