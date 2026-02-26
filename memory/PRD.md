@@ -5,121 +5,479 @@
 - **backend/server.py** MUST use `load_dotenv(override=True)`. NEVER change to `override=False`. The Emergent platform injects `MONGO_URL=localhost` which is WRONG for production.
 - **backend/.env.local** MUST NOT be loaded or created. It gets deployed to production and overrides the correct MONGO_URL.
 - **DB_NAME** in `.env` MUST be `imos-admin-test_database` — this is the production database name.
-- **frontend/services/api.ts** MUST use relative `/api` path for web (`Platform.OS === 'web'`). NEVER use `EXPO_PUBLIC_BACKEND_URL` for web — it bakes dead preview URLs into the JS bundle and breaks production login.
-- **Production MONGO_URL**: `mongodb+srv://imos-admin:d6daj3slqs2c73egs2k0@customer-apps.tuuucd.mongodb.net/imos-admin-test_database?appName=congrats-card-fix&maxPoolSize=5&retryWrites=true&timeoutMS=10000&w=majority`
-- **Production database**: `imos-admin-test_database` (NOT `imos-admin-mvpline_db`)
+- **frontend/services/api.ts** MUST use relative `/api` path for web (`Platform.OS === 'web'`). NEVER use `EXPO_PUBLIC_BACKEND_URL` for web — it bakes dead preview URLs into the JS bundle and breaks production.
+- **ALL frontend files** that make API calls MUST use `Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')` for the base URL. NEVER use env vars directly on web.
 
-## Original Problem Statement
-Full-stack Relationship Management System (RMS) for sales teams. Features include contacts management, team chat, digital business cards, congrats cards, AI assistant (Jessi), admin panel, lead routing, and more.
+---
 
-## Core Requirements
-- Multi-role authentication (super_admin, org_admin, store_manager, user)
-- Contact management with bulk operations
+## Current Architecture
+
+### Stack
+- **Frontend**: React Native Web (Expo SDK 54, Expo Router 6) — runs on port 3000
+- **Backend**: FastAPI 0.110.1 — runs on port 8001, all routes prefixed with `/api`
+- **Database**: MongoDB Atlas (pymongo 4.5.0, motor 3.3.1)
+- **Runtime**: Python 3.11, React 19.1.0, React Native 0.81.5
+
+### Environment Variables
+
+#### Backend (`/app/backend/.env`)
+| Key | Value | Purpose |
+|-----|-------|---------|
+| DB_NAME | imos-admin-test_database | Production database name |
+| MONGO_URL | mongodb+srv://imos-admin:d6daj3slqs2c73egs2k0@customer-apps.tuuucd.mongodb.net/imos-admin-test_database?... | Production MongoDB Atlas |
+| CORS_ORIGINS | * | CORS config |
+| RESEND_API_KEY | re_9NvFreuG_6deEy2V99qDhwjFCAx5fERPD | Resend email service |
+| SENDER_EMAIL | noreply@imosapp.com | From address for emails |
+| EMERGENT_LLM_KEY | sk-emergent-f03D630881c37F9Cf1 | OpenAI via Emergent |
+| TWILIO_ACCOUNT_SID | ACb3417cc4bd67d30b8f9fa1f2baa13233 | Twilio (MOCK mode) |
+| TWILIO_AUTH_TOKEN | d14071fb3d46653f5b46a52c4150be66 | Twilio (MOCK mode) |
+| TWILIO_PHONE_NUMBER | +18557657326 | Twilio phone |
+| APP_URL | https://app.imosapp.com | Production app URL |
+
+#### Frontend (`/app/frontend/.env`)
+| Key | Value | Purpose |
+|-----|-------|---------|
+| REACT_APP_BACKEND_URL | (preview URL - changes per fork) | Preview only |
+| EXPO_PUBLIC_BACKEND_URL | (preview URL - changes per fork) | Preview only — IGNORED on web |
+| WDS_SOCKET_PORT | 443 | WebSocket |
+| EXPO_TUNNEL_SUBDOMAIN | (changes per fork) | Expo tunnel |
+| EXPO_PACKAGER_HOSTNAME | (changes per fork) | Expo packager |
+| EXPO_USE_FAST_RESOLVER | 1 | Metro bundler |
+
+---
+
+## Database Schema (MongoDB Atlas: `imos-admin-test_database`)
+
+### Collections Referenced in Code (74 total)
+| Collection | Purpose |
+|-----------|---------|
+| users | User accounts (5 docs in production) |
+| contacts | Contact records |
+| contact_photos | Contact profile photos |
+| conversations | SMS/messaging conversations |
+| messages | Individual messages |
+| threads | Message threads |
+| calls | Call logs |
+| voicemails | Voicemail records |
+| tags | Contact tags |
+| tasks | Task/reminder records |
+| campaigns | SMS campaign definitions |
+| campaign_enrollments | Campaign enrollment tracking |
+| campaign_settings | Campaign configuration |
+| campaign_templates | Campaign message templates |
+| email_campaigns | Email campaign definitions |
+| email_templates | Email template content |
+| email_logs | Email send logs |
+| templates | SMS templates |
+| template_sends | Template send tracking |
+| broadcast (in code as broadcast) | Mass message broadcasts |
+| congrats_cards | Congratulations cards |
+| congrats_templates | Congrats card templates |
+| card_shares | Digital card share events |
+| card_events | Digital card interaction events |
+| organizations | Organization records |
+| stores | Store/dealership records |
+| teams | Team definitions |
+| team_channels | Team chat channels |
+| team_messages | Team chat messages |
+| team_members | Team membership |
+| team_invites | Team invitation records |
+| team_read_status | Team message read status |
+| shared_inboxes | Shared phone number inboxes |
+| lead_sources | Lead source configurations |
+| notifications | User notifications |
+| activity | Activity log entries |
+| member_activities | Member activity tracking |
+| ai_messages | AI assistant (Jessi) messages |
+| sops | Standard Operating Procedures |
+| sop_feedback | SOP feedback |
+| sop_progress | SOP completion tracking |
+| partner_agreements | Partner/reseller agreements |
+| partner_templates | Partner agreement templates |
+| partners | Partner records |
+| invoices | Invoice records |
+| subscriptions | Subscription records |
+| subscription_quotes | Subscription quote records |
+| subscription_cancellations | Cancellation records |
+| payment_transactions | Payment records |
+| discount_codes | Discount/promo codes |
+| inventory | Inventory items |
+| integrations | API key/webhook configs |
+| api_keys | API keys |
+| webhooks | Webhook definitions |
+| webhook_events | Webhook event logs |
+| webhook_logs | Webhook delivery logs |
+| short_urls | URL shortener records |
+| short_url_clicks | Short URL click tracking |
+| date_trigger_configs | Birthday/anniversary triggers |
+| date_trigger_log | Trigger execution log |
+| onboarding_settings | New user onboarding config |
+| demo_requests | Demo request submissions |
+| customer_feedback | Customer feedback records |
+| referrals | Referral tracking |
+| invite_shares | Invitation share tracking |
+| companies | Company records |
+| media | Media/file uploads |
+| sms_queue | SMS send queue |
+| weekly_kpis | Weekly KPI snapshots |
+| sync_logs | Data sync logs |
+| impersonation_sessions | Admin impersonation sessions |
+| transfer_logs | Contact transfer logs |
+| bulk_transfers | Bulk transfer operations |
+| reports (in code as weekly_kpis) | Report data |
+
+### Key User Schema
+```json
+{
+  "email": "string",
+  "password": "string (PLAIN TEXT - security risk)",
+  "name": "string",
+  "role": "super_admin | org_admin | store_manager | user",
+  "status": "active | inactive | null",
+  "is_active": "boolean | null",
+  "phone": "string",
+  "organization_id": "string",
+  "store_id": "string",
+  "social_links": { "instagram": "", "facebook": "", "linkedin": "", "twitter": "", "tiktok": "", "website": "" },
+  "bio": "string",
+  "title": "string",
+  "leaderboard_visible": "boolean",
+  "onboarding_completed": "boolean"
+}
+```
+
+### Key Contact Schema
+```json
+{
+  "user_id": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "email": "string",
+  "phone": "string",
+  "tags": ["string"],
+  "notes": "string",
+  "photo": "string (URL)",
+  "source": "string",
+  "created_at": "datetime"
+}
+```
+
+---
+
+## Backend API Routes (all prefixed with `/api`)
+
+### Authentication (`/api/auth`)
+- POST `/login` — User login (plain text password comparison)
+- POST `/signup` — User registration
+- POST `/forgot-password/request` — Generate reset code (DOES NOT send email)
+- POST `/forgot-password/verify` — Verify reset code
+- POST `/forgot-password/reset` — Reset password
+- POST `/admin-reset` — Emergency password reset (secret: `iMOs-Emergency-Reset-2026`)
+
+### Contacts (`/api/contacts`)
+- GET `/` — List contacts for user
+- POST `/` — Create contact
+- GET `/{id}` — Get single contact
+- PUT `/{id}` — Update contact
+- DELETE `/{id}` — Delete single contact
+- POST `/delete` — Bulk delete contacts
+- POST `/import` — Import contacts from CSV
+
+### Admin (`/api/admin`)
+- GET `/users` — List all users
+- POST `/users` — Create user
+- GET `/users/{id}` — Get user details
+- PUT `/users/{id}` — Update user
+- DELETE `/users/{id}` — Delete user
+- GET `/organizations` — List organizations
+- GET `/stores` — List stores
+- GET `/activity-feed` — Activity feed
+- POST `/impersonate` — Impersonate user
+
+### Messages (`/api/messages`)
+- GET `/{conversation_id}` — Get messages for conversation
+- POST `/send` — Send message (Twilio - MOCKED)
+
+### Team Chat (`/api/team-chat`)
+- GET `/channels` — List channels
+- POST `/channels` — Create channel
+- GET `/channels/{id}/messages` — Get channel messages
+- POST `/channels/{id}/messages` — Send message
+
+### Campaigns (`/api/campaigns`)
+- GET `/` — List campaigns
+- POST `/` — Create campaign
+- GET `/{id}` — Campaign details
+- PUT `/{id}` — Update campaign
+
+### Digital Card (`/api/card`)
+- GET `/{userId}` — Get public digital card
+
+### Congrats Cards (`/api/congrats`)
+- POST `/create` — Create congrats card
+- GET `/{id}` — Get congrats card
+
+### Lead Sources (`/api/lead-sources`)
+- GET `/` — List lead sources
+- POST `/` — Create lead source
+- GET `/{id}` — Lead source details
+- PUT `/{id}` — Update lead source
+- POST `/claim/{id}` — Claim a lead
+- GET `/team-inbox/{id}` — Team inbox conversations
+
+### Other Routes
+- `/api/tags` — Tag CRUD
+- `/api/tasks` — Task CRUD
+- `/api/templates` — SMS template CRUD
+- `/api/email` — Email template CRUD + sending
+- `/api/broadcast` — Mass messaging
+- `/api/calendar` — Calendar integration
+- `/api/integrations` — API keys/webhooks
+- `/api/partners` — Partner management
+- `/api/invoices` — Invoice management
+- `/api/subscriptions` — Subscription management
+- `/api/reports` — Report generation
+- `/api/leaderboard` — Leaderboard data
+- `/api/directory` — Company directory
+- `/api/sop` — SOPs
+- `/api/jessie` — AI assistant (OpenAI)
+- `/api/voice` — Voice features
+- `/api/notifications` — Notification CRUD
+- `/api/search` — Global search
+- `/api/profile` — Profile management
+- `/api/webhooks` — Webhook management
+- `/api/date-triggers` — Date-based triggers
+- `/api/onboarding-settings` — Onboarding config
+- `/api/demo-requests` — Demo request handling
+- `/api/team-invite` — Team invitations
+- `/api/review` — Public review pages
+- `/api/p` — Public landing pages
+- `/api/s` — URL shortener
+- `/api/scheduler` — Scheduler admin
+- `/api/admin/app-directory` — App directory sharing
+- `/api/admin/team` — Shared inboxes & transfers
+- `/api/webhooks/twilio` — Twilio webhooks
+- `/api/webhooks/inventory` — Inventory webhooks
+
+### Utility Endpoints (in server.py)
+- GET `/api/health` — Health check
+- GET `/api/debug/db-info` — Database diagnostic (TEMPORARY)
+- GET `/api/branding/logo` — Branding logo
+- GET/PUT `/api/users/{id}/leaderboard-settings` — Leaderboard prefs
+- GET/PUT `/api/users/{id}/review-links` — Review links
+- GET/PUT `/api/users/{id}/persona` — AI persona
+- PATCH `/api/users/{id}` — Partial user update
+- GET `/api/activity/{id}` — User activity
+- POST `/api/webhook/stripe` — Stripe webhook
+- WS `/api/ws/{user_id}` — WebSocket connection
+
+---
+
+## Frontend Routes
+
+### Tab Navigation (`app/(tabs)/`)
+| Route | File | Purpose |
+|-------|------|---------|
+| /inbox | inbox.tsx | Message inbox (My/Team) |
+| /dialer | dialer.tsx | Phone dialer |
+| /contacts | contacts.tsx | Contact list |
+| /team | team.tsx | Team chat |
+| /more | more.tsx | Settings/menu hub |
+
+### Main Menu (More tab → router.push paths)
+| Section | Route | Page |
+|---------|-------|------|
+| **Essentials** | /training-hub | Training Hub |
+| | /jessie | Ask Jessi (AI) |
+| | /tasks | Tasks & Reminders |
+| **Communication** | /(tabs)/dialer | Phone/Dialer |
+| | /broadcast | Broadcast |
+| | /campaigns | SMS Campaigns |
+| | /campaigns/email | Email Campaigns |
+| | /campaigns/dashboard | Campaign Dashboard |
+| | /settings/date-triggers | Date Triggers |
+| **Templates & Branding** | /settings/templates | SMS Templates |
+| | /settings/email-templates | Email Templates |
+| | /settings/brand-kit | Brand Kit |
+| | /settings/congrats-template | Congrats Cards |
+| **Performance** | /analytics | Analytics |
+| | /reports | Reports |
+| | /settings/email-analytics | Email Analytics |
+| | /admin/my-rankings | My Rankings |
+| **Contacts & Leads** | /admin/lead-sources | Lead Sources |
+| | /contacts/import | Import Contacts |
+| | /settings/tags | Contact Tags |
+| | /settings/review-links | Review Links |
+| | /settings/review-approvals | Review Approvals |
+| **Profile & AI** | /settings/my-profile | Digital Card |
+| | /settings/persona | AI Persona |
+| **Settings** | /settings/security | Security |
+| | /settings/toggle-style | SMS/Email Toggle |
+| | /settings/calendar | Calendar |
+| | /settings/integrations | Integrations |
+| **Administration** | /admin | Admin Dashboard |
+| | /admin/app-directory | App Directory |
+| | /settings/invite-team | Invite Team |
+| | /admin/organizations | Organizations |
+| | /admin/stores | Accounts/Stores |
+| | /admin/users | Users |
+| | /admin/individuals | Individuals |
+| | /admin/pending-users | Pending Users |
+| | /admin/partner-agreements | Partner Agreements |
+| | /admin/directory | Company Directory |
+| | /admin/shared-inboxes | Shared Inboxes |
+| | /admin/bulk-transfer | Bulk Transfer |
+| | /admin/phone-assignments | Phone Assignments |
+| | /admin/quotes | View Quotes |
+| | /admin/create-quote | Create Quote |
+| | /admin/discount-codes | Discount Codes |
+
+### Public/Standalone Routes
+| Route | File | Purpose |
+|-------|------|---------|
+| /card/[userId] | card/[userId].tsx | Public digital business card |
+| /congrats/[cardId] | congrats/[cardId].tsx | Public congrats card |
+| /p/[userId] | p/[userId].tsx | Public landing page |
+| /review/[storeSlug] | review/[storeSlug].tsx | Public review page |
+| /join/[code] | join/[code].tsx | Team join via invite code |
+| /my-account | my-account.tsx | My Account (Create Congrats Card here) |
+
+### Legacy `/imos/` Routes (mirror pages for public/embedded access)
+Full set of ~40 pages under `/app/imos/` that mirror the main app routes for public or embedded use.
+
+---
+
+## 3rd Party Integrations
+
+| Service | Status | Used For |
+|---------|--------|----------|
+| **MongoDB Atlas** | ACTIVE | Primary database |
+| **Resend** | ACTIVE (but email delivery may be failing) | Transactional emails |
+| **OpenAI** (via Emergent LLM key) | ACTIVE | Jessi AI assistant |
+| **Twilio** | MOCKED | SMS messaging |
+| **Stripe** | WEBHOOK ONLY | Payment processing (webhook handler exists) |
+
+---
+
+## Key Custom Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| WebModal | /components/WebModal.tsx | Web-safe modal (replaces RN Modal) |
+| Toast | /components/common/Toast.tsx | Non-blocking toast notifications |
+| Alert Service | /services/alert.ts | Web-safe alert wrappers |
+| API Service | /services/api.ts | Axios-based API client (relative URL on web) |
+
+---
+
+## What's Been Implemented (Completed)
+
+### Core App
+- Multi-role auth (super_admin, org_admin, store_manager, user) — plain text passwords
+- Contact management with CRUD, bulk delete, import, photo support
 - Team chat with channels
-- Digital business card creation and sharing
-- Congrats card creation and sharing
-- Admin panel with user/org/store management
+- Digital business card creation, editing, sharing (production URLs)
+- Congrats card creation and sharing (production URLs)
+- Admin panel (users, orgs, stores, pending users, partner agreements)
+- Lead source management with round-robin/jump-ball routing
 - AI assistant (Jessi) powered by OpenAI
-- Email via Resend, SMS via Twilio (currently mocked)
-- Training hub, leaderboard, reports
+- SMS/email templates, campaigns, broadcasts
+- Task/reminder system
+- Date triggers (birthdays, anniversaries)
+- Leaderboard and rankings
+- Reports and analytics
+- Training hub (no content yet)
+- URL shortener
+- WebSocket support
+- SOP system
+- Partner agreement signing
 
-## What's Been Implemented
+### Recent Session Fixes (Feb 26, 2026)
+- Fixed production login (frontend was using dead preview URLs)
+- Fixed production database connection (platform MONGO_URL override)
+- Fixed 4 broken Toast import paths
+- Fixed 5 files using EXPO_PUBLIC_BACKEND_URL directly
+- Removed hardcoded APP_URL from 3 backend files
+- Replaced 17+ Modal components with WebModal
+- Replaced Alert.alert with toast notifications across 19 files
+- Added Website field to digital business card
+- Fixed Resend email API key and sender format
+- Added admin-reset endpoint for emergency password recovery
+- Standardized all shareable links to use app.imosapp.com
+- Fixed double-URL SMS share bug
+- Relocated Create Congrats Card to My Account
+- Added Delete Contact button
+- Changed favicon
 
-### Session - Feb 26, 2026 (Original)
-- [x] Team Chat UI Fix: Web compatibility for dropdowns and create button
-- [x] Team Chat Search: Channel search/filter bar
-- [x] Contact Deletion: Single and bulk delete (backend + frontend)
-- [x] Digital Card UI: Social links moved above voice recorder
-- [x] Admin Linking Fix: Fixed unclickable "Link Existing" buttons
-- [x] User Creation Modal Fix: Web-compatible copy buttons
-- [x] Inbox Email Prompt Fix: Check existing email before prompting
-- [x] Congrats Card Creation Fix: Web-compatible file upload
-- [x] Congrats Card Feature: Full create + share flow at /settings/create-congrats
-  - Relocated to My Account → QUICK ACTIONS
-- [x] Social Media Username-Only Inputs
-- [x] Fixed mobile Safari login crash (expo-haptics try-catch)
-- [x] Fixed ALL shareable links to use production URL (app.imosapp.com)
-- [x] Eliminated short URL redirects for business cards (direct links)
-- [x] Admin password reset endpoint (POST /api/auth/admin-reset)
-- [x] Full QA audit (all 31 More menu routes return 200)
-- [x] Replaced 17 Modal components with WebModal
-- [x] Replaced Alert.alert with toast notifications across 19 files
-- [x] Website field added to digital business card
-- [x] Favicon changed
-- [x] Resend email integration fixed (API key + sender format)
-- [x] Delete Contact button on edit page
-
-### Session - Feb 26, 2026 (Fork: Build Fix & Production Login)
-- [x] **Fixed 4 broken Toast import paths** that prevented app from loading
-- [x] **FIXED PRODUCTION LOGIN (ROOT CAUSE)**: Frontend was baking dead preview URLs into JS bundle via `EXPO_PUBLIC_BACKEND_URL`. Changed `api.ts` to use relative `/api` path on web.
-- [x] **FIXED PRODUCTION DATABASE CONNECTION**: Platform injects `MONGO_URL=localhost` which overwrites production config. Fixed with `load_dotenv(override=True)` and hardcoding production MONGO_URL in `.env`.
-- [x] **Removed .env.local loading**: File was getting deployed to production and overriding correct MONGO_URL with localhost.
-- [x] **Removed hardcoded APP_URL** from auth.py, team_invite.py, short_urls.py — now reads from env var.
-- [x] **Added resilient DB connection**: `get_db()` tries `get_default_database()` first, falls back to `DB_NAME`. Added 30s connection timeouts.
-- [x] **Added debug endpoint** `/api/debug/db-info` for diagnosing production DB issues.
-- [x] **Reset user passwords** via admin-reset endpoint on production.
-- Testing: 100% pass rate (iteration_35.json)
-
-## Architecture
-- Frontend: React Native Web (Expo) with file-based routing
-- Backend: FastAPI with MongoDB
-- Database: MongoDB Atlas (production), localhost (preview via supervisor env var)
-- 3rd Party: OpenAI (Jessi AI), Resend (email), Twilio (SMS - mocked)
+---
 
 ## Known Issues
-- Twilio SMS is in mock mode
-- React Hydration Error #418 (cosmetic, not blocking)
-- Passwords stored as plain text (security risk, needs bcrypt refactor)
-- ~25 files still use RN Modal instead of WebModal (non-blocking, buttons work via IS_WEB checks)
-- Forgot-password endpoint doesn't send email via Resend (just logs code)
-- Email (Resend) may not be sending — user reported not receiving emails
 
-## Prioritized Backlog
+| Priority | Issue | Status |
+|----------|-------|--------|
+| P0 | Email delivery failing (Resend) | NOT FIXED |
+| P0 | Forgot-password endpoint doesn't send email | NOT FIXED |
+| P0 | Debug endpoint `/api/debug/db-info` exposes DB info | NEEDS REMOVAL |
+| P1 | Passwords stored in plain text | NOT FIXED |
+| P1 | Dead links in App Directory (user reported) | INVESTIGATING |
+| P2 | ~25 files still use RN Modal instead of WebModal | LOW PRIORITY |
+| P2 | Twilio SMS in mock mode | DEFERRED |
+| P2 | React Hydration Error #418 | COSMETIC |
 
-### P0 (Critical)
-- Fix Resend email delivery (user reported not receiving emails at forest@imosapp.com)
-- Remove debug endpoint `/api/debug/db-info` from production (contains sensitive info)
-
-### P1 (High)
-- Auth refactor to bcrypt hashed passwords
-- Fix forgot-password to actually send reset code via Resend email
-- Lead Notification System Phase 2 (push notifications)
-- Voice Help Assistant Backend
-
-### P2 (Medium)
-- Code Cleanup (~80 dead files, route extraction from server.py)
-- Full Twilio Integration (move from MOCK to live)
-- WhatsApp Integration
-- White-Label System (custom domains, org branding)
-- Full Inventory Management Module
-- Training Hub content
-- Leaderboard toggle verification
-- React Hydration Error #418 fix
-- Migrate remaining ~25 Modal → WebModal
-
-## Key API Endpoints
-- POST /api/auth/login - User login
-- POST /api/auth/admin-reset - Emergency password reset (secret: iMOs-Emergency-Reset-2026)
-- GET /api/debug/db-info - Database diagnostic (TEMPORARY - remove for production)
-- DELETE /api/contacts/delete - Bulk delete contacts
-- DELETE /api/contacts/{id} - Single delete contact
-- POST /api/congrats/create - Create congrats card
-- GET /api/health - Health check
-
-## Key DB Schema
-- users: { email, password (plain text!), name, role, status, is_active, social_links, ... }
-- contacts: { name, email, phone, photo, tags, user_id, ... }
-- congrats_cards: { salesman_id, customer_name, photo, message, ... }
-- conversations: { user_id, contact_id, status, ai_enabled, ai_mode, ... }
+---
 
 ## Credentials
-- Super Admin: forest@imosapp.com / Admin123!
-- Preview seed admin: admin@imosapp.com / iMOs2026!
 
-## Key Files
-- `/app/backend/server.py` — Main backend, admin-reset endpoint, debug endpoint
-- `/app/backend/.env` — Production MONGO_URL, Resend key, Twilio keys
-- `/app/backend/routers/database.py` — DB connection with get_default_database() fallback
-- `/app/frontend/services/api.ts` — API client, relative URL fix for web
-- `/app/frontend/components/WebModal.tsx` — Web-safe modal replacement
-- `/app/frontend/components/common/Toast.tsx` — Toast notification system
+| Account | Email | Password | Role |
+|---------|-------|----------|------|
+| Super Admin | forest@imosapp.com | Admin123! | super_admin |
+| Preview Seed | admin@imosapp.com | iMOs2026! | super_admin |
+| Admin Reset Secret | — | iMOs-Emergency-Reset-2026 | — |
+
+---
+
+## File Structure Summary
+```
+/app/
+├── backend/
+│   ├── .env                    # Production env vars (MONGO_URL, keys)
+│   ├── server.py               # Main app, startup, utility routes, WebSocket
+│   ├── requirements.txt        # Python dependencies
+│   ├── routers/                # 47 route files
+│   │   ├── database.py         # MongoDB connection (get_db)
+│   │   ├── auth.py             # Login, signup, forgot-password, admin-reset
+│   │   ├── contacts.py         # Contact CRUD
+│   │   ├── admin.py            # Admin user management
+│   │   ├── messages.py         # Messaging
+│   │   ├── team_chat.py        # Team chat
+│   │   ├── campaigns.py        # Campaigns
+│   │   ├── lead_sources.py     # Lead routing
+│   │   ├── jessie.py           # AI assistant
+│   │   ├── email.py            # Email via Resend
+│   │   └── ... (37 more)
+│   └── tests/                  # Test files
+├── frontend/
+│   ├── .env                    # Frontend env vars
+│   ├── package.json            # Dependencies
+│   ├── app/                    # Expo Router pages
+│   │   ├── _layout.tsx         # Root layout with ToastProvider
+│   │   ├── (tabs)/             # 5 main tabs
+│   │   ├── admin/              # ~30 admin pages
+│   │   ├── settings/           # ~15 settings pages
+│   │   ├── imos/               # ~40 legacy/public mirror pages
+│   │   ├── card/[userId].tsx   # Public digital card
+│   │   ├── congrats/[cardId].tsx # Public congrats card
+│   │   └── ... (other routes)
+│   ├── components/
+│   │   ├── WebModal.tsx        # Web-safe modal
+│   │   └── common/Toast.tsx    # Toast notification system
+│   ├── services/
+│   │   ├── api.ts              # API client (relative URL on web)
+│   │   └── alert.ts            # Web-safe alerts
+│   ├── hooks/
+│   │   └── useWebSocket.ts     # WebSocket hook
+│   └── store/
+│       └── authStore.ts        # Auth state (Zustand)
+└── memory/
+    └── PRD.md                  # This file
+```
