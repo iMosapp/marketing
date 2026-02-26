@@ -1353,22 +1353,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '500',
   },
-  // Chat header dropdown
-  chatHeaderDropdown: {
-    position: 'absolute',
-    top: 56,
-    right: 8,
-    backgroundColor: '#2C2C2E',
-    borderRadius: 12,
-    overflow: 'hidden',
-    minWidth: 180,
-    zIndex: 9999,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-    } : {
-      elevation: 10,
-    }),
-  },
   // Create channel panel (replaces Modal)
   createPanel: {
     position: 'absolute',
