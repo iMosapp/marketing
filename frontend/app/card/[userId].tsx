@@ -374,16 +374,20 @@ export default function DigitalCardPage() {
               {/* Social Links */}
               {activeSocialLinks.length > 0 && (
                 <View style={styles.socialRow}>
-                  {activeSocialLinks.map((platform) => (
-                    <TouchableOpacity
-                      key={platform.key}
-                      style={styles.socialIcon}
-                      onPress={() => Linking.openURL(user.social_links[platform.key])}
-                      data-testid={`social-${platform.key}`}
-                    >
-                      <Ionicons name={platform.icon as any} size={22} color={platform.color} />
-                    </TouchableOpacity>
-                  ))}
+                  {activeSocialLinks.map((platform) => {
+                    const username = user.social_links[platform.key];
+                    const url = username.startsWith('http') ? username : `${platform.baseUrl}${username}`;
+                    return (
+                      <TouchableOpacity
+                        key={platform.key}
+                        style={styles.socialIcon}
+                        onPress={() => Linking.openURL(url)}
+                        data-testid={`social-${platform.key}`}
+                      >
+                        <Ionicons name={platform.icon as any} size={22} color={platform.color} />
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
 
