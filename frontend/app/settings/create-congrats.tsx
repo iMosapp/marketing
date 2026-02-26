@@ -105,9 +105,8 @@ export default function CreateCongratsCardPage() {
       });
 
       const cardId = res.data?.card_id;
-      const shareUrl = IS_WEB
-        ? `${window.location.origin}/congrats/${cardId}`
-        : `${api.defaults.baseURL?.replace('/api', '')}/congrats/${cardId}`;
+      // Always use production URL for sharing
+      const shareUrl = `https://app.imosapp.com/congrats/${cardId}`;
 
       setCreatedCard({ card_id: cardId, share_url: shareUrl });
     } catch (err: any) {
