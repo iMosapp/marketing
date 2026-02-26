@@ -1620,6 +1620,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
+  deleteContactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    marginTop: 24,
+    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
+    borderWidth: 1,
+    borderColor: '#FF3B3040',
+  },
+  deleteContactText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF3B30',
+  },
   scrollContent: {
     padding: 16,
   },
