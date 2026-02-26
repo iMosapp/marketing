@@ -17,6 +17,11 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] Customer-facing header, Schedule a Demo, 14-day free trial
 - [x] All email invite URLs updated to production domain
 - [x] Team Chat: delete channel, clear history, real-time WebSocket
+- [x] **Team Chat Web Compatibility Fix** (Feb 26, 2026):
+  - Fixed 3-dot menu dropdown on channel list (was not clickable due to Pressable event conflicts)
+  - Fixed chat header dropdown menu (Clear History, Delete Channel)
+  - Replaced Pressable overlay pattern with backdrop+dropdown siblings using responder system
+  - Create Channel panel, channel row click, message input all verified working on web
 - [x] Inbox: removed SMS/Email toggle pills, inline email prompt
 - [x] Avatar system: auto-backfill thumbnails from raw photos (Feb 25, 2026)
 - [x] Image quality: 1080px for outbound sharing (Feb 25, 2026)
