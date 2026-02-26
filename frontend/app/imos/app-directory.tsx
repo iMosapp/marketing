@@ -58,6 +58,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Page Hub', description: 'Browse all public pages', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', audience: 'Everyone' },
       { name: 'App Directory', description: 'Full page catalog with search & share', path: '/imos/app-directory', icon: 'folder-outline', color: '#FF9500', audience: 'Admins, partners' },
       { name: 'Review Links Page', description: 'Customer-facing review link hub (Podium-style)', path: '/review/imos-demo', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
+      { name: 'Reviews & Reputation', description: 'Marketing page for the reviews feature', path: '/imos/reviews', icon: 'star', color: '#FFD60A', audience: 'Prospects, demos' },
     ],
   },
   {
