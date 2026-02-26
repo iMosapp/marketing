@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 
 const BACKEND_URL = Platform.OS === 'web' ? '' : (process.env.REACT_APP_BACKEND_URL || '');

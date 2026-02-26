@@ -224,7 +224,7 @@ export default function InboxScreen() {
     try {
       // Get user's teams/shared inboxes
       const teamsResponse = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/admin/team/shared-inboxes?user_id=${user._id}`
+        `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/admin/team/shared-inboxes?user_id=${user._id}`
       );
       const teamsData = await teamsResponse.json();
       
@@ -238,7 +238,7 @@ export default function InboxScreen() {
           const teamId = team._id || team.id;
           try {
             const convResponse = await fetch(
-              `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
+              `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
             );
             const convData = await convResponse.json();
             if (convData.conversations) {
@@ -816,7 +816,7 @@ export default function InboxScreen() {
       
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/lead-sources/claim/${item.id}?user_id=${user._id}`,
+          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/lead-sources/claim/${item.id}?user_id=${user._id}`,
           { method: 'POST' }
         );
         const data = await response.json();
