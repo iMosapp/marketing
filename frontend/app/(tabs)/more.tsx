@@ -829,6 +829,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Profile Info
+  quickSettingsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    gap: 8,
+  },
+  quickSettingsBtn: {
+    flex: 1,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickSettingsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickSettingsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
   profileInfo: {
     flex: 1,
   },
