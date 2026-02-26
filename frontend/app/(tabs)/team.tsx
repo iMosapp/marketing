@@ -436,7 +436,7 @@ export default function TeamChatScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
