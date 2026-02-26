@@ -194,6 +194,82 @@ export default function OrganizationDetailScreen() {
       }
     );
   };
+
+  // Load stores not linked to this org
+  const loadAvailableStores = async () => {
+    setLoadingStores(true);
+    try {
+      const res = await api.get('/admin/stores');
+      const orgStoreIds = new Set(hierarchy?.stores.map(s => s._id) || []);
+      const unlinked = (res.data || []).filter(
+        (s: any) => !orgStoreIds.has(s._id) && (!s.organization_id || s.organization_id !== id)
+      );
+      setAvailableStores(unlinked);
+    } catch (error) {
+      showSimpleAlert('Error', 'Failed to load accounts');
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  // Link a store to this org
+  const linkStoreToOrg = async (storeId: string, storeName: string) => {
+    showConfirm(
+      'Link Account',
+      `Link "${storeName}" to this organization?`,
+      async () => {
+        try {
+          await api.put(`/admin/stores/${storeId}`, { organization_id: id });
+          showSimpleAlert('Success', `${storeName} linked to this organization`);
+          setShowLinkStore(false);
+          setLinkSearch('');
+          loadHierarchy();
+        } catch (error) {
+          showSimpleAlert('Error', 'Failed to link account');
+        }
+      }
+    );
+  };
+
+  // Load users not in this org
+  const loadAvailableUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await api.get('/admin/users');
+      const orgUserIds = new Set([
+        ...(hierarchy?.admins.map(u => u._id) || []),
+        ...(hierarchy?.stores.flatMap(s => s.users?.map(u => u._id) || []) || []),
+        ...(hierarchy?.unassigned_users.map(u => u._id) || []),
+      ]);
+      const unlinked = (res.data || []).filter(
+        (u: any) => !orgUserIds.has(u._id) && u.organization_id !== id
+      );
+      setAvailableUsers(unlinked);
+    } catch (error) {
+      showSimpleAlert('Error', 'Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Link a user to this org
+  const linkUserToOrg = async (userId: string, userName: string) => {
+    showConfirm(
+      'Link User',
+      `Link "${userName}" to this organization?`,
+      async () => {
+        try {
+          await api.put(`/admin/users/${userId}`, { organization_id: id });
+          showSimpleAlert('Success', `${userName} linked to this organization`);
+          setShowLinkUser(false);
+          setLinkSearch('');
+          loadHierarchy();
+        } catch (error) {
+          showSimpleAlert('Error', 'Failed to link user');
+        }
+      }
+    );
+  };
   
   const renderUserBadge = (user: UserInfo, small = false) => (
     <TouchableOpacity 
