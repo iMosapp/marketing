@@ -230,7 +230,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             try:
                 import resend as resend_mod
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
-                SENDER = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await get_db().users.find_one({"_id": ObjectId(user_id)})
@@ -249,7 +249,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                     """
                     
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
-                        "from": SENDER,
+                        "from": f"iMOs <{SENDER}>",
                         "to": contact_email,
                         "subject": f"Message from {sender_name}",
                         "html": email_html,
