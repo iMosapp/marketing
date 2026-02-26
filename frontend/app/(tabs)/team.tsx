@@ -344,9 +344,15 @@ export default function TeamChatScreen() {
   };
 
   // Show channel actions menu (web-compatible)
-  const showChannelActions = (channel: Channel) => {
+  const showChannelActions = (channel: Channel, pageY?: number) => {
     if (Platform.OS === 'web') {
-      setChannelMenuId(channelMenuId === channel.id ? null : channel.id);
+      if (channelMenuId === channel.id) {
+        setChannelMenuId(null);
+      } else {
+        const top = pageY ? Math.min(pageY + 10, window.innerHeight - 200) : 80;
+        setMenuPosition({ top, right: 16 });
+        setChannelMenuId(channel.id);
+      }
     } else {
       Alert.alert(
         channel.name,
