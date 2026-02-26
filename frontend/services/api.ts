@@ -159,6 +159,16 @@ export const contactsAPI = {
     const response = await api.get(`/contacts/${userId}/${contactId}/referrals`);
     return response.data;
   },
+
+  delete: async (userId: string, contactId: string) => {
+    const response = await api.delete(`/contacts/${userId}/${contactId}`);
+    return response.data;
+  },
+
+  bulkDelete: async (userId: string, contactIds: string[]) => {
+    const response = await api.post(`/contacts/${userId}/bulk-delete`, { contact_ids: contactIds });
+    return response.data;
+  },
 };
 
 // ============= MESSAGES API =============
