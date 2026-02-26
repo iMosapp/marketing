@@ -1344,8 +1344,9 @@ const styles = StyleSheet.create({
   },
   // Channel row 3-dot menu button
   channelMenuBtn: {
-    padding: 6,
+    padding: 12,
     marginLeft: 4,
+    zIndex: 1,
   },
   // Channel dropdown menu (web)
   channelDropdown: {
