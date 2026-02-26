@@ -552,6 +552,56 @@ export default function OrganizationDetailScreen() {
               <Text style={styles.hintText}>These users are in the org but not assigned to any account</Text>
             </View>
           )}
+
+          {/* Link Existing User */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-add" size={20} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Link User</Text>
+              <TouchableOpacity 
+                style={styles.linkButton}
+                onPress={() => { setShowLinkUser(!showLinkUser); if (!showLinkUser) loadAvailableUsers(); setLinkSearch(''); }}
+              >
+                <Ionicons name="link" size={18} color="#007AFF" />
+                <Text style={styles.linkButtonText}>{showLinkUser ? 'Close' : 'Link Existing'}</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {showLinkUser && (
+              <View style={styles.linkPanel}>
+                <TextInput
+                  style={styles.linkSearchInput}
+                  placeholder="Search users to link..."
+                  placeholderTextColor="#8E8E93"
+                  value={linkSearch}
+                  onChangeText={setLinkSearch}
+                />
+                {loadingUsers ? (
+                  <ActivityIndicator size="small" color="#007AFF" style={{ padding: 16 }} />
+                ) : availableUsers.filter(u => !linkSearch || u.name?.toLowerCase().includes(linkSearch.toLowerCase()) || u.email?.toLowerCase().includes(linkSearch.toLowerCase())).length === 0 ? (
+                  <Text style={styles.linkEmptyText}>No unlinked users available</Text>
+                ) : (
+                  availableUsers
+                    .filter(u => !linkSearch || u.name?.toLowerCase().includes(linkSearch.toLowerCase()) || u.email?.toLowerCase().includes(linkSearch.toLowerCase()))
+                    .slice(0, 10)
+                    .map((user: any) => (
+                      <TouchableOpacity 
+                        key={user._id} 
+                        style={styles.linkItem}
+                        onPress={() => linkUserToOrg(user._id, user.name || user.email)}
+                      >
+                        <Ionicons name="person-outline" size={20} color="#007AFF" />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.linkItemName}>{user.name || 'No Name'}</Text>
+                          <Text style={styles.linkItemSub}>{user.email} · {user.role}</Text>
+                        </View>
+                        <Ionicons name="add-circle-outline" size={22} color="#007AFF" />
+                      </TouchableOpacity>
+                    ))
+                )}
+              </View>
+            )}
+          </View>
           
           {/* Details Section (Collapsible Edit) */}
           {editMode && (
