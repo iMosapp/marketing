@@ -723,6 +723,31 @@ export default function TeamChatScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Chat header dropdown menu (rendered outside header to avoid clipping) */}
+      {Platform.OS === 'web' && showChatMenu && selectedChannel && (
+        <Pressable 
+          style={{ position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9998 }}
+          onPress={() => setShowChatMenu(false)}
+        >
+          <View style={styles.chatHeaderDropdown}>
+            <TouchableOpacity 
+              style={styles.channelDropdownItem}
+              onPress={() => { setShowChatMenu(false); clearHistory(selectedChannel); }}
+            >
+              <Ionicons name="trash-outline" size={16} color="#FF9500" />
+              <Text style={[styles.channelDropdownText, { color: '#FF9500' }]}>Clear History</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.channelDropdownItem}
+              onPress={() => { setShowChatMenu(false); deleteChannel(selectedChannel); }}
+            >
+              <Ionicons name="close-circle-outline" size={16} color="#FF3B30" />
+              <Text style={[styles.channelDropdownText, { color: '#FF3B30' }]}>Delete Channel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      )}
+
       {/* Messages */}
       <KeyboardAvoidingView
         style={styles.chatContent}
