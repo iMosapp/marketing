@@ -437,8 +437,11 @@ export default function TeamChatScreen() {
         {/* 3-dot menu button — outside the tap area */}
         <TouchableOpacity
           style={styles.channelMenuBtn}
-          onPress={() => showChannelActions(item)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          onPress={(e: any) => {
+            const pageY = e?.nativeEvent?.pageY;
+            showChannelActions(item, pageY);
+          }}
+          data-testid="channel-menu-btn"
         >
           <Ionicons name="ellipsis-vertical" size={18} color={COLORS.textSecondary} />
         </TouchableOpacity>
