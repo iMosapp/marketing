@@ -40,6 +40,11 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
   - New "Create Congrats Card" page at /settings/create-congrats
   - Full sharing options after creation: Copy Link, Download, View Card, SMS, Email, Facebook, Twitter
   - **Relocated to My Account → QUICK ACTIONS** next to "My Digital Card", with "Edit Digital Card" moved down (Feb 26, 2026)
+- [x] **Social Media Username-Only Inputs** (Feb 26, 2026):
+  - Edit Digital Card: Social fields now show URL prefix (e.g. facebook.com/) with just username input
+  - Auto-strips @ symbol from input
+  - Digital Card constructs full URL from base URL + username
+  - Backwards compatible with existing data (full URLs or usernames both work)
   - Admin > Organizations, Accounts, Users pages all accessible
   - User detail page has Change Organization and Assign Store modals
   - **NEW: "Link Existing Account"** button on Org detail page — opens searchable panel of unlinked accounts, one-click to link
