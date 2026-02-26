@@ -548,15 +548,10 @@ export default function TeamChatScreen() {
           />
         )}
 
-        {/* Create Channel Modal */}
-        <Modal
-          visible={showCreateModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setShowCreateModal(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+        {/* Create Channel Panel (web-compatible, replaces Modal) */}
+        {showCreateModal && (
+          <View style={styles.createPanel}>
+            <View style={styles.createPanelHeader}>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                 <Text style={styles.modalCancel}>Cancel</Text>
               </TouchableOpacity>
