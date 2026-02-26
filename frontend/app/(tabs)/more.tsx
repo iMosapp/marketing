@@ -337,6 +337,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/jessie'),
           color: '#C9A962',
         },
+        {
+          icon: 'mic',
+          title: 'Voice Training',
+          subtitle: 'Train AI with your voice',
+          onPress: () => router.push('/voice-training'),
+          color: '#FF3B30',
+        },
       ],
     },
     // Settings & Security
