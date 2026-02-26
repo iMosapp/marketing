@@ -638,6 +638,7 @@ async def patch_user(user_id: str, user_data: dict):
     updated_user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     if updated_user:
         updated_user["_id"] = str(updated_user["_id"])
+        updated_user.pop("password", None)
     
     return updated_user
 
