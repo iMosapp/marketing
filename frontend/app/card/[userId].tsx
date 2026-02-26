@@ -148,7 +148,7 @@ export default function DigitalCardPage() {
   // Share via link
   const handleShareLink = async () => {
     try {
-      const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
+      const cardUrl = `https://app.imosapp.com/card/${userId}`;
       await Share.share({
         message: `Check out my digital business card: ${cardUrl}`,
         url: cardUrl,
@@ -163,7 +163,7 @@ export default function DigitalCardPage() {
   // Copy link to clipboard
   const handleCopyLink = async () => {
     try {
-      const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
+      const cardUrl = `https://app.imosapp.com/card/${userId}`;
       await Clipboard.setStringAsync(cardUrl);
       if (Platform.OS === 'web') {
         alert('Link copied to clipboard!');
@@ -195,7 +195,7 @@ export default function DigitalCardPage() {
   const handleShareQR = async () => {
     try {
       // Use short URL if available, otherwise fall back to full URL
-      const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
+      const cardUrl = `https://app.imosapp.com/card/${userId}`;
       await Share.share({
         message: `Check out my digital business card: ${cardUrl}`,
         url: cardUrl,
