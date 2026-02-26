@@ -86,6 +86,15 @@ export default function OrganizationDetailScreen() {
   const [editedOrg, setEditedOrg] = useState<Partial<Organization>>({});
   const [expandedStores, setExpandedStores] = useState<Set<string>>(new Set());
   
+  // Link existing account/user
+  const [showLinkStore, setShowLinkStore] = useState(false);
+  const [availableStores, setAvailableStores] = useState<any[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [showLinkUser, setShowLinkUser] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [linkSearch, setLinkSearch] = useState('');
+  
   useFocusEffect(
     useCallback(() => {
       loadHierarchy();
