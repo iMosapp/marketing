@@ -476,6 +476,8 @@ app.include_router(short_urls.router)
 # ============= STARTUP EVENT =============
 @app.on_event("startup")
 async def startup_event():
+    import time
+    app.state.start_time = time.time()
     logger.info("iMOs API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
     
