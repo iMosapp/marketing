@@ -330,6 +330,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/persona'),
           color: '#AF52DE',
         },
+        {
+          icon: 'sparkles',
+          title: 'Train Jessi AI',
+          subtitle: 'Chat with your AI assistant',
+          onPress: () => router.push('/jessie'),
+          color: '#C9A962',
+        },
       ],
     },
     // Settings & Security
