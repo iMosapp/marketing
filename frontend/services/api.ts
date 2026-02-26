@@ -3,13 +3,17 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Get backend URL - use environment variable
+// Get backend URL - use relative path for web, env var for native
 const getBackendUrl = () => {
+  // On web (browser), always use relative path so it works on any domain
+  if (Platform.OS === 'web') {
+    return '/api';
+  }
+  // On native (iOS/Android), use the configured backend URL
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || Constants.expoConfig?.extra?.backendUrl;
   if (backendUrl) {
     return `${backendUrl}/api`;
   }
-  // Fallback to relative path for local development
   return '/api';
 };
 
