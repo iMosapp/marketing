@@ -409,15 +409,26 @@ Full set of ~40 pages under `/app/imos/` that mirror the main app routes for pub
 - Added Delete Contact button
 - Changed favicon
 
+### Session Feb 26, 2026 (Fork 2)
+- **NEW FEATURE**: Podium-style Review Links Landing Page (`/review/[storeSlug]`)
+  - Clean light theme with store logo, name, and brand kit integration
+  - All review links displayed upfront (Google, Yelp, Facebook, DealerRater, custom)
+  - Click tracking at store and salesperson level (`POST /api/review/track-click/{store_slug}`)
+  - Click statistics endpoint (`GET /api/review/click-stats/{store_id}`)
+  - Store info footer (phone, website, address)
+- **FIXED**: Password reset emails now sent via Resend (was generating code but never emailing it)
+- **FIXED**: Removed insecure debug endpoint `/api/debug/db-info`
+- **FIXED**: Forgot-password endpoint no longer leaks `dev_code` in response
+
 ---
 
 ## Known Issues
 
 | Priority | Issue | Status |
 |----------|-------|--------|
-| P0 | Email delivery failing (Resend) | NOT FIXED |
-| P0 | Forgot-password endpoint doesn't send email | NOT FIXED |
-| P0 | Debug endpoint `/api/debug/db-info` exposes DB info | NEEDS REMOVAL |
+| P0 | Email delivery failing (Resend) | MONITORING (Resend key active, password reset emails now sending) |
+| P0 | Forgot-password endpoint doesn't send email | FIXED (Feb 26, 2026) |
+| P0 | Debug endpoint `/api/debug/db-info` exposes DB info | FIXED - REMOVED (Feb 26, 2026) |
 | P1 | Passwords stored in plain text | NOT FIXED |
 | P1 | Dead links in App Directory (user reported) | INVESTIGATING |
 | P2 | ~25 files still use RN Modal instead of WebModal | LOW PRIORITY |
