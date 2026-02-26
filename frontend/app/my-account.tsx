@@ -581,8 +581,16 @@ export default function MyAccountScreen() {
           {/* Link Preview */}
           <View style={shareStyles.linkBox}>
             <Ionicons name="link" size={18} color="#FFD60A" />
-            <Text style={shareStyles.linkText} numberOfLines={2}>{getReviewUrl()}</Text>
+            <Text style={shareStyles.linkText} numberOfLines={2}>
+              {getReviewUrl() || 'Loading store link...'}
+            </Text>
           </View>
+
+          {!storeSlug && (
+            <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16 }}>
+              Store not configured. Go to Store Settings to set up your store slug.
+            </Text>
+          )}
 
           {/* Action Buttons */}
           <View style={shareStyles.actions}>
