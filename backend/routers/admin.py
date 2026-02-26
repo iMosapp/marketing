@@ -2,7 +2,7 @@
 Admin router - handles organization, store, and user management
 With Role-Based Access Control (RBAC) enforcement
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -10,6 +10,7 @@ import logging
 import os
 import asyncio
 import resend
+import base64
 
 from models import Organization, OrganizationCreate, Store, StoreCreate
 from routers.database import get_db, get_user_by_id
