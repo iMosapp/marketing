@@ -1030,18 +1030,6 @@ const styles = StyleSheet.create({
   },
   
   // Create Modal
-  modalContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
   modalCancel: {
     fontSize: 16,
     color: COLORS.accent,
