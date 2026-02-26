@@ -51,8 +51,13 @@ export default function MyAccountScreen() {
       const res = await api.get(`/admin/stores/${user?.store_id}`, {
         headers: { 'X-User-ID': user?._id }
       });
-      if (res.data?.slug) {
-        setStoreSlug(res.data.slug);
+      const slug = res.data?.slug;
+      if (slug) {
+        setStoreSlug(slug);
+      } else if (res.data?.name) {
+        // Auto-generate from name
+        const generated = res.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        setStoreSlug(generated);
       }
     } catch (e) {}
   };
