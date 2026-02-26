@@ -318,21 +318,23 @@ export default function UsersScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Users</Text>
         {Platform.OS === 'web' ? (
-          <button
-            type="button"
+          <div
             onClick={() => setShowAddModal(true)}
             style={{
-              padding: 4,
+              padding: 12,
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative' as any,
+              zIndex: 100,
             }}
+            data-testid="add-user-btn"
           >
             <Ionicons name="person-add" size={24} color="#007AFF" />
-          </button>
+          </div>
         ) : (
           <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
             <Ionicons name="person-add" size={24} color="#007AFF" />
