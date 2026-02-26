@@ -40,6 +40,7 @@ const PAGE_CATALOG: Category[] = [
     color: '#34C759',
     pages: [
       { name: 'Review Links Page', description: 'Customer-facing review link hub (Podium-style)', path: '/review/imos-demo', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
+      { name: 'Dealership Card', description: 'Account-level digital card for the dealership', path: '/card/store/imos-demo', icon: 'business-outline', color: '#34C759', audience: 'Customers, prospects' },
       { name: 'Digital Business Card', description: 'Shareable digital card for any team member', path: '/card/demo', icon: 'card-outline', color: '#007AFF', audience: 'Customers, prospects' },
       { name: 'Congrats Card', description: 'Customer thank-you & congratulations card', path: '/congrats/demo', icon: 'gift-outline', color: '#C9A962', audience: 'Customers' },
     ],
