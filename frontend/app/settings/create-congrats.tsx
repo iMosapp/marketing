@@ -34,7 +34,7 @@ const COLORS = {
 
 export default function CreateCongratsCardPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customMessage, setCustomMessage] = useState('');
