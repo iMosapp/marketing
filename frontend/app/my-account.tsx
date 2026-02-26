@@ -336,9 +336,9 @@ export default function MyAccountScreen() {
     {
       icon: 'star',
       title: 'Share Review Link',
-      subtitle: copiedLink ? 'Copied!' : 'Copy & send to customers',
+      subtitle: 'Send to customers',
       color: '#FFD60A',
-      onPress: handleCopyReviewLink,
+      onPress: () => setShowShareModal(true),
     },
     {
       icon: 'create',
