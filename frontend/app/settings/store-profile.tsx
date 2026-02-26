@@ -125,6 +125,47 @@ const { showToast } = useToast();
     }));
   };
 
+  const handleUploadLogo = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      setUploading(true);
+      const asset = result.assets[0];
+
+      // Read as blob and upload
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const formData = new FormData();
+      formData.append('file', blob as any, 'logo.png');
+
+      const uploadRes = await api.post(
+        `/admin/stores/${user?.store_id}/upload-logo`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      if (uploadRes.data?.logo_url) {
+        setStore((prev: any) => ({
+          ...prev,
+          logo_url: uploadRes.data.logo_url,
+          logo_avatar_url: uploadRes.data.logo_avatar_url,
+        }));
+        showToast('Logo updated!');
+      }
+    } catch (e) {
+      console.error('Upload error:', e);
+      Alert.alert('Error', 'Failed to upload logo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Show loading while auth is loading OR store is loading
   if (authLoading || loading) {
     return (
