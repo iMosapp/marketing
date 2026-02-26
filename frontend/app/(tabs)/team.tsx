@@ -1340,22 +1340,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     zIndex: 1,
   },
-  // Channel dropdown menu (web)
-  channelDropdown: {
-    position: 'absolute',
-    top: 80,
-    right: 16,
-    backgroundColor: '#2C2C2E',
-    borderRadius: 12,
-    overflow: 'hidden',
-    minWidth: 200,
-    zIndex: 99999,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-    } : {
-      elevation: 10,
-    }),
-  },
+  // Channel dropdown menu items
   channelDropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
