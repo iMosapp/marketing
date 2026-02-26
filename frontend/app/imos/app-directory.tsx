@@ -195,7 +195,7 @@ export default function AppDirectoryScreen() {
   const isDesktop = width > 768;
   const maxW = isDesktop ? 960 : undefined;
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['marketing']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['public_pages', 'marketing']));
   const [shareModal, setShareModal] = useState<PageEntry | null>(null);
   const [shareChannel, setShareChannel] = useState<'email' | 'sms'>('email');
   const [recipientName, setRecipientName] = useState('');
