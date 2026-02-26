@@ -58,8 +58,8 @@ async def api_health():
 async def build_version():
     """Returns current build version for cache-busting"""
     import hashlib
-    # Version based on server start time - changes every deploy
-    version = hashlib.md5(str(app.state._state.get('start_time', '')).encode()).hexdigest()[:8]
+    start_time = getattr(app.state, 'start_time', 0)
+    version = hashlib.md5(str(start_time).encode()).hexdigest()[:8]
     return {"version": version}
 
 @api_router.get("/debug/db-info")
