@@ -614,13 +614,13 @@ export default function ContactDetailScreen() {
   };
 
   const handleDeleteContact = () => {
-    if (isNewContact) return;
+    if (isNewContact || !user) return;
     showConfirm(
       'Delete Contact',
       `Delete "${contact.first_name}"? This cannot be undone.`,
       async () => {
         try {
-          await contactsAPI.delete(id as string);
+          await contactsAPI.delete(user._id, id as string);
           showToast('Contact deleted');
           router.back();
         } catch (error: any) {
