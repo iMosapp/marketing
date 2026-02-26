@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebModal } from '../../components/WebModal';
 
 interface User {
   id: string;
@@ -61,7 +61,7 @@ export default function BulkTransferPage() {
   const [transferHistory, setTransferHistory] = useState<TransferHistory[]>([]);
   
   // Transfer state
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showTransfersetShowTransferModal] = useState(false);
   const [selectedFromUser, setSelectedFromUser] = useState<User | null>(null);
   const [selectedToUser, setSelectedToUser] = useState<User | null>(null);
   const [transferPreview, setTransferPreview] = useState<TransferPreview | null>(null);
@@ -349,7 +349,7 @@ export default function BulkTransferPage() {
       </ScrollView>
 
       {/* Transfer Modal */}
-      <Modal visible={showTransferModal} animationType="slide" transparent>
+      <WebModal visible={showTransferModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -444,7 +444,7 @@ export default function BulkTransferPage() {
             )}
           </View>
         </View>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

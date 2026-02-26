@@ -7,7 +7,6 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { WebModal } from '../../components/WebModal';
 
 interface Template {
   id: string;
@@ -46,7 +46,7 @@ export default function PartnerAgreementsScreen() {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [agreements, setAgreements] = useState<Agreement[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreatesetShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   
   // New agreement form
@@ -256,7 +256,7 @@ export default function PartnerAgreementsScreen() {
       </ScrollView>
 
       {/* Create Agreement Modal */}
-      <Modal visible={showCreateModal} animationType="slide" transparent>
+      <WebModal visible={showCreateModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -420,7 +420,7 @@ export default function PartnerAgreementsScreen() {
             )}
           </View>
         </View>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

@@ -7,7 +7,6 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Modal,
   ScrollView,
   TextInput,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebModal } from '../../components/WebModal';
 
 interface PendingUser {
   _id: string;
@@ -55,7 +55,7 @@ export default function PendingUsersScreen() {
   const [stores, setStores] = useState<Store[]>([]);
   
   // Approval modal
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showApprovalsetShowApprovalModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [approvalData, setApprovalData] = useState({
     role: 'user',
@@ -260,7 +260,7 @@ export default function PendingUsersScreen() {
       )}
       
       {/* Approval Modal */}
-      <Modal visible={showApprovalModal} animationType="slide" transparent>
+      <WebModal visible={showApprovalModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -416,7 +416,7 @@ export default function PendingUsersScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

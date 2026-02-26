@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   TextInput,
   RefreshControl,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebModal } from '../../components/WebModal';
 
 type TabType = 'directory' | 'leaderboard' | 'efficiency' | 'resellers';
 
@@ -114,7 +114,7 @@ export default function DirectoryPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showMemberDetail, setShowMemberDetail] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [showKPIModal, setShowKPIModal] = useState(false);
+  const [showKPIsetShowKPIModal] = useState(false);
   const [kpiMember, setKpiMember] = useState<TeamMember | null>(null);
   
   // KPI Form
@@ -670,7 +670,7 @@ export default function DirectoryPage() {
       </ScrollView>
 
       {/* KPI Input Modal */}
-      <Modal visible={showKPIModal} animationType="slide" transparent>
+      <WebModal visible={showKPIModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -722,10 +722,10 @@ export default function DirectoryPage() {
             )}
           </View>
         </View>
-      </Modal>
+      </WebModal>
 
       {/* Add Member Modal */}
-      <Modal visible={showAddMember} animationType="slide" transparent>
+      <WebModal visible={showAddMember} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -835,10 +835,10 @@ export default function DirectoryPage() {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </WebModal>
 
       {/* Member Detail Modal */}
-      <Modal visible={showMemberDetail} animationType="slide" transparent>
+      <WebModal visible={showMemberDetail} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -928,7 +928,7 @@ export default function DirectoryPage() {
             )}
           </View>
         </View>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

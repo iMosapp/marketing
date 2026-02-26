@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Modal,
   Alert,
   ActivityIndicator,
   Platform,
@@ -18,6 +17,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { WebModal } from '../../components/WebModal';
 
 interface EmailTemplate {
   _id: string;
@@ -43,7 +43,7 @@ export default function EmailTemplatesSettings() {
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showsetShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [formName, setFormName] = useState('');
   const [formSubject, setFormSubject] = useState('');
@@ -241,7 +241,7 @@ export default function EmailTemplatesSettings() {
       </ScrollView>
 
       {/* Edit/Create Modal */}
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+      <WebModal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.modalContainer}>
           <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -345,7 +345,7 @@ export default function EmailTemplatesSettings() {
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

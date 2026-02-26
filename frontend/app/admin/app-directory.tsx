@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
-  Modal,
   Platform,
   Linking,
   LayoutAnimation,
@@ -19,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
+import { WebModal } from '../../components/WebModal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -196,7 +196,7 @@ export default function AppDirectoryScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [shareModal, setShareModal] = useState<PageEntry | null>(null);
+  const [sharesetShareModal] = useState<PageEntry | null>(null);
   const [shareChannel, setShareChannel] = useState<'email' | 'sms'>('email');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
@@ -416,7 +416,7 @@ export default function AppDirectoryScreen() {
       </ScrollView>
 
       {/* Share Modal */}
-      <Modal visible={!!shareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeShareModal}>
+      <WebModal visible={!!shareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeShareModal}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={closeShareModal}>
@@ -533,7 +533,7 @@ export default function AppDirectoryScreen() {
             )}
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

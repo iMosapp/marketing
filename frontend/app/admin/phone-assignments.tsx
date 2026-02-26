@@ -8,7 +8,6 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Modal,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +20,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import axios from 'axios';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebModal } from '../../components/WebModal';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
@@ -52,7 +52,7 @@ export default function PhoneAssignmentsScreen() {
   const [activeTab, setActiveTab] = useState<'users' | 'shared'>('users');
   
   // Edit modal state
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditsetShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<User | SharedInbox | null>(null);
   const [editingType, setEditingType] = useState<'user' | 'shared'>('user');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -355,7 +355,7 @@ export default function PhoneAssignmentsScreen() {
       )}
       
       {/* Edit Modal */}
-      <Modal visible={showEditModal} animationType="slide" transparent>
+      <WebModal visible={showEditModal} animationType="slide" transparent>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
@@ -435,7 +435,7 @@ export default function PhoneAssignmentsScreen() {
             </View>
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

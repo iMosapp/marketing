@@ -10,7 +10,6 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  Modal,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +21,7 @@ import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import api from '../../services/api';
 import { format, addDays, addMonths } from 'date-fns';
+import { WebModal } from '../../components/WebModal';
 
 interface SequenceStep {
   id: string;
@@ -518,7 +518,7 @@ export default function CampaignBuilderScreen() {
         
         {showTimePicker && (
           Platform.OS === 'ios' ? (
-            <Modal transparent animationType="slide">
+            <WebModal transparent animationType="slide">
               <View style={styles.pickerModal}>
                 <View style={styles.pickerContainer}>
                   <View style={styles.pickerHeader}>
@@ -540,7 +540,7 @@ export default function CampaignBuilderScreen() {
                   />
                 </View>
               </View>
-            </Modal>
+            </WebModal>
           ) : (
             <DateTimePicker
               value={campaign.sendTime}

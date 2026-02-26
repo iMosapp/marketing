@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
-  Modal,
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import api from '../../../services/api';
 import { showSimpleAlert, showConfirm } from '../../../services/alert';
+import { WebModal } from '../../../components/WebModal';
 
 interface UserInfo {
   _id: string;
@@ -73,7 +73,7 @@ export default function StoreDetailScreen() {
   const [data, setData] = useState<StoreData | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editedStore, setEditedStore] = useState<any>({});
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showAddUsersetShowAddUserModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
   // Campaign Permissions State
@@ -709,7 +709,7 @@ export default function StoreDetailScreen() {
       </KeyboardAvoidingView>
       
       {/* Add User Modal */}
-      <Modal visible={showAddUserModal} animationType="slide" transparent>
+      <WebModal visible={showAddUserModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -752,7 +752,7 @@ export default function StoreDetailScreen() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

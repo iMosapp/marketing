@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   TextInput,
   RefreshControl,
-  Modal,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -19,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { WebModal } from '../../components/WebModal';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -50,8 +50,8 @@ export default function SharedInboxesPage() {
   const [users, setUsers] = useState<User[]>([]);
   
   // Modals
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showCreatesetShowCreateModal] = useState(false);
+  const [showAssignsetShowAssignModal] = useState(false);
   const [selectedInbox, setSelectedInbox] = useState<SharedInbox | null>(null);
   
   // Create form
@@ -281,7 +281,7 @@ export default function SharedInboxesPage() {
       </ScrollView>
 
       {/* Create Modal */}
-      <Modal visible={showCreateModal} animationType="slide" transparent>
+      <WebModal visible={showCreateModal} animationType="slide" transparent>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
@@ -375,10 +375,10 @@ export default function SharedInboxesPage() {
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
-      </Modal>
+      </WebModal>
 
       {/* Assign User Modal */}
-      <Modal visible={showAssignModal} animationType="slide" transparent>
+      <WebModal visible={showAssignModal} animationType="slide" transparent>
         <Pressable 
           style={styles.modalOverlay}
           onPress={() => !IS_WEB && setShowAssignModal(false)}
@@ -468,7 +468,7 @@ export default function SharedInboxesPage() {
             </ScrollView>
           </Pressable>
         </Pressable>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }

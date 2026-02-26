@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput,
-  Modal, Platform, LayoutAnimation, UIManager, ActivityIndicator, Alert,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Platform, LayoutAnimation, UIManager, ActivityIndicator, Alert,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ImosHeader, ImosFooter, getShareUrl } from './_components';
 import api from '../../services/api';
+import { WebModal } from '../../components/WebModal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -185,7 +185,7 @@ export default function AppDirectoryScreen() {
   const maxW = isDesktop ? 960 : undefined;
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['marketing']));
-  const [shareModal, setShareModal] = useState<PageEntry | null>(null);
+  const [sharesetShareModal] = useState<PageEntry | null>(null);
   const [shareChannel, setShareChannel] = useState<'email' | 'sms'>('email');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
@@ -378,7 +378,7 @@ export default function AppDirectoryScreen() {
       </ScrollView>
 
       {/* Share Modal */}
-      <Modal visible={!!shareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeShareModal}>
+      <WebModal visible={!!shareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeShareModal}>
         <View style={st.modalContainer}>
           <View style={st.modalHeader}>
             <TouchableOpacity onPress={closeShareModal}><Text style={st.modalCancel}>Cancel</Text></TouchableOpacity>
@@ -431,7 +431,7 @@ export default function AppDirectoryScreen() {
             <TextInput style={[st.modalInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]} placeholder="Check out this page from iMOs..." placeholderTextColor="#6E6E73" value={customMessage} onChangeText={setCustomMessage} multiline />
           </ScrollView>
         </View>
-      </Modal>
+      </WebModal>
     </View>
   );
 }

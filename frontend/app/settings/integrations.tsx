@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { WebModal } from '../../components/WebModal';
 
 type TabType = 'api-keys' | 'webhooks' | 'crm' | 'dms' | 'docs';
 
@@ -37,7 +37,7 @@ export default function IntegrationsScreen() {
   
   // API Keys
   const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [showNewKeyModal, setShowNewKeyModal] = useState(false);
+  const [showNewKeysetShowNewKeyModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [creatingKey, setCreatingKey] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export default function IntegrationsScreen() {
   // Webhooks
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [webhookEvents, setWebhookEvents] = useState<Record<string, string>>({});
-  const [showNewWebhookModal, setShowNewWebhookModal] = useState(false);
+  const [showNewWebhooksetShowNewWebhookModal] = useState(false);
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', events: [] as string[] });
   
   // Providers
@@ -451,7 +451,7 @@ export default function IntegrationsScreen() {
       </ScrollView>
 
       {/* New API Key Modal */}
-      <Modal visible={showNewKeyModal} animationType="slide" transparent>
+      <WebModal visible={showNewKeyModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create API Key</Text>
@@ -515,10 +515,10 @@ export default function IntegrationsScreen() {
             )}
           </View>
         </View>
-      </Modal>
+      </WebModal>
 
       {/* New Webhook Modal */}
-      <Modal visible={showNewWebhookModal} animationType="slide" transparent>
+      <WebModal visible={showNewWebhookModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Webhook</Text>
@@ -591,7 +591,7 @@ export default function IntegrationsScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </WebModal>
     </SafeAreaView>
   );
 }
