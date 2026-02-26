@@ -2,58 +2,31 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   Linking,
   Image,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
 
-// Review platform configurations
 const REVIEW_PLATFORMS = [
-  { key: 'google', name: 'Google', icon: 'logo-google', color: '#4285F4', bgColor: '#4285F420' },
-  { key: 'yelp', name: 'Yelp', icon: 'star', color: '#FF1A1A', bgColor: '#FF1A1A20' },
-  { key: 'facebook', name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', bgColor: '#1877F220' },
-  { key: 'dealerrater', name: 'DealerRater', icon: 'car-sport', color: '#00A0E3', bgColor: '#00A0E320' },
-  { key: 'cars_com', name: 'Cars.com', icon: 'car', color: '#8E44AD', bgColor: '#8E44AD20' },
-];
-
-const SOCIAL_PLATFORMS = [
-  { key: 'facebook', icon: 'logo-facebook', color: '#1877F2' },
-  { key: 'instagram', icon: 'logo-instagram', color: '#E4405F' },
-  { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2' },
-  { key: 'youtube', icon: 'logo-youtube', color: '#FF0000' },
-  { key: 'tiktok', icon: 'logo-tiktok', color: '#000000' },
-  { key: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2' },
+  { key: 'google', name: 'Google', icon: 'logo-google', color: '#4285F4', bgColor: '#EAF1FE' },
+  { key: 'yelp', name: 'Yelp', icon: 'star', color: '#FF1A1A', bgColor: '#FFF0F0' },
+  { key: 'facebook', name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', bgColor: '#EBF3FE' },
+  { key: 'dealerrater', name: 'DealerRater', icon: 'car-sport', color: '#00A0E3', bgColor: '#E6F7FD' },
+  { key: 'cars_com', name: 'Cars.com', icon: 'car', color: '#8E44AD', bgColor: '#F3EAFA' },
 ];
 
 export default function PublicReviewPage() {
   const { storeSlug, sp } = useLocalSearchParams();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [storeData, setStoreData] = useState<any>(null);
-  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-  
-  // Feedback form state
-  const [feedback, setFeedback] = useState({
-    customer_name: '',
-    customer_email: '',
-    customer_phone: '',
-    rating: 5,
-    text_review: '',
-    photo_consent: false,
-  });
+  const [showOtherSites, setShowOtherSites] = useState(false);
 
   useEffect(() => {
     loadStoreData();
@@ -66,75 +39,26 @@ export default function PublicReviewPage() {
       setStoreData(response.data);
     } catch (error) {
       console.error('Error loading store:', error);
-      Alert.alert('Error', 'Account not found');
     } finally {
       setLoading(false);
     }
   };
 
   const handlePlatformClick = async (platform: string, url: string) => {
-    // Track the click
     try {
       await api.post(`/review/submit/${storeSlug}`, {
         customer_name: 'Link Click',
         platform_clicked: platform,
         salesperson_id: sp,
       });
-    } catch (e) {
-      // Ignore tracking errors
-    }
-    
-    // Open the review platform
+    } catch (e) {}
     Linking.openURL(url);
-  };
-
-  const submitFeedback = async () => {
-    if (!feedback.customer_name.trim()) {
-      Alert.alert('Required', 'Please enter your name');
-      return;
-    }
-    
-    setSubmitting(true);
-    try {
-      await api.post(`/review/submit/${storeSlug}`, {
-        ...feedback,
-        salesperson_id: sp,
-        salesperson_name: storeData?.salesperson?.name,
-      });
-      setFeedbackSubmitted(true);
-      Alert.alert('Thank You!', 'Your feedback has been submitted.');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to submit feedback. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const renderStars = () => {
-    return (
-      <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <TouchableOpacity
-            key={star}
-            onPress={() => setFeedback(prev => ({ ...prev, rating: star }))}
-            style={styles.starButton}
-          >
-            <Ionicons
-              name={star <= feedback.rating ? 'star' : 'star-outline'}
-              size={36}
-              color={star <= feedback.rating ? '#FFD700' : '#8E8E93'}
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <ActivityIndicator size="large" color="#4285F4" />
       </View>
     );
   }
@@ -142,290 +66,115 @@ export default function PublicReviewPage() {
   if (!storeData) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle" size={64} color="#FF3B30" />
-        <Text style={styles.errorTitle}>Account Not Found</Text>
+        <Ionicons name="alert-circle" size={48} color="#ccc" />
+        <Text style={styles.errorTitle}>Page Not Found</Text>
         <Text style={styles.errorText}>This review page doesn't exist.</Text>
       </View>
     );
   }
 
-  const { store, review_links, social_links, salesperson } = storeData;
-  const primaryColor = store.primary_color || '#007AFF';
-
-  // Filter out empty review links
-  const activeReviewLinks = REVIEW_PLATFORMS.filter(
-    p => review_links?.[p.key] && review_links[p.key].trim()
-  );
+  const { store, review_links, salesperson } = storeData;
   
-  // Add custom links
-  const customLinks = review_links?.custom || [];
-
-  // Filter active social links
-  const activeSocialLinks = SOCIAL_PLATFORMS.filter(
-    p => social_links?.[p.key] && social_links[p.key].trim()
+  const activeLinks = REVIEW_PLATFORMS.filter(
+    p => review_links?.[p.key]?.trim()
   );
+  const customLinks = review_links?.custom || [];
+  const primaryLink = activeLinks[0];
+  const otherLinks = activeLinks.slice(1);
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-        >
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Header with Logo */}
-            <View style={styles.header}>
-              {store.logo_url ? (
-                <Image 
-                  source={{ uri: store.logo_url }} 
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={[styles.logoPlaceholder, { backgroundColor: primaryColor + '20' }]}>
-                  <Ionicons name="business" size={40} color={primaryColor} />
-                </View>
-              )}
-              <Text style={styles.storeName}>{store.name}</Text>
-              {store.address && (
-                <Text style={styles.storeAddress}>
-                  {store.address}{store.city ? `, ${store.city}` : ''}{store.state ? `, ${store.state}` : ''}
-                </Text>
-              )}
-              {salesperson?.name && (
-                <View style={styles.salespersonBadge}>
-                  <Ionicons name="person-circle" size={16} color="#8E8E93" />
-                  <Text style={styles.salespersonText}>Helped by {salesperson.name}</Text>
-                </View>
-              )}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          {store.logo_url ? (
+            <Image source={{ uri: store.logo_url }} style={styles.logo} resizeMode="contain" />
+          ) : (
+            <View style={styles.logoPlaceholder}>
+              <Ionicons name="business" size={36} color="#666" />
             </View>
+          )}
+        </View>
 
-            {/* Review Links Section */}
-            {(activeReviewLinks.length > 0 || customLinks.length > 0) && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Leave Us a Review</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Your feedback helps us improve! Choose a platform:
-                </Text>
-                
-                {activeReviewLinks.map((platform) => (
-                  <TouchableOpacity
-                    key={platform.key}
-                    style={[styles.reviewButton, { backgroundColor: platform.bgColor, borderColor: platform.color }]}
-                    onPress={() => handlePlatformClick(platform.key, review_links[platform.key])}
-                    data-testid={`review-link-${platform.key}`}
-                  >
-                    <View style={[styles.reviewIconBox, { backgroundColor: platform.color }]}>
-                      <Ionicons name={platform.icon as any} size={24} color="#FFF" />
-                    </View>
-                    <Text style={[styles.reviewButtonText, { color: platform.color }]}>
-                      Review on {platform.name}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={20} color={platform.color} />
-                  </TouchableOpacity>
-                ))}
-                
-                {/* Custom Links */}
-                {customLinks.map((link: { name: string; url: string }, index: number) => (
-                  <TouchableOpacity
-                    key={`custom-${index}`}
-                    style={[styles.reviewButton, { backgroundColor: primaryColor + '20', borderColor: primaryColor }]}
-                    onPress={() => handlePlatformClick('custom', link.url)}
-                    data-testid={`review-link-custom-${index}`}
-                  >
-                    <View style={[styles.reviewIconBox, { backgroundColor: primaryColor }]}>
-                      <Ionicons name="link" size={24} color="#FFF" />
-                    </View>
-                    <Text style={[styles.reviewButtonText, { color: primaryColor }]}>
-                      {link.name}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={20} color={primaryColor} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+        {/* Invitation Card */}
+        <View style={styles.card}>
+          <Text style={styles.storeName}>{store.name}</Text>
+          <Text style={styles.inviteText}>has invited you to review their business</Text>
 
-            {/* Text Feedback Section */}
-            {!feedbackSubmitted ? (
-              <View style={styles.section}>
+          {salesperson?.name && (
+            <Text style={styles.helpedBy}>Helped by {salesperson.name}</Text>
+          )}
+
+          {/* Primary Review Button */}
+          {primaryLink && (
+            <>
+              <Text style={styles.submitText}>
+                Submit your review on {primaryLink.name}, or select a different review site
+              </Text>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: primaryLink.color }]}
+                onPress={() => handlePlatformClick(primaryLink.key, review_links[primaryLink.key])}
+                data-testid={`review-primary-${primaryLink.key}`}
+              >
+                <Ionicons name={primaryLink.icon as any} size={22} color="#FFF" style={{ marginRight: 10 }} />
+                <Text style={styles.primaryButtonText}>Continue with {primaryLink.name}</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* Select Different Site */}
+          {(otherLinks.length > 0 || customLinks.length > 0) && (
+            <TouchableOpacity
+              style={styles.selectOtherButton}
+              onPress={() => setShowOtherSites(!showOtherSites)}
+              data-testid="select-different-site"
+            >
+              <Text style={styles.selectOtherText}>
+                {showOtherSites ? 'Hide other sites' : 'Select a different site'}
+              </Text>
+              <Ionicons name={showOtherSites ? 'chevron-up' : 'chevron-down'} size={18} color="#4285F4" />
+            </TouchableOpacity>
+          )}
+
+          {/* Other Review Sites */}
+          {showOtherSites && (
+            <View style={styles.otherSites}>
+              {otherLinks.map((platform) => (
                 <TouchableOpacity
-                  style={styles.feedbackToggle}
-                  onPress={() => setShowFeedbackForm(!showFeedbackForm)}
-                  data-testid="toggle-feedback-form"
+                  key={platform.key}
+                  style={[styles.otherButton, { backgroundColor: platform.bgColor }]}
+                  onPress={() => handlePlatformClick(platform.key, review_links[platform.key])}
+                  data-testid={`review-link-${platform.key}`}
                 >
-                  <View style={styles.feedbackToggleLeft}>
-                    <Ionicons name="chatbubble-ellipses" size={24} color={primaryColor} />
-                    <Text style={styles.feedbackToggleText}>
-                      {showFeedbackForm ? 'Hide Feedback Form' : 'Leave Private Feedback'}
-                    </Text>
-                  </View>
-                  <Ionicons 
-                    name={showFeedbackForm ? 'chevron-up' : 'chevron-down'} 
-                    size={20} 
-                    color="#8E8E93" 
-                  />
+                  <Ionicons name={platform.icon as any} size={22} color={platform.color} />
+                  <Text style={[styles.otherButtonText, { color: platform.color }]}>
+                    {platform.name}
+                  </Text>
+                  <Ionicons name="open-outline" size={16} color={platform.color} />
                 </TouchableOpacity>
-                
-                {showFeedbackForm && (
-                  <View style={styles.feedbackForm}>
-                    <Text style={styles.formLabel}>Your Name *</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={feedback.customer_name}
-                      onChangeText={(text) => setFeedback(prev => ({ ...prev, customer_name: text }))}
-                      placeholder="John Doe"
-                      placeholderTextColor="#8E8E93"
-                      data-testid="feedback-name-input"
-                    />
-                    
-                    <Text style={styles.formLabel}>Email (optional)</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={feedback.customer_email}
-                      onChangeText={(text) => setFeedback(prev => ({ ...prev, customer_email: text }))}
-                      placeholder="john@example.com"
-                      placeholderTextColor="#8E8E93"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      data-testid="feedback-email-input"
-                    />
-                    
-                    <Text style={styles.formLabel}>How was your experience?</Text>
-                    {renderStars()}
-                    
-                    <Text style={styles.formLabel}>Your Feedback</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      value={feedback.text_review}
-                      onChangeText={(text) => setFeedback(prev => ({ ...prev, text_review: text }))}
-                      placeholder="Tell us about your experience..."
-                      placeholderTextColor="#8E8E93"
-                      multiline
-                      numberOfLines={4}
-                      textAlignVertical="top"
-                      data-testid="feedback-text-input"
-                    />
-                    
-                    <TouchableOpacity
-                      style={styles.consentRow}
-                      onPress={() => setFeedback(prev => ({ ...prev, photo_consent: !prev.photo_consent }))}
-                    >
-                      <View style={[styles.checkbox, feedback.photo_consent && styles.checkboxChecked]}>
-                        {feedback.photo_consent && (
-                          <Ionicons name="checkmark" size={16} color="#FFF" />
-                        )}
-                      </View>
-                      <Text style={styles.consentText}>
-                        I consent to having my feedback shared publicly
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                      style={[styles.submitButton, { backgroundColor: primaryColor }]}
-                      onPress={submitFeedback}
-                      disabled={submitting}
-                      data-testid="submit-feedback-btn"
-                    >
-                      {submitting ? (
-                        <ActivityIndicator color="#FFF" />
-                      ) : (
-                        <>
-                          <Ionicons name="send" size={20} color="#FFF" />
-                          <Text style={styles.submitButtonText}>Submit Feedback</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <View style={styles.thankYouSection}>
-                <Ionicons name="checkmark-circle" size={64} color="#34C759" />
-                <Text style={styles.thankYouTitle}>Thank You!</Text>
-                <Text style={styles.thankYouText}>Your feedback has been received.</Text>
-              </View>
-            )}
-
-            {/* Social Links Section */}
-            {activeSocialLinks.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Follow Us</Text>
-                <View style={styles.socialGrid}>
-                  {activeSocialLinks.map((platform) => (
-                    <TouchableOpacity
-                      key={platform.key}
-                      style={[styles.socialButton, { backgroundColor: platform.color + '20' }]}
-                      onPress={() => Linking.openURL(social_links[platform.key])}
-                      data-testid={`social-link-${platform.key}`}
-                    >
-                      <Ionicons name={platform.icon as any} size={28} color={platform.color} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Contact Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Get in Touch</Text>
-              <View style={styles.contactGrid}>
-                {store.phone && (
-                  <TouchableOpacity
-                    style={styles.contactButton}
-                    onPress={() => Linking.openURL(`tel:${store.phone}`)}
-                    data-testid="call-store-btn"
-                  >
-                    <Ionicons name="call" size={24} color="#34C759" />
-                    <Text style={styles.contactButtonText}>Call Us</Text>
-                  </TouchableOpacity>
-                )}
-                {store.website && (
-                  <TouchableOpacity
-                    style={styles.contactButton}
-                    onPress={() => Linking.openURL(store.website)}
-                    data-testid="visit-website-btn"
-                  >
-                    <Ionicons name="globe" size={24} color="#007AFF" />
-                    <Text style={styles.contactButtonText}>Website</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              ))}
+              {customLinks.map((link: { name: string; url: string }, i: number) => (
+                <TouchableOpacity
+                  key={`custom-${i}`}
+                  style={[styles.otherButton, { backgroundColor: '#F0F0F0' }]}
+                  onPress={() => handlePlatformClick('custom', link.url)}
+                  data-testid={`review-custom-${i}`}
+                >
+                  <Ionicons name="link" size={22} color="#333" />
+                  <Text style={[styles.otherButtonText, { color: '#333' }]}>{link.name}</Text>
+                  <Ionicons name="open-outline" size={16} color="#333" />
+                </TouchableOpacity>
+              ))}
             </View>
+          )}
+        </View>
 
-            {/* Business Hours */}
-            {store.business_hours && Object.keys(store.business_hours).length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Business Hours</Text>
-                <View style={styles.hoursCard}>
-                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
-                    const hours = store.business_hours[day];
-                    const isOpen = hours !== null;
-                    return (
-                      <View key={day} style={styles.hoursRow}>
-                        <Text style={styles.dayText}>
-                          {day.charAt(0).toUpperCase() + day.slice(1)}
-                        </Text>
-                        <Text style={[styles.hoursText, !isOpen && styles.closedText]}>
-                          {isOpen ? `${hours.open} - ${hours.close}` : 'Closed'}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Powered by iMOs</Text>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Powered by </Text>
+          <Text style={[styles.footerText, styles.footerBrand]}>iMOs</Text>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -433,292 +182,153 @@ export default function PublicReviewPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F5F5F7',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    color: '#FFF',
-    marginTop: 16,
-    fontSize: 16,
-  },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   errorTitle: {
-    color: '#FFF',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginTop: 16,
+    color: '#333',
+    marginTop: 12,
   },
   errorText: {
-    color: '#8E8E93',
-    fontSize: 16,
-    marginTop: 8,
-  },
-  scrollView: {
-    flex: 1,
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
   },
   scrollContent: {
-    padding: 20,
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}),
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    marginBottom: 16,
+    width: 80,
+    height: 80,
+    borderRadius: 16,
   },
   logoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    backgroundColor: '#E8E8ED',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 32,
+    width: '100%',
+    maxWidth: 440,
+    alignItems: 'center',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 2px 20px rgba(0,0,0,0.08)',
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 20,
+      elevation: 4,
+    }),
   },
   storeName: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#1A1A1A',
     textAlign: 'center',
   },
-  storeAddress: {
+  inviteText: {
     fontSize: 15,
-    color: '#8E8E93',
-    marginTop: 8,
+    color: '#666',
     textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 22,
   },
-  salespersonBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C1C1E',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 16,
+  helpedBy: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
-  salespersonText: {
-    color: '#8E8E93',
+  submitText: {
     fontSize: 14,
-    marginLeft: 8,
-  },
-  section: {
-    marginBottom: 28,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFF',
-    marginBottom: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#8E8E93',
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 24,
     marginBottom: 16,
+    lineHeight: 20,
   },
-  reviewButton: {
+  primaryButton: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-  reviewIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 12,
   },
-  reviewButtonText: {
-    flex: 1,
+  primaryButtonText: {
+    color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  feedbackToggle: {
+  selectOtherButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
-    padding: 16,
+    paddingVertical: 12,
+  },
+  selectOtherText: {
+    color: '#4285F4',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  otherSites: {
+    width: '100%',
+    marginTop: 8,
+  },
+  otherButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
     borderRadius: 12,
+    marginBottom: 8,
   },
-  feedbackToggleLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  feedbackToggleText: {
-    color: '#FFF',
-    fontSize: 16,
+  otherButtonText: {
+    flex: 1,
+    fontSize: 15,
     fontWeight: '500',
     marginLeft: 12,
   },
-  feedbackForm: {
-    backgroundColor: '#1C1C1E',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  formLabel: {
-    color: '#8E8E93',
-    fontSize: 13,
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: '#2C2C2E',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 15,
-    color: '#FFF',
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 14,
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 12,
-  },
-  starButton: {
-    padding: 4,
-  },
-  consentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#8E8E93',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  consentText: {
-    flex: 1,
-    color: '#8E8E93',
-    fontSize: 14,
-  },
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  submitButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  thankYouSection: {
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#1C1C1E',
-    borderRadius: 16,
-    marginBottom: 28,
-  },
-  thankYouTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFF',
-    marginTop: 16,
-  },
-  thankYouText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginTop: 8,
-  },
-  socialGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  socialButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    marginBottom: 12,
-  },
-  contactGrid: {
-    flexDirection: 'row',
-    marginTop: 8,
-  },
-  contactButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
-    padding: 16,
-    borderRadius: 12,
-    marginRight: 12,
-  },
-  contactButtonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  hoursCard: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-  },
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
-  },
-  dayText: {
-    color: '#FFF',
-    fontSize: 15,
-  },
-  hoursText: {
-    color: '#8E8E93',
-    fontSize: 15,
-  },
-  closedText: {
-    color: '#FF3B30',
-  },
   footer: {
+    flexDirection: 'row',
+    marginTop: 32,
     alignItems: 'center',
-    paddingVertical: 24,
-    marginTop: 12,
   },
   footerText: {
-    color: '#3A3A3C',
     fontSize: 12,
+    color: '#BBB',
+  },
+  footerBrand: {
+    fontWeight: '700',
   },
 });
