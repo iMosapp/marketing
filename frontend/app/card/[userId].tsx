@@ -260,8 +260,7 @@ export default function DigitalCardPage() {
   }
 
   const { user, store, testimonials } = cardData;
-  // QR code points to the public landing page - use short URL if available
-  const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
+  // QR code and share links use the direct production URL
 
   // Filter active social links
   const activeSocialLinks = SOCIAL_PLATFORMS.filter(
