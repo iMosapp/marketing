@@ -90,7 +90,7 @@ async def track_review_click(store_slug: str, data: dict):
     """
     db = get_db()
     
-    store = await db.stores.find_one({"slug": store_slug})
+    store = await find_store_by_slug(db, store_slug)
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
