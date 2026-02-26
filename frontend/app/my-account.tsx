@@ -268,6 +268,13 @@ export default function MyAccountScreen() {
       onPress: () => router.push('/settings/create-congrats'),
     },
     {
+      icon: 'star',
+      title: 'Share Review Link',
+      subtitle: copiedLink ? 'Copied!' : 'Copy & send to customers',
+      color: '#FFD60A',
+      onPress: handleCopyReviewLink,
+    },
+    {
       icon: 'create',
       title: 'Edit Digital Card',
       subtitle: 'Update bio, photo & socials',
