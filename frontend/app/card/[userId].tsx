@@ -29,6 +29,7 @@ const CARD_HEIGHT = 480;
 
 // Social platform icons with brand colors
 const SOCIAL_PLATFORMS = [
+  { key: 'website', icon: 'globe-outline', color: '#34C759', baseUrl: '' },
   { key: 'facebook', icon: 'logo-facebook', color: '#1877F2', baseUrl: 'https://facebook.com/' },
   { key: 'instagram', icon: 'logo-instagram', color: '#E4405F', baseUrl: 'https://instagram.com/' },
   { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2', baseUrl: 'https://x.com/' },
