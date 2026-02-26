@@ -592,9 +592,11 @@ export default function MyAccountScreen() {
           </View>
 
           {!storeSlug && (
-            <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16 }}>
-              Store not configured. Go to Store Settings to set up your store slug.
-            </Text>
+            <TouchableOpacity onPress={() => { setShowShareModal(false); router.push('/settings/store-profile' as any); }}>
+              <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
+                Store slug not set. Tap here to configure in Store Profile.
+              </Text>
+            </TouchableOpacity>
           )}
 
           {/* Action Buttons */}
