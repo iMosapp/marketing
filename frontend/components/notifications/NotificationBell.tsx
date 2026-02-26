@@ -134,9 +134,9 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   button: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: '#1C1C1E',
     alignItems: 'center',
     justifyContent: 'center',
