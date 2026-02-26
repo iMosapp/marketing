@@ -260,11 +260,43 @@ async def request_password_reset(data: dict):
         'expires': datetime.utcnow().timestamp() + 600  # 10 minutes
     }
     
-    logger.info(f"[DEV MODE] Password reset code for {email}: {code}")
+    logger.info(f"Password reset code generated for {email}")
+    
+    # Send reset code email via Resend
+    if RESEND_API_KEY:
+        try:
+            params = {
+                "from": f"iMOs <{SENDER_EMAIL}>",
+                "to": [email],
+                "subject": "Your iMOs Password Reset Code",
+                "html": f"""
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; background: #ffffff;">
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <h2 style="color: #1A1A1A; margin: 0;">Password Reset</h2>
+                    </div>
+                    <p style="color: #555; font-size: 15px; line-height: 1.6;">
+                        You requested a password reset for your iMOs account. Use the code below to reset your password. This code expires in 10 minutes.
+                    </p>
+                    <div style="text-align: center; margin: 32px 0;">
+                        <div style="display: inline-block; background: #F0F4FF; border: 2px solid #007AFF; border-radius: 12px; padding: 16px 40px; letter-spacing: 8px; font-size: 28px; font-weight: 700; color: #007AFF;">
+                            {code}
+                        </div>
+                    </div>
+                    <p style="color: #999; font-size: 13px; text-align: center;">
+                        If you didn't request this, you can safely ignore this email.
+                    </p>
+                </div>
+                """
+            }
+            resend.Emails.send(params)
+            logger.info(f"Password reset email sent to {email}")
+        except Exception as e:
+            logger.error(f"Failed to send reset email to {email}: {e}")
+    else:
+        logger.warning("Resend API key not configured, reset email not sent")
     
     return {
-        "message": "If an account exists with this email, a reset code has been sent",
-        "dev_code": code  # Remove in production
+        "message": "If an account exists with this email, a reset code has been sent"
     }
 
 @router.post("/forgot-password/verify")
