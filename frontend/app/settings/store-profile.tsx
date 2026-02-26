@@ -208,6 +208,47 @@ const { showToast } = useToast();
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Logo Upload */}
+          <Text style={styles.sectionTitle}>ACCOUNT LOGO</Text>
+          <View style={styles.card}>
+            <View style={styles.logoUploadRow}>
+              <TouchableOpacity
+                style={styles.logoUploadBox}
+                onPress={isAdmin ? handleUploadLogo : undefined}
+                disabled={uploading}
+                data-testid="logo-upload-btn"
+              >
+                {uploading ? (
+                  <ActivityIndicator size="small" color="#C9A962" />
+                ) : store.logo_url ? (
+                  <Image source={{ uri: store.logo_url }} style={styles.logoPreview} resizeMode="contain" />
+                ) : (
+                  <View style={styles.logoPlaceholder}>
+                    <Ionicons name="camera" size={28} color="#6E6E73" />
+                  </View>
+                )}
+              </TouchableOpacity>
+              <View style={styles.logoUploadInfo}>
+                <Text style={styles.logoUploadTitle}>
+                  {store.logo_url ? 'Change Logo' : 'Upload Logo'}
+                </Text>
+                <Text style={styles.logoUploadHint}>Square image, max 5MB{'\n'}Used on cards, review pages & emails</Text>
+                {isAdmin && (
+                  <TouchableOpacity style={styles.logoUploadBtn} onPress={handleUploadLogo} disabled={uploading}>
+                    <Ionicons name="cloud-upload" size={16} color="#007AFF" />
+                    <Text style={styles.logoUploadBtnText}>{uploading ? 'Uploading...' : 'Choose Image'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+            {store.logo_avatar_url && (
+              <View style={styles.avatarPreviewRow}>
+                <Image source={{ uri: store.logo_avatar_url }} style={styles.avatarPreview} />
+                <Text style={styles.avatarPreviewLabel}>Avatar (auto-generated)</Text>
+              </View>
+            )}
+          </View>
+
           {/* Basic Info */}
           <Text style={styles.sectionTitle}>BASIC INFO</Text>
           <View style={styles.card}>
