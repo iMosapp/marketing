@@ -324,13 +324,6 @@ export default function MoreScreen() {
           color: '#007AFF',
         },
         {
-          icon: 'gift',
-          title: 'Create Congrats Card',
-          subtitle: 'Make & share a card',
-          onPress: () => router.push('/settings/create-congrats'),
-          color: '#C9A962',
-        },
-        {
           icon: 'person',
           title: 'AI Persona',
           subtitle: 'Communication style',
