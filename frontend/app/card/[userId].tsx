@@ -646,6 +646,75 @@ export default function DigitalCardPage() {
             </View>
           )}
 
+          {/* Leave a Review Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Leave a Review</Text>
+            <View style={styles.feedbackCard}>
+              {feedbackSubmitted ? (
+                <View style={styles.feedbackSuccess} data-testid="feedback-success">
+                  <Ionicons name="checkmark-circle" size={40} color="#34C759" />
+                  <Text style={styles.feedbackSuccessTitle}>Thank you!</Text>
+                  <Text style={styles.feedbackSuccessText}>Your feedback means a lot.</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Star Rating */}
+                  <Text style={styles.feedbackLabel}>How was your experience?</Text>
+                  <View style={styles.starRow} data-testid="feedback-stars">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <TouchableOpacity
+                        key={star}
+                        onPress={() => setFeedbackRating(star)}
+                        data-testid={`star-${star}`}
+                      >
+                        <Ionicons
+                          name={star <= feedbackRating ? 'star' : 'star-outline'}
+                          size={36}
+                          color={star <= feedbackRating ? '#FFD60A' : '#3A3A3C'}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {feedbackRating > 0 && (
+                    <>
+                      <TextInput
+                        style={styles.feedbackInput}
+                        placeholder="Your name (optional)"
+                        placeholderTextColor="#6E6E73"
+                        value={feedbackName}
+                        onChangeText={setFeedbackName}
+                        data-testid="feedback-name"
+                      />
+                      <TextInput
+                        style={[styles.feedbackInput, styles.feedbackTextArea]}
+                        placeholder="Tell us about your experience..."
+                        placeholderTextColor="#6E6E73"
+                        value={feedbackText}
+                        onChangeText={setFeedbackText}
+                        multiline
+                        numberOfLines={3}
+                        data-testid="feedback-text"
+                      />
+                      <TouchableOpacity
+                        style={styles.feedbackSubmitBtn}
+                        onPress={handleSubmitFeedback}
+                        disabled={submittingFeedback}
+                        data-testid="feedback-submit"
+                      >
+                        {submittingFeedback ? (
+                          <ActivityIndicator size="small" color="#000" />
+                        ) : (
+                          <Text style={styles.feedbackSubmitText}>Submit Review</Text>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </>
+              )}
+            </View>
+          </View>
+
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Powered by iMOs</Text>
