@@ -35,10 +35,10 @@ async def get_card_data(user_id: str):
     if user.get("store_id"):
         store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
     
-    # Get testimonials/reviews for this salesperson
+    # Get testimonials/reviews for this salesperson (approved only)
     testimonials = await db.customer_feedback.find({
         "salesperson_id": user_id,
-        "photo_consent": True,  # Only show reviews with consent
+        "approved": True,
         "rating": {"$gte": 4}   # Only show 4+ star reviews
     }).sort("created_at", -1).limit(5).to_list(5)
     
