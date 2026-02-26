@@ -859,6 +859,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    position: 'relative' as any,
+  },
+  channelTapArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   channelUnread: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
