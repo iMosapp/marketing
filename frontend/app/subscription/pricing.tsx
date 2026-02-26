@@ -88,7 +88,7 @@ export default function PricingPage() {
     try {
       const originUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : 'https://chat-web-ui.preview.emergentagent.com';
+        : 'https://congrats-card-fix.preview.emergentagent.com';
       
       const checkoutData: any = {
         plan_id: planId,

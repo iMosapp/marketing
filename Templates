@@ -1,0 +1,36 @@
+<analysis>**original_problem_statement:**
+The user has provided a series of feature requests and bug fixes:
+1.  **Delete Contacts:** Implement functionality for users to delete single or multiple contacts.
+2.  **Edit Digital Card UI:** Move the social media links above the voice recorder section on the digital card editor.
+3.  **Org/Account Linking:** Clarify and improve the workflow for linking existing accounts and users to an organization from the admin panel. The user reported being unable to find a way to link pre-existing entities.
+4.  **Team Chat Filter:** Add a search or filter bar to the Team Chat page to easily find channels.
+5.  **Fix Org Linking Click:** The Link Existing button on the organization detail page flashes but is not clickable on the web.
+6.  **Fix Copy Buttons:** The Copy Password and Copy All buttons in the User Created success modal are not clickable on the web.
+7.  **Fix Inbox Email Prompt:** When opening an email conversation with a contact who already has a valid email address, the app incorrectly prompts the user to enter a new email.
+8.  **Fix Congrats Card Error:** Creating a congrats card fails with an Object error on the web.
+9.  **Relocate Create Congrats Card Feature:** The user wants to create congrats cards from a central, easily accessible location. The initial request was to add it under the More tab, with shareable links that use the production domain.
+10. **Correctly Relocate Create Congrats Card:** The user provided a very specific final location for the feature: under the My Account section at the top of the More page, as a Quick Action next to My Digital Card.
+
+**User's preferred language**: English
+
+**what currently exists?**
+The application is a full-stack Relationship Management System (RMS). In this session, several critical web compatibility issues on the Team Chat, Admin, and User Creation pages were resolved. New features were also added, including a channel search bar in Team Chat, bulk/single contact deletion, and a comprehensive Create Congrats Card flow. The logic for the inbox was fixed to prevent unnecessary email prompts. The agent successfully implemented all requested features but is currently in the process of moving the Create Congrats Card feature to its final, user-specified location after two incorrect placements.
+
+**Last working item**:
+-   **Last item agent was working:** Moving the Create Congrats Card feature to the correct location. The user specified it should be a Quick Action within the My Account section at the top of the More tab. The agent has identified the correct file to modify: .
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Frontend testing agent. The agent should verify that the Create Congrats Card button appears in the correct location under Quick Actions and that clicking it navigates to the creation page. Also, verify it has been removed from its previous incorrect location.
+-   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+-   Issue 1: (P0) Create Congrats Card feature is in the wrong location.
+-   Issue 2: (P1) User password corruption risk.
+-   Issue 3: (P1) Production deployment is running old, broken code.
+-   Issue 4: (P2) Mobile app data for  may not be syncing.
+-   Issue 5: (P2) React Hydration Error #418 persists.
+-   Issue 6: (P2) Leaderboard toggle functionality is not fully tested or verified.
+
+**Issues Detail:**
+-   **Issue 1: Create Congrats Card feature is in the wrong location.**
+    -   **Attempted fixes:** The agent first placed the feature in the More -
