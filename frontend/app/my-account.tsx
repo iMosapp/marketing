@@ -838,3 +838,74 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
 });
+
+
+const shareStyles = StyleSheet.create({
+  modal: {
+    flex: 1,
+    backgroundColor: '#000',
+    paddingTop: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C1E',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  linkBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#1C1C1E',
+    marginHorizontal: 16,
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#FFF',
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 32,
+    paddingHorizontal: 16,
+  },
+  actionBtn: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  hint: {
+    fontSize: 13,
+    color: '#6E6E73',
+    textAlign: 'center',
+    marginTop: 32,
+    paddingHorizontal: 32,
+    lineHeight: 18,
+  },
+});
