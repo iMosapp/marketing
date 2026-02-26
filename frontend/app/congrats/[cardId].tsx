@@ -91,7 +91,7 @@ export default function CongratsCardPage() {
     
     const shareUrl = Platform.OS === 'web' 
       ? window.location.href 
-      : `${api.defaults.baseURL?.replace('/api', '')}/congrats/${cardId}`;
+      : `https://app.imosapp.com/congrats/${cardId}`;
     
     const shareText = `Check out my thank you card from ${cardData?.salesman?.name || 'my salesperson'}! ${cardData?.headline}`;
     
@@ -230,7 +230,7 @@ export default function CongratsCardPage() {
           style={styles.actionsTitleLink}
           onPress={() => {
             if (cardData?.salesman_id) {
-              const reviewUrl = `${api.defaults.baseURL?.replace('/api', '')}/p/${cardData.salesman_id}`;
+              const reviewUrl = `https://app.imosapp.com/p/${cardData.salesman_id}`;
               if (Platform.OS === 'web') {
                 window.open(reviewUrl, '_blank');
               } else {
@@ -300,7 +300,7 @@ export default function CongratsCardPage() {
         <TouchableOpacity
           style={styles.profileLinkSection}
           onPress={() => {
-            const profileUrl = `${api.defaults.baseURL?.replace('/api', '')}/p/${cardData.salesman_id}`;
+            const profileUrl = `https://app.imosapp.com/p/${cardData.salesman_id}`;
             if (Platform.OS === 'web') {
               window.open(profileUrl, '_blank');
             } else {
