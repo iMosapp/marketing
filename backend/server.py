@@ -433,7 +433,7 @@ app.include_router(short_urls.router)
 @app.on_event("startup")
 async def startup_event():
     logger.info("iMOs API v2.0 starting...")
-    logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')}")
+    logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
     
     # Create database indexes for performance
     try:
