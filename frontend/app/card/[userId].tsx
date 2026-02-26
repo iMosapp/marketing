@@ -69,15 +69,6 @@ export default function DigitalCardPage() {
     }
   };
 
-  const loadShortUrl = async () => {
-    try {
-      const response = await api.get(`/card/short-url/${userId}`);
-      setShortUrl(response.data.short_url);
-    } catch (error) {
-      console.error('Error loading short URL:', error);
-    }
-  };
-
   // Flip card animation
   const flipCard = () => {
     Animated.spring(flipAnimation, {
