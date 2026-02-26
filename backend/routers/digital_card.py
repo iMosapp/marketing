@@ -283,3 +283,79 @@ async def get_card_short_url(user_id: str):
         "short_url": short_url_result["short_url"],
         "short_code": short_url_result["short_code"]
     }
+
+
+@router.get("/store/{store_slug}")
+async def get_store_card_data(store_slug: str):
+    """
+    Get account-level digital card data for public display.
+    This is the dealership/store card that managers send out.
+    """
+    db = get_db()
+
+    store = await db.stores.find_one({"slug": store_slug})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+
+    store_id = str(store["_id"])
+
+    # Get brand kit
+    brand_kit = store.get("email_brand_kit", {})
+
+    # Get approved testimonials at the store level
+    testimonials = await db.customer_feedback.find({
+        "store_id": store_id,
+        "approved": True,
+        "rating": {"$gte": 4}
+    }).sort("created_at", -1).limit(6).to_list(6)
+
+    formatted_testimonials = []
+    for t in testimonials:
+        formatted_testimonials.append({
+            "id": str(t["_id"]),
+            "customer_name": t.get("customer_name", "Happy Customer"),
+            "rating": t.get("rating", 5),
+            "text": t.get("text_review", ""),
+            "salesperson_name": t.get("salesperson_name"),
+            "created_at": t.get("created_at").isoformat() if t.get("created_at") else None
+        })
+
+    # Get team members to display
+    team_members = await db.users.find({
+        "store_id": store_id,
+        "status": "active"
+    }, {"password": 0, "_id": 1, "name": 1, "title": 1, "photo_url": 1}).to_list(20)
+
+    formatted_team = [{
+        "id": str(m["_id"]),
+        "name": m.get("name", ""),
+        "title": m.get("title", ""),
+        "photo_url": m.get("photo_url"),
+    } for m in team_members]
+
+    return {
+        "store": {
+            "id": store_id,
+            "name": store.get("name", ""),
+            "slug": store.get("slug", ""),
+            "logo_url": brand_kit.get("logo_url") or store.get("logo_url", ""),
+            "cover_image_url": store.get("cover_image_url"),
+            "primary_color": brand_kit.get("primary_color") or store.get("primary_color", "#007AFF"),
+            "phone": store.get("phone"),
+            "email": store.get("email"),
+            "address": store.get("address"),
+            "city": store.get("city"),
+            "state": store.get("state"),
+            "website": store.get("website"),
+            "social_links": store.get("social_links", {}),
+            "business_hours": store.get("business_hours", {}),
+        },
+        "brand_kit": {
+            "company_name": brand_kit.get("company_name", store.get("name", "")),
+            "tagline": brand_kit.get("tagline", ""),
+            "primary_color": brand_kit.get("primary_color", store.get("primary_color", "#007AFF")),
+        },
+        "testimonials": formatted_testimonials,
+        "team": formatted_team,
+        "review_links": store.get("review_links", {}),
+    }
