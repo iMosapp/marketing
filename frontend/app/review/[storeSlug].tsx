@@ -229,6 +229,67 @@ export default function PublicReviewPage() {
             )}
           </View>
 
+          {/* Direct Feedback Card */}
+          <View style={styles.feedbackCard} data-testid="feedback-section">
+            {fbSubmitted ? (
+              <View style={styles.feedbackSuccess}>
+                <Ionicons name="checkmark-circle" size={36} color="#22C55E" />
+                <Text style={styles.feedbackSuccessTitle}>Thank you!</Text>
+                <Text style={styles.feedbackSuccessText}>Your feedback has been submitted.</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.feedbackHeading}>Or leave us direct feedback</Text>
+                <View style={styles.starRow} data-testid="feedback-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity key={star} onPress={() => setFbRating(star)} data-testid={`fb-star-${star}`}>
+                      <Ionicons
+                        name={star <= fbRating ? 'star' : 'star-outline'}
+                        size={32}
+                        color={star <= fbRating ? '#FBBF24' : '#CBD5E1'}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {fbRating > 0 && (
+                  <>
+                    <TextInput
+                      style={styles.feedbackInput}
+                      placeholder="Your name (optional)"
+                      placeholderTextColor="#94A3B8"
+                      value={fbName}
+                      onChangeText={setFbName}
+                      data-testid="fb-name-input"
+                    />
+                    <TextInput
+                      style={[styles.feedbackInput, styles.feedbackTextArea]}
+                      placeholder="Tell us about your experience..."
+                      placeholderTextColor="#94A3B8"
+                      value={fbText}
+                      onChangeText={setFbText}
+                      multiline
+                      numberOfLines={3}
+                      data-testid="fb-text-input"
+                    />
+                    <TouchableOpacity
+                      style={[styles.feedbackSubmitBtn, { backgroundColor: primaryColor }]}
+                      onPress={handleSubmitFeedback}
+                      disabled={fbSubmitting}
+                      data-testid="fb-submit-btn"
+                    >
+                      {fbSubmitting ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Text style={styles.feedbackSubmitText}>Submit Feedback</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+
           {/* Footer */}
           <TouchableOpacity 
             style={styles.footer}
