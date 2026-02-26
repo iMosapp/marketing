@@ -45,8 +45,10 @@ export default function DigitalCardPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Direct shareable link - always use production URL like congrats cards
+  const cardUrl = `https://app.imosapp.com/card/${userId}`;
   
   // Animation values
   const flipAnimation = useRef(new Animated.Value(0)).current;
@@ -54,7 +56,6 @@ export default function DigitalCardPage() {
 
   useEffect(() => {
     loadCardData();
-    loadShortUrl();
   }, [userId]);
 
   const loadCardData = async () => {
