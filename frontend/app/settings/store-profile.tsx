@@ -43,6 +43,7 @@ const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [store, setStore] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     // Wait for auth to finish loading before checking store_id
