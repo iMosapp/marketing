@@ -76,6 +76,7 @@ export default function TeamChatScreen() {
   const { user } = useAuthStore();
   
   // State
+  const { showToast } = useToast();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
