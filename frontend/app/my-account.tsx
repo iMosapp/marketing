@@ -566,6 +566,61 @@ export default function MyAccountScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Share Review Link Modal */}
+      <WebModal visible={showShareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowShareModal(false)}>
+        <View style={shareStyles.modal}>
+          <View style={shareStyles.header}>
+            <TouchableOpacity onPress={() => setShowShareModal(false)}>
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </TouchableOpacity>
+            <Text style={shareStyles.headerTitle}>Share Review Link</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          {/* Link Preview */}
+          <View style={shareStyles.linkBox}>
+            <Ionicons name="link" size={18} color="#FFD60A" />
+            <Text style={shareStyles.linkText} numberOfLines={2}>{getReviewUrl()}</Text>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={shareStyles.actions}>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleCopyReviewLink} data-testid="share-copy-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#FF950020' }]}>
+                <Ionicons name={copiedLink ? 'checkmark' : 'copy-outline'} size={24} color={copiedLink ? '#34C759' : '#FF9500'} />
+              </View>
+              <Text style={shareStyles.actionLabel}>{copiedLink ? 'Copied!' : 'Copy Link'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleShareViaSMS} data-testid="share-sms-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Text</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleShareViaEmail} data-testid="share-email-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="mail-outline" size={24} color="#007AFF" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Email</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handlePreviewReviewPage} data-testid="share-preview-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#5856D620' }]}>
+                <Ionicons name="eye-outline" size={24} color="#5856D6" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Preview</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Quick message hint */}
+          <Text style={shareStyles.hint}>
+            Tap Text or Email to send with a pre-written message asking for a review.
+          </Text>
+        </View>
+      </WebModal>
     </SafeAreaView>
   );
 }
