@@ -341,13 +341,6 @@ export default function MyAccountScreen() {
       onPress: () => setShowShareModal(true),
     },
     {
-      icon: 'create',
-      title: 'Edit Digital Card',
-      subtitle: 'Update bio, photo & socials',
-      color: '#007AFF',
-      onPress: () => router.push('/settings/my-profile'),
-    },
-    {
       icon: 'chatbubbles',
       title: 'Review Approvals',
       subtitle: 'Approve customer reviews',
@@ -360,6 +353,13 @@ export default function MyAccountScreen() {
       subtitle: 'Communication style settings',
       color: '#AF52DE',
       onPress: () => router.push('/settings/persona'),
+    },
+    {
+      icon: 'create',
+      title: 'Edit Digital Card',
+      subtitle: 'Update bio, photo & socials',
+      color: '#007AFF',
+      onPress: () => router.push('/settings/my-profile'),
     },
   ];
 
