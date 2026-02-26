@@ -775,7 +775,7 @@ async def send_email_invite(data: EmailInviteRequest):
     
     # Send email via Resend
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
     
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured - invite created but email not sent")
