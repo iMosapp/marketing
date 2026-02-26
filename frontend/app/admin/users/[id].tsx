@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import api from '../../../services/api';
 import { showSimpleAlert, showConfirm } from '../../../services/alert';
+import { useToast } from '../../../components/common/Toast';
 import { useAuthStore } from '../../../store/authStore';
 
 interface UserDetail {
@@ -203,7 +204,7 @@ export default function UserDetailScreen() {
         try {
           await api.put(`/admin/users/${id}`, { is_active: newStatus });
           loadUserData();
-          showSimpleAlert('Success', `User ${newStatus ? 'activated' : 'deactivated'}`);
+          showToast(`User ${newStatus ? 'activated' : 'deactivated'}`);
         } catch (error) {
           showSimpleAlert('Error', 'Failed to update user status');
         }
@@ -221,7 +222,7 @@ export default function UserDetailScreen() {
         try {
           await api.put(`/admin/users/${id}/reactivate`);
           loadUserData();
-          showSimpleAlert('Success', `${user.name} has been reactivated`);
+          showToast('${user.name} has been reactivated');
         } catch (error: any) {
           showSimpleAlert('Error', error.response?.data?.detail || 'Failed to reactivate user');
         } finally {
@@ -236,7 +237,7 @@ export default function UserDetailScreen() {
     setActionLoading(true);
     try {
       await api.put(`/admin/hierarchy/users/${id}/change-organization`, { organization_id: newOrgId });
-      showSimpleAlert('Success', 'User moved to new organization');
+      showToast('User moved to new organization');
       setShowOrgModal(false);
       loadUserData();
     } catch (error: any) {
@@ -250,7 +251,7 @@ export default function UserDetailScreen() {
     setActionLoading(true);
     try {
       await api.put(`/admin/hierarchy/users/${id}/assign-store`, { store_id: storeId });
-      showSimpleAlert('Success', 'User assigned to store');
+      showToast('User assigned to store');
       setShowStoreModal(false);
       loadUserData();
     } catch (error) {
@@ -267,7 +268,7 @@ export default function UserDetailScreen() {
       async () => {
         try {
           await api.put(`/admin/hierarchy/users/${id}/remove-store`, { store_id: store._id });
-          showSimpleAlert('Success', 'User removed from store');
+          showToast('User removed from store');
           loadUserData();
         } catch (error) {
           showSimpleAlert('Error', 'Failed to remove user from store');
@@ -280,7 +281,7 @@ export default function UserDetailScreen() {
     setActionLoading(true);
     try {
       await api.put(`/admin/hierarchy/users/${id}/role`, { role: newRole });
-      showSimpleAlert('Success', 'Role updated');
+      showToast('Role updated');
       setShowRoleModal(false);
       loadUserData();
     } catch (error) {
@@ -294,12 +295,12 @@ export default function UserDetailScreen() {
     if (!user) return;
     showConfirm(
       'Delete User',
-      `Are you sure you want to permanently delete "${user.name}"? This action cannot be undone.\n\nAll their data, conversations, and contacts will be removed from the system.\n\nNote: Personal contacts uploaded or downloaded by this user will NOT transfer to the organization or store. They belong to the individual user.`,
+      `Delete "${user.name}"? All their data will be permanently removed.`,
       async () => {
         setActionLoading(true);
         try {
           await api.delete(`/admin/users/${id}`);
-          showSimpleAlert('Success', 'User deleted');
+          showToast('User deleted');
           router.back();
         } catch (error: any) {
           showSimpleAlert('Error', error.response?.data?.detail || 'Failed to delete user');
