@@ -593,7 +593,7 @@ export default function DigitalCardPage() {
               {store?.website && (
                 <TouchableOpacity 
                   style={[styles.infoRow, { borderBottomWidth: 0 }]}
-                  onPress={() => Linking.openURL(store.website)}
+                  onPress={() => openProtocolUrl(store.website.startsWith('http') ? store.website : `https://${store.website}`)}
                 >
                   <Ionicons name="globe-outline" size={20} color="#C9A962" />
                   <Text style={[styles.infoText, styles.linkText]}>{store.website}</Text>
