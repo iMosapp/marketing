@@ -61,6 +61,7 @@ export default function ContactDetailScreen() {
   });
   
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(!isNewContact);
   
   // Date picker state
