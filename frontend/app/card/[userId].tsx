@@ -92,6 +92,26 @@ export default function DigitalCardPage() {
     }
   };
 
+  const handleSubmitFeedback = async () => {
+    if (feedbackRating === 0) return;
+    setSubmittingFeedback(true);
+    try {
+      const storeSlug = cardData?.store?.slug || 'default';
+      await api.post(`/review/submit/${storeSlug}`, {
+        customer_name: feedbackName.trim() || 'Anonymous',
+        rating: feedbackRating,
+        text_review: feedbackText.trim() || null,
+        salesperson_id: userId,
+        salesperson_name: cardData?.user?.name,
+      });
+      setFeedbackSubmitted(true);
+    } catch (e) {
+      console.error('Feedback error:', e);
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
   // Flip card animation
   const flipCard = () => {
     Animated.spring(flipAnimation, {
