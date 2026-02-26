@@ -358,6 +358,30 @@ async def change_password(data: dict):
     
     return {"message": "Password changed successfully"}
 
+@router.post("/admin-reset")
+async def admin_password_reset(data: dict):
+    """Emergency admin password reset - requires secret key"""
+    secret = data.get('secret')
+    email = data.get('email')
+    new_password = data.get('new_password')
+    
+    if secret != 'iMOs-Emergency-Reset-2026':
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    
+    if not email or not new_password:
+        raise HTTPException(status_code=400, detail="Email and new_password required")
+    
+    result = await get_db().users.update_one(
+        {"email": email},
+        {"$set": {"password": new_password}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": f"Password reset for {email}"}
+
+
 @router.post("/persona/{user_id}")
 async def save_persona(user_id: str, persona: UserPersona):
     """Save the AI persona settings for a user"""
