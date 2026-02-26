@@ -540,16 +540,7 @@ export default function MyProfileScreen() {
           </View>
         </View>
 
-        {/* Voicemail Greeting Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>VOICEMAIL GREETING</Text>
-          <Text style={styles.sectionSubtitle}>
-            Record a custom voicemail greeting for missed calls
-          </Text>
-          <VoicemailRecorder />
-        </View>
-
-        {/* Social Links Section */}
+        {/* Social Links Section (moved above voicemail) */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
@@ -592,6 +583,15 @@ export default function MyProfileScreen() {
               ))}
             </View>
           )}
+        </View>
+
+        {/* Voicemail Greeting Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>VOICEMAIL GREETING</Text>
+          <Text style={styles.sectionSubtitle}>
+            Record a custom voicemail greeting for missed calls
+          </Text>
+          <VoicemailRecorder />
         </View>
 
         {/* Preview Card Button */}
