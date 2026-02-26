@@ -28,7 +28,7 @@ async def get_review_page_data(store_slug: str, sp: str = None):
     """
     db = get_db()
     
-    store = await db.stores.find_one({"slug": store_slug})
+    store = await find_store_by_slug(db, store_slug)
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
