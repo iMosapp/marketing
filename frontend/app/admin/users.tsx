@@ -20,6 +20,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
+import { showSimpleAlert } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
 const ROLE_COLORS: Record<string, string> = {
