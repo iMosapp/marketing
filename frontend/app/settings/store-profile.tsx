@@ -343,7 +343,25 @@ const { showToast } = useToast();
           {/* Review Page Link */}
           <Text style={styles.sectionTitle}>PUBLIC REVIEW PAGE</Text>
           <View style={styles.card}>
-            <Text style={styles.reviewLinkLabel}>Share this link with customers:</Text>
+            <Text style={styles.reviewLinkLabel}>Store URL Slug</Text>
+            <View style={styles.slugRow}>
+              <Text style={styles.slugPrefix}>app.imosapp.com/review/</Text>
+              <TextInput
+                style={styles.slugInput}
+                value={store.slug || ''}
+                onChangeText={(text) => {
+                  const cleaned = text.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-');
+                  setStore({ ...store, slug: cleaned });
+                }}
+                placeholder="your-store-name"
+                placeholderTextColor="#6E6E73"
+                autoCapitalize="none"
+                data-testid="store-slug-input"
+              />
+            </View>
+            <Text style={styles.slugHint}>Lowercase letters, numbers, and dashes only</Text>
+
+            <Text style={[styles.reviewLinkLabel, { marginTop: 16 }]}>Share this link with customers:</Text>
             <View style={styles.reviewLinkBox}>
               <Text style={styles.reviewLinkUrl} numberOfLines={1}>
                 {`https://app.imosapp.com/review/${store.slug || store._id}`}
