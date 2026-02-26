@@ -54,6 +54,14 @@ async def root():
 async def api_health():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
+@api_router.get("/build-version")
+async def build_version():
+    """Returns current build version for cache-busting"""
+    import hashlib
+    # Version based on server start time - changes every deploy
+    version = hashlib.md5(str(app.state._state.get('start_time', '')).encode()).hexdigest()[:8]
+    return {"version": version}
+
 @api_router.get("/debug/db-info")
 async def debug_db_info():
     """Temporary diagnostic endpoint to debug production database connection"""
