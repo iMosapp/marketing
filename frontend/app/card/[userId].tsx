@@ -156,7 +156,7 @@ export default function DigitalCardPage() {
   // Share via link
   const handleShareLink = async () => {
     try {
-      const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+      const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
       await Share.share({
         message: `Check out my digital business card: ${cardUrl}`,
         url: cardUrl,
@@ -171,7 +171,7 @@ export default function DigitalCardPage() {
   // Copy link to clipboard
   const handleCopyLink = async () => {
     try {
-      const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+      const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
       await Clipboard.setStringAsync(cardUrl);
       if (Platform.OS === 'web') {
         alert('Link copied to clipboard!');
@@ -184,7 +184,7 @@ export default function DigitalCardPage() {
 
   // Share via SMS
   const handleShareSMS = () => {
-    const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+    const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
     const message = `Check out my digital business card: ${cardUrl}`;
     Linking.openURL(`sms:?body=${encodeURIComponent(message)}`);
     setShowShareModal(false);
@@ -192,7 +192,7 @@ export default function DigitalCardPage() {
 
   // Share via Email
   const handleShareEmail = () => {
-    const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+    const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
     const subject = `${cardData?.user?.name || 'My'} Digital Business Card`;
     const body = `Hi!\n\nHere's my digital business card:\n${cardUrl}\n\nLooking forward to connecting!`;
     Linking.openURL(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
@@ -203,7 +203,7 @@ export default function DigitalCardPage() {
   const handleShareQR = async () => {
     try {
       // Use short URL if available, otherwise fall back to full URL
-      const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+      const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
       await Share.share({
         message: `Check out my digital business card: ${cardUrl}`,
         url: cardUrl,
@@ -269,7 +269,7 @@ export default function DigitalCardPage() {
 
   const { user, store, testimonials } = cardData;
   // QR code points to the public landing page - use short URL if available
-  const cardUrl = shortUrl || `${api.defaults.baseURL?.replace('/api', '')}/p/${userId}`;
+  const cardUrl = shortUrl || `https://app.imosapp.com/p/${userId}`;
 
   // Filter active social links
   const activeSocialLinks = SOCIAL_PLATFORMS.filter(
