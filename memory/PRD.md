@@ -34,6 +34,8 @@ All 57 pages at `app.imosapp.com/imos/...` — no auth required.
 - [x] **Org/Account/User Linking Verified** (Feb 26, 2026):
   - Admin > Organizations, Accounts, Users pages all accessible
   - User detail page has Change Organization and Assign Store modals
+  - **NEW: "Link Existing Account"** button on Org detail page — opens searchable panel of unlinked accounts, one-click to link
+  - **NEW: "Link Existing User"** button on Org detail page — opens searchable panel of unlinked users, one-click to link
 - [x] Inbox: removed SMS/Email toggle pills, inline email prompt
 - [x] Avatar system: auto-backfill thumbnails from raw photos (Feb 25, 2026)
 - [x] Image quality: 1080px for outbound sharing (Feb 25, 2026)
