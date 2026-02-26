@@ -1,4 +1,4 @@
-import React, { const { showToast } = useToast();
+import React, {
   useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
