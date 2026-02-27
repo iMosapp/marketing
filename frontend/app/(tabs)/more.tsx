@@ -55,6 +55,8 @@ export default function MoreScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const [shareRecipientName, setShareRecipientName] = useState('');
+  const [shareRecipientPhone, setShareRecipientPhone] = useState('');
   
   // Load pending count for super admins
   useFocusEffect(
