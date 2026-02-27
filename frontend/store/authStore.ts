@@ -20,9 +20,27 @@ interface User {
   isImpersonating?: boolean;  // Flag for impersonation mode
 }
 
+interface PartnerBranding {
+  name: string;
+  slug: string;
+  logo?: string | null;
+  logo_icon?: string | null;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  text_color: string;
+  powered_by_text: string;
+  company_name: string;
+  company_address?: string;
+  company_phone?: string;
+  company_email?: string;
+  company_website?: string;
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;
+  partnerBranding: PartnerBranding | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isImpersonating: boolean;
