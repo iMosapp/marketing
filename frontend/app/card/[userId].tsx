@@ -969,14 +969,14 @@ const styles = StyleSheet.create({
   photo: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: 22,
     borderWidth: 3,
     borderColor: '#C9A962',
   },
   photoPlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: 22,
     backgroundColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
