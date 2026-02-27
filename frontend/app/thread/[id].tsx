@@ -2951,6 +2951,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#8E8E93',
   },
+  personalSmsHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#FF950010',
+    borderTopWidth: 1,
+    borderTopColor: '#FF950030',
+  },
+  personalSmsHintText: {
+    fontSize: 12,
+    color: '#FF9500',
+    fontWeight: '500',
+  },
   messageTime: {
     fontSize: 11,
     marginTop: 4,
