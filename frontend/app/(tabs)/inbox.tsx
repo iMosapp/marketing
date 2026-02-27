@@ -2082,13 +2082,14 @@ const styles = StyleSheet.create({
   
   // Inbox Toggle (My/Team)
   inboxToggleContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
   },
   inboxToggle: {
     flexDirection: 'row',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 4,
+    backgroundColor: '#1C1C1E',
   },
   inboxToggleOption: {
     flex: 1,
