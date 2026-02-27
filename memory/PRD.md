@@ -16,6 +16,10 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ### Session Feb 27, 2026 (Fork 4)
 - **FIX: MONGO_URL** — Reset from Atlas to localhost:27017 for preview stability
+- **UI: More Page Tile Rearrangement**
+  - Moved Account Setup, Brand Kit, Review Links tiles into My Account page
+  - Replaced with My Digital Card, Congrats Card, Share Review as top 3 tiles on More page
+  - Quick action tiles now visible to all users (no role restriction)
 - Verified all 5 main tabs (Inbox, Keypad, Contacts, Team, More) load correctly
 
 ### Session Feb 27, 2026 (Fork 3)
