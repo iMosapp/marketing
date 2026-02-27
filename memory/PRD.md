@@ -78,7 +78,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - `GET /api/admin/partners` - White-label partner CRUD
 
 ## Critical Production Notes
-- `backend/server.py` uses `load_dotenv(override=True)` — NEVER change
+- `backend/server.py` uses `load_dotenv(override=False)` — This is CRITICAL. `override=False` means deployment platform env vars (Kubernetes) take priority over the .env file. This was changed from `override=True` which was causing the .env localhost URL to stomp on the production Atlas URL, locking the user out for 3 days. NEVER change back to override=True.
 - Frontend uses relative `/api` paths for web builds
 - **MONGO_URL in preview .env MUST be mongodb://localhost:27017**
 - **NEVER switch .env MONGO_URL to production Atlas in the preview pod**
