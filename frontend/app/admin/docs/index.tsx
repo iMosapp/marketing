@@ -17,6 +17,7 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 
 const CATEGORY_COLORS: Record<string, string> = {
+  operations: '#00C7BE',
   security: '#FF3B30',
   company_policy: '#5856D6',
   legal: '#007AFF',
@@ -25,6 +26,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
+  operations: 'book',
   security: 'shield-checkmark',
   company_policy: 'business',
   legal: 'document-text',
@@ -33,6 +35,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
+  operations: 'Operations Manual',
   security: 'Cyber Security',
   company_policy: 'Company Policy',
   legal: 'Legal',
