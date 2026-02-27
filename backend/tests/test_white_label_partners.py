@@ -240,14 +240,15 @@ class TestDigitalCardPartnerBranding:
         assert 'user' in data
         assert data['user'].get('id') == TEST_USER_ID
         
-        # Check for partner_branding
-        if 'partner_branding' in data:
-            branding = data['partner_branding']
-            print(f"Card partner branding: {branding.get('name')}")
-            assert branding.get('name') == 'Calendar Systems'
-            assert branding.get('primary_color') == '#E87722'
-        else:
-            print("INFO: partner_branding not in card data - expected if store has no partner")
+        # Check for partner_branding - should be present now
+        assert 'partner_branding' in data, "partner_branding should be in digital card response"
+        branding = data['partner_branding']
+        print(f"Card partner branding: {branding.get('name')}")
+        
+        # Validate Calendar Systems partner
+        assert branding.get('name') == 'Calendar Systems'
+        assert branding.get('primary_color') == '#E87722'
+        assert 'powered_by_text' in branding
 
 
 class TestPartnerBySlug:
