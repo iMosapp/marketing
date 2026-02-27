@@ -533,6 +533,13 @@ export default function MoreScreen() {
         color: '#5AC8FA',
       },
       {
+        icon: 'library',
+        title: 'Company Docs',
+        subtitle: 'Policies, security & training',
+        onPress: () => router.push('/admin/docs'),
+        color: '#5856D6',
+      },
+      {
         icon: 'person-add',
         title: 'Invite Team',
         subtitle: 'Send invitations',
