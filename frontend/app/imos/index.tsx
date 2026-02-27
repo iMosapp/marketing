@@ -123,6 +123,125 @@ export default function ImosHome() {
             ))}
           </View>
 
+          {/* ========== THE PROBLEM ========== */}
+          <View style={s.narrativeSection}>
+            <View style={[s.narrativeCard, { borderColor: 'rgba(255,59,48,0.15)' }]}>
+              <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(255,59,48,0.1)' }]}>
+                <Ionicons name="alert-circle" size={32} color="#FF3B30" />
+              </View>
+              <Text style={[s.narrativeTag, { color: '#FF3B30' }]}>THE OLD WORLD</Text>
+              <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
+                People Disappear After the Transaction.
+              </Text>
+              <View style={s.narrativeDivider} />
+              <View style={s.narrativeLines}>
+                <Text style={s.narrativeLine}>The customer buys. The salesperson moves on.</Text>
+                <Text style={s.narrativeLine}>Reviews go to the company — not the person.</Text>
+                <Text style={s.narrativeLine}>Social profiles live scattered across platforms.</Text>
+                <Text style={s.narrativeLine}>Follow-up feels generic. The relationship fades.</Text>
+              </View>
+              <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(255,59,48,0.08)' }]}>
+                <Text style={[s.narrativeHighlightText, { color: '#FF6B6B' }]}>
+                  In a world full of automation, nobody feels remembered.
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ========== THE SHIFT ========== */}
+          <View style={s.narrativeSection}>
+            <View style={[s.narrativeCard, { borderColor: 'rgba(201,169,98,0.2)' }]}>
+              <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(201,169,98,0.1)' }]}>
+                <Ionicons name="swap-horizontal" size={32} color="#C9A962" />
+              </View>
+              <Text style={[s.narrativeTag, { color: '#C9A962' }]}>THE SHIFT</Text>
+              <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
+                iMOs Isn't About Marketing.{'\n'}
+                <Text style={{ color: '#C9A962' }}>It's About Ownership.</Text>
+              </Text>
+              <View style={s.narrativeDivider} />
+              <View style={s.narrativeLines}>
+                <Text style={s.narrativeLine}>Every organization. Every team. Every individual.</Text>
+                <Text style={s.narrativeLine}>All under one structured social ecosystem.</Text>
+              </View>
+              <View style={s.narrativeColumnsWrap}>
+                {[
+                  { icon: 'business', color: '#007AFF', label: 'Organizations', desc: 'Teams, accounts, reputation data, social presence — structured.' },
+                  { icon: 'people', color: '#34C759', label: 'Teams', desc: 'Shared visibility. Unified brand. Individual ownership.' },
+                  { icon: 'person', color: '#C9A962', label: 'Individuals', desc: 'Digital card. Reviews. Social links. Personal rating.' },
+                ].map((col, ci) => (
+                  <View key={ci} style={s.narrativeCol}>
+                    <View style={[s.narrativeColIcon, { backgroundColor: `${col.color}15` }]}>
+                      <Ionicons name={col.icon as any} size={22} color={col.color} />
+                    </View>
+                    <Text style={s.narrativeColLabel}>{col.label}</Text>
+                    <Text style={s.narrativeColDesc}>{col.desc}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* ========== THE POWER MOVE ========== */}
+          <View style={s.narrativeSection}>
+            <View style={[s.narrativeCard, { borderColor: 'rgba(255,214,10,0.15)' }]}>
+              <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(255,214,10,0.1)' }]}>
+                <Ionicons name="flash" size={32} color="#FFD60A" />
+              </View>
+              <Text style={[s.narrativeTag, { color: '#FFD60A' }]}>THE POWER MOVE</Text>
+              <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
+                Personal Reviews Change Everything.
+              </Text>
+              <View style={s.narrativeDivider} />
+              <View style={s.narrativeLines}>
+                <Text style={s.narrativeLine}>Direct feedback that lives on your digital business card.</Text>
+                <Text style={s.narrativeLine}>Builds personal credibility. Strengthens your brand.</Text>
+                <Text style={s.narrativeLine}>Stays with you — even if you switch stores or industries.</Text>
+              </View>
+              <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(255,214,10,0.08)' }]}>
+                <Text style={[s.narrativeHighlightText, { color: '#FFD60A' }]}>
+                  Reputation becomes portable. That's powerful.
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ========== THE EMOTIONAL HOOK ========== */}
+          <View style={s.narrativeSection}>
+            <View style={[s.narrativeCard, { borderColor: 'rgba(0,122,255,0.15)' }]}>
+              <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(0,122,255,0.1)' }]}>
+                <Ionicons name="heart" size={32} color="#007AFF" />
+              </View>
+              <Text style={[s.narrativeTag, { color: '#007AFF' }]}>THE BIGGER PICTURE</Text>
+              <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
+                AI Is Replacing Transactions.{'\n'}
+                <Text style={{ color: '#007AFF' }}>But Trust Still Wins.</Text>
+              </Text>
+              <View style={s.narrativeDivider} />
+              <View style={s.narrativeLines}>
+                <Text style={s.narrativeLine}>Trust lives with people — not logos.</Text>
+              </View>
+              <View style={s.narrativeGrid}>
+                {[
+                  { icon: 'eye', color: '#007AFF', text: 'Visibility' },
+                  { icon: 'shield-checkmark', color: '#34C759', text: 'Credibility' },
+                  { icon: 'key', color: '#C9A962', text: 'Ownership' },
+                  { icon: 'infinite', color: '#AF52DE', text: 'Continuity' },
+                ].map((g, gi) => (
+                  <View key={gi} style={s.narrativeGridItem}>
+                    <Ionicons name={g.icon as any} size={24} color={g.color} />
+                    <Text style={s.narrativeGridText}>{g.text}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(0,122,255,0.08)' }]}>
+                <Text style={[s.narrativeHighlightText, { color: '#5AC8FA' }]}>
+                  iMOs gives individuals visibility, credibility, ownership, and continuity. Their reputation moves with them.
+                </Text>
+              </View>
+            </View>
+          </View>
+
           {/* ========== HOW IT WORKS ========== */}
           <View style={s.howSection}>
             <Text style={[s.sectionLabel]}>THE SOCIAL RELATIONSHIP OS</Text>
