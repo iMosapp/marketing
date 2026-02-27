@@ -236,7 +236,10 @@ class Contact(BaseModel):
     custom_dates: List[CustomDateField] = []  # Additional custom dates
     
     purchase_date: Optional[datetime] = None  # Legacy - alias for date_sold
-    source: str = "manual"  # manual, csv, phone_contacts
+    source: str = "manual"  # manual, csv, phone_contacts, lead_form, referral
+    ownership_type: str = "org"  # org (belongs to org) or personal (imported/personal to user)
+    status: str = "active"  # active, hidden (hidden when user deactivated from org)
+    original_user_id: Optional[str] = None  # Tracks who originally created/imported this contact
     # Referral tracking
     referred_by: Optional[str] = None  # Contact ID of referrer
     referred_by_name: Optional[str] = None  # Cached name for display
