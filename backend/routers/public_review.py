@@ -20,6 +20,23 @@ async def find_store_by_slug(db, slug: str):
     return store
 
 
+def get_safe_logo(doc, fallback_doc=None):
+    """Get a logo URL that's safe for API responses.
+    Prefers avatar (small) version, falls back to logo_url only if it's a real URL (not base64)."""
+    for d in [doc, fallback_doc]:
+        if not d:
+            continue
+        # Prefer small avatar version
+        avatar = d.get("logo_avatar_url")
+        if avatar:
+            return avatar
+        # Use logo_url only if it's a real URL (not huge base64)
+        logo = d.get("logo_url")
+        if logo and not logo.startswith("data:") or (logo and len(logo) < 500):
+            return logo
+    return ""
+
+
 @router.get("/page/{store_slug}")
 async def get_review_page_data(store_slug: str, sp: str = None):
     """
@@ -53,13 +70,15 @@ async def get_review_page_data(store_slug: str, sp: str = None):
             except Exception:
                 pass
 
+    safe_logo = get_safe_logo(store, brand_kit)
+
     return {
         "store": {
             "id": str(store["_id"]),
             "name": store.get("name", ""),
             "slug": store.get("slug", ""),
-            "logo_url": store.get("logo_url") or brand_kit.get("logo_url", ""),
-            "cover_image_url": store.get("cover_image_url"),
+            "logo_url": safe_logo,
+            "cover_image_url": store.get("cover_image_url") if store.get("cover_image_url") and len(store.get("cover_image_url", "")) < 500 else "",
             "primary_color": brand_kit.get("primary_color") or store.get("primary_color", "#007AFF"),
             "phone": store.get("phone"),
             "address": store.get("address"),
@@ -70,7 +89,7 @@ async def get_review_page_data(store_slug: str, sp: str = None):
         "brand_kit": {
             "company_name": brand_kit.get("company_name", store.get("name", "")),
             "tagline": brand_kit.get("tagline", ""),
-            "logo_url": brand_kit.get("logo_url", store.get("logo_url", "")),
+            "logo_url": safe_logo,
             "primary_color": brand_kit.get("primary_color", store.get("primary_color", "#007AFF")),
         },
         "review_links": store.get("review_links", {}),
