@@ -181,7 +181,7 @@ export default function CreateCongratsCardPage() {
     // Log contact event if we have a phone number
     if (customerPhone.trim() && user?._id) {
       try {
-        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
           phone: customerPhone.trim(),
           name: customerName.trim(),
           event_type: 'congrats_card_sent',
@@ -190,10 +190,34 @@ export default function CreateCongratsCardPage() {
           event_icon: 'gift',
           event_color: '#C9A962',
         });
+        if (res.data.needs_confirmation) {
+          setMatchInfo(res.data);
+          setPendingSharePlatform(platform);
+          setMatchModalVisible(true);
+        }
       } catch (err) {
         console.error('Failed to log congrats event:', err);
       }
     }
+  };
+
+  const resolveCongratsMatch = async (action: string) => {
+    setMatchModalVisible(false);
+    if (!user?._id || !pendingSharePlatform) return;
+    try {
+      await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        phone: customerPhone.trim(),
+        name: customerName.trim(),
+        event_type: 'congrats_card_sent',
+        event_title: 'Congrats Card Sent',
+        event_description: `Sent congrats card via ${pendingSharePlatform}`,
+        event_icon: 'gift',
+        event_color: '#C9A962',
+        force_action: action,
+      });
+    } catch {}
+    setMatchInfo(null);
+    setPendingSharePlatform(null);
   };
 
   const handleDownload = () => {
