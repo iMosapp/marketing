@@ -1379,20 +1379,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS_DARK.background,
   },
   
-  // Header - Luxury Glassmorphic
+  // Header - Clean Dark
   header: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS_DARK.border,
+    borderBottomWidth: 0,
   },
   headerWeb: {
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: '#000000',
   },
   headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   headerLeft: {
     flexDirection: 'row',
