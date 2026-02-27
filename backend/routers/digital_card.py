@@ -9,7 +9,17 @@ from typing import Optional
 from routers.database import get_db, get_data_filter
 from routers.short_urls import create_short_url, get_short_url_base
 
-router = APIRouter(prefix="/card", tags=["digital-card"])
+def get_safe_logo(doc):
+    """Return avatar or short logo URL, never a massive base64."""
+    if not doc:
+        return None
+    avatar = doc.get("logo_avatar_url")
+    if avatar:
+        return avatar
+    logo = doc.get("logo_url")
+    if logo and (not logo.startswith("data:") or len(logo) < 500):
+        return logo
+    return None
 
 
 @router.get("/data/{user_id}")
