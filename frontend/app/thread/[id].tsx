@@ -613,6 +613,10 @@ export default function ThreadScreen() {
     // Light haptic when sending message
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
+    // Check if user has a Twilio number for SMS mode
+    const hasTwilioNumber = !!(user as any).mvpline_number;
+    const isPersonalSMS = messageMode === 'sms' && !hasTwilioNumber;
+    
     try {
       setSending(true);
       
@@ -628,7 +632,7 @@ export default function ThreadScreen() {
         sender: 'user',
         timestamp: new Date().toISOString(),
         ai_generated: false,
-        channel: messageMode,
+        channel: isPersonalSMS ? 'sms_personal' : messageMode,
       };
       
       setMessages((prev) => [...prev, optimisticMessage]);
@@ -645,7 +649,7 @@ export default function ThreadScreen() {
       const messagePayload: any = {
         conversation_id: convId,
         content: contentToSend,
-        channel: messageMode,
+        channel: isPersonalSMS ? 'sms_personal' : messageMode,
       };
       
       // Include template tracking info if a template was used
@@ -655,8 +659,38 @@ export default function ThreadScreen() {
         messagePayload.template_name = selectedTemplateInfo.template_name;
       }
       
-      // Send to backend
+      // Send to backend (logs the message regardless of send method)
       await messagesAPI.send(user._id, messagePayload);
+      
+      // If no Twilio number → copy message & open native SMS app
+      if (isPersonalSMS && contactPhone) {
+        // Copy message to clipboard
+        try {
+          if (Platform.OS === 'web' && navigator.clipboard) {
+            await navigator.clipboard.writeText(contentToSend);
+          } else if (Platform.OS === 'web') {
+            const ta = document.createElement('textarea');
+            ta.value = contentToSend;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+        } catch {}
+        
+        // Open native SMS app with recipient and message pre-filled
+        const smsUrl = Platform.OS === 'ios'
+          ? `sms:${contactPhone}&body=${encodeURIComponent(contentToSend)}`
+          : `sms:${contactPhone}?body=${encodeURIComponent(contentToSend)}`;
+        
+        if (Platform.OS === 'web') {
+          window.open(`sms:${contactPhone}?body=${encodeURIComponent(contentToSend)}`, '_self');
+        } else {
+          Linking.openURL(smsUrl);
+        }
+      }
       
       // Clear template info after sending
       setSelectedTemplateInfo(null);
