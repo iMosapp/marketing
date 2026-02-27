@@ -21,6 +21,8 @@ def get_safe_logo(doc):
         return logo
     return None
 
+router = APIRouter(prefix="/card", tags=["digital-card"])
+
 
 @router.get("/data/{user_id}")
 async def get_card_data(user_id: str):
