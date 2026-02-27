@@ -310,25 +310,28 @@ export default function ContactDetailScreen() {
       showSimpleAlert('Missing Info', 'No email address available');
       return;
     }
+    
+    // Build thread URL with contact info
+    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contact.email || '')}`;
+    
     switch (key) {
       case 'sms':
-        // Navigate to thread/inbox for this contact to compose from there
-        router.push(`/thread/${id}?contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}`);
+        router.push(`/thread/${id}?${threadParams}&mode=sms`);
         break;
       case 'call':
         Linking.openURL(`tel:${contact.phone}`);
         break;
       case 'email':
-        Linking.openURL(`mailto:${contact.email}`);
+        router.push(`/thread/${id}?${threadParams}&mode=email`);
         break;
       case 'review':
-        showToast('Review invite feature');
+        router.push(`/thread/${id}?${threadParams}&mode=review`);
         break;
       case 'card':
-        if (user) router.push(`/card/${user._id}`);
+        router.push(`/thread/${id}?${threadParams}&mode=card`);
         break;
       case 'gift':
-        router.push(`/congrats/${id}`);
+        router.push(`/thread/${id}?${threadParams}&mode=congrats`);
         break;
     }
   };
