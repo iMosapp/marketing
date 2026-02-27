@@ -662,8 +662,8 @@ const { showToast } = useToast();
               <Text style={styles.codeText}>        "first_name": "Jane",</Text>
               <Text style={styles.codeText}>        "phone": "+15559876543",</Text>
               <Text style={styles.codeText}>        "external_id": "HUB-456",</Text>
-              <Text style={styles.codeText}>        "external_ids": {'{'}"hubspot": "HUB-456"{'}'}</Text>
-              <Text style={styles.codeText}>    {'}'}</Text>
+              <Text style={styles.codeText}>        "external_ids": {"{\"hubspot\": \"HUB-456\"}"}</Text>
+              <Text style={styles.codeText}>    {"}"}</Text>
               <Text style={styles.codeText}>)</Text>
             </View>
           </View>
