@@ -5,60 +5,60 @@ import { useRouter } from 'expo-router';
 import { ImosHeader, ImosFooter } from './_components';
 
 const HERO_FEATURES = [
-  { icon: 'camera', color: '#34C759', label: 'Congrats Cards' },
-  { icon: 'chatbubbles', color: '#007AFF', label: 'Smart Messaging' },
-  { icon: 'repeat', color: '#FF9500', label: 'Automated Campaigns' },
-  { icon: 'sparkles', color: '#AF52DE', label: 'AI Assistant' },
-  { icon: 'star', color: '#FFD60A', label: 'Reviews' },
-  { icon: 'trophy', color: '#C9A962', label: 'Leaderboards' },
+  { icon: 'card', color: '#007AFF', label: 'Digital Cards' },
+  { icon: 'star', color: '#FFD60A', label: 'Personal Reviews' },
+  { icon: 'share-social', color: '#34C759', label: 'Social Links' },
+  { icon: 'camera', color: '#C9A962', label: 'Congrats Cards' },
+  { icon: 'rocket', color: '#FF9500', label: 'Campaigns' },
+  { icon: 'trophy', color: '#AF52DE', label: 'Reputation' },
 ];
 
 const STATS = [
-  { value: '100%', label: 'of customer milestones captured automatically' },
-  { value: '3x', label: 'faster new hire onboarding with guided training' },
-  { value: '24/7', label: 'automated follow-up campaigns running for you' },
+  { value: 'Own', label: 'your reputation — it moves with you, wherever you go' },
+  { value: 'Build', label: 'personal credibility that outlasts any company' },
+  { value: 'Connect', label: 'every customer touchpoint under one social presence' },
 ];
 
 const HOW_IT_WORKS = [
   {
-    tag: 'CONGRATS CARDS',
-    title: 'One Photo Starts a Lifetime of Loyalty.',
-    desc: 'Your salesperson snaps a congrats photo. A branded card is created that customers share on social media. The contact is tagged, the campaign starts, and follow-ups happen forever — automatically.',
-    bullets: ['Branded shareable cards', 'Auto-tag & campaign enrollment', 'Social media amplification'],
-    icon: 'camera',
-    color: '#34C759',
-  },
-  {
-    tag: 'SMART MESSAGING',
-    title: 'Deliver Personalized Messages That Build Real Relationships.',
-    desc: 'SMS and email from one unified inbox. AI-powered response suggestions that sound like your team wrote them. Never leave a customer waiting.',
-    bullets: ['Unified SMS & email inbox', 'AI response suggestions', 'Mobile-friendly (iOS, Android)'],
-    icon: 'chatbubbles',
+    tag: 'ORGANIZATIONS',
+    title: 'Structure Your Entire Social Presence.',
+    desc: 'Manage teams, accounts, and individuals under one roof. Track review performance, social engagement, and reputation data across your entire organization.',
+    bullets: ['Team & account management', 'Reputation data at every level', 'Unified social presence'],
+    icon: 'business',
     color: '#007AFF',
   },
   {
-    tag: 'AUTOMATED CAMPAIGNS',
-    title: 'Set It and Never Forget a Customer Again.',
-    desc: 'Birthday messages, anniversary follow-ups, holiday greetings, sold-date sequences — all automated. Customers feel remembered without any manual effort from your team.',
-    bullets: ['Birthdays & anniversaries', '14+ holiday templates', 'Tag-triggered multi-step workflows'],
-    icon: 'rocket',
-    color: '#FF9500',
+    tag: 'INDIVIDUALS',
+    title: 'Every Person Gets Their Own Brand.',
+    desc: 'Digital business card. Review profile. Social links. Personal rating. Customer feedback history. No more hiding behind the company logo.',
+    bullets: ['Personal digital card & review profile', 'Portable reputation that stays with you', 'Direct customer feedback history'],
+    icon: 'person',
+    color: '#C9A962',
   },
   {
-    tag: 'MANAGEMENT & COACHING',
-    title: 'Complete Visibility Without Micromanaging.',
-    desc: 'Real-time leaderboards, activity feeds across your entire team, broadcast messages, and onboarding that gets new hires productive in days — not weeks.',
-    bullets: ['Real-time leaderboards', 'Team activity feeds', 'Guided role-based onboarding'],
-    icon: 'shield-checkmark',
-    color: '#AF52DE',
+    tag: 'THE EXPERIENCE',
+    title: 'Not "Leave a Review." It\'s "We Appreciate You."',
+    desc: 'A sale happens. A Congrats Card is sent. The customer lands on a branded page with social links, Google reviews, direct feedback, and a future engagement path. It feels celebratory. Intentional. Human.',
+    bullets: ['Branded celebratory experience', 'All social links in one place', 'Google review + direct feedback'],
+    icon: 'heart',
+    color: '#FF2D55',
   },
   {
-    tag: 'REVIEWS & REPUTATION',
-    title: 'Turn Happy Customers Into 5-Star Reviews.',
-    desc: 'One link sends customers to all your review sites. Share it via text, email, or your digital card. Track every click, collect direct feedback, and approve reviews before they go public.',
-    bullets: ['Podium-style review link pages', 'Click tracking per salesperson', 'Approval workflow for testimonials'],
+    tag: 'PERSONAL REVIEWS',
+    title: 'Reputation That\'s Portable.',
+    desc: 'Not just public Google reviews — direct feedback that lives on your digital card, builds your personal credibility, and stays with you long-term. Even if you switch stores or industries.',
+    bullets: ['Reviews live on your digital card', 'Personal credibility that travels', 'Strengthens your individual brand'],
     icon: 'star',
     color: '#FFD60A',
+  },
+  {
+    tag: 'AUTOMATED CAMPAIGNS',
+    title: 'Nobody Gets Forgotten. Ever.',
+    desc: 'Birthday messages, anniversary follow-ups, holiday greetings, sold-date sequences — all automated. Customers feel remembered without any manual effort from your team.',
+    bullets: ['Birthdays & anniversaries', 'Tag-triggered workflows', 'Customers feel remembered'],
+    icon: 'rocket',
+    color: '#FF9500',
   },
 ];
 
@@ -79,13 +79,13 @@ export default function ImosHome() {
 
           {/* ========== HERO ========== */}
           <View style={[s.hero, isDesktop && s.heroDesktop]}>
-            <Text style={[s.heroLabel, isDesktop && { fontSize: 14 }]}>RELATIONSHIP MANAGEMENT SYSTEM</Text>
+            <Text style={[s.heroLabel, isDesktop && { fontSize: 14 }]}>i'M ON SOCIAL</Text>
             <Text style={[s.heroTitle, isDesktop && { fontSize: 52, lineHeight: 58 }]}>
-              Old School Relationship Building.{'\n'}
-              <Text style={{ color: '#C9A962' }}>Modern Tools.</Text>
+              Meet the New Way{'\n'}
+              <Text style={{ color: '#C9A962' }}>to Be On Social.</Text>
             </Text>
             <Text style={[s.heroSub, isDesktop && { fontSize: 18, maxWidth: 560 }]}>
-              Empower your sales teams with the tools they need to build lasting customer relationships. Every moment captured. Every follow-up automated. Every customer remembered.
+              In a world where companies automate everything, iMOs protects the relationship. Give organizations, teams, and individuals control of their digital presence, reviews, and customer connections.
             </Text>
 
             {/* Feature Icons Row */}
@@ -125,9 +125,9 @@ export default function ImosHome() {
 
           {/* ========== HOW IT WORKS ========== */}
           <View style={s.howSection}>
-            <Text style={[s.sectionLabel]}>HOW IT WORKS</Text>
+            <Text style={[s.sectionLabel]}>THE SOCIAL RELATIONSHIP OS</Text>
             <Text style={[s.sectionTitle, isDesktop && { fontSize: 36 }]}>
-              Everything Your Team Needs to Win
+              A Reputation Operating System for Humans
             </Text>
           </View>
 
@@ -158,10 +158,10 @@ export default function ImosHome() {
 
           <View style={s.bottomCTA}>
             <Text style={[s.bottomCTATitle, isDesktop && { fontSize: 36 }]}>
-              Ready to Transform Your Team?
+              Own Your Relationships.{'\n'}Own Your Reputation.
             </Text>
             <Text style={s.bottomCTASub}>
-              See why forward-thinking organizations trust iMOs to build lasting customer relationships.
+              Send congrats cards. Collect reviews. Share your socials. Build your reputation. The new way to be on social starts here.
             </Text>
             <View style={s.bottomCTABtns}>
               <TouchableOpacity style={s.primaryBtn} onPress={() => navigate('/imos/demo')} data-testid="bottom-demo-btn">
