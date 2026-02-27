@@ -84,6 +84,8 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **NEVER switch .env MONGO_URL to production Atlas in the preview pod**
 - **The deployment platform's environment variables handle production**
 - If login breaks after a restart, check MONGO_URL in backend/.env FIRST
+- **DB_NAME = `imos-admin-test_database` — THIS IS THE REAL PRODUCTION DATABASE. Do NOT rename or change it. The name is misleading but confirmed correct by the owner.**
+- **Production MONGO_URL does NOT contain a database name in the path — the app relies on the DB_NAME env var to connect to the correct database**
 
 ## Prioritized Backlog
 ### P0 (Critical)
