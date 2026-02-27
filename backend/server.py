@@ -125,6 +125,8 @@ api_router.include_router(team_chat.router)
 api_router.include_router(date_triggers.router)
 api_router.include_router(app_directory.router)
 api_router.include_router(scheduler_admin.router)
+api_router.include_router(webhook_subscriptions.router)
+api_router.include_router(public_api.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
