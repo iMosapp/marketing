@@ -643,6 +643,35 @@ export default function ThreadScreen() {
     const hasTwilioNumber = !!(user as any).mvpline_number;
     const isPersonalSMS = messageMode === 'sms' && !hasTwilioNumber;
     
+    // CRITICAL: Open native SMS app IMMEDIATELY, BEFORE any async operations.
+    // Mobile browsers (iOS Safari especially) require sms: protocol links to be
+    // triggered within a direct user gesture. Any await/setTimeout breaks this chain.
+    if (isPersonalSMS && contactPhone) {
+      const isIOS = /iPad|iPhone|iPod|Macintosh/.test(
+        Platform.OS === 'web' ? navigator.userAgent : ''
+      );
+      const separator = isIOS ? '&' : '?';
+      const smsUrl = `sms:${contactPhone}${separator}body=${encodeURIComponent(contentToSend)}`;
+      
+      if (Platform.OS === 'web') {
+        const a = document.createElement('a');
+        a.href = smsUrl;
+        a.target = '_self';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        Linking.openURL(smsUrl);
+      }
+      
+      // Copy message to clipboard (non-blocking, best-effort)
+      try {
+        if (Platform.OS === 'web' && navigator.clipboard) {
+          navigator.clipboard.writeText(contentToSend).catch(() => {});
+        }
+      } catch {}
+    }
+    
     try {
       setSending(true);
       
@@ -687,46 +716,6 @@ export default function ThreadScreen() {
       
       // Send to backend (logs the message regardless of send method)
       await messagesAPI.send(user._id, messagePayload);
-      
-      // If no Twilio number → copy message & open native SMS app
-      if (isPersonalSMS && contactPhone) {
-        // Copy message to clipboard
-        try {
-          if (Platform.OS === 'web' && navigator.clipboard) {
-            await navigator.clipboard.writeText(contentToSend);
-          } else if (Platform.OS === 'web') {
-            const ta = document.createElement('textarea');
-            ta.value = contentToSend;
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-          }
-        } catch {}
-        
-        // Open native SMS app with recipient and message pre-filled
-        // iOS uses &body= format, Android/web uses ?body=
-        const isIOS = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-        const separator = isIOS ? '&' : '?';
-        const smsUrl = `sms:${contactPhone}${separator}body=${encodeURIComponent(contentToSend)}`;
-        
-        if (Platform.OS === 'web') {
-          // Use anchor-click technique (same as digital card share)
-          // This bypasses popup blockers that intercept window.open/location.href for sms: protocol
-          setTimeout(() => {
-            const a = document.createElement('a');
-            a.href = smsUrl;
-            a.target = '_self';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }, 300);
-        } else {
-          Linking.openURL(smsUrl);
-        }
-      }
       
       // Clear template info after sending
       setSelectedTemplateInfo(null);
