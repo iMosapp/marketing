@@ -44,7 +44,7 @@ type Section = {
 
 export default function MoreScreen() {
   const router = useRouter();
-  const { user, logout, isImpersonating, stopImpersonation, originalUser } = useAuthStore();
+  const { user, logout, isImpersonating, stopImpersonation, originalUser, partnerBranding } = useAuthStore();
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
