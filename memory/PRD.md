@@ -453,6 +453,72 @@ White Label Partner (e.g., i'M On Social)
 
 ---
 
+### FLOW 10: Personal Activity Dashboard — My Account
+
+**Location:** My Account page — expandable tile/section
+
+**Purpose:** Give every user full visibility into their own activity. Must demonstrate clear value from using the tool to reduce cancellations. "Look how much you've done this month."
+
+**Time filters (user-selectable):**
+- Today
+- This Week
+- This Month
+- This Year
+- Custom Date Range (date picker)
+
+**Metrics to display (by category):**
+
+*Communication:*
+- SMS sent (personal phone)
+- SMS sent (Twilio — when integrated)
+- Emails sent
+- Calls placed
+
+*Sharing:*
+- Digital business cards shared
+- Review links shared
+- Congrats cards sent
+- VCF contact cards sent
+
+*Engagement (click-through tracking):*
+- Clicks on shared business cards
+- Clicks on shared review links
+- Clicks on shared congrats cards
+- Overall click-through rate
+
+*Campaigns (future — Twilio integration):*
+- Campaign texts sent (by campaign type)
+- Campaign responses received
+- Virtual assistant interactions/responses
+
+*Trending:*
+- Activity trend line (daily/weekly) showing volume over selected period
+- Comparison to previous period (e.g., "up 20% from last month")
+
+**Display format:**
+- Expandable tile on My Account page
+- Category headers with count summaries
+- Tap to expand and see detailed breakdown per category
+- Clean, digestible, not overwhelming — but comprehensive
+
+**Data source:** Aggregates from `contact_events` (primary) + `messages` collections, filtered by user_id and date range
+
+**Third-party CRM integration (future):**
+- Every event logged in the app must be exportable/pushable to external CRMs (Zapier, HubSpot, Salesforce, etc.)
+- Call logs from the dialer must be included
+- The existing webhook/API system (`/api/webhooks`) is the foundation for this
+- Event format must be standardized so any CRM can consume it
+
+**Why this matters for the business:**
+- Users who see their own activity data are less likely to cancel
+- Managers use this to coach underperforming users
+- The data proves ROI of the tool to decision-makers
+- Every metric feeds into the leaderboard and org-level reporting
+
+**Status:** DOCUMENTED — ready to build when prioritized
+
+---
+
 ## Critical Production Notes
 - `backend/server.py` uses `load_dotenv(override=False)` — This is CRITICAL. `override=False` means deployment platform env vars (Kubernetes) take priority over the .env file. This was changed from `override=True` which was causing the .env localhost URL to stomp on the production Atlas URL, locking the user out for 3 days. NEVER change back to override=True.
 - Frontend uses relative `/api` paths for web builds
