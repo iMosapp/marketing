@@ -1940,7 +1940,7 @@ export default function ThreadScreen() {
           <View style={styles.personalSmsHint} data-testid="personal-sms-hint">
             <Ionicons name="phone-portrait-outline" size={13} color="#FF9500" />
             <Text style={styles.personalSmsHintText}>
-              Messages will copy to clipboard & open your SMS app
+              Tap send to open your SMS app with message ready to go
             </Text>
           </View>
         )}
