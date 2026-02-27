@@ -48,6 +48,8 @@ export default function MoreScreen() {
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const sectionRefs = useRef<Record<string, View | null>>({});
+  const scrollRef = useRef<ScrollView>(null);
   
   // Load pending count for super admins
   useFocusEffect(
