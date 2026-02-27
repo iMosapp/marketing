@@ -14,7 +14,19 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ## What's Been Implemented
 
-### Session Feb 27, 2026 (Fork 5 - Current)
+### Session Feb 28, 2026 (Fork 7 - Current)
+- **CRITICAL FIX: Email Mode Switch from Inbox** — Fixed bug where "Switch to Email" button showed email prompt even for contacts who have emails. Root cause: `contact_email` was not passed in inbox navigation params, and async `loadContactInfo` created a race condition. Fix: 1) Backend conversations API now includes `email` in contact data, 2) All 3 inbox navigation paths now pass `contact_email`, 3) Mode switch handler does fallback API check before showing prompt.
+- **VERIFIED: CTR Analytics** — Click-Through Rate display on "My Activity" dashboard confirmed working with per-channel (SMS/Email) breakdown.
+
+### Session Feb 27, 2026 (Fork 6)
+- **FIX: Personal SMS & Dialer Regression** — Implemented `fetch` with `keepalive: true` for reliable logging when navigating away
+- **FIX: Mobile Viewport Overflow** — Added `maximum-scale=1, user-scalable=no` to viewport meta tag
+- **FIX: Leaderboard Visibility** — Removed faulty `isIndependent` guard hiding tiles
+- **FEATURE: My Activity Dashboard** — User analytics with time filters on My Account page
+- **FEATURE: CTR Analytics** — Click-through rates for shared links by channel
+- **DOCS: CHANGE_RULES.md** — Critical patterns documented to prevent regressions
+
+### Session Feb 27, 2026 (Fork 5)
 - **FIX: Share Review Tile** — Opens share modal (Copy Link, SMS, Email, Preview) instead of settings page
 - **FIX: API Docs Syntax Error** — Fixed JSX escaping in integrations Docs tab
 - **BACKEND: Automated Lifecycle Scan** — APScheduler job at 6 AM UTC daily
