@@ -179,13 +179,12 @@ const { showToast } = useToast();
     
     setLoading(true);
     try {
-      const [keysRes, webhooksRes, eventsRes, providersRes, connectionsRes, docsRes] = await Promise.all([
+      const [keysRes, webhooksRes, eventsRes, providersRes, connectionsRes] = await Promise.all([
         api.get(`/integrations/api-keys?store_id=${user.store_id}`),
         api.get(`/integrations/webhooks?store_id=${user.store_id}`),
         api.get('/integrations/webhooks/events'),
         api.get('/integrations/providers'),
         api.get(`/integrations/connections?store_id=${user.store_id}`),
-        api.get('/integrations/docs/overview'),
       ]);
       
       setApiKeys(keysRes.data);
@@ -193,7 +192,6 @@ const { showToast } = useToast();
       setWebhookEvents(eventsRes.data);
       setProviders(providersRes.data);
       setConnections(connectionsRes.data);
-      setApiDocs(docsRes.data);
     } catch (error) {
       console.error('Error loading integrations:', error);
     } finally {
