@@ -1474,21 +1474,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Premium Search Bar
+  // Search Bar - Card Style
   searchContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    paddingHorizontal: 14,
     gap: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    height: 38,
+    borderColor: '#2A2A2A',
+    height: 42,
   },
   searchInput: {
     flex: 1,
