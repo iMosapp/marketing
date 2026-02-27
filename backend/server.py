@@ -450,6 +450,13 @@ async def startup_event():
     logger.info("iMOs API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
     
+    # Initialize object storage
+    try:
+        from utils.image_storage import init_storage
+        init_storage()
+    except Exception as e:
+        logger.warning(f"Object storage init deferred: {e}")
+    
     # Create database indexes for performance (non-blocking)
     try:
         import asyncio
