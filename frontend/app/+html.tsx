@@ -24,6 +24,8 @@ export default function Root({ children }: PropsWithChildren) {
               body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; display: none !important; }
+              /* Prevent iOS Safari from zooming in on input focus (happens when font-size < 16px) */
+              input, textarea, select { font-size: 16px !important; }
             `,
           }}
         />
