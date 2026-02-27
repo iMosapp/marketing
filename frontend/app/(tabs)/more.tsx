@@ -468,6 +468,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/admin/my-rankings'),
           color: '#FFD60A',
         }] : []),
+        {
+          icon: 'podium',
+          title: 'Leaderboard',
+          subtitle: 'Team rankings & performance',
+          onPress: () => router.push('/admin/leaderboard'),
+          color: '#AF52DE',
+        },
       ],
     },
     // Contacts & Leads
