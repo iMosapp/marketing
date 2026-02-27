@@ -579,6 +579,7 @@ export default function MoreScreen() {
       <View key={section.id} style={styles.sectionWrapper} data-testid={`section-${section.id}`}>
         {/* Section Header Card */}
         <TouchableOpacity
+          ref={(el: any) => { sectionRefs.current[section.id] = el; }}
           style={styles.sectionHeaderCard}
           onPress={() => toggleSection(section.id)}
           activeOpacity={0.7}
