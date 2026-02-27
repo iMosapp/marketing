@@ -143,6 +143,7 @@ export default function ThreadScreen() {
   const [showReviewLinks, setShowReviewLinks] = useState(false);
   const [reviewLinks, setReviewLinks] = useState<Record<string, string>>({});
   const [customLinkName, setCustomLinkName] = useState('');
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
