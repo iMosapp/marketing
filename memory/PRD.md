@@ -15,14 +15,16 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ## What's Been Implemented
 
 ### Session Feb 27, 2026 (Fork 5 - Current)
-- **FIX: Share Review Tile** — "Share Review" tile on More page now opens a share review modal (Copy Link, SMS, Email, Preview) instead of navigating to the review links settings page. Added "Manage Review Platform Links" shortcut in the modal for admin access. Also added "Share Review Link" button on My Account page.
-- **FIX: API Docs Syntax Error** — Fixed JSX curly brace escaping in integrations.tsx Docs tab (line 660) that was causing a SyntaxError blocking the entire frontend.
-- **BACKEND: Automated Lifecycle Scan** — Added `daily_lifecycle_scan` job to APScheduler (runs at 6 AM UTC daily). Auto-tags users based on tenure milestones, inactivity detection, and activity levels. Queues milestone messages. Added manual trigger endpoint at `POST /api/scheduler/trigger/lifecycle-scan`.
-- **FEATURE: Personal SMS Mode** — When a user doesn't have a Twilio number (mvpline_number), the Send button in the inbox thread: (1) copies the message to clipboard, (2) opens the native SMS app with recipient and message pre-filled, (3) logs the message in the system as channel `sms_personal`. Visual indicators: orange send button with "open" icon, hint banner, and "Sent from your phone" badge on sent messages.
-- **FIX: iOS SMS Protocol** — Changed from `window.open('sms:...')` (silently blocked by iOS Safari) to `window.location.href` with proper iOS `&body=` format and 300ms delay after backend logging.
-- **FIX: Review Star Button in Thread** — Star icon in thread now shows "Send Review Request" with iMOs review link always available (not "Set Up Review Links" empty state). Added "Manage Review Platform Links" shortcut.
-- **FEATURE: Auto-Send Actions** — Digital card, vCard, review link, and congrats card buttons now auto-send instead of just inserting text. One tap = logged + clipboard + SMS app opens. Carrier agnostic.
-- **FEATURE: Contact Event Tracking** — All personal SMS outbound actions are logged as contact events with type detection: `digital_card_sent`, `review_request_sent`, `congrats_card_sent`, `vcard_sent`, `personal_sms`. Stored in `contact_events` collection for activity tracking.
+- **FIX: Share Review Tile** — Opens share modal (Copy Link, SMS, Email, Preview) instead of settings page
+- **FIX: API Docs Syntax Error** — Fixed JSX escaping in integrations Docs tab
+- **BACKEND: Automated Lifecycle Scan** — APScheduler job at 6 AM UTC daily
+- **FEATURE: Personal SMS Mode** — No-Twilio users: auto-send copies message + opens native SMS app + logs everything
+- **FIX: iOS SMS Protocol** — `window.location.href` replaces `window.open` for iOS Safari sms: links
+- **FIX: Review Star Button in Thread** — Always shows "Send Review Request" with iMOs review link
+- **FEATURE: Auto-Send Actions** — Digital card, vCard, review links, congrats card all auto-send in one tap
+- **FEATURE: Contact Event Tracking** — All personal SMS actions logged as events: digital_card_sent, review_request_sent, congrats_card_sent, vcard_sent, personal_sms
+- **FIX: Contact Detail Quick Actions** — SMS, Email, Review, Card, Congrats all route through inbox thread for full logging. Only Call stays as direct phone dialer.
+- **FEATURE: Activity Reports & Analytics** — Full reports system with date range picker, per-user breakdown, team toggle for managers, daily activity chart, email delivery via Resend, and configurable scheduled reports (daily/weekly/monthly). New endpoints: GET /api/reports/activity/{user_id}, GET /api/reports/activity-daily/{user_id}, POST /api/reports/send-email/{user_id}, GET/PUT /api/reports/preferences/{user_id}.
 
 ### Session Feb 27, 2026 (Fork 4)
 - **FIX: MONGO_URL** — Reset from Atlas to localhost:27017 for preview stability
