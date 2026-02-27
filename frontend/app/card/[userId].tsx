@@ -71,6 +71,12 @@ export default function DigitalCardPage() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [shareRecipientName, setShareRecipientName] = useState('');
+  const [shareRecipientPhone, setShareRecipientPhone] = useState('');
+  const [shareRecipientEmail, setShareRecipientEmail] = useState('');
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
+  const [matchInfo, setMatchInfo] = useState<any>(null);
+  const [pendingShareAction, setPendingShareAction] = useState<{platform: string; payload: any} | null>(null);
   
   // Direct shareable link - always use production URL like congrats cards
   const cardUrl = `https://app.imosapp.com/card/${userId}`;
