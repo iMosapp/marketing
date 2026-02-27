@@ -363,6 +363,15 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
+    # Daily at 6 AM UTC — lifecycle scan (tenure tags, inactivity detection, milestone messages)
+    scheduler.add_job(
+        run_daily_lifecycle_scan,
+        CronTrigger(hour=6, minute=0),
+        id="daily_lifecycle_scan",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     # Every 15 minutes — process pending campaign step messages
     scheduler.add_job(
         process_pending_campaign_steps,
@@ -373,7 +382,7 @@ def start_scheduler():
     )
 
     scheduler.start()
-    logger.info("[Scheduler] Started with 2 jobs: daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
+    logger.info("[Scheduler] Started with 3 jobs: daily_lifecycle_scan (6:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
 
 
 def stop_scheduler():
