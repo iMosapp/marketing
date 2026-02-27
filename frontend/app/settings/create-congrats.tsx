@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   photoPicker: { alignItems: 'center', marginBottom: 8 },
   photoPreview: { width: 160, height: 160, borderRadius: 32, borderWidth: 3, borderColor: COLORS.gold },
   photoPlaceholder: {
-    width: 160, height: 160, borderRadius: 80,
+    width: 160, height: 160, borderRadius: 32,
     backgroundColor: COLORS.card,
     borderWidth: 2, borderColor: COLORS.border, borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center',
