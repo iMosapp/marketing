@@ -55,8 +55,115 @@ const { showToast } = useToast();
   const [providers, setProviders] = useState<{ crm: Record<string, Provider>; dms: Record<string, Provider> }>({ crm: {}, dms: {} });
   const [connections, setConnections] = useState<any[]>([]);
   
-  // Docs
-  const [apiDocs, setApiDocs] = useState<any>(null);
+  const [docsSection, setDocsSection] = useState('getting-started');
+
+  const APP_URL = 'https://app.imosapp.com';
+
+  const API_REFERENCE = {
+    contacts: {
+      title: 'Contacts',
+      icon: 'people',
+      color: '#007AFF',
+      endpoints: [
+        { method: 'GET', path: '/api/v1/contacts', desc: 'List all contacts', params: 'search, tag, source, ownership_type, limit, offset' },
+        { method: 'GET', path: '/api/v1/contacts/:id', desc: 'Get contact details' },
+        { method: 'POST', path: '/api/v1/contacts', desc: 'Create a contact', body: '{ first_name, last_name, phone, email, tags[], source, external_id }' },
+        { method: 'PUT', path: '/api/v1/contacts/:id', desc: 'Update a contact', body: '{ any contact fields }' },
+        { method: 'DELETE', path: '/api/v1/contacts/:id', desc: 'Soft-delete a contact' },
+        { method: 'POST', path: '/api/v1/contacts/:id/tags', desc: 'Add tag to contact', body: '{ tag: "VIP" }' },
+        { method: 'DELETE', path: '/api/v1/contacts/:id/tags/:tag', desc: 'Remove tag from contact' },
+        { method: 'POST', path: '/api/v1/contacts/:id/notes', desc: 'Add note to contact', body: '{ note: "..." }' },
+        { method: 'GET', path: '/api/v1/contacts/:id/events', desc: 'Get activity timeline' },
+        { method: 'POST', path: '/api/v1/contacts/:id/events', desc: 'Log custom event', body: '{ event_type, description, metadata }' },
+        { method: 'POST', path: '/api/v1/contacts/bulk-tag', desc: 'Tag multiple contacts', body: '{ contact_ids[], tag }' },
+        { method: 'POST', path: '/api/v1/contacts/bulk-assign', desc: 'Reassign contacts', body: '{ contact_ids[], user_id }' },
+        { method: 'GET', path: '/api/v1/export/contacts', desc: 'Export all contacts (JSON)' },
+      ],
+    },
+    users: {
+      title: 'Users',
+      icon: 'person',
+      color: '#5856D6',
+      endpoints: [
+        { method: 'GET', path: '/api/v1/users', desc: 'List all users', params: 'role, status, limit, offset' },
+        { method: 'GET', path: '/api/v1/users/:id', desc: 'Get user details' },
+        { method: 'GET', path: '/api/v1/users/:id/contacts', desc: 'Get user\'s contacts' },
+        { method: 'GET', path: '/api/v1/users/:id/stats', desc: 'Get user activity stats' },
+      ],
+    },
+    messages: {
+      title: 'Messages',
+      icon: 'chatbubbles',
+      color: '#34C759',
+      endpoints: [
+        { method: 'GET', path: '/api/v1/conversations', desc: 'List conversations', params: 'user_id, status, limit, offset' },
+        { method: 'GET', path: '/api/v1/conversations/:id/messages', desc: 'Get messages in conversation' },
+        { method: 'POST', path: '/api/v1/messages', desc: 'Send a message', body: '{ to, content, user_id, mode: "sms"|"email" }' },
+      ],
+    },
+    campaigns: {
+      title: 'Campaigns',
+      icon: 'rocket',
+      color: '#FF9500',
+      endpoints: [
+        { method: 'GET', path: '/api/v1/campaigns', desc: 'List campaigns' },
+        { method: 'GET', path: '/api/v1/campaigns/:id', desc: 'Get campaign with stats' },
+        { method: 'GET', path: '/api/v1/campaigns/:id/enrollments', desc: 'Get enrollments' },
+      ],
+    },
+    reviews: {
+      title: 'Reviews',
+      icon: 'star',
+      color: '#FFD60A',
+      endpoints: [
+        { method: 'GET', path: '/api/v1/reviews', desc: 'List reviews', params: 'status, store_id, limit, offset' },
+      ],
+    },
+    orgs: {
+      title: 'Organizations & Stores',
+      icon: 'business',
+      color: '#AF52DE',
+      endpoints: [
+        { method: 'GET', path: '/api/v1/organizations', desc: 'List organizations' },
+        { method: 'GET', path: '/api/v1/stores', desc: 'List stores' },
+        { method: 'GET', path: '/api/v1/tags', desc: 'List all tags' },
+      ],
+    },
+    keys: {
+      title: 'API Key Management',
+      icon: 'key',
+      color: '#FF2D55',
+      endpoints: [
+        { method: 'POST', path: '/api/v1/api-keys', desc: 'Generate new API key', body: '{ name, scope: "full"|"read_only" }' },
+        { method: 'GET', path: '/api/v1/api-keys', desc: 'List API keys' },
+        { method: 'DELETE', path: '/api/v1/api-keys/:id', desc: 'Revoke an API key' },
+      ],
+    },
+  };
+
+  const WEBHOOK_EVENTS = [
+    { event: 'contact.created', desc: 'New contact added', payload: '{ contact_id, first_name, last_name, phone, email, tags, source }' },
+    { event: 'contact.updated', desc: 'Contact info changed', payload: '{ contact_id, changes: { field: new_value } }' },
+    { event: 'contact.deleted', desc: 'Contact removed', payload: '{ contact_id }' },
+    { event: 'contact.tagged', desc: 'Tag added/removed', payload: '{ contact_id, tag, action }' },
+    { event: 'message.sent', desc: 'Message sent to contact', payload: '{ message_id, to, content, mode }' },
+    { event: 'message.received', desc: 'Incoming message from contact', payload: '{ message_id, from, content }' },
+    { event: 'campaign.enrolled', desc: 'Contact enrolled in campaign', payload: '{ contact_id, campaign_id }' },
+    { event: 'campaign.completed', desc: 'Campaign finished for contact', payload: '{ contact_id, campaign_id }' },
+    { event: 'campaign.step_sent', desc: 'Campaign step delivered', payload: '{ contact_id, campaign_id, step }' },
+    { event: 'review.submitted', desc: 'Customer submitted a review', payload: '{ review_id, store_id, rating, content }' },
+    { event: 'review.approved', desc: 'Review approved by manager', payload: '{ review_id }' },
+    { event: 'congrats.sent', desc: 'Congrats card sent', payload: '{ card_id, contact_id }' },
+    { event: 'user.created', desc: 'New user account created', payload: '{ user_id, name, role }' },
+    { event: 'user.deactivated', desc: 'User account deactivated', payload: '{ user_id, deactivated_by }' },
+    { event: 'user.reactivated', desc: 'User account restored', payload: '{ user_id }' },
+    { event: 'deal.closed', desc: 'Deal/sale completed', payload: '{ contact_id, deal_id, amount }' },
+    { event: 'call.logged', desc: 'Phone call recorded', payload: '{ contact_id, duration }' },
+    { event: 'note.added', desc: 'Note added to contact', payload: '{ contact_id }' },
+    { event: 'tag.added', desc: 'Tag applied to contact', payload: '{ contact_id, tag }' },
+    { event: 'tag.removed', desc: 'Tag removed from contact', payload: '{ contact_id, tag }' },
+    { event: 'appointment.created', desc: 'Appointment scheduled', payload: '{ contact_id, date }' },
+  ];
 
   useEffect(() => {
     if (user?.store_id) {
