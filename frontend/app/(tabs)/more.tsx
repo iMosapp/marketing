@@ -997,7 +997,7 @@ export default function MoreScreen() {
             <Text style={shareStyles.recipientLabel}>Send to (optional)</Text>
             <TextInput
               style={shareStyles.recipientInput}
-              placeholder="Name"
+              placeholder="Recipient Name"
               placeholderTextColor="#6E6E73"
               value={shareRecipientName}
               onChangeText={setShareRecipientName}
