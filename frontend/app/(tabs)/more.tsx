@@ -822,7 +822,7 @@ export default function MoreScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickSettingsBtn}
-            onPress={() => router.push('/settings/review-links' as any)}
+            onPress={() => setShowShareModal(true)}
             data-testid="quick-share-review"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FFD60A20' }]}>
