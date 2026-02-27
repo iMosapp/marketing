@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://integration-hub-54.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://engagement-hub-69.preview.emergentagent.com')
 BASE_URL = BASE_URL.rstrip('/')
 
 # Test user ID (superadmin)
