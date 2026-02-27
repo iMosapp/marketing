@@ -32,7 +32,10 @@ async def get_brand_context(db, user_id: str) -> dict:
         # Get store branding
         store_id = user.get("store_id")
         if store_id:
-            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+            try:
+                store = await db.stores.find_one({"_id": ObjectId(store_id)})
+            except Exception:
+                store = await db.stores.find_one({"_id": store_id})
             if store:
                 brand["store_name"] = store.get("name", brand["store_name"])
                 brand["logo_url"] = store.get("logo_url", "")
@@ -44,7 +47,10 @@ async def get_brand_context(db, user_id: str) -> dict:
         # Get org branding (may override store)
         org_id = user.get("org_id") or user.get("organization_id")
         if org_id:
-            org = await db.organizations.find_one({"_id": ObjectId(org_id)})
+            try:
+                org = await db.organizations.find_one({"_id": ObjectId(org_id)})
+            except Exception:
+                org = await db.organizations.find_one({"_id": org_id})
             if org:
                 if org.get("name"):
                     brand["store_name"] = org["name"]
