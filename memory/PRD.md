@@ -49,6 +49,18 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **UPDATED: Sales Presentation** — 10-slide overhaul with full story arc
 - **UPDATED: Onboarding Slides** — All 3 role tracks aligned with "i'M On Social" messaging
 - **UPDATED: Features Page** — "Social Presence" section with new descriptions
+- **NEW: White Label Partner System**
+  - Backend CRUD at `/api/admin/partners` — create, read, update, delete partners
+  - Partner branding cascades: partner → orgs → stores → users
+  - Login returns `partner_branding` when user's store/org linked to a partner
+  - Tab bar active tint uses partner's primary color
+  - More page shows partner banner (name + powered by text)
+  - More page footer shows partner branding instead of iMOs
+  - Digital card & store card footers show partner branding
+  - Admin management page at `/admin/white-label`
+  - Org assignment/unassignment endpoints
+  - Calendar Systems seeded as first partner (orange #E87722 + teal #008B8B)
+  - South Ogden, Utah | 1.801.479.7097 | calendarsystems.info
 
 ### Session Feb 26, 2026 (Fork 2)
 - Podium-style Review Links Landing Page (`/review/[storeSlug]`)
