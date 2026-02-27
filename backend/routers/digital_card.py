@@ -113,7 +113,7 @@ async def get_card_data(user_id: str):
             "state": store.get("state") if store else None,
             "website": store.get("website") if store else None,
         } if store else None,
-        "testimonials": formatted_testimonials,
+        "testimonials": formatted_testimonials
     }
     if partner_branding_data:
         result["partner_branding"] = partner_branding_data
