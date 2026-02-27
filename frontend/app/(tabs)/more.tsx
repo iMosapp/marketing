@@ -79,6 +79,87 @@ export default function MoreScreen() {
       console.error('Failed to fetch pending users count:', error);
     }
   };
+
+  const fetchStoreSlug = async () => {
+    try {
+      const res = await api.get(`/admin/stores/${user?.store_id}`, {
+        headers: { 'X-User-ID': user?._id }
+      });
+      const slug = res.data?.slug;
+      if (slug) {
+        setStoreSlug(slug);
+      } else if (res.data?.name) {
+        setStoreSlug(res.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+      }
+    } catch (e) {}
+  };
+
+  const getReviewUrl = () => {
+    if (!storeSlug) return '';
+    const spParam = user?._id ? `?sp=${user._id}` : '';
+    return `https://app.imosapp.com/review/${storeSlug}${spParam}`;
+  };
+
+  const handleCopyReviewLink = async () => {
+    const url = getReviewUrl();
+    try {
+      if (Platform.OS === 'web' && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      } else if (Platform.OS === 'web') {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {}
+    }
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleShareViaSMS = () => {
+    const url = getReviewUrl();
+    const msg = `Hey! We'd love your feedback. Leave us a review here: ${url}`;
+    if (Platform.OS === 'web') {
+      window.open(`sms:?body=${encodeURIComponent(msg)}`, '_self');
+    } else {
+      Linking.openURL(`sms:?body=${encodeURIComponent(msg)}`);
+    }
+    setShowShareModal(false);
+  };
+
+  const handleShareViaEmail = () => {
+    const url = getReviewUrl();
+    const subject = "We'd love your feedback!";
+    const body = `Hi!\n\nThank you for your business. We'd really appreciate it if you could take a moment to leave us a review:\n\n${url}\n\nThank you!`;
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if (Platform.OS === 'web') {
+      window.open(mailto, '_self');
+    } else {
+      Linking.openURL(mailto);
+    }
+    setShowShareModal(false);
+  };
+
+  const handlePreviewReviewPage = () => {
+    const slug = storeSlug || 'my-store';
+    router.push(`/review/${slug}` as any);
+    setShowShareModal(false);
+  };
   
   const handleExitImpersonation = async () => {
     setExitingImpersonation(true);
