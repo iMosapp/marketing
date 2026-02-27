@@ -1520,16 +1520,18 @@ const styles = StyleSheet.create({
   recipientInput: {
     backgroundColor: '#1C1C1E',
     borderRadius: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 15,
+    fontSize: 14,
     color: '#FFF',
     borderWidth: 1.5,
     borderColor: '#3A3A3C',
+    minWidth: 0,
   },
   recipientRow: {
     flexDirection: 'row' as any,
     gap: 8,
+    width: '100%' as any,
   },
   matchOverlay: {
     position: 'absolute' as any,
