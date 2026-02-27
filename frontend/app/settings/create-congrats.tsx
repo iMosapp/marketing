@@ -372,7 +372,7 @@ export default function CreateCongratsCardPage() {
             keyboardType="phone-pad"
           />
           <TextInput
-            style={[styles.input, { flex: 1 }]}
+            style={[styles.input, { flex: 1, minWidth: 0 }]}
             value={customerEmail}
             onChangeText={setCustomerEmail}
             placeholder="Email"
