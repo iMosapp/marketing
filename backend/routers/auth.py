@@ -288,12 +288,18 @@ async def login(credentials: dict):
                     partner_branding = partner
         # Check store-level partner if no org-level found
         if not partner_branding and store_id:
-            store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1, "organization_id": 1})
+            try:
+                store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1, "organization_id": 1})
+            except Exception:
+                store_doc = None
             if store_doc:
                 pid = store_doc.get("partner_id")
                 if not pid and store_doc.get("organization_id"):
-                    org_doc = await get_db().organizations.find_one({"_id": ObjectId(store_doc["organization_id"])}, {"partner_id": 1})
-                    pid = org_doc.get("partner_id") if org_doc else None
+                    try:
+                        org_doc = await get_db().organizations.find_one({"_id": ObjectId(store_doc["organization_id"])}, {"partner_id": 1})
+                        pid = org_doc.get("partner_id") if org_doc else None
+                    except Exception:
+                        pass
                 if pid:
                     partner = await get_db().white_label_partners.find_one(
                         {"_id": ObjectId(pid), "is_active": True},
