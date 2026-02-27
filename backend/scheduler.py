@@ -47,6 +47,56 @@ async def run_daily_lifecycle_scan():
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
 
 
+async def send_scheduled_reports():
+    """Check for users who want reports delivered today and send them."""
+    logger.info("[Scheduler] Checking for scheduled report deliveries...")
+    try:
+        from routers.database import get_db
+        db = get_db()
+        today = datetime.now(timezone.utc)
+        dow = today.weekday()  # 0=Mon
+        dom = today.day
+
+        prefs_cursor = db.report_preferences.find({
+            "email_enabled": True,
+            "frequency": {"$in": ["daily", "weekly", "monthly"]},
+        })
+        sent = 0
+        async for pref in prefs_cursor:
+            freq = pref.get("frequency")
+            should_send = False
+            if freq == "daily":
+                should_send = True
+            elif freq == "weekly" and pref.get("day_of_week", 1) == dow:
+                should_send = True
+            elif freq == "monthly" and pref.get("day_of_month", 1) == dom:
+                should_send = True
+
+            if should_send:
+                uid = pref["user_id"]
+                email = pref.get("email_to")
+                try:
+                    from routers.reports import send_report_email
+                    if freq == "daily":
+                        start = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+                    elif freq == "weekly":
+                        start = (today - timedelta(days=7)).strftime("%Y-%m-%d")
+                    else:
+                        start = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+                    end = today.strftime("%Y-%m-%d")
+                    await send_report_email(uid, start, end, team=True, recipient_email=email)
+                    sent += 1
+                    logger.info(f"[Scheduler] Sent {freq} report to {email or uid}")
+                except Exception as e:
+                    logger.error(f"[Scheduler] Failed report for {uid}: {e}")
+
+        logger.info(f"[Scheduler] Scheduled reports: {sent} sent")
+    except Exception as e:
+        msg = f"[Scheduler] Error in scheduled reports: {e}"
+        logger.error(msg)
+        _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+
+
 async def process_all_date_triggers():
     """Daily job: iterate all users with active date-trigger configs and fire messages."""
     from routers.database import get_db
