@@ -876,10 +876,10 @@ export default function ThreadScreen() {
     setShowBusinessCard(false);
     setShowLandingPageOptions(false);
     
-    // Set message after a short delay to ensure modal is closed
+    // Auto-send: logs message + copies to clipboard + opens SMS app
     setTimeout(() => {
-      setMessage(cardMessage);
-    }, 100);
+      handleSend(cardMessage);
+    }, 200);
   };
 
   // Congrats Card Functions
