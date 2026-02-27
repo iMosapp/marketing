@@ -130,7 +130,7 @@ def build_branded_email(content: str, brand: dict, contact_name: str = "") -> st
             <h2 style="margin:0;font-size:22px;color:{pc};font-weight:700;">{store}</h2>
         </div>'''
 
-    # CTA button — See Calldrip in action
+    # CTA button
     cta_html = f'''
     <div style="text-align:center;margin:24px 0 8px;">
         <a href="{powered_by_url}" style="display:inline-block;background:{pc};color:#FFF;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">
