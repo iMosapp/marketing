@@ -549,6 +549,169 @@ export default function MyAccountScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* My Activity Dashboard */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}
+            onPress={() => setActivityExpanded(!activityExpanded)}
+            data-testid="activity-toggle"
+          >
+            <Text style={styles.sectionTitle}>My Activity</Text>
+            <Ionicons name={activityExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+          </TouchableOpacity>
+
+          {activityExpanded && (
+            <View>
+              {/* Period Selector */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {[
+                    { key: 'today', label: 'Today' },
+                    { key: 'week', label: 'This Week' },
+                    { key: 'month', label: 'This Month' },
+                    { key: 'year', label: 'This Year' },
+                  ].map(p => (
+                    <TouchableOpacity
+                      key={p.key}
+                      onPress={() => setActivityPeriod(p.key)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 7,
+                        borderRadius: 18,
+                        backgroundColor: activityPeriod === p.key ? '#C9A962' : '#1C1C1E',
+                      }}
+                      data-testid={`activity-period-${p.key}`}
+                    >
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: activityPeriod === p.key ? '#000' : '#8E8E93',
+                      }}>{p.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {activityLoading ? (
+                <View style={{ padding: 24, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#C9A962" />
+                </View>
+              ) : activityData ? (
+                <View>
+                  {/* Summary Banner */}
+                  <View style={{
+                    backgroundColor: '#1C1C1E',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <View>
+                      <Text style={{ fontSize: 28, fontWeight: '800', color: '#FFF' }}>
+                        {activityData.summary?.total_touchpoints || 0}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>Total Touchpoints</Text>
+                    </View>
+                    {activityData.summary?.trend_pct !== 0 && activityData.summary?.prev_total > 0 && (
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        backgroundColor: activityData.summary.trend_pct > 0 ? '#34C75920' : '#FF3B3020',
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 12,
+                      }}>
+                        <Ionicons
+                          name={activityData.summary.trend_pct > 0 ? 'trending-up' : 'trending-down'}
+                          size={16}
+                          color={activityData.summary.trend_pct > 0 ? '#34C759' : '#FF3B30'}
+                        />
+                        <Text style={{
+                          fontSize: 13,
+                          fontWeight: '700',
+                          color: activityData.summary.trend_pct > 0 ? '#34C759' : '#FF3B30',
+                        }}>
+                          {activityData.summary.trend_pct > 0 ? '+' : ''}{activityData.summary.trend_pct}%
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Category Grid */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <View style={actStyles.statCard}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#007AFF20' }]}>
+                        <Ionicons name="chatbubble" size={18} color="#007AFF" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.communication?.texts_sent || 0}</Text>
+                      <Text style={actStyles.statLabel}>Texts Sent</Text>
+                    </View>
+                    <View style={actStyles.statCard}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#5856D620' }]}>
+                        <Ionicons name="mail" size={18} color="#5856D6" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.communication?.emails_sent || 0}</Text>
+                      <Text style={actStyles.statLabel}>Emails Sent</Text>
+                    </View>
+                    <View style={actStyles.statCard}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#34C75920' }]}>
+                        <Ionicons name="call" size={18} color="#34C759" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.communication?.calls_placed || 0}</Text>
+                      <Text style={actStyles.statLabel}>Calls</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <View style={actStyles.statCard}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#C9A96220' }]}>
+                        <Ionicons name="person-circle" size={18} color="#C9A962" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.sharing?.digital_cards || 0}</Text>
+                      <Text style={actStyles.statLabel}>Cards Shared</Text>
+                    </View>
+                    <View style={actStyles.statCard}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#FFD60A20' }]}>
+                        <Ionicons name="star" size={18} color="#FFD60A" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.sharing?.review_links || 0}</Text>
+                      <Text style={actStyles.statLabel}>Reviews Shared</Text>
+                    </View>
+                    <View style={actStyles.statCard}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#FF950020' }]}>
+                        <Ionicons name="gift" size={18} color="#FF9500" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.sharing?.congrats_cards || 0}</Text>
+                      <Text style={actStyles.statLabel}>Congrats Sent</Text>
+                    </View>
+                  </View>
+
+                  {/* Engagement & Contacts Row */}
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={[actStyles.statCard, { flex: 1 }]}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#FF375F20' }]}>
+                        <Ionicons name="finger-print" size={18} color="#FF375F" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.engagement?.total_clicks || 0}</Text>
+                      <Text style={actStyles.statLabel}>Link Clicks</Text>
+                    </View>
+                    <View style={[actStyles.statCard, { flex: 1 }]}>
+                      <View style={[actStyles.statIcon, { backgroundColor: '#30D15820' }]}>
+                        <Ionicons name="people" size={18} color="#30D158" />
+                      </View>
+                      <Text style={actStyles.statNum}>{activityData.contacts?.new_contacts || 0}</Text>
+                      <Text style={actStyles.statLabel}>New Contacts</Text>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
+
         {/* Upgrade Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upgrade & Rewards</Text>
