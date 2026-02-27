@@ -1586,9 +1586,20 @@ export default function ThreadScreen() {
         </Text>
         <TouchableOpacity 
           style={styles.modeSwitchButton}
-          onPress={() => {
+          onPress={async () => {
             const newMode = messageMode === 'sms' ? 'email' : 'sms';
             if (newMode === 'email' && !hasEmail) {
+              // Before showing prompt, try to load email from API one more time
+              try {
+                const res = await api.get(`/messages/conversation/${actualConversationId || id}/info`);
+                const loadedEmail = res.data?.contact_email;
+                if (loadedEmail) {
+                  setSavedContactEmail(loadedEmail);
+                  setMessageMode('email');
+                  AsyncStorage.setItem('message_mode', 'email');
+                  return;
+                }
+              } catch {}
               setShowEmailPrompt(true);
               return;
             }
