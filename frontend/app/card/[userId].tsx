@@ -834,6 +834,42 @@ export default function DigitalCardPage() {
             <Text style={styles.shareModalTitle}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
             <Text style={styles.shareModalSubtitle}>Choose how to share your digital card</Text>
             
+            {/* Recipient Info */}
+            {isOwner && (
+              <View style={styles.recipientSection}>
+                <Text style={styles.recipientLabel}>SEND TO (OPTIONAL)</Text>
+                <TextInput
+                  style={styles.recipientInput}
+                  placeholder="Recipient Name"
+                  placeholderTextColor="#6E6E73"
+                  value={shareRecipientName}
+                  onChangeText={setShareRecipientName}
+                  data-testid="card-share-name"
+                />
+                <View style={styles.recipientRow}>
+                  <TextInput
+                    style={[styles.recipientInput, { flex: 1 }]}
+                    placeholder="Phone"
+                    placeholderTextColor="#6E6E73"
+                    value={shareRecipientPhone}
+                    onChangeText={setShareRecipientPhone}
+                    keyboardType="phone-pad"
+                    data-testid="card-share-phone"
+                  />
+                  <TextInput
+                    style={[styles.recipientInput, { flex: 1 }]}
+                    placeholder="Email"
+                    placeholderTextColor="#6E6E73"
+                    value={shareRecipientEmail}
+                    onChangeText={setShareRecipientEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    data-testid="card-share-email"
+                  />
+                </View>
+              </View>
+            )}
+            
             <View style={styles.shareOptionsGrid}>
               <TouchableOpacity 
                 style={styles.shareOption}
