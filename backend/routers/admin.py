@@ -3213,57 +3213,79 @@ def _resize_image(contents: bytes, max_size: int = 128) -> str:
 
 @router.post("/stores/{store_id}/upload-logo")
 async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
-    """Upload a logo for a store/account. Stores original + avatar."""
+    """Upload a logo for a store/account. Stores original + generates thumbnail & avatar."""
     db = get_db()
 
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
     contents = await file.read()
-    if len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image must be less than 5MB")
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
 
-    original_b64 = f"data:{file.content_type};base64,{base64.b64encode(contents).decode('utf-8')}"
-    avatar_b64 = _resize_image(contents, 128)
+    try:
+        from utils.image_storage import upload_image
+        result = await upload_image(contents, prefix="logos/stores", entity_id=store_id)
+        if result:
+            logo_url = f"/api/images/{result['original_path']}"
+            thumb_url = f"/api/images/{result['thumbnail_path']}"
+            avatar_url = f"/api/images/{result['avatar_path']}"
+        else:
+            raise Exception("Upload returned None")
+    except Exception as e:
+        logger.warning(f"Object storage upload failed, falling back to base64: {e}")
+        logo_url = f"data:{file.content_type};base64,{base64.b64encode(contents).decode('utf-8')}"
+        avatar_url = _resize_image(contents, 128)
+        thumb_url = avatar_url
 
-    result = await db.stores.update_one(
+    await db.stores.update_one(
         {"_id": ObjectId(store_id)},
         {"$set": {
-            "logo_url": original_b64,
-            "logo_avatar_url": avatar_b64,
+            "logo_url": logo_url,
+            "logo_thumbnail_url": thumb_url,
+            "logo_avatar_url": avatar_url,
             "updated_at": datetime.utcnow(),
         }}
     )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Account not found")
 
-    return {"success": True, "logo_url": original_b64, "logo_avatar_url": avatar_b64}
+    return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}
 
 
 @router.post("/organizations/{org_id}/upload-logo")
 async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
-    """Upload a logo for an organization. Stores original + avatar."""
+    """Upload a logo for an organization. Stores original + generates thumbnail & avatar."""
     db = get_db()
 
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
     contents = await file.read()
-    if len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image must be less than 5MB")
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
 
-    original_b64 = f"data:{file.content_type};base64,{base64.b64encode(contents).decode('utf-8')}"
-    avatar_b64 = _resize_image(contents, 128)
+    try:
+        from utils.image_storage import upload_image
+        result = await upload_image(contents, prefix="logos/orgs", entity_id=org_id)
+        if result:
+            logo_url = f"/api/images/{result['original_path']}"
+            thumb_url = f"/api/images/{result['thumbnail_path']}"
+            avatar_url = f"/api/images/{result['avatar_path']}"
+        else:
+            raise Exception("Upload returned None")
+    except Exception as e:
+        logger.warning(f"Object storage upload failed, falling back to base64: {e}")
+        logo_url = f"data:{file.content_type};base64,{base64.b64encode(contents).decode('utf-8')}"
+        avatar_url = _resize_image(contents, 128)
+        thumb_url = avatar_url
 
-    result = await db.organizations.update_one(
+    await db.organizations.update_one(
         {"_id": ObjectId(org_id)},
         {"$set": {
-            "logo_url": original_b64,
-            "logo_avatar_url": avatar_b64,
+            "logo_url": logo_url,
+            "logo_thumbnail_url": thumb_url,
+            "logo_avatar_url": avatar_url,
             "updated_at": datetime.utcnow(),
         }}
     )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Organization not found")
 
-    return {"success": True, "logo_url": original_b64, "logo_avatar_url": avatar_b64}
+    return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}
