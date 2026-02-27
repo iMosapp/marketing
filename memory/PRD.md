@@ -40,6 +40,15 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - Sales presentation slides updated
   - Legacy landing page updated
   - Zero "old school" references remaining across entire frontend
+- **ENHANCED: Full Narrative Story Arc on Marketing Page**
+  - Added 4 immersive narrative sections: The Old World, The Shift, The Power Move, The Bigger Picture
+  - Card-based design with colored accents, icons, highlight callouts
+  - Organizations/Teams/Individuals 3-column breakdown
+  - Golden highlight: "Reputation becomes portable. That's powerful."
+  - Visibility/Credibility/Ownership/Continuity grid
+- **UPDATED: Sales Presentation** — 10-slide overhaul with full story arc
+- **UPDATED: Onboarding Slides** — All 3 role tracks aligned with "i'M On Social" messaging
+- **UPDATED: Features Page** — "Social Presence" section with new descriptions
 
 ### Session Feb 26, 2026 (Fork 2)
 - Podium-style Review Links Landing Page (`/review/[storeSlug]`)
