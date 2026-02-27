@@ -2107,9 +2107,11 @@ export default function ThreadScreen() {
                     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
                     const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
                     const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
-                    setMessage(prev => prev + (prev ? ' ' : '') + reviewMsg);
                     setShowReviewLinks(false);
                     setShowAttachMenu(false);
+                    setTimeout(() => {
+                      handleSend(reviewMsg);
+                    }, 200);
                   }}
                 >
                   <View style={[styles.templateIcon, { backgroundColor: '#FFD60A20' }]}>
