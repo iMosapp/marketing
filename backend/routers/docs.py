@@ -58,6 +58,7 @@ async def list_docs(
 async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
     await verify_admin_access(x_user_id)
     return [
+        {"id": "operations", "name": "Operations Manual", "icon": "book", "color": "#00C7BE"},
         {"id": "security", "name": "Cyber Security", "icon": "shield-checkmark", "color": "#FF3B30"},
         {"id": "company_policy", "name": "Company Policy", "icon": "business", "color": "#5856D6"},
         {"id": "legal", "name": "Legal", "icon": "document-text", "color": "#007AFF"},
