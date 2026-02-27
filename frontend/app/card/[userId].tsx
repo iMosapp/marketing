@@ -246,12 +246,79 @@ export default function DigitalCardPage() {
     }
   };
 
+  // Log contact event for share actions
+  const logShareEvent = async (platform: string, forceAction?: string) => {
+    const phone = shareRecipientPhone.trim();
+    const email = shareRecipientEmail.trim();
+    const name = shareRecipientName.trim();
+    if (!phone && !email) return; // Nothing to log
+
+    // Get current user ID from AsyncStorage
+    let currentUserId = '';
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) currentUserId = JSON.parse(userData)._id || JSON.parse(userData).id;
+    } catch {}
+    if (!currentUserId) return;
+
+    const payload: any = {
+      phone, email, name,
+      event_type: 'digital_card_shared',
+      event_title: 'Digital Card Shared',
+      event_description: `Shared digital card via ${platform}`,
+      event_icon: 'card',
+      event_color: '#C9A962',
+    };
+    if (forceAction) payload.force_action = forceAction;
+
+    try {
+      const res = await api.post(`/contacts/${currentUserId}/find-or-create-and-log`, payload);
+      if (res.data.needs_confirmation) {
+        setMatchInfo(res.data);
+        setPendingShareAction({ platform, payload });
+        setMatchModalVisible(true);
+      }
+    } catch (err) {
+      console.error('Failed to log share event:', err);
+    }
+  };
+
+  const resolveMatchAction = async (action: string) => {
+    setMatchModalVisible(false);
+    if (!pendingShareAction) return;
+    let currentUserId = '';
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) currentUserId = JSON.parse(userData)._id || JSON.parse(userData).id;
+    } catch {}
+    if (!currentUserId) return;
+
+    try {
+      await api.post(`/contacts/${currentUserId}/find-or-create-and-log`, {
+        ...pendingShareAction.payload,
+        force_action: action,
+      });
+    } catch {}
+    setMatchInfo(null);
+    setPendingShareAction(null);
+  };
+
   // Share via SMS
   const handleShareSMS = () => {
     const cardUrl = `https://app.imosapp.com/card/${userId}`;
     const message = `Check out my digital business card: ${cardUrl}`;
-    openProtocolUrl(`sms:?body=${encodeURIComponent(message)}`);
+    const phone = shareRecipientPhone.trim();
+    const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    const sep = isApple ? '&' : '?';
+    const smsUrl = phone
+      ? `sms:${phone}${sep}body=${encodeURIComponent(message)}`
+      : `sms:${sep === '&' ? '&' : '?'}body=${encodeURIComponent(message)}`;
+    openProtocolUrl(smsUrl);
+    logShareEvent('sms');
     setShowShareModal(false);
+    setShareRecipientName('');
+    setShareRecipientPhone('');
+    setShareRecipientEmail('');
   };
 
   // Share via Email
@@ -259,8 +326,16 @@ export default function DigitalCardPage() {
     const cardUrl = `https://app.imosapp.com/card/${userId}`;
     const subject = `${cardData?.user?.name || 'My'} Digital Business Card`;
     const body = `Hi!\n\nHere's my digital business card:\n${cardUrl}\n\nLooking forward to connecting!`;
-    openProtocolUrl(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    const email = shareRecipientEmail.trim();
+    const mailto = email
+      ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    openProtocolUrl(mailto);
+    logShareEvent('email');
     setShowShareModal(false);
+    setShareRecipientName('');
+    setShareRecipientPhone('');
+    setShareRecipientEmail('');
   };
 
   // Share QR Code - uses short URL for cleaner sharing
