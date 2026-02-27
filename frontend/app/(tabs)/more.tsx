@@ -601,6 +601,27 @@ export default function MoreScreen() {
           </TouchableOpacity>
         )}
         
+        {/* Partner Branding Banner */}
+        {partnerBranding && (
+          <View style={[styles.partnerBanner, { borderBottomColor: partnerBranding.primary_color + '30' }]} data-testid="partner-branding-banner">
+            <View style={styles.partnerBannerInner}>
+              {partnerBranding.logo ? (
+                <Image source={{ uri: partnerBranding.logo }} style={styles.partnerLogo} resizeMode="contain" />
+              ) : (
+                <View style={[styles.partnerLogoPlaceholder, { backgroundColor: partnerBranding.primary_color + '20' }]}>
+                  <Text style={[styles.partnerLogoText, { color: partnerBranding.primary_color }]}>
+                    {partnerBranding.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
+                  </Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.partnerName, { color: partnerBranding.primary_color }]}>{partnerBranding.name}</Text>
+                <Text style={styles.partnerPowered}>{partnerBranding.powered_by_text}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Profile Card - Digital Card Style */}
         <View style={styles.profileCardContainer}>
           <TouchableOpacity 
