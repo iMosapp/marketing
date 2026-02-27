@@ -24,6 +24,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **FEATURE: Auto-Send Actions** — Digital card, vCard, review links, congrats card all auto-send in one tap
 - **FEATURE: Contact Event Tracking** — All personal SMS actions logged as events: digital_card_sent, review_request_sent, congrats_card_sent, vcard_sent, personal_sms
 - **FIX: Contact Detail Quick Actions** — SMS, Email, Review, Card, Congrats all route through inbox thread for full logging. Only Call stays as direct phone dialer.
+- **CRITICAL FIX: Email Sending from Inbox** — The simplified `/send/{user_id}` endpoint (which the frontend actually calls) was completely ignoring the `channel` parameter and always sending via Twilio. Emails from inbox Email Mode were never reaching customers. Fixed to properly route: email → Resend, sms_personal → log only, sms → Twilio. Confirmed working — emails now delivered via Resend with "Sent by {name} via iMOs" branding.
 - **FEATURE: Activity Reports & Analytics** — Full reports system with date range picker, per-user breakdown, team toggle for managers, daily activity chart, email delivery via Resend, and configurable scheduled reports (daily/weekly/monthly). New endpoints: GET /api/reports/activity/{user_id}, GET /api/reports/activity-daily/{user_id}, POST /api/reports/send-email/{user_id}, GET/PUT /api/reports/preferences/{user_id}.
 
 ### Session Feb 27, 2026 (Fork 4)
