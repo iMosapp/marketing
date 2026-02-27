@@ -278,6 +278,33 @@ User taps action tile — setMessage("Hey {name}! Here's my review link: {url}")
 
 ---
 
+### FLOW 6: Dialer — Native Phone Call
+
+**What it is:** User dials a number on the in-app dialer and taps the call button. The app opens the native phone app and logs the call event.
+
+**File:** `/app/frontend/app/(tabs)/dialer.tsx` — `handleCall()` function
+
+**Step-by-step flow:**
+```
+1. User enters a phone number or taps a recent contact on the dialer
+2. User taps the green Call button
+3. handleCall() fires
+4. Log the call event with fetch+keepalive to POST /api/contacts/{user_id}/find-or-create-and-log
+   — Uses keepalive so the request completes even when browser navigates to phone app
+5. Open native phone app via tel: protocol using anchor-click technique
+6. Phone app opens, user places the call
+7. Call event is logged in the contact's activity feed
+```
+
+**Also applies to:** Contact detail page call buttons (`/app/frontend/app/contact/[id].tsx`) — both the quick action call button and the phone number chip use anchor-click.
+
+**DO NOT:**
+- Use `await api.post()` after opening `tel:` — browser navigates away, await never resolves
+- Use `Linking.openURL('tel:...')` on web — unreliable on mobile Safari, use anchor-click
+- Remove `keepalive: true` from the fetch — call events won't be logged
+
+---
+
 ### Viewport & Mobile Browser Rules
 
 **File:** `/app/frontend/app/+html.tsx`
