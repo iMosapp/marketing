@@ -249,31 +249,52 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                     """
                     
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
-                        "from": f"iMOs <{SENDER}>",
+                        "from": f"{sender_name} via iMOs <{SENDER}>",
                         "to": contact_email,
                         "subject": f"Message from {sender_name}",
                         "html": email_html,
                     })
+                    resend_id = email_result.get('id') if isinstance(email_result, dict) else str(email_result)
                     message['status'] = 'sent'
                     message['channel'] = 'email'
-                    message['resend_id'] = email_result.get('id')
-                    logger.info(f"Email sent to {contact_email}: {message_data.content[:50]}...")
+                    message['resend_id'] = resend_id
+                    logger.info(f"[EMAIL] Sent to {contact_email} (resend_id={resend_id}): {message_data.content[:50]}...")
                 else:
                     message['status'] = 'failed'
-                    message['error'] = 'Email service not configured'
+                    message['error'] = 'Email service not configured (RESEND_API_KEY missing)'
+                    logger.error("[EMAIL] RESEND_API_KEY not set")
             except Exception as e:
                 message['status'] = 'failed'
                 message['error'] = str(e)
-                logger.error(f"Email failed to {contact_email}: {e}")
+                logger.error(f"[EMAIL] Failed to {contact_email}: {e}")
         else:
             message['status'] = 'failed'
             message['error'] = 'No email address for contact'
-            logger.warning(f"No email for contact in conversation {conversation_id}")
+            logger.warning(f"[EMAIL] No email for contact in conversation {conversation_id}")
         
         await get_db().messages.update_one(
             {"_id": ObjectId(message['_id'])},
-            {"$set": {"status": message['status'], "channel": "email", "resend_id": message.get('resend_id')}}
+            {"$set": {
+                "status": message['status'],
+                "channel": "email",
+                "resend_id": message.get('resend_id'),
+                "error": message.get('error'),
+            }}
         )
+        
+        # Log as contact event
+        contact_id = conv.get('contact_id')
+        if contact_id and message['status'] == 'sent':
+            await get_db().contact_events.insert_one({
+                "contact_id": str(contact_id),
+                "user_id": user_id,
+                "event_type": "email_sent",
+                "channel": "email",
+                "message_id": message['_id'],
+                "content_preview": message_data.content[:100],
+                "recipient": contact_email,
+                "timestamp": datetime.utcnow(),
+            })
     elif channel == 'sms_personal':
         # User sending from their personal phone — just log it, no Twilio needed
         message['status'] = 'sent'
