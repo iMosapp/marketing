@@ -458,3 +458,317 @@ async def get_personal_report(
             'daily_breakdown': daily_activity
         }
     }
+
+
+
+# ===== NEW: Activity Report with all tracked events =====
+
+class ReportPreferences(BaseModel):
+    frequency: str = "none"  # none, daily, weekly, monthly
+    day_of_week: Optional[int] = 1
+    day_of_month: Optional[int] = 1
+    email_enabled: bool = False
+    email_to: Optional[str] = None
+
+
+@router.get("/activity/{user_id}")
+async def get_activity_report(
+    user_id: str,
+    start_date: str = Query(..., description="YYYY-MM-DD"),
+    end_date: str = Query(..., description="YYYY-MM-DD"),
+    team: bool = Query(False),
+):
+    """Comprehensive activity report: messages, cards, reviews, congrats, contacts, clicks."""
+    db = get_db()
+    try:
+        start = datetime.fromisoformat(start_date)
+    except Exception:
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+    try:
+        end = datetime.fromisoformat(end_date)
+    except Exception:
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+    if end.hour == 0:
+        end = end.replace(hour=23, minute=59, second=59)
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "role": 1, "store_id": 1, "name": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_manager = user.get("role") in ("super_admin", "admin", "manager", "store_manager", "org_admin")
+
+    if team and is_manager and user.get("store_id"):
+        team_users = await db.users.find(
+            {"store_id": user["store_id"], "status": {"$ne": "deactivated"}},
+            {"_id": 1, "name": 1, "role": 1}
+        ).to_list(200)
+        user_ids = [str(u["_id"]) for u in team_users]
+        user_map = {str(u["_id"]): u.get("name", "Unknown") for u in team_users}
+    else:
+        user_ids = [user_id]
+        user_map = {user_id: user.get("name", "You")}
+
+    date_filter = {"timestamp": {"$gte": start, "$lte": end}}
+
+    # Messages by channel
+    msg_results = await db.messages.aggregate([
+        {"$match": {"user_id": {"$in": user_ids}, "sender": "user", **date_filter}},
+        {"$group": {"_id": {"user_id": "$user_id", "channel": {"$ifNull": ["$channel", "sms"]}}, "count": {"$sum": 1}}}
+    ]).to_list(500)
+
+    # Contact events
+    evt_results = await db.contact_events.aggregate([
+        {"$match": {"user_id": {"$in": user_ids}, **date_filter}},
+        {"$group": {"_id": {"user_id": "$user_id", "event_type": "$event_type"}, "count": {"$sum": 1}}}
+    ]).to_list(500)
+
+    # New contacts
+    contact_results = await db.contacts.aggregate([
+        {"$match": {"user_id": {"$in": user_ids}, "created_at": {"$gte": start, "$lte": end}}},
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+    ]).to_list(200)
+
+    # Calls
+    call_results = await db.calls.aggregate([
+        {"$match": {"user_id": {"$in": user_ids}, "timestamp": {"$gte": start, "$lte": end}}},
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+    ]).to_list(200)
+
+    # Build per-user stats
+    per_user = {}
+    for uid in user_ids:
+        per_user[uid] = {
+            "name": user_map.get(uid, "Unknown"),
+            "sms_sent": 0, "sms_personal": 0, "emails_sent": 0,
+            "digital_cards_sent": 0, "review_invites_sent": 0,
+            "congrats_cards_sent": 0, "vcards_sent": 0,
+            "new_contacts": 0, "calls": 0, "link_clicks": 0,
+            "total_touchpoints": 0,
+        }
+
+    for r in msg_results:
+        uid = r["_id"]["user_id"]
+        ch = r["_id"]["channel"]
+        if uid not in per_user:
+            continue
+        if ch == "sms":
+            per_user[uid]["sms_sent"] += r["count"]
+        elif ch == "sms_personal":
+            per_user[uid]["sms_personal"] += r["count"]
+        elif ch == "email":
+            per_user[uid]["emails_sent"] += r["count"]
+
+    for r in evt_results:
+        uid = r["_id"]["user_id"]
+        etype = r["_id"]["event_type"]
+        if uid not in per_user:
+            continue
+        mapping = {
+            "digital_card_sent": "digital_cards_sent",
+            "review_request_sent": "review_invites_sent",
+            "congrats_card_sent": "congrats_cards_sent",
+            "vcard_sent": "vcards_sent",
+        }
+        if etype in mapping:
+            per_user[uid][mapping[etype]] += r["count"]
+
+    for r in contact_results:
+        uid = r["_id"]
+        if uid in per_user:
+            per_user[uid]["new_contacts"] = r["count"]
+
+    for r in call_results:
+        uid = r["_id"]
+        if uid in per_user:
+            per_user[uid]["calls"] = r["count"]
+
+    for uid, s in per_user.items():
+        s["total_touchpoints"] = (
+            s["sms_sent"] + s["sms_personal"] + s["emails_sent"] +
+            s["calls"] + s["digital_cards_sent"] +
+            s["review_invites_sent"] + s["congrats_cards_sent"] + s["vcards_sent"]
+        )
+
+    totals = {}
+    for key in ["sms_sent", "sms_personal", "emails_sent", "digital_cards_sent",
+                 "review_invites_sent", "congrats_cards_sent", "vcards_sent",
+                 "new_contacts", "calls", "link_clicks", "total_touchpoints"]:
+        totals[key] = sum(s[key] for s in per_user.values())
+
+    return {
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "is_team_report": team and is_manager,
+        "totals": totals,
+        "per_user": [{"user_id": uid, **stats} for uid, stats in per_user.items()],
+    }
+
+
+@router.get("/activity-daily/{user_id}")
+async def get_activity_daily(
+    user_id: str,
+    start_date: str = Query(...),
+    end_date: str = Query(...),
+    team: bool = Query(False),
+):
+    """Day-by-day breakdown for charts."""
+    db = get_db()
+    try:
+        start = datetime.fromisoformat(start_date)
+    except Exception:
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+    try:
+        end = datetime.fromisoformat(end_date)
+    except Exception:
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+    if end.hour == 0:
+        end = end.replace(hour=23, minute=59, second=59)
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "role": 1, "store_id": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_manager = user.get("role") in ("super_admin", "admin", "manager", "store_manager")
+    if team and is_manager and user.get("store_id"):
+        team_users = await db.users.find(
+            {"store_id": user["store_id"], "status": {"$ne": "deactivated"}}, {"_id": 1}
+        ).to_list(200)
+        user_ids = [str(u["_id"]) for u in team_users]
+    else:
+        user_ids = [user_id]
+
+    results = await db.messages.aggregate([
+        {"$match": {"user_id": {"$in": user_ids}, "sender": "user",
+                     "timestamp": {"$gte": start, "$lte": end}}},
+        {"$group": {
+            "_id": {"date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+                    "channel": {"$ifNull": ["$channel", "sms"]}},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id.date": 1}}
+    ]).to_list(1000)
+
+    days = {}
+    cur = start
+    while cur <= end:
+        ds = cur.strftime("%Y-%m-%d")
+        days[ds] = {"date": ds, "sms": 0, "sms_personal": 0, "email": 0, "total": 0}
+        cur += timedelta(days=1)
+    for r in results:
+        d = r["_id"]["date"]
+        ch = r["_id"]["channel"]
+        if d in days and ch in ("sms", "sms_personal", "email"):
+            days[d][ch] += r["count"]
+            days[d]["total"] += r["count"]
+    return {"days": list(days.values())}
+
+
+# --- Report preferences & email delivery ---
+
+@router.get("/preferences/{user_id}")
+async def get_report_preferences(user_id: str):
+    db = get_db()
+    prefs = await db.report_preferences.find_one({"user_id": user_id}, {"_id": 0})
+    return prefs or {"user_id": user_id, "frequency": "none", "day_of_week": 1,
+                     "day_of_month": 1, "email_enabled": False, "email_to": None}
+
+
+@router.put("/preferences/{user_id}")
+async def update_report_preferences(user_id: str, prefs: ReportPreferences):
+    db = get_db()
+    from datetime import timezone as tz
+    await db.report_preferences.update_one(
+        {"user_id": user_id},
+        {"$set": {"user_id": user_id, **prefs.dict(), "updated_at": datetime.now(tz.utc)}},
+        upsert=True,
+    )
+    return {"message": "Preferences saved", **prefs.dict()}
+
+
+@router.post("/send-email/{user_id}")
+async def send_report_email(
+    user_id: str,
+    start_date: str = Query(...),
+    end_date: str = Query(...),
+    team: bool = Query(False),
+    recipient_email: Optional[str] = Query(None),
+):
+    """Generate and email a clean HTML activity report."""
+    import resend as resend_mod
+    import asyncio
+    import os as _os
+    from datetime import timezone as tz
+
+    RESEND_KEY = _os.environ.get("RESEND_API_KEY")
+    SENDER = _os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+    if not RESEND_KEY:
+        raise HTTPException(status_code=500, detail="Email not configured")
+    resend_mod.api_key = RESEND_KEY
+
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "name": 1, "email": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    to_email = recipient_email or user.get("email")
+    if not to_email:
+        raise HTTPException(status_code=400, detail="No email address")
+
+    report = await get_activity_report(user_id, start_date, end_date, team)
+    t = report["totals"]
+    per_user = report["per_user"]
+
+    try:
+        sfmt = datetime.fromisoformat(start_date).strftime("%b %d, %Y")
+    except Exception:
+        sfmt = start_date
+    try:
+        efmt = datetime.fromisoformat(end_date).strftime("%b %d, %Y")
+    except Exception:
+        efmt = end_date
+
+    rows = ""
+    for u in per_user:
+        rows += f'<tr><td style="padding:10px 12px;border-bottom:1px solid #2C2C2E;color:#FFF;font-weight:600;">{u["name"]}</td>'
+        for k in ["total_touchpoints", "sms_sent", "sms_personal", "emails_sent", "digital_cards_sent", "review_invites_sent", "congrats_cards_sent", "new_contacts"]:
+            rows += f'<td style="padding:10px 8px;border-bottom:1px solid #2C2C2E;color:#CCC;text-align:center;">{u[k]}</td>'
+        rows += '</tr>'
+
+    team_table = ""
+    if len(per_user) > 1:
+        headers = ["Name", "Touch", "SMS", "Personal", "Email", "Cards", "Reviews", "Congrats", "Contacts"]
+        th = "".join(f'<th style="padding:10px 8px;text-align:center;color:#8E8E93;font-size:11px;">{h}</th>' for h in headers)
+        team_table = f'<h3 style="font-size:16px;color:#FFF;margin:24px 0 12px;">Team Breakdown</h3><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;background:#1C1C1E;border-radius:12px;overflow:hidden;"><thead><tr style="background:#2C2C2E;">{th}</tr></thead><tbody>{rows}</tbody></table></div>'
+
+    stats_cards = [
+        (t["total_touchpoints"], "TOUCHPOINTS", "#34C759"),
+        (t["sms_sent"] + t["sms_personal"], "SMS SENT", "#007AFF"),
+        (t["emails_sent"], "EMAILS", "#AF52DE"),
+        (t["digital_cards_sent"], "CARDS SHARED", "#007AFF"),
+        (t["review_invites_sent"], "REVIEW INVITES", "#FFD60A"),
+        (t["congrats_cards_sent"], "CONGRATS", "#C9A962"),
+        (t["new_contacts"], "NEW CONTACTS", "#32ADE6"),
+        (t["calls"], "CALLS", "#34C759"),
+    ]
+    cards_html = ""
+    for val, label, color in stats_cards:
+        cards_html += f'<div style="flex:1;min-width:120px;background:#1C1C1E;padding:14px;border-radius:12px;text-align:center;"><div style="font-size:24px;font-weight:700;color:{color};">{val}</div><div style="font-size:10px;color:#8E8E93;margin-top:4px;">{label}</div></div>'
+
+    html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:640px;margin:0 auto;background:#000;color:#FFF;padding:28px;border-radius:16px;">
+    <div style="text-align:center;margin-bottom:20px;"><h1 style="font-size:22px;margin:0;color:#FFD60A;">iMOs Activity Report</h1><p style="color:#8E8E93;margin:6px 0 0;font-size:14px;">{sfmt} &ndash; {efmt}</p></div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;">{cards_html}</div>
+    {team_table}
+    <p style="text-align:center;color:#6E6E73;font-size:11px;margin-top:24px;">Generated by iMOs &middot; {datetime.now(tz.utc).strftime('%b %d, %Y %I:%M %p UTC')}</p>
+    </div>"""
+
+    try:
+        result = await asyncio.to_thread(resend_mod.Emails.send, {
+            "from": f"iMOs Reports <{SENDER}>",
+            "to": to_email,
+            "subject": f"iMOs Activity Report | {sfmt} - {efmt}",
+            "html": html,
+        })
+        return {"message": f"Report sent to {to_email}", "resend_id": result.get("id")}
+    except Exception as e:
+        logger.error(f"Report email failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
