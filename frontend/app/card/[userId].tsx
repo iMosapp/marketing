@@ -70,6 +70,7 @@ export default function DigitalCardPage() {
   const [feedbackName, setFeedbackName] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   
   // Direct shareable link - always use production URL like congrats cards
   const cardUrl = `https://app.imosapp.com/card/${userId}`;
@@ -80,7 +81,18 @@ export default function DigitalCardPage() {
 
   useEffect(() => {
     loadCardData();
+    checkOwnership();
   }, [userId]);
+
+  const checkOwnership = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setIsOwner(user._id === userId || user.id === userId);
+      }
+    } catch {}
+  };
 
   const loadCardData = async () => {
     try {
