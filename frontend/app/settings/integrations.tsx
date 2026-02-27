@@ -657,8 +657,8 @@ const { showToast } = useToast();
               <Text style={styles.codeText}>{''}</Text>
               <Text style={styles.codeText}>r = requests.post(</Text>
               <Text style={styles.codeText}>    "{APP_URL}/api/v1/contacts",</Text>
-              <Text style={styles.codeText}>    headers={'{'}{"X-API-Key": key}{'}'},</Text>
-              <Text style={styles.codeText}>    json={'{'}</Text>
+              <Text style={styles.codeText}>    headers={"{'\"X-API-Key\": key}"},</Text>
+              <Text style={styles.codeText}>    json={"{"}</Text>
               <Text style={styles.codeText}>        "first_name": "Jane",</Text>
               <Text style={styles.codeText}>        "phone": "+15559876543",</Text>
               <Text style={styles.codeText}>        "external_id": "HUB-456",</Text>
