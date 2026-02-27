@@ -87,8 +87,11 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ## Critical Production Notes
 - `backend/server.py` uses `load_dotenv(override=True)` — NEVER change
 - Frontend uses relative `/api` paths for web builds
-- MONGO_URL in .env must be production Atlas URL for deployment
-- Preview environment uses local MongoDB (localhost:27017)
+- **MONGO_URL in .env must be production Atlas URL for deployment**
+- **Preview environment uses local MongoDB (localhost:27017)**
+- **NEVER switch .env MONGO_URL to production Atlas in the preview pod — Atlas is unreachable from preview and will break login**
+- **The deployment platform's environment variables handle production. The .env file in this repo must ALWAYS stay as `mongodb://localhost:27017` for preview to work**
+- If login breaks after a restart, check MONGO_URL in backend/.env FIRST — it's almost always this
 
 ## Prioritized Backlog
 ### P0 (Completed)
