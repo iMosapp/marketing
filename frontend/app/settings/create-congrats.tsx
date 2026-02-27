@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   photoPicker: { alignItems: 'center', marginBottom: 8 },
-  photoPreview: { width: 160, height: 160, borderRadius: 80, borderWidth: 3, borderColor: COLORS.gold },
+  photoPreview: { width: 160, height: 160, borderRadius: 32, borderWidth: 3, borderColor: COLORS.gold },
   photoPlaceholder: {
     width: 160, height: 160, borderRadius: 80,
     backgroundColor: COLORS.card,
