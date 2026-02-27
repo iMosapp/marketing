@@ -176,7 +176,7 @@ async def list_organizations(x_user_id: str = Header(None, alias="X-User-ID")):
             return []
         orgs = await get_db().organizations.find({
             "_id": {"$in": [ObjectId(oid) for oid in org_ids if oid]}
-        }).limit(500).to_list(500)
+        }, {"logo_url": 0, "email_brand_kit.logo_url": 0}).limit(500).to_list(500)
     
     return [{**org, "_id": str(org["_id"])} for org in orgs]
 
