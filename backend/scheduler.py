@@ -17,8 +17,10 @@ scheduler = AsyncIOScheduler()
 _scheduler_state = {
     "last_date_trigger_run": None,
     "last_campaign_step_run": None,
+    "last_lifecycle_scan_run": None,
     "date_trigger_results": {},
     "campaign_step_results": {},
+    "lifecycle_scan_results": {},
     "errors": [],
 }
 
