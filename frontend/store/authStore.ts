@@ -116,9 +116,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('original_auth');
+    await AsyncStorage.removeItem('partner_branding');
     set({ 
       user: null, 
       token: null, 
+      partnerBranding: null,
       isAuthenticated: false,
       isImpersonating: false,
       originalUser: null,
