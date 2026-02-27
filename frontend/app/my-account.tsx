@@ -493,6 +493,40 @@ export default function MyAccountScreen() {
           )}
         </View>
 
+        {/* Account Settings Tiles */}
+        <View style={styles.accountTilesRow}>
+          <TouchableOpacity
+            style={styles.accountTileBtn}
+            onPress={() => router.push('/settings/store-profile' as any)}
+            data-testid="account-setup-tile"
+          >
+            <View style={[styles.accountTileIcon, { backgroundColor: '#34C75920' }]}>
+              <Ionicons name="storefront" size={20} color="#34C759" />
+            </View>
+            <Text style={styles.accountTileLabel}>Account Setup</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.accountTileBtn}
+            onPress={() => router.push('/settings/brand-kit' as any)}
+            data-testid="brand-kit-tile"
+          >
+            <View style={[styles.accountTileIcon, { backgroundColor: '#C9A96220' }]}>
+              <Ionicons name="color-palette" size={20} color="#C9A962" />
+            </View>
+            <Text style={styles.accountTileLabel}>Brand Kit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.accountTileBtn}
+            onPress={() => router.push('/settings/review-links' as any)}
+            data-testid="review-links-tile"
+          >
+            <View style={[styles.accountTileIcon, { backgroundColor: '#FFD60A20' }]}>
+              <Ionicons name="star" size={20} color="#FFD60A" />
+            </View>
+            <Text style={styles.accountTileLabel}>Review Links</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
