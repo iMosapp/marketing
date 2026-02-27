@@ -682,12 +682,17 @@ export default function ThreadScreen() {
         } catch {}
         
         // Open native SMS app with recipient and message pre-filled
-        const smsUrl = Platform.OS === 'ios'
-          ? `sms:${contactPhone}&body=${encodeURIComponent(contentToSend)}`
-          : `sms:${contactPhone}?body=${encodeURIComponent(contentToSend)}`;
+        // iOS Safari requires window.location.href for sms: protocol (window.open doesn't work)
+        // iOS uses &body= format, Android/web uses ?body=
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const separator = isIOS ? '&' : '?';
+        const smsUrl = `sms:${contactPhone}${separator}body=${encodeURIComponent(contentToSend)}`;
         
         if (Platform.OS === 'web') {
-          window.open(`sms:${contactPhone}?body=${encodeURIComponent(contentToSend)}`, '_self');
+          // Small delay to let the backend call complete before navigating away
+          setTimeout(() => {
+            window.location.href = smsUrl;
+          }, 300);
         } else {
           Linking.openURL(smsUrl);
         }
