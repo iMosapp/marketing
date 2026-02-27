@@ -276,37 +276,37 @@ async def login(credentials: dict):
     try:
         org_id = user.get('organization_id')
         store_id = user.get('store_id')
-        # Check org-level partner
+        pid = None
+
+        # Check org-level partner first
         if org_id:
-            org_doc = await get_db().organizations.find_one({"_id": ObjectId(org_id)}, {"partner_id": 1})
-            if org_doc and org_doc.get("partner_id"):
+            try:
+                org_doc = await get_db().organizations.find_one({"_id": ObjectId(org_id)}, {"partner_id": 1})
+                if org_doc and org_doc.get("partner_id"):
+                    pid = org_doc["partner_id"]
+            except Exception:
+                pass
+
+        # Check store-level partner
+        if not pid and store_id:
+            try:
+                store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1})
+                if store_doc and store_doc.get("partner_id"):
+                    pid = store_doc["partner_id"]
+            except Exception:
+                pass
+
+        # Fetch partner branding
+        if pid:
+            try:
                 partner = await get_db().white_label_partners.find_one(
-                    {"_id": ObjectId(org_doc["partner_id"]), "is_active": True},
+                    {"_id": ObjectId(pid), "is_active": True},
                     {"_id": 0, "created_at": 0, "updated_at": 0}
                 )
                 if partner:
                     partner_branding = partner
-        # Check store-level partner if no org-level found
-        if not partner_branding and store_id:
-            try:
-                store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1, "organization_id": 1})
             except Exception:
-                store_doc = None
-            if store_doc:
-                pid = store_doc.get("partner_id")
-                if not pid and store_doc.get("organization_id"):
-                    try:
-                        org_doc = await get_db().organizations.find_one({"_id": ObjectId(store_doc["organization_id"])}, {"partner_id": 1})
-                        pid = org_doc.get("partner_id") if org_doc else None
-                    except Exception:
-                        pass
-                if pid:
-                    partner = await get_db().white_label_partners.find_one(
-                        {"_id": ObjectId(pid), "is_active": True},
-                        {"_id": 0, "created_at": 0, "updated_at": 0}
-                    )
-                    if partner:
-                        partner_branding = partner
+                pass
     except Exception as e:
         logger.warning(f"Error resolving partner branding: {e}")
 
