@@ -843,56 +843,41 @@ export default function ThreadScreen() {
   const sendBusinessCardLink = () => {
     if (!user?._id) return;
     
-    // Haptic feedback for action
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // Build the card URL - use the api baseURL and strip /api
     const baseUrl = 'https://app.imosapp.com';
     let cardUrl = `${baseUrl}/card/${user._id}`;
     
-    // Add campaign and contact params for tracking
     const params = [];
     if (selectedCampaign) params.push(`campaign=${selectedCampaign}`);
     if (id) params.push(`contact=${id}`);
     if (params.length > 0) cardUrl += `?${params.join('&')}`;
     
-    // Build message with link
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     const cardMessage = `Hey ${firstName}! Here's my digital business card - save my contact info: ${cardUrl}`;
     
-    // Close modals first
+    // Close modal and pre-fill message in composer
     setShowBusinessCard(false);
     setShowLandingPageOptions(false);
     setSelectedCampaign(null);
-    
-    // Auto-send: logs message + copies to clipboard + opens SMS app
-    setTimeout(() => {
-      handleSend(cardMessage);
-    }, 200);
+    setMessage(cardMessage);
   };
 
   const sendVCardLink = () => {
     if (!user?._id) return;
     
-    // Haptic feedback for action
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // Build the vCard download URL
     const baseUrl = 'https://app.imosapp.com';
     const vcardUrl = `${baseUrl}/api/card/vcard/${user._id}`;
     
-    // Insert message with link
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     const cardMessage = `Hey ${firstName}! Tap here to save my contact info directly to your phone: ${vcardUrl}`;
     
-    // Close modals first
+    // Close modal and pre-fill message in composer
     setShowBusinessCard(false);
     setShowLandingPageOptions(false);
-    
-    // Auto-send: logs message + copies to clipboard + opens SMS app
-    setTimeout(() => {
-      handleSend(cardMessage);
-    }, 200);
+    setMessage(cardMessage);
   };
 
   // Congrats Card Functions
