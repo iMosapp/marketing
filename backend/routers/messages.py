@@ -278,12 +278,39 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
         # User sending from their personal phone — just log it, no Twilio needed
         message['status'] = 'sent'
         message['channel'] = 'sms_personal'
-        logger.info(f"Personal SMS logged for {to_phone}: {message_data.content[:50]}... (user will send from their own device)")
+        
+        # Detect content type for activity tracking
+        content_lower = message_data.content.lower()
+        event_type = 'personal_sms'
+        if '/card/' in message_data.content:
+            event_type = 'digital_card_sent'
+        elif '/review/' in message_data.content:
+            event_type = 'review_request_sent'
+        elif 'congrats' in content_lower or '/api/s/' in message_data.content:
+            event_type = 'congrats_card_sent'
+        elif '/vcard/' in message_data.content:
+            event_type = 'vcard_sent'
+        
+        logger.info(f"Personal SMS logged ({event_type}) for {to_phone}: {message_data.content[:50]}...")
         
         await get_db().messages.update_one(
             {"_id": ObjectId(message['_id'])},
-            {"$set": {"status": "sent", "channel": "sms_personal"}}
+            {"$set": {"status": "sent", "channel": "sms_personal", "event_type": event_type}}
         )
+        
+        # Log as contact event for activity tracking
+        contact_id = conv.get('contact_id')
+        if contact_id:
+            event_doc = {
+                "contact_id": str(contact_id),
+                "user_id": user_id,
+                "event_type": event_type,
+                "channel": "sms_personal",
+                "message_id": message['_id'],
+                "content_preview": message_data.content[:100],
+                "timestamp": datetime.utcnow(),
+            }
+            await get_db().contact_events.insert_one(event_doc)
     elif to_phone:
         # Send via Twilio (SMS)
         message['channel'] = 'sms'
