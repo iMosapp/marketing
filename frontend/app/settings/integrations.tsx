@@ -444,67 +444,319 @@ const { showToast } = useToast();
     );
   };
 
+  const METHOD_COLORS: Record<string, string> = {
+    GET: '#34C759', POST: '#007AFF', PUT: '#FF9500', DELETE: '#FF3B30',
+  };
+
   const renderDocsTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>API Documentation</Text>
-      <Text style={styles.sectionSubtitle}>
-        Everything you need to integrate with iMOs
-      </Text>
-      
-      {apiDocs && (
-        <>
-          <View style={styles.docCard}>
-            <Text style={styles.docCardTitle}>Authentication</Text>
-            <Text style={styles.docCardText}>
-              Include your API key in the <Text style={styles.codeInline}>X-API-Key</Text> header
-            </Text>
-          </View>
-          
-          <View style={styles.docCard}>
-            <Text style={styles.docCardTitle}>Base URL</Text>
-            <View style={styles.codeBlock}>
-              <Text style={styles.codeText}>{apiDocs.base_url || '/api'}</Text>
-              <TouchableOpacity onPress={() => copyToClipboard(apiDocs.base_url || '/api')}>
-                <Ionicons name="copy-outline" size={18} color="#8E8E93" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          <View style={styles.docCard}>
-            <Text style={styles.docCardTitle}>Rate Limits</Text>
-            <Text style={styles.docCardText}>
-              {apiDocs.rate_limits?.requests_per_minute || 60} requests/minute
-              {'\n'}{apiDocs.rate_limits?.requests_per_day || 10000} requests/day
-            </Text>
-          </View>
-          
-          <Text style={styles.endpointsTitle}>Endpoints</Text>
-          {apiDocs.endpoints && Object.entries(apiDocs.endpoints).map(([name, endpoint]: [string, any]) => (
-            <TouchableOpacity key={name} style={styles.endpointCard}>
-              <View style={styles.endpointHeader}>
-                <Text style={styles.endpointName}>{name.charAt(0).toUpperCase() + name.slice(1)}</Text>
-                <View style={styles.methodBadges}>
-                  {endpoint.methods?.map((method: string) => (
-                    <View key={method} style={[styles.methodBadge, styles[`method${method}` as keyof typeof styles] || {}]}>
-                      <Text style={styles.methodText}>{method}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-              <Text style={styles.endpointPath}>{endpoint.base}</Text>
-              <Text style={styles.endpointDesc}>{endpoint.description}</Text>
+      {/* Quick Nav */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[
+            { key: 'getting-started', label: 'Start' },
+            { key: 'endpoints', label: 'Endpoints' },
+            { key: 'webhooks-ref', label: 'Webhooks' },
+            { key: 'examples', label: 'Examples' },
+            { key: 'zapier', label: 'Zapier' },
+          ].map(s => (
+            <TouchableOpacity
+              key={s.key}
+              style={[styles.docNavPill, docsSection === s.key && styles.docNavPillActive]}
+              onPress={() => setDocsSection(s.key)}
+            >
+              <Text style={[styles.docNavText, docsSection === s.key && styles.docNavTextActive]}>{s.label}</Text>
             </TouchableOpacity>
           ))}
-          
-          <TouchableOpacity 
-            style={styles.fullDocsButton}
-            onPress={() => Linking.openURL('/api/docs')}
-          >
-            <Ionicons name="document-text-outline" size={20} color="#007AFF" />
-            <Text style={styles.fullDocsText}>View Full API Documentation (Swagger)</Text>
-          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Getting Started */}
+      {docsSection === 'getting-started' && (
+        <>
+          <Text style={styles.docSectionTitle}>Getting Started</Text>
+          <Text style={styles.docParagraph}>
+            The iMOs API lets you manage contacts, send messages, run campaigns, and sync data with any external system.
+          </Text>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Base URL</Text>
+            <TouchableOpacity style={styles.codeBlock} onPress={() => copyToClipboard(`${APP_URL}/api/v1`)}>
+              <Text style={styles.codeText}>{APP_URL}/api/v1</Text>
+              <Ionicons name="copy-outline" size={16} color="#8E8E93" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Authentication</Text>
+            <Text style={styles.docParagraph}>
+              All API requests require an API key passed in the header:
+            </Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeComment}>// Include with every request</Text>
+              <Text style={styles.codeText}>X-API-Key: imos_your_key_here</Text>
+            </View>
+            <Text style={[styles.docParagraph, { marginTop: 8 }]}>
+              Generate keys from the API Keys tab. Keys can be scoped to full access or read-only.
+            </Text>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Rate Limits</Text>
+            <Text style={styles.docParagraph}>60 requests/minute, 10,000 requests/day per key.</Text>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Response Format</Text>
+            <Text style={styles.docParagraph}>All responses are JSON. List endpoints return:</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeText}>{'{'}</Text>
+              <Text style={styles.codeText}>  "contacts": [...],</Text>
+              <Text style={styles.codeText}>  "total": 150,</Text>
+              <Text style={styles.codeText}>  "limit": 50,</Text>
+              <Text style={styles.codeText}>  "offset": 0</Text>
+              <Text style={styles.codeText}>{'}'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>3rd Party CRM IDs</Text>
+            <Text style={styles.docParagraph}>
+              Contacts and Users support external system IDs for syncing:
+            </Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeComment}>// Map your system IDs</Text>
+              <Text style={styles.codeText}>{'{'}</Text>
+              <Text style={styles.codeText}>  "external_id": "SF-12345",</Text>
+              <Text style={styles.codeText}>  "external_ids": {'{'}</Text>
+              <Text style={styles.codeText}>    "salesforce": "SF-12345",</Text>
+              <Text style={styles.codeText}>    "cdk": "CDK-789",</Text>
+              <Text style={styles.codeText}>    "vin_solutions": "VS-456"</Text>
+              <Text style={styles.codeText}>  {'}'},</Text>
+              <Text style={styles.codeText}>  "dms_id": "DMS-001",</Text>
+              <Text style={styles.codeText}>  "crm_id": "CRM-002",</Text>
+              <Text style={styles.codeText}>  "customer_number": "CUST-9876"</Text>
+              <Text style={styles.codeText}>{'}'}</Text>
+            </View>
+          </View>
         </>
       )}
+
+      {/* Endpoints */}
+      {docsSection === 'endpoints' && (
+        <>
+          <Text style={styles.docSectionTitle}>API Endpoints</Text>
+          {Object.entries(API_REFERENCE).map(([key, section]) => (
+            <View key={key} style={styles.docCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <View style={[styles.docIconBadge, { backgroundColor: `${section.color}20` }]}>
+                  <Ionicons name={section.icon as any} size={16} color={section.color} />
+                </View>
+                <Text style={styles.docCardTitle}>{section.title}</Text>
+              </View>
+              {section.endpoints.map((ep, i) => (
+                <TouchableOpacity key={i} style={styles.endpointRow} onPress={() => copyToClipboard(`${APP_URL}${ep.path}`)}>
+                  <View style={[styles.methodTag, { backgroundColor: `${METHOD_COLORS[ep.method]}20` }]}>
+                    <Text style={[styles.methodTagText, { color: METHOD_COLORS[ep.method] }]}>{ep.method}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.endpointPathText}>{ep.path}</Text>
+                    <Text style={styles.endpointDescText}>{ep.desc}</Text>
+                    {ep.params && <Text style={styles.endpointParams}>Params: {ep.params}</Text>}
+                    {ep.body && <Text style={styles.endpointBody}>Body: {ep.body}</Text>}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* Webhooks Reference */}
+      {docsSection === 'webhooks-ref' && (
+        <>
+          <Text style={styles.docSectionTitle}>Webhook Events</Text>
+          <Text style={styles.docParagraph}>
+            Register webhook URLs to receive real-time notifications when events happen in iMOs. 
+            All payloads include an event name, timestamp, and data object.
+          </Text>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Payload Format</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeText}>{'{'}</Text>
+              <Text style={styles.codeText}>  "event": "contact.created",</Text>
+              <Text style={styles.codeText}>  "timestamp": "2026-02-27T...",</Text>
+              <Text style={styles.codeText}>  "data": {'{ ... }'}</Text>
+              <Text style={styles.codeText}>{'}'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Security</Text>
+            <Text style={styles.docParagraph}>
+              Set a shared secret when creating a webhook. iMOs signs each payload with HMAC-SHA256 in the{' '}
+              <Text style={styles.codeInline}>X-iMOs-Signature</Text> header.
+            </Text>
+          </View>
+
+          <Text style={[styles.docSectionTitle, { fontSize: 16, marginTop: 16 }]}>All Events ({WEBHOOK_EVENTS.length})</Text>
+          {WEBHOOK_EVENTS.map((evt, i) => (
+            <View key={i} style={styles.webhookEventRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={[styles.eventDot, { backgroundColor: evt.event.startsWith('contact') ? '#007AFF' : evt.event.startsWith('message') ? '#34C759' : evt.event.startsWith('campaign') ? '#FF9500' : evt.event.startsWith('review') ? '#FFD60A' : evt.event.startsWith('user') ? '#5856D6' : '#8E8E93' }]} />
+                <Text style={styles.webhookEventName}>{evt.event}</Text>
+              </View>
+              <Text style={styles.webhookEventDesc}>{evt.desc}</Text>
+              <Text style={styles.webhookEventPayload}>Payload: {evt.payload}</Text>
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* Code Examples */}
+      {docsSection === 'examples' && (
+        <>
+          <Text style={styles.docSectionTitle}>Code Examples</Text>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>cURL — List Contacts</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeText}>curl -X GET \</Text>
+              <Text style={styles.codeText}>  "{APP_URL}/api/v1/contacts?limit=10" \</Text>
+              <Text style={styles.codeText}>  -H "X-API-Key: imos_your_key"</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>cURL — Create Contact</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeText}>curl -X POST \</Text>
+              <Text style={styles.codeText}>  "{APP_URL}/api/v1/contacts" \</Text>
+              <Text style={styles.codeText}>  -H "X-API-Key: imos_your_key" \</Text>
+              <Text style={styles.codeText}>  -H "Content-Type: application/json" \</Text>
+              <Text style={styles.codeText}>  -d '{'"first_name":"John","last_name":"Doe","phone":"+15551234567","tags":["VIP"],"external_id":"SF-123"'}'</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>JavaScript (fetch)</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeComment}>// List contacts with search</Text>
+              <Text style={styles.codeText}>const res = await fetch(</Text>
+              <Text style={styles.codeText}>  '{APP_URL}/api/v1/contacts?search=john',</Text>
+              <Text style={styles.codeText}>  {'{ headers: { "X-API-Key": key } }'}</Text>
+              <Text style={styles.codeText}>);</Text>
+              <Text style={styles.codeText}>const {'{ contacts, total }'} = await res.json();</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Python (requests)</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeComment}># Create a contact with CRM sync</Text>
+              <Text style={styles.codeText}>import requests</Text>
+              <Text style={styles.codeText}>{''}</Text>
+              <Text style={styles.codeText}>r = requests.post(</Text>
+              <Text style={styles.codeText}>    "{APP_URL}/api/v1/contacts",</Text>
+              <Text style={styles.codeText}>    headers={'{'}{"X-API-Key": key}{'}'},</Text>
+              <Text style={styles.codeText}>    json={'{'}</Text>
+              <Text style={styles.codeText}>        "first_name": "Jane",</Text>
+              <Text style={styles.codeText}>        "phone": "+15559876543",</Text>
+              <Text style={styles.codeText}>        "external_id": "HUB-456",</Text>
+              <Text style={styles.codeText}>        "external_ids": {'{'}"hubspot": "HUB-456"{'}'}</Text>
+              <Text style={styles.codeText}>    {'}'}</Text>
+              <Text style={styles.codeText}>)</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Webhook Receiver (Node.js)</Text>
+            <View style={styles.codeBlockMulti}>
+              <Text style={styles.codeComment}>// Verify & handle iMOs webhooks</Text>
+              <Text style={styles.codeText}>app.post('/webhook', (req, res) =&gt; {'{'}</Text>
+              <Text style={styles.codeText}>  const {'{ event, data }'} = req.body;</Text>
+              <Text style={styles.codeText}>{''}</Text>
+              <Text style={styles.codeText}>  if (event === 'contact.created') {'{'}</Text>
+              <Text style={styles.codeText}>    syncToCRM(data);</Text>
+              <Text style={styles.codeText}>  {'}'}</Text>
+              <Text style={styles.codeText}>  res.sendStatus(200);</Text>
+              <Text style={styles.codeText}>{'}'});</Text>
+            </View>
+          </View>
+        </>
+      )}
+
+      {/* Zapier / Make Guide */}
+      {docsSection === 'zapier' && (
+        <>
+          <Text style={styles.docSectionTitle}>Zapier / Make.com Integration</Text>
+
+          <View style={styles.docCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <View style={[styles.docIconBadge, { backgroundColor: '#FF4A0020' }]}>
+                <Ionicons name="flash" size={16} color="#FF4A00" />
+              </View>
+              <Text style={styles.docCardTitle}>Zapier Setup</Text>
+            </View>
+            <View style={styles.stepList}>
+              <Text style={styles.stepItem}>1. Create a Zap with "Webhooks by Zapier" as trigger</Text>
+              <Text style={styles.stepItem}>2. Choose "Catch Hook" as trigger event</Text>
+              <Text style={styles.stepItem}>3. Copy the webhook URL from Zapier</Text>
+              <Text style={styles.stepItem}>4. Go to iMOs Webhooks tab and create a new subscription</Text>
+              <Text style={styles.stepItem}>5. Paste the Zapier URL and select your events</Text>
+              <Text style={styles.stepItem}>6. Test the webhook — Zapier will receive sample data</Text>
+              <Text style={styles.stepItem}>7. Map iMOs fields to your destination app</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <View style={[styles.docIconBadge, { backgroundColor: '#6C63FF20' }]}>
+                <Ionicons name="git-network" size={16} color="#6C63FF" />
+              </View>
+              <Text style={styles.docCardTitle}>Make.com (Integromat)</Text>
+            </View>
+            <View style={styles.stepList}>
+              <Text style={styles.stepItem}>1. Create a scenario with "Custom Webhook" module</Text>
+              <Text style={styles.stepItem}>2. Copy the webhook URL</Text>
+              <Text style={styles.stepItem}>3. Register it in iMOs Webhooks tab</Text>
+              <Text style={styles.stepItem}>4. Run once to establish data structure</Text>
+              <Text style={styles.stepItem}>5. Add action modules to your destination</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Popular Automations</Text>
+            <View style={styles.stepList}>
+              <Text style={styles.stepItem}>New contact in iMOs → Create deal in Salesforce</Text>
+              <Text style={styles.stepItem}>Review submitted → Notify Slack channel</Text>
+              <Text style={styles.stepItem}>Message received → Log in Google Sheets</Text>
+              <Text style={styles.stepItem}>Contact tagged "HOT" → Add to HubSpot sequence</Text>
+              <Text style={styles.stepItem}>Campaign completed → Update DMS record</Text>
+              <Text style={styles.stepItem}>User deactivated → Alert admin via email</Text>
+            </View>
+          </View>
+
+          <View style={styles.docCard}>
+            <Text style={styles.docCardTitle}>Two-Way Sync</Text>
+            <Text style={styles.docParagraph}>
+              Use the API to push data INTO iMOs and webhooks to push data OUT.
+              Map your CRM IDs using the external_id and external_ids fields on contacts and users for bidirectional sync.
+            </Text>
+          </View>
+        </>
+      )}
+
+      {/* Swagger link */}
+      <TouchableOpacity
+        style={styles.fullDocsButton}
+        onPress={() => Linking.openURL(`${APP_URL}/api/docs`)}
+        data-testid="swagger-link"
+      >
+        <Ionicons name="document-text-outline" size={20} color="#007AFF" />
+        <Text style={styles.fullDocsText}>Interactive API Docs (Swagger)</Text>
+      </TouchableOpacity>
     </View>
   );
 
