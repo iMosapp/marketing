@@ -415,6 +415,44 @@ This prevents iOS Safari's auto-zoom-on-focus for small text inputs.
 
 ---
 
+### FLOW 9: Leaderboard & Rankings — Hierarchical Visibility
+
+**Architecture — Cascading data visibility:**
+```
+White Label Partner (e.g., i'M On Social)
+  └── Organization (e.g., Ken Garff Group) — sees all opted-in stores
+        └── Store (e.g., Ken Garff Honda) — sees own users only
+              └── User (e.g., Forest Ward) — sees own stats
+```
+
+**Visibility rules by role:**
+- **User** → Always sees their own stats (My Rankings page)
+- **Store Manager** → Sees all users in their store only
+- **Org Admin** → Sees all stores in their org, BUT only stores that have opted in to share data
+- **White Label** → Can compare organizations under their umbrella
+- **Independent** → Sees own stats + can toggle on to compare against other independents
+
+**Opt-in is at the STORE level:** A store decides whether its activity data is visible to the org admin above it. The `leaderboard_visible` setting controls this. Without opt-in, the org admin cannot see that store's numbers.
+
+**Pages:**
+- `/admin/my-rankings` — Personal rankings, toggle for data sharing, scope selector (State/Region/National). Visible to ALL users.
+- `/admin/leaderboard` — Team/org leaderboard with org/store/metric filters. Visible to ALL users, but data shown is filtered by role and opt-in settings.
+
+**Backend endpoints:**
+- `GET /api/admin/organizations/{org_id}/leaderboard` — RBAC-filtered leaderboard
+- `GET /api/directory/leaderboard` — General leaderboard with metric/scope filters
+- `GET /api/directory/leaderboard/efficiency` — Efficiency-based rankings
+
+**Data source:** Leaderboard aggregates from `contact_events` collection by user_id. This is why EVERY action must create a contact_event (see Flow 8).
+
+**DO NOT:**
+- Show one store's data to another store without opt-in
+- Remove the `leaderboard_visible` toggle — it controls privacy
+- Change the role-based filtering without understanding the full hierarchy
+- Aggregate data across orgs unless the user is a white label admin
+
+---
+
 ## Critical Production Notes
 - `backend/server.py` uses `load_dotenv(override=False)` — This is CRITICAL. `override=False` means deployment platform env vars (Kubernetes) take priority over the .env file. This was changed from `override=True` which was causing the .env localhost URL to stomp on the production Atlas URL, locking the user out for 3 days. NEVER change back to override=True.
 - Frontend uses relative `/api` paths for web builds
