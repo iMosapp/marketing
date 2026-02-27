@@ -6,8 +6,8 @@ import { ImosHeader, ImosFooter } from './_components';
 
 const FEATURE_SECTIONS = [
   {
-    title: 'Sales Empowerment',
-    subtitle: 'Give your team the tools to close more deals',
+    title: 'Social Presence',
+    subtitle: 'Own your digital reputation',
     icon: 'flash',
     color: '#C9A962',
     features: [
