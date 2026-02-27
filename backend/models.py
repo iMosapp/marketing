@@ -230,6 +230,7 @@ class Contact(BaseModel):
     last_name: Optional[str] = None
     phone: str
     email: Optional[str] = None
+    email_work: Optional[str] = None
     photo: Optional[str] = None  # high-res photo (excluded from list queries)
     photo_thumbnail: Optional[str] = None  # tiny avatar for fast loading (~3-5KB)
     photo_url: Optional[str] = None  # thumbnail for display
