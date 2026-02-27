@@ -182,8 +182,16 @@ class User(BaseModel):
     status: str = "active"  # active, deactivated, suspended
     deactivated_at: Optional[datetime] = None  # When user was deactivated
     deactivated_by: Optional[str] = None  # Who deactivated them
-    grace_period_end: Optional[datetime] = None  # 6 months after deactivation
+    grace_period_end: Optional[datetime] = None  # 6 months — access purge (hide from org)
+    hard_delete_date: Optional[datetime] = None  # 12 months — data retention limit
     account_type: str = "org"  # org (part of org) or individual (self-paying)
+    
+    # 3rd Party CRM / DMS Integration IDs
+    external_id: Optional[str] = None  # Primary external system ID (Salesforce, HubSpot, etc.)
+    external_ids: Dict[str, str] = {}  # Multiple systems: {"salesforce": "SF123", "cdk": "CDK456", "dealersocket": "DS789"}
+    dms_id: Optional[str] = None  # Dealer Management System ID (Reynolds, CDK, Dealertrack)
+    crm_id: Optional[str] = None  # CRM-specific ID (VinSolutions, DealerSocket, etc.)
+    erp_id: Optional[str] = None  # ERP system ID if applicable
     
     # For independents - gamification visibility
     leaderboard_visible: bool = False
