@@ -976,11 +976,48 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
             if not has_access:
                 raise HTTPException(status_code=403, detail="Access denied to this user")
     
-    result = await get_db().users.delete_one({"_id": ObjectId(user_id)})
-    if result.deleted_count == 0:
+    # SOFT DELETE: Never truly delete users - deactivate instead
+    from datetime import timedelta
+    now = datetime.utcnow()
+    grace_end = now + timedelta(days=180)  # 6-month grace period
+    
+    # Get the user being deleted
+    user_to_deactivate = await get_db().users.find_one({"_id": ObjectId(user_id)})
+    if not user_to_deactivate:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return {"message": "User deleted"}
+    is_individual = not user_to_deactivate.get('organization_id') and not user_to_deactivate.get('store_id')
+    
+    # Deactivate user (never hard delete)
+    result = await get_db().users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "is_active": False,
+            "status": "deactivated",
+            "deactivated_at": now,
+            "deactivated_by": x_user_id or "system",
+            "grace_period_end": grace_end,
+        }}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Handle contacts based on ownership
+    if not is_individual:
+        # ORG USER: personal/imported contacts get hidden from org, org contacts stay
+        # Hide imported contacts (personal to the user)
+        await get_db().contacts.update_many(
+            {"user_id": user_id, "ownership_type": "personal"},
+            {"$set": {"status": "hidden", "hidden_at": now, "hidden_reason": "user_deactivated"}}
+        )
+        # Org contacts stay active — reassign to store/org level
+        # They remain searchable by other org members via get_data_filter
+        logger.info(f"User {user_id} deactivated from org. Personal contacts hidden, org contacts retained.")
+    else:
+        # INDIVIDUAL USER: they keep everything, just deactivated
+        logger.info(f"Individual user {user_id} deactivated. All contacts retained for grace period.")
+    
+    return {"message": "User deactivated", "grace_period_end": grace_end.isoformat()}
 
 
 @router.get("/users/{user_id}/detail")
