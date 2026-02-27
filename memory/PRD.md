@@ -26,7 +26,17 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **UX: Accordion behavior on More page** — Only one section open at a time, auto-scrolls clicked section into view
 - **UI: Inbox Redesign** — Card-based conversation list, timeline-style thread messages, rich content detection for review/congrats/digital cards
 - **UI: Contact Edit Mode Layout** — Moved Basic Info fields to appear right after Tags in edit mode (no more scrolling past Activity Feed)
-- **UI: Unified Rounded-Square Avatars** — Changed all avatars from circles to rounded squares across 12+ files (contacts, more, inbox, thread, my-account, my-profile, contact detail, team, digital card, store card, congrats, invite team)
+- **BACKEND: Contact Ownership & Soft Delete System**
+  - Contact model: added `ownership_type` (org/personal), `original_user_id`, `status` (active/hidden)
+  - Source tracking: manual, csv, phone_contacts, lead_form, referral
+  - Imported contacts = personal to uploader; manual contacts = belong to org
+  - User deletion now soft-deletes (status: deactivated, 6-month grace period)
+  - Org user deactivation: personal contacts hidden, org contacts stay
+  - Individual user deactivation: everything retained
+  - Reactivation endpoint restores user + unhides personal contacts
+  - Contact list queries auto-filter hidden contacts
+- **FIX: load_dotenv(override=False)** — Platform env vars now take priority over .env file (fixes 3-day production lockout)
+- **FIX: Digital Card** — "Share My Contact" for owner, "Save My Contact" for customers
 
 ### Session Feb 27, 2026 (Fork 3)
 - **NEW: Facebook-Feed Style Contact Profile Page** (`/contact/[id]`)
