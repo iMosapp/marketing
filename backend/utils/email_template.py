@@ -99,7 +99,7 @@ def build_branded_email(content: str, brand: dict, contact_name: str = "") -> st
     social = brand.get("social_links", {})
     footer = brand.get("footer_text", "")
     powered_by = brand.get("powered_by", "IM On Social")
-    powered_by_url = brand.get("powered_by_url", "https://www.calldrip.com/see_it_in_action")
+    powered_by_url = brand.get("powered_by_url", "https://app.imosapp.com/imos")
 
     # Build social links row
     social_html = ""
