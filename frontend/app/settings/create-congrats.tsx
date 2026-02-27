@@ -41,6 +41,9 @@ export default function CreateCongratsCardPage() {
   const [photo, setPhoto] = useState<{uri: string, type: string, name: string} | null>(null);
   const [creating, setCreating] = useState(false);
   const [createdCard, setCreatedCard] = useState<{card_id: string, share_url: string} | null>(null);
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
+  const [matchInfo, setMatchInfo] = useState<any>(null);
+  const [pendingSharePlatform, setPendingSharePlatform] = useState<string | null>(null);
 
   const pickPhoto = async () => {
     if (IS_WEB) {
