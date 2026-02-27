@@ -138,6 +138,48 @@ export default function MoreScreen() {
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
+  const logReviewShareEvent = async (platform: string, forceAction?: string) => {
+    const phone = shareRecipientPhone.trim();
+    const email = shareRecipientEmail.trim();
+    const name = shareRecipientName.trim();
+    if (!phone && !email) return;
+    if (!user?._id) return;
+
+    const payload: any = {
+      phone, email, name,
+      event_type: 'review_shared',
+      event_title: 'Review Link Shared',
+      event_description: `Shared review link via ${platform}`,
+      event_icon: 'star',
+      event_color: '#FFD60A',
+    };
+    if (forceAction) payload.force_action = forceAction;
+
+    try {
+      const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, payload);
+      if (res.data.needs_confirmation) {
+        setMatchInfo(res.data);
+        setPendingSharePayload({ platform, payload });
+        setMatchModalVisible(true);
+      }
+    } catch (err) {
+      console.error('Failed to log review share event:', err);
+    }
+  };
+
+  const resolveReviewMatch = async (action: string) => {
+    setMatchModalVisible(false);
+    if (!pendingSharePayload || !user?._id) return;
+    try {
+      await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        ...pendingSharePayload.payload,
+        force_action: action,
+      });
+    } catch {}
+    setMatchInfo(null);
+    setPendingSharePayload(null);
+  };
+
   const handleShareViaSMS = async () => {
     const url = getReviewUrl();
     const msg = `Hey! We'd love your feedback. Leave us a review here: ${url}`;
@@ -159,33 +201,21 @@ export default function MoreScreen() {
       Linking.openURL(smsUrl);
     }
 
-    // Log contact event if we have a phone number
-    if (phone && user?._id) {
-      try {
-        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-          phone,
-          name: shareRecipientName.trim(),
-          event_type: 'review_shared',
-          event_title: 'Review Link Shared',
-          event_description: 'Shared review link via SMS',
-          event_icon: 'star',
-          event_color: '#FFD60A',
-        });
-      } catch (err) {
-        console.error('Failed to log review share event:', err);
-      }
-    }
-
+    await logReviewShareEvent('sms');
     setShowShareModal(false);
     setShareRecipientName('');
     setShareRecipientPhone('');
+    setShareRecipientEmail('');
   };
 
   const handleShareViaEmail = async () => {
     const url = getReviewUrl();
     const subject = "We'd love your feedback!";
     const body = `Hi!\n\nThank you for your business. We'd really appreciate it if you could take a moment to leave us a review:\n\n${url}\n\nThank you!`;
-    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const email = shareRecipientEmail.trim();
+    const mailto = email
+      ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
       const a = document.createElement('a');
       a.href = mailto;
@@ -197,27 +227,11 @@ export default function MoreScreen() {
       Linking.openURL(mailto);
     }
 
-    // Log contact event if we have a phone number
-    const phone = shareRecipientPhone.trim();
-    if (phone && user?._id) {
-      try {
-        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-          phone,
-          name: shareRecipientName.trim(),
-          event_type: 'review_shared',
-          event_title: 'Review Link Shared',
-          event_description: 'Shared review link via email',
-          event_icon: 'star',
-          event_color: '#FFD60A',
-        });
-      } catch (err) {
-        console.error('Failed to log review share event:', err);
-      }
-    }
-
+    await logReviewShareEvent('email');
     setShowShareModal(false);
     setShareRecipientName('');
     setShareRecipientPhone('');
+    setShareRecipientEmail('');
   };
 
   const handlePreviewReviewPage = () => {
