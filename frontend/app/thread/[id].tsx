@@ -159,6 +159,14 @@ export default function ThreadScreen() {
       const effectiveMode = (mode === 'email' && !contact_email) ? 'sms' : mode as 'sms' | 'email';
       setMessageMode(effectiveMode);
       AsyncStorage.setItem('message_mode', effectiveMode);
+    } else if (mode === 'review' || mode === 'card' || mode === 'congrats') {
+      // Set SMS mode for these actions, then auto-open the relevant modal after load
+      setMessageMode('sms');
+      setTimeout(() => {
+        if (mode === 'review') setShowReviewLinks(true);
+        else if (mode === 'card') setShowBusinessCard(true);
+        else if (mode === 'congrats') setShowCongratsCardModal(true);
+      }, 800);
     } else {
       loadMessagePreferences();
     }
