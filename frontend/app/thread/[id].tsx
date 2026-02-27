@@ -843,19 +843,19 @@ export default function ThreadScreen() {
     if (id) params.push(`contact=${id}`);
     if (params.length > 0) cardUrl += `?${params.join('&')}`;
     
-    // Insert message with link
+    // Build message with link
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     const cardMessage = `Hey ${firstName}! Here's my digital business card - save my contact info: ${cardUrl}`;
     
-    // Close modals first, then set message
+    // Close modals first
     setShowBusinessCard(false);
     setShowLandingPageOptions(false);
     setSelectedCampaign(null);
     
-    // Set message after a short delay to ensure modal is closed
+    // Auto-send: logs message + copies to clipboard + opens SMS app
     setTimeout(() => {
-      setMessage(cardMessage);
-    }, 100);
+      handleSend(cardMessage);
+    }, 200);
   };
 
   const sendVCardLink = () => {
