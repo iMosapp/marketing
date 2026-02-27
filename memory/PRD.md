@@ -36,7 +36,13 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - Reactivation endpoint restores user + unhides personal contacts
   - Contact list queries auto-filter hidden contacts
 - **FIX: load_dotenv(override=False)** — Platform env vars now take priority over .env file (fixes 3-day production lockout)
-- **FIX: Digital Card** — "Share My Contact" for owner, "Save My Contact" for customers
+- **BACKEND: Public API v1** (`/api/v1/`) — Full REST API with API key auth for 3rd party CRM integrations
+  - Contacts CRUD, search, filter, bulk tag/assign, export
+  - Users, Conversations, Messages, Campaigns, Reviews, Tags, Orgs, Stores
+  - API key management (generate, list, revoke)
+- **BACKEND: Outgoing Webhook System** — 21 event types, HMAC signatures, delivery logging
+  - contact.created/updated/deleted, message.sent/received, campaign.enrolled, review.submitted, etc.
+  - Webhook subscription management + delivery logs
 
 ### Session Feb 27, 2026 (Fork 3)
 - **NEW: Facebook-Feed Style Contact Profile Page** (`/contact/[id]`)
