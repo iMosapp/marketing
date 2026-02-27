@@ -1986,12 +1986,15 @@ export default function ThreadScreen() {
                   onClick={() => selectedMedia ? sendMMS() : handleSend()}
                   disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
                   data-testid="send-message-btn"
+                  title={messageMode === 'sms' && !(user as any)?.mvpline_number ? 'Copy & open your messaging app' : 'Send message'}
                   style={{
                     width: 36,
                     height: 36,
                     borderRadius: 18,
                     backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia 
-                      ? (messageMode === 'sms' ? '#007AFF' : '#34C759') 
+                      ? (messageMode === 'sms' 
+                          ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
+                          : '#34C759') 
                       : '#3A3A3C',
                     border: 'none',
                     cursor: (!message.trim() && !selectedMedia) || sending || sendingMedia ? 'not-allowed' : 'pointer',
@@ -2004,7 +2007,9 @@ export default function ThreadScreen() {
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
                     <Ionicons
-                      name={messageMode === 'sms' ? 'send' : 'mail'}
+                      name={messageMode === 'sms' 
+                        ? ((user as any)?.mvpline_number ? 'send' : 'open-outline') 
+                        : 'mail'}
                       size={18}
                       color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
                     />
@@ -2014,7 +2019,9 @@ export default function ThreadScreen() {
                 <TouchableOpacity
                   style={[
                     styles.composerSendButton, 
-                    { backgroundColor: messageMode === 'sms' ? '#007AFF' : '#34C759' },
+                    { backgroundColor: messageMode === 'sms' 
+                        ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
+                        : '#34C759' },
                     ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled
                   ]}
                   onPress={() => selectedMedia ? sendMMS() : handleSend()}
@@ -2024,7 +2031,9 @@ export default function ThreadScreen() {
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
                     <Ionicons
-                      name={messageMode === 'sms' ? 'send' : 'mail'}
+                      name={messageMode === 'sms' 
+                        ? ((user as any)?.mvpline_number ? 'send' : 'open-outline') 
+                        : 'mail'}
                       size={18}
                       color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
                     />
