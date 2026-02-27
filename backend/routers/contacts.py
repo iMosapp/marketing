@@ -108,14 +108,27 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
 @router.get("/{user_id}", response_model=List[Contact])
 async def get_contacts(user_id: str, search: Optional[str] = None):
     """Get all contacts accessible to a user based on their role.
-    Excludes heavy photo field - uses photo_thumbnail for avatars."""
+    Excludes heavy photo field - uses photo_thumbnail for avatars.
+    Excludes hidden contacts (from deactivated users' personal imports)."""
     db = get_db()
     base_filter = await get_data_filter(user_id)
+    
+    # Always exclude hidden contacts unless the user owns them
+    active_filter = {
+        "$and": [
+            base_filter,
+            {"$or": [
+                {"status": {"$ne": "hidden"}},
+                {"status": {"$exists": False}},
+                {"original_user_id": user_id},  # User can always see their own contacts
+            ]}
+        ]
+    }
     
     if search:
         query = {
             "$and": [
-                base_filter,
+                active_filter,
                 {"$or": [
                     {"first_name": {"$regex": search, "$options": "i"}},
                     {"last_name": {"$regex": search, "$options": "i"}},
@@ -124,7 +137,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
             ]
         }
     else:
-        query = base_filter
+        query = active_filter
     
     # Exclude heavy 'photo' field from list queries — use photo_thumbnail instead
     contacts = await db.contacts.find(query, {"photo": 0}).sort("first_name", 1).limit(500).to_list(500)
