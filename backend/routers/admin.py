@@ -161,7 +161,7 @@ async def list_organizations(x_user_id: str = Header(None, alias="X-User-ID")):
     
     if not user:
         # Fallback for backward compatibility - return all (will be restricted later)
-        orgs = await get_db().organizations.find().limit(500).to_list(500)
+        orgs = await get_db().organizations.find({}, {"logo_url": 0, "email_brand_kit.logo_url": 0}).limit(500).to_list(500)
         return [{**org, "_id": str(org["_id"])} for org in orgs]
     
     role = user.get('role', 'user')
