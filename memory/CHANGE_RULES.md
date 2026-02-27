@@ -129,6 +129,13 @@ contact_email = contact.get('email') or contact.get('email_work')
 
 Backend file: `/app/backend/routers/messages.py` — has TWO email paths that both need this.
 
+
+Also: ALL navigation paths to the thread page MUST include `contact_email` in params. The conversations API returns `email` in the contact object. If `contact_email` is missing from URL params, the "Switch to Email" button will do a fallback API check — but passing it upfront is always preferred.
+
+Frontend files that navigate to threads:
+- `/app/frontend/app/(tabs)/inbox.tsx` — 3 navigation paths (all now include email)
+- `/app/frontend/app/contact/[id].tsx` — includes email in threadParams
+
 ---
 
 ## Rule 9: Preview and Production Are Separate
