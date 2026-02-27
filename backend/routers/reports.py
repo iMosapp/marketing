@@ -877,6 +877,110 @@ async def get_user_activity(
     prev_total = prev_count + prev_msg_count
     trend_pct = round(((total_touchpoints - prev_total) / max(prev_total, 1)) * 100) if prev_total > 0 else 0
 
+    # Channel breakdown for shares (CTR by channel by content type)
+    channel_pipeline = [
+        {"$match": {
+            "user_id": user_id,
+            "event_type": {"$in": [
+                "digital_card_sent", "digital_card_shared",
+                "review_request_sent", "review_shared", "review_invite_sent",
+                "congrats_card_sent", "congrats_sent",
+                "vcard_sent",
+            ]},
+            "$or": [{**date_filter_ts}, {**date_filter_ca}],
+        }},
+        {"$group": {
+            "_id": {
+                "type": "$event_type",
+                "channel": {"$ifNull": ["$channel", "$category"]},
+            },
+            "count": {"$sum": 1},
+        }},
+    ]
+    channel_results = await db.contact_events.aggregate(channel_pipeline).to_list(200)
+
+    # Normalize into content categories
+    def normalize_type(et):
+        if "digital_card" in et or "vcard" in et:
+            return "digital_card"
+        if "review" in et:
+            return "review_link"
+        if "congrats" in et:
+            return "congrats_card"
+        return et
+
+    channel_breakdown = {}
+    for doc in channel_results:
+        content_type = normalize_type(doc["_id"]["type"])
+        ch = doc["_id"].get("channel") or "unknown"
+        if ch in ("sms_personal", "text", "sms"):
+            ch = "sms"
+        elif ch in ("email", "resend"):
+            ch = "email"
+        elif ch in ("outreach", "card", "message"):
+            ch = "in_app"
+        key = f"{content_type}__{ch}"
+        channel_breakdown[key] = channel_breakdown.get(key, 0) + doc["count"]
+
+    # Click counts by link type from short_urls
+    click_by_type_pipeline = [
+        {"$match": {"user_id": user_id, "created_at": {"$gte": start, "$lte": end}}},
+        {"$group": {
+            "_id": "$link_type",
+            "total_clicks": {"$sum": "$click_count"},
+            "total_sent": {"$sum": 1},
+        }},
+    ]
+    short_url_stats = await db.short_urls.aggregate(click_by_type_pipeline).to_list(50)
+    click_by_link_type = {}
+    for doc in short_url_stats:
+        lt = doc["_id"] or "unknown"
+        click_by_link_type[lt] = {
+            "sent": doc["total_sent"],
+            "clicks": doc["total_clicks"],
+            "ctr": round((doc["total_clicks"] / max(doc["total_sent"], 1)) * 100, 1),
+        }
+
+    # Review link clicks
+    review_click_count = await db.review_link_clicks.count_documents(
+        {"salesperson_id": user_id, "created_at": {"$gte": start, "$lte": end}}
+    )
+    if review_click_count == 0:
+        review_click_count = await db.review_link_clicks.count_documents(
+            {"created_at": {"$gte": start, "$lte": end}}
+        )
+
+    # Build CTR summary per content type
+    ctr_summary = {
+        "digital_card": {
+            "sent": digital_cards,
+            "clicks": click_by_link_type.get("digital_card", {}).get("clicks", 0),
+            "ctr": round((click_by_link_type.get("digital_card", {}).get("clicks", 0) / max(digital_cards, 1)) * 100, 1) if digital_cards > 0 else 0,
+            "by_channel": {
+                "sms": channel_breakdown.get("digital_card__sms", 0) + channel_breakdown.get("digital_card__in_app", 0),
+                "email": channel_breakdown.get("digital_card__email", 0),
+            },
+        },
+        "review_link": {
+            "sent": review_links,
+            "clicks": review_click_count + click_by_link_type.get("review", {}).get("clicks", 0),
+            "ctr": round(((review_click_count + click_by_link_type.get("review", {}).get("clicks", 0)) / max(review_links, 1)) * 100, 1) if review_links > 0 else 0,
+            "by_channel": {
+                "sms": channel_breakdown.get("review_link__sms", 0),
+                "email": channel_breakdown.get("review_link__email", 0),
+            },
+        },
+        "congrats_card": {
+            "sent": congrats_cards,
+            "clicks": click_by_link_type.get("congrats_card", {}).get("clicks", 0),
+            "ctr": round((click_by_link_type.get("congrats_card", {}).get("clicks", 0) / max(congrats_cards, 1)) * 100, 1) if congrats_cards > 0 else 0,
+            "by_channel": {
+                "sms": channel_breakdown.get("congrats_card__sms", 0) + channel_breakdown.get("congrats_card__in_app", 0),
+                "email": channel_breakdown.get("congrats_card__email", 0),
+            },
+        },
+    }
+
     return {
         "period": period,
         "start_date": start.isoformat(),
@@ -902,8 +1006,10 @@ async def get_user_activity(
         },
         "engagement": {
             "total_clicks": total_clicks,
+            "review_clicks": review_click_count,
             "clicks_by_type": click_map,
         },
+        "ctr": ctr_summary,
         "contacts": {
             "new_contacts": new_contacts,
         },
