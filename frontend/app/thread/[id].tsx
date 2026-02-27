@@ -1462,6 +1462,13 @@ export default function ThreadScreen() {
               <Text style={styles.intentText}>{item.intent_detected}</Text>
             </View>
           )}
+          
+          {item.channel === 'sms_personal' && isUser && (
+            <View style={styles.personalSmsBadge}>
+              <Ionicons name="phone-portrait-outline" size={10} color="#8E8E93" />
+              <Text style={styles.personalSmsText}>Sent from your phone</Text>
+            </View>
+          )}
         </View>
       </View>
     );
