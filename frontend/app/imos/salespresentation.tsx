@@ -22,8 +22,8 @@ const SLIDES: Slide[] = [
     title: 'iMOs',
     subtitle: 'Meet the New Way to Be On Social.',
     content: [
-      'Empower your sales teams with tools that help them be the best in the business.',
-      'Every customer interaction starts with a relationship. iMOs ensures no moment is ever missed.',
+      'iMOs is a Social Relationship OS that gives organizations, teams, and individuals control of their digital presence.',
+      'Own your reputation. Build your credibility. Connect every customer touchpoint under one social presence.',
     ],
     icon: 'diamond',
     iconColor: '#C9A962',
