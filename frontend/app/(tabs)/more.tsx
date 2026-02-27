@@ -973,6 +973,30 @@ export default function MoreScreen() {
             </TouchableOpacity>
           )}
 
+          {/* Recipient Info */}
+          <View style={shareStyles.recipientSection}>
+            <Text style={shareStyles.recipientLabel}>Send to (optional)</Text>
+            <View style={shareStyles.recipientRow}>
+              <TextInput
+                style={shareStyles.recipientInput}
+                placeholder="Name"
+                placeholderTextColor="#6E6E73"
+                value={shareRecipientName}
+                onChangeText={setShareRecipientName}
+                data-testid="share-recipient-name"
+              />
+              <TextInput
+                style={shareStyles.recipientInput}
+                placeholder="Phone"
+                placeholderTextColor="#6E6E73"
+                value={shareRecipientPhone}
+                onChangeText={setShareRecipientPhone}
+                keyboardType="phone-pad"
+                data-testid="share-recipient-phone"
+              />
+            </View>
+          </View>
+
           {/* Action Buttons */}
           <View style={shareStyles.actions}>
             <TouchableOpacity style={shareStyles.actionBtn} onPress={handleCopyReviewLink} data-testid="share-copy-link-btn">
