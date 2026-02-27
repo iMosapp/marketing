@@ -62,7 +62,7 @@ class TestPersonalSMSMode:
         return self.test_contact
     
     def test_send_personal_sms_returns_success(self):
-        """POST /api/messages/send/{user_id} with channel 'sms_personal' should return status 'sent'"""
+        """POST /api/messages/send/{user_id}/{conversation_id} with channel 'sms_personal' should return status 'sent'"""
         # First get a contact
         contacts_response = self.session.get(f"{BASE_URL}/api/contacts/{self.user_id}")
         assert contacts_response.status_code == 200
@@ -81,8 +81,9 @@ class TestPersonalSMSMode:
         conversation = conv_response.json()
         conversation_id = conversation.get('_id')
         
-        # Send message with sms_personal channel
+        # Send message with sms_personal channel - using the endpoint that handles channel
         send_response = self.session.post(f"{BASE_URL}/api/messages/send/{self.user_id}/{conversation_id}", json={
+            "conversation_id": conversation_id,
             "content": "Test personal SMS message - sent from user device",
             "channel": "sms_personal"
         })
@@ -95,7 +96,6 @@ class TestPersonalSMSMode:
         assert message.get('channel') == 'sms_personal', f"Expected channel 'sms_personal', got: {message.get('channel')}"
         
         print(f"Message sent successfully with channel: {message.get('channel')}, status: {message.get('status')}")
-        return message
     
     def test_personal_sms_message_logged_in_db(self):
         """Verify message with sms_personal channel is persisted in database"""
@@ -112,13 +112,14 @@ class TestPersonalSMSMode:
         conversation = conv_response.json()
         conversation_id = conversation.get('_id')
         
-        # Send personal SMS
+        # Send personal SMS using the endpoint that supports channel
         unique_content = f"Personal SMS test message - {os.urandom(4).hex()}"
         send_response = self.session.post(f"{BASE_URL}/api/messages/send/{self.user_id}/{conversation_id}", json={
+            "conversation_id": conversation_id,
             "content": unique_content,
             "channel": "sms_personal"
         })
-        assert send_response.status_code == 200
+        assert send_response.status_code == 200, f"Send failed: {send_response.text}"
         sent_message = send_response.json()
         
         # Get thread to verify message is persisted
@@ -152,8 +153,9 @@ class TestPersonalSMSMode:
         conversation = conv_response.json()
         conversation_id = conversation.get('_id')
         
-        # Send with regular SMS channel
+        # Send with regular SMS channel using the endpoint that supports channel
         send_response = self.session.post(f"{BASE_URL}/api/messages/send/{self.user_id}/{conversation_id}", json={
+            "conversation_id": conversation_id,
             "content": "Test regular SMS message",
             "channel": "sms"
         })
@@ -180,8 +182,9 @@ class TestPersonalSMSMode:
         conversation = conv_response.json()
         conversation_id = conversation.get('_id')
         
-        # Try email channel
+        # Try email channel using the endpoint that supports channel
         send_response = self.session.post(f"{BASE_URL}/api/messages/send/{self.user_id}/{conversation_id}", json={
+            "conversation_id": conversation_id,
             "content": "Test email message",
             "channel": "email"
         })
