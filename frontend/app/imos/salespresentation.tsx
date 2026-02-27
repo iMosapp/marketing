@@ -20,7 +20,7 @@ const SLIDES: Slide[] = [
   {
     id: 'intro',
     title: 'iMOs',
-    subtitle: 'Old School Relationship Building. Modern Tools.',
+    subtitle: 'Meet the New Way to Be On Social.',
     content: [
       'Empower your sales teams with tools that help them be the best in the business.',
       'Every customer interaction starts with a relationship. iMOs ensures no moment is ever missed.',

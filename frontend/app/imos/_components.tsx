@@ -113,8 +113,8 @@ export function ImosFooter() {
             <Text style={[styles.fChar, { color: '#34C759' }]}>O</Text>
             <Text style={[styles.fChar, { color: '#007AFF' }]}>s</Text>
           </View>
-          <Text style={styles.footerTagline}>Relationship Management System</Text>
-          <Text style={styles.footerSub}>Old School Relationship Building.{'\n'}Modern Tools.</Text>
+          <Text style={styles.footerTagline}>Social Relationship OS</Text>
+          <Text style={styles.footerSub}>Meet the New Way{'\n'}to Be On Social.</Text>
         </View>
 
         {/* Links */}
