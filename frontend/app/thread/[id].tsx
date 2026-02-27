@@ -645,10 +645,56 @@ export default function ThreadScreen() {
     const hasTwilioNumber = !!(user as any).mvpline_number;
     const isPersonalSMS = messageMode === 'sms' && !hasTwilioNumber;
     
-    // CRITICAL: Open native SMS app IMMEDIATELY, BEFORE any async operations.
-    // Mobile browsers (iOS Safari especially) require sms: protocol links to be
-    // triggered within a direct user gesture. Any await/setTimeout breaks this chain.
+    // PERSONAL SMS FLOW: Special handling because opening sms: navigates away from the browser.
+    // We use fetch with keepalive:true so the API call completes even as Safari goes to background.
     if (isPersonalSMS && contactPhone) {
+      // Optimistic UI update
+      const optimisticMessage: Message = {
+        _id: `temp_${Date.now()}`,
+        content: contentToSend,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        ai_generated: false,
+        channel: 'sms_personal',
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+      setMessage('');
+      setShowAISuggestion(false);
+      setSending(true);
+      
+      // Build message payload
+      const convId = actualConversationId || conversationId;
+      const messagePayload: any = {
+        conversation_id: convId,
+        content: contentToSend,
+        channel: 'sms_personal',
+      };
+      if (selectedTemplateInfo) {
+        messagePayload.template_id = selectedTemplateInfo.template_id;
+        messagePayload.template_type = selectedTemplateInfo.template_type;
+        messagePayload.template_name = selectedTemplateInfo.template_name;
+      }
+      
+      // Fire API call with keepalive — this ensures the request completes
+      // even when the browser navigates away to the native SMS app
+      const apiBase = Platform.OS === 'web' ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
+      try {
+        fetch(`${apiBase}/messages/send/${user._id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(messagePayload),
+          keepalive: true,
+        }).catch(() => {});
+      } catch {}
+      
+      // Copy message to clipboard (best-effort)
+      try {
+        if (Platform.OS === 'web' && navigator.clipboard) {
+          navigator.clipboard.writeText(contentToSend).catch(() => {});
+        }
+      } catch {}
+      
+      // Open native SMS app — this navigates away from the browser
       const isIOS = /iPad|iPhone|iPod|Macintosh/.test(
         Platform.OS === 'web' ? navigator.userAgent : ''
       );
@@ -666,14 +712,12 @@ export default function ThreadScreen() {
         Linking.openURL(smsUrl);
       }
       
-      // Copy message to clipboard (non-blocking, best-effort)
-      try {
-        if (Platform.OS === 'web' && navigator.clipboard) {
-          navigator.clipboard.writeText(contentToSend).catch(() => {});
-        }
-      } catch {}
+      setSelectedTemplateInfo(null);
+      setSending(false);
+      return; // Exit early — regular await flow won't work since we navigated away
     }
     
+    // REGULAR FLOW: Email, Twilio SMS, etc. (no page navigation)
     try {
       setSending(true);
       
@@ -689,7 +733,7 @@ export default function ThreadScreen() {
         sender: 'user',
         timestamp: new Date().toISOString(),
         ai_generated: false,
-        channel: isPersonalSMS ? 'sms_personal' : messageMode,
+        channel: messageMode,
       };
       
       setMessages((prev) => [...prev, optimisticMessage]);
@@ -706,7 +750,7 @@ export default function ThreadScreen() {
       const messagePayload: any = {
         conversation_id: convId,
         content: contentToSend,
-        channel: isPersonalSMS ? 'sms_personal' : messageMode,
+        channel: messageMode,
       };
       
       // Include template tracking info if a template was used
