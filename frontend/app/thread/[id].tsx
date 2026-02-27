@@ -2101,9 +2101,7 @@ export default function ThreadScreen() {
                     const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
                     setShowReviewLinks(false);
                     setShowAttachMenu(false);
-                    setTimeout(() => {
-                      handleSend(reviewMsg);
-                    }, 200);
+                    setMessage(reviewMsg);
                   }}
                 >
                   <View style={[styles.templateIcon, { backgroundColor: '#FFD60A20' }]}>
