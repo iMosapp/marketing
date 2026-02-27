@@ -26,6 +26,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **UX: Accordion behavior on More page** — Only one section open at a time, auto-scrolls clicked section into view
 - **UI: Inbox Redesign** — Card-based conversation list, timeline-style thread messages, rich content detection for review/congrats/digital cards
 - **UI: Contact Edit Mode Layout** — Moved Basic Info fields to appear right after Tags in edit mode (no more scrolling past Activity Feed)
+- **UI: Unified Rounded-Square Avatars** — Changed all avatars from circles to rounded squares across 12+ files (contacts, more, inbox, thread, my-account, my-profile, contact detail, team, digital card, store card, congrats, invite team)
 
 ### Session Feb 27, 2026 (Fork 3)
 - **NEW: Facebook-Feed Style Contact Profile Page** (`/contact/[id]`)
