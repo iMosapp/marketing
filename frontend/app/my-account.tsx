@@ -328,51 +328,6 @@ export default function MyAccountScreen() {
       .slice(0, 2);
   };
 
-  const quickActions = [
-    {
-      icon: 'card',
-      title: 'My Digital Card',
-      subtitle: 'View & share your card',
-      color: '#5856D6',
-      onPress: () => router.push(`/card/${user?._id}`),
-    },
-    {
-      icon: 'gift',
-      title: 'Create Congrats Card',
-      subtitle: 'Make & share a card',
-      color: '#C9A962',
-      onPress: () => router.push('/settings/create-congrats'),
-    },
-    {
-      icon: 'star',
-      title: 'Share Review Link',
-      subtitle: 'Send to customers',
-      color: '#FFD60A',
-      onPress: () => setShowShareModal(true),
-    },
-    {
-      icon: 'chatbubbles',
-      title: 'Review Approvals',
-      subtitle: 'Approve customer reviews',
-      color: '#AF52DE',
-      onPress: () => router.push('/settings/review-approvals'),
-    },
-    {
-      icon: 'person',
-      title: 'AI Persona',
-      subtitle: 'Communication style settings',
-      color: '#AF52DE',
-      onPress: () => router.push('/settings/persona'),
-    },
-    {
-      icon: 'create',
-      title: 'Edit Digital Card',
-      subtitle: 'Update bio, photo & socials',
-      color: '#007AFF',
-      onPress: () => router.push('/settings/my-profile'),
-    },
-  ];
-
   const settingsItems = [
     {
       icon: 'shield-checkmark',
