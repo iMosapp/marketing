@@ -1070,6 +1070,14 @@ async def reactivate_user(user_id: str, x_user_id: str = Header(None, alias="X-U
     )
     
     logger.info(f"User {user_id} reactivated. {restored.modified_count} personal contacts restored.")
+    
+    # Fire lifecycle hooks
+    try:
+        from .user_lifecycle import on_user_reactivated
+        await on_user_reactivated(user_id, x_user_id)
+    except Exception as e:
+        logger.warning(f"Lifecycle reactivation hook error: {e}")
+    
     return {"message": "User reactivated", "contacts_restored": restored.modified_count}
 
 
