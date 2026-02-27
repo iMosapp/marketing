@@ -1498,38 +1498,38 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   
-  // Luxury Pill Filters
+  // Filter Pills - Card Style
   filterScroll: {
     marginBottom: 4,
     flexGrow: 0,
     flexShrink: 0,
-    maxHeight: 36,
+    maxHeight: 40,
   },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 12,
-    gap: 6,
+    gap: 8,
     alignItems: 'center',
   },
   filterButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#1C1C1E',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    height: 30,
+    borderColor: '#2A2A2A',
+    height: 32,
   },
   filterButtonActive: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
+    backgroundColor: COLORS_DARK.accent,
+    borderColor: COLORS_DARK.accent,
   },
   filterButtonAI: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
+    backgroundColor: COLORS_DARK.success,
+    borderColor: COLORS_DARK.success,
   },
   filterText: {
     color: COLORS.textSecondary,
