@@ -1514,7 +1514,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#6E6E73',
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: 0,
+    textTransform: 'uppercase',
   },
   recipientInput: {
     backgroundColor: '#1C1C1E',
@@ -1523,8 +1524,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: '#FFF',
-    borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderWidth: 1.5,
+    borderColor: '#3A3A3C',
   },
   recipientRow: {
     flexDirection: 'row' as any,
