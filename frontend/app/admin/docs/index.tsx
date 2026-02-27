@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 20,
     backgroundColor: '#1C1C1E',
-    borderRadius: 24,
+    borderRadius: 28,
     marginRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
