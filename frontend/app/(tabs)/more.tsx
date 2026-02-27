@@ -995,27 +995,25 @@ export default function MoreScreen() {
               onChangeText={setShareRecipientName}
               data-testid="share-recipient-name"
             />
-            <View style={shareStyles.recipientRow}>
-              <TextInput
-                style={[shareStyles.recipientInput, { flex: 1 }]}
-                placeholder="Phone"
-                placeholderTextColor="#6E6E73"
-                value={shareRecipientPhone}
-                onChangeText={setShareRecipientPhone}
-                keyboardType="phone-pad"
-                data-testid="share-recipient-phone"
-              />
-              <TextInput
-                style={[shareStyles.recipientInput, { flex: 1 }]}
-                placeholder="Email"
-                placeholderTextColor="#6E6E73"
-                value={shareRecipientEmail}
-                onChangeText={setShareRecipientEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                data-testid="share-recipient-email"
-              />
-            </View>
+            <TextInput
+              style={shareStyles.recipientInput}
+              placeholder="Phone"
+              placeholderTextColor="#6E6E73"
+              value={shareRecipientPhone}
+              onChangeText={setShareRecipientPhone}
+              keyboardType="phone-pad"
+              data-testid="share-recipient-phone"
+            />
+            <TextInput
+              style={shareStyles.recipientInput}
+              placeholder="Email"
+              placeholderTextColor="#6E6E73"
+              value={shareRecipientEmail}
+              onChangeText={setShareRecipientEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              data-testid="share-recipient-email"
+            />
           </View>
 
           {/* Action Buttons */}
