@@ -363,6 +363,58 @@ This prevents iOS Safari's auto-zoom-on-focus for small text inputs.
 
 ---
 
+### FLOW 7: Photo Management — Thumbnails vs High-Res
+
+**Architecture:**
+- `photo_thumbnail`: Used EVERYWHERE in the UI (contact lists, avatars, activity feeds, conversation headers)
+- `photo` (high-res): Stored ONLY for the congrats card flow, which pushes the original to a third party. High-res does NOT need to travel with the contact record.
+- The contacts list API intentionally EXCLUDES the `photo` field (too heavy for lists)
+
+**Requirements:**
+- When a user uploads a new photo, the THUMBNAIL must be regenerated and persisted. The UI reads thumbnails, not originals.
+- Users must be able to: upload, delete, and ROTATE photos (some go landscape/sideways)
+- After changing a photo, it must persist permanently — not revert to the old one
+- Rotation fix must apply to both the thumbnail and any stored version
+
+**Current known issue:** Photo appears to revert after editing. Likely cause: thumbnail not being regenerated when a new photo is uploaded, so the old cached thumbnail keeps showing.
+
+**Status:** NOT YET FIXED — documented for next work session. Do not touch photo code without understanding the full thumbnail/high-res split.
+
+---
+
+### FLOW 8: Tracking & Analytics Architecture — EVERYTHING IS TRACKED
+
+**Core principle:** Every single user action that touches a contact MUST create BOTH:
+1. A `contact_event` record (powers the contact's activity feed AND the reporting aggregations)
+2. A `message` record (powers the inbox conversation thread)
+
+**What gets tracked (non-exhaustive):**
+- SMS sent (personal or Twilio) → contact_event + message
+- Email sent → contact_event + message
+- Digital card shared → contact_event
+- Review link shared → contact_event
+- Congrats card sent → contact_event
+- Call placed → contact_event
+- Link clicks → tracked via short URLs, feed into click rates
+
+**Where tracking data appears:**
+1. **Contact Activity Feed** — reads from `contact_events` filtered by contact_id
+2. **Inbox Conversations** — reads from `messages` filtered by conversation_id
+3. **Reports / Analytics** — aggregates from BOTH `messages` (SMS/email counts) AND `contact_events` (card/review/congrats counts)
+4. **Leaderboard / My Rankings** — aggregates from `contact_events` by user_id
+5. **Manager Dashboard** — aggregates across all users in the org
+
+**If ANY action fails to create a contact_event, it breaks:**
+- The contact's activity trail
+- The user's performance stats
+- The leaderboard rankings
+- The manager's visibility into team activity
+- Click rate analytics
+
+**This is the #1 most important thing in the system.** Every feature, every button, every action must end with a logged event. No exceptions.
+
+---
+
 ## Critical Production Notes
 - `backend/server.py` uses `load_dotenv(override=False)` — This is CRITICAL. `override=False` means deployment platform env vars (Kubernetes) take priority over the .env file. This was changed from `override=True` which was causing the .env localhost URL to stomp on the production Atlas URL, locking the user out for 3 days. NEVER change back to override=True.
 - Frontend uses relative `/api` paths for web builds
