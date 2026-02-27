@@ -274,6 +274,16 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             {"_id": ObjectId(message['_id'])},
             {"$set": {"status": message['status'], "channel": "email", "resend_id": message.get('resend_id')}}
         )
+    elif channel == 'sms_personal':
+        # User sending from their personal phone — just log it, no Twilio needed
+        message['status'] = 'sent'
+        message['channel'] = 'sms_personal'
+        logger.info(f"Personal SMS logged for {to_phone}: {message_data.content[:50]}... (user will send from their own device)")
+        
+        await get_db().messages.update_one(
+            {"_id": ObjectId(message['_id'])},
+            {"$set": {"status": "sent", "channel": "sms_personal"}}
+        )
     elif to_phone:
         # Send via Twilio (SMS)
         message['channel'] = 'sms'
