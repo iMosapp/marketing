@@ -951,6 +951,7 @@ export default function DigitalCardPage() {
               <Text style={styles.shareModalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
