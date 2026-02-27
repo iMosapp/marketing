@@ -952,6 +952,49 @@ export default function DigitalCardPage() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Contact Match Modal */}
+      {matchModalVisible && matchInfo && (
+        <View style={styles.matchOverlay}>
+          <View style={styles.matchModal} data-testid="contact-match-modal">
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF950015', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="person-circle" size={44} color="#FF9500" />
+              </View>
+            </View>
+            <Text style={styles.matchTitle}>Contact Already Exists</Text>
+            <Text style={styles.matchSubtitle}>A contact with this number already exists:</Text>
+            <View style={styles.matchCard}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>{matchInfo.existing_name}</Text>
+              {matchInfo.phone ? <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{matchInfo.phone}</Text> : null}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+              <Text style={{ fontSize: 12, color: '#6E6E73', marginHorizontal: 12 }}>You entered</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+            </View>
+            <View style={[styles.matchCard, { marginBottom: 20 }]}>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
+            </View>
+            <TouchableOpacity style={styles.matchActionBtn} onPress={() => resolveMatchAction('use_existing')} data-testid="match-use-existing">
+              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+              <Text style={styles.matchActionText}>Use Existing Contact</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.matchActionBtn} onPress={() => resolveMatchAction('update_name')} data-testid="match-update-name">
+              <Ionicons name="create" size={20} color="#007AFF" />
+              <Text style={styles.matchActionText}>Update to "{matchInfo.provided_name}"</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.matchActionBtn} onPress={() => resolveMatchAction('create_new')} data-testid="match-create-new">
+              <Ionicons name="person-add" size={20} color="#FF9500" />
+              <Text style={styles.matchActionText}>Create New Contact</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 12, padding: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
