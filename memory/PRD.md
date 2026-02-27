@@ -127,6 +127,14 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - Backend: `/api/docs/` router with list, categories, single doc, and seed endpoints
   - Frontend: `/admin/docs` hub + `/admin/docs/[id]` viewer
   - Accessible from More > Administration > Company Docs (admin-only)
+- **NEW: Smart Contact Matching System** — Every outbound action now creates/matches/merges contacts:
+  - Match by last 10 digits of phone number or email (personal/work)
+  - Name mismatch prompts user: Use Existing, Update Name, or Create New
+  - Dual email support: personal + work merged under one contact
+  - Flows updated: Share Review, Congrats Card, Digital Card share, Dialer
+  - All actions logged as contact events (review_shared, congrats_card_sent, digital_card_shared, call_placed)
+  - SMS pre-fills phone number + message body using anchor-click technique
+  - Dialer opens native phone app via `tel:` protocol and logs call activity
 
 ## Prioritized Backlog
 ### P0 (Critical)
