@@ -131,9 +131,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = await AsyncStorage.getItem('auth_token');
       const userStr = await AsyncStorage.getItem('user');
       const originalAuthStr = await AsyncStorage.getItem('original_auth');
+      const brandingStr = await AsyncStorage.getItem('partner_branding');
       
       if (token && userStr) {
         const user = JSON.parse(userStr);
+        const partnerBranding = brandingStr ? JSON.parse(brandingStr) : null;
         let isImpersonating = false;
         let originalUser = null;
         let originalToken = null;
@@ -148,6 +150,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ 
           user, 
           token, 
+          partnerBranding,
           isAuthenticated: true, 
           isLoading: false,
           isImpersonating,
