@@ -11,10 +11,10 @@ const FEATURE_SECTIONS = [
     icon: 'flash',
     color: '#C9A962',
     features: [
-      { icon: 'camera', title: 'Congrats Cards', desc: 'Snap a photo, create a branded card customers share on social media. Every deal becomes marketing.' },
-      { icon: 'chatbubbles', title: 'Smart Messaging', desc: 'SMS and email from one inbox. AI-powered response suggestions. Never leave a customer waiting.' },
-      { icon: 'call', title: 'Built-in Dialer', desc: 'Call directly from the app. Auto-log every interaction. Full call history at your fingertips.' },
-      { icon: 'card', title: 'Digital Business Card', desc: 'Shareable digital card with bio, socials, and direct contact. Modern and professional.' },
+      { icon: 'camera', title: 'Congrats Cards', desc: 'Send branded cards customers share on social media. Collects reviews and builds your personal reputation.' },
+      { icon: 'chatbubbles', title: 'Smart Messaging', desc: 'SMS and email from one inbox. AI-powered suggestions. Every conversation strengthens the relationship.' },
+      { icon: 'star', title: 'Personal Reviews', desc: 'Direct feedback that lives on your digital card. Portable credibility that stays with you wherever you go.' },
+      { icon: 'card', title: 'Digital Business Card', desc: 'Your social hub — bio, socials, reviews, contact info. Your reputation in one shareable link.' },
     ],
   },
   {
