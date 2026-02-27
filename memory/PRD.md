@@ -19,6 +19,10 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **FIX: API Docs Syntax Error** — Fixed JSX curly brace escaping in integrations.tsx Docs tab (line 660) that was causing a SyntaxError blocking the entire frontend.
 - **BACKEND: Automated Lifecycle Scan** — Added `daily_lifecycle_scan` job to APScheduler (runs at 6 AM UTC daily). Auto-tags users based on tenure milestones, inactivity detection, and activity levels. Queues milestone messages. Added manual trigger endpoint at `POST /api/scheduler/trigger/lifecycle-scan`.
 - **FEATURE: Personal SMS Mode** — When a user doesn't have a Twilio number (mvpline_number), the Send button in the inbox thread: (1) copies the message to clipboard, (2) opens the native SMS app with recipient and message pre-filled, (3) logs the message in the system as channel `sms_personal`. Visual indicators: orange send button with "open" icon, hint banner, and "Sent from your phone" badge on sent messages.
+- **FIX: iOS SMS Protocol** — Changed from `window.open('sms:...')` (silently blocked by iOS Safari) to `window.location.href` with proper iOS `&body=` format and 300ms delay after backend logging.
+- **FIX: Review Star Button in Thread** — Star icon in thread now shows "Send Review Request" with iMOs review link always available (not "Set Up Review Links" empty state). Added "Manage Review Platform Links" shortcut.
+- **FEATURE: Auto-Send Actions** — Digital card, vCard, review link, and congrats card buttons now auto-send instead of just inserting text. One tap = logged + clipboard + SMS app opens. Carrier agnostic.
+- **FEATURE: Contact Event Tracking** — All personal SMS outbound actions are logged as contact events with type detection: `digital_card_sent`, `review_request_sent`, `congrats_card_sent`, `vcard_sent`, `personal_sms`. Stored in `contact_events` collection for activity tracking.
 
 ### Session Feb 27, 2026 (Fork 4)
 - **FIX: MONGO_URL** — Reset from Atlas to localhost:27017 for preview stability
