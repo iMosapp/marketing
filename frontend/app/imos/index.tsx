@@ -370,4 +370,38 @@ const s = StyleSheet.create({
   bottomCTATitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
   bottomCTASub: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
   bottomCTABtns: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
+
+  /* NARRATIVE SECTIONS */
+  narrativeSection: { paddingHorizontal: 20, paddingVertical: 12 },
+  narrativeCard: {
+    backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, padding: 28,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  narrativeIconWrap: {
+    width: 56, height: 56, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  narrativeTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 10 },
+  narrativeTitle: { fontSize: 22, fontWeight: '800', color: '#FFF', lineHeight: 30, marginBottom: 16 },
+  narrativeDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
+  narrativeLines: { gap: 8, marginBottom: 16 },
+  narrativeLine: { fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 23 },
+  narrativeHighlight: {
+    borderRadius: 12, padding: 16, marginTop: 4,
+  },
+  narrativeHighlightText: { fontSize: 15, fontWeight: '600', lineHeight: 22, textAlign: 'center' },
+  narrativeColumnsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8, marginBottom: 8 },
+  narrativeCol: {
+    flex: 1, minWidth: 150, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+  },
+  narrativeColIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  narrativeColLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 4 },
+  narrativeColDesc: { fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
+  narrativeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
+  narrativeGridItem: {
+    width: '46%', flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 14,
+  },
+  narrativeGridText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
 });
