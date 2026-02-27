@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   previewPhoto: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 18,
     borderWidth: 3,
     justifyContent: 'center',
     alignItems: 'center',
