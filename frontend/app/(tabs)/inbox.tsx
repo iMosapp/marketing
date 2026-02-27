@@ -613,6 +613,7 @@ export default function InboxScreen() {
           params: {
             contact_name: contactName,
             contact_phone: item.contact?.phone || '',
+            contact_email: item.contact?.email || '',
           }
         });
       }
