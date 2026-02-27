@@ -336,7 +336,10 @@ async def import_contacts(user_id: str, contacts: List[ContactCreate]):
         
         contact_dict = contact_data.dict()
         contact_dict['user_id'] = user_id
+        contact_dict['original_user_id'] = user_id
         contact_dict['source'] = 'csv'
+        contact_dict['ownership_type'] = 'personal'
+        contact_dict['status'] = 'active'
         contact_dict['created_at'] = datetime.utcnow()
         contact_dict['updated_at'] = datetime.utcnow()
         
