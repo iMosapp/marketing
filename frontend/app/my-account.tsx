@@ -30,6 +30,27 @@ export default function MyAccountScreen() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [activityPeriod, setActivityPeriod] = useState('month');
+  const [activityData, setActivityData] = useState<any>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityExpanded, setActivityExpanded] = useState(true);
+
+  const loadActivity = useCallback(async (period: string) => {
+    if (!user?._id) return;
+    setActivityLoading(true);
+    try {
+      const res = await api.get(`/reports/user-activity/${user._id}?period=${period}`);
+      setActivityData(res.data);
+    } catch (e) {
+      console.error('Failed to load activity:', e);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, [user?._id]);
+
+  useEffect(() => {
+    loadActivity(activityPeriod);
+  }, [activityPeriod, loadActivity]);
 
   // Refresh user data when screen focuses
   useFocusEffect(
