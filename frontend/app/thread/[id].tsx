@@ -2711,7 +2711,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   modeSwitchText: {
-    color: '#FFF',
+    color: '#8E8E93',
     fontSize: 12,
     fontWeight: '600',
   },
