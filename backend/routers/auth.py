@@ -310,6 +310,13 @@ async def login(credentials: dict):
     except Exception as e:
         logger.warning(f"Error resolving partner branding: {e}")
 
+    # Track login for lifecycle tagging
+    try:
+        from .user_lifecycle import on_user_login
+        await on_user_login(str(user['_id']))
+    except Exception as e:
+        logger.warning(f"Lifecycle login hook error: {e}")
+
     response = {
         "token": f"mock_token_{user['_id']}",
         "user": user
