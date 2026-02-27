@@ -707,16 +707,21 @@ export default function ThreadScreen() {
         } catch {}
         
         // Open native SMS app with recipient and message pre-filled
-        // iOS Safari requires window.location.href for sms: protocol (window.open doesn't work)
         // iOS uses &body= format, Android/web uses ?body=
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
         const separator = isIOS ? '&' : '?';
         const smsUrl = `sms:${contactPhone}${separator}body=${encodeURIComponent(contentToSend)}`;
         
         if (Platform.OS === 'web') {
-          // Small delay to let the backend call complete before navigating away
+          // Use anchor-click technique (same as digital card share)
+          // This bypasses popup blockers that intercept window.open/location.href for sms: protocol
           setTimeout(() => {
-            window.location.href = smsUrl;
+            const a = document.createElement('a');
+            a.href = smsUrl;
+            a.target = '_self';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           }, 300);
         } else {
           Linking.openURL(smsUrl);
