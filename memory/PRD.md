@@ -20,6 +20,11 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - Moved Account Setup, Brand Kit, Review Links tiles into My Account page
   - Replaced with My Digital Card, Congrats Card, Share Review as top 3 tiles on More page
   - Quick action tiles now visible to all users (no role restriction)
+- **UI: My Account Quick Actions Cleanup**
+  - Removed duplicate tiles (My Digital Card, Create Congrats, Share Review Link)
+  - Reorganized: Row 1 = Account Setup, Brand Kit, Review Links; Row 2 = AI Persona, Approvals, Edit Card
+- **UX: Accordion behavior on More page** — Only one section open at a time, auto-scrolls clicked section into view
+- **UI: Inbox Redesign** — Card-based conversation list, timeline-style thread messages, rich content detection for review/congrats/digital cards
 - Verified all 5 main tabs (Inbox, Keypad, Contacts, Team, More) load correctly
 
 ### Session Feb 27, 2026 (Fork 3)
