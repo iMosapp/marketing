@@ -14,6 +14,11 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ## What's Been Implemented
 
+### Session Feb 27, 2026 (Fork 5 - Current)
+- **FIX: Share Review Tile** — "Share Review" tile on More page now opens a share review modal (Copy Link, SMS, Email, Preview) instead of navigating to the review links settings page. Added "Manage Review Platform Links" shortcut in the modal for admin access. Also added "Share Review Link" button on My Account page.
+- **FIX: API Docs Syntax Error** — Fixed JSX curly brace escaping in integrations.tsx Docs tab (line 660) that was causing a SyntaxError blocking the entire frontend.
+- **BACKEND: Automated Lifecycle Scan** — Added `daily_lifecycle_scan` job to APScheduler (runs at 6 AM UTC daily). Auto-tags users based on tenure milestones, inactivity detection, and activity levels. Queues milestone messages. Added manual trigger endpoint at `POST /api/scheduler/trigger/lifecycle-scan`.
+
 ### Session Feb 27, 2026 (Fork 4)
 - **FIX: MONGO_URL** — Reset from Atlas to localhost:27017 for preview stability
 - **UI: More Page Tile Rearrangement**
