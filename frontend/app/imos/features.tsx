@@ -80,9 +80,9 @@ export default function FeaturesScreen() {
         <View style={maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined}>
 
           <View style={s.titleSection}>
-            <Text style={s.label}>PLATFORM</Text>
+            <Text style={s.label}>SOCIAL RELATIONSHIP OS</Text>
             <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Features</Text>
-            <Text style={s.subtitle}>Everything your team needs to build lasting customer relationships</Text>
+            <Text style={s.subtitle}>Everything you need to own your social presence and build lasting relationships</Text>
           </View>
 
           {FEATURE_SECTIONS.map((section, si) => (
