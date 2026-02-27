@@ -1141,7 +1141,7 @@ const s = StyleSheet.create({
   heroAvatarContainer: { position: 'relative', marginBottom: 14 },
   heroAvatar: { width: 96, height: 96, borderRadius: 22, borderWidth: 3, borderColor: '#C9A962' },
   heroAvatarPlaceholder: {
-    width: 96, height: 96, borderRadius: 48,
+    width: 96, height: 96, borderRadius: 22,
     backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center',
     borderWidth: 3, borderColor: '#2C2C2E',
   },
