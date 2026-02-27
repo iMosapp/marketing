@@ -493,58 +493,72 @@ export default function MyAccountScreen() {
           )}
         </View>
 
-        {/* Account Settings Tiles */}
-        <View style={styles.accountTilesRow}>
-          <TouchableOpacity
-            style={styles.accountTileBtn}
-            onPress={() => router.push('/settings/store-profile' as any)}
-            data-testid="account-setup-tile"
-          >
-            <View style={[styles.accountTileIcon, { backgroundColor: '#34C75920' }]}>
-              <Ionicons name="storefront" size={20} color="#34C759" />
-            </View>
-            <Text style={styles.accountTileLabel}>Account Setup</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.accountTileBtn}
-            onPress={() => router.push('/settings/brand-kit' as any)}
-            data-testid="brand-kit-tile"
-          >
-            <View style={[styles.accountTileIcon, { backgroundColor: '#C9A96220' }]}>
-              <Ionicons name="color-palette" size={20} color="#C9A962" />
-            </View>
-            <Text style={styles.accountTileLabel}>Brand Kit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.accountTileBtn}
-            onPress={() => router.push('/settings/review-links' as any)}
-            data-testid="review-links-tile"
-          >
-            <View style={[styles.accountTileIcon, { backgroundColor: '#FFD60A20' }]}>
-              <Ionicons name="star" size={20} color="#FFD60A" />
-            </View>
-            <Text style={styles.accountTileLabel}>Review Links</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quick Actions */}
+        {/* Quick Actions - Tile Rows */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickGrid}>
-            {quickActions.map((item, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.quickCard}
-                onPress={item.onPress}
-                data-testid={`quick-action-${item.title.toLowerCase().replace(/\s/g, '-')}`}
-              >
-                <View style={[styles.quickIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={24} color={item.color} />
-                </View>
-                <Text style={styles.quickTitle}>{item.title}</Text>
-                <Text style={styles.quickSubtitle}>{item.subtitle}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.tileRow}>
+            <TouchableOpacity
+              style={styles.tileBtnThird}
+              onPress={() => router.push('/settings/store-profile' as any)}
+              data-testid="quick-action-account-setup"
+            >
+              <View style={[styles.tileIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="storefront" size={20} color="#34C759" />
+              </View>
+              <Text style={styles.tileLabel}>Account Setup</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tileBtnThird}
+              onPress={() => router.push('/settings/brand-kit' as any)}
+              data-testid="quick-action-brand-kit"
+            >
+              <View style={[styles.tileIcon, { backgroundColor: '#C9A96220' }]}>
+                <Ionicons name="color-palette" size={20} color="#C9A962" />
+              </View>
+              <Text style={styles.tileLabel}>Brand Kit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tileBtnThird}
+              onPress={() => router.push('/settings/review-links' as any)}
+              data-testid="quick-action-review-links"
+            >
+              <View style={[styles.tileIcon, { backgroundColor: '#FFD60A20' }]}>
+                <Ionicons name="star" size={20} color="#FFD60A" />
+              </View>
+              <Text style={styles.tileLabel}>Review Links</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.tileRow, { marginTop: 8 }]}>
+            <TouchableOpacity
+              style={styles.tileBtnThird}
+              onPress={() => router.push('/settings/persona' as any)}
+              data-testid="quick-action-ai-persona"
+            >
+              <View style={[styles.tileIcon, { backgroundColor: '#AF52DE20' }]}>
+                <Ionicons name="person" size={20} color="#AF52DE" />
+              </View>
+              <Text style={styles.tileLabel}>AI Persona</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tileBtnThird}
+              onPress={() => router.push('/settings/review-approvals' as any)}
+              data-testid="quick-action-review-approvals"
+            >
+              <View style={[styles.tileIcon, { backgroundColor: '#AF52DE20' }]}>
+                <Ionicons name="chatbubbles" size={20} color="#FF9500" />
+              </View>
+              <Text style={styles.tileLabel}>Approvals</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tileBtnThird}
+              onPress={() => router.push('/settings/my-profile' as any)}
+              data-testid="quick-action-edit-digital-card"
+            >
+              <View style={[styles.tileIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="create" size={20} color="#007AFF" />
+              </View>
+              <Text style={styles.tileLabel}>Edit Card</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
