@@ -124,7 +124,7 @@ export default function TabLayout() {
           paddingBottom: 32,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: partnerBranding?.primary_color || '#007AFF',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
