@@ -750,7 +750,7 @@ export default function DigitalCardPage() {
         >
           <View style={styles.shareModal}>
             <View style={styles.shareModalHandle} />
-            <Text style={styles.shareModalTitle}>Save My Contact</Text>
+            <Text style={styles.shareModalTitle}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
             <Text style={styles.shareModalSubtitle}>Choose how to share your digital card</Text>
             
             <View style={styles.shareOptionsGrid}>
