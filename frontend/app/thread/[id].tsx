@@ -320,45 +320,30 @@ export default function ThreadScreen() {
   }, [message, sending, aiMode, loadingAI]);
 
   const loadReviewLinks = async () => {
-    if (!user) {
-      console.log('loadReviewLinks: No user, skipping');
-      return;
-    }
-    console.log('loadReviewLinks: Starting for user', user._id, 'store_id:', user.store_id);
+    if (!user) return;
     try {
       const response = await messagesAPI.getReviewLinks(user._id);
       setReviewLinks(response.review_links || {});
       setCustomLinkName(response.custom_link_name || '');
-      console.log('loadReviewLinks: Got review links', response);
     } catch (error) {
-      console.log('No review links configured', error);
+      console.log('No review links configured');
     }
     // Fetch store slug for iMOs review link
     try {
       if ((user as any).store_slug) {
-        console.log('loadReviewLinks: User has store_slug:', (user as any).store_slug);
         setStoreSlug((user as any).store_slug);
       } else if (user.store_id) {
-        console.log('loadReviewLinks: Fetching store for store_id:', user.store_id);
         const storeRes = await api.get(`/admin/stores/${user.store_id}`, {
           headers: { 'X-User-ID': user._id }
         });
-        console.log('loadReviewLinks: Got store response', storeRes.data);
         const slug = storeRes.data?.slug;
         if (slug) {
-          console.log('loadReviewLinks: Setting storeSlug:', slug);
           setStoreSlug(slug);
         } else if (storeRes.data?.name) {
-          const generatedSlug = storeRes.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-          console.log('loadReviewLinks: Generated slug from name:', generatedSlug);
-          setStoreSlug(generatedSlug);
+          setStoreSlug(storeRes.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
         }
-      } else {
-        console.log('loadReviewLinks: No store_id on user');
       }
-    } catch (error) {
-      console.log('loadReviewLinks: Failed to fetch store', error);
-    }
+    } catch {}
   };
 
   // Load available tags for quick contact creation
