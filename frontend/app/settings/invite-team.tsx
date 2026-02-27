@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   memberAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
