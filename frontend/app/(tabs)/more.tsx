@@ -749,6 +749,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  partnerBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1C1C1E',
+    borderBottomWidth: 2,
+  },
+  partnerBannerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  partnerLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+  },
+  partnerLogoPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partnerLogoText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  partnerName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  partnerPowered: {
+    fontSize: 11,
+    color: '#636366',
+    marginTop: 1,
+  },
   bellContainer: {
     position: 'absolute',
     top: Platform.OS === 'web' ? 12 : 8,
