@@ -903,35 +903,31 @@ async def send_message_simple(user_id: str, message_data: dict):
     
     # Route based on channel
     if channel == 'email':
-        # Send via Resend
+        # Send via Resend with branded template
         contact = await db.contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
         contact_email = contact.get('email') if contact else None
         
         if contact_email:
             try:
                 import resend as resend_mod
+                from utils.email_template import get_brand_context, build_branded_email
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
                 SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
                     sender_name = user_doc.get('name', 'iMOs') if user_doc else 'iMOs'
+                    contact_name = contact.get('first_name', contact.get('name', ''))
                     
-                    email_html = f"""
-                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #111; color: #fff;">
-                        <div style="background: #1A1A2E; border-radius: 12px; padding: 24px;">
-                            <p style="font-size: 15px; line-height: 1.6; color: #ccc; white-space: pre-wrap;">{content}</p>
-                        </div>
-                        <p style="margin-top: 16px; font-size: 12px; color: #666; text-align: center;">
-                            Sent by {sender_name} via iMOs
-                        </p>
-                    </div>
-                    """
+                    # Build branded email
+                    brand = await get_brand_context(db, user_id)
+                    email_html = build_branded_email(content, brand, contact_name)
+                    store_name = brand.get('store_name', 'iMOs')
                     
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
-                        "from": f"{sender_name} via iMOs <{SENDER}>",
+                        "from": f"{sender_name} at {store_name} <{SENDER}>",
                         "to": contact_email,
-                        "subject": f"Message from {sender_name}",
+                        "subject": f"Message from {sender_name} at {store_name}",
                         "html": email_html,
                     })
                     resend_id = email_result.get('id') if isinstance(email_result, dict) else str(email_result)
