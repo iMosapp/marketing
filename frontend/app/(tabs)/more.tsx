@@ -1523,18 +1523,19 @@ const shareStyles = StyleSheet.create({
   recipientSection: {
     marginHorizontal: 16,
     marginTop: 16,
+    gap: 8,
   },
   recipientLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#8E8E93',
-    marginBottom: 8,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6E6E73',
+    letterSpacing: 1,
+    marginBottom: 0,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   recipientRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   recipientInput: {
     flex: 1,
@@ -1544,7 +1545,7 @@ const shareStyles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: '#FFF',
-    borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderWidth: 1.5,
+    borderColor: '#3A3A3C',
   },
 });
