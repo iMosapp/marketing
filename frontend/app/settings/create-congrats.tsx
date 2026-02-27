@@ -362,25 +362,23 @@ export default function CreateCongratsCardPage() {
           placeholder="Recipient Name"
           placeholderTextColor={COLORS.textSecondary}
         />
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, width: '100%' }}>
-          <TextInput
-            style={[styles.input, { flex: 1, minWidth: 0 }]}
-            value={customerPhone}
-            onChangeText={setCustomerPhone}
-            placeholder="Phone"
-            placeholderTextColor={COLORS.textSecondary}
-            keyboardType="phone-pad"
-          />
-          <TextInput
-            style={[styles.input, { flex: 1, minWidth: 0 }]}
-            value={customerEmail}
-            onChangeText={setCustomerEmail}
-            placeholder="Email"
-            placeholderTextColor={COLORS.textSecondary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+        <TextInput
+          style={[styles.input, { marginTop: 8 }]}
+          value={customerPhone}
+          onChangeText={setCustomerPhone}
+          placeholder="Phone"
+          placeholderTextColor={COLORS.textSecondary}
+          keyboardType="phone-pad"
+        />
+        <TextInput
+          style={[styles.input, { marginTop: 8 }]}
+          value={customerEmail}
+          onChangeText={setCustomerEmail}
+          placeholder="Email"
+          placeholderTextColor={COLORS.textSecondary}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
         {/* Custom Message (optional) */}
         <Text style={[styles.fieldLabel, { marginTop: 16 }]}>CUSTOM MESSAGE (OPTIONAL)</Text>
