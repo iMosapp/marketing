@@ -322,6 +322,7 @@ export default function DigitalCardPage() {
   }
 
   const { user, store, testimonials } = cardData;
+  const partnerBrand = cardData.partner_branding;
   // QR code and share links use the direct production URL
 
   // Filter active social links
