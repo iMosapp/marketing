@@ -810,6 +810,23 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
   },
+  shareReviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 10,
+    backgroundColor: '#FFD60A15',
+    borderRadius: 12,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#FFD60A30',
+  },
+  shareReviewBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFD60A',
+  },
   menuList: {
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
