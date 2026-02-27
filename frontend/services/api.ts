@@ -173,6 +173,21 @@ export const contactsAPI = {
     const response = await api.post(`/contacts/${userId}/bulk-delete`, { contact_ids: contactIds });
     return response.data;
   },
+
+  getEvents: async (userId: string, contactId: string, limit: number = 50) => {
+    const response = await api.get(`/contacts/${userId}/${contactId}/events`, { params: { limit } });
+    return response.data;
+  },
+
+  getStats: async (userId: string, contactId: string) => {
+    const response = await api.get(`/contacts/${userId}/${contactId}/stats`);
+    return response.data;
+  },
+
+  logEvent: async (userId: string, contactId: string, eventData: any) => {
+    const response = await api.post(`/contacts/${userId}/${contactId}/events`, eventData);
+    return response.data;
+  },
 };
 
 // ============= MESSAGES API =============
