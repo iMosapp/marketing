@@ -799,10 +799,14 @@ export default function ThreadScreen() {
   };
 
   const insertReviewLink = (platformId: string, url: string, platformName: string) => {
-    const linkText = url;
-    setMessage(prev => prev + (prev ? ' ' : '') + linkText);
+    const firstName = (contact_name as string || '').split(' ')[0] || 'there';
+    const reviewMessage = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`;
+    // Set message and auto-send so it logs + opens SMS app
     setShowReviewLinks(false);
     setShowAttachMenu(false);
+    setTimeout(() => {
+      handleSend(reviewMessage);
+    }, 200);
   };
 
   // Digital Business Card functions
