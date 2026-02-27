@@ -695,7 +695,7 @@ export default function MyAccountScreen() {
                       <View style={[actStyles.statIcon, { backgroundColor: '#FF375F20' }]}>
                         <Ionicons name="finger-print" size={18} color="#FF375F" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.engagement?.total_clicks || 0}</Text>
+                      <Text style={actStyles.statNum}>{activityData.engagement?.total_clicks + (activityData.engagement?.review_clicks || 0) || 0}</Text>
                       <Text style={actStyles.statLabel}>Link Clicks</Text>
                     </View>
                     <View style={[actStyles.statCard, { flex: 1 }]}>
@@ -706,6 +706,71 @@ export default function MyAccountScreen() {
                       <Text style={actStyles.statLabel}>New Contacts</Text>
                     </View>
                   </View>
+
+                  {/* Click-Through Rates by Content Type */}
+                  {activityData.ctr && (
+                    <View style={{ marginTop: 14 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 10 }}>
+                        Click-Through Rates
+                      </Text>
+                      {[
+                        { key: 'digital_card', label: 'Digital Cards', icon: 'person-circle' as const, color: '#C9A962' },
+                        { key: 'review_link', label: 'Review Links', icon: 'star' as const, color: '#FFD60A' },
+                        { key: 'congrats_card', label: 'Congrats Cards', icon: 'gift' as const, color: '#FF9500' },
+                      ].map(item => {
+                        const data = activityData.ctr[item.key];
+                        if (!data || data.sent === 0) return null;
+                        return (
+                          <View key={item.key} style={{
+                            backgroundColor: '#1C1C1E',
+                            borderRadius: 12,
+                            padding: 14,
+                            marginBottom: 8,
+                          }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Ionicons name={item.icon} size={16} color={item.color} />
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFF' }}>{item.label}</Text>
+                              </View>
+                              <View style={{
+                                backgroundColor: data.ctr > 0 ? '#34C75920' : '#3A3A3C',
+                                paddingHorizontal: 10,
+                                paddingVertical: 3,
+                                borderRadius: 10,
+                              }}>
+                                <Text style={{
+                                  fontSize: 13,
+                                  fontWeight: '700',
+                                  color: data.ctr > 0 ? '#34C759' : '#8E8E93',
+                                }}>
+                                  {Math.min(data.ctr, 100)}% CTR
+                                </Text>
+                              </View>
+                            </View>
+                            {/* Stats row */}
+                            <View style={{ flexDirection: 'row', gap: 16 }}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>Sent</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFF' }}>{data.sent}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>Clicks</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFF' }}>{data.clicks}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>via SMS</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#007AFF' }}>{data.by_channel?.sms || 0}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>via Email</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#5856D6' }}>{data.by_channel?.email || 0}</Text>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               ) : null}
             </View>
