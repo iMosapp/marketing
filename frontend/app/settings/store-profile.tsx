@@ -154,7 +154,8 @@ const { showToast } = useToast();
         setStore((prev: any) => ({
           ...prev,
           logo_url: uploadRes.data.logo_url,
-          logo_avatar_url: uploadRes.data.logo_avatar_url,
+          logo_avatar_url: uploadRes.data.avatar_url || uploadRes.data.logo_avatar_url,
+          logo_thumbnail_url: uploadRes.data.thumbnail_url,
         }));
         showToast('Logo updated!');
       }
