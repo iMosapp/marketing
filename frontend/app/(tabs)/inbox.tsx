@@ -1790,12 +1790,12 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   
-  // Done Button
+  // Done Button - Card Style
   doneButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
