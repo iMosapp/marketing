@@ -18,6 +18,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **FIX: Share Review Tile** — "Share Review" tile on More page now opens a share review modal (Copy Link, SMS, Email, Preview) instead of navigating to the review links settings page. Added "Manage Review Platform Links" shortcut in the modal for admin access. Also added "Share Review Link" button on My Account page.
 - **FIX: API Docs Syntax Error** — Fixed JSX curly brace escaping in integrations.tsx Docs tab (line 660) that was causing a SyntaxError blocking the entire frontend.
 - **BACKEND: Automated Lifecycle Scan** — Added `daily_lifecycle_scan` job to APScheduler (runs at 6 AM UTC daily). Auto-tags users based on tenure milestones, inactivity detection, and activity levels. Queues milestone messages. Added manual trigger endpoint at `POST /api/scheduler/trigger/lifecycle-scan`.
+- **FEATURE: Personal SMS Mode** — When a user doesn't have a Twilio number (mvpline_number), the Send button in the inbox thread: (1) copies the message to clipboard, (2) opens the native SMS app with recipient and message pre-filled, (3) logs the message in the system as channel `sms_personal`. Visual indicators: orange send button with "open" icon, hint banner, and "Sent from your phone" badge on sent messages.
 
 ### Session Feb 27, 2026 (Fork 4)
 - **FIX: MONGO_URL** — Reset from Atlas to localhost:27017 for preview stability
