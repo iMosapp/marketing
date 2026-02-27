@@ -28,6 +28,18 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - Custom event logging via POST endpoint
   - Stats endpoint returning touchpoint counts and created_at
   - Invalid ObjectId error handling
+- **REBRAND: "i'M On Social" Marketing Page Overhaul**
+  - Updated hero: "Meet the New Way to Be On Social"
+  - Replaced all "Old School Relationship Building / Modern Tools" messaging
+  - New narrative: Social Relationship OS, Reputation Operating System
+  - Updated feature icons: Digital Cards, Personal Reviews, Social Links, Reputation
+  - New stats: Own / Build / Connect
+  - Updated feature sections: Organizations, Individuals, The Experience, Personal Reviews, Campaigns
+  - Bottom CTA: "Own Your Relationships. Own Your Reputation."
+  - Footer: "Social Relationship OS" tagline
+  - Sales presentation slides updated
+  - Legacy landing page updated
+  - Zero "old school" references remaining across entire frontend
 
 ### Session Feb 26, 2026 (Fork 2)
 - Podium-style Review Links Landing Page (`/review/[storeSlug]`)
