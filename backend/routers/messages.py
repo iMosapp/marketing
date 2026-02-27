@@ -899,7 +899,7 @@ async def send_message_simple(user_id: str, message_data: dict):
     if channel == 'email':
         # Send via Resend with branded template
         contact = await db.contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
-        contact_email = contact.get('email') if contact else None
+        contact_email = (contact.get('email') or contact.get('email_work')) if contact else None
         
         if contact_email:
             try:
