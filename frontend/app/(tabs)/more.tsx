@@ -133,28 +133,86 @@ export default function MoreScreen() {
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  const handleShareViaSMS = () => {
+  const handleShareViaSMS = async () => {
     const url = getReviewUrl();
     const msg = `Hey! We'd love your feedback. Leave us a review here: ${url}`;
+    const phone = shareRecipientPhone.trim();
+    const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    const sep = isApple ? '&' : '?';
+    const smsUrl = phone
+      ? `sms:${phone}${sep}body=${encodeURIComponent(msg)}`
+      : `sms:${sep === '&' ? '&' : '?'}body=${encodeURIComponent(msg)}`;
+    
     if (Platform.OS === 'web') {
-      window.open(`sms:?body=${encodeURIComponent(msg)}`, '_self');
+      const a = document.createElement('a');
+      a.href = smsUrl;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } else {
-      Linking.openURL(`sms:?body=${encodeURIComponent(msg)}`);
+      Linking.openURL(smsUrl);
     }
+
+    // Log contact event if we have a phone number
+    if (phone && user?._id) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone,
+          name: shareRecipientName.trim(),
+          event_type: 'review_shared',
+          event_title: 'Review Link Shared',
+          event_description: 'Shared review link via SMS',
+          event_icon: 'star',
+          event_color: '#FFD60A',
+        });
+      } catch (err) {
+        console.error('Failed to log review share event:', err);
+      }
+    }
+
     setShowShareModal(false);
+    setShareRecipientName('');
+    setShareRecipientPhone('');
   };
 
-  const handleShareViaEmail = () => {
+  const handleShareViaEmail = async () => {
     const url = getReviewUrl();
     const subject = "We'd love your feedback!";
     const body = `Hi!\n\nThank you for your business. We'd really appreciate it if you could take a moment to leave us a review:\n\n${url}\n\nThank you!`;
     const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
-      window.open(mailto, '_self');
+      const a = document.createElement('a');
+      a.href = mailto;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } else {
       Linking.openURL(mailto);
     }
+
+    // Log contact event if we have a phone number
+    const phone = shareRecipientPhone.trim();
+    if (phone && user?._id) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone,
+          name: shareRecipientName.trim(),
+          event_type: 'review_shared',
+          event_title: 'Review Link Shared',
+          event_description: 'Shared review link via email',
+          event_icon: 'star',
+          event_color: '#FFD60A',
+        });
+      } catch (err) {
+        console.error('Failed to log review share event:', err);
+      }
+    }
+
     setShowShareModal(false);
+    setShareRecipientName('');
+    setShareRecipientPhone('');
   };
 
   const handlePreviewReviewPage = () => {
