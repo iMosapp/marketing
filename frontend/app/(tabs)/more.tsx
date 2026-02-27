@@ -732,12 +732,25 @@ export default function MoreScreen() {
         </View>
         
         <View style={styles.versionContainer}>
-          <Image 
-            source={require('../../assets/images/imos-logo-white-v3.png')}
-            style={styles.versionLogo}
-            resizeMode="contain"
-          />
-          <Text style={styles.version}>v1.0.0</Text>
+          {partnerBranding ? (
+            <>
+              {partnerBranding.logo ? (
+                <Image source={{ uri: partnerBranding.logo }} style={styles.versionLogo} resizeMode="contain" />
+              ) : (
+                <Text style={[styles.version, { fontSize: 14, fontWeight: '700', color: partnerBranding.primary_color }]}>{partnerBranding.name}</Text>
+              )}
+              <Text style={[styles.version, { marginTop: 4 }]}>{partnerBranding.powered_by_text}</Text>
+            </>
+          ) : (
+            <>
+              <Image 
+                source={require('../../assets/images/imos-logo-white-v3.png')}
+                style={styles.versionLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.version}>v1.0.0</Text>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
