@@ -251,6 +251,102 @@ async def seed_project_scope(x_user_id: str = Header(None, alias="X-User-ID")):
         return {"message": "Operations Manual created", "id": str(result.inserted_id)}
 
 
+@router.post("/seed-nda")
+async def seed_nda(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Create or update the NDA — super_admin only"""
+    user = await verify_admin_access(x_user_id)
+    if user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    db = get_db()
+    now = datetime.utcnow()
+
+    doc = {
+        "title": "Non-Disclosure Agreement (NDA)",
+        "summary": "Confidentiality agreement for employees, contractors, and partners with access to proprietary iMOs information.",
+        "category": "legal",
+        "icon": "lock-closed",
+        "sort_order": 0,
+        "version": "1.0",
+        "last_reviewed": now.isoformat(),
+        "is_published": True,
+        "required_role": "super_admin",
+        "slug": "imos-nda",
+        "slides": [
+            {
+                "order": 1,
+                "title": "Non-Disclosure Agreement",
+                "description": "**NON-DISCLOSURE AND CONFIDENTIALITY AGREEMENT**\n\nThis Non-Disclosure Agreement (\"Agreement\") is entered into as of the date of the receiving party's signature, by and between:\n\n**Disclosing Party:**\ni'M On Social LLC (\"iMOs\")\n1741 Lunford Ln\nRiverton, UT 84065\nContact: forest@imosapp.com\n\n**Receiving Party:**\nThe individual or entity identified on the signature page of this Agreement.\n\nThis Agreement governs the disclosure of confidential and proprietary information by iMOs to the Receiving Party in connection with employment, contracting, partnership, or evaluation of the iMOs platform and business operations.",
+            },
+            {
+                "order": 2,
+                "title": "1. Definition of Confidential Information",
+                "description": "\"Confidential Information\" means any and all non-public, proprietary, or trade secret information disclosed by iMOs to the Receiving Party, whether orally, in writing, electronically, or by any other means, including but not limited to:\n\n**a) Technical Information:**\n- Source code, algorithms, and software architecture\n- API specifications, database schemas, and system configurations\n- Security protocols, encryption methods, and authentication systems\n- Development roadmaps, feature plans, and technical documentation\n- Server infrastructure, hosting configurations, and deployment processes\n\n**b) Business Information:**\n- Customer lists, contact databases, and CRM data\n- Pricing models, revenue figures, and financial projections\n- Marketing strategies, sales processes, and go-to-market plans\n- Partnership agreements and vendor relationships\n- Organizational structure and staffing plans\n\n**c) Product Information:**\n- UI/UX designs, wireframes, and mockups\n- AI models, training data, and machine learning configurations\n- Integration specifications and third-party service configurations\n- Beta features, unreleased functionality, and prototype designs\n\n**d) Operational Information:**\n- Internal processes, SOPs, and workflow documentation\n- Employee compensation, benefits, and personnel records\n- Legal strategies, pending litigation, and regulatory compliance plans\n- Investor communications and fundraising materials",
+                "warning": "This definition is intentionally broad. When in doubt, treat information as confidential."
+            },
+            {
+                "order": 3,
+                "title": "2. Obligations of the Receiving Party",
+                "description": "The Receiving Party agrees to:\n\n**a) Maintain Confidentiality:**\n- Hold all Confidential Information in strict confidence\n- Use at least the same degree of care to protect Confidential Information as it uses to protect its own confidential information, but in no event less than reasonable care\n- Not disclose Confidential Information to any third party without prior written consent from iMOs\n\n**b) Limit Use:**\n- Use Confidential Information solely for the purpose for which it was disclosed (the \"Purpose\")\n- Not use Confidential Information for personal gain, competitive advantage, or any purpose other than the Purpose\n- Not reverse engineer, decompile, or disassemble any software or technology disclosed under this Agreement\n\n**c) Limit Access:**\n- Restrict access to Confidential Information to those employees, agents, or contractors who have a need to know and who are bound by confidentiality obligations at least as restrictive as those in this Agreement\n- Maintain a record of all individuals who have been granted access to Confidential Information\n- Immediately notify iMOs if the Receiving Party becomes aware of any unauthorized disclosure or use\n\n**d) Return or Destroy:**\n- Upon termination of this Agreement or upon request by iMOs, promptly return or destroy all Confidential Information and any copies, summaries, or extracts thereof\n- Provide written certification of destruction upon request",
+            },
+            {
+                "order": 4,
+                "title": "3. Exclusions from Confidential Information",
+                "description": "Confidential Information does NOT include information that:\n\n**a)** Is or becomes publicly available through no fault of the Receiving Party;\n\n**b)** Was rightfully in the Receiving Party's possession prior to disclosure by iMOs, as evidenced by written records;\n\n**c)** Is independently developed by the Receiving Party without use of or reference to the Confidential Information, as evidenced by written records;\n\n**d)** Is rightfully received from a third party without restriction on disclosure and without breach of this Agreement;\n\n**e)** Is approved for release by prior written authorization from iMOs;\n\n**f)** Is required to be disclosed by law, regulation, or court order, provided that the Receiving Party:\n- Gives iMOs prompt written notice of the required disclosure (to the extent legally permitted)\n- Cooperates with iMOs in seeking a protective order or other appropriate remedy\n- Discloses only the minimum amount of Confidential Information required by law",
+                "tip": "If you're ever asked to disclose information by a legal authority, contact iMOs immediately before responding."
+            },
+            {
+                "order": 5,
+                "title": "4. Intellectual Property Rights",
+                "description": "**a) Ownership:**\nAll Confidential Information remains the sole and exclusive property of iMOs. This Agreement does not grant the Receiving Party any license, right, title, or interest in or to any Confidential Information, intellectual property, trademarks, copyrights, or patents owned by iMOs.\n\n**b) No License:**\nNothing in this Agreement shall be construed as granting any rights to the Receiving Party under any patent, copyright, trademark, or other intellectual property right of iMOs, nor shall this Agreement grant the Receiving Party any rights in or to the Confidential Information except as expressly set forth herein.\n\n**c) Work Product:**\nAny work product, inventions, discoveries, or improvements made by the Receiving Party using or derived from Confidential Information shall be the sole property of iMOs. The Receiving Party hereby assigns all right, title, and interest in such work product to iMOs.\n\n**d) Moral Rights:**\nTo the extent permitted by applicable law, the Receiving Party waives all moral rights in any work product created under this Agreement.",
+            },
+            {
+                "order": 6,
+                "title": "5. Non-Solicitation & Non-Compete",
+                "description": "**a) Non-Solicitation of Employees:**\nDuring the term of this Agreement and for a period of twelve (12) months following its termination, the Receiving Party shall not, directly or indirectly:\n- Solicit, recruit, or hire any employee or contractor of iMOs\n- Encourage any employee or contractor of iMOs to terminate their relationship with iMOs\n\n**b) Non-Solicitation of Customers:**\nDuring the term of this Agreement and for a period of twelve (12) months following its termination, the Receiving Party shall not, directly or indirectly:\n- Solicit or contact any customer or prospective customer of iMOs for the purpose of offering competing products or services\n- Divert or attempt to divert any business from iMOs\n\n**c) Non-Compete:**\nDuring the term of this Agreement and for a period of twelve (12) months following its termination, the Receiving Party shall not, directly or indirectly, develop, market, sell, or distribute any product or service that is substantially similar to or competitive with the iMOs platform, including but not limited to:\n- CRM systems targeted at automotive dealerships\n- Digital business card platforms with integrated messaging\n- AI-powered sales follow-up systems for dealership use",
+                "warning": "Violation of non-solicitation or non-compete clauses may result in immediate legal action, including injunctive relief and monetary damages."
+            },
+            {
+                "order": 7,
+                "title": "6. Specific Protections for Platform Data",
+                "description": "The Receiving Party specifically acknowledges and agrees that the following constitute trade secrets of iMOs and are subject to the highest level of protection under this Agreement:\n\n**a) Customer Database Architecture:**\n- The structure, schema, and relationships of the iMOs contact management system\n- The activity tracking and touchpoint logging methodology\n- The leaderboard ranking algorithms and gamification mechanics\n\n**b) AI and Machine Learning:**\n- AI persona configurations and prompt engineering techniques\n- Conversation analysis algorithms and sentiment models\n- The Jessi AI assistant's training data and behavior patterns\n\n**c) Communication Infrastructure:**\n- The carrier-agnostic messaging architecture (Personal SMS fallback system)\n- The keepalive pattern for reliable cross-app communication logging\n- Email template engine and white-label branding system\n- Short URL tracking and click-through rate calculation methods\n\n**d) Business Metrics:**\n- User engagement data and retention metrics\n- Revenue per user, churn rates, and lifetime value calculations\n- Conversion rates for digital cards, review requests, and campaigns\n- Internal benchmarking data across dealerships",
+            },
+            {
+                "order": 8,
+                "title": "7. Term and Termination",
+                "description": "**a) Term:**\nThis Agreement shall be effective as of the date of the Receiving Party's signature and shall remain in effect for a period of three (3) years from the date of last disclosure of Confidential Information.\n\n**b) Survival:**\nThe obligations of confidentiality and non-disclosure under this Agreement shall survive termination and continue for a period of five (5) years from the date of termination, or for as long as the Confidential Information remains a trade secret under applicable law, whichever is longer.\n\n**c) Termination:**\nEither party may terminate this Agreement at any time by providing thirty (30) days' written notice to the other party. Termination shall not relieve the Receiving Party of its obligations under this Agreement with respect to Confidential Information disclosed prior to termination.\n\n**d) Effect of Termination:**\nUpon termination, the Receiving Party shall:\n- Immediately cease all use of Confidential Information\n- Return or destroy all Confidential Information within fourteen (14) days\n- Provide written certification of compliance within twenty-one (21) days",
+            },
+            {
+                "order": 9,
+                "title": "8. Remedies",
+                "description": "**a) Injunctive Relief:**\nThe Receiving Party acknowledges that any breach or threatened breach of this Agreement may cause irreparable harm to iMOs for which monetary damages would be inadequate. Accordingly, iMOs shall be entitled to seek injunctive relief (including temporary restraining orders, preliminary injunctions, and permanent injunctions) in any court of competent jurisdiction, without the necessity of proving actual damages or posting any bond.\n\n**b) Monetary Damages:**\nIn addition to injunctive relief, iMOs shall be entitled to recover all actual damages resulting from any breach of this Agreement, including but not limited to:\n- Lost profits and business opportunities\n- Costs of investigation and remediation\n- Reasonable attorneys' fees and court costs\n\n**c) Indemnification:**\nThe Receiving Party shall indemnify, defend, and hold harmless iMOs and its officers, directors, employees, and agents from and against any and all claims, damages, losses, costs, and expenses (including reasonable attorneys' fees) arising out of or related to any breach of this Agreement by the Receiving Party.\n\n**d) Cumulative Remedies:**\nThe remedies provided in this Agreement are cumulative and not exclusive of any other remedies available at law or in equity.",
+            },
+            {
+                "order": 10,
+                "title": "9. General Provisions",
+                "description": "**a) Governing Law:**\nThis Agreement shall be governed by and construed in accordance with the laws of the State of Utah, without regard to its conflict of laws provisions.\n\n**b) Dispute Resolution:**\nAny dispute arising out of or relating to this Agreement shall be resolved through binding arbitration in Salt Lake County, Utah, in accordance with the rules of the American Arbitration Association.\n\n**c) Entire Agreement:**\nThis Agreement constitutes the entire agreement between the parties with respect to the subject matter hereof and supersedes all prior or contemporaneous oral or written agreements concerning such subject matter.\n\n**d) Amendment:**\nThis Agreement may not be amended or modified except by a written instrument signed by both parties.\n\n**e) Severability:**\nIf any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.\n\n**f) Assignment:**\nThe Receiving Party may not assign this Agreement without the prior written consent of iMOs.\n\n**g) Waiver:**\nNo waiver of any breach of this Agreement shall constitute a waiver of any subsequent breach. No waiver shall be effective unless in writing and signed by the waiving party.\n\n**h) Notices:**\nAll notices under this Agreement shall be in writing and delivered to the addresses set forth on the first page of this Agreement, or to such other address as either party may designate in writing.",
+            },
+            {
+                "order": 11,
+                "title": "Signature & Acknowledgment",
+                "description": "**IN WITNESS WHEREOF**, the parties have executed this Non-Disclosure Agreement as of the date set forth below.\n\n**DISCLOSING PARTY:**\ni'M On Social LLC\n\nBy: ________________________________\nName: Forest Ward\nTitle: Founder & CEO\nDate: ________________________________\n\n\n**RECEIVING PARTY:**\n\nBy: ________________________________\nName: ________________________________\nTitle: ________________________________\nCompany: ________________________________\nDate: ________________________________\nEmail: ________________________________\n\n\nBy signing this Agreement, the Receiving Party acknowledges that they have read, understood, and agree to be bound by all terms and conditions set forth herein.\n\nThis Agreement has been executed in duplicate, with each party retaining one original copy.",
+                "tip": "This NDA should be signed before any confidential information is shared. Keep signed copies in a secure location."
+            },
+        ],
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    # Upsert by slug
+    existing = await db.company_docs.find_one({"slug": "imos-nda"})
+    if existing:
+        await db.company_docs.update_one({"slug": "imos-nda"}, {"$set": doc})
+        return {"message": "NDA updated", "id": str(existing["_id"])}
+    else:
+        result = await db.company_docs.insert_one(doc)
+        return {"message": "NDA created", "id": str(result.inserted_id)}
+
+
 @router.post("/seed")
 async def seed_docs(x_user_id: str = Header(None, alias="X-User-ID")):
     """Seed all company documents - super_admin only"""
