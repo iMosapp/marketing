@@ -328,16 +328,21 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
 
     # Merge email onto existing contact if missing
     if contact and email:
+        logger.info(f"Email merge check: contact_email='{contact.get('email')}', new_email='{email}', email_work='{contact.get('email_work')}'")
         if not contact.get("email"):
+            logger.info("Setting primary email")
             await db.contacts.update_one(
                 {"_id": contact["_id"]},
                 {"$set": {"email": email, "updated_at": datetime.now(timezone.utc)}}
             )
         elif contact.get("email", "").lower() != email.lower() and not contact.get("email_work"):
+            logger.info(f"Setting work email: {email}")
             await db.contacts.update_one(
                 {"_id": contact["_id"]},
                 {"$set": {"email_work": email, "updated_at": datetime.now(timezone.utc)}}
             )
+        else:
+            logger.info(f"No email update needed - condition not met: emails_different={contact.get('email', '').lower() != email.lower()}, email_work_empty={not contact.get('email_work')}")
 
     # Merge phone onto existing contact if missing
     if contact and phone and not contact.get("phone"):
