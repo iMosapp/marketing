@@ -2639,8 +2639,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomWidth: 0,
+    backgroundColor: '#000',
   },
   backButton: {
     padding: 4,
@@ -2648,13 +2648,13 @@ const styles = StyleSheet.create({
   headerAvatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 10,
     marginLeft: 4,
   },
   headerAvatarPlaceholder: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 10,
     marginLeft: 4,
     alignItems: 'center',
     justifyContent: 'center',
