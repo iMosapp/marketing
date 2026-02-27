@@ -2131,7 +2131,7 @@ async def get_organization_hierarchy(org_id: str):
         raise HTTPException(status_code=404, detail="Organization not found")
     
     # Get all stores for this org
-    stores = await get_db().stores.find({"organization_id": org_id}).to_list(100)
+    stores = await get_db().stores.find({"organization_id": org_id}, {"logo_url": 0, "email_brand_kit.logo_url": 0, "cover_image_url": 0}).to_list(100)
     
     # Get all users for this org
     users = await get_db().users.find(
