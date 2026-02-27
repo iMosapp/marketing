@@ -362,9 +362,9 @@ export default function CreateCongratsCardPage() {
           placeholder="Recipient Name"
           placeholderTextColor={COLORS.textSecondary}
         />
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, width: '100%' }}>
           <TextInput
-            style={[styles.input, { flex: 1 }]}
+            style={[styles.input, { flex: 1, minWidth: 0 }]}
             value={customerPhone}
             onChangeText={setCustomerPhone}
             placeholder="Phone"
