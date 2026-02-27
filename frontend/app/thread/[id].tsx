@@ -632,10 +632,21 @@ export default function ThreadScreen() {
     const contentToSend = textToSend || message.trim();
     if (!contentToSend || !user) return;
     
-    // Block email send if contact has no email
+    // Block email send if contact has no email - check API as fallback
     if (messageMode === 'email' && !hasEmail) {
-      setShowEmailPrompt(true);
-      return;
+      try {
+        const res = await api.get(`/messages/conversation/${actualConversationId || conversationId}/info`);
+        if (res.data?.contact_email) {
+          setSavedContactEmail(res.data.contact_email);
+          // Continue with send — don't return
+        } else {
+          setShowEmailPrompt(true);
+          return;
+        }
+      } catch {
+        setShowEmailPrompt(true);
+        return;
+      }
     }
     
     // Light haptic when sending message
