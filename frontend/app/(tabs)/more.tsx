@@ -976,14 +976,6 @@ export default function MoreScreen() {
             <View style={{ width: 24 }} />
           </View>
 
-          {/* Link Preview */}
-          <View style={shareStyles.linkBox}>
-            <Ionicons name="link" size={18} color="#FFD60A" />
-            <Text style={shareStyles.linkText} numberOfLines={2}>
-              {getReviewUrl() || 'Loading store link...'}
-            </Text>
-          </View>
-
           {!storeSlug && (
             <TouchableOpacity onPress={() => { setShowShareModal(false); router.push('/settings/store-profile' as any); }}>
               <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
