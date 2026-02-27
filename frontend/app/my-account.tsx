@@ -515,6 +515,17 @@ export default function MyAccountScreen() {
               <Text style={styles.tileLabel}>Edit Card</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Share Review Link Button */}
+          <TouchableOpacity
+            style={styles.shareReviewBtn}
+            onPress={() => setShowShareModal(true)}
+            data-testid="quick-action-share-review"
+          >
+            <Ionicons name="star" size={18} color="#FFD60A" />
+            <Text style={styles.shareReviewBtnText}>Share Review Link</Text>
+            <Ionicons name="arrow-forward" size={16} color="#FFD60A" />
+          </TouchableOpacity>
         </View>
 
         {/* Upgrade Section */}
