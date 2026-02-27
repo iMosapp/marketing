@@ -270,11 +270,47 @@ async def login(credentials: dict):
                     user['org_slug'] = org_slug
         except Exception:
             pass
-    
-    return {
+
+    # Resolve white-label partner branding
+    partner_branding = None
+    try:
+        org_id = user.get('organization_id')
+        store_id = user.get('store_id')
+        # Check org-level partner
+        if org_id:
+            org_doc = await get_db().organizations.find_one({"_id": ObjectId(org_id)}, {"partner_id": 1})
+            if org_doc and org_doc.get("partner_id"):
+                partner = await get_db().white_label_partners.find_one(
+                    {"_id": ObjectId(org_doc["partner_id"]), "is_active": True},
+                    {"_id": 0, "created_at": 0, "updated_at": 0}
+                )
+                if partner:
+                    partner_branding = partner
+        # Check store-level partner if no org-level found
+        if not partner_branding and store_id:
+            store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1, "organization_id": 1})
+            if store_doc:
+                pid = store_doc.get("partner_id")
+                if not pid and store_doc.get("organization_id"):
+                    org_doc = await get_db().organizations.find_one({"_id": ObjectId(store_doc["organization_id"])}, {"partner_id": 1})
+                    pid = org_doc.get("partner_id") if org_doc else None
+                if pid:
+                    partner = await get_db().white_label_partners.find_one(
+                        {"_id": ObjectId(pid), "is_active": True},
+                        {"_id": 0, "created_at": 0, "updated_at": 0}
+                    )
+                    if partner:
+                        partner_branding = partner
+    except Exception as e:
+        logger.warning(f"Error resolving partner branding: {e}")
+
+    response = {
         "token": f"mock_token_{user['_id']}",
         "user": user
     }
+    if partner_branding:
+        response["partner_branding"] = partner_branding
+    return response
 
 @router.post("/forgot-password/request")
 async def request_password_reset(data: dict):
