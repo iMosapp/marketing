@@ -163,16 +163,81 @@ export default function DialerScreen() {
     setPhoneNumber(phoneNumber.slice(0, -1));
   };
   
-  const handleCall = (number?: string) => {
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
+  const [matchInfo, setMatchInfo] = useState<any>(null);
+  const [pendingCallPayload, setPendingCallPayload] = useState<any>(null);
+
+  const handleCall = async (number?: string) => {
     const numberToCall = number || phoneNumber;
-    if (numberToCall) {
-      // Strong haptic for phone call action
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      Alert.alert('Calling', `Dialing ${numberToCall}...`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Call', onPress: () => console.log('Call initiated') },
-      ]);
+    if (!numberToCall) return;
+
+    // Strong haptic for phone call action
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    // Open native phone dialer
+    const telUrl = `tel:${numberToCall}`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a');
+      a.href = telUrl;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      Linking.openURL(telUrl);
     }
+
+    // Log call activity on contact
+    if (user?._id) {
+      // Find contact name if we have it
+      const digits = numberToCall.replace(/\D/g, '');
+      const suffix = digits.length >= 10 ? digits.slice(-10) : digits;
+      const match = contacts.find((c: any) => {
+        const cDigits = (c.phone || '').replace(/\D/g, '');
+        return cDigits.endsWith(suffix);
+      });
+      const contactName = match ? `${match.first_name || ''} ${match.last_name || ''}`.trim() : '';
+
+      try {
+        const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone: numberToCall,
+          name: contactName,
+          event_type: 'call_placed',
+          event_title: 'Call Placed',
+          event_description: `Called ${contactName || numberToCall} from dialer`,
+          event_icon: 'call',
+          event_color: '#34C759',
+        });
+        if (res.data.needs_confirmation && contactName) {
+          setMatchInfo(res.data);
+          setPendingCallPayload({
+            phone: numberToCall,
+            name: contactName,
+            event_type: 'call_placed',
+            event_title: 'Call Placed',
+            event_description: `Called ${contactName || numberToCall} from dialer`,
+            event_icon: 'call',
+            event_color: '#34C759',
+          });
+          setMatchModalVisible(true);
+        }
+      } catch (err) {
+        console.error('Failed to log call event:', err);
+      }
+    }
+  };
+
+  const resolveDialerMatch = async (action: string) => {
+    setMatchModalVisible(false);
+    if (!pendingCallPayload || !user?._id) return;
+    try {
+      await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        ...pendingCallPayload,
+        force_action: action,
+      });
+    } catch {}
+    setMatchInfo(null);
+    setPendingCallPayload(null);
   };
   
   const selectContact = (contact: any) => {
