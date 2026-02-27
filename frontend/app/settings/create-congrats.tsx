@@ -132,7 +132,7 @@ export default function CreateCongratsCardPage() {
     }
   };
 
-  const handleShare = (platform: string) => {
+  const handleShare = async (platform: string) => {
     if (!createdCard) return;
     const url = createdCard.share_url;
     const text = `Check out this congrats card for ${customerName}!`;
@@ -145,17 +145,51 @@ export default function CreateCongratsCardPage() {
       case 'twitter':
         shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
         break;
-      case 'sms':
-        shareUrl = `sms:?body=${encodeURIComponent(text + ' ' + url)}`;
+      case 'sms': {
+        const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+        const sep = isApple ? '&' : '?';
+        const phone = customerPhone.trim();
+        shareUrl = phone
+          ? `sms:${phone}${sep}body=${encodeURIComponent(text + ' ' + url)}`
+          : `sms:${sep === '&' ? '&' : '?'}body=${encodeURIComponent(text + ' ' + url)}`;
         break;
+      }
       case 'email':
         shareUrl = `mailto:?subject=${encodeURIComponent('Congrats Card')}&body=${encodeURIComponent(text + '\n\n' + url)}`;
         break;
     }
+
     if (IS_WEB) {
-      window.open(shareUrl, '_blank');
+      // Use anchor-click technique to bypass popup blockers for sms:/mailto:
+      if (platform === 'sms' || platform === 'email') {
+        const a = document.createElement('a');
+        a.href = shareUrl;
+        a.target = '_self';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        window.open(shareUrl, '_blank');
+      }
     } else {
       Linking.openURL(shareUrl);
+    }
+
+    // Log contact event if we have a phone number
+    if (customerPhone.trim() && user?._id) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone: customerPhone.trim(),
+          name: customerName.trim(),
+          event_type: 'congrats_card_sent',
+          event_title: 'Congrats Card Sent',
+          event_description: `Sent congrats card via ${platform}`,
+          event_icon: 'gift',
+          event_color: '#C9A962',
+        });
+      } catch (err) {
+        console.error('Failed to log congrats event:', err);
+      }
     }
   };
 
