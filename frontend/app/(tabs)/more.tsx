@@ -52,6 +52,9 @@ export default function MoreScreen() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollRef = useRef<ScrollView>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   
   // Load pending count for super admins
   useFocusEffect(
@@ -59,7 +62,13 @@ export default function MoreScreen() {
       if (user?.role === 'super_admin' || originalUser?.role === 'super_admin') {
         fetchPendingCount();
       }
-    }, [user?.role, originalUser?.role])
+      // Fetch store slug for share review link
+      if (user?.store_slug) {
+        setStoreSlug(user.store_slug);
+      } else if (user?.store_id) {
+        fetchStoreSlug();
+      }
+    }, [user?.role, originalUser?.role, user?.store_slug, user?.store_id])
   );
   
   const fetchPendingCount = async () => {
