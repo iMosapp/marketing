@@ -515,7 +515,7 @@ White Label Partner (e.g., i'M On Social)
 - The data proves ROI of the tool to decision-makers
 - Every metric feeds into the leaderboard and org-level reporting
 
-**Status:** DOCUMENTED — ready to build when prioritized
+**Status:** BUILT — Backend endpoint + Frontend dashboard complete. Needs deploy.
 
 ---
 
