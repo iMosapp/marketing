@@ -422,6 +422,15 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
+    # Daily at 7 AM UTC — send scheduled reports
+    scheduler.add_job(
+        send_scheduled_reports,
+        CronTrigger(hour=7, minute=0),
+        id="daily_report_delivery",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     # Every 15 minutes — process pending campaign step messages
     scheduler.add_job(
         process_pending_campaign_steps,
@@ -432,7 +441,7 @@ def start_scheduler():
     )
 
     scheduler.start()
-    logger.info("[Scheduler] Started with 3 jobs: daily_lifecycle_scan (6:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
+    logger.info("[Scheduler] Started with 4 jobs: daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
 
 
 def stop_scheduler():
