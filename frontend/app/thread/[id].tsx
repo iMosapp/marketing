@@ -257,10 +257,12 @@ export default function ThreadScreen() {
     }
   };
 
-  // Load review links
+  // Load review links (depends on user for store slug fetch)
   useEffect(() => {
-    loadReviewLinks();
-  }, []);
+    if (user) {
+      loadReviewLinks();
+    }
+  }, [user]);
 
   // Keyboard shortcuts for web (power users)
   useEffect(() => {
