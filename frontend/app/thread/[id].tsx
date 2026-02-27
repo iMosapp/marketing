@@ -96,6 +96,7 @@ interface Message {
   has_media?: boolean;
   ai_generated?: boolean;
   intent_detected?: string;
+  channel?: string;
 }
 
 interface ConversationInfo {
