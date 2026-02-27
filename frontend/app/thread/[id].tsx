@@ -2090,57 +2090,97 @@ export default function ThreadScreen() {
           <View style={styles.templatesModal} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Insert Review Link</Text>
+              <Text style={styles.modalTitle}>Send Review Link</Text>
             </View>
             
-            {Object.keys(reviewLinks).length === 0 ? (
-              <View style={styles.emptyReviews}>
-                <Ionicons name="star-outline" size={48} color="#8E8E93" />
-                <Text style={styles.emptyReviewsText}>No review links configured</Text>
+            <ScrollView style={styles.templatesList} contentContainerStyle={styles.templatesListContent}>
+              {/* iMOs Review Page Link - always shown if store slug exists */}
+              {storeSlug && (
                 <TouchableOpacity
-                  style={styles.setupReviewsButton}
+                  style={styles.templateItem}
+                  data-testid="review-link-imos"
                   onPress={() => {
+                    const firstName = (contact_name as string || '').split(' ')[0] || 'there';
+                    const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
+                    const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
+                    setMessage(prev => prev + (prev ? ' ' : '') + reviewMsg);
                     setShowReviewLinks(false);
-                    router.push('/settings/review-links');
+                    setShowAttachMenu(false);
                   }}
                 >
-                  <Text style={styles.setupReviewsButtonText}>Set Up Review Links</Text>
+                  <View style={[styles.templateIcon, { backgroundColor: '#FFD60A20' }]}>
+                    <Ionicons name="star" size={20} color="#FFD60A" />
+                  </View>
+                  <View style={styles.templateContent}>
+                    <Text style={styles.templateName}>Send Review Request</Text>
+                    <Text style={styles.templatePreview} numberOfLines={1}>
+                      Sends personalized review link to {(contact_name as string || 'contact').split(' ')[0]}
+                    </Text>
+                  </View>
+                  <Ionicons name="add-circle" size={24} color="#FFD60A" />
                 </TouchableOpacity>
-              </View>
-            ) : (
-              <FlatList
-                data={Object.entries(reviewLinks).filter(([_, url]) => url)}
-                keyExtractor={([platformId]) => platformId}
-                style={styles.templatesList}
-                contentContainerStyle={styles.templatesListContent}
-                renderItem={({ item: [platformId, url] }) => {
-                  const platformNames: Record<string, {name: string; icon: string; color: string}> = {
-                    google: { name: 'Google Reviews', icon: 'logo-google', color: '#4285F4' },
-                    facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
-                    yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
-                    trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
-                    custom: { name: customLinkName || 'Custom Link', icon: 'link', color: '#8E8E93' },
-                  };
-                  const platform = platformNames[platformId] || platformNames.custom;
-                  
-                  return (
-                    <TouchableOpacity
-                      style={styles.templateItem}
-                      onPress={() => insertReviewLink(platformId, url, platform.name)}
-                    >
-                      <View style={[styles.templateIcon, { backgroundColor: `${platform.color}20` }]}>
-                        <Ionicons name={platform.icon as any} size={20} color={platform.color} />
-                      </View>
-                      <View style={styles.templateContent}>
-                        <Text style={styles.templateName}>{platform.name}</Text>
-                        <Text style={styles.templatePreview} numberOfLines={1}>{url}</Text>
-                      </View>
-                      <Ionicons name="add-circle" size={24} color="#007AFF" />
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            )}
+              )}
+              
+              {/* External platform links */}
+              {Object.entries(reviewLinks).filter(([_, url]) => url).map(([platformId, url]) => {
+                const platformNames: Record<string, {name: string; icon: string; color: string}> = {
+                  google: { name: 'Google Reviews', icon: 'logo-google', color: '#4285F4' },
+                  facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
+                  yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
+                  trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
+                  custom: { name: customLinkName || 'Custom Link', icon: 'link', color: '#8E8E93' },
+                };
+                const platform = platformNames[platformId] || platformNames.custom;
+                
+                return (
+                  <TouchableOpacity
+                    key={platformId}
+                    style={styles.templateItem}
+                    onPress={() => insertReviewLink(platformId, url, platform.name)}
+                  >
+                    <View style={[styles.templateIcon, { backgroundColor: `${platform.color}20` }]}>
+                      <Ionicons name={platform.icon as any} size={20} color={platform.color} />
+                    </View>
+                    <View style={styles.templateContent}>
+                      <Text style={styles.templateName}>{platform.name}</Text>
+                      <Text style={styles.templatePreview} numberOfLines={1}>{url}</Text>
+                    </View>
+                    <Ionicons name="add-circle" size={24} color="#007AFF" />
+                  </TouchableOpacity>
+                );
+              })}
+              
+              {/* Empty state only if no links at all */}
+              {!storeSlug && Object.keys(reviewLinks).length === 0 && (
+                <View style={styles.emptyReviews}>
+                  <Ionicons name="star-outline" size={48} color="#8E8E93" />
+                  <Text style={styles.emptyReviewsText}>No review links configured</Text>
+                  <TouchableOpacity
+                    style={styles.setupReviewsButton}
+                    onPress={() => {
+                      setShowReviewLinks(false);
+                      router.push('/settings/review-links');
+                    }}
+                  >
+                    <Text style={styles.setupReviewsButtonText}>Set Up Review Links</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              {/* Manage links shortcut */}
+              {(storeSlug || Object.keys(reviewLinks).length > 0) && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 16, opacity: 0.6 }}
+                  onPress={() => {
+                    setShowReviewLinks(false);
+                    router.push('/settings/review-links' as any);
+                  }}
+                >
+                  <Ionicons name="settings-outline" size={14} color="#8E8E93" />
+                  <Text style={{ fontSize: 13, color: '#8E8E93' }}>Manage Review Platform Links</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
             
             <View style={styles.modalFooter}>
               <TouchableOpacity
