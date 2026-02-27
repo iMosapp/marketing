@@ -127,6 +127,7 @@ api_router.include_router(app_directory.router)
 api_router.include_router(scheduler_admin.router)
 api_router.include_router(webhook_subscriptions.router)
 api_router.include_router(public_api.router)
+api_router.include_router(user_lifecycle.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
