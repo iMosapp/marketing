@@ -1448,4 +1448,31 @@ const shareStyles = StyleSheet.create({
     paddingHorizontal: 32,
     lineHeight: 18,
   },
+  recipientSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  recipientLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  recipientRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  recipientInput: {
+    flex: 1,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#FFF',
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
 });
