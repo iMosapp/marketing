@@ -29,6 +29,24 @@ def get_scheduler_state() -> dict:
     return {**_scheduler_state, "running": scheduler.running}
 
 
+async def run_daily_lifecycle_scan():
+    """Daily job: scan all users for tenure milestones, inactivity, and activity levels."""
+    logger.info("[Scheduler] Starting daily lifecycle scan...")
+    try:
+        from routers.user_lifecycle import run_lifecycle_scan
+        results = await run_lifecycle_scan()
+        _scheduler_state["last_lifecycle_scan_run"] = datetime.now(timezone.utc).isoformat()
+        _scheduler_state["lifecycle_scan_results"] = {
+            **results,
+            "ran_at": datetime.now(timezone.utc).isoformat(),
+        }
+        logger.info(f"[Scheduler] Lifecycle scan complete: {results}")
+    except Exception as e:
+        msg = f"[Scheduler] Error in lifecycle scan: {e}"
+        logger.error(msg)
+        _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+
+
 async def process_all_date_triggers():
     """Daily job: iterate all users with active date-trigger configs and fire messages."""
     from routers.database import get_db
