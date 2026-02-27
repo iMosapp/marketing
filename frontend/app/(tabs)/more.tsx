@@ -878,6 +878,81 @@ export default function MoreScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Share Review Link Modal */}
+      <WebModal visible={showShareModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowShareModal(false)}>
+        <View style={shareStyles.modal}>
+          <View style={shareStyles.header}>
+            <TouchableOpacity onPress={() => setShowShareModal(false)} data-testid="share-modal-close">
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </TouchableOpacity>
+            <Text style={shareStyles.headerTitle}>Share Review Link</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          {/* Link Preview */}
+          <View style={shareStyles.linkBox}>
+            <Ionicons name="link" size={18} color="#FFD60A" />
+            <Text style={shareStyles.linkText} numberOfLines={2}>
+              {getReviewUrl() || 'Loading store link...'}
+            </Text>
+          </View>
+
+          {!storeSlug && (
+            <TouchableOpacity onPress={() => { setShowShareModal(false); router.push('/settings/store-profile' as any); }}>
+              <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
+                Store slug not set. Tap here to configure in Store Profile.
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Action Buttons */}
+          <View style={shareStyles.actions}>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleCopyReviewLink} data-testid="share-copy-link-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#FF950020' }]}>
+                <Ionicons name={copiedLink ? 'checkmark' : 'copy-outline'} size={24} color={copiedLink ? '#34C759' : '#FF9500'} />
+              </View>
+              <Text style={shareStyles.actionLabel}>{copiedLink ? 'Copied!' : 'Copy Link'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleShareViaSMS} data-testid="share-sms-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Text</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleShareViaEmail} data-testid="share-email-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="mail-outline" size={24} color="#007AFF" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Email</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handlePreviewReviewPage} data-testid="share-preview-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#5856D620' }]}>
+                <Ionicons name="eye-outline" size={24} color="#5856D6" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Preview</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Manage Links Shortcut */}
+          <TouchableOpacity 
+            style={shareStyles.manageLink}
+            onPress={() => { setShowShareModal(false); router.push('/settings/review-links' as any); }}
+            data-testid="share-manage-links-btn"
+          >
+            <Ionicons name="settings-outline" size={16} color="#8E8E93" />
+            <Text style={shareStyles.manageLinkText}>Manage Review Platform Links</Text>
+            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+          </TouchableOpacity>
+
+          <Text style={shareStyles.hint}>
+            Tap Text or Email to send a pre-written review request to your customer.
+          </Text>
+        </View>
+      </WebModal>
     </SafeAreaView>
   );
 }
