@@ -431,7 +431,9 @@ async def list_stores(
         if organization_id:
             query['organization_id'] = organization_id
     
-    stores = await db.stores.find(query).limit(500).to_list(500)
+    # Exclude large binary fields from list queries
+    _exclude_large = {"logo_url": 0, "email_brand_kit.logo_url": 0, "cover_image_url": 0}
+    stores = await db.stores.find(query, _exclude_large).limit(500).to_list(500)
     
     # Get all organizations to map names
     org_ids = list(set([s.get('organization_id') for s in stores if s.get('organization_id')]))
