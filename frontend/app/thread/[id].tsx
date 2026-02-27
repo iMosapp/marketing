@@ -1464,12 +1464,15 @@ export default function ThreadScreen() {
       {/* SMS/Email Mode Indicator Banner */}
       <View style={[
         styles.modeBanner, 
-        { backgroundColor: messageMode === 'sms' ? '#007AFF' : '#34C759' }
+        { 
+          backgroundColor: messageMode === 'sms' ? '#007AFF15' : '#34C75915',
+          borderColor: messageMode === 'sms' ? '#007AFF30' : '#34C75930',
+        }
       ]}>
         <Ionicons 
           name={messageMode === 'sms' ? 'chatbubble' : 'mail'} 
-          size={18} 
-          color="#FFF" 
+          size={16} 
+          color={messageMode === 'sms' ? '#007AFF' : '#34C759'} 
         />
         <Text style={styles.modeBannerText}>
           {messageMode === 'sms' ? 'SMS Mode' : 'Email Mode'}
