@@ -92,7 +92,7 @@ async def get_card_data(user_id: str):
         "store": {
             "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
-            "logo_url": store.get("logo_url") if store else None,
+            "logo_url": get_safe_logo(store) if store else None,
             "primary_color": store.get("primary_color", "#007AFF") if store else "#007AFF",
             "phone": store.get("phone") if store else None,
             "address": store.get("address") if store else None,
