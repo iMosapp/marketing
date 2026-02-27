@@ -1067,6 +1067,35 @@ const styles = StyleSheet.create({
   },
 });
 
+const actStyles = StyleSheet.create({
+  statCard: {
+    flex: 1,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statNum: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+});
+
 
 const shareStyles = StyleSheet.create({
   modal: {
