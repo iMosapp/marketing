@@ -244,10 +244,23 @@ class Contact(BaseModel):
     custom_dates: List[CustomDateField] = []  # Additional custom dates
     
     purchase_date: Optional[datetime] = None  # Legacy - alias for date_sold
-    source: str = "manual"  # manual, csv, phone_contacts, lead_form, referral
+    source: str = "manual"  # manual, csv, phone_contacts, lead_form, referral, api, dms, crm
     ownership_type: str = "org"  # org (belongs to org) or personal (imported/personal to user)
-    status: str = "active"  # active, hidden (hidden when user deactivated from org)
+    status: str = "active"  # active, hidden (hidden when user deactivated from org), purged
     original_user_id: Optional[str] = None  # Tracks who originally created/imported this contact
+    
+    # 3rd Party CRM / DMS Integration IDs
+    external_id: Optional[str] = None  # Primary external system ID
+    external_ids: Dict[str, str] = {}  # Multiple systems: {"salesforce": "SF123", "cdk": "CDK456", "vin_solutions": "VS789"}
+    dms_id: Optional[str] = None  # Dealer Management System ID
+    crm_id: Optional[str] = None  # CRM-specific ID
+    customer_number: Optional[str] = None  # Old-school customer number from legacy systems
+    
+    # Data retention
+    hidden_at: Optional[datetime] = None  # When contact was hidden (6-month purge from org view)
+    hidden_reason: Optional[str] = None  # Why hidden (user_deactivated, manual, etc.)
+    purge_date: Optional[datetime] = None  # 6 months after hide — purge from org
+    hard_delete_date: Optional[datetime] = None  # 12 months — full data retention limit
     # Referral tracking
     referred_by: Optional[str] = None  # Contact ID of referrer
     referred_by_name: Optional[str] = None  # Cached name for display
