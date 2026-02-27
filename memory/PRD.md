@@ -116,9 +116,13 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **DB_NAME = `imos-admin-test_database` — THIS IS THE REAL PRODUCTION DATABASE. Do NOT rename or change it. The name is misleading but confirmed correct by the owner.**
 - **Production MONGO_URL does NOT contain a database name in the path — the app relies on the DB_NAME env var to connect to the correct database**
 
+### Session Feb 27, 2026 (Fork 6 - Current)
+- **FIX: Email Delivery Verified End-to-End** — Confirmed emails are delivered via Resend from both API and Inbox UI. Three test emails sent successfully to forestward@gmail.com with unique Resend IDs.
+- **FIX: Brand Context ObjectId Error** — Fixed `get_brand_context()` in `utils/email_template.py` to handle non-ObjectId IDs (e.g., `org_001`) by falling back to string-based lookups for store_id, org_id, and partner_id. This eliminates the `'org_001' is not a valid ObjectId` error in branded email templates.
+
 ## Prioritized Backlog
 ### P0 (Critical)
-- None currently blocking
+- Production email delivery: Code is verified working. User must check `RESEND_API_KEY` env var in production deployment.
 
 ### P1
 - Refactor auth to use hashed passwords (bcrypt)
