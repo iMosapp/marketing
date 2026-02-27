@@ -2746,8 +2746,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   messagesList: {
-    padding: 16,
+    padding: 12,
     flexGrow: 1,
+    gap: 4,
   },
   emptyContainer: {
     flex: 1,
@@ -2767,7 +2768,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   messageContainer: {
-    marginBottom: 8,
+    marginBottom: 4,
+    paddingHorizontal: 4,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
@@ -2775,18 +2777,62 @@ const styles = StyleSheet.create({
   contactMessageContainer: {
     alignItems: 'flex-start',
   },
+  senderLabel: {
+    fontSize: 11,
+    color: '#6E6E73',
+    fontWeight: '500',
+    marginBottom: 4,
+    letterSpacing: 0.1,
+  },
+  senderLabelRight: {
+    textAlign: 'right',
+    paddingRight: 4,
+  },
+  senderLabelLeft: {
+    textAlign: 'left',
+    paddingLeft: 4,
+  },
   messageBubble: {
-    maxWidth: '75%',
-    borderRadius: 18,
+    maxWidth: '80%',
+    borderRadius: 14,
     padding: 12,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   userMessageBubble: {
-    backgroundColor: '#007AFF',
-    borderBottomRightRadius: 4,
+    backgroundColor: '#1A2A4A',
+    borderColor: '#1E3A6E',
   },
   contactMessageBubble: {
     backgroundColor: '#1C1C1E',
-    borderBottomLeftRadius: 4,
+    borderColor: '#2A2A2A',
+  },
+  richMessageBubble: {
+    borderLeftWidth: 3,
+    backgroundColor: '#1C1C1E',
+    borderColor: '#2A2A2A',
+  },
+  richContentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  richContentIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  richContentLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   aiIndicator: {
     flexDirection: 'row',
@@ -2795,7 +2841,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#34C75930',
+    borderBottomColor: '#34C75920',
   },
   aiIndicatorText: {
     fontSize: 11,
@@ -2803,9 +2849,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   messageText: {
-    fontSize: 16,
-    color: '#FFF',
-    lineHeight: 22,
+    fontSize: 15,
+    color: '#E5E5EA',
+    lineHeight: 21,
   },
   userMessageText: {
     color: '#FFF',
