@@ -700,14 +700,14 @@ const styles = StyleSheet.create({
   photo: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 28,
     borderWidth: 3,
     borderColor: '#007AFF',
   },
   photoPlaceholder: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 28,
     backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
