@@ -760,7 +760,10 @@ async def get_thread_messages(conversation_id: str):
         "timestamp": m['timestamp'].isoformat() if hasattr(m['timestamp'], 'isoformat') else str(m['timestamp']),
         "status": m.get('status', 'sent'),
         "ai_generated": m.get('ai_generated', False),
-        "intent_detected": m.get('intent_detected')
+        "intent_detected": m.get('intent_detected'),
+        "channel": m.get('channel'),
+        "has_media": m.get('has_media', False),
+        "media_urls": m.get('media_urls', [])
     } for m in messages]
 
 
