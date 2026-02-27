@@ -71,3 +71,20 @@ async def manual_trigger_campaign_steps():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/trigger/lifecycle-scan")
+async def manual_trigger_lifecycle_scan():
+    """Manually fire the daily lifecycle scan (for testing / admin use)."""
+    from scheduler import run_daily_lifecycle_scan
+
+    logger.info("[Scheduler Admin] Manual lifecycle scan requested")
+    try:
+        await run_daily_lifecycle_scan()
+        from scheduler import get_scheduler_state
+        return {
+            "message": "Lifecycle scan completed",
+            "results": get_scheduler_state().get("lifecycle_scan_results", {}),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
