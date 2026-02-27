@@ -18,7 +18,7 @@ const getInitialTab = (role?: string): string => {
 };
 
 export default function TabLayout() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading, partnerBranding } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
