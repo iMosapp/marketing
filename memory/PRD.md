@@ -106,6 +106,236 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - `GET /api/images/{image_key}` - Serve images from object storage
 - `GET /api/admin/partners` - White-label partner CRUD
 
+---
+
+## CRITICAL TECHNICAL FLOWS — DO NOT MODIFY WITHOUT READING THIS
+
+These flows have been battle-tested across multiple debugging sessions. Each design decision exists for a specific technical reason. Breaking any step will cause silent failures that are extremely hard to diagnose (messages appear "sent" in the UI but never reach the backend or the recipient).
+
+---
+
+### FLOW 1: Personal SMS (No Twilio Number)
+
+**What it is:** When a user does NOT have a Twilio phone number (`user.mvpline_number` is empty), the app opens the device's native SMS/iMessage app with the recipient's phone number and message body pre-filled. The user taps "Send" in their native SMS app. The CRM still logs everything.
+
+**File:** `/app/frontend/app/thread/[id].tsx` — `handleSend()` function
+
+**Step-by-step flow:**
+```
+1. User taps Send button in the thread composer
+2. handleSend() fires (this is a SYNCHRONOUS user gesture — critical for mobile browsers)
+3. Check: isPersonalSMS = (messageMode === 'sms' && !user.mvpline_number)
+4. If personal SMS:
+   a. Update UI optimistically (show message in conversation immediately)
+   b. Build the API payload (conversation_id, content, channel: 'sms_personal')
+   c. Fire fetch() with keepalive:true to POST /api/messages/send/{user_id}
+      — This logs the message in the backend database
+      — keepalive:true ensures the request completes even when browser navigates away
+   d. Build sms: URL — sms:{phone}?body={message} (Android) or sms:{phone}&body={message} (iOS)
+   e. Create an <a> element, set href to the sms: URL, click it programmatically
+      — This opens the native SMS/iMessage app
+      — The browser goes to the background
+   f. return — exit handleSend immediately, do NOT continue to the await flow
+5. User sees their native SMS app with phone + message pre-filled
+6. User taps Send in their native SMS app
+7. Meanwhile, the keepalive fetch completes in the background — message is logged
+```
+
+**WHY each decision matters:**
+
+- `keepalive: true` on fetch — Browser navigates away to SMS app. Without keepalive, the HTTP request is cancelled mid-flight. Without it: Messages appear "sent" in UI but never logged to backend. Inbox empty. Activity feed empty.
+- `fetch()` instead of `await messagesAPI.send()` — We cannot await. The page is about to navigate away. await would block until the SMS app opens, then the promise rejects. Without it: Either SMS app doesn't open (if await blocks) or message doesn't log (if await is interrupted).
+- Fire API call BEFORE opening SMS app — The fetch request needs to start before the browser navigates away. Even a few milliseconds matters. Without it: Race condition, sometimes logs sometimes doesn't depending on network speed.
+- `return` after opening SMS app — The regular await-based flow below would try to run after the page navigated away, causing errors. Without it: Console errors, duplicate messages, or UI glitches when user returns to the app.
+- Anchor-click technique (createElement 'a') — Direct `window.location.href = smsUrl` and `window.open(smsUrl)` are blocked by popup blockers on mobile Safari. The anchor-click bypasses this. Without it: SMS app doesn't open. User sees nothing happen. No error shown.
+- iOS detection for `&` vs `?` separator — iOS iMessage uses `sms:{phone}&body={msg}`. Android uses `sms:{phone}?body={msg}`. Wrong separator = message body not pre-filled. Without it: SMS app opens but message field is blank.
+
+**DO NOT:**
+- Move the sms: link opening to AFTER an await — breaks user gesture chain on mobile Safari
+- Move the fetch() to AFTER the sms: link — request may never start
+- Use `await messagesAPI.send()` for personal SMS — page navigates away, promise rejects
+- Add a setTimeout around the sms: link — breaks user gesture chain
+- Remove `keepalive: true` — request will be cancelled when browser backgrounds
+
+---
+
+### FLOW 2: Email Sending (via Resend)
+
+**What it is:** User switches to "Email Mode" in the thread composer and sends a message. The backend sends the email through Resend with branded HTML templates.
+
+**Files:**
+- Frontend: `/app/frontend/app/thread/[id].tsx` — `handleSend()` (the regular await flow, NOT the personal SMS early-return)
+- Backend: `/app/backend/routers/messages.py` — two email-sending code paths
+- Templates: `/app/backend/services/email_service.py` — `build_branded_email_html()`
+
+**Step-by-step flow:**
+```
+1. User switches to Email Mode (toggle in composer)
+2. User types message, taps Send
+3. handleSend() fires — isPersonalSMS is false (email mode)
+4. Skips the personal SMS early-return block
+5. Enters the regular try/catch flow
+6. await messagesAPI.send(user._id, { conversation_id, content, channel: 'email' })
+7. Backend receives POST /api/messages/send/{user_id} with channel: 'email'
+8. Backend looks up contact from conversation — gets contact.email OR contact.email_work
+9. Backend calls build_branded_email_html() — generates HTML with store logo, colors, footer
+10. Backend calls resend.Emails.send() with the branded HTML
+11. Resend returns an email ID — message stored with status: 'sent', resend_id saved
+12. Frontend receives success — reloads messages from backend
+```
+
+**CRITICAL: The backend has TWO email-sending code paths:**
+- Path 1: Lines ~220-270 in messages.py (the main `/messages/{conversation_id}/send` endpoint)
+- Path 2: Lines ~890-930 in messages.py (the `/messages/send/{user_id}` endpoint — THIS is what the frontend actually calls)
+
+Both paths MUST:
+- Check `contact.get('email') or contact.get('email_work')` (not just `email`)
+- Use `build_branded_email_html()` for consistent branding
+- Store the `resend_id` from the Resend response
+- Set `channel: 'email'` on the stored message
+
+**DO NOT:**
+- Only check `contact.email` — some contacts only have `email_work`
+- Hardcode "from" address — use `noreply@imosapp.com` from env/config
+- Skip the branded template — user expects branded emails with store logo
+- Remove either code path thinking it's duplicate — frontend uses `/send/{user_id}`, other integrations may use the other
+
+---
+
+### FLOW 3: Action Tiles — Pre-fill Pattern
+
+**What it is:** Inside a conversation thread, action tiles (Share Review Link, Share Business Card, Share Landing Page, Templates, Congrats Card) pre-fill the message composer instead of auto-sending. The user then taps Send to trigger the personal SMS or email flow.
+
+**File:** `/app/frontend/app/thread/[id].tsx`
+
+**Pattern:** Every action tile handler calls `setMessage(composedMessage)` — NEVER `handleSend(msg)` directly.
+
+```
+User taps action tile — setMessage("Hey {name}! Here's my review link: {url}")
+— Message appears in composer input field
+— User can review/edit the message
+— User taps Send — triggers handleSend() — personal SMS or email flow
+```
+
+**WHY pre-fill instead of auto-send:**
+1. Auto-send via `handleSend()` from a tile click is inside a UI handler, NOT a direct user tap on the Send button. Mobile browsers may not treat this as a "user gesture" for the sms: protocol.
+2. Auto-send via `setTimeout(() => handleSend(...))` definitely breaks user gesture chain.
+3. Pre-fill gives the user control — they can edit the message or change the mode before sending.
+4. Pre-fill ensures the Send button tap is the user gesture that triggers the sms: link.
+
+**DO NOT:**
+- Change any action tile from `setMessage(msg)` to `handleSend(msg)` — breaks SMS opening on mobile
+- Add `setTimeout` before `handleSend` — breaks user gesture chain
+- Auto-send from a modal close handler — not a user gesture
+
+---
+
+### FLOW 4: Contact Detail — Thread Navigation
+
+**What it is:** Quick action buttons on the contact detail page navigate to the thread page with URL parameters that tell the thread what to do.
+
+**File:** `/app/frontend/app/contact/[id].tsx` — `handleQuickAction()`
+
+**URL pattern:**
+```
+/thread/{contact_id}?contact_name={name}&contact_phone={phone}&contact_email={email}&mode={action}
+```
+
+**Modes:**
+- `mode=sms` — Opens thread in SMS mode, cursor in composer
+- `mode=email` — Opens thread in Email mode
+- `mode=review` — Opens thread, then shows review links modal after 800ms
+- `mode=card` — Opens thread, then shows business card modal after 800ms
+- `mode=congrats` — Opens thread, then shows congrats card modal after 800ms
+
+**The `contact_phone` parameter is CRITICAL.** Without it, `contactPhone` in the thread page is empty, the `if (isPersonalSMS && contactPhone)` check fails, and the SMS app never opens. The message still gets logged but the user experience breaks silently.
+
+---
+
+### FLOW 5: Smart Contact Matching
+
+**What it is:** When sending a share (Review, Card, Congrats) with recipient info, the system finds or creates a contact by matching the last 10 digits of phone or email address.
+
+**Files:**
+- Backend: `/app/backend/routers/contact_events.py` — `find-or-create-and-log`
+- Frontend: `/app/frontend/hooks/useContactMatch.ts` + `/app/frontend/components/ContactMatchModal.tsx`
+
+**Matching logic:**
+```
+1. Normalize phone to last 10 digits
+2. Search contacts where last 10 digits of stored phone match
+3. If no phone match, search by email (checks both email and email_work fields)
+4. If match found AND name matches — log event, return contact
+5. If match found AND name DIFFERENT — return needs_confirmation, show modal
+6. If no match — create new contact, log event, return contact
+```
+
+**DO NOT:**
+- Match on full phone number — formatting varies (+1, spaces, dashes)
+- Only check `email` field — `email_work` was added for work emails
+- Skip the name confirmation modal — users need to know when merging contacts
+- Log events without a contact_id — all events MUST be tied to a contact
+
+---
+
+### Viewport & Mobile Browser Rules
+
+**File:** `/app/frontend/app/+html.tsx`
+
+The viewport meta tag MUST include `maximum-scale=1, user-scalable=no`:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+```
+
+**Why:** iOS Safari expands the viewport when ANY element overflows horizontally or when focusing an input with font-size < 16px. Once expanded, the viewport stays wide even after navigating to other pages. The user has to pinch-to-zoom to fix it.
+
+**Global CSS rule (in +html.tsx):**
+```css
+input, textarea, select { font-size: 16px !important; }
+```
+This prevents iOS Safari's auto-zoom-on-focus for small text inputs.
+
+**DO NOT:**
+- Remove `maximum-scale=1` from the viewport tag
+- Remove the global 16px font-size rule
+- Put two input fields side-by-side on mobile without testing (use stacked vertical layout)
+- Use `width: 100%` with `gap` in a flex row without `minWidth: 0` on children
+
+---
+
+### Deployment & Environment Rules
+
+- **Preview** (Emergent pod): Database = localhost:27017 / `imos-admin-test_database`. For development & testing only.
+- **Production** (Emergent deploy): Database = MongoDB Atlas (set via platform env vars). For live customer use.
+- The preview and production databases are COMPLETELY SEPARATE. Changes in one do not affect the other.
+- To get code changes to production: User must click "Deploy" in Emergent. Code changes are NOT automatically deployed.
+- `load_dotenv(override=False)` means platform env vars take priority over `.env` file. Changing to `override=True` will cause production lockout.
+
+---
+
+### Change Log — Feb 27, 2026 (Fork 8)
+
+**Bug: Personal SMS messages not logging to inbox/activity**
+- Root cause: `sms:` link opened BEFORE API call, but browser navigated away before `await messagesAPI.send()` could complete. Messages appeared sent but never reached the backend.
+- Fix: Replaced `await` with `fetch()` + `keepalive: true`. API call starts, then SMS app opens, request completes in background.
+- Lesson: When browser navigates away (sms:, tel:, mailto:), pending `await` will never resolve. Use `fetch` with `keepalive: true`.
+
+**Bug: Email not checking `email_work` field**
+- Root cause: Both email code paths only checked `contact.get('email')`.
+- Fix: Changed to `contact.get('email') or contact.get('email_work')`.
+
+**Bug: iOS Safari viewport expanding beyond phone screen**
+- Root cause: `+html.tsx` missing `maximum-scale=1, user-scalable=no`.
+- Fix: Added viewport attributes + global 16px font-size for inputs.
+
+**Change: Share modal inputs stacked vertically**
+- Phone/Email were side-by-side (50/50). Changed to 3 stacked rows to prevent overflow.
+
+**Change: iMOs Review Link pre-fills instead of auto-sending**
+- Was `handleSend(reviewMsg)` in setTimeout. Now `setMessage(reviewMsg)` matching all action tiles.
+
+---
+
 ## Critical Production Notes
 - `backend/server.py` uses `load_dotenv(override=False)` — This is CRITICAL. `override=False` means deployment platform env vars (Kubernetes) take priority over the .env file. This was changed from `override=True` which was causing the .env localhost URL to stomp on the production Atlas URL, locking the user out for 3 days. NEVER change back to override=True.
 - Frontend uses relative `/api` paths for web builds
