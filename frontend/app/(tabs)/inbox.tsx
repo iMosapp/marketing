@@ -1552,29 +1552,37 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+    paddingHorizontal: 12,
+    paddingTop: 8,
     flexGrow: 1,
+    gap: 8,
   },
   separator: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginLeft: 88,
+    height: 0,
   },
   
-  // Conversation Item - Premium Card Style
+  // Conversation Item - Card Style matching More page
   conversationItem: {
     flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   conversationItemClosed: {
     opacity: 0.5,
   },
   conversationItemAI: {
-    backgroundColor: `${COLORS.success}08`,
+    borderColor: `${COLORS_DARK.success}30`,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS_DARK.success,
   },
   conversationItemSelected: {
-    backgroundColor: `${COLORS.accent}15`,
+    backgroundColor: `${COLORS_DARK.accent}15`,
+    borderColor: COLORS_DARK.accent,
   },
   
   // Checkbox
