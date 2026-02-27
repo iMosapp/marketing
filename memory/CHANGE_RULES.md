@@ -174,3 +174,14 @@ If ANY step fails, the change is not ready for production.
 **Root cause:** Not understanding that opening `sms:` navigates the browser away, killing pending `await` calls.
 **Fix:** Replaced `await` with `fetch` + `keepalive: true` for the personal SMS path.
 **Lesson:** Any code that opens a native protocol (`sms:`, `tel:`, `mailto:`) MUST use `keepalive` for background API calls. NEVER `await`.
+
+
+### Feb 27, 2026 — Email Mode Switch Blocked by Missing Email State
+**What happened:** When navigating to a thread from the Inbox, `contact_email` was not passed as a URL parameter. The `loadContactInfo` async function would eventually set `savedContactEmail`, but if the user clicked "Switch to Email" before the API call completed, the mode switch was blocked and an unnecessary email prompt appeared — even for contacts who have an email address.
+**Impact:** Users could not switch to email mode from threads opened via the Inbox, making them believe email sending was broken.
+**Root cause:** Race condition between async `loadContactInfo` and synchronous `hasEmail` check in the mode switch handler.
+**Fix:** Three-layer fix:
+1. Backend: Added `email` field to conversations API contact data
+2. Frontend inbox: Pass `contact_email` in all thread navigation params
+3. Frontend thread: Mode switch handler now does a fallback API check if `hasEmail` is false before showing the email prompt
+**Lesson:** Always pass all known contact data through navigation params. Don't rely solely on async state for UI gating.
