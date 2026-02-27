@@ -318,6 +318,22 @@ export default function ThreadScreen() {
     } catch (error) {
       console.log('No review links configured');
     }
+    // Fetch store slug for iMOs review link
+    try {
+      if ((user as any).store_slug) {
+        setStoreSlug((user as any).store_slug);
+      } else if (user.store_id) {
+        const storeRes = await api.get(`/admin/stores/${user.store_id}`, {
+          headers: { 'X-User-ID': user._id }
+        });
+        const slug = storeRes.data?.slug;
+        if (slug) {
+          setStoreSlug(slug);
+        } else if (storeRes.data?.name) {
+          setStoreSlug(storeRes.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+        }
+      }
+    } catch {}
   };
 
   // Load available tags for quick contact creation
