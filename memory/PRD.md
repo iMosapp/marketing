@@ -136,9 +136,13 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - SMS pre-fills phone number + message body using anchor-click technique
   - Dialer opens native phone app via `tel:` protocol and logs call activity
 
+### Session Feb 27, 2026 (Fork 8 - Current)
+- **CRITICAL FIX: Personal SMS User Gesture Chain** — The `sms:` protocol handler in `handleSend()` was running AFTER `await messagesAPI.send()` and inside a `setTimeout(300)`, breaking the browser's "user gesture" context on mobile devices (especially iOS Safari). Fix: SMS opening code now fires SYNCHRONOUSLY at the top of handleSend, BEFORE any async operations. This ensures mobile browsers treat the `sms:` link as a user-initiated action.
+- **FIX: iMOs Review Link Consistency** — Changed iMOs review link in the review modal from `handleSend(reviewMsg)` (auto-send) to `setMessage(reviewMsg)` (pre-fill), matching all other action handlers. User now has control to review/edit the message before sending.
+
 ## Prioritized Backlog
 ### P0 (Critical)
-- Production email delivery: Code is verified working. User must check `RESEND_API_KEY` env var in production deployment.
+- All critical issues resolved. Production email delivery verified. Personal SMS flow fixed.
 
 ### P1
 - Refactor auth to use hashed passwords (bcrypt)
