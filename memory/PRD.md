@@ -110,13 +110,14 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ## Prioritized Backlog
 ### P0 (Critical)
-- Fix production deployment (502 Bad Gateway) — startup blocking issue
+- None currently blocking
 
 ### P1
 - Refactor auth to use hashed passwords (bcrypt)
 - Lead Notification System Phase 2 (push notifications)
 - Voice Help Assistant backend
 - Gamification leaderboard for salespeople touch points
+- Campaign flow: Twilio assigned numbers / shared inboxes / task-based SMS sending with templates & AI suggestions
 
 ### P2
 - Full Twilio integration (currently MOCK)
