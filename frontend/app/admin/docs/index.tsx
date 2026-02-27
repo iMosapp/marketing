@@ -200,6 +200,7 @@ export default function DocsHubScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.filterScrollContainer}
         contentContainerStyle={styles.filterContainer}
       >
         <TouchableOpacity
@@ -210,12 +211,6 @@ export default function DocsHubScreen() {
           onPress={() => setSelectedCategory(null)}
           data-testid="docs-filter-all"
         >
-          <Ionicons
-            name="apps"
-            size={14}
-            color={selectedCategory === null ? '#FFF' : '#8E8E93'}
-            style={{ marginRight: 6 }}
-          />
           <Text style={[styles.filterChipText, selectedCategory === null && styles.filterChipTextActive]}>
             All
           </Text>
@@ -236,7 +231,6 @@ export default function DocsHubScreen() {
                 name={cat.icon as any}
                 size={14}
                 color={isActive ? '#FFF' : CATEGORY_COLORS[cat.id] || '#8E8E93'}
-                style={{ marginRight: 6 }}
               />
               <Text style={[
                 styles.filterChipText,
