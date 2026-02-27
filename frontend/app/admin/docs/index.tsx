@@ -119,6 +119,7 @@ export default function DocsHubScreen() {
 
   const renderDoc = ({ item }: { item: any }) => {
     const color = CATEGORY_COLORS[item.category] || '#8E8E93';
+    const isRestricted = !!item.required_role;
     return (
       <TouchableOpacity
         style={styles.docCard}
@@ -133,7 +134,14 @@ export default function DocsHubScreen() {
           />
         </View>
         <View style={styles.docContent}>
-          <Text style={styles.docTitle} numberOfLines={1}>{item.title}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.docTitle} numberOfLines={1}>{item.title}</Text>
+            {isRestricted && (
+              <View style={{ backgroundColor: '#FF3B3020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                <Ionicons name="lock-closed" size={10} color="#FF3B30" />
+              </View>
+            )}
+          </View>
           <Text style={styles.docSummary} numberOfLines={2}>{item.summary}</Text>
           <View style={styles.docMeta}>
             {item.version && (
