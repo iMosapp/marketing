@@ -30,8 +30,10 @@ async def scheduler_status():
         "jobs": jobs,
         "last_date_trigger_run": state["last_date_trigger_run"],
         "last_campaign_step_run": state["last_campaign_step_run"],
+        "last_lifecycle_scan_run": state.get("last_lifecycle_scan_run"),
         "date_trigger_results": state["date_trigger_results"],
         "campaign_step_results": state["campaign_step_results"],
+        "lifecycle_scan_results": state.get("lifecycle_scan_results", {}),
         "recent_errors": state["errors"][-5:],
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
