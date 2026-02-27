@@ -31,10 +31,14 @@ async def list_docs(
     search: Optional[str] = None,
     x_user_id: str = Header(None, alias="X-User-ID"),
 ):
-    await verify_admin_access(x_user_id)
+    user = await verify_admin_access(x_user_id)
+    user_role = user.get("role", "")
     db = get_db()
 
     query: dict = {"is_published": True}
+    # Filter out docs that require a higher role than the user has
+    if user_role != "super_admin":
+        query["required_role"] = {"$ne": "super_admin"}
     if category:
         query["category"] = category
     if search:
@@ -69,12 +73,16 @@ async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
 
 @router.get("/{doc_id}")
 async def get_doc(doc_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
-    await verify_admin_access(x_user_id)
+    user = await verify_admin_access(x_user_id)
     db = get_db()
 
     doc = await db.company_docs.find_one({"_id": ObjectId(doc_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    # Check role-restricted docs
+    if doc.get("required_role") == "super_admin" and user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Access restricted")
 
     doc["_id"] = str(doc["_id"])
     return doc
