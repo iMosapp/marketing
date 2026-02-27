@@ -808,6 +808,7 @@ export default function InboxScreen() {
         params: {
           contact_name: contactName,
           contact_phone: item.contact_phone || '',
+          contact_email: item.contact_email || '',
         }
       });
     };
