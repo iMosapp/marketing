@@ -311,10 +311,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterChip: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     backgroundColor: '#1C1C1E',
-    borderRadius: 20,
+    borderRadius: 24,
     marginRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
