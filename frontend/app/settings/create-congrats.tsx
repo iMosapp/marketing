@@ -353,29 +353,37 @@ export default function CreateCongratsCardPage() {
           )}
         </TouchableOpacity>
 
-        {/* Customer Name */}
-        <Text style={styles.fieldLabel}>CUSTOMER NAME *</Text>
+        {/* Send To */}
+        <Text style={styles.fieldLabel}>SEND TO (OPTIONAL)</Text>
         <TextInput
           style={styles.input}
           value={customerName}
           onChangeText={setCustomerName}
-          placeholder="Enter customer name"
+          placeholder="Recipient Name"
           placeholderTextColor={COLORS.textSecondary}
         />
-
-        {/* Customer Phone (optional) */}
-        <Text style={styles.fieldLabel}>CUSTOMER PHONE (optional)</Text>
-        <TextInput
-          style={styles.input}
-          value={customerPhone}
-          onChangeText={setCustomerPhone}
-          placeholder="Phone number"
-          placeholderTextColor={COLORS.textSecondary}
-          keyboardType="phone-pad"
-        />
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={customerPhone}
+            onChangeText={setCustomerPhone}
+            placeholder="Phone"
+            placeholderTextColor={COLORS.textSecondary}
+            keyboardType="phone-pad"
+          />
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={customerEmail}
+            onChangeText={setCustomerEmail}
+            placeholder="Email"
+            placeholderTextColor={COLORS.textSecondary}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
 
         {/* Custom Message (optional) */}
-        <Text style={styles.fieldLabel}>CUSTOM MESSAGE (optional)</Text>
+        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>CUSTOM MESSAGE (OPTIONAL)</Text>
         <TextInput
           style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
           value={customMessage}
