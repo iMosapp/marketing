@@ -10,84 +10,47 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **Email:** Resend
 - **SMS:** Twilio (MOCK mode)
 - **AI:** OpenAI (Jessi assistant)
+- **Object Storage:** Emergent Integrations (image uploads)
 
 ## What's Been Implemented
+
+### Session Feb 27, 2026 (Fork 4)
+- **FIX: MONGO_URL** — Reset from Atlas to localhost:27017 for preview stability
+- Verified all 5 main tabs (Inbox, Keypad, Contacts, Team, More) load correctly
 
 ### Session Feb 27, 2026 (Fork 3)
 - **NEW: Facebook-Feed Style Contact Profile Page** (`/contact/[id]`)
   - Hero section with avatar, touchpoint badge, name, phone/email chips
-  - Time-in-system counter (days → months → years calculation)
-  - Stats bar: Touchpoints, Messages, Campaigns, Referrals
-  - Quick action buttons: SMS, Call, Email, Review, Card, Congrats
+  - Time-in-system counter, Stats bar, Quick action buttons
   - Activity Feed timeline aggregating all contact interactions
-  - View-only default mode with Edit button to toggle form fields
-  - View Conversation link to message thread
-  - Comprehensive edit mode with all existing fields preserved
+  - View-only default mode with Edit button toggle
 - **NEW: Contact Events Backend** (`/api/contacts/{user_id}/{contact_id}/events`)
   - Aggregates events from messages, campaigns, congrats cards, broadcasts
-  - Custom event logging via POST endpoint
-  - Stats endpoint returning touchpoint counts and created_at
-  - Invalid ObjectId error handling
+  - Custom event logging, Stats endpoint
 - **REBRAND: "i'M On Social" Marketing Page Overhaul**
-  - Updated hero: "Meet the New Way to Be On Social"
-  - Replaced all "Old School Relationship Building / Modern Tools" messaging
-  - New narrative: Social Relationship OS, Reputation Operating System
-  - Updated feature icons: Digital Cards, Personal Reviews, Social Links, Reputation
-  - New stats: Own / Build / Connect
-  - Updated feature sections: Organizations, Individuals, The Experience, Personal Reviews, Campaigns
-  - Bottom CTA: "Own Your Relationships. Own Your Reputation."
-  - Footer: "Social Relationship OS" tagline
-  - Sales presentation slides updated
-  - Legacy landing page updated
-  - Zero "old school" references remaining across entire frontend
-- **ENHANCED: Full Narrative Story Arc on Marketing Page**
-  - Added 4 immersive narrative sections: The Old World, The Shift, The Power Move, The Bigger Picture
-  - Card-based design with colored accents, icons, highlight callouts
-  - Organizations/Teams/Individuals 3-column breakdown
-  - Golden highlight: "Reputation becomes portable. That's powerful."
-  - Visibility/Credibility/Ownership/Continuity grid
-- **UPDATED: Sales Presentation** — 10-slide overhaul with full story arc
-- **UPDATED: Onboarding Slides** — All 3 role tracks aligned with "i'M On Social" messaging
-- **UPDATED: Features Page** — "Social Presence" section with new descriptions
+  - Updated all marketing, sales presentation, onboarding, features pages
+  - Zero "old school" references remaining
 - **NEW: White Label Partner System**
-  - Backend CRUD at `/api/admin/partners` — create, read, update, delete partners
-  - Partner branding cascades: partner → orgs → stores → users
-  - Login returns `partner_branding` when user's store/org linked to a partner
-  - Tab bar active tint uses partner's primary color
-  - More page shows partner banner (name + powered by text)
-  - More page footer shows partner branding instead of iMOs
-  - Digital card & store card footers show partner branding
-  - Admin management page at `/admin/white-label`
-  - Org assignment/unassignment endpoints
-  - Calendar Systems seeded as first partner (orange #E87722 + teal #008B8B)
-  - South Ogden, Utah | 1.801.479.7097 | calendarsystems.info
+  - Backend CRUD at `/api/admin/partners`
+  - Partner branding cascades: partner > orgs > stores > users
+  - Login returns `partner_branding`, tab bar uses partner color
+  - Calendar Systems seeded as first partner
 - **NEW: Object Storage Image Pipeline**
-  - Emergent Object Storage integration for all image uploads
+  - Emergent Object Storage for all image uploads
   - Auto-generates 3 versions: original, thumbnail (200x200), avatar (80x80)
-  - Images served via `/api/images/{path}` with CDN cache headers
-  - Logo uploads now store URLs instead of base64 blobs in MongoDB
-  - Fallback to base64 if object storage unavailable
+  - Logo uploads store URLs instead of base64 blobs
 - **BUGFIX: Admin Dashboard & Review Page Performance**
-  - Root cause: base64-encoded logos (5+ MB) in API responses caused timeouts
-  - Fix: All list endpoints now exclude large binary fields (logo_url, cover_image_url)
-  - Review page and digital card endpoints use `get_safe_logo()` helper
-  - Admin stores list response: 1.3KB instead of 5.7MB
-  - Fixed InvalidId crash for non-ObjectId organization_ids
+  - All list endpoints exclude large binary fields
 
 ### Session Feb 26, 2026 (Fork 2)
 - Podium-style Review Links Landing Page (`/review/[storeSlug]`)
 - Account-Level Dealership Card (`/card/store/[storeSlug]`)
-- Reviews Marketing Page (`/imos/reviews`)
-- Share Review Link on My Account
-- Review Approval Flow
-- More page & My Account redesign
-- Logo upload for accounts and organizations
-- Quick Settings row for admins
-- Password reset email fix
-- Auto-slug generation on login
+- Reviews Marketing Page, Share Review Link, Review Approval Flow
+- More page & My Account redesign, Logo upload, Quick Settings
+- Password reset email fix, Auto-slug generation
 
 ### Previous Sessions
-- Critical production login fix (3-part: dotenv override, relative API paths, cache-buster)
+- Critical production login fix (3-part)
 - Fixed 14 crash-inducing useState bugs
 - Updated favicon
 
@@ -96,30 +59,25 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - `GET /api/contacts/{user_id}/{contact_id}/stats` - Contact touchpoint stats
 - `POST /api/contacts/{user_id}/{contact_id}/events` - Log custom event
 - `GET /api/review/page/{store_slug}` - Public review page data
-- `POST /api/review/submit/{store_slug}` - Submit feedback (pending)
+- `POST /api/review/submit/{store_slug}` - Submit feedback
 - `GET /api/card/store/{store_slug}` - Account-level dealership card
 - `POST /api/email/send` - Send email via Resend
 - `POST /api/auth/forgot-password/request` - Password reset
-
-## Key Files
-- `/app/frontend/app/contact/[id].tsx` - Redesigned contact profile page
-- `/app/backend/routers/contact_events.py` - Events endpoints
-- `/app/backend/routers/contacts.py` - Contact CRUD
-- `/app/frontend/services/api.ts` - Frontend API service
-- `/app/frontend/app/(tabs)/more.tsx` - Style template
+- `POST /api/images/upload/base64` - Image upload to object storage
+- `GET /api/images/{image_key}` - Serve images from object storage
+- `GET /api/admin/partners` - White-label partner CRUD
 
 ## Critical Production Notes
 - `backend/server.py` uses `load_dotenv(override=True)` — NEVER change
 - Frontend uses relative `/api` paths for web builds
-- **MONGO_URL in .env must be production Atlas URL for deployment**
-- **Preview environment uses local MongoDB (localhost:27017)**
-- **NEVER switch .env MONGO_URL to production Atlas in the preview pod — Atlas is unreachable from preview and will break login**
-- **The deployment platform's environment variables handle production. The .env file in this repo must ALWAYS stay as `mongodb://localhost:27017` for preview to work**
-- If login breaks after a restart, check MONGO_URL in backend/.env FIRST — it's almost always this
+- **MONGO_URL in preview .env MUST be mongodb://localhost:27017**
+- **NEVER switch .env MONGO_URL to production Atlas in the preview pod**
+- **The deployment platform's environment variables handle production**
+- If login breaks after a restart, check MONGO_URL in backend/.env FIRST
 
 ## Prioritized Backlog
-### P0 (Completed)
-- ~~Redesign Customer Contact Record Page~~ DONE
+### P0 (Critical)
+- Fix production deployment (502 Bad Gateway) — startup blocking issue
 
 ### P1
 - Refactor auth to use hashed passwords (bcrypt)
@@ -132,7 +90,6 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - WhatsApp integration
 - Code cleanup (~80 files)
 - Training Hub content
-- White-labeling system
 - Inventory Management Module
 - React Hydration Error #418
 - Mobile app tags sync
