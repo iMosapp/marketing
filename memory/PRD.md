@@ -61,6 +61,18 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - Org assignment/unassignment endpoints
   - Calendar Systems seeded as first partner (orange #E87722 + teal #008B8B)
   - South Ogden, Utah | 1.801.479.7097 | calendarsystems.info
+- **NEW: Object Storage Image Pipeline**
+  - Emergent Object Storage integration for all image uploads
+  - Auto-generates 3 versions: original, thumbnail (200x200), avatar (80x80)
+  - Images served via `/api/images/{path}` with CDN cache headers
+  - Logo uploads now store URLs instead of base64 blobs in MongoDB
+  - Fallback to base64 if object storage unavailable
+- **BUGFIX: Admin Dashboard & Review Page Performance**
+  - Root cause: base64-encoded logos (5+ MB) in API responses caused timeouts
+  - Fix: All list endpoints now exclude large binary fields (logo_url, cover_image_url)
+  - Review page and digital card endpoints use `get_safe_logo()` helper
+  - Admin stores list response: 1.3KB instead of 5.7MB
+  - Fixed InvalidId crash for non-ObjectId organization_ids
 
 ### Session Feb 26, 2026 (Fork 2)
 - Podium-style Review Links Landing Page (`/review/[storeSlug]`)
