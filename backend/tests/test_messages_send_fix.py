@@ -306,16 +306,24 @@ class TestContactEvents:
             pytest.skip("Contact events endpoint not found or contact doesn't exist")
         
         assert response.status_code == 200, f"Failed: {response.text}"
-        events = response.json()
+        data = response.json()
         
-        print(f"Found {len(events)} events for contact {self.contact_id}")
+        # Handle both {"events": [...], "total": N} and [...] response formats
+        events = data.get('events', []) if isinstance(data, dict) else data
+        total = data.get('total', len(events)) if isinstance(data, dict) else len(events)
         
-        # Look for recent personal_sms events
-        sms_events = [e for e in events if e.get('event_type') in ['personal_sms', 'email_sent', 'digital_card_sent', 'review_request_sent']]
+        print(f"Found {total} events for contact {self.contact_id}")
+        
+        # Look for recent message-related events
+        target_types = ['personal_sms', 'email_sent', 'digital_card_sent', 'review_request_sent', 'congrats_card_sent', 'vcard_sent']
+        sms_events = [e for e in events if isinstance(e, dict) and e.get('event_type') in target_types]
         print(f"Message-related events: {len(sms_events)}")
         
         for event in sms_events[:5]:
             print(f"  - {event.get('event_type')}: {event.get('content_preview', '')[:50]}")
+        
+        # Verify at least some message events were created from our tests
+        assert len(sms_events) > 0, "Should have message-related events from tests"
 
 
 if __name__ == "__main__":
