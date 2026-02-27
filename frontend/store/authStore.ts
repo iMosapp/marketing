@@ -79,12 +79,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await authAPI.login(email, password);
-      const { user, token } = response;
+      const { user, token, partner_branding } = response;
       
       await AsyncStorage.setItem('auth_token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
+      if (partner_branding) {
+        await AsyncStorage.setItem('partner_branding', JSON.stringify(partner_branding));
+      } else {
+        await AsyncStorage.removeItem('partner_branding');
+      }
       
-      set({ user, token, isAuthenticated: true, isLoading: false });
+      set({ user, token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
       throw error;
