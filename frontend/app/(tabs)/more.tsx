@@ -107,6 +107,23 @@ export default function MoreScreen() {
       }
       return newSet;
     });
+    // After layout settles, scroll the tapped section header into view
+    setTimeout(() => {
+      const ref = sectionRefs.current[sectionId];
+      if (ref && scrollRef.current) {
+        (ref as any).measureLayout?.(
+          (scrollRef.current as any).getInnerViewNode?.(),
+          (_x: number, y: number) => {
+            scrollRef.current?.scrollTo({ y: Math.max(0, y - 10), animated: true });
+          },
+          () => {}
+        );
+        // Web fallback: use scrollIntoView
+        if (Platform.OS === 'web' && (ref as any).scrollIntoView) {
+          (ref as any).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }, 350);
   };
   
   // Check user roles
