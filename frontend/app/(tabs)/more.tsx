@@ -986,7 +986,7 @@ export default function MoreScreen() {
 
           {/* Recipient Info */}
           <View style={shareStyles.recipientSection}>
-            <Text style={shareStyles.recipientLabel}>Send to (optional)</Text>
+            <Text style={shareStyles.recipientLabel}>SEND TO (OPTIONAL)</Text>
             <TextInput
               style={shareStyles.recipientInput}
               placeholder="Recipient Name"
