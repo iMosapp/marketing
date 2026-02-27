@@ -37,6 +37,7 @@ export default function CreateCongratsCardPage() {
   const { user } = useAuthStore();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [photo, setPhoto] = useState<{uri: string, type: string, name: string} | null>(null);
   const [creating, setCreating] = useState(false);
