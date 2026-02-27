@@ -99,10 +99,8 @@ export default function MoreScreen() {
   const toggleSection = (sectionId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
-      } else {
+      const newSet = new Set<string>();
+      if (!prev.has(sectionId)) {
         newSet.add(sectionId);
       }
       return newSet;
