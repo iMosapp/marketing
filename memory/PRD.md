@@ -119,6 +119,14 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ### Session Feb 27, 2026 (Fork 6 - Current)
 - **FIX: Email Delivery Verified End-to-End** — Confirmed emails are delivered via Resend from both API and Inbox UI. Three test emails sent successfully to forestward@gmail.com with unique Resend IDs.
 - **FIX: Brand Context ObjectId Error** — Fixed `get_brand_context()` in `utils/email_template.py` to handle non-ObjectId IDs (e.g., `org_001`) by falling back to string-based lookups for store_id, org_id, and partner_id. This eliminates the `'org_001' is not a valid ObjectId` error in branded email templates.
+- **NEW: Admin Docs Hub** — Built comprehensive Company Docs section under Admin with:
+  - 8 seeded documents: Cyber Security Policy, Company Policy & Code of Conduct, Terms of Service, Privacy Policy, Data Retention Policy, Security Awareness Training, Platform Onboarding Guide, Integration & API Documentation
+  - Slide-by-slide document viewer with progress bar, dot navigation, Previous/Next buttons
+  - Category filters (Security, Company Policy, Legal, Training, Integrations) and search
+  - Markdown rendering (bold text), tip boxes (yellow), warning boxes (red)
+  - Backend: `/api/docs/` router with list, categories, single doc, and seed endpoints
+  - Frontend: `/admin/docs` hub + `/admin/docs/[id]` viewer
+  - Accessible from More > Administration > Company Docs (admin-only)
 
 ## Prioritized Backlog
 ### P0 (Critical)
