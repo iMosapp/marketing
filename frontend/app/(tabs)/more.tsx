@@ -371,8 +371,8 @@ export default function MoreScreen() {
         {
           icon: 'bar-chart',
           title: 'Reports',
-          subtitle: 'Detailed reports',
-          onPress: () => router.push('/reports'),
+          subtitle: 'Activity reports & analytics',
+          onPress: () => router.push('/reports/activity'),
           color: '#007AFF',
         },
         {
