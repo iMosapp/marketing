@@ -168,7 +168,7 @@ async def list_organizations(x_user_id: str = Header(None, alias="X-User-ID")):
     
     if role == 'super_admin':
         # Super admin sees all organizations
-        orgs = await get_db().organizations.find().limit(500).to_list(500)
+        orgs = await get_db().organizations.find({}, {"logo_url": 0, "email_brand_kit.logo_url": 0}).limit(500).to_list(500)
     else:
         # Non-super admins see only their organization
         org_ids = await get_scoped_organization_ids(user)
