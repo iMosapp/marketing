@@ -325,7 +325,10 @@ const styles = StyleSheet.create({
   },
   slideNumberText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   slideTitle: { fontSize: 22, fontWeight: '700', color: '#FFF', flex: 1 },
-  slideDescription: { fontSize: 16, color: '#E5E5E7', lineHeight: 26, marginBottom: 20 },
+  slideDescriptionContainer: { marginBottom: 20 },
+  slideDescription: { fontSize: 16, color: '#E5E5E7', lineHeight: 26 },
+  boldText: { fontWeight: '700', color: '#FFF' },
+  codeText: { fontFamily: 'monospace', backgroundColor: '#1C1C1E', color: '#FF9500', fontSize: 13, paddingHorizontal: 4 },
   tipBox: {
     flexDirection: 'row',
     backgroundColor: '#FFD60A15',
