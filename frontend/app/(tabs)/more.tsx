@@ -461,13 +461,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/email-analytics'),
           color: '#FF2D55',
         },
-        ...(isIndependent ? [{
+        {
           icon: 'trophy',
           title: 'My Rankings',
-          subtitle: 'Compare with other pros',
+          subtitle: 'Your personal performance',
           onPress: () => router.push('/admin/my-rankings'),
           color: '#FFD60A',
-        }] : []),
+        },
         {
           icon: 'podium',
           title: 'Leaderboard',
