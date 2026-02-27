@@ -829,6 +829,7 @@ export default function DigitalCardPage() {
           activeOpacity={1}
           onPress={() => setShowShareModal(false)}
         >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
           <View style={styles.shareModal}>
             <View style={styles.shareModalHandle} />
             <Text style={styles.shareModalTitle}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
