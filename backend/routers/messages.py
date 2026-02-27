@@ -827,13 +827,13 @@ async def send_message_simple(user_id: str, message_data: dict):
     """Send a message (simplified endpoint that accepts conversation_id in body)"""
     conversation_id = message_data.get('conversation_id')
     content = message_data.get('content')
-    contact_id = message_data.get('contact_id')  # Optional: for sending to a contact directly
+    contact_id = message_data.get('contact_id')
+    channel = message_data.get('channel', 'sms')
     
     db = get_db()
     
     # If no conversation_id but we have contact_id, create/find conversation
     if not conversation_id and contact_id:
-        # Find or create conversation with this contact
         existing = await db.conversations.find_one({
             "user_id": user_id,
             "contact_id": contact_id
@@ -842,12 +842,10 @@ async def send_message_simple(user_id: str, message_data: dict):
         if existing:
             conversation_id = str(existing["_id"])
         else:
-            # Get contact phone
             contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
             if not contact:
                 raise HTTPException(status_code=404, detail="Contact not found")
             
-            # Create new conversation
             conv = {
                 "user_id": user_id,
                 "contact_id": contact_id,
@@ -878,7 +876,7 @@ async def send_message_simple(user_id: str, message_data: dict):
     # Get recipient phone
     to_phone = conv.get('contact_phone')
     if not to_phone:
-        contact = await db.contacts.find_one({"_id": ObjectId(conv['contact_id'])})
+        contact = await db.contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
         if contact:
             to_phone = contact.get('phone')
     
@@ -889,37 +887,149 @@ async def send_message_simple(user_id: str, message_data: dict):
         "sender": "user",
         "timestamp": datetime.utcnow(),
         "status": "sending",
-        "direction": "outbound"
+        "direction": "outbound",
+        "channel": channel,
     }
+    
+    # Add template tracking if provided
+    if message_data.get('template_id'):
+        message['template_id'] = message_data['template_id']
+        message['template_type'] = message_data.get('template_type')
+        message['template_name'] = message_data.get('template_name')
     
     result = await db.messages.insert_one(message)
     message_id = str(result.inserted_id)
+    message['_id'] = message_id
     
-    # Send via Twilio
-    if to_phone:
-        sms_result = await send_sms(to_phone, content)
+    # Route based on channel
+    if channel == 'email':
+        # Send via Resend
+        contact = await db.contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
+        contact_email = contact.get('email') if contact else None
         
-        if sms_result.get('success'):
-            message['status'] = 'sent'
-            message['twilio_sid'] = sms_result.get('message_sid')
-            logger.info(f"SMS sent to {to_phone}: {content[:50]}...")
+        if contact_email:
+            try:
+                import resend as resend_mod
+                RESEND_KEY = os.environ.get("RESEND_API_KEY")
+                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+                if RESEND_KEY:
+                    resend_mod.api_key = RESEND_KEY
+                    user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+                    sender_name = user_doc.get('name', 'iMOs') if user_doc else 'iMOs'
+                    
+                    email_html = f"""
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #111; color: #fff;">
+                        <div style="background: #1A1A2E; border-radius: 12px; padding: 24px;">
+                            <p style="font-size: 15px; line-height: 1.6; color: #ccc; white-space: pre-wrap;">{content}</p>
+                        </div>
+                        <p style="margin-top: 16px; font-size: 12px; color: #666; text-align: center;">
+                            Sent by {sender_name} via iMOs
+                        </p>
+                    </div>
+                    """
+                    
+                    email_result = await asyncio.to_thread(resend_mod.Emails.send, {
+                        "from": f"{sender_name} via iMOs <{SENDER}>",
+                        "to": contact_email,
+                        "subject": f"Message from {sender_name}",
+                        "html": email_html,
+                    })
+                    resend_id = email_result.get('id') if isinstance(email_result, dict) else str(email_result)
+                    message['status'] = 'sent'
+                    message['resend_id'] = resend_id
+                    logger.info(f"[EMAIL] Sent to {contact_email} (resend_id={resend_id}): {content[:50]}...")
+                else:
+                    message['status'] = 'failed'
+                    message['error'] = 'RESEND_API_KEY not configured'
+                    logger.error("[EMAIL] RESEND_API_KEY missing")
+            except Exception as e:
+                message['status'] = 'failed'
+                message['error'] = str(e)
+                logger.error(f"[EMAIL] Failed to {contact_email}: {e}")
         else:
             message['status'] = 'failed'
-            message['error'] = sms_result.get('error')
-            logger.error(f"SMS failed to {to_phone}: {sms_result.get('error')}")
+            message['error'] = 'No email address for contact'
+            logger.warning(f"[EMAIL] No email for contact in conv {conversation_id}")
         
-        # Update message status
         await db.messages.update_one(
             {"_id": ObjectId(message_id)},
-            {"$set": {"status": message['status'], "twilio_sid": sms_result.get('message_sid')}}
+            {"$set": {"status": message['status'], "channel": "email",
+                      "resend_id": message.get('resend_id'), "error": message.get('error')}}
         )
+        
+        # Log contact event
+        if message['status'] == 'sent' and conv.get('contact_id'):
+            await db.contact_events.insert_one({
+                "contact_id": str(conv['contact_id']),
+                "user_id": user_id,
+                "event_type": "email_sent",
+                "channel": "email",
+                "message_id": message_id,
+                "content_preview": content[:100],
+                "timestamp": datetime.utcnow(),
+            })
+    
+    elif channel == 'sms_personal':
+        # Personal SMS — just log it, user sends from their own phone
+        message['status'] = 'sent'
+        
+        # Detect content type
+        content_lower = content.lower()
+        event_type = 'personal_sms'
+        if '/card/' in content:
+            event_type = 'digital_card_sent'
+        elif '/review/' in content:
+            event_type = 'review_request_sent'
+        elif 'congrats' in content_lower:
+            event_type = 'congrats_card_sent'
+        elif '/vcard/' in content:
+            event_type = 'vcard_sent'
+        
+        logger.info(f"[PERSONAL SMS] Logged ({event_type}) for {to_phone}: {content[:50]}...")
+        
+        await db.messages.update_one(
+            {"_id": ObjectId(message_id)},
+            {"$set": {"status": "sent", "channel": "sms_personal", "event_type": event_type}}
+        )
+        
+        # Log contact event
+        if conv.get('contact_id'):
+            await db.contact_events.insert_one({
+                "contact_id": str(conv['contact_id']),
+                "user_id": user_id,
+                "event_type": event_type,
+                "channel": "sms_personal",
+                "message_id": message_id,
+                "content_preview": content[:100],
+                "timestamp": datetime.utcnow(),
+            })
+    
     else:
-        message['status'] = 'failed'
-        message['error'] = 'No phone number for contact'
-        await db.messages.update_one(
-            {"_id": ObjectId(message_id)},
-            {"$set": {"status": "failed", "error": "No phone number"}}
-        )
+        # SMS via Twilio
+        if to_phone:
+            sms_result = await send_sms(to_phone, content)
+            
+            if sms_result.get('success'):
+                message['status'] = 'sent'
+                message['twilio_sid'] = sms_result.get('message_sid')
+                logger.info(f"[SMS] Sent to {to_phone}: {content[:50]}...")
+            else:
+                message['status'] = 'failed'
+                message['error'] = sms_result.get('error')
+                logger.error(f"[SMS] Failed to {to_phone}: {sms_result.get('error')}")
+            
+            await db.messages.update_one(
+                {"_id": ObjectId(message_id)},
+                {"$set": {"status": message['status'], "channel": "sms",
+                          "twilio_sid": sms_result.get('message_sid')}}
+            )
+        else:
+            message['status'] = 'failed'
+            message['error'] = 'No phone number for contact'
+            await db.messages.update_one(
+                {"_id": ObjectId(message_id)},
+                {"$set": {"status": "failed", "channel": "sms", "error": "No phone number"}}
+            )
     
     # Update conversation
     await db.conversations.update_one(
@@ -937,6 +1047,8 @@ async def send_message_simple(user_id: str, message_data: dict):
         "sender": "user",
         "timestamp": message["timestamp"].isoformat(),
         "status": message['status'],
+        "channel": channel,
+        "resend_id": message.get('resend_id'),
         "error": message.get('error')
     }
 
