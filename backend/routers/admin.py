@@ -1020,6 +1020,43 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
     return {"message": "User deactivated", "grace_period_end": grace_end.isoformat()}
 
 
+
+@router.post("/users/{user_id}/reactivate")
+async def reactivate_user(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Reactivate a deactivated user and restore their hidden contacts"""
+    db = get_db()
+    requesting_user = await get_requesting_user(x_user_id)
+    if requesting_user:
+        role = requesting_user.get('role', 'user')
+        if role not in ['super_admin', 'org_admin']:
+            raise HTTPException(status_code=403, detail="Only admins can reactivate users")
+    
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Reactivate the user
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "is_active": True,
+            "status": "active",
+            "deactivated_at": None,
+            "deactivated_by": None,
+            "grace_period_end": None,
+        }}
+    )
+    
+    # Restore their hidden personal contacts
+    restored = await db.contacts.update_many(
+        {"original_user_id": user_id, "status": "hidden", "hidden_reason": "user_deactivated"},
+        {"$set": {"status": "active"}, "$unset": {"hidden_at": "", "hidden_reason": ""}}
+    )
+    
+    logger.info(f"User {user_id} reactivated. {restored.modified_count} personal contacts restored.")
+    return {"message": "User reactivated", "contacts_restored": restored.modified_count}
+
+
 @router.get("/users/{user_id}/detail")
 async def get_user_detail(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
     """Get detailed user info - with access check"""
