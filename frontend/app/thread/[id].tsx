@@ -2922,6 +2922,17 @@ const styles = StyleSheet.create({
     color: '#FF9500',
     fontWeight: '600',
   },
+  personalSmsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    alignSelf: 'flex-end',
+  },
+  personalSmsText: {
+    fontSize: 10,
+    color: '#8E8E93',
+  },
   messageTime: {
     fontSize: 11,
     marginTop: 4,
