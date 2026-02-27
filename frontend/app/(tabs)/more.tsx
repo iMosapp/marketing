@@ -99,6 +99,15 @@ export default function MoreScreen() {
   };
   
   const toggleSection = (sectionId: string) => {
+    const ref = sectionRefs.current[sectionId];
+    let beforeY = 0;
+    
+    // Capture where this section is on screen right now
+    if (Platform.OS === 'web' && ref) {
+      const rect = (ref as any).getBoundingClientRect?.();
+      if (rect) beforeY = rect.top;
+    }
+    
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSections(prev => {
       const newSet = new Set<string>();
@@ -107,23 +116,24 @@ export default function MoreScreen() {
       }
       return newSet;
     });
-    // After layout settles, scroll the tapped section header into view
-    setTimeout(() => {
-      const ref = sectionRefs.current[sectionId];
-      if (ref && scrollRef.current) {
-        (ref as any).measureLayout?.(
-          (scrollRef.current as any).getInnerViewNode?.(),
-          (_x: number, y: number) => {
-            scrollRef.current?.scrollTo({ y: Math.max(0, y - 10), animated: true });
-          },
-          () => {}
-        );
-        // Web fallback: use scrollIntoView
-        if (Platform.OS === 'web' && (ref as any).scrollIntoView) {
-          (ref as any).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }
-    }, 350);
+    
+    // After layout updates, adjust scroll so section stays at the same spot on screen
+    if (Platform.OS === 'web' && ref) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const rect = (ref as any).getBoundingClientRect?.();
+          if (rect && scrollRef.current) {
+            const diff = rect.top - beforeY;
+            if (Math.abs(diff) > 2) {
+              const scrollNode = (scrollRef.current as any).getScrollableNode?.();
+              if (scrollNode) {
+                scrollNode.scrollTop += diff;
+              }
+            }
+          }
+        });
+      });
+    }
   };
   
   // Check user roles
