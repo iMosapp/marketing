@@ -74,11 +74,17 @@ async def get_brand_context(db, user_id: str) -> dict:
         # Get partner branding (highest priority)
         partner_id = user.get("partner_id")
         if not partner_id and store_id:
-            store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1})
+            try:
+                store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1})
+            except Exception:
+                store = await db.stores.find_one({"_id": store_id}, {"partner_id": 1})
             partner_id = store.get("partner_id") if store else None
 
         if partner_id:
-            partner = await db.partners.find_one({"_id": ObjectId(partner_id)})
+            try:
+                partner = await db.partners.find_one({"_id": ObjectId(partner_id)})
+            except Exception:
+                partner = await db.partners.find_one({"_id": partner_id})
             if partner:
                 if partner.get("logo"):
                     brand["logo_url"] = partner["logo"]
