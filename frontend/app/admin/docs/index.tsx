@@ -71,7 +71,19 @@ export default function DocsHubScreen() {
       if (params.length) url += '?' + params.join('&');
 
       const docRes = await api.get(url, { headers });
-      setDocs(docRes.data);
+
+      // Auto-seed if no docs exist and no filter is active
+      if (docRes.data.length === 0 && !selectedCategory && !search) {
+        try {
+          await api.post('/docs/seed', {}, { headers });
+          const seededRes = await api.get('/docs/', { headers });
+          setDocs(seededRes.data);
+        } catch {
+          setDocs([]);
+        }
+      } else {
+        setDocs(docRes.data);
+      }
     } catch (error) {
       console.error('Failed to load docs:', error);
     } finally {
