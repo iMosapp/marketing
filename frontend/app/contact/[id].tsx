@@ -319,7 +319,16 @@ export default function ContactDetailScreen() {
         router.push(`/thread/${id}?${threadParams}&mode=sms`);
         break;
       case 'call':
-        Linking.openURL(`tel:${contact.phone}`);
+        if (Platform.OS === 'web') {
+          const a = document.createElement('a');
+          a.href = `tel:${contact.phone}`;
+          a.target = '_self';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          Linking.openURL(`tel:${contact.phone}`);
+        }
         break;
       case 'email':
         router.push(`/thread/${id}?${threadParams}&mode=email`);
