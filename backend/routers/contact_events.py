@@ -242,45 +242,112 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
 @router.post("/{user_id}/find-or-create-and-log")
 async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
     """
-    Find a contact by phone, or create one if not found. Then log an event.
-    Used by congrats card and share review flows.
+    Smart contact matching: find by phone (last 10 digits) or email, create if not found.
+    If name mismatch, return match info so frontend can prompt user.
+    Supports dual email (personal + work).
     """
     db = get_db()
 
     phone = (payload.get("phone") or "").strip()
+    email = (payload.get("email") or "").strip().lower()
     name = (payload.get("name") or "").strip()
     event_type = payload.get("event_type", "custom")
     event_title = payload.get("event_title", "Activity")
     event_description = payload.get("event_description", "")
     event_icon = payload.get("event_icon", "flag")
     event_color = payload.get("event_color", "#007AFF")
+    force_action = payload.get("force_action")  # 'use_existing', 'update_name', 'create_new'
 
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number is required")
+    if not phone and not email:
+        raise HTTPException(status_code=400, detail="Phone or email is required")
 
-    # Normalize phone: strip non-digits for matching
-    normalized = "".join(c for c in phone if c.isdigit())
-
-    # Try to find existing contact by phone (partial match on last 10 digits)
+    # --- Find existing contact ---
     contact = None
-    if len(normalized) >= 10:
-        suffix = normalized[-10:]
+
+    # Match by phone (last 10 digits)
+    if phone:
+        normalized = "".join(c for c in phone if c.isdigit())
+        if len(normalized) >= 10:
+            suffix = normalized[-10:]
+            contact = await db.contacts.find_one({
+                "user_id": user_id,
+                "phone": {"$regex": suffix},
+                "status": {"$ne": "deleted"},
+            })
+        if not contact:
+            contact = await db.contacts.find_one({
+                "user_id": user_id,
+                "phone": phone,
+                "status": {"$ne": "deleted"},
+            })
+
+    # Match by email (personal or work) if no phone match
+    if not contact and email:
         contact = await db.contacts.find_one({
             "user_id": user_id,
-            "phone": {"$regex": suffix},
-            "status": {"$ne": "deleted"},
-        })
-    if not contact:
-        contact = await db.contacts.find_one({
-            "user_id": user_id,
-            "phone": phone,
+            "$or": [
+                {"email": {"$regex": f"^{email}$", "$options": "i"}},
+                {"email_work": {"$regex": f"^{email}$", "$options": "i"}},
+            ],
             "status": {"$ne": "deleted"},
         })
 
+    # --- Handle match with name mismatch ---
+    if contact and name and not force_action:
+        existing_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+        if existing_name.lower() != name.lower() and existing_name:
+            return {
+                "match_found": True,
+                "needs_confirmation": True,
+                "contact_id": str(contact["_id"]),
+                "existing_name": existing_name,
+                "provided_name": name,
+                "phone": contact.get("phone", ""),
+                "email": contact.get("email", ""),
+            }
+
+    # --- Process based on force_action or auto ---
     created = False
+
+    if contact and force_action == "update_name" and name:
+        parts = name.split(" ", 1)
+        await db.contacts.update_one(
+            {"_id": contact["_id"]},
+            {"$set": {
+                "first_name": parts[0],
+                "last_name": parts[1] if len(parts) > 1 else "",
+                "updated_at": datetime.now(timezone.utc),
+            }}
+        )
+        contact["first_name"] = parts[0]
+        contact["last_name"] = parts[1] if len(parts) > 1 else ""
+
+    elif contact and force_action == "create_new":
+        # User wants a separate contact
+        contact = None
+
+    # Merge email onto existing contact if missing
+    if contact and email:
+        if not contact.get("email"):
+            await db.contacts.update_one(
+                {"_id": contact["_id"]},
+                {"$set": {"email": email, "updated_at": datetime.now(timezone.utc)}}
+            )
+        elif contact.get("email", "").lower() != email.lower() and not contact.get("email_work"):
+            await db.contacts.update_one(
+                {"_id": contact["_id"]},
+                {"$set": {"email_work": email, "updated_at": datetime.now(timezone.utc)}}
+            )
+
+    # Merge phone onto existing contact if missing
+    if contact and phone and not contact.get("phone"):
+        await db.contacts.update_one(
+            {"_id": contact["_id"]},
+            {"$set": {"phone": phone, "updated_at": datetime.now(timezone.utc)}}
+        )
+
     if not contact:
-        # Parse name
-        parts = name.split(" ", 1) if name else [phone]
+        parts = name.split(" ", 1) if name else [phone or email]
         first_name = parts[0]
         last_name = parts[1] if len(parts) > 1 else ""
 
@@ -288,7 +355,8 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
             "first_name": first_name,
             "last_name": last_name,
             "phone": phone,
-            "email": "",
+            "email": email,
+            "email_work": "",
             "user_id": user_id,
             "original_user_id": user_id,
             "ownership_type": "org",
@@ -326,4 +394,6 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
         "contact_created": created,
         "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
         "event_logged": True,
+        "match_found": not created,
+        "needs_confirmation": False,
     }
