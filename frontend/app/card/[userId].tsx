@@ -538,7 +538,7 @@ export default function DigitalCardPage() {
             ) : (
               <>
                 <Ionicons name="share-social" size={22} color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>Save My Contact</Text>
+                <Text style={styles.saveButtonText}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
               </>
             )}
           </TouchableOpacity>
