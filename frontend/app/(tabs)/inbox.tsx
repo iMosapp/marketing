@@ -1957,7 +1957,7 @@ const styles = StyleSheet.create({
   contactAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     backgroundColor: COLORS.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1966,7 +1966,7 @@ const styles = StyleSheet.create({
   contactAvatarPhoto: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     marginRight: 14,
   },
   contactAvatarText: {

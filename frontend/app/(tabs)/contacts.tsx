@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   photoAvatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
     marginRight: 12,
   },
   avatarText: {

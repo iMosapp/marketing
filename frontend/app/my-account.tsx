@@ -685,14 +685,14 @@ const styles = StyleSheet.create({
   profilePhoto: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 28,
     borderWidth: 3,
     borderColor: '#007AFF',
   },
   photoPlaceholder: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: 28,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',

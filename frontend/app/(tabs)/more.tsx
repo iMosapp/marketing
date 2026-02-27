@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
   profileAvatar: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 14,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
   profileAvatarImage: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: '#C9A962',
   },
