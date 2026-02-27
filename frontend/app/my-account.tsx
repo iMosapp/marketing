@@ -868,9 +868,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
   },
-  accountInfo: {
-    marginTop: 24,
+  accountTilesRow: {
+    flexDirection: 'row',
     marginHorizontal: 16,
+    marginTop: 16,
+    gap: 8,
+  },
+  accountTileBtn: {
+    flex: 1,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    gap: 8,
+  },
+  accountTileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountTileLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  accountInfo: {
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 16,
