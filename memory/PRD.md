@@ -136,6 +136,11 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
   - SMS pre-fills phone number + message body using anchor-click technique
   - Dialer opens native phone app via `tel:` protocol and logs call activity
 
+### Session Feb 27, 2026 — Mobile Viewport Fix
+- **CRITICAL FIX: iOS Safari Viewport Expansion** — The `+html.tsx` Expo template was missing `maximum-scale=1, user-scalable=no` in the viewport meta tag. iOS Safari would expand the viewport when content overflowed or when focusing small-font inputs, requiring pinch-to-zoom.
+- **FIX: Share Modal Input Layout** — Changed Name/Phone/Email fields from side-by-side (50/50 row) to 3 vertically stacked rows across all share modals (Share Review, Share My Contact, Congrats Card). Eliminates horizontal overflow on narrow screens.
+- **FIX: iOS Input Auto-Zoom** — Added global CSS to set input/textarea/select font-size to 16px, preventing iOS Safari's auto-zoom on focus behavior.
+
 ### Session Feb 27, 2026 (Fork 8 - Current)
 - **CRITICAL FIX: Personal SMS User Gesture Chain** — The `sms:` protocol handler in `handleSend()` was running AFTER `await messagesAPI.send()` and inside a `setTimeout(300)`, breaking the browser's "user gesture" context on mobile devices (especially iOS Safari). Fix: SMS opening code now fires SYNCHRONOUSLY at the top of handleSend, BEFORE any async operations. This ensures mobile browsers treat the `sms:` link as a user-initiated action.
 - **FIX: iMOs Review Link Consistency** — Changed iMOs review link in the review modal from `handleSend(reviewMsg)` (auto-send) to `setMessage(reviewMsg)` (pre-fill), matching all other action handlers. User now has control to review/edit the message before sending.
