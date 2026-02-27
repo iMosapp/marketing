@@ -637,6 +637,39 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
+          {/* ===== EDITABLE DETAILS (shown when editing or new) — right after tags ===== */}
+          {isEditing && (
+            <>
+              {/* Basic Info */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Basic Info</Text>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>First Name *</Text>
+                  <TextInput style={s.input} placeholder="First name" placeholderTextColor="#636366"
+                    value={contact.first_name} onChangeText={t => setContact({ ...contact, first_name: t })} data-testid="input-first-name" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Last Name</Text>
+                  <TextInput style={s.input} placeholder="Last name" placeholderTextColor="#636366"
+                    value={contact.last_name} onChangeText={t => setContact({ ...contact, last_name: t })} data-testid="input-last-name" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Phone *</Text>
+                  <TextInput style={s.input} placeholder="+1 (555) 123-4567" placeholderTextColor="#636366"
+                    value={contact.phone} onChangeText={t => setContact({ ...contact, phone: t })} keyboardType="phone-pad" data-testid="input-phone" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Email</Text>
+                  <TextInput style={s.input} placeholder="email@example.com" placeholderTextColor="#636366"
+                    value={contact.email} onChangeText={t => setContact({ ...contact, email: t })} keyboardType="email-address" autoCapitalize="none" data-testid="input-email" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Vehicle</Text>
+                  <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor="#636366"
+                    value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
+                </View>
+              </View>
+
           {/* ===== ACTIVITY FEED ===== */}
           {!isNewContact && (
             <View style={s.section} data-testid="activity-feed">
