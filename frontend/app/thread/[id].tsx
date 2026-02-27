@@ -2696,9 +2696,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   modeBannerText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
+    color: '#8E8E93',
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
   },
   modeSwitchButton: {
