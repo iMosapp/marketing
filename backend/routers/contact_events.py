@@ -236,3 +236,94 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
         event["timestamp"] = event["timestamp"].isoformat()
 
     return event
+
+
+
+@router.post("/{user_id}/find-or-create-and-log")
+async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
+    """
+    Find a contact by phone, or create one if not found. Then log an event.
+    Used by congrats card and share review flows.
+    """
+    db = get_db()
+
+    phone = (payload.get("phone") or "").strip()
+    name = (payload.get("name") or "").strip()
+    event_type = payload.get("event_type", "custom")
+    event_title = payload.get("event_title", "Activity")
+    event_description = payload.get("event_description", "")
+    event_icon = payload.get("event_icon", "flag")
+    event_color = payload.get("event_color", "#007AFF")
+
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number is required")
+
+    # Normalize phone: strip non-digits for matching
+    normalized = "".join(c for c in phone if c.isdigit())
+
+    # Try to find existing contact by phone (partial match on last 10 digits)
+    contact = None
+    if len(normalized) >= 10:
+        suffix = normalized[-10:]
+        contact = await db.contacts.find_one({
+            "user_id": user_id,
+            "phone": {"$regex": suffix},
+            "status": {"$ne": "deleted"},
+        })
+    if not contact:
+        contact = await db.contacts.find_one({
+            "user_id": user_id,
+            "phone": phone,
+            "status": {"$ne": "deleted"},
+        })
+
+    created = False
+    if not contact:
+        # Parse name
+        parts = name.split(" ", 1) if name else [phone]
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else ""
+
+        new_contact = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "phone": phone,
+            "email": "",
+            "user_id": user_id,
+            "original_user_id": user_id,
+            "ownership_type": "org",
+            "source": "manual",
+            "status": "active",
+            "tags": [],
+            "notes": "",
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+        result = await db.contacts.insert_one(new_contact)
+        new_contact["_id"] = result.inserted_id
+        contact = new_contact
+        created = True
+
+    contact_id = str(contact["_id"])
+
+    # Log the event
+    event = {
+        "contact_id": contact_id,
+        "user_id": user_id,
+        "event_type": event_type,
+        "icon": event_icon,
+        "color": event_color,
+        "title": event_title,
+        "description": event_description,
+        "category": "outreach",
+        "timestamp": datetime.now(timezone.utc),
+    }
+    await db.contact_events.insert_one(event)
+    event.pop("_id", None)
+
+    return {
+        "contact_id": contact_id,
+        "contact_created": created,
+        "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+        "event_logged": True,
+    }
