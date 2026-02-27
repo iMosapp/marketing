@@ -547,7 +547,18 @@ export default function ContactDetailScreen() {
             {/* Contact chips */}
             <View style={s.heroChips}>
               {contact.phone ? (
-                <TouchableOpacity style={s.heroChip} onPress={() => Linking.openURL(`tel:${contact.phone}`)}>
+                <TouchableOpacity style={s.heroChip} onPress={() => {
+                  if (Platform.OS === 'web') {
+                    const a = document.createElement('a');
+                    a.href = `tel:${contact.phone}`;
+                    a.target = '_self';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  } else {
+                    Linking.openURL(`tel:${contact.phone}`);
+                  }
+                }}>
                   <Ionicons name="call" size={14} color="#34C759" />
                   <Text style={s.heroChipText}>{contact.phone}</Text>
                 </TouchableOpacity>
