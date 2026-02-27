@@ -774,3 +774,137 @@ async def send_report_email(
     except Exception as e:
         logger.error(f"Report email failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.get("/user-activity/{user_id}")
+async def get_user_activity(
+    user_id: str,
+    period: str = Query("month", regex="^(today|week|month|year|custom)$"),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+):
+    """
+    Get comprehensive activity stats for a single user.
+    Used by the My Account activity dashboard.
+    """
+    db = get_db()
+
+    # Calculate date range
+    now = datetime.utcnow()
+    if period == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    elif period == "week":
+        start = now - timedelta(days=now.weekday())
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    elif period == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    elif period == "year":
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    elif period == "custom" and start_date and end_date:
+        try:
+            start = datetime.fromisoformat(start_date)
+            end = datetime.fromisoformat(end_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format")
+    else:
+        start = now - timedelta(days=30)
+        end = now
+
+    date_filter_ts = {"timestamp": {"$gte": start, "$lte": end}}
+    date_filter_ca = {"created_at": {"$gte": start, "$lte": end}}
+
+    # Query contact_events
+    evt_pipeline = [
+        {"$match": {"user_id": user_id, "$or": [{**date_filter_ts}, {**date_filter_ca}]}},
+        {"$group": {"_id": "$event_type", "count": {"$sum": 1}}},
+    ]
+    evt_results = await db.contact_events.aggregate(evt_pipeline).to_list(100)
+    evt_map = {doc["_id"]: doc["count"] for doc in evt_results}
+
+    # Query messages
+    msg_pipeline = [
+        {"$match": {"user_id": user_id, "sender": "user", **date_filter_ts}},
+        {"$group": {"_id": "$channel", "count": {"$sum": 1}}},
+    ]
+    msg_results = await db.messages.aggregate(msg_pipeline).to_list(100)
+    msg_map = {doc["_id"]: doc["count"] for doc in msg_results}
+
+    # Query link clicks
+    click_pipeline = [
+        {"$match": {"user_id": user_id, "event_type": "link_click", "$or": [{**date_filter_ts}, {**date_filter_ca}]}},
+        {"$group": {"_id": "$link_type", "count": {"$sum": 1}}},
+    ]
+    click_results = await db.contact_events.aggregate(click_pipeline).to_list(100)
+    click_map = {doc["_id"]: doc["count"] for doc in click_results}
+
+    # Count new contacts created
+    new_contacts = evt_map.get("new_contact", 0)
+
+    # Build response
+    sms_personal = msg_map.get("sms_personal", 0) + evt_map.get("personal_sms", 0)
+    sms_twilio = msg_map.get("sms", 0) + evt_map.get("sms_sent", 0)
+    emails = msg_map.get("email", 0) + evt_map.get("email_sent", 0)
+    calls = evt_map.get("call_placed", 0)
+    digital_cards = evt_map.get("digital_card_sent", 0) + evt_map.get("digital_card_shared", 0)
+    review_links = evt_map.get("review_request_sent", 0) + evt_map.get("review_shared", 0)
+    congrats_cards = evt_map.get("congrats_card_sent", 0) + evt_map.get("congrats_sent", 0)
+    vcards = evt_map.get("vcard_sent", 0)
+
+    total_texts = sms_personal + sms_twilio
+    total_shares = digital_cards + review_links + congrats_cards + vcards
+    total_touchpoints = total_texts + emails + calls + total_shares
+
+    total_clicks = sum(click_map.values())
+
+    # Previous period comparison
+    period_duration = (end - start).total_seconds()
+    prev_start = start - timedelta(seconds=period_duration)
+    prev_end = start
+    prev_filter_ts = {"timestamp": {"$gte": prev_start, "$lte": prev_end}}
+    prev_filter_ca = {"created_at": {"$gte": prev_start, "$lte": prev_end}}
+
+    prev_count = await db.contact_events.count_documents(
+        {"user_id": user_id, "$or": [{**prev_filter_ts}, {**prev_filter_ca}]}
+    )
+    prev_msg_count = await db.messages.count_documents(
+        {"user_id": user_id, "sender": "user", **prev_filter_ts}
+    )
+    prev_total = prev_count + prev_msg_count
+    trend_pct = round(((total_touchpoints - prev_total) / max(prev_total, 1)) * 100) if prev_total > 0 else 0
+
+    return {
+        "period": period,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "summary": {
+            "total_touchpoints": total_touchpoints,
+            "trend_pct": trend_pct,
+            "prev_total": prev_total,
+        },
+        "communication": {
+            "texts_sent": total_texts,
+            "sms_personal": sms_personal,
+            "sms_twilio": sms_twilio,
+            "emails_sent": emails,
+            "calls_placed": calls,
+        },
+        "sharing": {
+            "digital_cards": digital_cards,
+            "review_links": review_links,
+            "congrats_cards": congrats_cards,
+            "vcards": vcards,
+            "total_shares": total_shares,
+        },
+        "engagement": {
+            "total_clicks": total_clicks,
+            "clicks_by_type": click_map,
+        },
+        "contacts": {
+            "new_contacts": new_contacts,
+        },
+    }
