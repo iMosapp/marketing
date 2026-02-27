@@ -669,6 +669,8 @@ export default function ContactDetailScreen() {
                     value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
                 </View>
               </View>
+            </>
+          )}
 
           {/* ===== ACTIVITY FEED ===== */}
           {!isNewContact && (
