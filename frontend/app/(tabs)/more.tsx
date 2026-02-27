@@ -468,6 +468,13 @@ export default function MoreScreen() {
           color: '#FF9500',
         },
         {
+          icon: 'color-palette',
+          title: 'White Label Partners',
+          subtitle: 'Manage branded partners',
+          onPress: () => router.push('/admin/white-label'),
+          color: '#E87722',
+        },
+        {
           icon: 'people',
           title: 'Company Directory',
           subtitle: 'Team & leaderboards',
