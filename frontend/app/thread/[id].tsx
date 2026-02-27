@@ -1495,7 +1495,7 @@ export default function ThreadScreen() {
           <Ionicons 
             name={messageMode === 'sms' ? 'mail-outline' : 'chatbubble-outline'} 
             size={14} 
-            color="#FFF" 
+            color="#8E8E93" 
           />
         </TouchableOpacity>
       </View>
