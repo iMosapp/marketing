@@ -732,6 +732,112 @@ export default function ContactDetailScreen() {
             </TouchableOpacity>
           )}
 
+          {/* ===== REMAINING EDIT FIELDS (after activity feed) ===== */}
+          {isEditing && (
+            <>
+              {/* Important Dates */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Important Dates</Text>
+                {[
+                  { field: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF9500' },
+                  { field: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF2D55' },
+                  { field: 'date_sold', label: 'Date Sold', icon: 'car', color: '#34C759' },
+                ].map(d => (
+                  <TouchableOpacity key={d.field} style={s.dateRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)}>
+                    <View style={[s.dateRowIcon, { backgroundColor: `${d.color}20` }]}>
+                      <Ionicons name={d.icon as any} size={18} color={d.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.dateRowLabel}>{d.label}</Text>
+                      <Text style={[s.dateRowValue, !(contact as any)[d.field] && { color: '#636366' }]}>
+                        {formatDateDisplay((contact as any)[d.field])}
+                      </Text>
+                    </View>
+                    {(contact as any)[d.field] && (
+                      <TouchableOpacity onPress={() => clearDate(d.field)} style={{ padding: 4, marginRight: 8 }}>
+                        <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                      </TouchableOpacity>
+                    )}
+                    <Ionicons name="calendar" size={20} color="#8E8E93" />
+                  </TouchableOpacity>
+                ))}
+                {contact.custom_dates.map((cd, i) => (
+                  <TouchableOpacity key={i} style={s.dateRow} onPress={() => openDatePicker(`custom_${i}`, cd.date)}>
+                    <View style={[s.dateRowIcon, { backgroundColor: '#007AFF20' }]}>
+                      <Ionicons name="calendar-outline" size={18} color="#007AFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.dateRowLabel}>{cd.name}</Text>
+                      <Text style={[s.dateRowValue, !cd.date && { color: '#636366' }]}>{formatDateDisplay(cd.date)}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => removeCustomDateField(i)} style={{ padding: 4 }}>
+                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity style={s.addBtn} onPress={() => {
+                  setTempDate(new Date()); setActiveDateField('pending_custom');
+                  setActiveDateLabel('Select Date'); setShowDatePicker(true);
+                }}>
+                  <Ionicons name="add-circle" size={20} color="#007AFF" />
+                  <Text style={s.addBtnText}>Add Custom Date</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Referral */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Referral</Text>
+                <TouchableOpacity style={s.dateRow} onPress={() => { loadAllContacts(); setShowReferralPicker(true); }}>
+                  <View style={[s.dateRowIcon, { backgroundColor: '#34C75920' }]}>
+                    <Ionicons name="people" size={18} color="#34C759" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.dateRowLabel}>Referred By</Text>
+                    <Text style={[s.dateRowValue, !contact.referred_by_name && { color: '#636366' }]}>
+                      {contact.referred_by_name || 'Select referrer'}
+                    </Text>
+                  </View>
+                  {contact.referred_by ? (
+                    <TouchableOpacity onPress={clearReferrer} style={{ padding: 4 }}>
+                      <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                    </TouchableOpacity>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  )}
+                </TouchableOpacity>
+                {contact.referred_by && (
+                  <View style={s.inputGroup}>
+                    <Text style={s.inputLabel}>Referral Notes</Text>
+                    <TextInput style={s.input} placeholder="How did they refer?" placeholderTextColor="#636366"
+                      value={contact.referral_notes} onChangeText={t => setContact({ ...contact, referral_notes: t })} />
+                  </View>
+                )}
+              </View>
+
+              {/* Notes */}
+              <View style={s.section}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[s.sectionHeader, { marginBottom: 0 }]}>Notes</Text>
+                  <VoiceInput
+                    onTranscription={(text: string) => setContact({ ...contact, notes: contact.notes + ' ' + text })}
+                    size="small" color="#8E8E93"
+                  />
+                </View>
+                <TextInput style={[s.input, { minHeight: 100, textAlignVertical: 'top', marginTop: 8 }]}
+                  placeholder="Add notes..." placeholderTextColor="#636366" value={contact.notes}
+                  onChangeText={t => setContact({ ...contact, notes: t })} multiline data-testid="input-notes" />
+              </View>
+
+              {/* Delete */}
+              {!isNewContact && (
+                <TouchableOpacity onPress={handleDelete} style={s.deleteBtn} data-testid="delete-contact-button">
+                  <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                  <Text style={s.deleteBtnText}>Delete Contact</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+
           {/* ===== VIEW-ONLY DETAILS (when not editing) ===== */}
           {!isEditing && !isNewContact && (
             <>
