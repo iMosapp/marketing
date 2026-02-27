@@ -10,6 +10,7 @@ import {
   Animated,
   LayoutAnimation,
   UIManager,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 import api from '../../services/api';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
+import { WebModal } from '../../components/WebModal';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
