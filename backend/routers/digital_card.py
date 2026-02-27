@@ -53,31 +53,6 @@ async def get_card_data(user_id: str):
             "created_at": t.get("created_at").isoformat() if t.get("created_at") else None
         })
     
-    return {
-        "user": {
-            "id": str(user["_id"]),
-            "name": user.get("name", ""),
-            "email": user.get("email", ""),
-            "phone": user.get("phone", ""),
-            "title": user.get("title", "Sales Professional"),
-            "photo_url": user.get("photo_url"),
-            "bio": user.get("persona", {}).get("bio", ""),
-            "social_links": user.get("social_links", {}),
-        },
-        "store": {
-            "id": str(store["_id"]) if store else None,
-            "name": store.get("name", "") if store else None,
-            "logo_url": store.get("logo_url") if store else None,
-            "primary_color": store.get("primary_color", "#007AFF") if store else "#007AFF",
-            "phone": store.get("phone") if store else None,
-            "address": store.get("address") if store else None,
-            "city": store.get("city") if store else None,
-            "state": store.get("state") if store else None,
-            "website": store.get("website") if store else None,
-        } if store else None,
-        "testimonials": formatted_testimonials
-    }
-
     # Add partner branding if available
     partner_branding_data = None
     if store and store.get("partner_id"):
