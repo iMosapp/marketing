@@ -439,8 +439,15 @@ async def list_stores(
     org_ids = list(set([s.get('organization_id') for s in stores if s.get('organization_id')]))
     orgs_map = {}
     if org_ids:
-        orgs = await db.organizations.find({"_id": {"$in": [ObjectId(oid) for oid in org_ids]}}).to_list(100)
-        orgs_map = {str(o['_id']): o.get('name', 'Unknown') for o in orgs}
+        valid_oids = []
+        for oid in org_ids:
+            try:
+                valid_oids.append(ObjectId(oid))
+            except Exception:
+                pass
+        if valid_oids:
+            orgs = await db.organizations.find({"_id": {"$in": valid_oids}}, {"logo_url": 0}).to_list(100)
+            orgs_map = {str(o['_id']): o.get('name', 'Unknown') for o in orgs}
     
     # Count users per store
     result = []
