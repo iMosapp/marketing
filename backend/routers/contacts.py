@@ -69,10 +69,20 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
 @router.post("/{user_id}", response_model=Contact)
 async def create_contact(user_id: str, contact_data: ContactCreate):
     """Create a new contact"""
+    db = get_db()
     contact_dict = contact_data.dict()
     contact_dict['user_id'] = user_id
+    contact_dict['original_user_id'] = user_id
     contact_dict['created_at'] = datetime.utcnow()
     contact_dict['updated_at'] = datetime.utcnow()
+    
+    # Determine ownership type based on source
+    source = contact_dict.get('source', 'manual')
+    if source in ('csv', 'phone_contacts'):
+        contact_dict['ownership_type'] = 'personal'
+    else:
+        contact_dict['ownership_type'] = 'org'
+    contact_dict['status'] = 'active'
     
     # Auto-tag based on date fields
     existing_tags = set(contact_dict.get('tags', []))
