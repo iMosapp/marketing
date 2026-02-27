@@ -19,7 +19,7 @@ async def get_brand_context(db, user_id: str) -> dict:
         "social_links": {},
         "footer_text": "",
         "powered_by": "IM On Social",
-        "powered_by_url": "https://www.calldrip.com/see_it_in_action",
+        "powered_by_url": "https://app.imosapp.com/imos",
     }
 
     try:
