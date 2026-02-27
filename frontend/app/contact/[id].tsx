@@ -312,12 +312,8 @@ export default function ContactDetailScreen() {
     }
     switch (key) {
       case 'sms':
-        if (IS_WEB) {
-          Linking.openURL(`sms:${contact.phone}`);
-        } else {
-          // Navigate to thread/inbox for this contact
-          router.push(`/thread/${id}`);
-        }
+        // Navigate to thread/inbox for this contact to compose from there
+        router.push(`/thread/${id}?contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}`);
         break;
       case 'call':
         Linking.openURL(`tel:${contact.phone}`);
