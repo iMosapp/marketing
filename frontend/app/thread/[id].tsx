@@ -1338,6 +1338,21 @@ export default function ThreadScreen() {
     const timestamp = item.timestamp ? new Date(item.timestamp) : new Date();
     const hasMedia = item.has_media && item.media_urls && item.media_urls.length > 0;
     
+    // Detect rich content types
+    const content = item.content || '';
+    const isReviewLink = content.includes('/review/') || content.toLowerCase().includes('review link');
+    const isCongratsCard = content.toLowerCase().includes('congrats') || content.toLowerCase().includes('congratulations');
+    const isDigitalCard = content.includes('/card/') || content.toLowerCase().includes('digital card');
+    const isRichContent = isReviewLink || isCongratsCard || isDigitalCard;
+    
+    // Choose icon and color for rich content
+    let richIcon = 'chatbubble';
+    let richColor = '#007AFF';
+    let richLabel = 'Message';
+    if (isReviewLink) { richIcon = 'star'; richColor = '#FFD60A'; richLabel = 'Review Link'; }
+    else if (isCongratsCard) { richIcon = 'gift'; richColor = '#C9A962'; richLabel = 'Congrats Card'; }
+    else if (isDigitalCard) { richIcon = 'card'; richColor = '#5856D6'; richLabel = 'Digital Card'; }
+    
     return (
       <View
         style={[
@@ -1345,16 +1360,33 @@ export default function ThreadScreen() {
           isUser ? styles.userMessageContainer : styles.contactMessageContainer,
         ]}
       >
+        {/* Sender label */}
+        <Text style={[styles.senderLabel, isUser ? styles.senderLabelRight : styles.senderLabelLeft]}>
+          {isUser ? (item.ai_generated ? 'Jessi AI' : 'You') : (contactName?.toString() || 'Contact')} · {format(timestamp, 'h:mm a')}
+        </Text>
+        
         <View
           style={[
             styles.messageBubble,
             isUser ? styles.userMessageBubble : styles.contactMessageBubble,
+            isRichContent && styles.richMessageBubble,
+            isRichContent && { borderLeftColor: richColor },
           ]}
         >
-          {item.ai_generated && (
+          {/* Rich content header */}
+          {isRichContent && (
+            <View style={styles.richContentHeader}>
+              <View style={[styles.richContentIcon, { backgroundColor: `${richColor}20` }]}>
+                <Ionicons name={richIcon as any} size={14} color={richColor} />
+              </View>
+              <Text style={[styles.richContentLabel, { color: richColor }]}>{richLabel}</Text>
+            </View>
+          )}
+          
+          {item.ai_generated && !isRichContent && (
             <View style={styles.aiIndicator}>
               <Ionicons name="sparkles" size={12} color="#34C759" />
-              <Text style={styles.aiIndicatorText}>AI sent this</Text>
+              <Text style={styles.aiIndicatorText}>AI</Text>
             </View>
           )}
           
@@ -1395,15 +1427,6 @@ export default function ThreadScreen() {
               <Text style={styles.intentText}>{item.intent_detected}</Text>
             </View>
           )}
-          
-          <Text
-            style={[
-              styles.messageTime,
-              isUser ? styles.userMessageTime : styles.contactMessageTime,
-            ]}
-          >
-            {format(timestamp, 'h:mm a')}
-          </Text>
         </View>
       </View>
     );
