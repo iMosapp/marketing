@@ -178,7 +178,28 @@ export default function DocViewerScreen() {
             </View>
 
             {/* Slide Description */}
-            <Text style={styles.slideDescription}>{slide.description}</Text>
+            <View style={styles.slideDescriptionContainer}>
+              {slide.description.split('\n').map((line: string, lineIdx: number) => {
+                // Parse bold text: **text**
+                const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                if (line.trim() === '') return <View key={lineIdx} style={{ height: 12 }} />;
+                return (
+                  <Text key={lineIdx} style={styles.slideDescription}>
+                    {parts.map((part: string, partIdx: number) => {
+                      if (part.startsWith('**') && part.endsWith('**')) {
+                        return <Text key={partIdx} style={styles.boldText}>{part.slice(2, -2)}</Text>;
+                      }
+                      if (part.startsWith('```') || part.endsWith('```')) {
+                        const code = part.replace(/```/g, '').trim();
+                        if (!code) return null;
+                        return <Text key={partIdx} style={styles.codeText}>{code}</Text>;
+                      }
+                      return part;
+                    })}
+                  </Text>
+                );
+              })}
+            </View>
 
             {/* Tip Box */}
             {slide.tip && (
