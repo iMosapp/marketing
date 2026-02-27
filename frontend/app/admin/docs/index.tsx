@@ -203,39 +203,50 @@ export default function DocsHubScreen() {
         contentContainerStyle={styles.filterContainer}
       >
         <TouchableOpacity
-          style={[styles.filterChip, selectedCategory === null && styles.filterChipActive]}
+          style={[
+            styles.filterChip,
+            selectedCategory === null && { backgroundColor: '#007AFF' },
+          ]}
           onPress={() => setSelectedCategory(null)}
           data-testid="docs-filter-all"
         >
+          <Ionicons
+            name="apps"
+            size={14}
+            color={selectedCategory === null ? '#FFF' : '#8E8E93'}
+            style={{ marginRight: 6 }}
+          />
           <Text style={[styles.filterChipText, selectedCategory === null && styles.filterChipTextActive]}>
             All
           </Text>
         </TouchableOpacity>
-        {categories.map((cat: any) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[
-              styles.filterChip,
-              selectedCategory === cat.id && styles.filterChipActive,
-              selectedCategory === cat.id && { backgroundColor: CATEGORY_COLORS[cat.id] || '#007AFF' },
-            ]}
-            onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-            data-testid={`docs-filter-${cat.id}`}
-          >
-            <Ionicons
-              name={cat.icon as any}
-              size={14}
-              color={selectedCategory === cat.id ? '#FFF' : CATEGORY_COLORS[cat.id] || '#8E8E93'}
-              style={{ marginRight: 6 }}
-            />
-            <Text style={[
-              styles.filterChipText,
-              selectedCategory === cat.id && styles.filterChipTextActive,
-            ]}>
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {categories.map((cat: any) => {
+          const isActive = selectedCategory === cat.id;
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.filterChip,
+                isActive && { backgroundColor: CATEGORY_COLORS[cat.id] || '#007AFF' },
+              ]}
+              onPress={() => setSelectedCategory(isActive ? null : cat.id)}
+              data-testid={`docs-filter-${cat.id}`}
+            >
+              <Ionicons
+                name={cat.icon as any}
+                size={14}
+                color={isActive ? '#FFF' : CATEGORY_COLORS[cat.id] || '#8E8E93'}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[
+                styles.filterChipText,
+                isActive && styles.filterChipTextActive,
+              ]}>
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Doc List */}
