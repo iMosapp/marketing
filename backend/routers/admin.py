@@ -1022,6 +1022,13 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
         # INDIVIDUAL USER: they keep everything, just deactivated
         logger.info(f"Individual user {user_id} deactivated. All contacts retained. Hard delete: {hard_delete.isoformat()}")
     
+    # Fire lifecycle hooks
+    try:
+        from .user_lifecycle import on_user_deactivated
+        await on_user_deactivated(user_id, x_user_id)
+    except Exception as e:
+        logger.warning(f"Lifecycle deactivation hook error: {e}")
+    
     return {
         "message": "User deactivated",
         "grace_period_end": grace_end.isoformat(),
