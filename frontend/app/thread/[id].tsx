@@ -1504,6 +1504,13 @@ export default function ThreadScreen() {
               <Text style={styles.personalSmsText}>Sent from your phone</Text>
             </View>
           )}
+          
+          {item.channel === 'email' && isUser && (
+            <View style={styles.personalSmsBadge}>
+              <Ionicons name="mail-outline" size={10} color="#AF52DE" />
+              <Text style={[styles.personalSmsText, { color: '#AF52DE' }]}>Sent via email</Text>
+            </View>
+          )}
         </View>
       </View>
     );
