@@ -657,7 +657,7 @@ export default function IMOSLandingPage() {
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.footerTagline}>Innovation Meets Old School</Text>
+            <Text style={styles.footerTagline}>Meet the New Way to Be On Social</Text>
             <Text style={styles.footerDescription}>
               Empowering sales teams with the perfect blend of technology and timeless relationship-building.
             </Text>
