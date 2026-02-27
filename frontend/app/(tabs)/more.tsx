@@ -1528,16 +1528,18 @@ const shareStyles = StyleSheet.create({
   recipientRow: {
     flexDirection: 'row',
     gap: 8,
+    width: '100%',
   },
   recipientInput: {
     flex: 1,
     backgroundColor: '#1C1C1E',
     borderRadius: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 15,
+    fontSize: 14,
     color: '#FFF',
     borderWidth: 1.5,
     borderColor: '#3A3A3C',
+    minWidth: 0,
   },
 });
