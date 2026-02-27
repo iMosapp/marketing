@@ -1,0 +1,234 @@
+"""
+Contact Events router - tracks all touchpoints and interactions with a contact.
+Aggregates data from messages, campaigns, congrats cards, and custom events
+into a unified "Facebook-feed" style timeline.
+"""
+from fastapi import APIRouter, HTTPException
+from bson import ObjectId
+from datetime import datetime, timezone
+from typing import Optional
+import logging
+
+from routers.database import get_db
+
+router = APIRouter(prefix="/contacts", tags=["Contact Events"])
+logger = logging.getLogger(__name__)
+
+
+@router.get("/{user_id}/{contact_id}/events")
+async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
+    db = get_db()
+
+    events = []
+
+    # 1) Custom logged events from contact_events collection
+    custom_events = await db.contact_events.find(
+        {"contact_id": contact_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    for e in custom_events:
+        if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
+            e["timestamp"] = e["timestamp"].isoformat()
+        events.append(e)
+
+    # 2) Messages sent to/from this contact
+    conv = await db.conversations.find_one(
+        {"user_id": user_id, "contact_id": contact_id},
+        {"_id": 1}
+    )
+    if conv:
+        conv_id = str(conv["_id"])
+        messages = await db.messages.find(
+            {"conversation_id": conv_id},
+            {"_id": 0, "conversation_id": 0}
+        ).sort("timestamp", -1).limit(limit).to_list(limit)
+        for m in messages:
+            sender = m.get("sender", "user")
+            msg_type = m.get("type", "sms")
+            direction = "outbound" if sender == "user" else "inbound"
+            icon = "chatbubble" if msg_type == "sms" else "mail"
+            color = "#007AFF" if direction == "outbound" else "#8E8E93"
+            body_preview = (m.get("body") or "")[:80]
+            ts = m.get("timestamp")
+            if ts and hasattr(ts, "isoformat"):
+                ts = ts.isoformat()
+            events.append({
+                "event_type": f"message_{direction}",
+                "icon": icon,
+                "color": color,
+                "title": f"{'Sent' if direction == 'outbound' else 'Received'} {msg_type.upper()}",
+                "description": body_preview,
+                "timestamp": ts,
+                "category": "message",
+            })
+
+    # 3) Campaign enrollments for this contact
+    enrollments = await db.campaign_enrollments.find(
+        {"contact_id": contact_id, "user_id": user_id},
+        {"_id": 0}
+    ).sort("enrolled_at", -1).to_list(20)
+    for e in enrollments:
+        campaign = await db.campaigns.find_one(
+            {"_id": ObjectId(e["campaign_id"])},
+            {"_id": 0, "name": 1, "type": 1}
+        ) if e.get("campaign_id") else None
+        campaign_name = campaign.get("name", "Unknown") if campaign else "Unknown"
+        ts = e.get("enrolled_at")
+        if ts and hasattr(ts, "isoformat"):
+            ts = ts.isoformat()
+        events.append({
+            "event_type": "campaign_enrolled",
+            "icon": "rocket",
+            "color": "#AF52DE",
+            "title": f"Enrolled in Campaign",
+            "description": campaign_name,
+            "timestamp": ts,
+            "category": "campaign",
+        })
+        # Add individual campaign messages sent
+        for msg in (e.get("messages_sent") or []):
+            msg_ts = msg.get("sent_at")
+            if msg_ts and hasattr(msg_ts, "isoformat"):
+                msg_ts = msg_ts.isoformat()
+            events.append({
+                "event_type": "campaign_message_sent",
+                "icon": "megaphone",
+                "color": "#FF9500",
+                "title": f"Campaign Message Sent",
+                "description": f"{campaign_name} - Step {msg.get('step', '?')}",
+                "timestamp": msg_ts,
+                "category": "campaign",
+            })
+
+    # 4) Congrats cards sent to this contact
+    congrats = await db.congrats_cards_sent.find(
+        {"contact_id": contact_id, "user_id": user_id},
+        {"_id": 0}
+    ).sort("sent_at", -1).to_list(20)
+    for c in congrats:
+        ts = c.get("sent_at")
+        if ts and hasattr(ts, "isoformat"):
+            ts = ts.isoformat()
+        events.append({
+            "event_type": "congrats_card_sent",
+            "icon": "gift",
+            "color": "#C9A962",
+            "title": "Sent Congrats Card",
+            "description": c.get("message", "")[:60],
+            "timestamp": ts,
+            "category": "card",
+        })
+
+    # 5) Broadcast messages involving this contact
+    broadcasts = await db.broadcast_recipients.find(
+        {"contact_id": contact_id, "user_id": user_id},
+        {"_id": 0}
+    ).sort("sent_at", -1).to_list(20)
+    for b in broadcasts:
+        ts = b.get("sent_at")
+        if ts and hasattr(ts, "isoformat"):
+            ts = ts.isoformat()
+        events.append({
+            "event_type": "broadcast_sent",
+            "icon": "megaphone",
+            "color": "#FF2D55",
+            "title": "Broadcast Message",
+            "description": (b.get("message") or "")[:60],
+            "timestamp": ts,
+            "category": "broadcast",
+        })
+
+    # Sort all events by timestamp descending
+    def sort_key(e):
+        ts = e.get("timestamp")
+        if not ts:
+            return ""
+        return ts
+
+    events.sort(key=sort_key, reverse=True)
+
+    return {
+        "events": events[:limit],
+        "total": len(events),
+    }
+
+
+@router.get("/{user_id}/{contact_id}/stats")
+async def get_contact_stats(user_id: str, contact_id: str):
+    db = get_db()
+
+    # Count messages
+    conv = await db.conversations.find_one(
+        {"user_id": user_id, "contact_id": contact_id},
+        {"_id": 1}
+    )
+    message_count = 0
+    if conv:
+        message_count = await db.messages.count_documents(
+            {"conversation_id": str(conv["_id"]), "sender": "user"}
+        )
+
+    # Count campaign enrollments
+    campaign_count = await db.campaign_enrollments.count_documents(
+        {"contact_id": contact_id, "user_id": user_id}
+    )
+
+    # Count congrats cards
+    card_count = await db.congrats_cards_sent.count_documents(
+        {"contact_id": contact_id, "user_id": user_id}
+    )
+
+    # Count broadcasts
+    broadcast_count = await db.broadcast_recipients.count_documents(
+        {"contact_id": contact_id, "user_id": user_id}
+    )
+
+    # Count custom events
+    custom_count = await db.contact_events.count_documents(
+        {"contact_id": contact_id}
+    )
+
+    # Get contact created_at for "time in system"
+    contact = await db.contacts.find_one(
+        {"_id": ObjectId(contact_id)},
+        {"_id": 0, "created_at": 1}
+    )
+    created_at = None
+    if contact and contact.get("created_at"):
+        created_at = contact["created_at"].isoformat() if hasattr(contact["created_at"], "isoformat") else str(contact["created_at"])
+
+    total_touchpoints = message_count + campaign_count + card_count + broadcast_count + custom_count
+
+    return {
+        "total_touchpoints": total_touchpoints,
+        "messages_sent": message_count,
+        "campaigns": campaign_count,
+        "cards_sent": card_count,
+        "broadcasts": broadcast_count,
+        "custom_events": custom_count,
+        "created_at": created_at,
+    }
+
+
+@router.post("/{user_id}/{contact_id}/events")
+async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
+    db = get_db()
+
+    event = {
+        "contact_id": contact_id,
+        "user_id": user_id,
+        "event_type": event_data.get("event_type", "custom"),
+        "icon": event_data.get("icon", "flag"),
+        "color": event_data.get("color", "#007AFF"),
+        "title": event_data.get("title", "Custom Event"),
+        "description": event_data.get("description", ""),
+        "category": event_data.get("category", "custom"),
+        "timestamp": datetime.now(timezone.utc),
+    }
+
+    await db.contact_events.insert_one(event)
+    event.pop("_id", None)
+    if hasattr(event["timestamp"], "isoformat"):
+        event["timestamp"] = event["timestamp"].isoformat()
+
+    return event
