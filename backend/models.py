@@ -179,6 +179,11 @@ class User(BaseModel):
     store_ids: List[str] = []  # All stores user is assigned to (supports multi-store)
     role: str = "user"  # super_admin, org_admin, store_manager, user
     is_active: bool = True  # User status
+    status: str = "active"  # active, deactivated, suspended
+    deactivated_at: Optional[datetime] = None  # When user was deactivated
+    deactivated_by: Optional[str] = None  # Who deactivated them
+    grace_period_end: Optional[datetime] = None  # 6 months after deactivation
+    account_type: str = "org"  # org (part of org) or individual (self-paying)
     
     # For independents - gamification visibility
     leaderboard_visible: bool = False
