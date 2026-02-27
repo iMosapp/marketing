@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
   channelAvatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
   },
   channelInfo: {
     flex: 1,
@@ -1172,13 +1172,13 @@ const styles = StyleSheet.create({
   memberAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     marginRight: 12,
   },
   memberAvatarPlaceholder: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: COLORS.cardHover,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1256,13 +1256,13 @@ const styles = StyleSheet.create({
   senderAvatar: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 7,
     marginRight: 6,
   },
   senderAvatarPlaceholder: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 7,
     backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
