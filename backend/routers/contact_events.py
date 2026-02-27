@@ -189,10 +189,14 @@ async def get_contact_stats(user_id: str, contact_id: str):
     )
 
     # Get contact created_at for "time in system"
-    contact = await db.contacts.find_one(
-        {"_id": ObjectId(contact_id)},
-        {"_id": 0, "created_at": 1}
-    )
+    contact = None
+    try:
+        contact = await db.contacts.find_one(
+            {"_id": ObjectId(contact_id)},
+            {"_id": 0, "created_at": 1}
+        )
+    except Exception:
+        pass  # Invalid ObjectId format
     created_at = None
     if contact and contact.get("created_at"):
         created_at = contact["created_at"].isoformat() if hasattr(contact["created_at"], "isoformat") else str(contact["created_at"])
