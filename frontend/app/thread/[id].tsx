@@ -814,12 +814,10 @@ export default function ThreadScreen() {
   const insertReviewLink = (platformId: string, url: string, platformName: string) => {
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     const reviewMessage = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`;
-    // Set message and auto-send so it logs + opens SMS app
+    // Pre-fill message in composer — user taps Send to trigger native SMS
     setShowReviewLinks(false);
     setShowAttachMenu(false);
-    setTimeout(() => {
-      handleSend(reviewMessage);
-    }, 200);
+    setMessage(reviewMessage);
   };
 
   // Digital Business Card functions
