@@ -783,7 +783,6 @@ export default function ThreadScreen() {
       }, 100);
       
       // Build message payload with template info if available
-      const convId = actualConversationId || conversationId;
       const messagePayload: any = {
         conversation_id: convId,
         content: contentToSend,
