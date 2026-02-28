@@ -60,13 +60,21 @@ def get_object(path: str):
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 
-def generate_thumbnail(image_bytes: bytes, size: tuple) -> bytes:
+def generate_thumbnail(image_bytes: bytes, size: tuple, preserve_alpha: bool = False) -> tuple:
+    """Generate a thumbnail. Returns (bytes, format_str, content_type, ext)."""
     img = Image.open(io.BytesIO(image_bytes))
-    img = img.convert("RGB")
-    img.thumbnail(size, Image.LANCZOS)
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=80, optimize=True)
-    return buf.getvalue()
+    if preserve_alpha and img.mode in ("RGBA", "LA", "PA"):
+        img = img.convert("RGBA")
+        img.thumbnail(size, Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", optimize=True)
+        return buf.getvalue(), "PNG", "image/png", "png"
+    else:
+        img = img.convert("RGB")
+        img.thumbnail(size, Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=80, optimize=True)
+        return buf.getvalue(), "JPEG", "image/jpeg", "jpg"
 
 
 def decode_base64_image(data_uri: str) -> tuple:
