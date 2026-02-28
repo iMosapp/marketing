@@ -1059,16 +1059,6 @@ export default function MoreScreen() {
             </View>
             <Text style={styles.quickSettingsLabel}>Edit Showroom</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickSettingsTile}
-            onPress={() => router.push('/admin/brand-assets' as any)}
-            data-testid="quick-brand-assets"
-          >
-            <View style={[styles.quickSettingsIcon, { backgroundColor: '#AF52DE20' }]}>
-              <Ionicons name="images" size={18} color="#AF52DE" />
-            </View>
-            <Text style={styles.quickSettingsLabel}>Brand Assets</Text>
-          </TouchableOpacity>
         </View>
 
         {/* All Collapsible Sections */}
