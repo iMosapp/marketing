@@ -1677,8 +1677,10 @@ export default function ThreadScreen() {
             onPress={async () => {
               if (!promptEmail.includes('@') || !user) return;
               try {
-                const convRes = await api.get(`/conversations/${actualConversationId || id}`);
-                const contactId = convRes.data?.contact_id;
+                // Use the correct conversation info endpoint
+                const convId = actualConversationId || id;
+                const convRes = await api.get(`/messages/conversation/${convId}/info`);
+                const contactId = convRes.data?.contact_id || convRes.data?._id;
                 if (contactId) {
                   await api.put(`/contacts/${user._id}/${contactId}`, { email: promptEmail.trim().toLowerCase() });
                 }
@@ -1689,6 +1691,7 @@ export default function ThreadScreen() {
                 AsyncStorage.setItem('message_mode', 'email');
               } catch (e) {
                 console.error('Failed to save email:', e);
+                Alert.alert('Error', 'Failed to save email address. Please try again.');
               }
             }}
             data-testid="email-prompt-save-btn"
