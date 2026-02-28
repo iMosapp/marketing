@@ -1495,6 +1495,43 @@ export default function InboxScreen() {
           userId={user?._id || ''}
         />
       )}
+
+      {/* Swipe Tag Picker Modal */}
+      <Modal visible={showSwipeTagPicker} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => { setShowSwipeTagPicker(false); setSwipeTagTarget(null); }}>
+              <Text style={[styles.modalCancel, { color: colors.accent }]}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+              Tag {swipeTagTarget?.contact?.name || 'Contact'}
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+            {swipeAvailableTags.length > 0 ? swipeAvailableTags.map((tag: any) => (
+              <TouchableOpacity
+                key={tag._id || tag.name}
+                style={styles.swipeTagOption}
+                onPress={() => handleApplySwipeTag(tag.name)}
+                activeOpacity={0.7}
+                data-testid={`swipe-tag-${tag.name}`}
+              >
+                <View style={[styles.swipeTagIcon, { backgroundColor: `${tag.color || '#8E8E93'}20` }]}>
+                  <Ionicons name={(tag.icon || 'pricetag') as any} size={18} color={tag.color || '#8E8E93'} />
+                </View>
+                <Text style={styles.swipeTagName}>{tag.name}</Text>
+                <Ionicons name="add-circle" size={22} color={tag.color || '#8E8E93'} />
+              </TouchableOpacity>
+            )) : (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No tags available</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Create tags in Settings to use this feature</Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
