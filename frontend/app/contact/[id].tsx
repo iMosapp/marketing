@@ -1461,7 +1461,7 @@ export default function ContactDetailScreen() {
               <Text style={s.modalCancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={s.modalTitle}>Select Tag</Text>
-            <TouchableOpacity onPress={() => router.push('/settings/tags')}>
+            <TouchableOpacity onPress={() => { setShowTagPicker(false); setTagSearch(''); router.push('/settings/tags' as any); }}>
               <Text style={s.modalAction}>Manage</Text>
             </TouchableOpacity>
           </View>
