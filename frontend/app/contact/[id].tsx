@@ -184,6 +184,12 @@ export default function ContactDetailScreen() {
   const recordingTimerRef = React.useRef<any>(null);
   const MAX_RECORDING_SECONDS = 120;
 
+  // AI Relationship Intel
+  const [intelData, setIntelData] = useState<any>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [intelGenerating, setIntelGenerating] = useState(false);
+  const [showIntel, setShowIntel] = useState(false);
+
   // Events & stats
   const [events, setEvents] = useState<ContactEvent[]>([]);
   const [stats, setStats] = useState<ContactStats>({
