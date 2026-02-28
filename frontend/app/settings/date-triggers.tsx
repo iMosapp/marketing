@@ -134,12 +134,15 @@ export default function DateTriggersScreen() {
     if (!current) return;
 
     const trigger = DATE_TRIGGERS.find(t => t.type === type);
-    const payload = {
+    const payload: any = {
       trigger_type: type,
       enabled: current.enabled ?? true,
       delivery_method: current.delivery_method || 'sms',
       message_template: current.message_template || trigger?.defaultMsg || '',
     };
+    if (type === 'birthday') {
+      payload.include_birthday_card = current.include_birthday_card ?? true;
+    }
 
     setSaving(true);
     try {
