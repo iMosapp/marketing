@@ -1103,19 +1103,51 @@ export default function ContactDetailScreen() {
                 <Text style={s.sectionHeaderCount}>{events.length} events</Text>
               </View>
 
-              {eventsLoading ? (
-                <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
-              ) : events.length === 0 ? (
-                <View style={s.emptyFeed}>
-                  <Ionicons name="time-outline" size={36} color="#2C2C2E" />
-                  <Text style={s.emptyFeedText}>No activity yet</Text>
-                  <Text style={s.emptyFeedSub}>Send a message or enroll in a campaign to get started</Text>
+              {/* Search bar */}
+              {events.length > 0 && (
+                <View style={s.feedSearchRow}>
+                  <Ionicons name="search" size={16} color="#636366" />
+                  <TextInput
+                    style={s.feedSearchInput}
+                    placeholder="Search activity..."
+                    placeholderTextColor="#636366"
+                    value={feedSearch}
+                    onChangeText={setFeedSearch}
+                    data-testid="feed-search-input"
+                  />
+                  {feedSearch.length > 0 && (
+                    <TouchableOpacity onPress={() => setFeedSearch('')}>
+                      <Ionicons name="close-circle" size={16} color="#636366" />
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ) : (
-                <View style={s.feedTimeline}>
-                  {(showAllEvents ? events : events.slice(0, INITIAL_EVENT_COUNT)).map((evt, i) => {
-                    const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
-                    const isExpanded = expandedEvents[i] === true;
+              )}
+
+              {(() => {
+                const query = feedSearch.toLowerCase().trim();
+                const filtered = query
+                  ? events.filter(e =>
+                      (e.title || '').toLowerCase().includes(query) ||
+                      (e.description || '').toLowerCase().includes(query) ||
+                      (e.event_type || '').toLowerCase().includes(query) ||
+                      (getEventTitle(e)).toLowerCase().includes(query)
+                    )
+                  : events;
+                const visible = showAllEvents ? filtered : filtered.slice(0, INITIAL_EVENT_COUNT);
+
+                return eventsLoading ? (
+                  <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
+                ) : filtered.length === 0 ? (
+                  <View style={s.emptyFeed}>
+                    <Ionicons name={query ? 'search-outline' : 'time-outline'} size={36} color="#2C2C2E" />
+                    <Text style={s.emptyFeedText}>{query ? 'No matching events' : 'No activity yet'}</Text>
+                    <Text style={s.emptyFeedSub}>{query ? `No results for "${feedSearch}"` : 'Send a message or enroll in a campaign to get started'}</Text>
+                  </View>
+                ) : (
+                  <View style={s.feedTimeline}>
+                    {visible.map((evt, i) => {
+                      const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
+                      const isExpanded = expandedEvents[i] === true;
                     return (
                       <TouchableOpacity
                         key={i}
