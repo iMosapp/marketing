@@ -128,10 +128,14 @@ export default function LeaderboardPage() {
             {level === 'org' && entry.members ? <Text style={s.entryRole}>{entry.members} members</Text> : null}
           </View>
 
-          {/* Score */}
+          {/* Score — shows category-specific score when filtered */}
           <View style={s.scoreCol}>
-            <Text style={s.scoreNum}>{scores.total ?? entry.sort_score ?? 0}</Text>
-            <Text style={s.scoreLabel}>TOTAL</Text>
+            <Text style={s.scoreNum}>
+              {category === 'total' ? (scores.total ?? entry.sort_score ?? 0) : (scores[category] ?? entry.sort_score ?? 0)}
+            </Text>
+            <Text style={s.scoreLabel}>
+              {category === 'total' ? 'TOTAL' : ALL_CATEGORIES.find(c => c.key === category)?.label?.toUpperCase() || 'TOTAL'}
+            </Text>
           </View>
 
           <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#636366" />
