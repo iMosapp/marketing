@@ -245,7 +245,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                     
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
                         "from": f"{sender_name} at {store_name} <{SENDER}>",
-                        "to": contact_email,
+                        "to": [contact_email],
                         "subject": f"Message from {sender_name} at {store_name}",
                         "html": email_html,
                     })
@@ -921,7 +921,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                     
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
                         "from": f"{sender_name} at {store_name} <{SENDER}>",
-                        "to": contact_email,
+                        "to": [contact_email],
                         "subject": f"Message from {sender_name} at {store_name}",
                         "html": email_html,
                     })
