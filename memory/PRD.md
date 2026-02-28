@@ -19,6 +19,9 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **FEATURE: Inbox Swipe Gestures (Web)** — Built `WebSwipeableItem` component using pointer events for web-compatible drag/swipe. Left swipe reveals Flag + Task actions; right swipe reveals Tag + Archive. Added `flagConversation` API, task creation from swipe, and a tag picker modal.
 - **ENHANCEMENT: Flag Indicator** — Flagged conversations now show an orange flag icon next to the contact name in the inbox list.
 - **BACKEND: Flag Support** — Added `flagged` to allowed fields in `update_conversation` endpoint.
+- **BUG FIX: Contact Photo Reverting** — Root cause: `update_contact` endpoint never called `_process_photo()` when saving, so `photo_thumbnail` stayed stale while `photo` got overwritten. Fix: the PUT update endpoint now detects base64 photo data, generates a 96x96 avatar thumbnail (~3-5KB), stores high-res in separate `contact_photos` collection, and removes raw photo from contacts to keep queries fast.
+- **ENHANCEMENT: EXIF Auto-Rotation** — Added `ImageOps.exif_transpose()` to `_process_photo()` so phone photos taken in portrait/landscape display correctly (not sideways). Works for all photo paths: contact update, dedicated upload, and congrats cards.
+- **NOTE: Congrats card photos preserved** — Full-resolution photos (1080px, quality 92) still stored in `contact_photos` collection for print-quality third-party use.
 
 ### Session Feb 28, 2026 (Fork 7)
 - **CRITICAL FIX: 5-Point Email Flow Audit** — Traced every single entry point that leads to the inbox thread and fixed all disconnects:
