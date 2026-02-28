@@ -63,12 +63,85 @@ async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
     await verify_admin_access(x_user_id)
     return [
         {"id": "operations", "name": "Operations Manual", "icon": "book", "color": "#00C7BE"},
+        {"id": "signed", "name": "Signed Documents", "icon": "checkmark-done-circle", "color": "#34C759"},
         {"id": "security", "name": "Cyber Security", "icon": "shield-checkmark", "color": "#FF3B30"},
         {"id": "company_policy", "name": "Company Policy", "icon": "business", "color": "#5856D6"},
         {"id": "legal", "name": "Legal", "icon": "document-text", "color": "#007AFF"},
         {"id": "training", "name": "Training", "icon": "school", "color": "#34C759"},
         {"id": "integrations", "name": "Integrations", "icon": "git-network", "color": "#FF9500"},
     ]
+
+
+@router.get("/signed-documents")
+async def get_signed_documents(
+    doc_type: Optional[str] = None,
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Get all signed/executed documents across all types: NDAs, Partner Agreements, Quotes"""
+    user = await verify_admin_access(x_user_id)
+    if user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    db = get_db()
+    results = []
+
+    # NDAs
+    if not doc_type or doc_type == "nda":
+        ndas = await db.nda_agreements.find({"status": "signed"}).sort("signed_at", -1).to_list(200)
+        for n in ndas:
+            results.append({
+                "id": str(n["_id"]),
+                "type": "nda",
+                "type_label": "NDA",
+                "title": f"NDA — {n.get('signed_recipient', {}).get('name') or n.get('recipient', {}).get('name', 'Unknown')}",
+                "counterparty": n.get("signed_recipient", {}).get("name") or n.get("recipient", {}).get("name", ""),
+                "counterparty_email": n.get("signed_recipient", {}).get("email") or n.get("recipient", {}).get("email", ""),
+                "counterparty_company": n.get("signed_recipient", {}).get("company", ""),
+                "signed_at": n.get("signed_at").isoformat() if n.get("signed_at") else None,
+                "created_at": n.get("created_at").isoformat() if n.get("created_at") else None,
+                "link": f"/admin/nda/{str(n['_id'])}",
+            })
+
+    # Partner Agreements
+    if not doc_type or doc_type == "partner_agreement":
+        agreements = await db.partner_agreements.find({"status": {"$in": ["signed", "paid"]}}).sort("signed_at", -1).to_list(200)
+        for a in agreements:
+            partner_name = a.get("signed_partner", {}).get("name") or a.get("partner_name", "Unknown")
+            results.append({
+                "id": str(a["_id"]),
+                "type": "partner_agreement",
+                "type_label": "Partner Agreement",
+                "title": f"Partner Agreement — {partner_name}",
+                "counterparty": partner_name,
+                "counterparty_email": a.get("signed_partner", {}).get("email") or a.get("partner_email", ""),
+                "counterparty_company": a.get("signed_partner", {}).get("company", ""),
+                "signed_at": a.get("signed_at").isoformat() if a.get("signed_at") else None,
+                "created_at": a.get("created_at").isoformat() if a.get("created_at") else None,
+                "link": f"/admin/partner-agreement/{str(a['_id'])}",
+            })
+
+    # Quotes (accepted)
+    if not doc_type or doc_type == "quote":
+        quotes = await db.subscription_quotes.find({"status": "accepted"}).sort("accepted_at", -1).to_list(200)
+        for q in quotes:
+            org_name = q.get("organization_name") or q.get("org_name", "Unknown")
+            results.append({
+                "id": str(q["_id"]),
+                "type": "quote",
+                "type_label": "Quote",
+                "title": f"Quote — {org_name}",
+                "counterparty": q.get("contact_name", org_name),
+                "counterparty_email": q.get("contact_email", ""),
+                "counterparty_company": org_name,
+                "signed_at": (q.get("accepted_at") or q.get("updated_at") or q.get("created_at", "")).isoformat() if isinstance(q.get("accepted_at") or q.get("updated_at") or q.get("created_at"), datetime) else q.get("accepted_at") or q.get("updated_at"),
+                "created_at": q.get("created_at").isoformat() if isinstance(q.get("created_at"), datetime) else q.get("created_at"),
+                "link": f"/admin/quote/{str(q['_id'])}",
+            })
+
+    # Sort all by signed_at descending
+    results.sort(key=lambda x: x.get("signed_at") or x.get("created_at") or "", reverse=True)
+
+    return results
 
 
 @router.get("/{doc_id}")
