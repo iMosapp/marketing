@@ -923,8 +923,21 @@ async def send_message_simple(user_id: str, message_data: dict):
     # Route based on channel
     if channel == 'email':
         # Send via Resend with branded template
-        contact = await db.contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
-        contact_email = _get_contact_email(contact)
+        logger.info(f"[EMAIL-FLOW] Starting email send for user={user_id}, conv={conversation_id}")
+        contact_id_for_email = conv.get('contact_id', '')
+        logger.info(f"[EMAIL-FLOW] Contact ID from conversation: {repr(contact_id_for_email)}")
+        
+        contact = None
+        contact_email = ''
+        try:
+            if contact_id_for_email:
+                contact = await db.contacts.find_one({"_id": ObjectId(contact_id_for_email)})
+            logger.info(f"[EMAIL-FLOW] Contact found: {contact is not None}, email field: {repr(contact.get('email') if contact else None)}, email_work: {repr(contact.get('email_work') if contact else None)}")
+        except Exception as e:
+            logger.error(f"[EMAIL-FLOW] Contact lookup failed: {e}")
+        
+        contact_email = _get_contact_email(contact) if contact else ''
+        logger.info(f"[EMAIL-FLOW] Cleaned contact_email: {repr(contact_email)}")
         
         if contact_email:
             try:
@@ -932,6 +945,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 from utils.email_template import get_brand_context, build_branded_email
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
                 SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+                logger.info(f"[EMAIL-FLOW] RESEND_API_KEY present: {bool(RESEND_KEY)}, SENDER: {SENDER}")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -943,28 +957,33 @@ async def send_message_simple(user_id: str, message_data: dict):
                     email_html = build_branded_email(content, brand, contact_name)
                     store_name = brand.get('store_name', 'iMOs')
                     
+                    from_addr = f"{sender_name} at {store_name} <{SENDER}>"
+                    subject = f"Message from {sender_name} at {store_name}"
+                    logger.info(f"[EMAIL-FLOW] Sending: from={from_addr}, to={contact_email}, subject={subject}")
+                    
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
-                        "from": f"{sender_name} at {store_name} <{SENDER}>",
+                        "from": from_addr,
                         "to": [contact_email],
-                        "subject": f"Message from {sender_name} at {store_name}",
+                        "subject": subject,
                         "html": email_html,
                     })
-                    resend_id = email_result.get('id') if isinstance(email_result, dict) else str(email_result)
+                    logger.info(f"[EMAIL-FLOW] Resend response: type={type(email_result)}, value={repr(email_result)}")
+                    resend_id = email_result.get('id') if isinstance(email_result, dict) else getattr(email_result, 'id', str(email_result))
                     message['status'] = 'sent'
                     message['resend_id'] = resend_id
-                    logger.info(f"[EMAIL] Sent to {contact_email} (resend_id={resend_id}): {content[:50]}...")
+                    logger.info(f"[EMAIL-FLOW] SUCCESS: resend_id={resend_id}, to={contact_email}")
                 else:
                     message['status'] = 'failed'
                     message['error'] = 'RESEND_API_KEY not configured'
-                    logger.error("[EMAIL] RESEND_API_KEY missing")
+                    logger.error("[EMAIL-FLOW] RESEND_API_KEY missing from environment")
             except Exception as e:
                 message['status'] = 'failed'
                 message['error'] = str(e)
-                logger.error(f"[EMAIL] Failed to {contact_email}: {e}")
+                logger.error(f"[EMAIL-FLOW] EXCEPTION: {type(e).__name__}: {e}", exc_info=True)
         else:
             message['status'] = 'failed'
-            message['error'] = 'No email address for contact'
-            logger.warning(f"[EMAIL] No email for contact in conv {conversation_id}")
+            message['error'] = f'No valid email for contact (raw email field: {repr(contact.get("email") if contact else "NO CONTACT")})'
+            logger.warning(f"[EMAIL-FLOW] No valid email. Contact exists: {contact is not None}. Raw email: {repr(contact.get('email') if contact else None)}")
         
         await db.messages.update_one(
             {"_id": ObjectId(message_id)},
@@ -972,17 +991,21 @@ async def send_message_simple(user_id: str, message_data: dict):
                       "resend_id": message.get('resend_id'), "error": message.get('error')}}
         )
         
-        # Log contact event
-        if message['status'] == 'sent' and conv.get('contact_id'):
+        # Log contact event for ALL email attempts (sent or failed)
+        if conv.get('contact_id'):
+            event_type = "email_sent" if message['status'] == 'sent' else "email_failed"
             await db.contact_events.insert_one({
                 "contact_id": str(conv['contact_id']),
                 "user_id": user_id,
-                "event_type": "email_sent",
+                "event_type": event_type,
                 "channel": "email",
                 "message_id": message_id,
                 "content_preview": content[:100],
+                "status": message['status'],
+                "error": message.get('error'),
                 "timestamp": datetime.utcnow(),
             })
+            logger.info(f"[EMAIL-FLOW] Logged contact event: {event_type}")
     
     elif channel == 'sms_personal':
         # Personal SMS — just log it, user sends from their own phone
