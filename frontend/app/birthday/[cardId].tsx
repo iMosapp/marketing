@@ -121,6 +121,16 @@ export default function BirthdayCardPage() {
     <SafeAreaView style={[styles.container, { backgroundColor: card.style.background_color }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
+        {/* Back Button */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          data-testid="birthday-card-back-btn"
+        >
+          <Ionicons name="chevron-back" size={22} color="#FFF" />
+          <Text style={styles.backBtnText}>Back</Text>
+        </TouchableOpacity>
+
         {/* Confetti top decoration */}
         <View style={styles.confettiRow}>
           {['#FF6B8A', '#FFD700', '#00CED1', '#FF8C00', '#9370DB', '#32CD32', '#FF6B8A', '#FFD700'].map((c, i) => (
