@@ -1203,6 +1203,104 @@ export default function MoreScreen() {
         </View>
       </WebModal>
 
+      {/* Showroom Share Modal */}
+      <WebModal visible={showShowroomShare} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowShowroomShare(false)}>
+        <View style={shareStyles.modal}>
+          <View style={shareStyles.header}>
+            <TouchableOpacity onPress={() => setShowShowroomShare(false)} data-testid="showroom-share-close">
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </TouchableOpacity>
+            <Text style={shareStyles.headerTitle}>Share My Showroom</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <View style={shareStyles.recipientSection}>
+            <Text style={shareStyles.recipientLabel}>SEND TO (OPTIONAL)</Text>
+            <TextInput style={shareStyles.recipientInput} placeholder="Recipient Name" placeholderTextColor="#6E6E73"
+              value={shareRecipientName} onChangeText={setShareRecipientName} data-testid="showroom-recipient-name" />
+            <TextInput style={shareStyles.recipientInput} placeholder="Phone" placeholderTextColor="#6E6E73"
+              value={shareRecipientPhone} onChangeText={setShareRecipientPhone} keyboardType="phone-pad" data-testid="showroom-recipient-phone" />
+            <TextInput style={shareStyles.recipientInput} placeholder="Email" placeholderTextColor="#6E6E73"
+              value={shareRecipientEmail} onChangeText={setShareRecipientEmail} keyboardType="email-address" autoCapitalize="none" data-testid="showroom-recipient-email" />
+          </View>
+
+          <View style={shareStyles.actions}>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleCopyShowroomLink} data-testid="showroom-copy-link">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#FF950020' }]}>
+                <Ionicons name={copiedLink ? 'checkmark' : 'copy-outline'} size={24} color={copiedLink ? '#34C759' : '#FF9500'} />
+              </View>
+              <Text style={shareStyles.actionLabel}>{copiedLink ? 'Copied!' : 'Copy Link'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleShowroomViaSMS} data-testid="showroom-sms-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Text</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleShowroomViaEmail} data-testid="showroom-email-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="mail-outline" size={24} color="#007AFF" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Email</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={() => { setShowShowroomShare(false); router.push(`/showcase/${user?._id}` as any); }} data-testid="showroom-preview-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#5856D620' }]}>
+                <Ionicons name="eye-outline" size={24} color="#5856D6" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Preview</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={shareStyles.manageLink} onPress={() => { setShowShowroomShare(false); router.push('/showroom-manage' as any); }} data-testid="showroom-manage-btn">
+            <Ionicons name="settings-outline" size={16} color="#8E8E93" />
+            <Text style={shareStyles.manageLinkText}>Manage Showroom Entries</Text>
+            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+          </TouchableOpacity>
+
+          <Text style={shareStyles.hint}>Share your Showroom link to showcase your happy customers and reviews.</Text>
+        </View>
+      </WebModal>
+
+      {/* Birthday Card Share Modal */}
+      <WebModal visible={showBirthdayShare} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowBirthdayShare(false)}>
+        <View style={shareStyles.modal}>
+          <View style={shareStyles.header}>
+            <TouchableOpacity onPress={() => setShowBirthdayShare(false)} data-testid="birthday-share-close">
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </TouchableOpacity>
+            <Text style={shareStyles.headerTitle}>Send Birthday Wishes</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <View style={shareStyles.recipientSection}>
+            <Text style={shareStyles.recipientLabel}>BIRTHDAY CUSTOMER</Text>
+            <TextInput style={shareStyles.recipientInput} placeholder="Customer Name" placeholderTextColor="#6E6E73"
+              value={shareRecipientName} onChangeText={setShareRecipientName} data-testid="birthday-recipient-name" />
+            <TextInput style={shareStyles.recipientInput} placeholder="Phone" placeholderTextColor="#6E6E73"
+              value={shareRecipientPhone} onChangeText={setShareRecipientPhone} keyboardType="phone-pad" data-testid="birthday-recipient-phone" />
+            <TextInput style={shareStyles.recipientInput} placeholder="Email" placeholderTextColor="#6E6E73"
+              value={shareRecipientEmail} onChangeText={setShareRecipientEmail} keyboardType="email-address" autoCapitalize="none" data-testid="birthday-recipient-email" />
+          </View>
+
+          <View style={shareStyles.actions}>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleBirthdayViaSMS} data-testid="birthday-sms-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Text</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={shareStyles.actionBtn} onPress={handleBirthdayViaEmail} data-testid="birthday-email-btn">
+              <View style={[shareStyles.actionIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="mail-outline" size={24} color="#007AFF" />
+              </View>
+              <Text style={shareStyles.actionLabel}>Email</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={shareStyles.hint}>Send a personalized birthday greeting to your customer via text or email.</Text>
+        </View>
+      </WebModal>
+
       {/* Contact Match Modal */}
       {matchModalVisible && matchInfo && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
