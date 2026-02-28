@@ -556,6 +556,52 @@ const { showToast } = useToast();
                 </View>
               )}
               
+              {/* Channel + AI per step */}
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                {/* Channel selector */}
+                {['sms', 'email'].map(ch => (
+                  <TouchableOpacity
+                    key={ch}
+                    style={[
+                      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#2C2C2E' },
+                      step.channel === ch && { backgroundColor: '#007AFF' },
+                    ]}
+                    onPress={() => updateSequenceStep(step.id, 'channel', ch)}
+                  >
+                    <Ionicons name={ch === 'sms' ? 'chatbubble' : 'mail'} size={14} color={step.channel === ch ? '#FFF' : '#8E8E93'} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.channel === ch ? '#FFF' : '#8E8E93' }}>
+                      {ch === 'sms' ? 'SMS' : 'Email'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {/* AI toggle per step */}
+                {campaign.aiEnabled && (
+                  <TouchableOpacity
+                    style={[
+                      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#2C2C2E', marginLeft: 'auto' },
+                      step.ai_generated && { backgroundColor: '#FFD60A20', borderWidth: 1, borderColor: '#FFD60A50' },
+                    ]}
+                    onPress={() => updateSequenceStep(step.id, 'ai_generated', !step.ai_generated)}
+                  >
+                    <Ionicons name="sparkles" size={14} color={step.ai_generated ? '#FFD60A' : '#8E8E93'} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.ai_generated ? '#FFD60A' : '#8E8E93' }}>
+                      {step.ai_generated ? 'AI On' : 'AI Off'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* AI context hint */}
+              {campaign.aiEnabled && step.ai_generated && (
+                <TextInput
+                  style={[styles.messageInput, { minHeight: 40, marginBottom: 6 }]}
+                  placeholder="AI context: e.g. 'Thank them for the purchase, mention their vehicle'"
+                  placeholderTextColor="#6E6E73"
+                  value={step.step_context}
+                  onChangeText={(text) => updateSequenceStep(step.id, 'step_context', text)}
+                />
+              )}
+
               <TextInput
                 style={styles.messageInput}
                 placeholder="Enter your message..."
