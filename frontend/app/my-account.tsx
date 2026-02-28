@@ -581,10 +581,19 @@ export default function MyAccountScreen() {
                     { key: 'week', label: 'This Week' },
                     { key: 'month', label: 'This Month' },
                     { key: 'year', label: 'This Year' },
+                    { key: 'all_time', label: 'All Time' },
+                    { key: 'custom', label: 'Custom' },
                   ].map(p => (
                     <TouchableOpacity
                       key={p.key}
-                      onPress={() => setActivityPeriod(p.key)}
+                      onPress={() => {
+                        setActivityPeriod(p.key);
+                        if (p.key === 'custom') {
+                          setShowDatePicker(true);
+                        } else {
+                          setShowDatePicker(false);
+                        }
+                      }}
                       style={{
                         paddingHorizontal: 14,
                         paddingVertical: 7,
@@ -602,6 +611,104 @@ export default function MyAccountScreen() {
                   ))}
                 </View>
               </ScrollView>
+
+              {/* Custom Date Range Picker */}
+              {showDatePicker && activityPeriod === 'custom' && (
+                <View style={{
+                  backgroundColor: '#1C1C1E',
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 14,
+                  gap: 10,
+                }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E8E93', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                    Custom Date Range
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 4 }}>Start Date</Text>
+                      {Platform.OS === 'web' ? (
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e: any) => setCustomStartDate(e.target.value)}
+                          data-testid="custom-start-date"
+                          style={{
+                            backgroundColor: '#2C2C2E',
+                            color: '#FFF',
+                            border: '1px solid #3A3A3C',
+                            borderRadius: 8,
+                            padding: '10px 12px',
+                            fontSize: 14,
+                            width: '100%',
+                            colorScheme: 'dark',
+                          }}
+                        />
+                      ) : (
+                        <TextInput
+                          style={{
+                            backgroundColor: '#2C2C2E',
+                            borderRadius: 8,
+                            padding: 10,
+                            color: '#FFF',
+                            fontSize: 14,
+                            borderWidth: 1,
+                            borderColor: '#3A3A3C',
+                          }}
+                          placeholder="YYYY-MM-DD"
+                          placeholderTextColor="#6E6E73"
+                          value={customStartDate}
+                          onChangeText={setCustomStartDate}
+                          data-testid="custom-start-date"
+                        />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 4 }}>End Date</Text>
+                      {Platform.OS === 'web' ? (
+                        <input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e: any) => setCustomEndDate(e.target.value)}
+                          data-testid="custom-end-date"
+                          style={{
+                            backgroundColor: '#2C2C2E',
+                            color: '#FFF',
+                            border: '1px solid #3A3A3C',
+                            borderRadius: 8,
+                            padding: '10px 12px',
+                            fontSize: 14,
+                            width: '100%',
+                            colorScheme: 'dark',
+                          }}
+                        />
+                      ) : (
+                        <TextInput
+                          style={{
+                            backgroundColor: '#2C2C2E',
+                            borderRadius: 8,
+                            padding: 10,
+                            color: '#FFF',
+                            fontSize: 14,
+                            borderWidth: 1,
+                            borderColor: '#3A3A3C',
+                          }}
+                          placeholder="YYYY-MM-DD"
+                          placeholderTextColor="#6E6E73"
+                          value={customEndDate}
+                          onChangeText={setCustomEndDate}
+                          data-testid="custom-end-date"
+                        />
+                      )}
+                    </View>
+                  </View>
+                  {customStartDate && customEndDate && (
+                    <Text style={{ fontSize: 12, color: '#C9A962', textAlign: 'center' }}>
+                      Showing data from {customStartDate} to {customEndDate}
+                    </Text>
+                  )}
+                </View>
+              )}
 
               {activityLoading ? (
                 <View style={{ padding: 24, alignItems: 'center' }}>
