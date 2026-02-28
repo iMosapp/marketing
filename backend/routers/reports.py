@@ -463,6 +463,295 @@ async def get_personal_report(
 
 
 
+# ===== Comprehensive Dashboard Endpoint =====
+
+@router.get("/dashboard/{user_id}")
+async def get_dashboard_data(
+    user_id: str,
+    days: int = Query(30, ge=1, le=365),
+):
+    """
+    Comprehensive analytics dashboard endpoint.
+    Returns KPIs, daily trends, per-user performance, store comparisons,
+    and channel breakdown — all in one call.
+    Role-aware: admins see org/store, users see personal.
+    """
+    db = get_db()
+    from datetime import timezone as tz
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    role = user.get("role", "user")
+    store_id = user.get("store_id")
+    org_id = user.get("organization_id") or user.get("org_id")
+
+    now = datetime.now(tz.utc)
+    start = now - timedelta(days=days)
+    end = now
+    prev_start = start - timedelta(days=days)
+    prev_end = start
+
+    # Determine scope
+    is_admin = role in ("super_admin", "org_admin")
+    is_manager = role in ("super_admin", "org_admin", "store_manager")
+
+    if is_admin:
+        user_filter = {}
+        scope = "organization"
+    elif role == "store_manager":
+        user_filter = {"store_id": store_id} if store_id else {"_id": ObjectId(user_id)}
+        scope = "store"
+    else:
+        user_filter = {"_id": ObjectId(user_id)}
+        scope = "personal"
+
+    # Get users in scope
+    scope_users = await db.users.find(
+        {**user_filter, "status": {"$ne": "deactivated"}},
+        {"_id": 1, "name": 1, "role": 1, "store_id": 1, "photo_thumbnail": 1}
+    ).to_list(500)
+    scope_user_ids = [str(u["_id"]) for u in scope_users]
+    user_name_map = {str(u["_id"]): u.get("name", "Unknown") for u in scope_users}
+
+    date_filter = {"timestamp": {"$gte": start, "$lte": end}}
+    prev_date_filter = {"timestamp": {"$gte": prev_start, "$lte": prev_end}}
+
+    # ===== 1. KPI TOTALS =====
+    # Current period events
+    evt_pipeline = [
+        {"$match": {"user_id": {"$in": scope_user_ids}, **date_filter}},
+        {"$group": {"_id": "$event_type", "count": {"$sum": 1}}},
+    ]
+    evt_results = await db.contact_events.aggregate(evt_pipeline).to_list(200)
+    evt_map = {d["_id"]: d["count"] for d in evt_results}
+
+    # Messages by channel
+    msg_pipeline = [
+        {"$match": {"user_id": {"$in": scope_user_ids}, "sender": "user", **date_filter}},
+        {"$group": {"_id": "$channel", "count": {"$sum": 1}}},
+    ]
+    msg_results = await db.messages.aggregate(msg_pipeline).to_list(50)
+    msg_map = {d["_id"]: d["count"] for d in msg_results}
+
+    # New contacts
+    new_contacts = await db.contacts.count_documents(
+        {"user_id": {"$in": scope_user_ids}, "created_at": {"$gte": start, "$lte": end}}
+    )
+    total_contacts = await db.contacts.count_documents(
+        {"user_id": {"$in": scope_user_ids}}
+    )
+
+    # Calls
+    call_count = await db.calls.count_documents(
+        {"user_id": {"$in": scope_user_ids}, "timestamp": {"$gte": start, "$lte": end}}
+    )
+
+    sms_sent = msg_map.get("sms", 0)
+    sms_personal = msg_map.get("sms_personal", 0)
+    emails_sent = msg_map.get("email", 0)
+    digital_cards = evt_map.get("digital_card_sent", 0)
+    review_invites = evt_map.get("review_request_sent", 0)
+    congrats_cards = evt_map.get("congrats_card_sent", 0)
+    vcards = evt_map.get("vcard_sent", 0)
+    voice_notes = evt_map.get("voice_note", 0)
+    link_clicks = evt_map.get("link_click", 0)
+
+    total_touchpoints = (
+        sms_sent + sms_personal + emails_sent + call_count +
+        digital_cards + review_invites + congrats_cards + vcards
+    )
+
+    # Previous period for trend
+    prev_evt_count = await db.contact_events.count_documents(
+        {"user_id": {"$in": scope_user_ids}, **prev_date_filter}
+    )
+    prev_msg_count = await db.messages.count_documents(
+        {"user_id": {"$in": scope_user_ids}, "sender": "user", **prev_date_filter}
+    )
+    prev_total = prev_evt_count + prev_msg_count
+    trend_pct = round(((total_touchpoints - prev_total) / max(prev_total, 1)) * 100) if prev_total > 0 else 0
+
+    kpis = {
+        "total_touchpoints": total_touchpoints,
+        "trend_pct": trend_pct,
+        "sms_sent": sms_sent + sms_personal,
+        "emails_sent": emails_sent,
+        "calls": call_count,
+        "digital_cards": digital_cards,
+        "review_invites": review_invites,
+        "congrats_cards": congrats_cards,
+        "vcards": vcards,
+        "voice_notes": voice_notes,
+        "link_clicks": link_clicks,
+        "new_contacts": new_contacts,
+        "total_contacts": total_contacts,
+    }
+
+    # ===== 2. DAILY TREND (for chart) =====
+    daily_pipeline = [
+        {"$match": {"user_id": {"$in": scope_user_ids}, "sender": "user", **date_filter}},
+        {"$group": {
+            "_id": {
+                "date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+                "channel": {"$ifNull": ["$channel", "sms"]}
+            },
+            "count": {"$sum": 1},
+        }},
+        {"$sort": {"_id.date": 1}},
+    ]
+    daily_results = await db.messages.aggregate(daily_pipeline).to_list(2000)
+
+    evt_daily_pipeline = [
+        {"$match": {"user_id": {"$in": scope_user_ids}, **date_filter,
+                     "event_type": {"$in": ["digital_card_sent", "review_request_sent",
+                                             "congrats_card_sent", "vcard_sent", "voice_note"]}}},
+        {"$group": {
+            "_id": {"date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}},
+            "count": {"$sum": 1},
+        }},
+    ]
+    evt_daily_results = await db.contact_events.aggregate(evt_daily_pipeline).to_list(1000)
+    evt_daily_map = {d["_id"]["date"]: d["count"] for d in evt_daily_results}
+
+    daily_data = {}
+    cur = start
+    while cur <= end:
+        ds = cur.strftime("%Y-%m-%d")
+        daily_data[ds] = {"date": ds, "sms": 0, "email": 0, "shares": 0, "total": 0}
+        cur += timedelta(days=1)
+
+    for r in daily_results:
+        d = r["_id"]["date"]
+        ch = r["_id"]["channel"]
+        if d in daily_data:
+            if ch in ("sms", "sms_personal"):
+                daily_data[d]["sms"] += r["count"]
+            elif ch == "email":
+                daily_data[d]["email"] += r["count"]
+            daily_data[d]["total"] += r["count"]
+
+    for d, cnt in evt_daily_map.items():
+        if d in daily_data:
+            daily_data[d]["shares"] += cnt
+            daily_data[d]["total"] += cnt
+
+    # ===== 3. PER-USER PERFORMANCE =====
+    per_user_stats = []
+    if is_manager and len(scope_user_ids) > 1:
+        user_evt_pipeline = [
+            {"$match": {"user_id": {"$in": scope_user_ids}, **date_filter}},
+            {"$group": {"_id": {"user_id": "$user_id", "event_type": "$event_type"}, "count": {"$sum": 1}}},
+        ]
+        user_evt_results = await db.contact_events.aggregate(user_evt_pipeline).to_list(2000)
+
+        user_msg_pipeline = [
+            {"$match": {"user_id": {"$in": scope_user_ids}, "sender": "user", **date_filter}},
+            {"$group": {"_id": {"user_id": "$user_id", "channel": {"$ifNull": ["$channel", "sms"]}}, "count": {"$sum": 1}}},
+        ]
+        user_msg_results = await db.messages.aggregate(user_msg_pipeline).to_list(1000)
+
+        user_contact_pipeline = [
+            {"$match": {"user_id": {"$in": scope_user_ids}, "created_at": {"$gte": start, "$lte": end}}},
+            {"$group": {"_id": "$user_id", "count": {"$sum": 1}}},
+        ]
+        user_contact_results = await db.contacts.aggregate(user_contact_pipeline).to_list(500)
+        contact_map = {d["_id"]: d["count"] for d in user_contact_results}
+
+        # Build per-user data
+        user_data = {}
+        for uid in scope_user_ids:
+            user_data[uid] = {
+                "user_id": uid,
+                "name": user_name_map.get(uid, "Unknown"),
+                "sms": 0, "email": 0, "cards": 0, "reviews": 0,
+                "congrats": 0, "contacts": contact_map.get(uid, 0),
+                "touchpoints": 0,
+            }
+
+        for r in user_msg_results:
+            uid = r["_id"]["user_id"]
+            ch = r["_id"]["channel"]
+            if uid in user_data:
+                if ch in ("sms", "sms_personal"):
+                    user_data[uid]["sms"] += r["count"]
+                elif ch == "email":
+                    user_data[uid]["email"] += r["count"]
+
+        for r in user_evt_results:
+            uid = r["_id"]["user_id"]
+            et = r["_id"]["event_type"]
+            if uid not in user_data:
+                continue
+            if et == "digital_card_sent":
+                user_data[uid]["cards"] += r["count"]
+            elif et == "review_request_sent":
+                user_data[uid]["reviews"] += r["count"]
+            elif et == "congrats_card_sent":
+                user_data[uid]["congrats"] += r["count"]
+
+        for uid, d in user_data.items():
+            d["touchpoints"] = d["sms"] + d["email"] + d["cards"] + d["reviews"] + d["congrats"]
+
+        per_user_stats = sorted(user_data.values(), key=lambda x: x["touchpoints"], reverse=True)
+
+    # ===== 4. STORE COMPARISON (admins only) =====
+    store_comparison = []
+    if is_admin:
+        stores = await db.stores.find({}, {"_id": 1, "name": 1}).to_list(100)
+        store_map = {str(s["_id"]): s.get("name", "Unknown") for s in stores}
+        store_user_map = {}
+        for su in scope_users:
+            sid = su.get("store_id")
+            if sid:
+                store_user_map.setdefault(sid, []).append(str(su["_id"]))
+
+        for sid, suids in store_user_map.items():
+            s_evt = await db.contact_events.count_documents(
+                {"user_id": {"$in": suids}, **date_filter}
+            )
+            s_msg = await db.messages.count_documents(
+                {"user_id": {"$in": suids}, "sender": "user", **date_filter}
+            )
+            s_contacts = await db.contacts.count_documents(
+                {"user_id": {"$in": suids}, "created_at": {"$gte": start, "$lte": end}}
+            )
+            store_comparison.append({
+                "store_id": sid,
+                "store_name": store_map.get(sid, "Unknown Store"),
+                "users": len(suids),
+                "touchpoints": s_evt + s_msg,
+                "new_contacts": s_contacts,
+                "avg_per_user": round((s_evt + s_msg) / max(len(suids), 1), 1),
+            })
+        store_comparison.sort(key=lambda x: x["touchpoints"], reverse=True)
+
+    # ===== 5. CHANNEL BREAKDOWN =====
+    channel_breakdown = {
+        "sms": sms_sent + sms_personal,
+        "email": emails_sent,
+        "calls": call_count,
+        "digital_cards": digital_cards,
+        "reviews": review_invites,
+        "congrats": congrats_cards,
+        "voice_notes": voice_notes,
+    }
+
+    return {
+        "scope": scope,
+        "period_days": days,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "kpis": kpis,
+        "daily_trend": list(daily_data.values()),
+        "per_user": per_user_stats,
+        "store_comparison": store_comparison,
+        "channel_breakdown": channel_breakdown,
+        "team_size": len(scope_user_ids),
+    }
+
+
 # ===== NEW: Activity Report with all tracked events =====
 
 class ReportPreferences(BaseModel):
