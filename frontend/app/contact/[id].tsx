@@ -118,6 +118,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   new_contact: 'Contact Created',
   link_click: 'Link Clicked',
   voice_note: 'Voice Note',
+  note_updated: 'Note Updated',
 };
 
 function getEventTitle(evt: ContactEvent): string {
