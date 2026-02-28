@@ -363,10 +363,13 @@ class CallCreate(BaseModel):
 # Campaign Models
 class CampaignSequenceStep(BaseModel):
     step: int
-    message_template: str
+    message_template: str = ""
     delay_days: int = 0
     delay_months: int = 0
     media_urls: List[str] = []  # Media attachments for this step
+    channel: str = "sms"  # sms, email, both
+    ai_generated: bool = False  # Whether to use AI to generate/personalize the message
+    step_context: str = ""  # Context hint for AI generation (e.g. "thank you for the purchase")
 
 class Campaign(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -382,6 +385,10 @@ class Campaign(BaseModel):
     schedule: Dict[str, Any] = {}  # frequency, timing, etc.
     active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # New fields for AI-powered campaigns
+    delivery_mode: str = "manual"  # "automated" (Twilio + AI replies) or "manual" (notify user to send)
+    ai_enabled: bool = False  # Master toggle for AI features on this campaign
+    ownership_level: str = "user"  # "user", "store", "org" — who owns this campaign
 
     class Config:
         populate_by_name = True
