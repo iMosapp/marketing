@@ -418,11 +418,10 @@ async def preview_ai_clone(user_id: str, data: dict):
     try:
         chat = LlmChat(
             api_key=emergent_key,
-            model="gpt-5.2",
-            session_id=f"clone-preview-{user_id}-{uuid.uuid4()}",
+            session_id=f"clone-preview-{user_id}",
             system_message=system_prompt,
-        )
-        response = await chat.send_message_async(UserMessage(content=test_message))
+        ).with_model("openai", "gpt-5.2")
+        response = await chat.send_message(UserMessage(text=test_message))
         return {"success": True, "response": response.strip()}
     except Exception as e:
         logger.error(f"AI preview failed: {e}")
