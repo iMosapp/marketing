@@ -191,31 +191,37 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Recent activity: {e}")
 
-    # Filter by category if specified
-    if category != "all":
-        notifications = [n for n in notifications if n["category"] == category]
+    # Count categories before filtering
+    category_counts = {}
+    for n in notifications:
+        cat = n.get("category", "other")
+        category_counts[cat] = category_counts.get(cat, 0) + 1
 
-    # Sort by priority, then by timestamp desc
-    notifications.sort(key=lambda n: (n["priority"], ""), reverse=False)
-    # Secondary sort: within same priority, newest first
-    notifications.sort(key=lambda n: n.get("timestamp", ""), reverse=True)
-    notifications.sort(key=lambda n: n["priority"])
+    # Filter by category if specified
+    filtered = notifications if category == "all" else [n for n in notifications if n["category"] == category]
+
+    # Sort: priority first, then newest within same priority
+    filtered.sort(key=lambda n: (n["priority"], n.get("timestamp", "")))
+    # Stable sort by timestamp desc within same priority
+    from itertools import groupby
+    sorted_notifs = []
+    filtered.sort(key=lambda n: n["priority"])
+    for _, group in groupby(filtered, key=lambda n: n["priority"]):
+        grp = list(group)
+        grp.sort(key=lambda n: n.get("timestamp", ""), reverse=True)
+        sorted_notifs.extend(grp)
 
     # Read status overlay from user's notification_reads
     try:
         reads = db.notification_reads.find_one({"user_id": user_id})
         read_ids = set((reads or {}).get("read_ids", []))
-        for n in notifications:
+        for n in sorted_notifs:
             if n["id"] in read_ids:
                 n["read"] = True
     except Exception:
         pass
 
-    unread_count = sum(1 for n in notifications if not n["read"])
-    category_counts = {}
-    for n in notifications:
-        cat = n.get("category", "other")
-        category_counts[cat] = category_counts.get(cat, 0) + 1
+    unread_count = sum(1 for n in sorted_notifs if not n["read"])
 
     return {
         "success": True,
