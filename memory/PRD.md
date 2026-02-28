@@ -14,31 +14,25 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ## What's Been Implemented
 
-### Session Feb 28, 2026 (Fork 9 - Current)
+### Session Feb 28, 2026 (Fork 10 - Current)
 
-#### Notifications Center + Analytics Dashboard
-- **Notifications Center** — Unified hub aggregating 7 data sources with category filtering, mark-as-read, full-page UI.
-- **Analytics Dashboard** — Multi-level (Org/Store/Personal) dashboard with KPI hero card, 10-metric grid, trend chart, channel breakdown, per-user table, store comparison, period selector.
+#### UI/UX Audit & Cleanup
+- **Favicon Replacement** — New logo across all sizes
+- **"Touches" Label Fix** — Shortened "Touchpoints" on contact detail page
+- **More Page Cleanup** — Removed duplicate "Train Jessi AI" from Profile & AI section, enlarged profile card (60x60 avatar, 19px name), maintained quick actions
+- **My Activity Enhancement** — Added "All Time" and "Custom" period pills with date range picker (native HTML date inputs on web)
+- **Company Docs Redesign** — Category headers now modern cards with icon, title, description, and count badge
+- **Inbox Swipe Fix** — WebSwipeableItem close overlay uses native `<div>` on web for reliable click capture, added document click listener for close-on-outside-click
+- **Inbox Archive Fix** — handleArchive now uses optimistic UI update + `await loadConversations()`
+- **Backend** — Added `all_time` period support to `/api/reports/user-activity/{user_id}`
 
-#### AI-Powered Campaign Outreach System
-- **AI Clone Prompt System** — Global default prompt (genericized from user's provided prompt) + per-user overrides. Dynamically hydrates from user profile data.
-- **AI Message Generation** — GPT-5.2 generates personalized messages using contact history + salesperson persona. SMS and email channels.
-- **AI Virtual Assistant Reply Handler** — Handles inbound replies with 1-3 min human-like delay.
-- **Dual Delivery Modes** — Automated (10AM-12PM sends, AI replies) vs Manual (notification -> review -> send via native app).
-- **Enhanced Campaign Model** — delivery_mode, ai_enabled, ownership_level (user/store/org), channel + ai_generated per step.
-- **Pending Sends System** — CRUD for manual campaign pending sends with review page.
-- **Enhanced Campaign Builder** — Delivery Mode cards, AI toggle, Campaign Level, channel selector per step.
+### Previous Sessions (Fork 9)
+- Notifications Center + Analytics Dashboard
+- AI-Powered Campaign Outreach System with dual delivery modes
+- Pre-Built Campaign Templates (5 templates)
+- Campaign Builder UI with template picker
 
-#### Pre-Built Campaign Templates (5 templates)
-1. **Sold - Complete Follow-Up** (5 steps, 1 year) — Day 3 check-in, Day 14 referral ask, Month 2 first service reminder, Month 7 touch base, Month 12 anniversary celebration. Trigger: `sold`
-2. **Be-Back / Working Customer** (4 steps, 1 month) — Day 1 thank you, Day 5 value add, Day 14 resource offer, Month 1 final check. Trigger: `be_back`
-3. **Service Reminder Series** (3 steps, 10 days) — Proactive service notification, 1-week follow-up, post-service experience check. Trigger: `service_due`
-4. **Referral Thank You & Nurture** (3 steps, 3 months) — Immediate thank you, 1-week referral update, 3-month relationship maintenance. Trigger: `referral`
-5. **VIP Customer Experience** (4 steps, 10 months) — VIP welcome, monthly insider updates, quarterly email insights, 6-month personal check-in. Trigger: `vip`
-- Template picker screen with metadata badges (steps, duration, trigger tag, AI) + "Build Custom" option.
-- All templates AI-enabled with step-level context hints for personalized generation.
-
-### Previous Sessions
+### Earlier Sessions
 - Contact activity feed, swipe gestures, voice notes, AI relationship intel, leaderboards, photo fixes
 - Public REST API, webhooks, soft-delete, lifecycle engine
 - Personal SMS mode, event tracking, activity reports, white-label emails
