@@ -255,6 +255,27 @@ export default function DateTriggersScreen() {
 
                   {isEnabled && (
                     <View style={styles.triggerBody}>
+                      {/* Birthday Card toggle - only for birthday trigger */}
+                      {trigger.type === 'birthday' && (
+                        <View style={styles.birthdayCardToggle}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                            <Ionicons name="gift" size={20} color="#FF6B8A" />
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>Include Birthday Card</Text>
+                              <Text style={[styles.fieldHint, { marginBottom: 0 }]}>
+                                Auto-generates a personalized birthday card with a shareable link appended to your message
+                              </Text>
+                            </View>
+                          </View>
+                          <Switch
+                            value={config.include_birthday_card ?? true}
+                            onValueChange={(val) => updateTriggerField(trigger.type, 'include_birthday_card', val)}
+                            trackColor={{ false: '#3A3A3C', true: '#FF6B8A66' }}
+                            thumbColor={(config.include_birthday_card ?? true) ? '#FF6B8A' : '#8E8E93'}
+                          />
+                        </View>
+                      )}
+
                       <Text style={styles.fieldLabel}>Delivery Method</Text>
                       <View style={styles.deliveryRow}>
                         {DELIVERY_OPTIONS.map((opt) => (
