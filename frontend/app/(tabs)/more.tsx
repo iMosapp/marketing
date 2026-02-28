@@ -242,6 +242,79 @@ export default function MoreScreen() {
     router.push(`/review/${slug}` as any);
     setShowShareModal(false);
   };
+
+  // ===== Showroom Share Helpers =====
+  const getShowroomUrl = () => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${baseUrl}/showcase/${user?._id}`;
+  };
+
+  const handleCopyShowroomLink = async () => {
+    const url = getShowroomUrl();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {}
+  };
+
+  const handleShowroomViaSMS = () => {
+    const url = getShowroomUrl();
+    const name = shareRecipientName.trim();
+    const phone = shareRecipientPhone.trim();
+    const greeting = name ? `Hi ${name}, ` : '';
+    const body = `${greeting}Check out our happy customers and reviews: ${url}`;
+    const smsUrl = Platform.OS === 'ios' ? `sms:${phone}&body=${encodeURIComponent(body)}` : `sms:${phone}?body=${encodeURIComponent(body)}`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a'); a.href = smsUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else { Linking.openURL(smsUrl); }
+    setShowShowroomShare(false);
+    setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
+  };
+
+  const handleShowroomViaEmail = () => {
+    const url = getShowroomUrl();
+    const subject = 'Check Out Our Happy Customers!';
+    const body = `Hi!\n\nTake a look at what our customers are saying:\n\n${url}\n\nThank you!`;
+    const email = shareRecipientEmail.trim();
+    const mailto = email ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a'); a.href = mailto; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else { Linking.openURL(mailto); }
+    setShowShowroomShare(false);
+    setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
+  };
+
+  // ===== Birthday Card Share Helpers =====
+  const handleBirthdayViaSMS = () => {
+    const phone = shareRecipientPhone.trim();
+    const name = shareRecipientName.trim();
+    const greeting = name ? `Happy Birthday ${name}! ` : 'Happy Birthday! ';
+    const body = `${greeting}We hope your day is amazing. Thank you for being a valued customer!`;
+    const smsUrl = Platform.OS === 'ios' ? `sms:${phone}&body=${encodeURIComponent(body)}` : `sms:${phone}?body=${encodeURIComponent(body)}`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a'); a.href = smsUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else { Linking.openURL(smsUrl); }
+    setShowBirthdayShare(false);
+    setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
+  };
+
+  const handleBirthdayViaEmail = () => {
+    const subject = 'Happy Birthday from Us!';
+    const name = shareRecipientName.trim();
+    const body = name
+      ? `Happy Birthday, ${name}!\n\nWe hope you have an amazing day! Thank you for being such a wonderful customer.\n\nWarm wishes!`
+      : `Happy Birthday!\n\nWe hope you have an amazing day! Thank you for being such a wonderful customer.\n\nWarm wishes!`;
+    const email = shareRecipientEmail.trim();
+    const mailto = email ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a'); a.href = mailto; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else { Linking.openURL(mailto); }
+    setShowBirthdayShare(false);
+    setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
+  };
   
   const handleExitImpersonation = async () => {
     setExitingImpersonation(true);
