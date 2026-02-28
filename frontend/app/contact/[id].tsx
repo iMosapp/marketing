@@ -857,6 +857,63 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
+          {/* ===== RELATIONSHIP INTEL ===== */}
+          {!isNewContact && (
+            <View style={s.section} data-testid="relationship-intel">
+              <TouchableOpacity
+                style={s.intelBtn}
+                onPress={() => {
+                  if (intelData && !showIntel) { setShowIntel(true); return; }
+                  if (!intelData) { generateIntel(); return; }
+                  setShowIntel(!showIntel);
+                }}
+                activeOpacity={0.7}
+                data-testid="intel-toggle-btn"
+              >
+                <View style={s.intelBtnLeft}>
+                  <View style={s.intelIcon}>
+                    <Ionicons name="sparkles" size={16} color="#C9A962" />
+                  </View>
+                  <View>
+                    <Text style={s.intelBtnTitle}>Relationship Intel</Text>
+                    {intelData?.generated_at && !showIntel && (
+                      <Text style={s.intelBtnSub}>
+                        Updated {formatEventTime(intelData.generated_at)}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color="#636366" />
+              </TouchableOpacity>
+
+              {showIntel && (
+                <View style={s.intelCard}>
+                  {intelGenerating ? (
+                    <View style={s.intelLoading}>
+                      <ActivityIndicator size="small" color="#C9A962" />
+                      <Text style={s.intelLoadingText}>Analyzing relationship history...</Text>
+                    </View>
+                  ) : intelData?.summary ? (
+                    <>
+                      <Text style={s.intelSummary}>{intelData.summary}</Text>
+                      <View style={s.intelMeta}>
+                        <Text style={s.intelMetaText}>
+                          Based on {intelData.data_points?.messages || 0} messages, {intelData.data_points?.events || 0} events, {intelData.data_points?.voice_notes || 0} voice notes
+                        </Text>
+                        <TouchableOpacity onPress={generateIntel} style={s.intelRefresh} data-testid="intel-refresh-btn">
+                          <Ionicons name="refresh" size={14} color="#007AFF" />
+                          <Text style={s.intelRefreshText}>Refresh</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={s.intelEmpty}>Tap to generate an AI briefing</Text>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
           {/* ===== TAGS (always visible) ===== */}
           {(contact.tags.length > 0 || isEditing) && (
             <View style={s.section}>
