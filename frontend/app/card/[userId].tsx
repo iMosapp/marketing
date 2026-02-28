@@ -812,7 +812,7 @@ export default function DigitalCardPage() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>{partnerBrand ? `${partnerBrand.name} \u2022 ${partnerBrand.powered_by_text}` : 'Powered by iMOs'}</Text>
+            <Text style={styles.footerText}>{partnerBrand ? `${partnerBrand.name} \u2022 ${partnerBrand.powered_by_text}` : "Powered by i'M On Social"}</Text>
           </View>
         </ScrollView>
       </SafeAreaView>

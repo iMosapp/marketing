@@ -491,7 +491,7 @@ export default function PublicLandingPage() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Powered by iMOs</Text>
+        <Text style={styles.footerText}>Powered by i'M On Social</Text>
       </View>
 
       {/* Review Modal */}
