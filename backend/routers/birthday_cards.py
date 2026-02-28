@@ -5,7 +5,7 @@ Auto-triggers from:
   1. Daily scheduler when contact's birthday field matches today
   2. When a "birthday" tag is applied to a contact
 """
-from fastapi import APIRouter, HTTPException, Form
+from fastapi import APIRouter, HTTPException, Form, UploadFile, File
 from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timezone
