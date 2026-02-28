@@ -520,8 +520,9 @@ export default function ThreadScreen() {
         setContactPhoto(response.data.contact_photo);
       }
       // Check if contact email exists in conversation info
-      if (response.data?.contact_email && !savedContactEmail) {
-        setSavedContactEmail(response.data.contact_email);
+      const loadedEmail = response.data?.contact_email || response.data?.contact_email_work;
+      if (loadedEmail && !savedContactEmail) {
+        setSavedContactEmail(loadedEmail);
       }
     } catch (error) {
       // Contact photo not available from conversation - try loading from contact directly
@@ -530,9 +531,10 @@ export default function ThreadScreen() {
         if (contactResponse.data?.photo_thumbnail || contactResponse.data?.photo_url || contactResponse.data?.photo) {
           setContactPhoto(contactResponse.data.photo_thumbnail || contactResponse.data.photo_url || contactResponse.data.photo);
         }
-        // Load email from contact record if available
-        if (contactResponse.data?.email && !savedContactEmail) {
-          setSavedContactEmail(contactResponse.data.email);
+        // Load email from contact record if available — check both fields
+        const contactEmail = contactResponse.data?.email || contactResponse.data?.email_work;
+        if (contactEmail && !savedContactEmail) {
+          setSavedContactEmail(contactEmail);
         }
       } catch (e) {
         console.log('Contact photo not available');
