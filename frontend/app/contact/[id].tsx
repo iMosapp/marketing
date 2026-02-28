@@ -1177,21 +1177,20 @@ export default function ContactDetailScreen() {
                     );
                   })}
                   {/* Show More / Show Less toggle */}
-                  {filtered.length > INITIAL_EVENT_COUNT && (
+                  {filteredEvents.length > INITIAL_EVENT_COUNT && (
                     <TouchableOpacity
                       style={s.showMoreBtn}
                       onPress={() => setShowAllEvents(!showAllEvents)}
                       data-testid="show-more-events-button"
                     >
                       <Text style={s.showMoreText}>
-                        {showAllEvents ? 'Show Less' : `Show All ${filtered.length} Events`}
+                        {showAllEvents ? 'Show Less' : `Show All ${filteredEvents.length} Events`}
                       </Text>
                       <Ionicons name={showAllEvents ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
                     </TouchableOpacity>
                   )}
                 </View>
-                );
-              })()}
+              )}
             </View>
           )}
 
