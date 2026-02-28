@@ -396,13 +396,13 @@ async def get_personal_report(
     
     sms_sent = await db.messages.count_documents({
         'sender_id': user_id,
-        'type': 'sms',
+        '$or': [{'type': 'sms'}, {'channel': 'sms'}, {'channel': 'sms_personal'}],
         'created_at': {'$gte': start_date, '$lte': end_date}
     })
     
     emails_sent = await db.messages.count_documents({
         'sender_id': user_id,
-        'type': 'email',
+        '$or': [{'type': 'email'}, {'channel': 'email'}],
         'created_at': {'$gte': start_date, '$lte': end_date}
     })
     
