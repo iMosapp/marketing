@@ -144,6 +144,11 @@ export const contactsAPI = {
     return response.data;
   },
 
+  getFullPhoto: async (userId: string, contactId: string) => {
+    const response = await api.get(`/contacts/${userId}/${contactId}/photo/full`);
+    return response.data;
+  },
+
   create: async (userId: string, data: any) => {
     const response = await api.post(`/contacts/${userId}`, data);
     return response.data;
