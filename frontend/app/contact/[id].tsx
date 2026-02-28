@@ -144,6 +144,7 @@ const EVENT_CATEGORY_ICON: Record<string, { icon: string; color: string }> = {
   broadcast: { icon: 'megaphone', color: '#FF2D55' },
   review: { icon: 'star', color: '#FFD60A' },
   voice_note: { icon: 'mic', color: '#34C759' },
+  note: { icon: 'document-text', color: '#FF9F0A' },
   custom: { icon: 'flag', color: '#8E8E93' },
 };
 
