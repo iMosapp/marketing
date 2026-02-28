@@ -926,6 +926,9 @@ export default function OnboardingScreen() {
             )
           )}
 
+          {/* Quick Win Badge */}
+          {renderQuickWinBadge()}
+
           {/* Description */}
           <Text style={styles.description}>{currentSlide.description}</Text>
 
@@ -933,7 +936,16 @@ export default function OnboardingScreen() {
           {renderDemoComponent()}
 
           {/* Benefits */}
-          {currentSlide.type !== 'ai_setup' && !currentSlide.demoComponent && renderBenefits()}
+          {currentSlide.type !== 'ai_setup' && !currentSlide.demoComponent && currentSlide.type !== 'checklist' && renderBenefits()}
+
+          {/* Benefits below demo for quick_win slides */}
+          {currentSlide.type === 'quick_win' && currentSlide.demoComponent && renderBenefits()}
+
+          {/* Try It Now button for quick win slides */}
+          {renderTryItButton()}
+
+          {/* Checklist */}
+          {renderChecklist()}
 
           {/* Interactive Content */}
           {renderInteractiveContent()}
