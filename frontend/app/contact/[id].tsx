@@ -1768,6 +1768,12 @@ const s = StyleSheet.create({
     backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
   },
   showMoreText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
+  feedSearchRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 4,
+    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10,
+    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  feedSearchInput: { flex: 1, fontSize: 14, color: '#F2F2F7', padding: 0 },
   // Photo viewer
   photoViewerOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center',
