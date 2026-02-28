@@ -1432,3 +1432,83 @@ async def twilio_inbound_webhook(request: Request):
             content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
             media_type="application/xml"
         )
+
+
+
+@router.get("/email-diagnostic/{user_id}/{contact_id}")
+async def email_diagnostic(user_id: str, contact_id: str):
+    """Diagnostic endpoint to trace the entire email sending pipeline step by step."""
+    db = get_db()
+    steps = []
+    
+    # Step 1: Check user exists
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        steps.append({"step": "user_lookup", "ok": user is not None, "name": user.get('name') if user else None})
+    except Exception as e:
+        steps.append({"step": "user_lookup", "ok": False, "error": str(e)})
+    
+    # Step 2: Check contact exists and has email
+    try:
+        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+        raw_email = contact.get('email') if contact else None
+        raw_email_work = contact.get('email_work') if contact else None
+        clean = _get_contact_email(contact) if contact else ''
+        steps.append({
+            "step": "contact_lookup", "ok": contact is not None,
+            "raw_email": repr(raw_email), "raw_email_work": repr(raw_email_work),
+            "cleaned_email": clean, "contact_name": contact.get('first_name') if contact else None
+        })
+    except Exception as e:
+        steps.append({"step": "contact_lookup", "ok": False, "error": str(e)})
+    
+    # Step 3: Check conversation exists
+    try:
+        conv = await db.conversations.find_one({"user_id": user_id, "contact_id": contact_id})
+        steps.append({"step": "conversation_lookup", "ok": conv is not None, "conv_id": str(conv['_id']) if conv else None})
+    except Exception as e:
+        steps.append({"step": "conversation_lookup", "ok": False, "error": str(e)})
+    
+    # Step 4: Check Resend config
+    RESEND_KEY = os.environ.get("RESEND_API_KEY")
+    SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+    steps.append({
+        "step": "resend_config",
+        "api_key_present": bool(RESEND_KEY),
+        "api_key_prefix": RESEND_KEY[:10] + "..." if RESEND_KEY else "MISSING",
+        "sender_email": SENDER
+    })
+    
+    # Step 5: Check brand context
+    try:
+        from utils.email_template import get_brand_context
+        brand = await get_brand_context(db, user_id)
+        steps.append({"step": "brand_context", "ok": True, "store_name": brand.get('store_name'), "has_logo": bool(brand.get('logo_url'))})
+    except Exception as e:
+        steps.append({"step": "brand_context", "ok": False, "error": str(e)})
+    
+    # Step 6: Actually send a test email (if all checks pass)
+    if clean and RESEND_KEY:
+        try:
+            import resend as resend_mod
+            resend_mod.api_key = RESEND_KEY
+            from utils.email_template import build_branded_email
+            test_html = build_branded_email("This is a diagnostic test email from iMOs.", brand, contact.get('first_name', ''))
+            sender_name = user.get('name', 'iMOs') if user else 'iMOs'
+            store_name = brand.get('store_name', 'iMOs')
+            
+            result = await asyncio.to_thread(resend_mod.Emails.send, {
+                "from": f"{sender_name} at {store_name} <{SENDER}>",
+                "to": [clean],
+                "subject": f"[DIAGNOSTIC] Test from {store_name}",
+                "html": test_html,
+            })
+            resend_id = result.get('id') if isinstance(result, dict) else getattr(result, 'id', str(result))
+            steps.append({"step": "send_test_email", "ok": True, "resend_id": resend_id, "to": clean})
+        except Exception as e:
+            steps.append({"step": "send_test_email", "ok": False, "error": str(e), "error_type": type(e).__name__})
+    else:
+        steps.append({"step": "send_test_email", "skipped": True, "reason": "No valid email" if not clean else "No RESEND_API_KEY"})
+    
+    all_ok = all(s.get('ok', s.get('skipped', False)) for s in steps)
+    return {"diagnostic": "PASS" if all_ok else "FAIL", "steps": steps}
