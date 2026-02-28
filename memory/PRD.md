@@ -22,6 +22,8 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **BUG FIX: Contact Photo Reverting** — Root cause: `update_contact` endpoint never called `_process_photo()` when saving, so `photo_thumbnail` stayed stale while `photo` got overwritten. Fix: the PUT update endpoint now detects base64 photo data, generates a 96x96 avatar thumbnail (~3-5KB), stores high-res in separate `contact_photos` collection, and removes raw photo from contacts to keep queries fast.
 - **ENHANCEMENT: EXIF Auto-Rotation** — Added `ImageOps.exif_transpose()` to `_process_photo()` so phone photos taken in portrait/landscape display correctly (not sideways). Works for all photo paths: contact update, dedicated upload, and congrats cards.
 - **NOTE: Congrats card photos preserved** — Full-resolution photos (1080px, quality 92) still stored in `contact_photos` collection for print-quality third-party use.
+- **FEATURE: Full Photo Viewer** — Tapping a contact's photo opens a full-screen modal loading the 1080px high-res version. Sharp on iPhone Pro Max.
+- **FEATURE: Voice Notes on Contacts** — Record voice memos (up to 2 min) on any contact. Audio stored in Emergent object storage, auto-transcribed via OpenAI Whisper. Multiple notes per contact, most recent prominent, older notes behind "Show All". Each note logged in activity feed with green mic icon. Transcripts are searchable text.
 
 ### Session Feb 28, 2026 (Fork 7)
 - **CRITICAL FIX: 5-Point Email Flow Audit** — Traced every single entry point that leads to the inbox thread and fixed all disconnects:
