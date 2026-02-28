@@ -111,7 +111,14 @@ export default function SearchScreen() {
         router.push(`/contact/${result.id}`);
         break;
       case 'conversation':
-        router.push(`/thread/${result.id}`);
+        router.push({
+          pathname: `/thread/${result.id}`,
+          params: {
+            contact_name: result.name || result.title || '',
+            contact_phone: result.phone || '',
+            contact_email: result.email || '',
+          }
+        });
         break;
       case 'campaign':
         router.push(`/campaigns/${result.id}`);
