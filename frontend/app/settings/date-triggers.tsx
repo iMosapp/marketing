@@ -102,12 +102,15 @@ export default function DateTriggersScreen() {
   const toggleTrigger = async (type: string, enabled: boolean) => {
     const current = configs[type] || {};
     const trigger = DATE_TRIGGERS.find(t => t.type === type);
-    const newConfig = {
+    const newConfig: any = {
       trigger_type: type,
       enabled,
       delivery_method: current.delivery_method || 'sms',
       message_template: current.message_template || trigger?.defaultMsg || '',
     };
+    if (type === 'birthday') {
+      newConfig.include_birthday_card = current.include_birthday_card ?? true;
+    }
 
     setConfigs(prev => ({ ...prev, [type]: { ...prev[type], ...newConfig } }));
 
