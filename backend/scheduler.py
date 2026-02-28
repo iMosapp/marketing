@@ -275,7 +275,12 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
 
 
 async def process_pending_campaign_steps():
-    """Periodic job: find active enrollments with due messages and advance them."""
+    """Periodic job: find active enrollments with due messages and advance them.
+    Handles two delivery modes:
+    - automated: Logs message + queues for Twilio delivery (or mock)
+    - manual: Creates a notification for the user to send manually
+    AI-enabled campaigns generate personalized content per step.
+    """
     from routers.database import get_db
     from routers.campaigns import calculate_next_send_date
 
@@ -286,7 +291,7 @@ async def process_pending_campaign_steps():
         logger.error("[Scheduler] DB not available")
         return
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     try:
         pending = await db.campaign_enrollments.find({
@@ -317,31 +322,123 @@ async def process_pending_campaign_steps():
 
                 step = sequences[current_step - 1]
                 message_content = step.get("message_template", "") or step.get("message", "")
+                channel = step.get("channel", "sms")
+                ai_generated = step.get("ai_generated", False) or campaign.get("ai_enabled", False)
+                delivery_mode = campaign.get("delivery_mode", "manual")
 
-                # Queue message for sending
-                contact_phone = enrollment.get("contact_phone", "")
                 contact_id = enrollment.get("contact_id", "")
                 user_id = enrollment.get("user_id", "")
+                contact_phone = enrollment.get("contact_phone", "")
 
-                if message_content and contact_phone:
+                # AI message generation if enabled
+                if ai_generated and contact_id and user_id:
+                    try:
+                        from routers.ai_campaigns import generate_campaign_message
+                        ai_data = {
+                            "step_context": step.get("step_context", f"Step {current_step} of {campaign.get('name', '')}"),
+                            "channel": channel,
+                            "campaign_name": campaign.get("name", ""),
+                            "template_hint": message_content,
+                        }
+                        ai_result = await generate_campaign_message(user_id, contact_id, ai_data)
+                        if ai_result.get("success"):
+                            message_content = ai_result["message"]
+                            logger.info(f"[Scheduler] AI generated message for step {current_step}")
+                    except Exception as e:
+                        logger.warning(f"[Scheduler] AI generation failed, using template: {e}")
+
+                if not message_content:
+                    message_content = f"Hi {enrollment.get('contact_name', 'there')}!"
+
+                # ===== DELIVERY =====
+                if delivery_mode == "automated":
+                    # AUTOMATED: Log the message and queue for sending
+                    conv_id = f"campaign_{user_id}_{contact_id}"
                     await db.messages.insert_one({
-                        "conversation_id": f"campaign_{user_id}_{contact_id}",
+                        "conversation_id": conv_id,
                         "sender": "user",
                         "content": message_content,
-                        "timestamp": datetime.now(timezone.utc),
+                        "timestamp": now,
                         "auto_sent": True,
                         "campaign_id": enrollment["campaign_id"],
                         "campaign_step": current_step,
+                        "channel": channel,
+                        "user_id": user_id,
+                        "contact_id": contact_id,
                     })
 
-                logger.info(
-                    f"[Scheduler] Sent step {current_step} to {enrollment.get('contact_name', 'unknown')}"
-                )
+                    # Log contact event
+                    event_type = "email_sent" if channel == "email" else "sms_sent"
+                    await db.contact_events.insert_one({
+                        "event_type": event_type,
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "org_id": enrollment.get("org_id", ""),
+                        "description": f"Campaign '{campaign.get('name', '')}' step {current_step}",
+                        "timestamp": now,
+                        "auto_campaign": True,
+                    })
+
+                    logger.info(
+                        f"[Scheduler] AUTO-SENT step {current_step} to {enrollment.get('contact_name', 'unknown')} via {channel}"
+                    )
+
+                else:
+                    # MANUAL: Create a notification for the user to send
+                    await db.campaign_pending_sends.insert_one({
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "contact_name": enrollment.get("contact_name", ""),
+                        "contact_phone": contact_phone,
+                        "contact_email": enrollment.get("contact_email", ""),
+                        "campaign_id": enrollment["campaign_id"],
+                        "campaign_name": campaign.get("name", ""),
+                        "step": current_step,
+                        "channel": channel,
+                        "message": message_content,
+                        "media_urls": step.get("media_urls", []),
+                        "status": "pending",
+                        "created_at": now,
+                    })
+
+                    # Also create a notification
+                    await db.notifications.insert_one({
+                        "user_id": user_id,
+                        "type": "campaign_send",
+                        "title": f"Campaign: {campaign.get('name', '')}",
+                        "message": f"Time to send step {current_step} to {enrollment.get('contact_name', '')}",
+                        "contact_name": enrollment.get("contact_name", ""),
+                        "contact_id": contact_id,
+                        "campaign_id": enrollment["campaign_id"],
+                        "pending_send_step": current_step,
+                        "read": False,
+                        "dismissed": False,
+                        "created_at": now,
+                    })
+
+                    logger.info(
+                        f"[Scheduler] MANUAL notification created for step {current_step} to {enrollment.get('contact_name', 'unknown')}"
+                    )
 
                 # Advance enrollment
                 if current_step < len(sequences):
                     next_step = sequences[current_step]
                     next_send = calculate_next_send_date(next_step)
+
+                    # Randomize send time between 10AM-12PM in user's timezone
+                    try:
+                        import pytz
+                        user_doc = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)})
+                        user_tz_str = (user_doc or {}).get("timezone", "America/Denver")
+                        user_tz = pytz.timezone(user_tz_str)
+                        local_send = next_send.astimezone(user_tz) if next_send.tzinfo else user_tz.localize(next_send)
+                        random_hour = random.randint(10, 11)
+                        random_minute = random.randint(0, 59)
+                        local_send = local_send.replace(hour=random_hour, minute=random_minute, second=0)
+                        next_send = local_send.astimezone(timezone.utc).replace(tzinfo=None)
+                    except Exception:
+                        pass
+
                     await db.campaign_enrollments.update_one(
                         {"_id": enrollment["_id"]},
                         {
@@ -355,6 +452,8 @@ async def process_pending_campaign_steps():
                                     "step": current_step,
                                     "sent_at": now,
                                     "content": message_content[:100],
+                                    "channel": channel,
+                                    "delivery_mode": delivery_mode,
                                 }
                             },
                         },
@@ -374,6 +473,8 @@ async def process_pending_campaign_steps():
                                     "step": current_step,
                                     "sent_at": now,
                                     "content": message_content[:100],
+                                    "channel": channel,
+                                    "delivery_mode": delivery_mode,
                                 }
                             },
                         },
