@@ -1135,31 +1135,19 @@ export default function ContactDetailScreen() {
                 </View>
               )}
 
-              {(() => {
-                const query = feedSearch.toLowerCase().trim();
-                const filtered = query
-                  ? events.filter(e =>
-                      (e.title || '').toLowerCase().includes(query) ||
-                      (e.description || '').toLowerCase().includes(query) ||
-                      (e.event_type || '').toLowerCase().includes(query) ||
-                      (getEventTitle(e)).toLowerCase().includes(query)
-                    )
-                  : events;
-                const visible = showAllEvents ? filtered : filtered.slice(0, INITIAL_EVENT_COUNT);
-
-                if (eventsLoading) return <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />;
-                if (filtered.length === 0) return (
-                  <View style={s.emptyFeed}>
-                    <Ionicons name={query ? 'search-outline' : 'time-outline'} size={36} color="#2C2C2E" />
-                    <Text style={s.emptyFeedText}>{query ? 'No matching events' : 'No activity yet'}</Text>
-                    <Text style={s.emptyFeedSub}>{query ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
-                  </View>
-                );
-                return (
-                  <View style={s.feedTimeline}>
-                    {visible.map((evt, i) => {
-                      const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
-                      const isExpanded = expandedEvents[i] === true;
+              {eventsLoading ? (
+                <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
+              ) : filteredEvents.length === 0 ? (
+                <View style={s.emptyFeed}>
+                  <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color="#2C2C2E" />
+                  <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : 'No activity yet'}</Text>
+                  <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
+                </View>
+              ) : (
+                <View style={s.feedTimeline}>
+                  {visibleEvents.map((evt, i) => {
+                    const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
+                    const isExpanded = expandedEvents[i] === true;
                     return (
                       <TouchableOpacity
                         key={i}
