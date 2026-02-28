@@ -133,6 +133,9 @@ const { showToast } = useToast();
         delayDays: 0, 
         delayMonths: lastStep.delayMonths + 1,
         media_urls: [],
+        channel: lastStep.channel || 'sms',
+        ai_generated: campaign.aiEnabled,
+        step_context: '',
       },
     ]);
   };
