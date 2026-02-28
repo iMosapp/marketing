@@ -227,12 +227,14 @@ class TestContactEventsForEmailFailure:
         
         # If events endpoint exists
         if events_response.status_code == 200:
-            events = events_response.json()
+            response_data = events_response.json()
+            # Response is wrapped in {'events': [...], 'total': N}
+            events = response_data.get("events", response_data) if isinstance(response_data, dict) else response_data
             
             # Look for recent email_failed event
             email_failed_events = [
                 e for e in events 
-                if e.get("event_type") == "email_failed" and e.get("channel") == "email"
+                if isinstance(e, dict) and e.get("event_type") == "email_failed" and e.get("channel") == "email"
             ]
             
             assert len(email_failed_events) > 0, f"Should have at least one email_failed event. Events: {events[:5]}"
@@ -281,12 +283,14 @@ class TestContactEventsForEmailFailure:
         )
         
         if events_response.status_code == 200:
-            events = events_response.json()
+            response_data = events_response.json()
+            # Response is wrapped in {'events': [...], 'total': N}
+            events = response_data.get("events", response_data) if isinstance(response_data, dict) else response_data
             
             # Look for recent email_sent event
             email_sent_events = [
                 e for e in events 
-                if e.get("event_type") == "email_sent" and e.get("channel") == "email"
+                if isinstance(e, dict) and e.get("event_type") == "email_sent" and e.get("channel") == "email"
             ]
             
             assert len(email_sent_events) > 0, f"Should have at least one email_sent event. Events: {events[:5]}"
