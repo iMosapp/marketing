@@ -139,6 +139,7 @@ export default function TasksScreen() {
             params: {
               contact_name: contact.name,
               contact_phone: contact.phone || '',
+              contact_email: contact.email || contact.email_work || '',
               task_id: task._id || task.id, // Pass task ID to mark complete after sending
             }
           });
