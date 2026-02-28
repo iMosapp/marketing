@@ -301,7 +301,7 @@ Customer context:
 
 Write ONLY the message text. No quotes, no explanation. Make it sound like it's coming from me personally."""
 
-    emergent_key = os.environ.get("EMERGENT_MODEL_API_KEY", "")
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not emergent_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -372,7 +372,7 @@ Customer just said: "{customer_message}"
 
 Reply naturally and briefly as me. Just the reply text, nothing else."""
 
-    emergent_key = os.environ.get("EMERGENT_MODEL_API_KEY", "")
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not emergent_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -413,7 +413,7 @@ async def preview_ai_clone(user_id: str, data: dict):
     test_message = data.get("message", "Tell me about yourself")
 
     system_prompt = await build_clone_system_prompt(user_id)
-    emergent_key = os.environ.get("EMERGENT_MODEL_API_KEY", "")
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not emergent_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
