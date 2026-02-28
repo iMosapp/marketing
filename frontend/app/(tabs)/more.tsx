@@ -1041,7 +1041,7 @@ export default function MoreScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickSettingsBtn}
-            onPress={() => { setShowBirthdayShare(true); setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail(''); }}
+            onPress={() => router.push('/settings/create-birthday-card' as any)}
             data-testid="quick-birthday-card"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF2D5520' }]}>
