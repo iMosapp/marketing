@@ -565,7 +565,7 @@ export default function InboxScreen() {
       } else {
         await messagesAPI.markAsRead(conversationId);
       }
-      loadConversations();
+      await loadConversations();
     } catch (error) {
       console.error('Error toggling read status:', error);
       Alert.alert('Error', 'Failed to update conversation');
