@@ -858,7 +858,7 @@ export default function ContactDetailScreen() {
             <View style={s.statsRow} data-testid="contact-stats-row">
               <View style={s.statItem}>
                 <Text style={s.statValue}>{stats.total_touchpoints}</Text>
-                <Text style={s.statLabel}>Touchpoints</Text>
+                <Text style={s.statLabel}>Touches</Text>
               </View>
               <View style={s.statDivider} />
               <View style={s.statItem}>
