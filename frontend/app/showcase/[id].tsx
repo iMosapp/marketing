@@ -285,16 +285,7 @@ export default function ShowcasePage() {
           {/* Leave a Review CTA */}
           <TouchableOpacity
             style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
-            onPress={() => {
-              const reviewUrl = IS_WEB
-                ? `${window.location.origin}/p/${id}`
-                : `https://app.imosapp.com/p/${id}`;
-              if (IS_WEB) {
-                window.open(reviewUrl, '_blank');
-              } else {
-                Linking.openURL(reviewUrl);
-              }
-            }}
+            onPress={() => router.push(`/p/${id}`)}
             data-testid="leave-review-btn"
           >
             <Ionicons name="star" size={20} color="#FFD60A" />
@@ -308,16 +299,7 @@ export default function ShowcasePage() {
           {/* View Digital Business Card */}
           <TouchableOpacity
             style={styles.cardLink}
-            onPress={() => {
-              const cardUrl = IS_WEB
-                ? `${window.location.origin}/p/${id}`
-                : `https://app.imosapp.com/p/${id}`;
-              if (IS_WEB) {
-                window.open(cardUrl, '_blank');
-              } else {
-                Linking.openURL(cardUrl);
-              }
-            }}
+            onPress={() => router.push(`/p/${id}`)}
             data-testid="view-business-card-btn"
           >
             <Ionicons name="card-outline" size={18} color={accent} />
