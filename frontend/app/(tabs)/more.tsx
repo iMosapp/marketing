@@ -951,6 +951,40 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Quick Actions Row 2 */}
+        <View style={styles.quickSettingsRow}>
+          <TouchableOpacity
+            style={styles.quickSettingsBtn}
+            onPress={() => router.push(`/showcase/${user?._id}` as any)}
+            data-testid="quick-my-showroom"
+          >
+            <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF950020' }]}>
+              <Ionicons name="images" size={18} color="#FF9500" />
+            </View>
+            <Text style={styles.quickSettingsLabel}>My Showroom</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickSettingsBtn}
+            onPress={() => router.push('/settings/create-birthday' as any)}
+            data-testid="quick-birthday-card"
+          >
+            <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF2D5520' }]}>
+              <Ionicons name="balloon" size={18} color="#FF2D55" />
+            </View>
+            <Text style={styles.quickSettingsLabel}>Birthday Card</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickSettingsBtn}
+            onPress={() => router.push(`/showroom-manage` as any)}
+            data-testid="quick-manage-showroom"
+          >
+            <View style={[styles.quickSettingsIcon, { backgroundColor: '#34C75920' }]}>
+              <Ionicons name="settings" size={18} color="#34C759" />
+            </View>
+            <Text style={styles.quickSettingsLabel}>Edit Showroom</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
         
