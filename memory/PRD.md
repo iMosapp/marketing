@@ -57,8 +57,13 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - GET /api/showcase/photo/{card_id} (serves card photo as image)
 - GET /api/showcase/user-photo/{user_id} (serves user photo)
 - GET /api/showcase/store-logo/{store_id} (serves store logo)
-- POST /api/birthday/create
+- POST /api/birthday/create (auto from contact_id)
+- POST /api/birthday/create-manual (photo upload, mirrors congrats flow)
 - GET /api/birthday/card/{card_id}
+- GET /api/birthday/card/{card_id}/image (downloadable PNG)
+
+## Completed (2026-02-28 - Session 2)
+- **Birthday Card Creation Flow Cloned from Congrats Card**: Created `/settings/create-birthday-card.tsx` mirroring the congrats card flow (photo upload → name/phone/email → custom message → create → share options). Added `POST /api/birthday/create-manual` backend endpoint. Updated More page tile to navigate to the new creation page.
 
 ## P1 Tasks (Upcoming)
 - Gamification & Leaderboards
