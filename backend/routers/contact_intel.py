@@ -192,6 +192,7 @@ RULES:
 
         chat = LlmChat(
             api_key=api_key,
+            session_id=f"intel_{contact_id}_{user_id}",
             system_message=system_prompt
         ).with_model("openai", "gpt-5.2")
         
