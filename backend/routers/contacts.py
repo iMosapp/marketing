@@ -493,3 +493,63 @@ async def _process_photo(photo_data: str) -> tuple:
     highres_b64 = prefix + base64.b64encode(highres_buffer.getvalue()).decode()
     
     return thumb_b64, highres_b64
+
+
+@router.get("/{user_id}/{contact_id}/photos/all")
+async def get_all_contact_photos(user_id: str, contact_id: str):
+    """Get all photos associated with a contact: profile, congrats cards, birthday cards."""
+    db = get_db()
+    photos = []
+
+    # 1. Profile photo
+    try:
+        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 1, "first_name": 1, "phone": 1})
+    except Exception:
+        contact = None
+
+    if contact and contact.get("photo"):
+        photos.append({
+            "type": "profile",
+            "label": "Profile Photo",
+            "url": contact["photo"],  # Already a data URI or URL
+        })
+
+    # 2. Congrats card photos (match by contact_id or customer_phone)
+    congrats_filter = {"$or": []}
+    if contact_id:
+        congrats_filter["$or"].append({"contact_id": contact_id})
+    if contact and contact.get("phone"):
+        phone = contact["phone"].replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+        if len(phone) > 6:
+            congrats_filter["$or"].append({"customer_phone": {"$regex": phone[-10:]}})
+
+    if congrats_filter["$or"]:
+        congrats = await db.congrats_cards.find(
+            congrats_filter,
+            {"card_id": 1, "customer_name": 1, "created_at": 1, "_id": 0}
+        ).sort("created_at", -1).to_list(50)
+        for c in congrats:
+            photos.append({
+                "type": "congrats",
+                "label": f"Congrats - {c.get('customer_name', '')}",
+                "card_id": c.get("card_id"),
+                "url": f"/api/showcase/photo/{c.get('card_id')}",
+                "date": c["created_at"].isoformat() if c.get("created_at") else None,
+            })
+
+    # 3. Birthday card photos
+    bday_cards = await db.birthday_cards.find(
+        {"contact_id": contact_id},
+        {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1, "_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    for bc in bday_cards:
+        if bc.get("customer_photo"):
+            photos.append({
+                "type": "birthday",
+                "label": f"Birthday - {bc.get('customer_name', '')}",
+                "card_id": bc.get("card_id"),
+                "url": bc["customer_photo"] if bc["customer_photo"].startswith("http") else f"/api/birthday/photo/{bc.get('card_id')}",
+                "date": bc["created_at"].isoformat() if bc.get("created_at") else None,
+            })
+
+    return {"photos": photos, "total": len(photos)}
