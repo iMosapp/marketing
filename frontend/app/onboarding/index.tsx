@@ -547,6 +547,13 @@ export default function OnboardingScreen() {
       case 'voice_to_text': return <VoiceToTextDemo />;
       case 'campaigns': return <CampaignsDemo />;
       case 'analytics': return <AnalyticsDemo />;
+      case 'DigitalCardDemo': return <DigitalCardDemo />;
+      case 'CongratsCardDemo': return <CongratsCardDemo />;
+      case 'BirthdayCardDemo': return <BirthdayCardDemo />;
+      case 'ReviewPageDemo': return <ReviewPageDemo />;
+      case 'ShowroomDemo': return <ShowroomDemo />;
+      case 'QuickActionsDemo': return <QuickActionsDemo />;
+      case 'CampaignsDemo': return <CampaignsDemo />;
       default: return null;
     }
   };
