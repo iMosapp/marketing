@@ -406,6 +406,9 @@ class CampaignCreate(BaseModel):
     send_time: str = "10:00"
     schedule: Dict[str, Any] = {}
     active: bool = True
+    delivery_mode: str = "manual"
+    ai_enabled: bool = False
+    ownership_level: str = "user"
 
 # Campaign Enrollment - tracks contacts enrolled in campaigns
 class CampaignEnrollment(BaseModel):
