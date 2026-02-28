@@ -92,6 +92,7 @@ async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "ge
     """
     Upload an image (base64 string or bytes) to object storage.
     Returns dict with original_url, thumbnail_url, avatar_url storage paths.
+    Preserves PNG transparency when detected.
     """
     # Handle base64 data URIs
     if isinstance(image_data, str):
@@ -102,26 +103,48 @@ async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "ge
             return None
     elif isinstance(image_data, bytes):
         image_bytes = image_data
-        content_type = "image/jpeg"
+        # Detect actual content type from image bytes
+        try:
+            img = Image.open(io.BytesIO(image_bytes))
+            if img.format == "PNG":
+                content_type = "image/png"
+            elif img.format == "GIF":
+                content_type = "image/gif"
+            elif img.format == "WEBP":
+                content_type = "image/webp"
+            else:
+                content_type = "image/jpeg"
+        except Exception:
+            content_type = "image/jpeg"
     else:
         return None
 
+    # Check if image has transparency (alpha channel)
+    has_alpha = False
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        has_alpha = img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info)
+    except Exception:
+        pass
+
     file_id = str(uuid.uuid4())
-    ext = "jpg" if "jpeg" in content_type else content_type.split("/")[-1]
+    ext = "png" if has_alpha else ("jpg" if "jpeg" in content_type else content_type.split("/")[-1])
+    if has_alpha:
+        content_type = "image/png"
 
     # Upload original
     original_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}.{ext}"
     put_object(original_path, image_bytes, content_type)
 
-    # Generate and upload thumbnail
-    thumb_bytes = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
-    thumb_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}_thumb.jpg"
-    put_object(thumb_path, thumb_bytes, "image/jpeg")
+    # Generate and upload thumbnail (preserve alpha if present)
+    thumb_data, _, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE, preserve_alpha=has_alpha)
+    thumb_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}_thumb.{thumb_ext}"
+    put_object(thumb_path, thumb_data, thumb_ct)
 
-    # Generate and upload avatar
-    avatar_bytes = generate_thumbnail(image_bytes, AVATAR_SIZE)
-    avatar_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}_avatar.jpg"
-    put_object(avatar_path, avatar_bytes, "image/jpeg")
+    # Generate and upload avatar (preserve alpha if present)
+    avatar_data, _, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE, preserve_alpha=has_alpha)
+    avatar_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}_avatar.{avatar_ext}"
+    put_object(avatar_path, avatar_data, avatar_ct)
 
     return {
         "original_path": original_path,
