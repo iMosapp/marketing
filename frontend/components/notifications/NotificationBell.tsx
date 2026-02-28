@@ -72,6 +72,7 @@ function getCategoryIcon(cat: string): string {
     case 'tasks': return 'checkbox';
     case 'messages': return 'chatbubble';
     case 'flags': return 'flag';
+    case 'campaigns': return 'megaphone';
     case 'activity': return 'pulse';
     default: return 'apps';
   }
