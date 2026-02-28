@@ -182,21 +182,27 @@ export default function DocsHubScreen() {
 
   const renderCategoryHeader = (category: string) => {
     const color = CATEGORY_COLORS[category] || '#8E8E93';
+    const count = groupedDocs[category]?.length || 0;
     return (
-      <View style={styles.categoryHeader}>
-        <View style={[styles.categoryIcon, { backgroundColor: color + '20' }]}>
+      <View style={styles.categoryCard} data-testid={`category-header-${category}`}>
+        <View style={[styles.categoryCardIcon, { backgroundColor: color + '15' }]}>
           <Ionicons
             name={(CATEGORY_ICONS[category] || 'document') as any}
-            size={16}
+            size={22}
             color={color}
           />
         </View>
-        <Text style={styles.categoryTitle}>
-          {CATEGORY_LABELS[category] || category}
-        </Text>
-        <Text style={styles.categoryCount}>
-          {groupedDocs[category]?.length || 0}
-        </Text>
+        <View style={styles.categoryCardContent}>
+          <Text style={styles.categoryCardTitle}>
+            {CATEGORY_LABELS[category] || category}
+          </Text>
+          <Text style={styles.categoryCardDescription}>
+            {CATEGORY_DESCRIPTIONS[category] || `${count} document${count !== 1 ? 's' : ''}`}
+          </Text>
+        </View>
+        <View style={[styles.categoryCardBadge, { backgroundColor: color + '20' }]}>
+          <Text style={[styles.categoryCardBadgeText, { color }]}>{count}</Text>
+        </View>
       </View>
     );
   };
