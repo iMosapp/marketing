@@ -104,7 +104,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
                 "id": str(contact['_id']),
                 "name": f"{contact['first_name']} {contact.get('last_name', '')}".strip(),
                 "phone": contact['phone'],
-                "email": contact.get('email') or contact.get('email_work') or '',
+                "email": _get_contact_email(contact),
                 "photo": contact.get('photo_thumbnail') or contact.get('photo_url'),
                 "photo_thumbnail": contact.get('photo_thumbnail'),
                 "photo_url": contact.get('photo_url'),
