@@ -573,6 +573,60 @@ export default function OnboardingScreen() {
     );
   };
 
+  const renderQuickWinBadge = () => {
+    if (currentSlide.type !== 'quick_win' || !currentSlide.quickWinNumber) return null;
+    return (
+      <View style={styles.quickWinBadge}>
+        <Ionicons name="flash" size={12} color="#FFD60A" />
+        <Text style={styles.quickWinBadgeText}>Quick Win #{currentSlide.quickWinNumber}</Text>
+      </View>
+    );
+  };
+
+  const renderTryItButton = () => {
+    if (!currentSlide.tryItRoute) return null;
+    return (
+      <TouchableOpacity
+        style={styles.tryItButton}
+        onPress={() => {
+          // Save progress and navigate to feature
+          router.push(currentSlide.tryItRoute as any);
+        }}
+        data-testid={`onboarding-try-${currentSlide.id}`}
+      >
+        <Ionicons name="play-circle" size={18} color="#FFF" />
+        <Text style={styles.tryItButtonText}>{currentSlide.tryItLabel || 'Try It Now'}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderChecklist = () => {
+    if (currentSlide.type !== 'checklist' || !currentSlide.checklistItems) return null;
+    return (
+      <ScrollView style={styles.checklistContainer} showsVerticalScrollIndicator={false}>
+        {currentSlide.checklistItems.map((item, index) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.checklistItem}
+            activeOpacity={0.7}
+            data-testid={`checklist-${item.id}`}
+          >
+            <View style={[styles.checklistIcon, { backgroundColor: `${item.iconColor}20` }]}>
+              <Ionicons name={item.icon as any} size={20} color={item.iconColor} />
+            </View>
+            <View style={styles.checklistContent}>
+              <Text style={styles.checklistLabel}>{item.label}</Text>
+              <Text style={styles.checklistDescription}>{item.description}</Text>
+            </View>
+            <View style={styles.checklistArrow}>
+              <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    );
+  };
+
   const renderChoices = () => {
     if (!currentSlide.choices) return null;
     
