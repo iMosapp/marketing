@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SwipeAction {
@@ -28,6 +28,7 @@ export default function WebSwipeableItem({
   const startY = useRef(0);
   const currentX = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
+  const hasMoved = useRef(false);
   const containerRef = useRef<View>(null);
 
   const ACTION_WIDTH = 72;
@@ -41,6 +42,7 @@ export default function WebSwipeableItem({
     startY.current = clientY;
     currentX.current = translateX;
     isHorizontal.current = null;
+    hasMoved.current = false;
     setIsDragging(true);
   }, [translateX]);
 
@@ -51,17 +53,15 @@ export default function WebSwipeableItem({
     const dx = clientX - startX.current;
     const dy = clientY - startY.current;
 
-    // Lock direction on first significant move
     if (isHorizontal.current === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
       isHorizontal.current = Math.abs(dx) > Math.abs(dy);
     }
     if (!isHorizontal.current) return;
+    hasMoved.current = true;
 
     let next = currentX.current + dx;
-    // Clamp
     if (next > 0) next = Math.min(next, leftMax);
     if (next < 0) next = Math.max(next, -rightMax);
-    // Rubber band if no actions in that direction
     if (next > 0 && leftActions.length === 0) next = next * 0.2;
     if (next < 0 && rightActions.length === 0) next = next * 0.2;
 
@@ -72,7 +72,6 @@ export default function WebSwipeableItem({
     if (!isDragging) return;
     setIsDragging(false);
 
-    // Snap logic
     const threshold = ACTION_WIDTH * 0.4;
     if (translateX > threshold && leftActions.length > 0) {
       setTranslateX(leftMax);
@@ -89,11 +88,27 @@ export default function WebSwipeableItem({
 
   const handleActionPress = useCallback((action: SwipeAction) => {
     close();
-    // Delay action slightly so close animation plays
     setTimeout(() => action.onPress(), 150);
   }, [close]);
 
   const isOpen = translateX !== 0;
+
+  // Web-specific: close on click outside by listening to document clicks
+  useEffect(() => {
+    if (!isOpen || Platform.OS !== 'web') return;
+
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (containerRef.current) {
+        const node = containerRef.current as any;
+        if (node && typeof node.contains === 'function' && !node.contains(e.target as Node)) {
+          close();
+        }
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick, true);
+    return () => document.removeEventListener('click', handleDocumentClick, true);
+  }, [isOpen, close]);
 
   return (
     <View
@@ -154,8 +169,24 @@ export default function WebSwipeableItem({
         {children}
       </View>
 
-      {/* Tap-to-close overlay when open */}
-      {isOpen && !isDragging && (
+      {/* Tap-to-close overlay when open — uses a real div on web for reliable hit testing */}
+      {isOpen && !isDragging && Platform.OS === 'web' && (
+        <div
+          onClick={(e) => { e.stopPropagation(); close(); }}
+          data-testid="swipe-close-overlay"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 10,
+            cursor: 'pointer',
+            backgroundColor: 'transparent',
+          }}
+        />
+      )}
+      {isOpen && !isDragging && Platform.OS !== 'web' && (
         <TouchableOpacity
           style={styles.closeOverlay}
           onPress={close}
@@ -209,6 +240,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 3,
+    zIndex: 10,
+    backgroundColor: 'transparent',
   },
 });
