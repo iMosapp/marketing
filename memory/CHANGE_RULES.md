@@ -185,3 +185,15 @@ If ANY step fails, the change is not ready for production.
 2. Frontend inbox: Pass `contact_email` in all thread navigation params
 3. Frontend thread: Mode switch handler now does a fallback API check if `hasEmail` is false before showing the email prompt
 **Lesson:** Always pass all known contact data through navigation params. Don't rely solely on async state for UI gating.
+
+
+### Feb 28, 2026 — Comprehensive Email Flow Audit (5 Disconnects Fixed)
+**What happened:** Email sending was inconsistent across different entry points.
+**Root causes found and fixed:**
+1. **Silent SMS fallback (thread/[id].tsx line 159):** When `contact_email` URL param was empty, mode silently fell back to SMS. Fixed: Trust the explicitly requested mode; email check happens at send time.
+2. **email_work ignored (contact/[id].tsx line 310):** Contact detail only checked `contact.email`, not `contact.email_work`. Contacts with only work email couldn't use email mode. Fixed: Check both fields everywhere.
+3. **Action modes forced SMS (thread/[id].tsx line 162):** Card/Review/Congrats modes always set SMS, ignoring user's preferred mode. Fixed: Respect saved message_mode preference.
+4. **Conversation ID race (thread/[id].tsx handleSend):** If `ensureConversation` hadn't completed, `convId` was a contact ID, causing the backend to 404. Fixed: handleSend now ensures conversation exists before sending.
+5. **Missing email in navigation (search.tsx, tasks/index.tsx, contact/[id].tsx line 740):** Multiple navigation paths didn't pass `contact_email`. Fixed: ALL navigation paths to thread now pass email.
+**Audit scope:** contact/[id].tsx, thread/[id].tsx, inbox.tsx, search.tsx, tasks/index.tsx, messages.py
+**Lesson:** EVERY navigation to a thread page must pass `contact_name`, `contact_phone`, AND `contact_email`. Use `email || email_work` everywhere.
