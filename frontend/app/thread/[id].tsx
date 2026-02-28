@@ -799,7 +799,21 @@ export default function ThreadScreen() {
       }
       
       // Send to backend (logs the message regardless of send method)
-      await messagesAPI.send(user._id, messagePayload);
+      const sendResult = await messagesAPI.send(user._id, messagePayload);
+      
+      // Check if backend reported a failure (e.g., email not sent)
+      if (sendResult?.status === 'failed') {
+        const errorMsg = sendResult?.error || 'Message failed to send';
+        console.error('[SEND] Backend reported failure:', errorMsg);
+        Alert.alert(
+          'Send Failed', 
+          messageMode === 'email' 
+            ? `Email could not be delivered: ${errorMsg}`
+            : `Message failed: ${errorMsg}`
+        );
+        // Remove optimistic message since it actually failed
+        setMessages((prev) => prev.filter((m) => !m._id.startsWith('temp_')));
+      }
       
       // Clear template info after sending
       setSelectedTemplateInfo(null);
