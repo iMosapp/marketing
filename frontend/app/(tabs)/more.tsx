@@ -441,6 +441,13 @@ export default function MoreScreen() {
       color: '#34C759',
       items: [
         {
+          icon: 'images',
+          title: 'The Showroom',
+          subtitle: 'Your happy customers page',
+          onPress: () => router.push(`/showcase/${user?._id}`),
+          color: '#C9A962',
+        },
+        {
           icon: 'stats-chart',
           title: 'Analytics',
           subtitle: 'Performance metrics',
