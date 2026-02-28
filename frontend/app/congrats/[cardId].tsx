@@ -298,12 +298,7 @@ export default function CongratsCardPage() {
         <TouchableOpacity
           style={styles.profileLinkSection}
           onPress={() => {
-            const profileUrl = `https://app.imosapp.com/p/${cardData.salesman_id}`;
-            if (Platform.OS === 'web') {
-              window.open(profileUrl, '_blank');
-            } else {
-              Linking.openURL(profileUrl);
-            }
+            router.push(`/p/${cardData.salesman_id}` as any);
           }}
         >
           <View style={styles.profileLinkContent}>
