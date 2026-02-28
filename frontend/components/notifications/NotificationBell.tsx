@@ -60,6 +60,7 @@ function getCategoryLabel(cat: string): string {
     case 'tasks': return 'Tasks';
     case 'messages': return 'Messages';
     case 'flags': return 'Flags';
+    case 'campaigns': return 'Campaigns';
     case 'activity': return 'Activity';
     default: return 'All';
   }
