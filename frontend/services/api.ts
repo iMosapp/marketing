@@ -149,6 +149,28 @@ export const contactsAPI = {
     return response.data;
   },
 
+  // Voice notes
+  getVoiceNotes: async (userId: string, contactId: string) => {
+    const response = await api.get(`/voice-notes/${userId}/${contactId}`);
+    return response.data;
+  },
+
+  uploadVoiceNote: async (userId: string, contactId: string, audioBlob: Blob, duration: number) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'voice_note.webm');
+    formData.append('duration', String(Math.round(duration)));
+    const response = await api.post(`/voice-notes/${userId}/${contactId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
+    });
+    return response.data;
+  },
+
+  deleteVoiceNote: async (userId: string, contactId: string, noteId: string) => {
+    const response = await api.delete(`/voice-notes/${userId}/${contactId}/${noteId}`);
+    return response.data;
+  },
+
   create: async (userId: string, data: any) => {
     const response = await api.post(`/contacts/${userId}`, data);
     return response.data;
