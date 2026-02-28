@@ -428,6 +428,10 @@ const styles = StyleSheet.create({
   triggerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   triggerTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
   triggerBody: { marginTop: 16 },
+  birthdayCardToggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, marginBottom: 16, gap: 12,
+  },
   fieldLabel: { fontSize: 14, fontWeight: '500', color: '#FFF', marginBottom: 8 },
   fieldHint: { fontSize: 12, color: '#6E6E73', marginBottom: 8 },
   deliveryRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
