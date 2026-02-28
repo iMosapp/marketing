@@ -306,13 +306,14 @@ export default function ContactDetailScreen() {
       showSimpleAlert('Missing Info', 'No phone number available');
       return;
     }
-    if (!contact.email && key === 'email') {
+    const contactEmail = contact.email || contact.email_work || '';
+    if (!contactEmail && key === 'email') {
       showSimpleAlert('Missing Info', 'No email address available');
       return;
     }
     
-    // Build thread URL with contact info
-    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contact.email || '')}`;
+    // Build thread URL with contact info — always include both email fields
+    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contactEmail)}`;
     
     switch (key) {
       case 'sms':
