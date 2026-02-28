@@ -2,7 +2,7 @@
 // ONBOARDING TYPES
 // ============================================
 
-export type SlideType = 'welcome' | 'feature' | 'ai_setup' | 'interactive' | 'action' | 'complete' | 'team_invite';
+export type SlideType = 'welcome' | 'feature' | 'quick_win' | 'ai_setup' | 'interactive' | 'action' | 'checklist' | 'complete' | 'team_invite';
 
 export interface OnboardingSlide {
   id: string;
@@ -19,7 +19,13 @@ export interface OnboardingSlide {
   choices?: { id: string; label: string; description: string; icon: string }[];
   actionButton?: { label: string; route: string };
   demoComponent?: string;
-  inviteRole?: 'store_manager' | 'user'; // For team_invite type slides
-  inviteTitle?: string; // Label for who they're inviting
-  skipable?: boolean; // Can this step be skipped
+  inviteRole?: 'store_manager' | 'user';
+  inviteTitle?: string;
+  skipable?: boolean;
+  // Quick Win specific
+  tryItRoute?: string; // "Try it now" navigation route
+  tryItLabel?: string; // Custom label for the try it button
+  quickWinNumber?: number; // e.g., "Quick Win #1"
+  // Checklist specific
+  checklistItems?: { id: string; label: string; description: string; route: string; icon: string; iconColor: string }[];
 }
