@@ -1318,6 +1318,12 @@ const s = StyleSheet.create({
   feedTitle: { fontSize: 14, fontWeight: '600', color: '#FFF', marginBottom: 2 },
   feedDesc: { fontSize: 13, color: '#8E8E93', marginBottom: 4 },
   feedTime: { fontSize: 12, color: '#636366' },
+  showMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginTop: 12, paddingVertical: 10, borderRadius: 10,
+    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  showMoreText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
 
   // Conversation link
   conversationLink: {
