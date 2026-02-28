@@ -39,8 +39,22 @@ def name_match(a: str, b: str) -> bool:
 async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict):
     """Core logic: fetch congrats cards, match with reviews, return entries."""
 
-    # Fetch congrats cards
-    cards = await db.congrats_cards.find(query_filter).sort("created_at", -1).to_list(500)
+    # Fetch congrats cards - exclude massive base64 photo blobs for list performance
+    cards = await db.congrats_cards.find(
+        query_filter,
+        {"customer_photo": 0, "salesman_photo": 0}
+    ).sort("created_at", -1).to_list(500)
+
+    # Track which cards actually have photos (we set a flag during card creation)
+    # Re-check by querying just the _id and existence of customer_photo
+    card_ids_with_photos = set()
+    if cards:
+        card_obj_ids = [c["_id"] for c in cards]
+        photo_check = await db.congrats_cards.find(
+            {"_id": {"$in": card_obj_ids}, "customer_photo": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"_id": 1}
+        ).to_list(500)
+        card_ids_with_photos = {str(c["_id"]) for c in photo_check}
 
     # Fetch approved reviews
     reviews = await db.customer_feedback.find({
