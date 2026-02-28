@@ -41,6 +41,7 @@ export default function CreateBirthdayCardPage() {
   const [customMessage, setCustomMessage] = useState('');
   const [photo, setPhoto] = useState<{uri: string, type: string, name: string} | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [createdCard, setCreatedCard] = useState<{card_id: string, share_url: string} | null>(null);
   const [matchModalVisible, setMatchModalVisible] = useState(false);
   const [matchInfo, setMatchInfo] = useState<any>(null);
@@ -77,7 +78,7 @@ export default function CreateBirthdayCardPage() {
     }
   };
 
-  const createCard = async () => {
+  const handlePreview = () => {
     if (!customerName.trim()) {
       showSimpleAlert('Required', 'Please enter the customer name');
       return;
@@ -86,6 +87,10 @@ export default function CreateBirthdayCardPage() {
       showSimpleAlert('Required', 'Please add a customer photo');
       return;
     }
+    setShowPreview(true);
+  };
+
+  const createCard = async () => {
     if (!user?._id) return;
 
     setCreating(true);
@@ -97,11 +102,11 @@ export default function CreateBirthdayCardPage() {
       if (customMessage.trim()) formData.append('custom_message', customMessage.trim());
 
       if (IS_WEB) {
-        const response = await fetch(photo.uri);
+        const response = await fetch(photo!.uri);
         const blob = await response.blob();
-        formData.append('photo', blob, photo.name || 'photo.jpg');
+        formData.append('photo', blob, photo!.name || 'photo.jpg');
       } else {
-        formData.append('photo', { uri: photo.uri, type: photo.type, name: photo.name } as any);
+        formData.append('photo', { uri: photo!.uri, type: photo!.type, name: photo!.name } as any);
       }
 
       const res = await api.post('/birthday/create-manual', formData, {
@@ -111,6 +116,7 @@ export default function CreateBirthdayCardPage() {
       const cardId = res.data?.card_id;
       const shareUrl = `https://app.imosapp.com/birthday/${cardId}`;
 
+      setShowPreview(false);
       setCreatedCard({ card_id: cardId, share_url: shareUrl });
     } catch (err: any) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to create card';
@@ -180,7 +186,6 @@ export default function CreateBirthdayCardPage() {
       Linking.openURL(shareUrl);
     }
 
-    // Log contact event
     if (customerPhone.trim() && user?._id) {
       try {
         const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
@@ -248,7 +253,7 @@ export default function CreateBirthdayCardPage() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} data-testid="birthday-back-btn">
+          <TouchableOpacity onPress={() => router.back()} data-testid="birthday-share-back">
             <Ionicons name="chevron-back" size={28} color={COLORS.accent} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Card Created!</Text>
@@ -261,12 +266,10 @@ export default function CreateBirthdayCardPage() {
           <Text style={styles.successTitle}>Birthday Card Ready!</Text>
           <Text style={styles.successSubtitle}>Share it with {customerName}</Text>
 
-          {/* Card Link */}
           <View style={styles.linkBox}>
             <Text style={styles.linkText} numberOfLines={1}>{createdCard.share_url}</Text>
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.actionGrid}>
             <TouchableOpacity style={styles.actionBtn} onPress={handleCopyLink} data-testid="birthday-copy-link">
               <View style={[styles.actionIcon, { backgroundColor: '#007AFF20' }]}>
@@ -274,14 +277,12 @@ export default function CreateBirthdayCardPage() {
               </View>
               <Text style={styles.actionLabel}>Copy Link</Text>
             </TouchableOpacity>
-
             <TouchableOpacity style={styles.actionBtn} onPress={handleDownload} data-testid="birthday-download">
               <View style={[styles.actionIcon, { backgroundColor: '#34C75920' }]}>
                 <Ionicons name="download-outline" size={24} color="#34C759" />
               </View>
               <Text style={styles.actionLabel}>Download</Text>
             </TouchableOpacity>
-
             <TouchableOpacity style={styles.actionBtn} onPress={handleViewCard} data-testid="birthday-view-card">
               <View style={[styles.actionIcon, { backgroundColor: '#FF6B8A20' }]}>
                 <Ionicons name="eye-outline" size={24} color="#FF6B8A" />
@@ -290,7 +291,6 @@ export default function CreateBirthdayCardPage() {
             </TouchableOpacity>
           </View>
 
-          {/* Share to Social */}
           <Text style={styles.sectionLabel}>SHARE VIA</Text>
           <View style={styles.shareRow}>
             <TouchableOpacity style={styles.shareBtn} onPress={() => handleShare('sms')} data-testid="birthday-share-sms">
@@ -319,10 +319,9 @@ export default function CreateBirthdayCardPage() {
             </TouchableOpacity>
           </View>
 
-          {/* Create Another */}
           <TouchableOpacity 
             style={styles.createAnotherBtn}
-            onPress={() => { setCreatedCard(null); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); }}
+            onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); }}
             data-testid="birthday-create-another"
           >
             <Ionicons name="add-circle-outline" size={20} color={COLORS.accent} />
@@ -333,18 +332,91 @@ export default function CreateBirthdayCardPage() {
     );
   }
 
+  // ---- Preview state: show card preview before sending ----
+  if (showPreview && photo) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setShowPreview(false)} data-testid="birthday-preview-back">
+            <Ionicons name="chevron-back" size={28} color={COLORS.accent} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Preview Card</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <ScrollView style={styles.scrollContent} contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
+          {/* Card Preview */}
+          <View style={styles.previewCard} data-testid="birthday-preview-card">
+            {/* Confetti dots */}
+            <View style={styles.previewConfetti}>
+              {['#FF6B8A', '#FFD700', '#00CED1', '#FF8C00', '#9370DB', '#32CD32'].map((c, i) => (
+                <View key={i} style={[styles.confettiDot, { backgroundColor: c, width: 6 + (i % 3) * 2, height: 6 + (i % 3) * 2 }]} />
+              ))}
+            </View>
+
+            <Text style={[styles.previewHeadline, { color: COLORS.pink }]}>Happy Birthday!</Text>
+            <View style={[styles.previewPhotoRing, { borderColor: COLORS.pink }]}>
+              <Image source={{ uri: photo.uri }} style={styles.previewPhoto} />
+            </View>
+            <Text style={styles.previewName}>{customerName}</Text>
+            <Text style={styles.previewMessage}>
+              Wishing you a wonderful birthday, {customerName}! Thank you for being part of our family.
+            </Text>
+            {customMessage ? (
+              <View style={[styles.previewCustomMsgBox, { borderLeftColor: COLORS.pink }]}>
+                <Text style={styles.previewCustomMsg}>"{customMessage}"</Text>
+              </View>
+            ) : null}
+            <View style={[styles.previewDivider, { backgroundColor: COLORS.pink }]} />
+            {user?.name && (
+              <View style={styles.previewSalesman}>
+                <Text style={styles.previewSalesmanName}>{user.name}</Text>
+                <Text style={[styles.previewSalesmanTitle, { color: COLORS.pink }]}>{user.title || 'Sales Professional'}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.previewActions}>
+            <TouchableOpacity
+              style={styles.previewEditBtn}
+              onPress={() => setShowPreview(false)}
+              data-testid="birthday-preview-edit"
+            >
+              <Ionicons name="create-outline" size={20} color={COLORS.accent} />
+              <Text style={styles.previewEditText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.previewSendBtn, creating && { opacity: 0.5 }]}
+              onPress={createCard}
+              disabled={creating}
+              data-testid="birthday-preview-send"
+            >
+              {creating ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="send" size={18} color="#FFF" />
+                  <Text style={styles.previewSendText}>Create & Send</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   // ---- Creation form ----
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="birthday-form-back-btn">
+        <TouchableOpacity onPress={() => router.back()} data-testid="birthday-form-back">
           <Ionicons name="chevron-back" size={28} color={COLORS.accent} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Birthday Card</Text>
         <View style={{ width: 28 }} />
       </View>
       <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Photo */}
         <Text style={styles.fieldLabel}>CUSTOMER PHOTO *</Text>
         <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto} data-testid="birthday-pick-photo">
           {photo ? (
@@ -357,8 +429,7 @@ export default function CreateBirthdayCardPage() {
           )}
         </TouchableOpacity>
 
-        {/* Send To */}
-        <Text style={styles.fieldLabel}>SEND TO (OPTIONAL)</Text>
+        <Text style={styles.fieldLabel}>RECIPIENT NAME *</Text>
         <TextInput
           style={styles.input}
           value={customerName}
@@ -367,8 +438,10 @@ export default function CreateBirthdayCardPage() {
           placeholderTextColor={COLORS.textSecondary}
           data-testid="birthday-customer-name"
         />
+
+        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
         <TextInput
-          style={[styles.input, { marginTop: 8 }]}
+          style={styles.input}
           value={customerPhone}
           onChangeText={setCustomerPhone}
           placeholder="Phone"
@@ -387,7 +460,6 @@ export default function CreateBirthdayCardPage() {
           data-testid="birthday-customer-email"
         />
 
-        {/* Custom Message (optional) */}
         <Text style={[styles.fieldLabel, { marginTop: 16 }]}>CUSTOM MESSAGE (OPTIONAL)</Text>
         <TextInput
           style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
@@ -399,21 +471,14 @@ export default function CreateBirthdayCardPage() {
           data-testid="birthday-custom-message"
         />
 
-        {/* Create Button */}
         <TouchableOpacity 
-          style={[styles.createBtn, (!customerName.trim() || !photo || creating) && styles.createBtnDisabled]}
-          onPress={createCard}
-          disabled={!customerName.trim() || !photo || creating}
-          data-testid="birthday-create-btn"
+          style={[styles.createBtn, (!customerName.trim() || !photo) && styles.createBtnDisabled]}
+          onPress={handlePreview}
+          disabled={!customerName.trim() || !photo}
+          data-testid="birthday-preview-btn"
         >
-          {creating ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <>
-              <Ionicons name="gift" size={20} color="#FFF" />
-              <Text style={styles.createBtnText}>Create & Share Card</Text>
-            </>
-          )}
+          <Ionicons name="eye-outline" size={20} color="#FFF" />
+          <Text style={styles.createBtnText}>Preview Card</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -466,45 +531,28 @@ export default function CreateBirthdayCardPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
   scrollContent: { flex: 1, paddingHorizontal: 20 },
   fieldLabel: { fontSize: 10, fontWeight: '700', color: '#6E6E73', marginTop: 16, marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' },
   input: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    borderWidth: 1.5,
-    borderColor: '#3A3A3C',
+    backgroundColor: COLORS.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12,
+    fontSize: 14, color: COLORS.textPrimary, borderWidth: 1.5, borderColor: '#3A3A3C',
   },
   photoPicker: { alignItems: 'center', marginBottom: 8 },
   photoPreview: { width: 160, height: 160, borderRadius: 32, borderWidth: 3, borderColor: COLORS.pink },
   photoPlaceholder: {
-    width: 160, height: 160, borderRadius: 32,
-    backgroundColor: COLORS.card,
+    width: 160, height: 160, borderRadius: 32, backgroundColor: COLORS.card,
     borderWidth: 2, borderColor: COLORS.border, borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center',
   },
   photoPlaceholderText: { fontSize: 13, color: COLORS.textSecondary, marginTop: 8 },
   createBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.pink,
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginTop: 30,
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.pink, borderRadius: 12, paddingVertical: 16, marginTop: 30, gap: 8,
   },
   createBtnDisabled: { opacity: 0.5 },
   createBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
@@ -513,22 +561,13 @@ const styles = StyleSheet.create({
   successTitle: { fontSize: 24, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 6 },
   successSubtitle: { fontSize: 16, color: COLORS.textSecondary, marginBottom: 24 },
   linkBox: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    padding: 14,
-    width: '100%',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.card, borderRadius: 10, padding: 14, width: '100%',
+    marginBottom: 24, borderWidth: 1, borderColor: COLORS.border,
   },
   linkText: { fontSize: 14, color: COLORS.accent },
   actionGrid: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 30, width: '100%' },
   actionBtn: { alignItems: 'center', width: 80 },
-  actionIcon: {
-    width: 56, height: 56, borderRadius: 16,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: 8,
-  },
+  actionIcon: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   actionLabel: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '500' },
   sectionLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, alignSelf: 'flex-start', marginBottom: 12, letterSpacing: 0.5 },
   shareRow: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 30, width: '100%' },
@@ -536,15 +575,37 @@ const styles = StyleSheet.create({
   shareIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
   shareLabel: { fontSize: 11, color: COLORS.textSecondary },
   createAnotherBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.accent,
-    width: '100%',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.accent, width: '100%',
   },
   createAnotherText: { fontSize: 15, color: COLORS.accent, fontWeight: '600' },
+  // Preview state
+  previewCard: {
+    backgroundColor: '#1A1A1A', borderRadius: 20, padding: 30, width: '100%', maxWidth: 380,
+    alignItems: 'center', marginTop: 20, borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  previewConfetti: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 16 },
+  confettiDot: { borderRadius: 20 },
+  previewHeadline: { fontSize: 32, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
+  previewPhotoRing: { borderWidth: 4, borderRadius: 80, padding: 4, marginBottom: 16 },
+  previewPhoto: { width: 140, height: 140, borderRadius: 70 },
+  previewName: { fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 12, textAlign: 'center' },
+  previewMessage: { fontSize: 15, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 22, marginBottom: 12 },
+  previewCustomMsgBox: { borderLeftWidth: 3, paddingLeft: 14, paddingVertical: 6, width: '100%', marginBottom: 16 },
+  previewCustomMsg: { fontSize: 14, fontStyle: 'italic', color: '#FFFFFFBB', lineHeight: 20 },
+  previewDivider: { width: 50, height: 3, borderRadius: 2, marginVertical: 16 },
+  previewSalesman: { alignItems: 'center' },
+  previewSalesmanName: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  previewSalesmanTitle: { fontSize: 13, fontWeight: '500' },
+  previewActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%', maxWidth: 380 },
+  previewEditBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 16, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.accent,
+  },
+  previewEditText: { fontSize: 16, fontWeight: '600', color: COLORS.accent },
+  previewSendBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 16, borderRadius: 12, backgroundColor: COLORS.pink,
+  },
+  previewSendText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
 });
