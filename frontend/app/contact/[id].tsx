@@ -167,6 +167,7 @@ export default function ContactDetailScreen() {
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
+  const [originalNotes, setOriginalNotes] = useState('');
   // Full photo viewer
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [fullPhoto, setFullPhoto] = useState<string | null>(null);
