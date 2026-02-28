@@ -74,7 +74,7 @@ const { showToast } = useToast();
     });
   }, [user?._id]);
   
-  const availableTags = ['sold', 'lead', 'hot', 'customer', 'lease_end', 'service_due', 'referral', 'vip'];
+  const availableTags = tags;
   
   const campaignTypes = [
     { id: 'sold_followup', name: 'Sold Follow-up', icon: 'car', color: '#34C759', description: 'Check in with customers after purchase' },
