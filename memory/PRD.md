@@ -15,7 +15,12 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ## What's Been Implemented
 
 ### Session Feb 28, 2026 (Fork 7 - Current)
-- **CRITICAL FIX: Email Mode Switch from Inbox** — Fixed bug where "Switch to Email" button showed email prompt even for contacts who have emails. Root cause: `contact_email` was not passed in inbox navigation params, and async `loadContactInfo` created a race condition. Fix: 1) Backend conversations API now includes `email` in contact data, 2) All 3 inbox navigation paths now pass `contact_email`, 3) Mode switch handler does fallback API check before showing prompt.
+- **CRITICAL FIX: 5-Point Email Flow Audit** — Traced every single entry point that leads to the inbox thread and fixed all disconnects:
+  1. Mode initialization no longer silently falls back to SMS when `contact_email` URL param is empty
+  2. `email_work` field checked everywhere (contact detail, conversation info, thread page)
+  3. Card/Review/Congrats action modes respect user's preferred message mode instead of forcing SMS
+  4. `handleSend` now ensures conversation exists before sending (prevents 404 from contact ID)
+  5. ALL navigation paths (inbox, contact detail, search, tasks) now pass `contact_email`
 - **VERIFIED: CTR Analytics** — Click-Through Rate display on "My Activity" dashboard confirmed working with per-channel (SMS/Email) breakdown.
 - **FEATURE: Operations Manual** — Created comprehensive 23-slide in-app document covering full project scope, every feature, technical architecture, DO-NOT-TOUCH patterns, database schema, integrations, and deployment guide. Lives in Company Docs > Operations Manual.
 - **FEATURE: NDA (Super Admin Only)** — Created 11-slide Non-Disclosure Agreement with role-based access control. Only visible to super_admin users. Added `required_role` field to docs system for document-level access control.
