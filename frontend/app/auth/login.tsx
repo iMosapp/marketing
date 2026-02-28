@@ -260,7 +260,7 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image 
-                source={{ uri: '/logo512.png' }}
+                source={{ uri: '/logo512-transparent.png' }}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
@@ -473,9 +473,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoImage: {
-    width: 320,
-    height: 120,
-    maxWidth: '100%',
+    width: 280,
+    height: 280,
+    maxWidth: '80%',
     marginBottom: 8,
   },
   tagline: {
