@@ -76,6 +76,45 @@ const { showToast } = useToast();
       setTags(['sold', 'lead', 'hot', 'customer', 'service_due', 'referral', 'vip']);
     });
   }, [user?._id]);
+
+  // Fetch pre-built templates
+  React.useEffect(() => {
+    api.get('/campaigns/templates/prebuilt').then(res => {
+      setPrebuiltTemplates(res.data || []);
+    }).catch(() => {}).finally(() => setLoadingTemplates(false));
+  }, []);
+
+  const selectPrebuiltTemplate = async (templateId: string) => {
+    try {
+      const res = await api.get(`/campaigns/templates/prebuilt/${templateId}`);
+      const tpl = res.data;
+      setCampaign({
+        ...campaign,
+        name: tpl.name,
+        type: tpl.type || 'custom',
+        triggerTag: tpl.trigger_tag || '',
+        selectedTags: tpl.trigger_tag ? [tpl.trigger_tag] : [],
+        deliveryMode: tpl.delivery_mode || 'manual',
+        aiEnabled: tpl.ai_enabled ?? true,
+      });
+      setSequences(
+        (tpl.sequences || []).map((s: any, i: number) => ({
+          id: String(i + 1),
+          message: s.message_template || '',
+          delayDays: s.delay_days || 0,
+          delayMonths: s.delay_months || 0,
+          media_urls: s.media_urls || [],
+          channel: s.channel || 'sms',
+          ai_generated: s.ai_generated ?? false,
+          step_context: s.step_context || '',
+        }))
+      );
+      setShowTemplates(false);
+      showToast(`Loaded "${tpl.name}" template`, 'success');
+    } catch (e) {
+      showToast('Failed to load template', 'error');
+    }
+  };
   
   const availableTags = tags;
   
