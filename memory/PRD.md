@@ -67,6 +67,7 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - **Birthday Card Campaign Integration**: Added `include_birthday_card` toggle to birthday date trigger config. When enabled (default ON), the daily scheduler and manual trigger processor auto-generate a birthday card for each matching contact and append the card link to the outgoing message. Tag-based triggers ("birthday"/"bday") also auto-create cards.
 - **Card Preview Before Sending**: Both Congrats and Birthday card creation pages now have a 3-step flow: Fill Form -> Preview Card (see how it looks) -> Edit or Create & Send -> Share Options. Replaced the old "Create & Share Card" button with "Preview Card".
 - **Back Button on Card View Pages**: Both `/congrats/{cardId}` and `/birthday/{cardId}` public view pages now have a "Back" button at the top to return to the share/send screen after reviewing.
+- **Full Logo/Icon Rebrand**: Replaced all favicons, app icons, login logo, email logo, PWA manifest icons, splash screen, and adaptive icons across frontend/backend/marketing with the new "iM On Social" multicolor logo.
 
 ## P1 Tasks (Upcoming)
 - Gamification & Leaderboards
