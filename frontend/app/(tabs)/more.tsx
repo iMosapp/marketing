@@ -612,6 +612,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/integrations'),
           color: '#5856D6',
         },
+        {
+          icon: 'help-circle-outline',
+          title: 'Help Center',
+          subtitle: 'How-to guides & FAQs',
+          onPress: () => router.push('/help' as any),
+          color: '#007AFF',
+        },
       ],
     },
   ];
