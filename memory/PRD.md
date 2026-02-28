@@ -74,7 +74,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - None currently
 
 ### P1 (High)
-- **Contact Photo Reverting** — Photos revert to old image after upload. Suspected: thumbnail not regenerated.
+- ~~Contact Photo Reverting~~ — **FIXED in Fork 8**
 
 ### P2 (Low)
 - React Hydration Error #418
