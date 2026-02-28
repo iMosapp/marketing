@@ -1,63 +1,94 @@
-# iMOs - Product Requirements Document
+# i'M On Social (iMOs) - Product Requirements Document
 
 ## Original Problem Statement
-Full-stack Relationship Management System (RMS) for dealerships. The app empowers sales teams with digital cards, automated campaigns, AI assistants, review management, and customer relationship tools.
+Full-stack Relationship Management System (RMS) for automotive dealerships. React/Expo frontend, FastAPI backend, MongoDB database. The platform helps salespeople manage customer relationships, send personalized communications, track activities, and build social proof.
 
-## Core Architecture
-- **Frontend:** React Native (Expo) with web support
-- **Backend:** FastAPI (Python)
-- **Database:** MongoDB Atlas (production), localhost:27017 (preview)
-- **Email:** Resend (verified working)
+## Core Requirements
+- Contact management with tagging, notes, and lifecycle tracking
+- Multi-channel messaging (SMS, Email, Personal SMS fallback)
+- Automated card generation (Congrats Cards, Birthday Cards)
+- Public shareable pages (Digital Business Card, Showroom, Card Pages)
+- Activity reporting with scheduled email delivery
+- White-label branding ("Powered by i'M On Social")
+- PWA support for iOS standalone mode
+- Public REST API and webhook system for CRM integrations
+- User lifecycle management with automated tagging
+- Soft-delete data retention policy
+
+## Architecture
+- **Frontend:** React/Expo (port 3000)
+- **Backend:** FastAPI (port 8001, prefixed /api)
+- **Database:** MongoDB Atlas
+- **Storage:** Emergent Object Storage
+- **Email:** Resend
 - **SMS:** Twilio (MOCK mode)
-- **AI:** OpenAI GPT-5.2, Whisper
-- **Object Storage:** Emergent Integrations
+- **AI:** OpenAI GPT-5.2 via emergentintegrations
+- **Scheduler:** APScheduler for daily jobs
 
-## What's Been Implemented
-
-### Session Feb 28, 2026 (Fork 10 - Current)
-
-#### The Showroom — Social Proof Landing Page (NEW)
-- **Public page** at `/showcase/{user_id}` — Instagram-style feed of delivery photos + reviews
-- **Three levels:** Per-user, per-store, per-org
-- **Auto-populated** from congrats cards, matched with reviews by phone/name
-- **CTAs:** "Leave a Review" button linking to digital card page, "View My Digital Business Card" link
-- **Share:** Shareable link + QR code
-- **Management:** Hide/show individual entries
-- **"The Showroom" tile** in More > Performance section
-- Backend: `/app/backend/routers/showcase.py` (6 endpoints)
-- Frontend: `/app/frontend/app/showcase/[id].tsx`
-
-#### Email System Verified Working
-- Full E2E flow: Frontend → Resend API → Gmail delivery confirmed
-
-#### UI/UX Audit & Cleanup
-- More Page: Removed duplicate "Train Jessi AI", enlarged profile card
-- My Activity: Added "All Time" + "Custom" date range picker
-- Company Docs: Modern category cards
-- Inbox Swipe: Fixed close overlay + archive optimistic UI
-
-### Previous Sessions
-- AI Campaign Engine, Pre-Built Templates, Notifications Center, Analytics Dashboard
-- Contact activity feed, voice notes, AI relationship intel, leaderboards
-- Public REST API, webhooks, soft-delete, lifecycle engine
-- Personal SMS mode, event tracking, activity reports, white-label emails
-
-## Known Issues
-- (P2) React Hydration Error #418
-- (P2) Mobile app tags sync
-
-## Upcoming Tasks
-- (P1) Mobile Push Notifications
-- (P1) Auth refactor (bcrypt)
-- (P1) Clean production database
-
-## Future/Backlog
-- (P2) Customer-facing gamification
-- (P2) Full Twilio live mode
-- (P2) WhatsApp integration
-- (P2) TestFlight iOS build
-- (P2) Training Hub content
-- (P2) Inventory Management Module
+## Key Features Implemented
+- Authentication (JWT-based, plain-text passwords - bcrypt migration pending)
+- Contact CRUD with tags, notes, activity history
+- Inbox with SMS/Email modes, archive, swipe actions
+- Congrats Card generation and public page
+- Birthday Card generation and public page (NEW)
+- The Showroom - public social proof page
+- Digital Business Card
+- Activity Reporting with date filters and scheduled email delivery
+- White-label branded HTML emails via Resend
+- Public REST API with API key authentication
+- Outgoing webhooks for third-party integrations
+- User lifecycle engine (automated daily scans)
+- PWA manifest and meta tags for iOS standalone mode
+- Share Showroom Link from More page (NEW)
+- Inbox email-to-SMS mode switching fix (NEW)
 
 ## Credentials
 - **Super Admin:** forest@imosapp.com / Admin123!
+
+## Key API Endpoints
+- POST /api/auth/login
+- GET /api/contacts/{user_id}
+- POST /api/messages/send/{user_id}
+- POST /api/birthday/create
+- GET /api/birthday/card/{card_id}
+- GET /api/showcase/{user_id}
+- GET /api/reports/activity-summary
+- POST /api/reports/send-email-report
+
+## 3rd Party Integrations
+- Resend (email delivery - verified working)
+- MongoDB Atlas (primary database)
+- Twilio (MOCK mode)
+- OpenAI GPT-5.2 (via emergentintegrations)
+- Emergent Object Storage
+- Pillow (image processing)
+
+## Mocked Services
+- Twilio SMS
+
+## P0 Tasks (Completed)
+- Birthday Card frontend page
+- Inbox email/SMS mode switching fix
+- Share Showroom Link on More page
+
+## P1 Tasks (Upcoming)
+- Gamification & Leaderboards
+- AI-Powered Outreach (contextual follow-ups on "sold" tag)
+- Refactor Authentication (bcrypt password hashing)
+- Mobile Push Notifications (Phase 2)
+- Clean production database for customer launch
+
+## P2 Tasks (Future/Backlog)
+- Full Twilio Integration (MOCK to live)
+- WhatsApp Integration
+- TestFlight Build for iOS
+- Populate Training Hub with video content
+- Full Inventory Management Module
+- Code Cleanup (~80 files)
+- Customer-Facing Gamification & Leaderboards
+- React Hydration Error #418 fix
+- Mobile app tags data sync issue
+
+## Known Issues
+- React Hydration Error #418 (P2)
+- Mobile app tags data sync (P2)
