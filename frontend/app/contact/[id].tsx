@@ -1052,7 +1052,7 @@ export default function ContactDetailScreen() {
                     </View>
                   ) : intelData?.summary ? (
                     <>
-                      <Text style={s.intelSummary}>{intelData.summary}</Text>
+                      <IntelRenderer text={intelData.summary} />
                       <View style={s.intelMeta}>
                         <Text style={s.intelMetaText}>
                           Based on {intelData.data_points?.messages || 0} messages, {intelData.data_points?.events || 0} events, {intelData.data_points?.voice_notes || 0} voice notes
