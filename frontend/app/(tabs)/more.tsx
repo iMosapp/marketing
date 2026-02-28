@@ -442,6 +442,24 @@ export default function MoreScreen() {
           color: '#C9A962',
         },
         {
+          icon: 'share-outline',
+          title: 'Share Showroom Link',
+          subtitle: 'Copy your public Showroom URL',
+          onPress: () => {
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            const showroomUrl = `${baseUrl}/showcase/${user?._id}`;
+            if (typeof navigator !== 'undefined' && navigator.clipboard) {
+              navigator.clipboard.writeText(showroomUrl);
+              showSimpleAlert('Link Copied', `Your Showroom URL has been copied to clipboard:\n${showroomUrl}`);
+            } else if (typeof navigator !== 'undefined' && navigator.share) {
+              navigator.share({ title: 'My Showroom', url: showroomUrl }).catch(() => {});
+            } else {
+              showSimpleAlert('Your Showroom URL', showroomUrl);
+            }
+          },
+          color: '#FF9500',
+        },
+        {
           icon: 'stats-chart',
           title: 'Analytics',
           subtitle: 'Performance metrics',
