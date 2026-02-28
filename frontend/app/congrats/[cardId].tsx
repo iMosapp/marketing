@@ -233,12 +233,7 @@ export default function CongratsCardPage() {
           style={styles.actionsTitleLink}
           onPress={() => {
             if (cardData?.salesman_id) {
-              const reviewUrl = `https://app.imosapp.com/p/${cardData.salesman_id}`;
-              if (Platform.OS === 'web') {
-                window.open(reviewUrl, '_blank');
-              } else {
-                Linking.openURL(reviewUrl);
-              }
+              router.push(`/p/${cardData.salesman_id}` as any);
             }
           }}
         >
