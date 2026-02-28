@@ -212,8 +212,8 @@ async def get_messaging_report(
                 {'user_id': {'$in': user_ids}}
             ]
         
-        sms = await db.messages.count_documents({**day_filter, 'type': 'sms'})
-        email = await db.messages.count_documents({**day_filter, 'type': 'email'})
+        sms = await db.messages.count_documents({**day_filter, '$or': [{'type': 'sms'}, {'channel': 'sms'}, {'channel': 'sms_personal'}]})
+        email = await db.messages.count_documents({**day_filter, '$or': [{'type': 'email'}, {'channel': 'email'}]})
         ai = await db.messages.count_documents({**day_filter, 'sent_by_ai': True})
         
         daily_stats.append({
