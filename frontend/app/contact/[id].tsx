@@ -1090,11 +1090,6 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
-          {/* ===== EDITABLE DETAILS — Basic Info moved to top, remaining fields here ===== */}
-          {isEditing && (
-            <>
-            </>
-          )}
 
           {/* ===== VOICE NOTES ===== */}
           {!isNewContact && Platform.OS === 'web' && (
