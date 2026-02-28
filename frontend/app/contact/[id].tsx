@@ -206,6 +206,18 @@ export default function ContactDetailScreen() {
   const [feedSearch, setFeedSearch] = useState('');
   const INITIAL_EVENT_COUNT = 5;
 
+  // Computed: filtered events for search (must come after state declarations)
+  const feedQuery = feedSearch.toLowerCase().trim();
+  const filteredEvents = feedQuery
+    ? events.filter(e =>
+        (e.title || '').toLowerCase().includes(feedQuery) ||
+        (e.description || '').toLowerCase().includes(feedQuery) ||
+        (e.event_type || '').toLowerCase().includes(feedQuery) ||
+        (getEventTitle(e)).toLowerCase().includes(feedQuery)
+      )
+    : events;
+  const visibleEvents = showAllEvents ? filteredEvents : filteredEvents.slice(0, INITIAL_EVENT_COUNT);
+
   // Modals
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeDateField, setActiveDateField] = useState<string | null>(null);
