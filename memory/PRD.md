@@ -3,71 +3,62 @@
 ## Original Problem Statement
 Full-stack Relationship Management System (RMS) for automotive dealerships. React/Expo frontend, FastAPI backend, MongoDB database. The platform helps salespeople manage customer relationships, send personalized communications, track activities, and build social proof.
 
-## Core Requirements
-- Contact management with tagging, notes, and lifecycle tracking
-- Multi-channel messaging (SMS, Email, Personal SMS fallback)
-- Automated card generation (Congrats Cards, Birthday Cards)
-- Public shareable pages (Digital Business Card, Showroom, Card Pages)
-- Activity reporting with scheduled email delivery
-- White-label branding ("Powered by i'M On Social")
-- PWA support for iOS standalone mode
-- Public REST API and webhook system for CRM integrations
-- User lifecycle management with automated tagging
-- Soft-delete data retention policy
-
 ## Architecture
 - **Frontend:** React/Expo (port 3000)
 - **Backend:** FastAPI (port 8001, prefixed /api)
 - **Database:** MongoDB Atlas
 - **Storage:** Emergent Object Storage
-- **Email:** Resend
+- **Email:** Resend (verified working)
 - **SMS:** Twilio (MOCK mode)
 - **AI:** OpenAI GPT-5.2 via emergentintegrations
 - **Scheduler:** APScheduler for daily jobs
 
-## Key Features Implemented
-- Authentication (JWT-based, plain-text passwords - bcrypt migration pending)
-- Contact CRUD with tags, notes, activity history
-- Inbox with SMS/Email modes, archive, swipe actions
-- Congrats Card generation and public page
-- Birthday Card generation and public page
-- The Showroom - public social proof page (with Share Link on More page)
-- Digital Business Card
-- Activity Reporting with date filters and scheduled email delivery
-- White-label branded HTML emails via Resend
-- Public REST API with API key authentication
-- Outgoing webhooks for third-party integrations
-- User lifecycle engine (automated daily scans)
-- PWA manifest and meta tags for iOS standalone mode
-- Email diagnostic endpoint for production troubleshooting
-- Comprehensive [EMAIL-FLOW] logging in backend
-
 ## Credentials
 - **Super Admin:** forest@imosapp.com / Admin123!
 
+## Key Features Implemented
+- Contact management with tagging, notes, lifecycle tracking
+- Multi-channel messaging (SMS, Email, Personal SMS fallback)
+- Automated card generation (Congrats Cards, Birthday Cards)
+- Public shareable pages (Digital Business Card, Showroom, Card Pages)
+- Activity Reporting with scheduled email delivery
+- White-label branded HTML emails via Resend
+- Public REST API with API key authentication
+- PWA manifest and meta tags for iOS standalone mode
+- Email diagnostic endpoint for production troubleshooting
+- Comprehensive [EMAIL-FLOW] logging
+- Optimized Showcase/Showroom API (photos served via dedicated endpoints, not inline base64)
+
+## Critical Bugs Fixed (2026-02-28)
+
+### Email Pipeline Bugs
+1. Frontend email prompt called wrong API endpoint (`/conversations/{id}` → 404 instead of `/messages/conversation/{id}/info`). Contact emails entered via prompt never saved.
+2. Frontend didn't check send response status — showed failed emails as "sent"
+3. Failed email events weren't tracked in `contact_events`
+4. Added `getattr()` fallback for Resend SDK v2+ response objects
+5. Added comprehensive `[EMAIL-FLOW]` logging at every pipeline step
+6. Added diagnostic endpoint: `GET /api/messages/email-diagnostic/{user_id}/{contact_id}`
+
+### Showroom Performance Bug
+7. **Showroom "spinning wheel of death"**: API response was 2.9MB+ due to inline base64 photos. Fixed by:
+   - Excluding base64 blobs from MongoDB queries
+   - Serving photos via dedicated endpoints: `/api/showcase/photo/{card_id}`, `/api/showcase/user-photo/{user_id}`, `/api/showcase/store-logo/{store_id}`
+   - Response size reduced from 2.9MB to 679 bytes (4,000x improvement)
+   - Photos lazy-load via browser with `Cache-Control: max-age=86400`
+
+### Inbox UX Bugs
+8. Email prompt dismiss now auto-switches back to SMS mode
+9. Share Showroom Link tile added to More page
+
 ## Key API Endpoints
-- POST /api/auth/login
-- GET /api/contacts/{user_id}
-- POST /api/messages/send/{user_id} (handles SMS, email, personal SMS)
-- POST /api/messages/send/{user_id}/{conversation_id}
-- GET /api/messages/email-diagnostic/{user_id}/{contact_id} (NEW - diagnoses email pipeline)
-- GET /api/messages/conversation/{conversation_id}/info
+- POST /api/messages/send/{user_id}
+- GET /api/messages/email-diagnostic/{user_id}/{contact_id}
+- GET /api/showcase/user/{user_id} (optimized - no inline photos)
+- GET /api/showcase/photo/{card_id} (serves card photo as image)
+- GET /api/showcase/user-photo/{user_id} (serves user photo)
+- GET /api/showcase/store-logo/{store_id} (serves store logo)
 - POST /api/birthday/create
 - GET /api/birthday/card/{card_id}
-- GET /api/showcase/{user_id}
-- GET /api/reports/activity-summary
-- POST /api/reports/send-email-report
-
-## Critical Email Bugs Fixed (2026-02-28)
-1. **Frontend email prompt save used wrong endpoint** - Was calling `GET /api/conversations/{id}` (404) instead of `GET /api/messages/conversation/{id}/info`. Contact emails entered in the prompt were NEVER being saved.
-2. **Frontend didn't check send response status** - Even when backend returned `{status: 'failed'}`, user saw the message as "sent" (optimistic update never rolled back).
-3. **Failed email events not tracked** - Contact events only logged on success. Failed sends left no audit trail.
-4. **Resend SDK response handling** - Added `getattr()` fallback for newer SDK versions that return objects instead of dicts.
-5. **Added comprehensive [EMAIL-FLOW] logging** - Every step of the email pipeline is now logged for production debugging.
-6. **Added diagnostic endpoint** - `GET /api/messages/email-diagnostic/{user_id}/{contact_id}` traces user→contact→conversation→resend→brand→send step by step.
-
-## Mocked Services
-- Twilio SMS
 
 ## P1 Tasks (Upcoming)
 - Gamification & Leaderboards
@@ -83,6 +74,8 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - Populate Training Hub with video content
 - Full Inventory Management Module
 - Code Cleanup (~80 files)
-- Customer-Facing Gamification & Leaderboards
-- React Hydration Error #418 fix
-- Mobile app tags data sync issue
+- React Hydration Error #418
+- Mobile app tags data sync
+
+## Mocked Services
+- Twilio SMS
