@@ -1389,6 +1389,23 @@ const s = StyleSheet.create({
     backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
   },
   showMoreText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
+  // Photo viewer
+  photoViewerOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center',
+  },
+  photoViewerClose: {
+    position: 'absolute', top: 50, right: 20, zIndex: 10, width: 40, height: 40,
+    borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center',
+  },
+  photoViewerContent: {
+    width: '90%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center',
+  },
+  photoViewerImage: {
+    width: '100%', height: '100%', borderRadius: 12,
+  },
+  photoViewerName: {
+    color: '#F2F2F7', fontSize: 18, fontWeight: '600', marginTop: 16,
+  },
 
   // Conversation link
   conversationLink: {
