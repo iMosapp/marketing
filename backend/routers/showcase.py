@@ -207,12 +207,14 @@ async def get_store_showcase(store_id: str):
     """Public endpoint: Get showcase data for an entire store."""
     db = get_db()
 
-    store = await db.stores.find_one({"_id": ObjectId(store_id)})
+    store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"logo_url": 0})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
 
+    has_logo = await db.stores.count_documents({"_id": ObjectId(store_id), "logo_url": {"$exists": True, "$ne": None, "$ne": ""}})
+
     # Get all users in this store
-    users = await db.users.find({"store_id": store_id}, {"password": 0}).to_list(200)
+    users = await db.users.find({"store_id": store_id}, {"password": 0, "photo_url": 0}).to_list(200)
     user_ids = [str(u["_id"]) for u in users]
 
     entries = await _build_showcase_entries(
@@ -228,10 +230,10 @@ async def get_store_showcase(store_id: str):
         "store": {
             "id": str(store["_id"]),
             "name": store.get("name", ""),
-            "logo_url": store.get("logo_url"),
+            "logo_url": f"/api/showcase/store-logo/{store_id}" if has_logo else None,
             "primary_color": store.get("primary_color", "#C9A962"),
         },
-        "team": [{"id": str(u["_id"]), "name": u.get("name", ""), "photo_url": u.get("photo_url")} for u in users],
+        "team": [{"id": str(u["_id"]), "name": u.get("name", ""), "photo_url": f"/api/showcase/user-photo/{str(u['_id'])}"} for u in users],
         "entries": entries,
         "total_deliveries": sum(1 for e in entries if e["type"] == "delivery"),
         "total_reviews": sum(1 for e in entries if e.get("review")),
