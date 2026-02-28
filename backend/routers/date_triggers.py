@@ -41,6 +41,7 @@ class DateTriggerConfig(BaseModel):
     delivery_method: str = "sms"  # sms, email, both
     message_template: str = ""
     holiday_id: Optional[str] = None  # Only for holiday type
+    include_birthday_card: Optional[bool] = True  # Auto-generate birthday card
 
 
 class DateTriggerConfigUpdate(BaseModel):
@@ -87,6 +88,7 @@ async def upsert_date_trigger_config(user_id: str, trigger_type: str, config: Da
         "delivery_method": config.delivery_method,
         "message_template": config.message_template,
         "holiday_id": config.holiday_id,
+        "include_birthday_card": config.include_birthday_card if trigger_type == "birthday" else None,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     
