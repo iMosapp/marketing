@@ -199,6 +199,7 @@ export default function ContactDetailScreen() {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Record<number, boolean>>({});
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [feedSearch, setFeedSearch] = useState('');
   const INITIAL_EVENT_COUNT = 5;
 
   // Modals
