@@ -14,8 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useAuthStore } from '../../store/authStore';
-import api from '../../services/api';
+import { useAuthStore } from '../../../store/authStore';
+import api from '../../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
 
