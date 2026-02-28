@@ -299,17 +299,20 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             }}
         )
         
-        # Log as contact event
+        # Log as contact event (both success and failure for audit trail)
         contact_id = conv.get('contact_id')
-        if contact_id and message['status'] == 'sent':
+        if contact_id:
+            event_type = "email_sent" if message['status'] == 'sent' else "email_failed"
             await get_db().contact_events.insert_one({
                 "contact_id": str(contact_id),
                 "user_id": user_id,
-                "event_type": "email_sent",
+                "event_type": event_type,
                 "channel": "email",
                 "message_id": message['_id'],
                 "content_preview": message_data.content[:100],
                 "recipient": contact_email,
+                "status": message['status'],
+                "error": message.get('error'),
                 "timestamp": datetime.utcnow(),
             })
     elif channel == 'sms_personal':
