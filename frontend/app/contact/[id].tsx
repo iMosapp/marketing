@@ -399,6 +399,21 @@ export default function ContactDetailScreen() {
     }
   };
 
+  const viewFullPhoto = async () => {
+    if (!user || isNewContact || !contact.photo) return;
+    setShowPhotoViewer(true);
+    setFullPhotoLoading(true);
+    try {
+      const res = await contactsAPI.getFullPhoto(user._id, id as string);
+      setFullPhoto(res.photo);
+    } catch {
+      // Fallback to whatever we have
+      setFullPhoto(contact.photo);
+    } finally {
+      setFullPhotoLoading(false);
+    }
+  };
+
   // ===== DATE PICKER =====
   const openDatePicker = (field: string, currentDate: Date | null, label?: string) => {
     const d = currentDate || new Date();
