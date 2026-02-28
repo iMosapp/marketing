@@ -148,6 +148,47 @@ const EVENT_CATEGORY_ICON: Record<string, { icon: string; color: string }> = {
   custom: { icon: 'flag', color: '#8E8E93' },
 };
 
+// Renders relationship intel text with bold section headers and bullet formatting
+const SECTION_HEADERS = ['Quick Take', 'Key Facts', 'Communication Patterns', 'Personal Notes', 'Before Your Next Interaction'];
+
+const IntelRenderer = ({ text }: { text: string }) => {
+  const lines = text.split('\n').filter(l => l.trim());
+  const elements: React.ReactNode[] = [];
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim()
+      .replace(/\*\*/g, '')  // strip any leftover markdown bold
+      .replace(/[—–]/g, ', '); // replace em/en dashes with commas
+
+    const isHeader = SECTION_HEADERS.some(h => trimmed.toLowerCase().startsWith(h.toLowerCase()));
+    const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•');
+
+    if (isHeader) {
+      elements.push(
+        <Text key={i} style={{ color: '#FFF', fontSize: 14, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
+          {trimmed.replace(/:$/, '')}
+        </Text>
+      );
+    } else if (isBullet) {
+      const bulletText = trimmed.replace(/^[-•]\s*/, '');
+      elements.push(
+        <View key={i} style={{ flexDirection: 'row', paddingLeft: 4, marginBottom: 3 }}>
+          <Text style={{ color: '#8E8E93', fontSize: 13, marginRight: 6 }}>{'\u2022'}</Text>
+          <Text style={{ color: '#FFFFFFCC', fontSize: 13, lineHeight: 19, flex: 1 }}>{bulletText}</Text>
+        </View>
+      );
+    } else {
+      elements.push(
+        <Text key={i} style={{ color: '#FFFFFFCC', fontSize: 13, lineHeight: 19, marginBottom: 4 }}>
+          {trimmed}
+        </Text>
+      );
+    }
+  });
+
+  return <View>{elements}</View>;
+};
+
 export default function ContactDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
