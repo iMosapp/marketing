@@ -51,6 +51,7 @@ export default function DocsHubScreen() {
   const user = useAuthStore((state) => state.user);
 
   const [docs, setDocs] = useState<any[]>([]);
+  const [signedDocs, setSignedDocs] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,25 +71,32 @@ export default function DocsHubScreen() {
       const catRes = await api.get('/docs/categories', { headers });
       setCategories(catRes.data);
 
-      let url = '/docs/';
-      const params: string[] = [];
-      if (selectedCategory) params.push(`category=${selectedCategory}`);
-      if (search) params.push(`search=${encodeURIComponent(search)}`);
-      if (params.length) url += '?' + params.join('&');
-
-      const docRes = await api.get(url, { headers });
-
-      // Auto-seed if no docs exist and no filter is active
-      if (docRes.data.length === 0 && !selectedCategory && !search) {
-        try {
-          await api.post('/docs/seed', {}, { headers });
-          const seededRes = await api.get('/docs/', { headers });
-          setDocs(seededRes.data);
-        } catch {
-          setDocs([]);
-        }
+      // If "Signed Documents" is selected, fetch from signed-documents endpoint
+      if (selectedCategory === 'signed') {
+        const signedRes = await api.get('/docs/signed-documents', { headers });
+        setSignedDocs(signedRes.data);
+        setDocs([]);
       } else {
-        setDocs(docRes.data);
+        setSignedDocs([]);
+        let url = '/docs/';
+        const params: string[] = [];
+        if (selectedCategory) params.push(`category=${selectedCategory}`);
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (params.length) url += '?' + params.join('&');
+
+        const docRes = await api.get(url, { headers });
+
+        if (docRes.data.length === 0 && !selectedCategory && !search) {
+          try {
+            await api.post('/docs/seed', {}, { headers });
+            const seededRes = await api.get('/docs/', { headers });
+            setDocs(seededRes.data);
+          } catch {
+            setDocs([]);
+          }
+        } else {
+          setDocs(docRes.data);
+        }
       }
     } catch (error) {
       console.error('Failed to load docs:', error);
