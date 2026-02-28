@@ -1851,13 +1851,36 @@ const s = StyleSheet.create({
     borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerContent: {
-    width: '90%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center',
+    width: '85%', aspectRatio: 0.85, justifyContent: 'center', alignItems: 'center', marginTop: 20,
   },
   photoViewerImage: {
     width: '100%', height: '100%', borderRadius: 12,
   },
   photoViewerName: {
-    color: '#F2F2F7', fontSize: 18, fontWeight: '600', marginTop: 16,
+    color: '#F2F2F7', fontSize: 16, fontWeight: '600', marginTop: 12,
+  },
+  galleryStrip: {
+    width: '100%', marginTop: 16, paddingBottom: 24,
+  },
+  galleryStripInner: {
+    paddingHorizontal: 16, gap: 8, alignItems: 'center',
+  },
+  galleryThumb: {
+    width: 64, height: 64, borderRadius: 10, overflow: 'hidden',
+    borderWidth: 2, borderColor: 'transparent',
+  },
+  galleryThumbActive: {
+    borderColor: '#C9A962',
+  },
+  galleryThumbImg: {
+    width: '100%', height: '100%',
+  },
+  galleryThumbBadge: {
+    position: 'absolute' as const, bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)', paddingVertical: 2,
+  },
+  galleryThumbBadgeText: {
+    color: '#FFF', fontSize: 8, fontWeight: '700', textAlign: 'center' as const, textTransform: 'uppercase' as const,
   },
   // Voice notes
   vnRecordBtn: {
