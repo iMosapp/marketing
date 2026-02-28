@@ -171,6 +171,19 @@ export default function ContactDetailScreen() {
   const [fullPhotoLoading, setFullPhotoLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(isNewContact);
 
+  // Voice notes
+  const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [voiceNotesLoading, setVoiceNotesLoading] = useState(false);
+  const [uploadingVoiceNote, setUploadingVoiceNote] = useState(false);
+  const [playingNoteId, setPlayingNoteId] = useState<string | null>(null);
+  const [showAllNotes, setShowAllNotes] = useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const recordingTimerRef = React.useRef<any>(null);
+  const MAX_RECORDING_SECONDS = 120;
+
   // Events & stats
   const [events, setEvents] = useState<ContactEvent[]>([]);
   const [stats, setStats] = useState<ContactStats>({
