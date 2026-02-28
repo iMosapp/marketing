@@ -1061,8 +1061,8 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
-          {/* ===== TAGS (always visible) ===== */}
-          {(contact.tags.length > 0 || isEditing) && (
+          {/* ===== TAGS (view mode only — edit mode renders at top) ===== */}
+          {!isEditing && contact.tags.length > 0 && (
             <View style={s.section}>
               <Text style={s.sectionHeader}>Tags</Text>
               <View style={s.tagsWrap}>
