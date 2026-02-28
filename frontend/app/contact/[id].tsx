@@ -1298,58 +1298,9 @@ export default function ContactDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {/* ===== REMAINING EDIT FIELDS (after activity feed) ===== */}
+          {/* ===== REMAINING EDIT FIELDS (Important Dates moved to top) ===== */}
           {isEditing && (
             <>
-              {/* Important Dates */}
-              <View style={s.section}>
-                <Text style={s.sectionHeader}>Important Dates</Text>
-                {[
-                  { field: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF9500' },
-                  { field: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF2D55' },
-                  { field: 'date_sold', label: 'Date Sold', icon: 'car', color: '#34C759' },
-                ].map(d => (
-                  <TouchableOpacity key={d.field} style={s.dateRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)}>
-                    <View style={[s.dateRowIcon, { backgroundColor: `${d.color}20` }]}>
-                      <Ionicons name={d.icon as any} size={18} color={d.color} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.dateRowLabel}>{d.label}</Text>
-                      <Text style={[s.dateRowValue, !(contact as any)[d.field] && { color: '#636366' }]}>
-                        {formatDateDisplay((contact as any)[d.field])}
-                      </Text>
-                    </View>
-                    {(contact as any)[d.field] && (
-                      <TouchableOpacity onPress={() => clearDate(d.field)} style={{ padding: 4, marginRight: 8 }}>
-                        <Ionicons name="close-circle" size={20} color="#8E8E93" />
-                      </TouchableOpacity>
-                    )}
-                    <Ionicons name="calendar" size={20} color="#8E8E93" />
-                  </TouchableOpacity>
-                ))}
-                {contact.custom_dates.map((cd, i) => (
-                  <TouchableOpacity key={i} style={s.dateRow} onPress={() => openDatePicker(`custom_${i}`, cd.date)}>
-                    <View style={[s.dateRowIcon, { backgroundColor: '#007AFF20' }]}>
-                      <Ionicons name="calendar-outline" size={18} color="#007AFF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.dateRowLabel}>{cd.name}</Text>
-                      <Text style={[s.dateRowValue, !cd.date && { color: '#636366' }]}>{formatDateDisplay(cd.date)}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => removeCustomDateField(i)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity style={s.addBtn} onPress={() => {
-                  setTempDate(new Date()); setActiveDateField('pending_custom');
-                  setActiveDateLabel('Select Date'); setShowDatePicker(true);
-                }}>
-                  <Ionicons name="add-circle" size={20} color="#007AFF" />
-                  <Text style={s.addBtnText}>Add Custom Date</Text>
-                </TouchableOpacity>
-              </View>
-
               {/* Referral */}
               <View style={s.section}>
                 <Text style={s.sectionHeader}>Referral</Text>
