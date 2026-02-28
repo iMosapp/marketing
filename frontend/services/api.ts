@@ -171,6 +171,17 @@ export const contactsAPI = {
     return response.data;
   },
 
+  // Contact Intel (AI Summary)
+  getContactIntel: async (userId: string, contactId: string) => {
+    const response = await api.get(`/contact-intel/${userId}/${contactId}`);
+    return response.data;
+  },
+
+  generateContactIntel: async (userId: string, contactId: string) => {
+    const response = await api.post(`/contact-intel/${userId}/${contactId}`, {}, { timeout: 30000 });
+    return response.data;
+  },
+
   create: async (userId: string, data: any) => {
     const response = await api.post(`/contacts/${userId}`, data);
     return response.data;
