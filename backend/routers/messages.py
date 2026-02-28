@@ -907,6 +907,8 @@ async def send_message_simple(user_id: str, message_data: dict):
         "conversation_id": conversation_id,
         "content": content,
         "sender": "user",
+        "sender_id": user_id,
+        "user_id": user_id,
         "timestamp": datetime.utcnow(),
         "status": "sending",
         "direction": "outbound",
