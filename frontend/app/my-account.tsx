@@ -34,12 +34,19 @@ export default function MyAccountScreen() {
   const [activityData, setActivityData] = useState<any>(null);
   const [activityLoading, setActivityLoading] = useState(false);
   const [activityExpanded, setActivityExpanded] = useState(true);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const loadActivity = useCallback(async (period: string) => {
+  const loadActivity = useCallback(async (period: string, startDate?: string, endDate?: string) => {
     if (!user?._id) return;
     setActivityLoading(true);
     try {
-      const res = await api.get(`/reports/user-activity/${user._id}?period=${period}`);
+      let url = `/reports/user-activity/${user._id}?period=${period}`;
+      if (period === 'custom' && startDate && endDate) {
+        url += `&start_date=${startDate}&end_date=${endDate}`;
+      }
+      const res = await api.get(url);
       setActivityData(res.data);
     } catch (e) {
       console.error('Failed to load activity:', e);
@@ -49,8 +56,12 @@ export default function MyAccountScreen() {
   }, [user?._id]);
 
   useEffect(() => {
-    loadActivity(activityPeriod);
-  }, [activityPeriod, loadActivity]);
+    if (activityPeriod === 'custom' && customStartDate && customEndDate) {
+      loadActivity(activityPeriod, customStartDate, customEndDate);
+    } else if (activityPeriod !== 'custom') {
+      loadActivity(activityPeriod);
+    }
+  }, [activityPeriod, customStartDate, customEndDate, loadActivity]);
 
   // Refresh user data when screen focuses
   useFocusEffect(
