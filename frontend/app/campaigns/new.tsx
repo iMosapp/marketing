@@ -41,6 +41,9 @@ export default function CampaignBuilderScreen() {
   const user = useAuthStore((state) => state.user);
   
 const { showToast } = useToast();
+  const [showTemplates, setShowTemplates] = useState(true);
+  const [prebuiltTemplates, setPrebuiltTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
     const [campaign, setCampaign] = useState({
     name: '',
     type: 'check_in' as 'birthday' | 'anniversary' | 'check_in' | 'sold_followup' | 'custom',
