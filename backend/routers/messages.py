@@ -19,6 +19,28 @@ from services.twilio_service import send_sms, get_twilio_status, normalize_phone
 router = APIRouter(prefix="/messages", tags=["Messages"])
 logger = logging.getLogger(__name__)
 
+# Email validation — reject "None", "null", empty strings, and non-email values
+import re
+_EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+def _clean_email(val) -> str:
+    """Return a valid email string or empty string. Filters out 'None', 'null', etc."""
+    if not val or not isinstance(val, str):
+        return ''
+    val = val.strip()
+    if val.lower() in ('none', 'null', 'n/a', 'undefined', ''):
+        return ''
+    if not _EMAIL_RE.match(val):
+        return ''
+    return val
+
+def _get_contact_email(contact: dict) -> str:
+    """Extract a valid email from a contact document, checking both email fields."""
+    if not contact:
+        return ''
+    return _clean_email(contact.get('email')) or _clean_email(contact.get('email_work'))
+
+
 # AI suggestion templates
 AI_SUGGESTIONS = [
     "Thanks for reaching out! I'll get back to you shortly.",
