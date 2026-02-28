@@ -297,6 +297,118 @@ const AICloneDemo = () => {
   );
 };
 
+// Birthday Card Demo
+const BirthdayCardDemo = () => (
+  <View style={demoStyles.phoneFrame}>
+    <View style={{ borderRadius: 16, padding: 16, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 8 }}>
+        {['#FF6B8A', '#FFD700', '#00CED1', '#FF8C00', '#9370DB'].map((c, i) => (
+          <View key={i} style={{ width: 6 + (i%2)*2, height: 6 + (i%2)*2, borderRadius: 10, backgroundColor: c }} />
+        ))}
+      </View>
+      <Text style={{ color: '#FF6B8A', fontSize: 18, fontWeight: '800', marginBottom: 10 }}>Happy Birthday!</Text>
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,107,138,0.2)', borderWidth: 2, borderColor: '#FF6B8A', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+        <Ionicons name="person" size={28} color="#FF6B8A" />
+      </View>
+      <Text style={{ color: '#FFF', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>Sarah Johnson</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>Wishing you a wonderful birthday!</Text>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <Ionicons name="chatbubble" size={16} color="#34C759" />
+        <Ionicons name="mail" size={16} color="#007AFF" />
+        <Ionicons name="share-social" size={16} color="#FF9500" />
+      </View>
+    </View>
+  </View>
+);
+
+// Review Page Demo
+const ReviewPageDemo = () => (
+  <View style={demoStyles.phoneFrame}>
+    <View style={{ padding: 12 }}>
+      <View style={{ alignItems: 'center', marginBottom: 10 }}>
+        <Text style={{ color: '#FFD60A', fontSize: 14, fontWeight: '700', marginBottom: 6 }}>Leave a Review</Text>
+        <View style={{ flexDirection: 'row', gap: 4, marginBottom: 8 }}>
+          {[1,2,3,4,5].map(i => (
+            <Ionicons key={i} name="star" size={20} color="#FFD60A" />
+          ))}
+        </View>
+      </View>
+      <View style={{ gap: 6 }}>
+        {[
+          { name: 'Google', icon: 'logo-google' as const, color: '#4285F4' },
+          { name: 'Facebook', icon: 'logo-facebook' as const, color: '#1877F2' },
+          { name: 'Yelp', icon: 'star' as const, color: '#FF1A1A' },
+        ].map(r => (
+          <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 10, gap: 10 }}>
+            <Ionicons name={r.icon} size={18} color={r.color} />
+            <Text style={{ color: '#FFF', fontSize: 13, flex: 1 }}>Leave a {r.name} Review</Text>
+            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+          </View>
+        ))}
+      </View>
+    </View>
+  </View>
+);
+
+// Showroom Demo
+const ShowroomDemo = () => (
+  <View style={demoStyles.phoneFrame}>
+    <View style={{ padding: 10 }}>
+      <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>My Showroom</Text>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {[{ color: '#C9A962', label: 'Congrats' }, { color: '#FF6B8A', label: 'Birthday' }, { color: '#5856D6', label: 'Featured' }].map(card => (
+          <View key={card.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 8, alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${card.color}30`, justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
+              <Ionicons name="images" size={16} color={card.color} />
+            </View>
+            <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '600' }}>{card.label}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(52,199,89,0.1)', borderRadius: 6, padding: 6, alignItems: 'center' }}>
+          <Ionicons name="chatbubble" size={12} color="#34C759" />
+          <Text style={{ color: '#34C759', fontSize: 9, marginTop: 2 }}>Text Link</Text>
+        </View>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,122,255,0.1)', borderRadius: 6, padding: 6, alignItems: 'center' }}>
+          <Ionicons name="mail" size={12} color="#007AFF" />
+          <Text style={{ color: '#007AFF', fontSize: 9, marginTop: 2 }}>Email</Text>
+        </View>
+        <View style={{ flex: 1, backgroundColor: 'rgba(255,149,0,0.1)', borderRadius: 6, padding: 6, alignItems: 'center' }}>
+          <Ionicons name="copy" size={12} color="#FF9500" />
+          <Text style={{ color: '#FF9500', fontSize: 9, marginTop: 2 }}>Copy</Text>
+        </View>
+      </View>
+    </View>
+  </View>
+);
+
+// Quick Actions Demo
+const QuickActionsDemo = () => (
+  <View style={demoStyles.phoneFrame}>
+    <View style={{ padding: 10 }}>
+      <Text style={{ color: '#FF9500', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>Quick Actions</Text>
+      <View style={{ gap: 6 }}>
+        {[
+          { icon: 'chatbubble' as const, label: 'Send SMS', color: '#34C759' },
+          { icon: 'mail' as const, label: 'Send Email', color: '#007AFF' },
+          { icon: 'gift' as const, label: 'Congrats Card', color: '#C9A962' },
+          { icon: 'star' as const, label: 'Review Invite', color: '#FFD60A' },
+          { icon: 'card' as const, label: 'Digital Card', color: '#5856D6' },
+        ].map(a => (
+          <View key={a.label} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 10, gap: 10 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${a.color}20`, justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name={a.icon} size={14} color={a.color} />
+            </View>
+            <Text style={{ color: '#FFF', fontSize: 13, flex: 1 }}>{a.label}</Text>
+            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+          </View>
+        ))}
+      </View>
+    </View>
+  </View>
+);
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
