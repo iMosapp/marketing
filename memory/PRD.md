@@ -68,7 +68,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ## Known Issues
 
 ### P0 (Critical)
-- None currently (email fix deployed)
+- None currently
 
 ### P1 (High)
 - **Contact Photo Reverting** — Photos revert to old image after upload. Suspected: thumbnail not regenerated.
