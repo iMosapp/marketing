@@ -185,61 +185,6 @@ async def delete_campaign(user_id: str, campaign_id: str):
     
     return {"message": "Campaign deleted successfully"}
 
-# ============= PENDING SENDS (Manual Campaigns) =============
-@router.get("/{user_id}/pending-sends")
-async def get_pending_sends(user_id: str):
-    """Get all pending manual campaign messages waiting for user to send."""
-    db = get_db()
-    pending = await db.campaign_pending_sends.find({
-        "user_id": user_id,
-        "status": "pending",
-    }).sort("created_at", -1).to_list(100)
-
-    for p in pending:
-        p["_id"] = str(p["_id"])
-    return pending
-
-
-@router.post("/{user_id}/pending-sends/{send_id}/complete")
-async def mark_pending_send_complete(user_id: str, send_id: str):
-    """Mark a manual campaign send as completed (user has sent the message)."""
-    db = get_db()
-    result = await db.campaign_pending_sends.update_one(
-        {"_id": ObjectId(send_id), "user_id": user_id},
-        {"$set": {"status": "sent", "sent_at": datetime.utcnow()}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Pending send not found")
-
-    # Log contact event
-    send_doc = await db.campaign_pending_sends.find_one({"_id": ObjectId(send_id)})
-    if send_doc:
-        channel = send_doc.get("channel", "sms")
-        event_type = "email_sent" if channel == "email" else "sms_sent"
-        await db.contact_events.insert_one({
-            "event_type": event_type,
-            "user_id": user_id,
-            "contact_id": send_doc.get("contact_id", ""),
-            "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {send_doc.get('step', 0)} (manual)",
-            "timestamp": datetime.utcnow(),
-            "manual_campaign": True,
-        })
-
-    return {"success": True, "message": "Marked as sent"}
-
-
-@router.post("/{user_id}/pending-sends/{send_id}/skip")
-async def skip_pending_send(user_id: str, send_id: str):
-    """Skip a manual campaign send."""
-    db = get_db()
-    result = await db.campaign_pending_sends.update_one(
-        {"_id": ObjectId(send_id), "user_id": user_id},
-        {"$set": {"status": "skipped", "skipped_at": datetime.utcnow()}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Pending send not found")
-    return {"success": True, "message": "Skipped"}
-
 
 # ============= ENROLLMENT ENDPOINTS =============
 @router.post("/{user_id}/{campaign_id}/enroll/{contact_id}")
