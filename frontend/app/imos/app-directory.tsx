@@ -35,14 +35,18 @@ type Category = {
 const PAGE_CATALOG: Category[] = [
   {
     id: 'public_pages',
-    title: 'Public Landing Pages',
+    title: 'Public Customer Pages',
     icon: 'globe-outline',
     color: '#34C759',
     pages: [
-      { name: 'Review Links Page', description: 'Customer-facing review link hub (Podium-style)', path: '/review/imos-demo', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
-      { name: 'Dealership Card', description: 'Account-level digital card for the dealership', path: '/card/store/imos-demo', icon: 'business-outline', color: '#34C759', audience: 'Customers, prospects' },
-      { name: 'Digital Business Card', description: 'Shareable digital card for any team member', path: '/card/demo', icon: 'card-outline', color: '#007AFF', audience: 'Customers, prospects' },
-      { name: 'Congrats Card', description: 'Customer thank-you & congratulations card', path: '/congrats/demo', icon: 'gift-outline', color: '#C9A962', audience: 'Customers' },
+      { name: 'Digital Business Card', description: 'Shareable card with photo, QR, reviews, social links', path: '/imos/digital-card', icon: 'card-outline', color: '#007AFF', audience: 'Customers, prospects' },
+      { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', audience: 'Customers' },
+      { name: 'Birthday Card', description: 'Personalized birthday card with photo & message', path: '/imos/birthday-card', icon: 'gift-outline', color: '#FF6B8A', audience: 'Customers' },
+      { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/imos/reviews', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
+      { name: 'Showroom', description: 'User showcase page — congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', audience: 'Customers, public' },
+      { name: 'Join / Invite Page', description: 'Team invite link landing page', path: '/imos/join', icon: 'person-add-outline', color: '#34C759', audience: 'New team members' },
+      { name: 'Partner Agreement', description: 'Public partner agreement signing page', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', audience: 'Partners' },
+      { name: 'NDA Signing', description: 'Public NDA signing page', path: '/imos/nda', icon: 'lock-closed-outline', color: '#FF3B30', audience: 'Partners, employees' },
     ],
   },
   {
