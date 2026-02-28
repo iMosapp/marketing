@@ -1474,7 +1474,7 @@ async def email_diagnostic(user_id: str, contact_id: str):
     SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
     steps.append({
         "step": "resend_config",
-        "api_key_present": bool(RESEND_KEY),
+        "ok": bool(RESEND_KEY),
         "api_key_prefix": RESEND_KEY[:10] + "..." if RESEND_KEY else "MISSING",
         "sender_email": SENDER
     })
