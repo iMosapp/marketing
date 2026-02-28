@@ -191,6 +191,29 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Recent activity: {e}")
 
+    # 7. PENDING CAMPAIGN SENDS (manual mode — high priority action items)
+    try:
+        pending_sends = list(db.campaign_pending_sends.find({
+            "user_id": user_id,
+            "status": "pending",
+        }).sort("created_at", -1).limit(10))
+        for ps in pending_sends:
+            notifications.append({
+                "id": f"csend_{ps['_id']}",
+                "type": "campaign_send",
+                "category": "campaigns",
+                "priority": 1,
+                "title": f"Send: {ps.get('campaign_name', 'Campaign')}",
+                "body": f"Step {ps.get('step', 0)} to {ps.get('contact_name', 'contact')} via {ps.get('channel', 'sms').upper()}",
+                "link": f"/campaigns/pending-send/{ps['_id']}",
+                "contact_name": ps.get("contact_name"),
+                "timestamp": _ts(ps.get("created_at")),
+                "read": False,
+                "source": "campaigns",
+            })
+    except Exception as e:
+        logger.debug(f"Pending campaign sends: {e}")
+
     # Count categories before filtering
     category_counts = {}
     for n in notifications:
