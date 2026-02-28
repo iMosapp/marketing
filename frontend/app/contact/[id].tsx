@@ -1639,16 +1639,18 @@ export default function ContactDetailScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Full Photo Viewer Modal */}
+      {/* Full Photo Viewer Modal with Gallery */}
       <Modal visible={showPhotoViewer} animationType="fade" transparent onRequestClose={() => setShowPhotoViewer(false)}>
         <View style={s.photoViewerOverlay}>
           <TouchableOpacity
             style={s.photoViewerClose}
-            onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); }}
+            onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); }}
             data-testid="close-photo-viewer"
           >
             <Ionicons name="close" size={28} color="#FFF" />
           </TouchableOpacity>
+
+          {/* Main Photo */}
           <View style={s.photoViewerContent}>
             {fullPhotoLoading ? (
               <ActivityIndicator size="large" color="#C9A962" />
@@ -1663,7 +1665,39 @@ export default function ContactDetailScreen() {
               <Text style={{ color: '#8E8E93', fontSize: 16 }}>No photo available</Text>
             )}
           </View>
-          <Text style={s.photoViewerName}>{contact.first_name} {contact.last_name}</Text>
+
+          {/* Photo label */}
+          <Text style={s.photoViewerName}>
+            {allPhotos.length > 0 && allPhotos[selectedPhotoIndex]
+              ? allPhotos[selectedPhotoIndex].label
+              : `${contact.first_name} ${contact.last_name}`}
+          </Text>
+
+          {/* Thumbnail Gallery Strip */}
+          {allPhotos.length > 1 && (
+            <View style={s.galleryStrip}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.galleryStripInner}>
+                {allPhotos.map((photo: any, idx: number) => (
+                  <TouchableOpacity
+                    key={`${photo.type}-${idx}`}
+                    style={[s.galleryThumb, selectedPhotoIndex === idx && s.galleryThumbActive]}
+                    onPress={() => {
+                      setSelectedPhotoIndex(idx);
+                      setFullPhoto(photo.url);
+                    }}
+                    data-testid={`gallery-thumb-${idx}`}
+                  >
+                    <Image source={{ uri: photo.url }} style={s.galleryThumbImg} resizeMode="cover" />
+                    <View style={s.galleryThumbBadge}>
+                      <Text style={s.galleryThumbBadgeText}>
+                        {photo.type === 'profile' ? 'Profile' : photo.type === 'congrats' ? 'Congrats' : 'Birthday'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </Modal>
     </SafeAreaView>
