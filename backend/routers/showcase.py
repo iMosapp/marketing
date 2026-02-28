@@ -3,10 +3,12 @@ The Showroom — Public social proof showcase page.
 Displays delivery photos (congrats cards) paired with customer reviews.
 """
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timezone
 import re
 import logging
+import base64
 
 from routers.database import get_db
 
