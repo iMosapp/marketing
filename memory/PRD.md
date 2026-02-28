@@ -68,6 +68,8 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - **Card Preview Before Sending**: Both Congrats and Birthday card creation pages now have a 3-step flow: Fill Form -> Preview Card (see how it looks) -> Edit or Create & Send -> Share Options. Replaced the old "Create & Share Card" button with "Preview Card".
 - **Back Button on Card View Pages**: Both `/congrats/{cardId}` and `/birthday/{cardId}` public view pages now have a "Back" button at the top to return to the share/send screen after reviewing.
 - **Full Logo/Icon Rebrand**: Replaced all favicons, app icons, login logo, email logo, PWA manifest icons, splash screen, and adaptive icons across frontend/backend/marketing with the new "iM On Social" multicolor logo.
+- **Onboarding Redesigned as Quick Wins Walkthrough**: 13-slide interactive flow for salespeople (role-specific for managers/admins with extra slides). Slides: Welcome → Profile Check → 8 Quick Win slides (Digital Card, Congrats Cards, Birthday Cards, Review Page, Showroom, Quick Actions, CSV Import, Campaigns) each with visual demo, benefits, and "Try It Now" button → AI Setup → Checklist → Complete.
+- **Admin App Directory Expanded**: Added 3 new top-level categories: Public Customer Pages (8), Quick Win Tools (8), Analytics & Reporting (7). Now 88 total pages with Preview, Copy Link, and Share on every entry.
 
 ## P1 Tasks (Upcoming)
 - Gamification & Leaderboards
