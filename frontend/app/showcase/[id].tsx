@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
 
   // Header
   header: { alignItems: 'center', paddingTop: 20, paddingHorizontal: 20 },
-  storeLogo: { width: 120, height: 40, marginBottom: 16, opacity: 0.8 },
+  storeLogo: { width: 120, height: 40, marginBottom: 16, opacity: 0.8, backgroundColor: 'transparent' },
 
   heroSection: { alignItems: 'center', marginBottom: 24 },
   heroAvatar: {

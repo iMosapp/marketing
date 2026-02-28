@@ -420,6 +420,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 60,
     resizeMode: 'contain',
+    backgroundColor: 'transparent',
   },
   headline: {
     fontSize: 36,

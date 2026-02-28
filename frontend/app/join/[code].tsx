@@ -532,6 +532,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 16,
     marginBottom: 16,
+    backgroundColor: 'transparent',
   },
   storeIconContainer: {
     width: 80,

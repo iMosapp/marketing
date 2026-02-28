@@ -591,6 +591,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 16,
+    backgroundColor: 'transparent',
   },
   logoPlaceholder: {
     alignItems: 'center',

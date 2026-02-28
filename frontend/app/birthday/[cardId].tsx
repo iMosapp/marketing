@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   salesmanName: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
   salesmanTitle: { fontSize: 14, fontWeight: '500', marginBottom: 2 },
   storeName: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
-  storeLogo: { width: 100, height: 36, marginBottom: 20, opacity: 0.7 },
+  storeLogo: { width: 100, height: 36, marginBottom: 20, opacity: 0.7, backgroundColor: 'transparent' },
 
   actions: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 },

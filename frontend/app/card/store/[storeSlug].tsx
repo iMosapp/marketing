@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? { maxWidth: 480, marginLeft: 'auto', marginRight: 'auto', width: '100%' } : {}),
   },
   header: { alignItems: 'center', paddingTop: 48, paddingBottom: 24, paddingHorizontal: 24 },
-  logo: { width: 80, height: 80, borderRadius: 20, marginBottom: 16 },
+  logo: { width: 80, height: 80, borderRadius: 20, marginBottom: 16, backgroundColor: 'transparent' },
   logoPlaceholder: { width: 80, height: 80, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   storeName: { fontSize: 24, fontWeight: '700', color: '#FFF', textAlign: 'center', letterSpacing: -0.3 },
   tagline: { fontSize: 14, color: '#C9A962', marginTop: 4, fontWeight: '500' },
