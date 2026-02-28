@@ -583,6 +583,78 @@ export default function InboxScreen() {
     }
   };
 
+  // ============= NEW SWIPE ACTION HANDLERS =============
+
+  const handleFlagConversation = async (conversationId: string) => {
+    if (!user) return;
+    try {
+      const conv = conversations.find(c => c._id === conversationId);
+      const newFlagged = !conv?.flagged;
+      await messagesAPI.flagConversation(user._id, conversationId, newFlagged);
+      loadConversations();
+    } catch (error) {
+      console.error('Error flagging conversation:', error);
+    }
+  };
+
+  const handleCreateTaskFromConversation = async (conversationId: string) => {
+    if (!user) return;
+    const conv = conversations.find(c => c._id === conversationId);
+    const contactName = conv?.contact?.name || 'Unknown';
+    const contactId = conv?.contact_id || '';
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+      await tasksAPI.create(user._id, {
+        contact_id: contactId,
+        type: 'follow_up',
+        title: `Follow up with ${contactName}`,
+        description: '',
+        due_date: tomorrow.toISOString(),
+        priority: 'medium',
+      });
+      Alert.alert('Task Created', `Follow-up task for ${contactName} created for tomorrow.`);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      Alert.alert('Error', 'Failed to create task');
+    }
+  };
+
+  // Tag picker state for swipe-to-tag
+  const [showSwipeTagPicker, setShowSwipeTagPicker] = useState(false);
+  const [swipeTagTarget, setSwipeTagTarget] = useState<any>(null);
+  const [swipeAvailableTags, setSwipeAvailableTags] = useState<any[]>([]);
+
+  const handleOpenTagPicker = async (conversationId: string) => {
+    if (!user) return;
+    const conv = conversations.find(c => c._id === conversationId);
+    setSwipeTagTarget(conv);
+    try {
+      const tags = await tagsAPI.getAll(user._id);
+      setSwipeAvailableTags(tags);
+    } catch { setSwipeAvailableTags([]); }
+    setShowSwipeTagPicker(true);
+  };
+
+  const handleApplySwipeTag = async (tagName: string) => {
+    if (!user || !swipeTagTarget) return;
+    const contactId = swipeTagTarget.contact_id;
+    if (!contactId) { setShowSwipeTagPicker(false); return; }
+    try {
+      const contact = await contactsAPI.getById(user._id, contactId);
+      const currentTags = contact.tags || [];
+      if (!currentTags.includes(tagName)) {
+        await contactsAPI.update(user._id, contactId, { tags: [...currentTags, tagName] });
+        Alert.alert('Tagged', `"${tagName}" added to ${swipeTagTarget.contact?.name || 'contact'}`);
+      }
+    } catch (error) {
+      console.error('Error tagging contact:', error);
+    }
+    setShowSwipeTagPicker(false);
+    setSwipeTagTarget(null);
+  };
+
   const handleFilterPress = (f: typeof filter) => {
     triggerHaptic('selection');
     setFilter(f);
