@@ -1760,6 +1760,37 @@ const s = StyleSheet.create({
   vnCardDate: { fontSize: 13, fontWeight: '600', color: '#F2F2F7' },
   vnCardDuration: { fontSize: 12, color: '#636366' },
   vnTranscript: { fontSize: 13, color: '#AEAEB2', lineHeight: 18, marginTop: 8 },
+  // Relationship Intel
+  intelBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12,
+    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#C9A96230',
+  },
+  intelBtnLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  intelIcon: {
+    width: 34, height: 34, borderRadius: 10, backgroundColor: '#C9A96220',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  intelBtnTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
+  intelBtnSub: { fontSize: 11, color: '#636366', marginTop: 1 },
+  intelCard: {
+    marginTop: 8, padding: 14, borderRadius: 12,
+    backgroundColor: '#1A1A1C', borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  intelLoading: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 20,
+    justifyContent: 'center',
+  },
+  intelLoadingText: { fontSize: 14, color: '#C9A962', fontStyle: 'italic' },
+  intelSummary: { fontSize: 13.5, color: '#E5E5EA', lineHeight: 20 },
+  intelMeta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#2C2C2E',
+  },
+  intelMetaText: { fontSize: 11, color: '#636366', flex: 1 },
+  intelRefresh: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 4 },
+  intelRefreshText: { fontSize: 12, fontWeight: '600', color: '#007AFF' },
+  intelEmpty: { fontSize: 14, color: '#636366', textAlign: 'center', paddingVertical: 16 },
 
   // Conversation link
   conversationLink: {
