@@ -62,6 +62,9 @@ export default function MoreScreen() {
   const [matchModalVisible, setMatchModalVisible] = useState(false);
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [pendingSharePayload, setPendingSharePayload] = useState<any>(null);
+  const [showShowroomShare, setShowShowroomShare] = useState(false);
+  const [showBirthdayShare, setShowBirthdayShare] = useState(false);
+  const [shareMode, setShareMode] = useState<'review' | 'showroom' | 'birthday'>('review');
   
   // Load pending count for super admins
   useFocusEffect(
