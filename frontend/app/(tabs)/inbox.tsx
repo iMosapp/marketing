@@ -2358,4 +2358,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 10,
   },
+  // Swipe tag picker styles
+  swipeTagOption: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16,
+    marginBottom: 2, borderRadius: 10, backgroundColor: '#1C1C1E',
+  },
+  swipeTagIcon: {
+    width: 36, height: 36, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  },
+  swipeTagName: {
+    flex: 1, fontSize: 16, fontWeight: '500', color: '#F2F2F7',
+  },
 });
