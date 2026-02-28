@@ -353,6 +353,62 @@ async def get_showcase_photo(card_id: str):
     # If it's a URL, redirect to it
     if photo_data.startswith("http"):
         from fastapi.responses import RedirectResponse
+
+@router.get("/user-photo/{user_id}")
+async def get_user_photo(user_id: str):
+    """Serve a user's profile photo as an actual image."""
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"photo_url": 1})
+    if not user or not user.get("photo_url"):
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    photo_data = user["photo_url"]
+    if photo_data.startswith("data:"):
+        parts = photo_data.split(",", 1)
+        if len(parts) == 2:
+            header = parts[0]
+            b64_data = parts[1]
+            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            try:
+                image_bytes = base64.b64decode(b64_data)
+                return Response(content=image_bytes, media_type=mime, headers={
+                    "Cache-Control": "public, max-age=86400",
+                })
+            except Exception:
+                raise HTTPException(status_code=500, detail="Failed to decode photo")
+    if photo_data.startswith("http"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=photo_data)
+    raise HTTPException(status_code=404, detail="Photo not found")
+
+
+@router.get("/store-logo/{store_id}")
+async def get_store_logo(store_id: str):
+    """Serve a store's logo as an actual image."""
+    db = get_db()
+    store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"logo_url": 1})
+    if not store or not store.get("logo_url"):
+        raise HTTPException(status_code=404, detail="Logo not found")
+
+    photo_data = store["logo_url"]
+    if photo_data.startswith("data:"):
+        parts = photo_data.split(",", 1)
+        if len(parts) == 2:
+            header = parts[0]
+            b64_data = parts[1]
+            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            try:
+                image_bytes = base64.b64decode(b64_data)
+                return Response(content=image_bytes, media_type=mime, headers={
+                    "Cache-Control": "public, max-age=86400",
+                })
+            except Exception:
+                raise HTTPException(status_code=500, detail="Failed to decode logo")
+    if photo_data.startswith("http"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=photo_data)
+    raise HTTPException(status_code=404, detail="Logo not found")
+
         return RedirectResponse(url=photo_data)
 
     raise HTTPException(status_code=404, detail="Photo not found")
