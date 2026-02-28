@@ -67,7 +67,7 @@ export default function PendingSendPage() {
       const subject = encodeURIComponent(`From ${user?.name || 'Your Rep'}`);
       const body = encodeURIComponent(message);
       if (IS_WEB) {
-        window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+        window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
       }
     } else {
       const encoded = encodeURIComponent(message);
