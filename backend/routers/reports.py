@@ -100,9 +100,9 @@ async def get_reports_overview(
     
     total_messages = await db.messages.count_documents(message_filter)
     
-    # SMS vs Email breakdown
-    sms_count = await db.messages.count_documents({**message_filter, 'type': 'sms'})
-    email_count = await db.messages.count_documents({**message_filter, 'type': 'email'})
+    # SMS vs Email breakdown (include both type-based and channel-based messages)
+    sms_count = await db.messages.count_documents({**message_filter, '$or': [{'type': 'sms'}, {'channel': 'sms'}, {'channel': 'sms_personal'}]})
+    email_count = await db.messages.count_documents({**message_filter, '$or': [{'type': 'email'}, {'channel': 'email'}]})
     ai_messages = await db.messages.count_documents({**message_filter, 'sent_by_ai': True})
     
     stats['messaging'] = {
