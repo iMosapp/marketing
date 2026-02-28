@@ -82,7 +82,7 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict)
             continue
 
         card_id = card.get("card_id", str(card["_id"]))
-        has_customer_photo = bool(card.get("customer_photo"))
+        has_customer_photo = str(card["_id"]) in card_ids_with_photos
 
         entry = {
             "id": card_id,
