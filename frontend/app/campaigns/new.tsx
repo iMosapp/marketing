@@ -352,6 +352,104 @@ const { showToast } = useToast();
     }
   };
   
+  // Template picker icon mapping
+  const getTemplateIcon = (icon: string): string => {
+    const map: Record<string, string> = {
+      car: 'car-sport', refresh: 'refresh-circle', construct: 'construct',
+      people: 'people', diamond: 'diamond',
+    };
+    return map[icon] || icon;
+  };
+
+  // ===== TEMPLATE PICKER SCREEN =====
+  if (showTemplates) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']} data-testid="template-picker">
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="close" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>New Campaign</Text>
+          <TouchableOpacity onPress={() => setShowTemplates(false)} data-testid="skip-templates-btn">
+            <Text style={{ color: '#007AFF', fontSize: 15, fontWeight: '600' }}>Build Custom</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFF', marginBottom: 4 }}>
+            Start with a Template
+          </Text>
+          <Text style={{ fontSize: 14, color: '#8E8E93', marginBottom: 20, lineHeight: 20 }}>
+            Choose a proven campaign sequence or build your own from scratch. Templates come pre-loaded with timing, AI-powered personalization, and messages that sound like a real conversation.
+          </Text>
+
+          {loadingTemplates ? (
+            <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+          ) : (
+            prebuiltTemplates.map((tpl: any) => (
+              <TouchableOpacity
+                key={tpl.id}
+                style={styles.templateCard}
+                onPress={() => selectPrebuiltTemplate(tpl.id)}
+                data-testid={`template-${tpl.id}`}
+              >
+                <View style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
+                  <View style={[styles.templateIcon, { backgroundColor: tpl.color + '18' }]}>
+                    <Ionicons name={getTemplateIcon(tpl.icon) as any} size={24} color={tpl.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.templateName}>{tpl.name}</Text>
+                    <Text style={styles.templateDesc}>{tpl.description}</Text>
+                    <View style={styles.templateMeta}>
+                      <View style={styles.templateMetaChip}>
+                        <Ionicons name="layers" size={12} color="#8E8E93" />
+                        <Text style={styles.templateMetaText}>{tpl.step_count} steps</Text>
+                      </View>
+                      <View style={styles.templateMetaChip}>
+                        <Ionicons name="time" size={12} color="#8E8E93" />
+                        <Text style={styles.templateMetaText}>{tpl.total_duration}</Text>
+                      </View>
+                      <View style={[styles.templateMetaChip, { backgroundColor: tpl.color + '15' }]}>
+                        <Ionicons name="pricetag" size={12} color={tpl.color} />
+                        <Text style={[styles.templateMetaText, { color: tpl.color }]}>{tpl.trigger_tag}</Text>
+                      </View>
+                      {tpl.ai_enabled && (
+                        <View style={[styles.templateMetaChip, { backgroundColor: '#FFD60A15' }]}>
+                          <Ionicons name="sparkles" size={12} color="#FFD60A" />
+                          <Text style={[styles.templateMetaText, { color: '#FFD60A' }]}>AI</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#3A3A3C" style={{ marginTop: 4 }} />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+
+          {/* Build Custom option */}
+          <TouchableOpacity
+            style={[styles.templateCard, { borderStyle: 'dashed', borderColor: '#3A3A3C' }]}
+            onPress={() => setShowTemplates(false)}
+            data-testid="build-custom-btn"
+          >
+            <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+              <View style={[styles.templateIcon, { backgroundColor: '#2C2C2E' }]}>
+                <Ionicons name="add" size={24} color="#8E8E93" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.templateName}>Build From Scratch</Text>
+                <Text style={styles.templateDesc}>Create a fully custom campaign with your own timing, messages, and triggers.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#3A3A3C" />
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ===== MAIN CAMPAIGN BUILDER =====
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
