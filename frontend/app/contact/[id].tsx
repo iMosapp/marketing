@@ -20,7 +20,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
-import { format, formatDistanceToNow, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
+import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import { contactsAPI, campaignsAPI, tagsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
