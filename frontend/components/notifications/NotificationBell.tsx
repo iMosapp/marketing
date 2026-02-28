@@ -116,7 +116,7 @@ export function NotificationBell() {
     }
   };
 
-  const categories = ['all', 'leads', 'tasks', 'messages', 'flags', 'activity'];
+  const categories = ['all', 'leads', 'tasks', 'messages', 'campaigns', 'flags', 'activity'];
 
   return (
     <View style={styles.wrapper}>
