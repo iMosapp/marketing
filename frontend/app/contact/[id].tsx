@@ -738,7 +738,14 @@ export default function ContactDetailScreen() {
           {!isNewContact && (
             <TouchableOpacity
               style={s.conversationLink}
-              onPress={() => router.push(`/thread/${id}`)}
+              onPress={() => router.push({
+                pathname: `/thread/${id}`,
+                params: {
+                  contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                  contact_phone: contact.phone || '',
+                  contact_email: contact.email || contact.email_work || '',
+                }
+              })}
               data-testid="go-to-conversation"
             >
               <View style={[s.quickActionIcon, { backgroundColor: '#007AFF20' }]}>
