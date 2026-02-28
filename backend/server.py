@@ -131,6 +131,7 @@ api_router.include_router(user_lifecycle.router)
 api_router.include_router(docs.router)
 api_router.include_router(nda.router)
 api_router.include_router(voice_notes.router)
+api_router.include_router(contact_intel.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
