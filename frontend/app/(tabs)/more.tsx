@@ -536,13 +536,6 @@ export default function MoreScreen() {
           color: '#AF52DE',
         },
         {
-          icon: 'sparkles',
-          title: 'Train Jessi AI',
-          subtitle: 'Chat with your AI assistant',
-          onPress: () => router.push('/jessie'),
-          color: '#C9A962',
-        },
-        {
           icon: 'mic',
           title: 'Voice Training',
           subtitle: 'Train AI with your voice',
