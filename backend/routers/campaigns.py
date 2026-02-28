@@ -14,6 +14,312 @@ router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 logger = logging.getLogger(__name__)
 
 
+# =====================================================
+# PRE-BUILT CAMPAIGN TEMPLATES
+# =====================================================
+
+PREBUILT_TEMPLATES = [
+    {
+        "id": "sold_followup",
+        "name": "Sold - Complete Follow-Up",
+        "description": "A 5-step journey from delivery day through the 1-year anniversary. Builds a lasting relationship with genuine, personal touchpoints.",
+        "type": "sold_followup",
+        "trigger_tag": "sold",
+        "icon": "car",
+        "color": "#34C759",
+        "delivery_mode": "manual",
+        "ai_enabled": True,
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 3,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "First check-in 3 days after delivery. Make sure everything is going well with the vehicle. Ask if they have any questions about features or settings. Keep it warm and personal.",
+                "message_template": "Hey {name}, it's been a few days - just wanted to make sure everything's going smooth with the {vehicle}. Any questions about features, settings, how anything works? I'm here for you even after the papers are signed. Don't be a stranger!",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 14,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Two weeks in. Casual referral ask. Not pushy - just a natural 'if you know anyone' ask. Mention you'd take care of them the same way.",
+                "message_template": "Hey {name}, hope you're loving the {vehicle}! Quick question - do you have any friends or family that might be in the market? I'd love to take care of them the same way I took care of you. No pressure at all, just thought I'd mention it!",
+                "media_urls": [],
+            },
+            {
+                "step": 3,
+                "delay_days": 0,
+                "delay_months": 2,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Around 75 days. First service is coming up. Offer to help schedule, mention loaner car availability. Be helpful and proactive, not salesy.",
+                "message_template": "Hey {name}, heads up - you're getting close to your first service on the {vehicle}. Want me to get something scheduled for you? I can also check on a loaner if you need one while it's in. Just let me know and I'll handle everything!",
+                "media_urls": [],
+            },
+            {
+                "step": 4,
+                "delay_days": 0,
+                "delay_months": 7,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "7-month touch base. Just checking in naturally. Going through notes, thought of them. No agenda, just genuine relationship maintenance.",
+                "message_template": "Hey {name}, was just going through my notes and thought of you. How's the {vehicle} treating you? Everything running good? No agenda here - just wanted to check in. I'm always around if you ever need anything.",
+                "media_urls": [],
+            },
+            {
+                "step": 5,
+                "delay_days": 0,
+                "delay_months": 12,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "1-year anniversary! Reference their delivery day. Express genuine surprise at how fast time flew. Ask how the vehicle is holding up. If there's a congrats photo from delivery, reference it warmly. Celebrate the milestone.",
+                "message_template": "Hey {name}, can you believe it's been a YEAR already?! I was looking back at your delivery day and honestly it feels like last month. How's the {vehicle} holding up? I hope it's been everything you wanted and more. Here's to many more miles - congrats on the 1-year mark!",
+                "media_urls": [],
+            },
+        ],
+    },
+    {
+        "id": "be_back_nurture",
+        "name": "Be-Back / Working Customer",
+        "description": "Stay top of mind with customers who visited but haven't bought yet. Gentle, value-driven follow-ups that keep the door open without being pushy.",
+        "type": "custom",
+        "trigger_tag": "be_back",
+        "icon": "refresh",
+        "color": "#FF9500",
+        "delivery_mode": "manual",
+        "ai_enabled": True,
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 1,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Day after visit. Thank them for coming in. Reference the vehicle(s) they were looking at if known. Keep it casual and low-pressure. Let them know you're available.",
+                "message_template": "Hey {name}, great meeting you yesterday! I know car shopping can be a lot, so no rush on anything. Just wanted you to know I'm here whenever you're ready or if any questions come up. I'll keep an eye out for anything I think you'd like.",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 5,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "5 days after visit. Provide value - maybe a new option came in, or market insight. Not a hard sell. Create curiosity.",
+                "message_template": "Hey {name}, just wanted to drop a quick note. A few things have changed on the lot since you were here and I saw something that made me think of you. Want me to send over some details? No pressure either way.",
+                "media_urls": [],
+            },
+            {
+                "step": 3,
+                "delay_days": 14,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Two weeks out. Last personal check-in before spacing out. Acknowledge their timeline. Offer to be a resource even if they're not buying from you.",
+                "message_template": "Hey {name}, hope the search is going well! I know you'll find the right one when the timing is right. If you ever want a second opinion or just want to bounce ideas off someone, I'm always around. No sales pitch, I promise.",
+                "media_urls": [],
+            },
+            {
+                "step": 4,
+                "delay_days": 0,
+                "delay_months": 1,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "One month. Quick, casual check-in. Show you remember them. Keep the relationship warm.",
+                "message_template": "Hey {name}, just a quick check-in - still looking or did you find something you love? Either way, I'm happy for you. Let me know if I can ever help!",
+                "media_urls": [],
+            },
+        ],
+    },
+    {
+        "id": "service_reminder",
+        "name": "Service Reminder Series",
+        "description": "Proactive service reminders that position you as their go-to person for everything vehicle-related. Builds loyalty and drives service revenue.",
+        "type": "custom",
+        "trigger_tag": "service_due",
+        "icon": "construct",
+        "color": "#007AFF",
+        "delivery_mode": "manual",
+        "ai_enabled": True,
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 0,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Service reminder triggered. Let them know you noticed their service is coming up. Offer to schedule and arrange everything. Mention loaner car if applicable.",
+                "message_template": "Hey {name}, just a heads up - looks like your {vehicle} is coming up on a service. Want me to get something on the books for you? I can check on a loaner too if you need one. Just let me know and I'll handle all the details!",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 7,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Gentle follow-up if they haven't responded. Maybe mention current service specials if available. Keep it helpful, not nagging.",
+                "message_template": "Hey {name}, just circling back on that service for the {vehicle}. I don't want you to miss anything important. I can usually get you in pretty quick if you want me to set it up. Just say the word!",
+                "media_urls": [],
+            },
+            {
+                "step": 3,
+                "delay_days": 3,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Post-service follow-up (triggered after service is completed). Check that everything went well. Show you care about the experience beyond the sale.",
+                "message_template": "Hey {name}, how'd the service go on the {vehicle}? Everything taken care of? I always want to make sure my people are being treated right. Let me know if there's anything that wasn't handled!",
+                "media_urls": [],
+            },
+        ],
+    },
+    {
+        "id": "referral_thank_you",
+        "name": "Referral Thank You & Nurture",
+        "description": "When someone refers a friend, show genuine appreciation and keep them engaged as a brand ambassador. Makes them feel valued and encourages more referrals.",
+        "type": "custom",
+        "trigger_tag": "referral",
+        "icon": "people",
+        "color": "#AF52DE",
+        "delivery_mode": "manual",
+        "ai_enabled": True,
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 0,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Immediate thank you for the referral. Be genuinely grateful. Let them know you'll take great care of the person they sent. Make them feel like a VIP.",
+                "message_template": "Hey {name}, I just wanted to say THANK YOU for sending your friend my way. That means a lot to me - seriously. I'm going to take great care of them, you have my word. You're the best!",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 7,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "One week later. Quick update on the referral (without sharing private details). Show them their referral is being handled well.",
+                "message_template": "Hey {name}, just wanted to give you a quick update - things are going great with the connection you made. Really appreciate you thinking of me. You've got good people in your circle!",
+                "media_urls": [],
+            },
+            {
+                "step": 3,
+                "delay_days": 0,
+                "delay_months": 3,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "3-month check-in. Maintain the relationship. They're a referral source - treat them like gold. Ask how they're doing. Casually keep the referral door open.",
+                "message_template": "Hey {name}, been a few months - just wanted to check in and see how you're doing! Hope everything's great on your end. You know I always appreciate you, and if you ever run into anyone else looking, you know where to find me!",
+                "media_urls": [],
+            },
+        ],
+    },
+    {
+        "id": "vip_customer_care",
+        "name": "VIP Customer Experience",
+        "description": "Premium touchpoints for your best customers. These are the ones who buy, refer, and advocate for you. Treat them like the rockstars they are.",
+        "type": "custom",
+        "trigger_tag": "vip",
+        "icon": "diamond",
+        "color": "#FFD60A",
+        "delivery_mode": "manual",
+        "ai_enabled": True,
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 0,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "VIP tag just applied. Welcome them to VIP status. Make them feel special. Let them know they have priority access to you.",
+                "message_template": "Hey {name}, just wanted to let you know - you're one of my VIP people. That means you've got my direct line for anything, anytime. New inventory, service needs, questions about your {vehicle} - you come first. I appreciate you!",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 0,
+                "delay_months": 1,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Monthly VIP touch. Share something exclusive - early access to inventory, a market insight, or just a genuine personal check-in. Make them feel like an insider.",
+                "message_template": "Hey {name}, just wanted to reach out with a quick insider update. We've got some interesting things coming in that I thought you might want first look at. Want me to keep you posted? Hope everything's going great with you!",
+                "media_urls": [],
+            },
+            {
+                "step": 3,
+                "delay_days": 0,
+                "delay_months": 3,
+                "channel": "email",
+                "ai_generated": True,
+                "step_context": "Quarterly VIP email. More detailed touchpoint. Could include market trends, trade-in value update, or seasonal vehicle tips. Position yourself as their trusted automotive advisor.",
+                "message_template": "Subject: Quick update for you, {name}\n\nHey {name},\n\nJust wanted to drop you a quick note. As one of my top customers, I like to keep you in the loop.\n\nA few things on my radar that might interest you:\n- Market values have been shifting, and your {vehicle} is holding strong\n- Some great new inventory hitting the lot soon\n- If you ever want a no-obligation trade appraisal, just say the word\n\nHope everything's going well. Don't hesitate to reach out for anything!\n\nTalk soon,\n{salesperson_name}",
+                "media_urls": [],
+            },
+            {
+                "step": 4,
+                "delay_days": 0,
+                "delay_months": 6,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "6-month VIP check-in. Personal, warm, and genuine. Reference the relationship. Keep the bond strong.",
+                "message_template": "Hey {name}, can't believe it's been 6 months already. Just wanted to check in and see how everything's going with the {vehicle} and life in general. You know I'm always in your corner. Let's catch up soon!",
+                "media_urls": [],
+            },
+        ],
+    },
+]
+
+
+@router.get("/templates/prebuilt")
+async def get_prebuilt_templates():
+    """Get all pre-built campaign templates."""
+    # Return templates without full message content for the selector UI
+    summaries = []
+    for t in PREBUILT_TEMPLATES:
+        summaries.append({
+            "id": t["id"],
+            "name": t["name"],
+            "description": t["description"],
+            "type": t["type"],
+            "trigger_tag": t["trigger_tag"],
+            "icon": t["icon"],
+            "color": t["color"],
+            "delivery_mode": t["delivery_mode"],
+            "ai_enabled": t["ai_enabled"],
+            "step_count": len(t["sequences"]),
+            "total_duration": _calc_duration(t["sequences"]),
+        })
+    return summaries
+
+
+@router.get("/templates/prebuilt/{template_id}")
+async def get_prebuilt_template(template_id: str):
+    """Get a specific pre-built template with full details."""
+    for t in PREBUILT_TEMPLATES:
+        if t["id"] == template_id:
+            return t
+    raise HTTPException(status_code=404, detail="Template not found")
+
+
+def _calc_duration(sequences: list) -> str:
+    """Calculate total campaign duration as a readable string."""
+    total_days = 0
+    for s in sequences:
+        total_days += s.get("delay_days", 0) + s.get("delay_months", 0) * 30
+    if total_days >= 365:
+        return f"{total_days // 365} year{'s' if total_days >= 730 else ''}"
+    if total_days >= 30:
+        return f"{total_days // 30} month{'s' if total_days >= 60 else ''}"
+    return f"{total_days} days"
+
+
 async def check_campaign_permission(user_id: str, action: str = "edit") -> dict:
     """
     Check if user has permission to perform campaign actions.
