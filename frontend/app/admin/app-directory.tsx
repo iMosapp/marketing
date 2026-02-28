@@ -46,6 +46,53 @@ type Category = {
 
 const PAGE_CATALOG: Category[] = [
   {
+    id: 'public_pages',
+    title: 'Public Customer Pages',
+    icon: 'globe-outline',
+    color: '#FF6B8A',
+    pages: [
+      { name: 'Digital Business Card', description: 'Shareable card with photo, QR, reviews, social links', path: '/card/{userId}', icon: 'card-outline', color: '#5856D6', requiresAuth: false, audience: 'Customers, public' },
+      { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/congrats/{cardId}', icon: 'gift-outline', color: '#C9A962', requiresAuth: false, audience: 'Customers, public' },
+      { name: 'Birthday Card', description: 'Personalized birthday card with photo & message', path: '/birthday/{cardId}', icon: 'gift-outline', color: '#FF6B8A', requiresAuth: false, audience: 'Customers, public' },
+      { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/review/{storeSlug}', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'Customers, public' },
+      { name: 'Showroom', description: 'User showcase page — congrats cards, featured work', path: '/showcase/{userId}', icon: 'images-outline', color: '#007AFF', requiresAuth: false, audience: 'Customers, public' },
+      { name: 'Join / Invite Page', description: 'Team invite link landing page', path: '/join/{code}', icon: 'person-add-outline', color: '#34C759', requiresAuth: false, audience: 'New team members' },
+      { name: 'Partner Agreement', description: 'Public partner agreement signing page', path: '/partner/agreement/{id}', icon: 'document-text-outline', color: '#FF9500', requiresAuth: false, audience: 'Partners' },
+      { name: 'NDA Signing', description: 'Public NDA signing page', path: '/nda/sign/{id}', icon: 'lock-closed-outline', color: '#FF3B30', requiresAuth: false, audience: 'Partners, employees' },
+    ],
+  },
+  {
+    id: 'quick_wins',
+    title: 'Quick Win Tools',
+    icon: 'flash-outline',
+    color: '#34C759',
+    pages: [
+      { name: 'Create Congrats Card', description: 'Upload photo, preview, and share a congrats card', path: '/settings/create-congrats', icon: 'gift-outline', color: '#C9A962', requiresAuth: true, audience: 'All users' },
+      { name: 'Create Birthday Card', description: 'Upload photo, preview, and share a birthday card', path: '/settings/create-birthday-card', icon: 'gift-outline', color: '#FF6B8A', requiresAuth: true, audience: 'All users' },
+      { name: 'Manage Showroom', description: 'Edit what shows on your showroom page', path: '/showroom-manage', icon: 'images-outline', color: '#007AFF', requiresAuth: true, audience: 'All users' },
+      { name: 'Import Contacts (CSV)', description: 'Bulk import contacts from spreadsheet', path: '/contacts/import', icon: 'cloud-upload-outline', color: '#34C759', requiresAuth: true, audience: 'All users' },
+      { name: 'Store Profile / Digital Card Setup', description: 'Set up your digital business card & store branding', path: '/settings/store-profile', icon: 'card-outline', color: '#5856D6', requiresAuth: true, audience: 'All users' },
+      { name: 'Review Links Setup', description: 'Configure Google, Yelp, Facebook review URLs', path: '/settings/review-links', icon: 'star-outline', color: '#FFD60A', requiresAuth: true, audience: 'All users' },
+      { name: 'Date Trigger Campaigns', description: 'Auto birthday, anniversary, holiday messages', path: '/settings/date-triggers', icon: 'calendar-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
+      { name: 'Help Center', description: 'How-to articles for key features', path: '/help', icon: 'help-circle-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+    ],
+  },
+  {
+    id: 'analytics_reports',
+    title: 'Analytics & Reporting',
+    icon: 'stats-chart-outline',
+    color: '#007AFF',
+    pages: [
+      { name: 'Leaderboard', description: 'Real-time team rankings by category', path: '/leaderboard', icon: 'trophy-outline', color: '#FFD60A', requiresAuth: true, audience: 'All users' },
+      { name: 'Activity Reports', description: '14+ metrics with date filters & email delivery', path: '/reports/activity', icon: 'bar-chart-outline', color: '#007AFF', requiresAuth: true, audience: 'Managers, Admins' },
+      { name: 'Personal Reports', description: 'Your individual performance stats', path: '/reports/personal', icon: 'person-outline', color: '#34C759', requiresAuth: true, audience: 'All users' },
+      { name: 'Team Reports', description: 'Team-wide performance breakdown', path: '/reports/team', icon: 'people-outline', color: '#FF9500', requiresAuth: true, audience: 'Managers, Admins' },
+      { name: 'Campaign Reports', description: 'Campaign enrollment & delivery stats', path: '/reports/campaigns', icon: 'megaphone-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
+      { name: 'Messaging Reports', description: 'SMS & email analytics', path: '/reports/messaging', icon: 'chatbubble-outline', color: '#5856D6', requiresAuth: true, audience: 'All users' },
+      { name: 'My Rankings', description: 'Your personal leaderboard position & stats', path: '/my-rankings', icon: 'ribbon-outline', color: '#C9A962', requiresAuth: true, audience: 'All users' },
+    ],
+  },
+  {
     id: 'marketing',
     title: 'Marketing & Sales',
     icon: 'diamond-outline',
@@ -57,7 +104,6 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Pricing Plans', description: 'Subscription tiers', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Solutions Hub', description: 'Browse solutions', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
-      { name: 'Presentation (Redirect)', description: 'Redirects to Why Use iMOs', path: '/imos/presentation', icon: 'arrow-forward-outline', color: '#8E8E93', requiresAuth: false, audience: 'Prospects, investors' },
     ],
   },
   {
