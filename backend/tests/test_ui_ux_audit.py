@@ -164,10 +164,12 @@ class TestCompanyDocs:
     
     def test_docs_list_endpoint_exists(self):
         """Verify docs list endpoint exists (requires auth)"""
-        response = requests.get(f"{BASE_URL}/api/company-docs/")
-        # Should return 401 (auth required) or 200
-        assert response.status_code in [200, 401], f"Unexpected status: {response.status_code}"
-        print(f"✓ Docs list endpoint responded with {response.status_code}")
+        response = requests.get(f"{BASE_URL}/api/docs/")
+        # Should return 401 (auth required) since we're not authenticated
+        assert response.status_code == 401, f"Expected 401, got {response.status_code}"
+        data = response.json()
+        assert "Authentication required" in data.get("detail", "")
+        print(f"✓ Docs list endpoint correctly requires authentication")
 
 
 class TestHealthAndBasicEndpoints:
