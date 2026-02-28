@@ -24,6 +24,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **NOTE: Congrats card photos preserved** — Full-resolution photos (1080px, quality 92) still stored in `contact_photos` collection for print-quality third-party use.
 - **FEATURE: Full Photo Viewer** — Tapping a contact's photo opens a full-screen modal loading the 1080px high-res version. Sharp on iPhone Pro Max.
 - **FEATURE: Voice Notes on Contacts** — Record voice memos (up to 2 min) on any contact. Audio stored in Emergent object storage, auto-transcribed via OpenAI Whisper. Multiple notes per contact, most recent prominent, older notes behind "Show All". Each note logged in activity feed with green mic icon. Transcripts are searchable text.
+- **BUG FIX: Inbox Email Sending** — Root cause: contact email fields containing Python `None` or string `"None"` were passing truthy checks but failing at Resend. Added `_clean_email()` validation function with regex email format check. Applied to ALL 4 email resolution paths in `messages.py` (conversation list, conversation info, primary send, simplified send). Also sanitizes `"null"`, `"N/A"`, `"undefined"` strings.
 
 ### Session Feb 28, 2026 (Fork 7)
 - **CRITICAL FIX: 5-Point Email Flow Audit** — Traced every single entry point that leads to the inbox thread and fixed all disconnects:
