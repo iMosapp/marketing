@@ -1289,7 +1289,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FFF',
     marginBottom: 2,
