@@ -126,7 +126,8 @@ async def create_nda(data: NDASenderSign):
 
     app_url = os.environ.get("APP_URL", "").rstrip("/")
     if not app_url:
-        app_url = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+        frontend_url = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+        app_url = frontend_url
 
     return {
         "id": nda_id,
