@@ -159,7 +159,8 @@ const PAGE_CATALOG: Category[] = [
       { name: 'SMS Templates', description: 'Pre-built SMS messages', path: '/imos/templates', icon: 'document-text-outline', color: '#FFD60A', requiresAuth: false, audience: 'All users' },
       { name: 'Email Templates', description: 'Pre-built email designs', path: '/imos/email-templates', icon: 'mail-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
       { name: 'Brand Kit', description: 'Email branding & colors', path: '/imos/brand-kit', icon: 'color-palette-outline', color: '#AF52DE', requiresAuth: false, audience: 'All users' },
-      { name: 'Congrats Cards', description: 'Thank you card templates', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', requiresAuth: false, audience: 'All users' },
+      { name: 'Congrats Card Templates', description: 'Thank you card templates', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', requiresAuth: false, audience: 'All users' },
+      { name: 'Birthday Card Templates', description: 'Birthday card design & defaults', path: '/settings/create-birthday-card', icon: 'gift-outline', color: '#FF6B8A', requiresAuth: true, audience: 'All users' },
     ],
   },
   {
