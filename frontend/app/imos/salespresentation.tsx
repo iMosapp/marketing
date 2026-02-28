@@ -248,7 +248,7 @@ export default function SalesPresentationScreen() {
           {slide.id === 'cta' && (
             <View style={styles.ctaSection}>
               <TouchableOpacity style={styles.ctaButton} onPress={() => {
-                if (Platform.OS === 'web') window.open('mailto:forest@imosapp.com?subject=iMOs%20Demo%20Request', '_blank');
+                if (Platform.OS === 'web') window.location.href = 'mailto:forest@imosapp.com?subject=iMOs%20Demo%20Request';
               }} data-testid="request-demo-btn">
                 <Ionicons name="mail" size={20} color="#000" />
                 <Text style={styles.ctaButtonText}>Request a Demo</Text>
