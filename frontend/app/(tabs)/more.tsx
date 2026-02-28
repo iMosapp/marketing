@@ -571,6 +571,13 @@ export default function MoreScreen() {
       color: '#8E8E93',
       items: [
         {
+          icon: 'storefront-outline',
+          title: 'Store Profile',
+          subtitle: 'Logo, address, store info',
+          onPress: () => router.push('/settings/store-profile' as any),
+          color: '#34C759',
+        },
+        {
           icon: 'shield-checkmark',
           title: 'Security',
           subtitle: 'Face ID, passwords',
