@@ -228,7 +228,14 @@ export default function CreateCongratsCardPage() {
     if (!createdCard) return;
     const imageUrl = `https://app.imosapp.com/api/congrats/card/${createdCard.card_id}/image`;
     if (IS_WEB) {
-      window.open(imageUrl, '_blank');
+      // Use an anchor tag with download attribute to avoid breaking PWA
+      const a = document.createElement('a');
+      a.href = imageUrl;
+      a.download = `congrats-${createdCard.card_id}.png`;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } else {
       Linking.openURL(imageUrl);
     }
@@ -236,11 +243,7 @@ export default function CreateCongratsCardPage() {
 
   const handleViewCard = () => {
     if (!createdCard) return;
-    if (IS_WEB) {
-      window.open(createdCard.share_url, '_blank');
-    } else {
-      Linking.openURL(createdCard.share_url);
-    }
+    router.push(`/congrats/${createdCard.card_id}` as any);
   };
 
   // ---- Created state: show sharing options ----
