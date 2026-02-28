@@ -743,6 +743,26 @@ export default function ThreadScreen() {
         await createQuickContact();
       }
       
+      // Ensure we have a valid conversation ID before sending
+      let convId = actualConversationId || conversationId;
+      if (!convId) {
+        throw new Error('No conversation ID available');
+      }
+      
+      // If convId might be a contact ID (ensureConversation not yet complete), wait for it
+      if (!actualConversationId && id) {
+        try {
+          const convRes = await api.post(`/messages/conversations/${user._id}`, {
+            contact_id: id,
+            contact_phone: contactPhone,
+          });
+          convId = convRes.data._id;
+          setActualConversationId(convId);
+        } catch {
+          // Fallback — use what we have
+        }
+      }
+      
       // Optimistically add the message to the UI
       const optimisticMessage: Message = {
         _id: `temp_${Date.now()}`,
