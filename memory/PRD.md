@@ -19,6 +19,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 - **VERIFIED: CTR Analytics** — Click-Through Rate display on "My Activity" dashboard confirmed working with per-channel (SMS/Email) breakdown.
 - **FEATURE: Operations Manual** — Created comprehensive 23-slide in-app document covering full project scope, every feature, technical architecture, DO-NOT-TOUCH patterns, database schema, integrations, and deployment guide. Lives in Company Docs > Operations Manual.
 - **FEATURE: NDA (Super Admin Only)** — Created 11-slide Non-Disclosure Agreement with role-based access control. Only visible to super_admin users. Added `required_role` field to docs system for document-level access control.
+- **FEATURE: Digital NDA Signing System** — Full signing flow: Admin fills name/title + draws signature on canvas, enters recipient info (name, email, phone), creates shareable link. Recipient verifies identity (email+phone), reads full 9-section NDA, fills their info (name, title, company), draws signature. Both parties get confirmation emails. NDAs stored in MongoDB, manageable from `/admin/nda` with status tracking (Pending → Viewed → Signed).
 - **ENHANCEMENT: Doc Access Control** — Backend docs list and get endpoints now filter by user role. Documents with `required_role: "super_admin"` are hidden from org_admin, store_manager, and user roles.
 
 ### Session Feb 27, 2026 (Fork 6)
