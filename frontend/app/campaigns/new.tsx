@@ -48,15 +48,31 @@ const { showToast } = useToast();
     selectedTags: [] as string[],
     active: true,
     sendTime: new Date(new Date().setHours(10, 0, 0, 0)),
+    deliveryMode: 'manual' as 'manual' | 'automated',
+    aiEnabled: false,
+    ownershipLevel: 'user' as 'user' | 'store' | 'org',
   });
   
   const [sequences, setSequences] = useState<SequenceStep[]>([
-    { id: '1', message: '', delayDays: 0, delayMonths: 0, media_urls: [] },
+    { id: '1', message: '', delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' },
   ]);
   
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
+  const [generatingAI, setGeneratingAI] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+
+  // Fetch tags from API
+  React.useEffect(() => {
+    if (!user?._id) return;
+    api.get(`/tags/${user._id}`).then(res => {
+      const tagNames = (res.data || []).map((t: any) => t.name || t);
+      setTags(tagNames.length > 0 ? tagNames : ['sold', 'lead', 'hot', 'customer', 'service_due', 'referral', 'vip']);
+    }).catch(() => {
+      setTags(['sold', 'lead', 'hot', 'customer', 'service_due', 'referral', 'vip']);
+    });
+  }, [user?._id]);
   
   const availableTags = ['sold', 'lead', 'hot', 'customer', 'lease_end', 'service_due', 'referral', 'vip'];
   
