@@ -76,11 +76,15 @@ export default function CongratsCardPage() {
   };
 
   const handleDownload = async () => {
-    // Open the image directly - user can long-press to save to Photos
     const imageUrl = `${api.defaults.baseURL}/congrats/card/${cardId}/image`;
-    
     if (Platform.OS === 'web') {
-      window.open(imageUrl, '_blank');
+      const a = document.createElement('a');
+      a.href = imageUrl;
+      a.download = `congrats-${cardId}.png`;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } else {
       Linking.openURL(imageUrl);
     }
@@ -108,17 +112,18 @@ export default function CongratsCardPage() {
           url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
           break;
         case 'instagram':
-          // Instagram doesn't have direct web sharing, show instructions
           alert('To share on Instagram:\n\n1. Take a screenshot of this card\n2. Open Instagram and create a new post or story\n3. Select the screenshot from your gallery');
           return;
       }
-      if (Platform.OS === 'web') {
-        window.open(url, '_blank', 'width=600,height=400');
+      // Use native share sheet if available, otherwise open in same window
+      if (Platform.OS === 'web' && navigator.share) {
+        try { await navigator.share({ url: shareUrl, text: shareText }); } catch {}
+      } else if (Platform.OS === 'web') {
+        window.location.href = url;
       } else {
         Linking.openURL(url);
       }
     } else {
-      // Native share
       if (Platform.OS !== 'web') {
         Share.share({
           message: `${shareText}\n${shareUrl}`,
