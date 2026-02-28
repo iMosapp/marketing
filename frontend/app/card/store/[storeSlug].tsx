@@ -242,7 +242,7 @@ export default function StoreCardPage() {
 
         {/* Footer */}
         <TouchableOpacity style={styles.footer} onPress={() => Linking.openURL('https://app.imosapp.com/imos')}>
-          <Text style={styles.footerText}>{data?.partner_branding ? `${data.partner_branding.name} \u2022 ` : 'Powered by '}</Text>
+          <Text style={styles.footerText}>{data?.partner_branding ? `${data.partner_branding.name} \u2022 ` : "Powered by i'M On Social"}</Text>
           <Text style={styles.footerBrand}>{data?.partner_branding ? data.partner_branding.powered_by_text : 'iMOs'}</Text>
         </TouchableOpacity>
       </ScrollView>

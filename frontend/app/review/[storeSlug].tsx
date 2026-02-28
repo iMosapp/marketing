@@ -295,7 +295,7 @@ export default function PublicReviewPage() {
             style={styles.footer}
             onPress={() => Linking.openURL('https://app.imosapp.com/imos')}
           >
-            <Text style={styles.footerText}>Powered by </Text>
+            <Text style={styles.footerText}>Powered by i'M On Social</Text>
             <Text style={[styles.footerText, styles.footerBrand]}>iMOs</Text>
             <Text style={styles.footerUrl}> — app.imosapp.com</Text>
           </TouchableOpacity>
