@@ -1195,4 +1195,90 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '600',
   },
+  // Delivery mode cards
+  modeCard: {
+    flex: 1,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: '#2C2C2E',
+  },
+  modeCardActive: {
+    borderColor: '#007AFF50',
+    backgroundColor: '#007AFF08',
+  },
+  modeTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  modeDesc: {
+    fontSize: 11,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  // Toggle switch
+  toggleButton: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#3A3A3C',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#34C759',
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+  },
+  toggleKnobActive: {
+    alignSelf: 'flex-end',
+  },
+  // AI info box
+  aiInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFD60A10',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#FFD60A20',
+  },
+  aiInfoText: {
+    fontSize: 12,
+    color: '#D1D1D6',
+    flex: 1,
+    lineHeight: 17,
+  },
+  // Level chips
+  levelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: '#1C1C1E',
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  levelChipActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  levelChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
 });
