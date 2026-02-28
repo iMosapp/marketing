@@ -131,6 +131,9 @@ async def create_voice_note(
             "user_id": user_id,
             "org_id": org_id,
             "channel": "voice_note",
+            "category": "voice_note",  # For frontend icon lookup
+            "icon": "mic",
+            "color": "#34C759",
             "content": transcript or "",
             "metadata": {"voice_note_id": note_id, "duration": round(duration, 1)},
             "timestamp": now,
