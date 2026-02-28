@@ -269,6 +269,13 @@ export default function ContactDetailScreen() {
     }
   };
 
+  // Track original notes for change detection
+  React.useEffect(() => {
+    if (contact.notes !== undefined && !loading && !isNewContact) {
+      setOriginalNotes(prev => prev || contact.notes);
+    }
+  }, [contact.notes, loading]);
+
   const loadEvents = async () => {
     if (!user || isNewContact) return;
     try {
