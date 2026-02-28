@@ -46,6 +46,7 @@ interface CongratsCardData {
 
 export default function CongratsCardPage() {
   const { cardId } = useLocalSearchParams();
+  const router = useRouter();
   const [cardData, setCardData] = useState<CongratsCardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
