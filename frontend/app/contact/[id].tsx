@@ -429,6 +429,127 @@ export default function ContactDetailScreen() {
     }
   };
 
+  // ===== VOICE NOTES =====
+  const loadVoiceNotes = async () => {
+    if (!user || isNewContact) return;
+    try {
+      setVoiceNotesLoading(true);
+      const notes = await contactsAPI.getVoiceNotes(user._id, id as string);
+      setVoiceNotes(notes);
+    } catch (e) {
+      console.error('Failed to load voice notes:', e);
+    } finally {
+      setVoiceNotesLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!isNewContact && user) loadVoiceNotes();
+  }, [id, user, isNewContact]);
+
+  const startRecording = async () => {
+    if (Platform.OS !== 'web') return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        await uploadVoiceNote(blob);
+      };
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          if (prev >= MAX_RECORDING_SECONDS - 1) {
+            stopRecording();
+            return MAX_RECORDING_SECONDS;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (e) {
+      console.error('Mic access denied:', e);
+      showSimpleAlert('Microphone Access', 'Please allow microphone access to record voice notes.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    setIsRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const uploadVoiceNote = async (blob: Blob) => {
+    if (!user) return;
+    try {
+      setUploadingVoiceNote(true);
+      await contactsAPI.uploadVoiceNote(user._id, id as string, blob, recordingTime);
+      showToast('Voice note saved & transcribing...');
+      await loadVoiceNotes();
+      // Refresh events to show in activity feed
+      loadEvents();
+    } catch (e) {
+      console.error('Upload failed:', e);
+      showSimpleAlert('Error', 'Failed to save voice note');
+    } finally {
+      setUploadingVoiceNote(false);
+      setRecordingTime(0);
+    }
+  };
+
+  const playVoiceNote = (noteId: string, audioUrl: string) => {
+    if (Platform.OS !== 'web') return;
+    // Stop current playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (playingNoteId === noteId) {
+      setPlayingNoteId(null);
+      return;
+    }
+    const audio = new Audio(audioUrl);
+    audio.onended = () => setPlayingNoteId(null);
+    audio.onerror = () => { setPlayingNoteId(null); showSimpleAlert('Error', 'Failed to play audio'); };
+    audio.play();
+    audioRef.current = audio;
+    setPlayingNoteId(noteId);
+  };
+
+  const deleteVoiceNote = async (noteId: string) => {
+    if (!user) return;
+    showConfirm('Delete Voice Note', 'Are you sure?', async () => {
+      try {
+        await contactsAPI.deleteVoiceNote(user._id, id as string, noteId);
+        if (playingNoteId === noteId && audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+          setPlayingNoteId(null);
+        }
+        await loadVoiceNotes();
+        showToast('Voice note deleted');
+      } catch (e) {
+        showSimpleAlert('Error', 'Failed to delete');
+      }
+    });
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   // ===== DATE PICKER =====
   const openDatePicker = (field: string, currentDate: Date | null, label?: string) => {
     const d = currentDate || new Date();
