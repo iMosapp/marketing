@@ -285,9 +285,15 @@ const { showToast } = useToast();
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
           media_urls: s.media_urls,
+          channel: s.channel,
+          ai_generated: s.ai_generated,
+          step_context: s.step_context,
         })),
         send_time: format(campaign.sendTime, 'HH:mm'),
         active: campaign.active,
+        delivery_mode: campaign.deliveryMode,
+        ai_enabled: campaign.aiEnabled,
+        ownership_level: campaign.ownershipLevel,
       };
       
       await campaignsAPI.create(user._id, campaignData);
