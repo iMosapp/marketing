@@ -733,6 +733,7 @@ const styles = StyleSheet.create({
     height: 80,
     resizeMode: 'contain',
     marginBottom: 16,
+    backgroundColor: 'transparent',
   },
   profileImageContainer: {
     marginBottom: 16,

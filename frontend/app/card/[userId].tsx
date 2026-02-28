@@ -1135,6 +1135,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 40,
     marginBottom: 12,
+    backgroundColor: 'transparent',
   },
   photoContainer: {
     marginBottom: 16,
