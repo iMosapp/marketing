@@ -780,8 +780,8 @@ async def get_conversation_info(conversation_id: str):
             if contact:
                 result["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
                 result["contact_name"] = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or result["contact_name"]
-                if not result["contact_email"] and contact.get("email"):
-                    result["contact_email"] = contact.get("email")
+                if not result["contact_email"] and (contact.get("email") or contact.get("email_work")):
+                    result["contact_email"] = contact.get("email") or contact.get("email_work")
         except:
             pass
     
