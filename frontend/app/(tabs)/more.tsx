@@ -987,12 +987,8 @@ export default function MoreScreen() {
             </>
           ) : (
             <>
-              <Image 
-                source={require('../../assets/images/imos-logo-white-v3.png')}
-                style={styles.versionLogo}
-                resizeMode="contain"
-              />
-              <Text style={styles.version}>v1.0.0</Text>
+              <Text style={styles.version}>Powered by i'M On Social</Text>
+              <Text style={[styles.version, { marginTop: 4 }]}>v1.0.0</Text>
             </>
           )}
         </View>
