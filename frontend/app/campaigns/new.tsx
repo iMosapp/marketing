@@ -31,6 +31,9 @@ interface SequenceStep {
   delayDays: number;
   delayMonths: number;
   media_urls: string[];
+  channel: string;
+  ai_generated: boolean;
+  step_context: string;
 }
 
 export default function CampaignBuilderScreen() {
