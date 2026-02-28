@@ -577,7 +577,7 @@ export default function ContactDetailScreen() {
           {/* ===== PROFILE HERO ===== */}
           <View style={s.heroSection} data-testid="contact-hero">
             <View style={s.heroAvatarContainer}>
-              <TouchableOpacity onPress={isEditing ? pickImage : undefined} activeOpacity={isEditing ? 0.7 : 1}>
+              <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8}>
                 {contact.photo ? (
                   <Image source={{ uri: contact.photo }} style={s.heroAvatar} />
                 ) : (
