@@ -22,7 +22,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 
 ### Marketing & Public Pages
 - Full `/imos/` marketing site (home, features, pricing, demo, etc.)
-- **88 preview pages** under `/imos/` for every app feature
+- **88+ preview pages** under `/imos/` for every app feature
 - App Directory with search, preview, copy link, and share functionality
 - Onboarding flow with quick-win demos
 
@@ -31,10 +31,11 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Scheduled email delivery of reports
 - SMS tally bug fixed (personal SMS counted correctly)
 
-### Branding
+### Branding & Logos
 - Custom glossy 3D logo across all assets
 - White-label HTML email templates
 - Brand Assets download page
+- **FIXED: Logo transparency preservation** — image upload now detects and preserves PNG transparency across originals, thumbnails, and avatars
 
 ### Administration
 - Soft-delete user system with data retention
@@ -42,16 +43,21 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Automated lifecycle scans via apscheduler
 
 ## Recent Changes (Feb 28, 2026)
-- **FIXED: App Directory 404s** — All pages in both admin and public App Directories now point to working `/imos/` preview routes instead of broken template URLs
-- Created 17 new preview pages under `/imos/` (birthday-card, showcase, join, nda, help, tasks, notifications, search, contact-detail, voice-training, showcase-manage, store-profile, my-rankings, reports-personal, reports-team, reports-campaigns, reports-messaging)
-- Added corresponding page data configs to `_pagedata.ts`
-- Both `/admin/app-directory` and `/imos/app-directory` updated with correct paths
+1. **FIXED: App Directory 404s** — All pages in both admin and public App Directories now point to working `/imos/` preview routes. Created 17 new preview pages.
+2. **FIXED: Logo black background bug** — Root cause: `image_storage.py` was converting all uploads to JPEG (destroying transparency). Now:
+   - Detects PNG alpha channel and preserves it
+   - Thumbnails and avatars keep PNG format when source has transparency
+   - Added `backgroundColor: 'transparent'` to all logo Image styles across 8 frontend files
+   - Affected files: `/card/[userId].tsx`, `/p/[userId].tsx`, `/congrats/[cardId].tsx`, `/birthday/[cardId].tsx`, `/showcase/[id].tsx`, `/join/[code].tsx`, `/card/store/[storeSlug].tsx`, `/review/[storeSlug].tsx`, `/settings/store-profile.tsx`
 
 ## Known Issues
 - **Production email delivery** — Code works in preview; needs RESEND_API_KEY verification on production
 - **Production SMS tally** — Fix deployed to preview, pending production deployment
 - React Hydration Error #418 (P2)
 - Mobile app tags sync (P2)
+
+## Action Required by User
+- **Re-upload your iM On Social logo** as a transparent PNG via Settings > Store Profile on production. The system will now preserve transparency.
 
 ## Upcoming Tasks (Priority Order)
 1. (P0) Onboarding Checklist Tracking — save user progress
