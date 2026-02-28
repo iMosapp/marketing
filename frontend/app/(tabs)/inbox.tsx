@@ -858,6 +858,53 @@ export default function InboxScreen() {
       );
     }
 
+    // Web: use web-compatible swipe with all actions
+    if (IS_WEB && !selectionMode) {
+      const isFlagged = item.flagged === true;
+      return (
+        <WebSwipeableItem
+          leftActions={[
+            {
+              key: 'flag',
+              icon: isFlagged ? 'flag' : 'flag-outline',
+              label: isFlagged ? 'Unflag' : 'Flag',
+              color: '#FF9500',
+              bgColor: '#FF950020',
+              onPress: () => handleFlagConversation(item._id),
+            },
+            {
+              key: 'task',
+              icon: 'checkbox-outline',
+              label: 'Task',
+              color: '#007AFF',
+              bgColor: '#007AFF20',
+              onPress: () => handleCreateTaskFromConversation(item._id),
+            },
+          ]}
+          rightActions={[
+            {
+              key: 'tag',
+              icon: 'pricetag-outline',
+              label: 'Tag',
+              color: '#AF52DE',
+              bgColor: '#AF52DE20',
+              onPress: () => handleOpenTagPicker(item._id),
+            },
+            {
+              key: 'archive',
+              icon: isArchived ? 'arrow-undo' : 'archive-outline',
+              label: isArchived ? 'Restore' : 'Archive',
+              color: '#8E8E93',
+              bgColor: '#8E8E9320',
+              onPress: () => handleArchive(item._id),
+            },
+          ]}
+        >
+          {conversationContent}
+        </WebSwipeableItem>
+      );
+    }
+
     return conversationContent;
   };
 
