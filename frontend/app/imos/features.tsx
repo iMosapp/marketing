@@ -60,7 +60,7 @@ const FEATURE_SECTIONS = [
     color: '#5AC8FA',
     features: [
       { icon: 'layers', title: 'Multi-Org Hierarchy', desc: 'Organizations, stores, teams — structured exactly how your business operates.' },
-      { icon: 'color-palette', title: 'White-Label Ready', desc: 'Your brand, your colors, your domain. Powered by iMOs under the hood.' },
+      { icon: 'color-palette', title: 'White-Label Ready', desc: "Your brand, your colors, your domain. Powered by i'M On Social under the hood." },
       { icon: 'people', title: 'Role-Based Onboarding', desc: 'Custom onboarding for every role. Admins, managers, salespeople — each gets what they need.' },
       { icon: 'shield', title: 'Security & Compliance', desc: 'Enterprise-grade security. Role-based access. Your data stays yours.' },
     ],
