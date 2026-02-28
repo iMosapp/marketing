@@ -225,9 +225,9 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
     return {
         "success": True,
-        "notifications": notifications[:limit],
+        "notifications": sorted_notifs[:limit],
         "unread_count": unread_count,
-        "total": len(notifications),
+        "total": len(sorted_notifs),
         "category_counts": category_counts,
     }
 
