@@ -466,14 +466,22 @@ export default function ContactDetailScreen() {
     if (!user || isNewContact || !contact.photo) return;
     setShowPhotoViewer(true);
     setFullPhotoLoading(true);
+    setSelectedPhotoIndex(0);
     try {
+      // Load full-res profile photo
       const res = await contactsAPI.getFullPhoto(user._id, id as string);
       setFullPhoto(res.photo);
     } catch {
-      // Fallback to whatever we have
       setFullPhoto(contact.photo);
     } finally {
       setFullPhotoLoading(false);
+    }
+    // Load all photos gallery in background
+    try {
+      const galleryRes = await api.get(`/contacts/${user._id}/${id}/photos/all`);
+      setAllPhotos(galleryRes.data?.photos || []);
+    } catch {
+      // Gallery load failed, just show the single photo
     }
   };
 
