@@ -403,6 +403,85 @@ const { showToast } = useToast();
           </View>
         </View>
         
+        {/* Delivery Mode */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Delivery Mode</Text>
+          <Text style={styles.sectionDescription}>
+            How should campaign messages be sent?
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <TouchableOpacity
+              style={[styles.modeCard, campaign.deliveryMode === 'automated' && styles.modeCardActive]}
+              onPress={() => setCampaign({ ...campaign, deliveryMode: 'automated' })}
+              data-testid="delivery-mode-automated"
+            >
+              <Ionicons name="flash" size={24} color={campaign.deliveryMode === 'automated' ? '#34C759' : '#8E8E93'} />
+              <Text style={[styles.modeTitle, campaign.deliveryMode === 'automated' && { color: '#34C759' }]}>Automated</Text>
+              <Text style={styles.modeDesc}>AI assistant sends & replies for you. Randomized between 10am-12pm.</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeCard, campaign.deliveryMode === 'manual' && styles.modeCardActive]}
+              onPress={() => setCampaign({ ...campaign, deliveryMode: 'manual' })}
+              data-testid="delivery-mode-manual"
+            >
+              <Ionicons name="hand-left" size={24} color={campaign.deliveryMode === 'manual' ? '#007AFF' : '#8E8E93'} />
+              <Text style={[styles.modeTitle, campaign.deliveryMode === 'manual' && { color: '#007AFF' }]}>Manual</Text>
+              <Text style={styles.modeDesc}>Get notified when it's time. Review, personalize, then hit send.</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* AI Features Toggle */}
+        <View style={styles.section}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>AI-Powered Messages</Text>
+              <Text style={styles.sectionDescription}>
+                AI generates personalized messages using your contact's activity history and your communication style
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.toggleButton, campaign.aiEnabled && styles.toggleButtonActive]}
+              onPress={() => setCampaign({ ...campaign, aiEnabled: !campaign.aiEnabled })}
+              data-testid="ai-toggle"
+            >
+              <View style={[styles.toggleKnob, campaign.aiEnabled && styles.toggleKnobActive]} />
+            </TouchableOpacity>
+          </View>
+          {campaign.aiEnabled && (
+            <View style={styles.aiInfoBox}>
+              <Ionicons name="sparkles" size={16} color="#FFD60A" />
+              <Text style={styles.aiInfoText}>
+                Each step can use AI to personalize messages based on the contact's history. Templates you write will be used as starting points.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Ownership Level (admin only) */}
+        {user?.role === 'super_admin' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Campaign Level</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              {[
+                { key: 'user', label: 'Personal', icon: 'person' },
+                { key: 'store', label: 'Store', icon: 'storefront' },
+                { key: 'org', label: 'Organization', icon: 'business' },
+              ].map(level => (
+                <TouchableOpacity
+                  key={level.key}
+                  style={[styles.levelChip, campaign.ownershipLevel === level.key && styles.levelChipActive]}
+                  onPress={() => setCampaign({ ...campaign, ownershipLevel: level.key as any })}
+                  data-testid={`level-${level.key}`}
+                >
+                  <Ionicons name={level.icon as any} size={16} color={campaign.ownershipLevel === level.key ? '#FFF' : '#8E8E93'} />
+                  <Text style={[styles.levelChipText, campaign.ownershipLevel === level.key && { color: '#FFF' }]}>{level.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Message Sequence */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
