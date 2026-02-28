@@ -72,11 +72,10 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNotifications = useCallback(async (cat?: string) => {
+  const fetchNotifications = useCallback(async (cat: string = 'all') => {
     if (!user?._id) return;
     try {
-      const category = cat ?? activeCategory;
-      const res = await api.get(`/notification-center/${user._id}?category=${category}&limit=100`);
+      const res = await api.get(`/notification-center/${user._id}?category=${cat}&limit=100`);
       if (res.data.success) {
         setNotifications(res.data.notifications || []);
         setUnreadCount(res.data.unread_count ?? 0);
@@ -85,7 +84,7 @@ export default function NotificationsPage() {
     } catch (e) {
       console.error('Failed to fetch notifications:', e);
     }
-  }, [user?._id, activeCategory]);
+  }, [user?._id]);
 
   useEffect(() => {
     if (!user?._id) return;
