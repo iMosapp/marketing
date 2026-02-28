@@ -30,8 +30,8 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - Contact CRUD with tags, notes, activity history
 - Inbox with SMS/Email modes, archive, swipe actions
 - Congrats Card generation and public page
-- Birthday Card generation and public page (NEW)
-- The Showroom - public social proof page
+- Birthday Card generation and public page
+- The Showroom - public social proof page (with Share Link on More page)
 - Digital Business Card
 - Activity Reporting with date filters and scheduled email delivery
 - White-label branded HTML emails via Resend
@@ -39,8 +39,8 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - Outgoing webhooks for third-party integrations
 - User lifecycle engine (automated daily scans)
 - PWA manifest and meta tags for iOS standalone mode
-- Share Showroom Link from More page (NEW)
-- Inbox email-to-SMS mode switching fix (NEW)
+- Email diagnostic endpoint for production troubleshooting
+- Comprehensive [EMAIL-FLOW] logging in backend
 
 ## Credentials
 - **Super Admin:** forest@imosapp.com / Admin123!
@@ -48,28 +48,26 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 ## Key API Endpoints
 - POST /api/auth/login
 - GET /api/contacts/{user_id}
-- POST /api/messages/send/{user_id}
+- POST /api/messages/send/{user_id} (handles SMS, email, personal SMS)
+- POST /api/messages/send/{user_id}/{conversation_id}
+- GET /api/messages/email-diagnostic/{user_id}/{contact_id} (NEW - diagnoses email pipeline)
+- GET /api/messages/conversation/{conversation_id}/info
 - POST /api/birthday/create
 - GET /api/birthday/card/{card_id}
 - GET /api/showcase/{user_id}
 - GET /api/reports/activity-summary
 - POST /api/reports/send-email-report
 
-## 3rd Party Integrations
-- Resend (email delivery - verified working)
-- MongoDB Atlas (primary database)
-- Twilio (MOCK mode)
-- OpenAI GPT-5.2 (via emergentintegrations)
-- Emergent Object Storage
-- Pillow (image processing)
+## Critical Email Bugs Fixed (2026-02-28)
+1. **Frontend email prompt save used wrong endpoint** - Was calling `GET /api/conversations/{id}` (404) instead of `GET /api/messages/conversation/{id}/info`. Contact emails entered in the prompt were NEVER being saved.
+2. **Frontend didn't check send response status** - Even when backend returned `{status: 'failed'}`, user saw the message as "sent" (optimistic update never rolled back).
+3. **Failed email events not tracked** - Contact events only logged on success. Failed sends left no audit trail.
+4. **Resend SDK response handling** - Added `getattr()` fallback for newer SDK versions that return objects instead of dicts.
+5. **Added comprehensive [EMAIL-FLOW] logging** - Every step of the email pipeline is now logged for production debugging.
+6. **Added diagnostic endpoint** - `GET /api/messages/email-diagnostic/{user_id}/{contact_id}` traces user→contact→conversation→resend→brand→send step by step.
 
 ## Mocked Services
 - Twilio SMS
-
-## P0 Tasks (Completed)
-- Birthday Card frontend page
-- Inbox email/SMS mode switching fix
-- Share Showroom Link on More page
 
 ## P1 Tasks (Upcoming)
 - Gamification & Leaderboards
@@ -88,7 +86,3 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 - Customer-Facing Gamification & Leaderboards
 - React Hydration Error #418 fix
 - Mobile app tags data sync issue
-
-## Known Issues
-- React Hydration Error #418 (P2)
-- Mobile app tags data sync (P2)
