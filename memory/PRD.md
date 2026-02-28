@@ -17,29 +17,27 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ### Session Feb 28, 2026 (Fork 10 - Current)
 
 #### The Showroom — Social Proof Landing Page (NEW)
-- **Public page** at `/showcase/{user_id}` showing delivery photos paired with customer reviews
-- **Three levels:** Per-user, per-store (`/showcase/store/{id}`), per-org (`/showcase/org/{id}`)
-- **Auto-populated** from congrats cards collection, matched with approved reviews by phone number and customer name
-- **Instagram-style vertical feed** with delivery photos, "Delivered" badge, customer names, dates
-- **Review matching:** When a review matches a congrats card (by phone or name), it displays below the photo with star rating and comments
-- **Shareable link + QR code** for sharing
-- **Hide/show management:** Salesperson can hide individual entries via API
-- **Backend:** `/app/backend/routers/showcase.py` with 6 endpoints
-- **Frontend:** `/app/frontend/app/showcase/[id].tsx`
-- **More page tile:** "The Showroom" in Performance section
+- **Public page** at `/showcase/{user_id}` — Instagram-style feed of delivery photos + reviews
+- **Three levels:** Per-user, per-store, per-org
+- **Auto-populated** from congrats cards, matched with reviews by phone/name
+- **CTAs:** "Leave a Review" button linking to digital card page, "View My Digital Business Card" link
+- **Share:** Shareable link + QR code
+- **Management:** Hide/show individual entries
+- **"The Showroom" tile** in More > Performance section
+- Backend: `/app/backend/routers/showcase.py` (6 endpoints)
+- Frontend: `/app/frontend/app/showcase/[id].tsx`
 
-#### Email System Verification
-- Full E2E email flow verified working (Frontend → Resend → Gmail delivery confirmed)
+#### Email System Verified Working
+- Full E2E flow: Frontend → Resend API → Gmail delivery confirmed
 
 #### UI/UX Audit & Cleanup
 - More Page: Removed duplicate "Train Jessi AI", enlarged profile card
 - My Activity: Added "All Time" + "Custom" date range picker
-- Company Docs: Modern category cards with descriptions
-- Inbox Swipe: Fixed close overlay + archive with optimistic UI
-- Backend: Added `all_time` period support
+- Company Docs: Modern category cards
+- Inbox Swipe: Fixed close overlay + archive optimistic UI
 
 ### Previous Sessions
-- AI-Powered Campaign Engine, Pre-Built Templates, Notifications Center, Analytics Dashboard
+- AI Campaign Engine, Pre-Built Templates, Notifications Center, Analytics Dashboard
 - Contact activity feed, voice notes, AI relationship intel, leaderboards
 - Public REST API, webhooks, soft-delete, lifecycle engine
 - Personal SMS mode, event tracking, activity reports, white-label emails
@@ -51,7 +49,7 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 ## Upcoming Tasks
 - (P1) Mobile Push Notifications
 - (P1) Auth refactor (bcrypt)
-- (P1) Clean production database for customer launch
+- (P1) Clean production database
 
 ## Future/Backlog
 - (P2) Customer-facing gamification
