@@ -182,8 +182,8 @@ export default function ThreadScreen() {
     try {
       const savedMode = await AsyncStorage.getItem('message_mode');
       if (savedMode === 'sms' || savedMode === 'email') {
-        const effectiveMode = (savedMode === 'email' && !contact_email) ? 'sms' : savedMode;
-        setMessageMode(effectiveMode);
+        // Trust saved preference — email check happens at send time
+        setMessageMode(savedMode);
       }
     } catch (error) {
       // Fallback to SMS mode
