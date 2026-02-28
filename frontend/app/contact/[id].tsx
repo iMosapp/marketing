@@ -168,10 +168,12 @@ export default function ContactDetailScreen() {
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
   const [originalNotes, setOriginalNotes] = useState('');
-  // Full photo viewer
+  // Full photo viewer & gallery
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [fullPhoto, setFullPhoto] = useState<string | null>(null);
   const [fullPhotoLoading, setFullPhotoLoading] = useState(false);
+  const [allPhotos, setAllPhotos] = useState<any[]>([]);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(isNewContact);
 
   // Voice notes
