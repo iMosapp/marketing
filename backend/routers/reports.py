@@ -1069,7 +1069,7 @@ async def send_report_email(
 @router.get("/user-activity/{user_id}")
 async def get_user_activity(
     user_id: str,
-    period: str = Query("month", regex="^(today|week|month|year|custom)$"),
+    period: str = Query("month", regex="^(today|week|month|year|all_time|custom)$"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ):
@@ -1093,6 +1093,9 @@ async def get_user_activity(
         end = now
     elif period == "year":
         start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    elif period == "all_time":
+        start = datetime(2020, 1, 1)
         end = now
     elif period == "custom" and start_date and end_date:
         try:
