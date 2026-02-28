@@ -67,15 +67,18 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict)
         if card.get("hidden"):
             continue
 
+        card_id = card.get("card_id", str(card["_id"]))
+        has_customer_photo = bool(card.get("customer_photo"))
+
         entry = {
-            "id": card.get("card_id", str(card["_id"])),
+            "id": card_id,
             "type": "delivery",
             "customer_name": card.get("customer_name", "Happy Customer"),
-            "customer_photo": card.get("customer_photo"),
-            "card_id": card.get("card_id"),
+            "customer_photo": f"/api/showcase/photo/{card_id}" if has_customer_photo else None,
+            "card_id": card_id,
             "salesman_id": card.get("salesman_id"),
             "salesman_name": card.get("salesman_name"),
-            "salesman_photo": card.get("salesman_photo"),
+            "salesman_photo": None,
             "store_name": card.get("store_name"),
             "created_at": card.get("created_at").isoformat() if card.get("created_at") else None,
             "review": None,
