@@ -372,6 +372,11 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
+  backBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 4, marginBottom: 8,
+  },
+  backBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#000',

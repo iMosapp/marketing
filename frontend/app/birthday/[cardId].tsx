@@ -252,6 +252,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   errorText: { color: '#FF3B30', fontSize: 16, marginTop: 12 },
   scrollContent: { alignItems: 'center', paddingVertical: 30, paddingHorizontal: 24, maxWidth: 480, width: '100%', alignSelf: 'center' },
+  backBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 4, marginBottom: 8,
+  },
+  backBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
 
   confettiRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 20, paddingHorizontal: 20 },
   confettiDot: { borderRadius: 20 },
