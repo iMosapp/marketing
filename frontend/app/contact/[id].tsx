@@ -768,7 +768,7 @@ export default function ContactDetailScreen() {
                         {/* Content */}
                         <View style={s.feedContent}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={s.feedTitle}>{evt.title}</Text>
+                            <Text style={s.feedTitle}>{getEventTitle(evt)}</Text>
                             <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#636366" />
                           </View>
                           {evt.description ? (
