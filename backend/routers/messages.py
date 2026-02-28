@@ -715,7 +715,7 @@ async def update_conversation(user_id: str, conversation_id: str, data: dict):
     """Update conversation settings (AI mode, status, etc.)"""
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['ai_enabled', 'ai_mode', 'status', 'unread', 'unread_count', 'needs_assistance', 'ai_handled', 'ai_outcome', 'ai_outcome_priority', 'ai_outcome_acknowledged']
+    allowed_fields = ['ai_enabled', 'ai_mode', 'status', 'unread', 'unread_count', 'needs_assistance', 'ai_handled', 'ai_outcome', 'ai_outcome_priority', 'ai_outcome_acknowledged', 'flagged']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     
     # If setting ai_outcome, auto-set the priority
