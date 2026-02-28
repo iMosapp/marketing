@@ -49,6 +49,7 @@ function getNotifColor(type: string): string {
     case 'email_sent': return '#30D158';
     case 'sms_sent': return '#34C759';
     case 'badge_earned': return '#FFD60A';
+    case 'campaign_send': return '#FF9500';
     default: return '#8E8E93';
   }
 }
