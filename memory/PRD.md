@@ -14,7 +14,13 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ## What's Been Implemented
 
-### Session Feb 28, 2026 (Fork 7 - Current)
+### Session Feb 28, 2026 (Fork 8 - Current)
+- **FEATURE: Contact Activity Feed Revamp** — Fixed incorrect relative timestamps ("in about five hours") by replacing `formatDistanceToNow` with absolute `format()` from date-fns. Events now show "Yesterday at 10:04 PM", "Feb 27 at 7:28 PM" etc. Added expand/collapse per event (chevron toggle), initial 5-event limit with "Show All X Events" button, and fallback title labels for events with null titles (e.g., "Email Sent" instead of blank).
+- **FEATURE: Inbox Swipe Gestures (Web)** — Built `WebSwipeableItem` component using pointer events for web-compatible drag/swipe. Left swipe reveals Flag + Task actions; right swipe reveals Tag + Archive. Added `flagConversation` API, task creation from swipe, and a tag picker modal.
+- **ENHANCEMENT: Flag Indicator** — Flagged conversations now show an orange flag icon next to the contact name in the inbox list.
+- **BACKEND: Flag Support** — Added `flagged` to allowed fields in `update_conversation` endpoint.
+
+### Session Feb 28, 2026 (Fork 7)
 - **CRITICAL FIX: 5-Point Email Flow Audit** — Traced every single entry point that leads to the inbox thread and fixed all disconnects:
   1. Mode initialization no longer silently falls back to SMS when `contact_email` URL param is empty
   2. `email_work` field checked everywhere (contact detail, conversation info, thread page)
