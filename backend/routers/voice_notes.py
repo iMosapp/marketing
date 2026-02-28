@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from bson import ObjectId
 
-from database import get_db
+from routers.database import get_db
 from utils.image_storage import put_object
 
 logger = logging.getLogger(__name__)
