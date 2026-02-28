@@ -260,7 +260,7 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image 
-                source={{ uri: 'https://customer-assets.emergentagent.com/job_35683d39-9c8e-4a2d-a3f7-89b34db8b170/artifacts/g39ale0a_ChatGPT%20Image%20Feb%2023%2C%202026%2C%2004_06_33%20PM.png' }}
+                source={{ uri: '/logo512.png' }}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
