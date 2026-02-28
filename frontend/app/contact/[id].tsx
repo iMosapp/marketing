@@ -347,6 +347,22 @@ export default function ContactDetailScreen() {
         await contactsAPI.create(user._id, contact);
       } else {
         await contactsAPI.update(user._id, id as string, contact);
+        // Log note change to activity feed
+        if (contact.notes && contact.notes.trim() !== originalNotes.trim()) {
+          try {
+            await contactsAPI.logEvent(user._id, id as string, {
+              event_type: 'note_updated',
+              title: 'Note Updated',
+              description: contact.notes.slice(0, 300),
+              channel: 'note',
+              category: 'note',
+              icon: 'document-text',
+              color: '#FF9F0A',
+            });
+            setOriginalNotes(contact.notes);
+            loadEvents();
+          } catch (e) { /* non-critical */ }
+        }
       }
       showToast('Contact saved!');
       if (isNewContact) {
