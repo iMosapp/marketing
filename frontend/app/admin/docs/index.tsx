@@ -331,7 +331,31 @@ export default function DocsHubScreen() {
       </ScrollView>
 
       {/* Doc List */}
-      {docs.length === 0 ? (
+      {selectedCategory === 'signed' ? (
+        <ScrollView
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />}
+        >
+          {signedDocs.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="checkmark-done-circle-outline" size={64} color="#2C2C2E" />
+              <Text style={styles.emptyText}>No signed documents yet</Text>
+              <Text style={styles.emptySubtext}>Signed NDAs, agreements, and quotes will appear here</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.categoryHeader}>
+                <View style={[styles.categoryIcon, { backgroundColor: '#34C75920' }]}>
+                  <Ionicons name="checkmark-done-circle" size={16} color="#34C759" />
+                </View>
+                <Text style={styles.categoryTitle}>Signed Documents</Text>
+                <Text style={styles.categoryCount}>{signedDocs.length}</Text>
+              </View>
+              {signedDocs.map(renderSignedDoc)}
+            </>
+          )}
+        </ScrollView>
+      ) : docs.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="folder-open-outline" size={64} color="#2C2C2E" />
           <Text style={styles.emptyText}>No documents found</Text>
