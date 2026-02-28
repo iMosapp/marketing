@@ -155,13 +155,19 @@ export default function ThreadScreen() {
   useEffect(() => {
     // If mode was passed from navigation, use that
     if (mode === 'email' || mode === 'sms') {
-      // Auto-fallback to SMS if contact has no email
-      const effectiveMode = (mode === 'email' && !contact_email) ? 'sms' : mode as 'sms' | 'email';
-      setMessageMode(effectiveMode);
-      AsyncStorage.setItem('message_mode', effectiveMode);
+      // Trust the explicitly requested mode — don't fall back.
+      // The email availability check happens at send time (handleSend).
+      setMessageMode(mode as 'sms' | 'email');
+      AsyncStorage.setItem('message_mode', mode as string);
     } else if (mode === 'review' || mode === 'card' || mode === 'congrats') {
-      // Set SMS mode for these actions, then auto-open the relevant modal after load
-      setMessageMode('sms');
+      // Don't force SMS — load user's preferred mode first
+      AsyncStorage.getItem('message_mode').then((savedMode) => {
+        if (savedMode === 'email' && (contact_email || savedContactEmail)) {
+          setMessageMode('email');
+        } else {
+          setMessageMode('sms');
+        }
+      }).catch(() => setMessageMode('sms'));
       setTimeout(() => {
         if (mode === 'review') setShowReviewLinks(true);
         else if (mode === 'card') setShowBusinessCard(true);
