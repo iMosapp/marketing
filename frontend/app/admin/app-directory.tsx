@@ -169,10 +169,10 @@ const PAGE_CATALOG: Category[] = [
     icon: 'stats-chart-outline',
     color: '#34C759',
     pages: [
-      { name: 'Analytics', description: 'Performance metrics', path: '/imos/analytics', icon: 'stats-chart-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
-      { name: 'Reports', description: 'Detailed performance reports', path: '/imos/reports', icon: 'bar-chart-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Analytics Overview', description: 'Performance metrics dashboard', path: '/imos/analytics', icon: 'stats-chart-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
+      { name: 'Reports Hub (iMOs)', description: 'Detailed performance reports', path: '/imos/reports', icon: 'bar-chart-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
       { name: 'Email Analytics', description: 'Opens, clicks, engagement', path: '/imos/email-analytics', icon: 'trending-up-outline', color: '#FF2D55', requiresAuth: false, audience: 'All users' },
-      { name: 'Leaderboard', description: 'Team performance rankings', path: '/imos/leaderboard', icon: 'trophy-outline', color: '#FFD60A', requiresAuth: false, audience: 'Team members' },
+      { name: 'Leaderboard (iMOs)', description: 'Team performance rankings', path: '/imos/leaderboard', icon: 'trophy-outline', color: '#FFD60A', requiresAuth: false, audience: 'Team members' },
     ],
   },
   {
