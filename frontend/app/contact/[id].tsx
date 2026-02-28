@@ -853,6 +853,113 @@ export default function ContactDetailScreen() {
             )}
           </View>
 
+          {/* ===== EDIT-MODE: Basic Info + Tags + Important Dates at top ===== */}
+          {isEditing && (
+            <>
+              {/* Basic Info */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Basic Info</Text>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>First Name *</Text>
+                  <TextInput style={s.input} placeholder="First name" placeholderTextColor="#636366"
+                    value={contact.first_name} onChangeText={t => setContact({ ...contact, first_name: t })} data-testid="input-first-name" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Last Name</Text>
+                  <TextInput style={s.input} placeholder="Last name" placeholderTextColor="#636366"
+                    value={contact.last_name} onChangeText={t => setContact({ ...contact, last_name: t })} data-testid="input-last-name" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Phone *</Text>
+                  <TextInput style={s.input} placeholder="+1 (555) 123-4567" placeholderTextColor="#636366"
+                    value={contact.phone} onChangeText={t => setContact({ ...contact, phone: t })} keyboardType="phone-pad" data-testid="input-phone" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Email</Text>
+                  <TextInput style={s.input} placeholder="email@example.com" placeholderTextColor="#636366"
+                    value={contact.email} onChangeText={t => setContact({ ...contact, email: t })} keyboardType="email-address" autoCapitalize="none" data-testid="input-email" />
+                </View>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Vehicle</Text>
+                  <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor="#636366"
+                    value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
+                </View>
+              </View>
+
+              {/* Tags (edit mode — at top) */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Tags</Text>
+                <View style={s.tagsWrap}>
+                  {contact.tags.map((tag, i) => {
+                    const info = availableTags.find(t => t.name === tag);
+                    return (
+                      <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
+                        {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || '#8E8E93'} />}
+                        <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
+                        <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <Ionicons name="close-circle" size={15} color="#8E8E93" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                  <TouchableOpacity style={s.addTagChip} onPress={() => { loadTags(); setShowTagPicker(true); }} data-testid="add-tag-button-top">
+                    <Ionicons name="add" size={16} color="#007AFF" />
+                    <Text style={s.addTagChipText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Important Dates (edit mode — at top) */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Important Dates</Text>
+                {[
+                  { field: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF9500' },
+                  { field: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF2D55' },
+                  { field: 'date_sold', label: 'Date Sold', icon: 'car', color: '#34C759' },
+                ].map(d => (
+                  <TouchableOpacity key={d.field} style={s.dateRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)}>
+                    <View style={[s.dateRowIcon, { backgroundColor: `${d.color}20` }]}>
+                      <Ionicons name={d.icon as any} size={18} color={d.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.dateRowLabel}>{d.label}</Text>
+                      <Text style={[s.dateRowValue, !(contact as any)[d.field] && { color: '#636366' }]}>
+                        {formatDateDisplay((contact as any)[d.field])}
+                      </Text>
+                    </View>
+                    {(contact as any)[d.field] && (
+                      <TouchableOpacity onPress={() => clearDate(d.field)} style={{ padding: 4, marginRight: 8 }}>
+                        <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                      </TouchableOpacity>
+                    )}
+                    <Ionicons name="calendar" size={20} color="#8E8E93" />
+                  </TouchableOpacity>
+                ))}
+                {contact.custom_dates.map((cd, i) => (
+                  <TouchableOpacity key={i} style={s.dateRow} onPress={() => openDatePicker(`custom_${i}`, cd.date)}>
+                    <View style={[s.dateRowIcon, { backgroundColor: '#007AFF20' }]}>
+                      <Ionicons name="calendar-outline" size={18} color="#007AFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.dateRowLabel}>{cd.name}</Text>
+                      <Text style={[s.dateRowValue, !cd.date && { color: '#636366' }]}>{formatDateDisplay(cd.date)}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => removeCustomDateField(i)} style={{ padding: 4 }}>
+                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity style={s.addBtn} onPress={() => {
+                  setTempDate(new Date()); setActiveDateField('pending_custom');
+                  setActiveDateLabel('Select Date'); setShowDatePicker(true);
+                }}>
+                  <Ionicons name="add-circle" size={20} color="#007AFF" />
+                  <Text style={s.addBtnText}>Add Custom Date</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
           {/* ===== QUICK STATS BAR ===== */}
           {!isNewContact && (
             <View style={s.statsRow} data-testid="contact-stats-row">
