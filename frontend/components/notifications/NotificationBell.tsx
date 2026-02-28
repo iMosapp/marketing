@@ -31,6 +31,7 @@ function getNotifIcon(type: string): string {
     case 'email_sent': return 'mail';
     case 'sms_sent': return 'chatbox';
     case 'badge_earned': return 'trophy';
+    case 'campaign_send': return 'megaphone';
     default: return 'notifications';
   }
 }
