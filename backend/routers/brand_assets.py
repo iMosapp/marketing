@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from datetime import datetime, timezone
 import uuid, base64, logging
-from database import get_db
+from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/brand-assets", tags=["brand-assets"])
