@@ -47,6 +47,7 @@ function getNotifColor(type: string): string {
     email_sent: '#30D158', sms_sent: '#34C759', badge_earned: '#FFD60A',
     digital_card_sent: '#5856D6', review_request_sent: '#FFD60A',
     congrats_card_sent: '#FF2D55',
+    campaign_send: '#FF9500',
   };
   return map[type] || '#8E8E93';
 }
