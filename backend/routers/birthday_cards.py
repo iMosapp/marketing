@@ -454,3 +454,31 @@ async def get_card_history(salesman_id: str, limit: int = 50):
         "shares": c.get("shares", 0),
         "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,
     } for c in cards]
+
+
+@router.get("/photo/{card_id}")
+async def get_birthday_photo(card_id: str):
+    """Serve a birthday card customer photo as an actual image."""
+    db = get_db()
+    card = await db.birthday_cards.find_one({"card_id": card_id}, {"customer_photo": 1})
+    if not card or not card.get("customer_photo"):
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    photo_data = card["customer_photo"]
+    if photo_data.startswith("data:"):
+        parts = photo_data.split(",", 1)
+        if len(parts) == 2:
+            header = parts[0]
+            b64_data = parts[1]
+            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            try:
+                image_bytes = base64.b64decode(b64_data)
+                return Response(content=image_bytes, media_type=mime, headers={
+                    "Cache-Control": "public, max-age=86400",
+                })
+            except Exception:
+                raise HTTPException(status_code=500, detail="Failed to decode photo")
+    if photo_data.startswith("http"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=photo_data)
+    raise HTTPException(status_code=404, detail="Photo not found")
