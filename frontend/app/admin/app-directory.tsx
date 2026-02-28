@@ -112,7 +112,8 @@ const PAGE_CATALOG: Category[] = [
     icon: 'rocket-outline',
     color: '#FF9500',
     pages: [
-      { name: 'Onboarding Preview', description: 'Preview all 5 role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#C9A962', requiresAuth: false, audience: 'Admins, prospects' },
+      { name: 'Onboarding', description: 'Quick-wins walkthrough for new users', path: '/onboarding', icon: 'rocket-outline', color: '#C9A962', requiresAuth: true, audience: 'New users' },
+      { name: 'Onboarding Preview', description: 'Preview all role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#C9A962', requiresAuth: false, audience: 'Admins, prospects' },
       { name: 'Training Hub', description: 'Learn how to use iMOs', path: '/imos/training', icon: 'school-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
     ],
   },
