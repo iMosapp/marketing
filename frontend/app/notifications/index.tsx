@@ -88,9 +88,10 @@ export default function NotificationsPage() {
   }, [user?._id, activeCategory]);
 
   useEffect(() => {
+    if (!user?._id) return;
     setLoading(true);
-    fetchNotifications().finally(() => setLoading(false));
-  }, [activeCategory]);
+    fetchNotifications(activeCategory).finally(() => setLoading(false));
+  }, [activeCategory, user?._id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
