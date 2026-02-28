@@ -200,7 +200,9 @@ RULES:
             UserMessage(text=f"Generate a relationship intel briefing for this contact:\n\n{contact_data}")
         )
         
-        summary_text = response.text if response else "Unable to generate summary."
+        summary_text = response if isinstance(response, str) else (response.text if hasattr(response, 'text') else str(response))
+        if not summary_text:
+            summary_text = "Unable to generate summary."
         
     except Exception as e:
         logger.error(f"AI summary generation failed: {e}")
