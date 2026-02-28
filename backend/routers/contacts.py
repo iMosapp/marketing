@@ -433,10 +433,10 @@ async def get_full_photo(user_id: str, contact_id: str):
 
 
 async def _process_photo(photo_data: str) -> tuple:
-    """Process a photo: generate a tiny thumbnail and a reasonable high-res version.
+    """Process a photo: auto-rotate using EXIF, generate a tiny thumbnail and a reasonable high-res version.
     Returns (thumbnail_base64, highres_base64)"""
     import base64
-    from PIL import Image
+    from PIL import Image, ImageOps
     import io
     
     # Extract base64 data
@@ -449,6 +449,9 @@ async def _process_photo(photo_data: str) -> tuple:
     
     img_bytes = base64.b64decode(b64data)
     img = Image.open(io.BytesIO(img_bytes))
+    
+    # Auto-rotate based on EXIF orientation (fixes sideways photos from phones)
+    img = ImageOps.exif_transpose(img)
     
     # Convert to RGB if needed
     if img.mode in ('RGBA', 'P'):
