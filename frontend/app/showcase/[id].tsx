@@ -478,6 +478,32 @@ const styles = StyleSheet.create({
 
   // Share
   shareSection: { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20, gap: 12 },
+
+  // Leave a Review CTA
+  reviewCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 14,
+  },
+  reviewCTAContent: { flex: 1 },
+  reviewCTATitle: { fontSize: 14, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
+  reviewCTASubtitle: { fontSize: 16, fontWeight: '700' },
+
+  // Business card link
+  cardLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+  },
+  cardLinkText: { fontSize: 14, fontWeight: '600' },
+
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
