@@ -154,6 +154,9 @@ export default function ContactDetailScreen() {
     cards_sent: 0, broadcasts: 0, custom_events: 0, created_at: null,
   });
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState<Record<number, boolean>>({});
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const INITIAL_EVENT_COUNT = 5;
 
   // Modals
   const [showDatePicker, setShowDatePicker] = useState(false);
