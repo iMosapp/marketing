@@ -16,27 +16,32 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ### Session Feb 28, 2026 (Fork 9 - Current)
 
-#### Phase 1: Notifications Center + Analytics Dashboard
-- **Notifications Center** — Unified hub aggregating 7 data sources: lead alerts, overdue tasks, upcoming tasks, unread messages, flagged convos, recent activity events, and pending campaign sends. Backend at `/api/notification-center/{user_id}` with category filtering (`all`, `leads`, `tasks`, `messages`, `campaigns`, `flags`, `activity`), mark-as-read, unread count. Frontend: full `/notifications` page with category tabs + enhanced NotificationBell dropdown.
-- **Analytics Dashboard** — Multi-level (Org/Store/Personal) dashboard at `/analytics` with: KPI hero card + 10-metric grid, stacked daily trend chart, channel breakdown bars, per-user performance table, store comparison table, period selector (7D-1Y). Backend at `/api/reports/dashboard/{user_id}?days=N`.
+#### Notifications Center + Analytics Dashboard
+- **Notifications Center** — Unified hub aggregating 7 data sources with category filtering, mark-as-read, full-page UI.
+- **Analytics Dashboard** — Multi-level (Org/Store/Personal) dashboard with KPI hero card, 10-metric grid, trend chart, channel breakdown, per-user table, store comparison, period selector.
 
-#### Phase 2: AI-Powered Campaign Outreach System
-- **AI Clone Prompt System** — Global default prompt template (genericized from user's provided prompt) with per-user overrides. Dynamically hydrates {user_name}, {user_bio}, {store_name}, {store_info} from user profile data. Endpoints: GET/PUT global, GET/PUT/DELETE per-user at `/api/ai-campaigns/clone-prompt/*`.
-- **AI Message Generation** — GPT-5.2 generates personalized campaign messages using contact's activity history, conversation context, and salesperson's clone personality. Supports both SMS and email channels. Endpoint: POST `/api/ai-campaigns/generate-message/{user_id}/{contact_id}`.
-- **AI Virtual Assistant Reply Handler** — Handles inbound customer replies during automated campaigns. Returns generated reply with 1-3 minute randomized delay for human-like timing. Endpoint: POST `/api/ai-campaigns/handle-reply/{user_id}/{contact_id}`.
-- **AI Clone Preview** — Test the AI personality. Endpoint: POST `/api/ai-campaigns/preview-clone/{user_id}`.
-- **Enhanced Campaign Model** — Added `delivery_mode` (automated/manual), `ai_enabled`, `ownership_level` (user/store/org). Each step now has `channel` (sms/email), `ai_generated`, `step_context`.
-- **Dual Delivery Modes**:
-  - **Automated:** Messages auto-send between 10AM-12PM (randomized), AI handles replies with 1-3 min delay.
-  - **Manual:** Creates notification + pending send record. User opens notification, reviews pre-populated message, clicks send to open native SMS/email app.
-- **Pending Sends System** — CRUD for manual campaign pending sends. Endpoints at `/api/campaigns/{user_id}/pending-sends`. Frontend page at `/campaigns/pending-send/[id]` with editable message, send via native app, mark complete/skip.
-- **Enhanced Campaign Builder** — New sections: Delivery Mode cards (Automated/Manual), AI-Powered Messages toggle, Campaign Level selector (Personal/Store/Org for admins), channel selector per step (SMS/Email), AI context per step.
-- **Enhanced Scheduler** — Dual mode campaign processing: automated sends logged + queued, manual sends create notifications. Randomized send times 10AM-12PM.
+#### AI-Powered Campaign Outreach System
+- **AI Clone Prompt System** — Global default prompt (genericized from user's provided prompt) + per-user overrides. Dynamically hydrates from user profile data.
+- **AI Message Generation** — GPT-5.2 generates personalized messages using contact history + salesperson persona. SMS and email channels.
+- **AI Virtual Assistant Reply Handler** — Handles inbound replies with 1-3 min human-like delay.
+- **Dual Delivery Modes** — Automated (10AM-12PM sends, AI replies) vs Manual (notification -> review -> send via native app).
+- **Enhanced Campaign Model** — delivery_mode, ai_enabled, ownership_level (user/store/org), channel + ai_generated per step.
+- **Pending Sends System** — CRUD for manual campaign pending sends with review page.
+- **Enhanced Campaign Builder** — Delivery Mode cards, AI toggle, Campaign Level, channel selector per step.
+
+#### Pre-Built Campaign Templates (5 templates)
+1. **Sold - Complete Follow-Up** (5 steps, 1 year) — Day 3 check-in, Day 14 referral ask, Month 2 first service reminder, Month 7 touch base, Month 12 anniversary celebration. Trigger: `sold`
+2. **Be-Back / Working Customer** (4 steps, 1 month) — Day 1 thank you, Day 5 value add, Day 14 resource offer, Month 1 final check. Trigger: `be_back`
+3. **Service Reminder Series** (3 steps, 10 days) — Proactive service notification, 1-week follow-up, post-service experience check. Trigger: `service_due`
+4. **Referral Thank You & Nurture** (3 steps, 3 months) — Immediate thank you, 1-week referral update, 3-month relationship maintenance. Trigger: `referral`
+5. **VIP Customer Experience** (4 steps, 10 months) — VIP welcome, monthly insider updates, quarterly email insights, 6-month personal check-in. Trigger: `vip`
+- Template picker screen with metadata badges (steps, duration, trigger tag, AI) + "Build Custom" option.
+- All templates AI-enabled with step-level context hints for personalized generation.
 
 ### Previous Sessions
 - Contact activity feed, swipe gestures, voice notes, AI relationship intel, leaderboards, photo fixes
-- Public REST API, webhooks, soft-delete system, lifecycle engine
-- Personal SMS mode, contact event tracking, activity reports, white-label emails
+- Public REST API, webhooks, soft-delete, lifecycle engine
+- Personal SMS mode, event tracking, activity reports, white-label emails
 - Operations manual, NDA system, digital signing
 
 ## Known Issues
@@ -59,11 +64,3 @@ Full-stack Relationship Management System (RMS) for dealerships. The app empower
 
 ## Credentials
 - **Super Admin:** forest@imosapp.com / Admin123!
-
-## 3rd Party Integrations
-- **OpenAI GPT-5.2** — Jessi assistant, Relationship Intel, AI Campaign Engine (via emergentintegrations)
-- **OpenAI Whisper** — Voice note transcription (via emergentintegrations)
-- **Resend** — Transactional emails
-- **MongoDB Atlas** — Primary database
-- **Twilio** — SMS (MOCK mode)
-- **Emergent Object Storage** — File storage
