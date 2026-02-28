@@ -1031,7 +1031,7 @@ export default function MoreScreen() {
         <View style={styles.quickSettingsRow}>
           <TouchableOpacity
             style={styles.quickSettingsBtn}
-            onPress={() => router.push(`/showcase/${user?._id}` as any)}
+            onPress={() => { setShowShowroomShare(true); setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail(''); setCopiedLink(false); }}
             data-testid="quick-my-showroom"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF950020' }]}>
@@ -1041,7 +1041,7 @@ export default function MoreScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickSettingsBtn}
-            onPress={() => router.push('/settings/create-birthday' as any)}
+            onPress={() => { setShowBirthdayShare(true); setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail(''); }}
             data-testid="quick-birthday-card"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF2D5520' }]}>
