@@ -256,16 +256,10 @@ export default function MoreScreen() {
   const handleLogout = async () => {
     try {
       await logout();
-      if (Platform.OS === 'web') {
-        window.location.href = '/auth/login';
-      } else {
-        router.replace('/auth/login');
-      }
+      router.replace('/auth/login');
     } catch (e) {
       console.error('Logout error:', e);
-      if (Platform.OS === 'web') {
-        window.location.href = '/auth/login';
-      }
+      router.replace('/auth/login');
     }
   };
   
