@@ -1421,4 +1421,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#8E8E93',
   },
+  // Template picker styles
+  templateCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  templateIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  templateName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  templateDesc: {
+    fontSize: 13,
+    color: '#8E8E93',
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  templateMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  templateMetaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: '#2C2C2E',
+  },
+  templateMetaText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
 });
