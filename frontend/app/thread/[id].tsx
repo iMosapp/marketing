@@ -1695,8 +1695,13 @@ export default function ThreadScreen() {
           >
             <Text style={styles.emailPromptSaveText}>Save</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); setMessageMode('sms'); AsyncStorage.setItem('message_mode', 'sms'); }} data-testid="email-prompt-close">
-            <Ionicons name="close" size={20} color="#8E8E93" />
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#2C2C2E', borderRadius: 8 }}
+            onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); setMessageMode('sms'); AsyncStorage.setItem('message_mode', 'sms'); }} 
+            data-testid="email-prompt-close"
+          >
+            <Ionicons name="chatbubble-outline" size={14} color="#007AFF" />
+            <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '600' }}>SMS</Text>
           </TouchableOpacity>
         </View>
       )}
