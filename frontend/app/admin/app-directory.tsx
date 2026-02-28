@@ -240,11 +240,7 @@ export default function AppDirectoryScreen() {
   };
 
   const handlePreview = (page: PageEntry) => {
-    if (Platform.OS === 'web') {
-      window.open(`${APP_URL}${page.path}`, '_blank');
-    } else {
-      router.push(page.path as any);
-    }
+    router.push(page.path as any);
   };
 
   const handleShare = async () => {
