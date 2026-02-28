@@ -1225,6 +1225,34 @@ export default function ContactDetailScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* Full Photo Viewer Modal */}
+      <Modal visible={showPhotoViewer} animationType="fade" transparent onRequestClose={() => setShowPhotoViewer(false)}>
+        <View style={s.photoViewerOverlay}>
+          <TouchableOpacity
+            style={s.photoViewerClose}
+            onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); }}
+            data-testid="close-photo-viewer"
+          >
+            <Ionicons name="close" size={28} color="#FFF" />
+          </TouchableOpacity>
+          <View style={s.photoViewerContent}>
+            {fullPhotoLoading ? (
+              <ActivityIndicator size="large" color="#C9A962" />
+            ) : fullPhoto ? (
+              <Image
+                source={{ uri: fullPhoto }}
+                style={s.photoViewerImage}
+                resizeMode="contain"
+                data-testid="full-photo-image"
+              />
+            ) : (
+              <Text style={{ color: '#8E8E93', fontSize: 16 }}>No photo available</Text>
+            )}
+          </View>
+          <Text style={s.photoViewerName}>{contact.first_name} {contact.last_name}</Text>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
