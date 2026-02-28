@@ -225,6 +225,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
         "conversation_id": conversation_id,
         "content": message_data.content,
         "sender": "user",
+        "sender_id": user_id,
         "user_id": user_id,
         "timestamp": datetime.utcnow(),
         "status": "sending",
