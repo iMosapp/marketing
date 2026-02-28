@@ -137,6 +137,7 @@ api_router.include_router(contact_intel.router)
 api_router.include_router(leaderboard_v2.router)
 api_router.include_router(notifications_center.router)
 api_router.include_router(ai_campaigns.router)
+api_router.include_router(brand_assets.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
