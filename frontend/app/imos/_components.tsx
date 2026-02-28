@@ -130,7 +130,7 @@ export function ImosFooter() {
             <Text style={styles.footerColTitle}>Company</Text>
             <TouchableOpacity onPress={() => navigate('/imos/privacy')}><Text style={styles.footerLink}>Privacy Policy</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/terms')}><Text style={styles.footerLink}>Terms of Service</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.open('mailto:forest@imosapp.com', '_blank'); }}>
+            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.location.href = 'mailto:forest@imosapp.com'; }}>
               <Text style={styles.footerLink}>Contact Us</Text>
             </TouchableOpacity>
           </View>
