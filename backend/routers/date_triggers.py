@@ -248,6 +248,24 @@ async def process_date_triggers(user_id: str):
             
             # Send via configured method
             send_result = {"sms": False, "email": False}
+
+            # Auto-create birthday card if this is a birthday trigger with include_birthday_card
+            if trigger_type == "birthday" and config.get("include_birthday_card", True):
+                try:
+                    from routers.birthday_cards import auto_create_birthday_card
+                    bday_result = await auto_create_birthday_card(user_id, contact_id, custom_message=None)
+                    if bday_result and bday_result.get("short_url"):
+                        message += f"\n\nView your birthday card: {bday_result['short_url']}"
+                        logger.info(f"[DateTrigger] Birthday card created for {contact_name}: {bday_result.get('card_id')}")
+                    elif bday_result and bday_result.get("already_exists"):
+                        # Card already exists today, look up its URL
+                        existing_card = await db.birthday_cards.find_one(
+                            {"card_id": bday_result["card_id"]}, {"short_url": 1, "card_id": 1}
+                        )
+                        if existing_card and existing_card.get("short_url"):
+                            message += f"\n\nView your birthday card: {existing_card['short_url']}"
+                except Exception as e:
+                    logger.error(f"[DateTrigger] Birthday card creation failed for {contact_name}: {e}")
             
             if delivery in ("sms", "both") and contact.get("phone"):
                 # Queue SMS via existing message system
