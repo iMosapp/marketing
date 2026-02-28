@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import re
 import logging
 
-from db import get_db
+from routers.database import get_db
 
 router = APIRouter(prefix="/showcase", tags=["showcase"])
 logger = logging.getLogger(__name__)
