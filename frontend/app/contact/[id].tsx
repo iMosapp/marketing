@@ -1157,7 +1157,7 @@ export default function ContactDetailScreen() {
                         data-testid={`feed-event-${i}`}
                       >
                         {/* Timeline line */}
-                        {i < (showAllEvents ? events : events.slice(0, INITIAL_EVENT_COUNT)).length - 1 && <View style={s.feedLine} />}
+                        {i < visible.length - 1 && <View style={s.feedLine} />}
                         {/* Icon */}
                         <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
                           <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
