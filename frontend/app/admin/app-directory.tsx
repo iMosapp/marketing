@@ -124,9 +124,16 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Inbox', description: 'Message conversations & threads', path: '/imos/inbox', icon: 'chatbubble-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
       { name: 'Contacts', description: 'Contact management & CRM', path: '/imos/contacts', icon: 'people-outline', color: '#5856D6', requiresAuth: false, audience: 'All users' },
+      { name: 'Contact Detail', description: 'Full contact view with photo gallery, relationship intel, events', path: '/contact/{id}', icon: 'person-outline', color: '#FF9500', requiresAuth: true, audience: 'All users' },
       { name: 'Dialer', description: 'Phone dialer & call log', path: '/imos/dialer', icon: 'keypad-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
       { name: 'Team Chat', description: 'Team collaboration', path: '/imos/team', icon: 'chatbubbles-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
-      { name: 'More / Settings', description: 'Navigation hub', path: '/imos/more', icon: 'menu-outline', color: '#8E8E93', requiresAuth: false, audience: 'All users' },
+      { name: 'More / Settings', description: 'Navigation hub with quick actions', path: '/imos/more', icon: 'menu-outline', color: '#8E8E93', requiresAuth: false, audience: 'All users' },
+      { name: 'Ask Jessi AI', description: 'AI assistant — voice & text', path: '/jessie', icon: 'sparkles-outline', color: '#C9A962', requiresAuth: true, audience: 'All users' },
+      { name: 'Notifications', description: 'Lead alerts, system notifications', path: '/notifications', icon: 'notifications-outline', color: '#FF3B30', requiresAuth: true, audience: 'All users' },
+      { name: 'Search', description: 'Global search across contacts & messages', path: '/search', icon: 'search-outline', color: '#8E8E93', requiresAuth: true, audience: 'All users' },
+      { name: 'Tasks', description: 'To-do list and task management', path: '/tasks', icon: 'checkbox-outline', color: '#34C759', requiresAuth: true, audience: 'All users' },
+      { name: 'Training Hub', description: 'Video tutorials & guides', path: '/training-hub', icon: 'school-outline', color: '#AF52DE', requiresAuth: true, audience: 'All users' },
+      { name: 'Voice Training', description: 'Train your AI voice persona', path: '/voice-training', icon: 'mic-outline', color: '#FF2D55', requiresAuth: true, audience: 'All users' },
     ],
   },
   {
