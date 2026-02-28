@@ -160,14 +160,14 @@ class TestConversationArchive:
 
 
 class TestCompanyDocs:
-    """Test Company Docs seeding endpoint"""
+    """Test Company Docs listing endpoint"""
     
-    def test_docs_seed_endpoint_exists(self):
-        """Verify docs seed endpoint exists"""
-        response = requests.post(f"{BASE_URL}/api/company-docs/seed")
-        # Should be 200 or 401 (if auth required)
-        assert response.status_code in [200, 401, 400], f"Unexpected status: {response.status_code}"
-        print(f"✓ Docs seed endpoint responded with {response.status_code}")
+    def test_docs_list_endpoint_exists(self):
+        """Verify docs list endpoint exists (requires auth)"""
+        response = requests.get(f"{BASE_URL}/api/company-docs/")
+        # Should return 401 (auth required) or 200
+        assert response.status_code in [200, 401], f"Unexpected status: {response.status_code}"
+        print(f"✓ Docs list endpoint responded with {response.status_code}")
 
 
 class TestHealthAndBasicEndpoints:
