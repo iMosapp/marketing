@@ -408,7 +408,3 @@ async def get_store_logo(store_id: str):
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url=photo_data)
     raise HTTPException(status_code=404, detail="Logo not found")
-
-        return RedirectResponse(url=photo_data)
-
-    raise HTTPException(status_code=404, detail="Photo not found")
