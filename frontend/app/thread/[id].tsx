@@ -1695,7 +1695,7 @@ export default function ThreadScreen() {
           >
             <Text style={styles.emailPromptSaveText}>Save</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); }} data-testid="email-prompt-close">
+          <TouchableOpacity onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); setMessageMode('sms'); AsyncStorage.setItem('message_mode', 'sms'); }} data-testid="email-prompt-close">
             <Ionicons name="close" size={20} color="#8E8E93" />
           </TouchableOpacity>
         </View>
