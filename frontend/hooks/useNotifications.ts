@@ -1,29 +1,35 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 
 export interface AppNotification {
   id: string;
   type: string;
+  category: string;
+  priority: number;
   title: string;
-  message?: string;
   body?: string;
+  message?: string;
+  link?: string;
+  contact_name?: string;
+  read: boolean;
+  timestamp: string;
+  source?: string;
+  // Legacy fields for backward compat
   user_id?: string;
   conversation_id?: string;
   contact_id?: string;
-  contact_name?: string;
-  contact_phone?: string;
-  contact_email?: string;
-  lead_source_name?: string;
   channel_id?: string;
-  read: boolean;
-  created_at: string;
+  created_at?: string;
 }
 
 interface UseNotificationsResult {
   notifications: AppNotification[];
   unreadCount: number;
   loading: boolean;
+  categoryFilter: string;
+  setCategoryFilter: (cat: string) => void;
+  categoryCounts: Record<string, number>;
   refreshNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
@@ -35,27 +41,30 @@ export function useNotifications(): UseNotificationsResult {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
   const fetchNotifications = useCallback(async () => {
     if (!user?._id) return;
     try {
-      const res = await api.get(`/notifications/?user_id=${user._id}&limit=50`);
+      const res = await api.get(`/notification-center/${user._id}?category=${categoryFilter}`);
       const data = res.data;
       if (data.success) {
         setNotifications(data.notifications || []);
-        setUnreadCount(data.unread_count ?? (data.notifications || []).filter((n: any) => !n.read).length);
+        setUnreadCount(data.unread_count ?? 0);
+        setCategoryCounts(data.category_counts || {});
       }
-    } catch (e) {
+    } catch {
       // Silent fail
     }
-  }, [user?._id]);
+  }, [user?._id, categoryFilter]);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user?._id) return;
     try {
-      const res = await api.get(`/notifications/unread-count?user_id=${user._id}`);
+      const res = await api.get(`/notification-center/${user._id}/unread-count`);
       setUnreadCount(res.data.count || 0);
-    } catch (e) {
+    } catch {
       // Silent fail
     }
   }, [user?._id]);
@@ -67,20 +76,21 @@ export function useNotifications(): UseNotificationsResult {
   }, [fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
+    if (!user?._id) return;
     try {
-      await api.post(`/notifications/${id}/read`);
+      await api.post(`/notification-center/${user._id}/read`, { ids: [id] });
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (e) { /* silent */ }
-  }, []);
+    } catch { /* silent */ }
+  }, [user?._id]);
 
   const markAllRead = useCallback(async () => {
     if (!user?._id) return;
     try {
-      await api.post(`/notifications/mark-all-read?user_id=${user._id}`);
+      await api.post(`/notification-center/${user._id}/read-all`);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (e) { /* silent */ }
+    } catch { /* silent */ }
   }, [user?._id]);
 
   const clearAll = useCallback(async () => {
@@ -89,10 +99,10 @@ export function useNotifications(): UseNotificationsResult {
       await api.delete(`/notifications/clear-all?user_id=${user._id}`);
       setNotifications([]);
       setUnreadCount(0);
-    } catch (e) { /* silent */ }
+    } catch { /* silent */ }
   }, [user?._id]);
 
-  // Initial fetch + poll every 15 seconds as fallback
+  // Initial fetch + poll every 15 seconds
   useEffect(() => {
     if (!user?._id) {
       setNotifications([]);
@@ -104,22 +114,17 @@ export function useNotifications(): UseNotificationsResult {
     return () => clearInterval(interval);
   }, [user?._id, refreshNotifications, fetchUnreadCount]);
 
-  // Listen for WebSocket notification_update events to refresh
-  const bumpUnread = useCallback(() => {
-    fetchUnreadCount();
-    fetchNotifications();
-  }, [fetchUnreadCount, fetchNotifications]);
-
   return {
     notifications,
     unreadCount,
     loading,
+    categoryFilter,
+    setCategoryFilter,
+    categoryCounts,
     refreshNotifications,
     markAsRead,
     markAllRead,
     clearAll,
-    // expose bumpUnread for websocket integration
-    ...(({ bumpUnread } as any)),
   };
 }
 
