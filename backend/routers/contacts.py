@@ -215,6 +215,27 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     update_dict = contact_data.dict()
     update_dict['updated_at'] = datetime.utcnow()
     
+    # Process photo if it's a new base64 upload → generate thumbnail + high-res
+    photo_val = update_dict.get('photo')
+    if photo_val and (photo_val.startswith('data:') or len(photo_val) > 1000):
+        try:
+            thumbnail, high_res = await _process_photo(photo_val)
+            update_dict['photo_thumbnail'] = thumbnail
+            update_dict['photo_url'] = thumbnail
+            # Don't store the huge raw base64 in the contacts collection
+            update_dict.pop('photo', None)
+            # Store high-res in separate collection
+            db = get_db()
+            await db.contact_photos.update_one(
+                {"contact_id": contact_id},
+                {"$set": {"contact_id": contact_id, "user_id": user_id, "photo_full": high_res, "updated_at": datetime.utcnow()}},
+                upsert=True
+            )
+        except Exception as e:
+            logger.error(f"Photo processing during update failed: {e}")
+            # Keep the raw photo as fallback
+            update_dict['photo_url'] = photo_val
+    
     # Auto-tag based on date fields
     existing_tags = set(update_dict.get('tags', []))
     if update_dict.get('birthday'):
