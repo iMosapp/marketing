@@ -19,6 +19,7 @@ const CATEGORIES = [
   { key: 'leads', label: 'Leads', icon: 'person-add' },
   { key: 'tasks', label: 'Tasks', icon: 'checkbox' },
   { key: 'messages', label: 'Messages', icon: 'chatbubble' },
+  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone' },
   { key: 'flags', label: 'Flagged', icon: 'flag' },
   { key: 'activity', label: 'Activity', icon: 'pulse' },
 ];
