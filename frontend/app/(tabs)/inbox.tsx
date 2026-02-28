@@ -534,14 +534,26 @@ export default function InboxScreen() {
   const handleArchive = async (conversationId: string) => {
     try {
       const conversation = conversations.find(c => c._id === conversationId);
-      if (conversation?.status === 'archived') {
+      const isArchived = conversation?.status === 'archived';
+      
+      // Optimistic UI update — immediately update status in local state
+      setConversations(prev => prev.map(c => 
+        c._id === conversationId 
+          ? { ...c, status: isArchived ? 'active' : 'archived' }
+          : c
+      ));
+      
+      if (isArchived) {
         await messagesAPI.restoreConversation(conversationId);
       } else {
         await messagesAPI.archiveConversation(conversationId);
       }
-      loadConversations();
+      // Refresh to get server truth
+      await loadConversations();
     } catch (error) {
       console.error('Error archiving conversation:', error);
+      // Revert on failure
+      await loadConversations();
       Alert.alert('Error', 'Failed to archive conversation');
     }
   };
