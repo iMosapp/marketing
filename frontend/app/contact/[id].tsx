@@ -730,25 +730,50 @@ export default function ContactDetailScreen() {
                 </View>
               ) : (
                 <View style={s.feedTimeline}>
-                  {events.map((evt, i) => {
+                  {(showAllEvents ? events : events.slice(0, INITIAL_EVENT_COUNT)).map((evt, i) => {
                     const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
+                    const isExpanded = expandedEvents[i] === true;
                     return (
-                      <View key={i} style={s.feedItem} data-testid={`feed-event-${i}`}>
+                      <TouchableOpacity
+                        key={i}
+                        activeOpacity={0.7}
+                        onPress={() => setExpandedEvents(prev => ({ ...prev, [i]: !prev[i] }))}
+                        style={s.feedItem}
+                        data-testid={`feed-event-${i}`}
+                      >
                         {/* Timeline line */}
-                        {i < events.length - 1 && <View style={s.feedLine} />}
+                        {i < (showAllEvents ? events : events.slice(0, INITIAL_EVENT_COUNT)).length - 1 && <View style={s.feedLine} />}
                         {/* Icon */}
                         <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
                           <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
                         </View>
                         {/* Content */}
                         <View style={s.feedContent}>
-                          <Text style={s.feedTitle}>{evt.title}</Text>
-                          {evt.description ? <Text style={s.feedDesc} numberOfLines={2}>{evt.description}</Text> : null}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={s.feedTitle}>{evt.title}</Text>
+                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#636366" />
+                          </View>
+                          {evt.description ? (
+                            <Text style={s.feedDesc} numberOfLines={isExpanded ? undefined : 1}>{evt.description}</Text>
+                          ) : null}
                           <Text style={s.feedTime}>{formatEventTime(evt.timestamp)}</Text>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
+                  {/* Show More / Show Less toggle */}
+                  {events.length > INITIAL_EVENT_COUNT && (
+                    <TouchableOpacity
+                      style={s.showMoreBtn}
+                      onPress={() => setShowAllEvents(!showAllEvents)}
+                      data-testid="show-more-events-button"
+                    >
+                      <Text style={s.showMoreText}>
+                        {showAllEvents ? 'Show Less' : `Show All ${events.length} Events`}
+                      </Text>
+                      <Ionicons name={showAllEvents ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
