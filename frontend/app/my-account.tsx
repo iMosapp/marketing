@@ -537,15 +537,15 @@ export default function MyAccountScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Share Review Link Button */}
+          {/* Leaderboard Quick Action */}
           <TouchableOpacity
-            style={styles.shareReviewBtn}
-            onPress={() => setShowShareModal(true)}
-            data-testid="quick-action-share-review"
+            style={[styles.shareReviewBtn, { borderColor: '#FFD70030' }]}
+            onPress={() => router.push('/leaderboard')}
+            data-testid="quick-action-leaderboard"
           >
-            <Ionicons name="star" size={18} color="#FFD60A" />
-            <Text style={styles.shareReviewBtnText}>Share Review Link</Text>
-            <Ionicons name="arrow-forward" size={16} color="#FFD60A" />
+            <Ionicons name="trophy" size={18} color="#FFD700" />
+            <Text style={[styles.shareReviewBtnText, { color: '#FFD700' }]}>Leaderboard</Text>
+            <Ionicons name="arrow-forward" size={16} color="#FFD700" />
           </TouchableOpacity>
         </View>
 
