@@ -243,6 +243,11 @@ export const messagesAPI = {
     return response.data;
   },
 
+  flagConversation: async (userId: string, conversationId: string, flagged: boolean) => {
+    const response = await api.put(`/messages/conversations/${userId}/${conversationId}`, { flagged });
+    return response.data;
+  },
+
   updateConversation: async (userId: string, conversationId: string, data: any) => {
     const response = await api.put(`/messages/conversations/${userId}/${conversationId}`, data);
     return response.data;
