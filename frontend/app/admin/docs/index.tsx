@@ -459,6 +459,54 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
   filterChipTextActive: { color: '#FFF' },
   listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  // Modern category card header
+  categoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  categoryCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  categoryCardContent: {
+    flex: 1,
+  },
+  categoryCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: 3,
+    letterSpacing: 0.1,
+  },
+  categoryCardDescription: {
+    fontSize: 12,
+    color: '#8E8E93',
+    lineHeight: 16,
+  },
+  categoryCardBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  categoryCardBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  // Legacy category header styles (kept for signed docs section)
   categoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
