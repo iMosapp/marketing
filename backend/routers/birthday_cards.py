@@ -194,6 +194,122 @@ async def create_birthday_card(
     return {"success": True, **result}
 
 
+@router.post("/create-manual")
+async def create_birthday_card_manual(
+    salesman_id: str = Form(...),
+    customer_name: str = Form(...),
+    customer_phone: str = Form(None),
+    custom_message: str = Form(None),
+    photo: UploadFile = File(...),
+):
+    """Create a birthday card with a photo upload, mirroring the congrats card flow."""
+    db = get_db()
+
+    try:
+        user = await db.users.find_one({"_id": ObjectId(salesman_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    store = None
+    store_id = user.get("store_id")
+    if store_id:
+        store = await db.stores.find_one({"_id": ObjectId(store_id)})
+
+    # Process photo
+    contents = await photo.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
+    base64_data = base64.b64encode(contents).decode("utf-8")
+    photo_url = f"data:{photo.content_type};base64,{base64_data}"
+
+    # Update contact avatar if contact exists
+    if customer_phone:
+        normalized = re.sub(r"\D", "", customer_phone)
+        if len(normalized) == 10:
+            normalized = "+1" + normalized
+        contact = await db.contacts.find_one({
+            "$or": [
+                {"phone": customer_phone},
+                {"phone": normalized},
+                {"phone": {"$regex": normalized[-10:] if len(normalized) >= 10 else normalized}},
+            ],
+            "user_id": salesman_id,
+        })
+        if contact and not contact.get("photo_thumbnail"):
+            try:
+                from routers.contacts import _process_photo
+                thumbnail, high_res = await _process_photo(photo_url)
+                await db.contacts.update_one(
+                    {"_id": contact["_id"]},
+                    {"$set": {"photo_thumbnail": thumbnail, "photo_url": thumbnail, "photo_source": "birthday_card"}},
+                )
+            except Exception:
+                await db.contacts.update_one(
+                    {"_id": contact["_id"]},
+                    {"$set": {"photo_url": photo_url, "photo_source": "birthday_card"}},
+                )
+
+    store_accent = store.get("primary_color", BIRTHDAY_DEFAULTS["accent_color"]) if store else BIRTHDAY_DEFAULTS["accent_color"]
+    card_id = str(uuid.uuid4())[:12]
+
+    card_doc = {
+        "card_id": card_id,
+        "card_type": "birthday",
+        "salesman_id": salesman_id,
+        "salesman_name": user.get("name", ""),
+        "salesman_photo": user.get("photo_url"),
+        "salesman_title": user.get("title", "Sales Professional"),
+        "salesman_phone": user.get("phone"),
+        "salesman_email": user.get("email"),
+        "store_id": store_id,
+        "store_name": store.get("name") if store else None,
+        "store_logo": store.get("logo_url") if store else None,
+        "customer_name": customer_name,
+        "customer_phone": customer_phone,
+        "customer_photo": photo_url,
+        "custom_message": custom_message,
+        "headline": BIRTHDAY_DEFAULTS["headline"],
+        "message": BIRTHDAY_DEFAULTS["message"],
+        "footer_text": BIRTHDAY_DEFAULTS["footer_text"],
+        "show_salesman": True,
+        "show_store_logo": True,
+        "background_color": BIRTHDAY_DEFAULTS["background_color"],
+        "accent_color": store_accent,
+        "text_color": BIRTHDAY_DEFAULTS["text_color"],
+        "views": 0,
+        "downloads": 0,
+        "shares": 0,
+        "auto_generated": False,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    await db.birthday_cards.insert_one(card_doc)
+
+    base_url = get_short_url_base()
+    full_url = f"{base_url}/birthday/{card_id}"
+    short_result = await create_short_url(
+        original_url=full_url,
+        link_type="birthday_card",
+        reference_id=card_id,
+        user_id=salesman_id,
+        metadata={"customer_name": customer_name},
+    )
+    await db.birthday_cards.update_one(
+        {"card_id": card_id},
+        {"$set": {"short_url": short_result["short_url"]}},
+    )
+
+    return {
+        "success": True,
+        "card_id": card_id,
+        "card_url": full_url,
+        "short_url": short_result["short_url"],
+        "message": "Birthday card created!",
+    }
+
+
 @router.get("/card/{card_id}")
 async def get_birthday_card(card_id: str):
     """Get birthday card data for the public landing page."""
