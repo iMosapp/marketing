@@ -100,11 +100,11 @@ const { showToast } = useToast();
       setSequences(soldFollowupTemplates);
       setCampaign(prev => ({ ...prev, type, triggerTag: 'sold' }));
     } else if (type === 'birthday') {
-      setSequences([{ id: '1', message: "Happy birthday, {name}! Hope you have an amazing day! If there's anything I can do for you, just let me know.", delayDays: 0, delayMonths: 0, media_urls: [] }]);
+      setSequences([{ id: '1', message: "Happy birthday, {name}! Hope you have an amazing day! If there's anything I can do for you, just let me know.", delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Birthday greeting' }]);
     } else if (type === 'anniversary') {
-      setSequences([{ id: '1', message: "Happy anniversary on your {vehicle} purchase, {name}! Can you believe it's been a year? Hope it's still treating you well!", delayDays: 0, delayMonths: 0, media_urls: [] }]);
+      setSequences([{ id: '1', message: "Happy anniversary on your {vehicle} purchase, {name}! Can you believe it's been a year? Hope it's still treating you well!", delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Purchase anniversary' }]);
     } else {
-      setSequences([{ id: '1', message: '', delayDays: 0, delayMonths: 0, media_urls: [] }]);
+      setSequences([{ id: '1', message: '', delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' }]);
     }
   };
   
