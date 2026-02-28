@@ -106,6 +106,24 @@ function formatEventTime(timestamp: string): string {
   }
 }
 
+// ===== EVENT TITLE FALLBACK =====
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  email_sent: 'Email Sent',
+  personal_sms: 'Personal SMS',
+  digital_card_sent: 'Digital Card Shared',
+  review_request_sent: 'Review Invite Sent',
+  congrats_card_sent: 'Congrats Card Sent',
+  vcard_sent: 'vCard Shared',
+  call_placed: 'Call Placed',
+  new_contact: 'Contact Created',
+  link_click: 'Link Clicked',
+};
+
+function getEventTitle(evt: ContactEvent): string {
+  if (evt.title) return evt.title;
+  return EVENT_TYPE_LABELS[evt.event_type] || evt.event_type?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
+}
+
 // ===== QUICK ACTION CONFIG =====
 const QUICK_ACTIONS = [
   { key: 'sms', icon: 'chatbubble', label: 'SMS', color: '#34C759' },
