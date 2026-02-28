@@ -65,6 +65,8 @@ Full-stack Relationship Management System (RMS) for automotive dealerships. Reac
 ## Completed (2026-02-28 - Session 2)
 - **Birthday Card Creation Flow Cloned from Congrats Card**: Created `/settings/create-birthday-card.tsx` mirroring the congrats card flow (photo upload, name/phone/email, custom message, create, share options). Added `POST /api/birthday/create-manual` backend endpoint. Updated More page tile to navigate to the new creation page.
 - **Birthday Card Campaign Integration**: Added `include_birthday_card` toggle to birthday date trigger config. When enabled (default ON), the daily scheduler and manual trigger processor auto-generate a birthday card for each matching contact and append the card link to the outgoing message. Tag-based triggers ("birthday"/"bday") also auto-create cards.
+- **Card Preview Before Sending**: Both Congrats and Birthday card creation pages now have a 3-step flow: Fill Form -> Preview Card (see how it looks) -> Edit or Create & Send -> Share Options. Replaced the old "Create & Share Card" button with "Preview Card".
+- **Back Button on Card View Pages**: Both `/congrats/{cardId}` and `/birthday/{cardId}` public view pages now have a "Back" button at the top to return to the share/send screen after reviewing.
 
 ## P1 Tasks (Upcoming)
 - Gamification & Leaderboards
