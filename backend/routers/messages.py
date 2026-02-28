@@ -271,7 +271,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                         "subject": f"Message from {sender_name} at {store_name}",
                         "html": email_html,
                     })
-                    resend_id = email_result.get('id') if isinstance(email_result, dict) else str(email_result)
+                    resend_id = email_result.get('id') if isinstance(email_result, dict) else getattr(email_result, 'id', str(email_result))
                     message['status'] = 'sent'
                     message['channel'] = 'email'
                     message['resend_id'] = resend_id
@@ -283,7 +283,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             except Exception as e:
                 message['status'] = 'failed'
                 message['error'] = str(e)
-                logger.error(f"[EMAIL] Failed to {contact_email}: {e}")
+                logger.error(f"[EMAIL] Failed to {contact_email}: {e}", exc_info=True)
         else:
             message['status'] = 'failed'
             message['error'] = 'No email address for contact'
