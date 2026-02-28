@@ -172,8 +172,11 @@ export default function CreateCongratsCardPage() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+      } else if (navigator.share) {
+        try { await navigator.share({ url: shareUrl }); } catch {}
       } else {
-        window.open(shareUrl, '_blank');
+        navigator.clipboard?.writeText(shareUrl);
+        alert('Link copied to clipboard!');
       }
     } else {
       Linking.openURL(shareUrl);
