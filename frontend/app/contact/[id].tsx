@@ -885,6 +885,96 @@ export default function ContactDetailScreen() {
             </>
           )}
 
+          {/* ===== VOICE NOTES ===== */}
+          {!isNewContact && Platform.OS === 'web' && (
+            <View style={s.section} data-testid="voice-notes-section">
+              <View style={s.sectionHeaderRow}>
+                <Text style={s.sectionHeader}>Voice Notes</Text>
+                <Text style={s.sectionHeaderCount}>{voiceNotes.length} {voiceNotes.length === 1 ? 'note' : 'notes'}</Text>
+              </View>
+
+              {/* Record button / recording indicator */}
+              {isRecording ? (
+                <View style={s.vnRecording} data-testid="voice-recording-indicator">
+                  <View style={s.vnRecordingDot} />
+                  <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
+                  <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(MAX_RECORDING_SECONDS)}</Text>
+                  <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
+                    <Ionicons name="stop" size={18} color="#FFF" />
+                    <Text style={s.vnStopText}>Stop</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : uploadingVoiceNote ? (
+                <View style={s.vnRecording}>
+                  <ActivityIndicator size="small" color="#34C759" />
+                  <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
+                  <Ionicons name="mic" size={20} color="#34C759" />
+                  <Text style={s.vnRecordText}>Record a Voice Note</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Voice notes list */}
+              {voiceNotesLoading ? (
+                <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
+              ) : voiceNotes.length > 0 ? (
+                <View style={{ marginTop: 12 }}>
+                  {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note, i) => {
+                    const isPlaying = playingNoteId === note.id;
+                    return (
+                      <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
+                        <View style={s.vnCardHeader}>
+                          <TouchableOpacity
+                            style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
+                            onPress={() => playVoiceNote(note.id, note.audio_url)}
+                            data-testid={`play-voice-note-${i}`}
+                          >
+                            <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
+                          </TouchableOpacity>
+                          <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
+                            <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
+                          </View>
+                          <TouchableOpacity onPress={() => deleteVoiceNote(note.id)} style={{ padding: 4 }} data-testid={`delete-voice-note-${i}`}>
+                            <Ionicons name="trash-outline" size={16} color="#636366" />
+                          </TouchableOpacity>
+                        </View>
+                        {note.transcript ? (
+                          <Text style={s.vnTranscript} numberOfLines={expandedEvents[1000 + i] ? undefined : 3}>
+                            {note.transcript}
+                          </Text>
+                        ) : (
+                          <Text style={[s.vnTranscript, { fontStyle: 'italic', color: '#636366' }]}>Transcribing...</Text>
+                        )}
+                        {note.transcript && note.transcript.length > 120 && (
+                          <TouchableOpacity onPress={() => setExpandedEvents(prev => ({ ...prev, [1000 + i]: !prev[1000 + i] }))}>
+                            <Text style={{ color: '#007AFF', fontSize: 12, marginTop: 4 }}>
+                              {expandedEvents[1000 + i] ? 'Show less' : 'Read full transcript'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
+                  {voiceNotes.length > 1 && (
+                    <TouchableOpacity
+                      style={s.showMoreBtn}
+                      onPress={() => setShowAllNotes(!showAllNotes)}
+                      data-testid="show-more-voice-notes"
+                    >
+                      <Text style={s.showMoreText}>
+                        {showAllNotes ? 'Show Latest Only' : `Show All ${voiceNotes.length} Voice Notes`}
+                      </Text>
+                      <Ionicons name={showAllNotes ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : null}
+            </View>
+          )}
+
           {/* ===== ACTIVITY FEED ===== */}
           {!isNewContact && (
             <View style={s.section} data-testid="activity-feed">
