@@ -177,17 +177,6 @@ export default function ContactDetailScreen() {
   // Voice notes
   const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
 
-  // Computed: filtered events for search
-  const feedQuery = feedSearch.toLowerCase().trim();
-  const filteredEvents = feedQuery
-    ? events.filter(e =>
-        (e.title || '').toLowerCase().includes(feedQuery) ||
-        (e.description || '').toLowerCase().includes(feedQuery) ||
-        (e.event_type || '').toLowerCase().includes(feedQuery) ||
-        (getEventTitle(e)).toLowerCase().includes(feedQuery)
-      )
-    : events;
-  const visibleEvents = showAllEvents ? filteredEvents : filteredEvents.slice(0, INITIAL_EVENT_COUNT);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
