@@ -1632,6 +1632,41 @@ const s = StyleSheet.create({
   photoViewerName: {
     color: '#F2F2F7', fontSize: 18, fontWeight: '600', marginTop: 16,
   },
+  // Voice notes
+  vnRecordBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8,
+    paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
+    backgroundColor: '#1A2E1A', borderWidth: 1, borderColor: '#34C75930',
+  },
+  vnRecordText: { fontSize: 15, fontWeight: '600', color: '#34C759' },
+  vnRecording: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8,
+    paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
+    backgroundColor: '#2E1A1A', borderWidth: 1, borderColor: '#FF3B3030',
+  },
+  vnRecordingDot: {
+    width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30',
+  },
+  vnRecordingTime: { fontSize: 20, fontWeight: '700', color: '#FF3B30', fontVariant: ['tabular-nums'] as any },
+  vnRecordingLimit: { fontSize: 14, color: '#636366' },
+  vnStopBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto',
+    paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#FF3B30',
+  },
+  vnStopText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  vnCard: {
+    backgroundColor: '#1C1C1E', borderRadius: 12, padding: 12, marginBottom: 8,
+    borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  vnCardHeader: { flexDirection: 'row', alignItems: 'center' },
+  vnPlayBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75920',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  vnPlayBtnActive: { backgroundColor: '#34C759' },
+  vnCardDate: { fontSize: 13, fontWeight: '600', color: '#F2F2F7' },
+  vnCardDuration: { fontSize: 12, color: '#636366' },
+  vnTranscript: { fontSize: 13, color: '#AEAEB2', lineHeight: 18, marginTop: 8 },
 
   // Conversation link
   conversationLink: {
