@@ -163,6 +163,10 @@ export default function ContactDetailScreen() {
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
+  // Full photo viewer
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [fullPhoto, setFullPhoto] = useState<string | null>(null);
+  const [fullPhotoLoading, setFullPhotoLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(isNewContact);
 
   // Events & stats
