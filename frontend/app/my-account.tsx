@@ -518,13 +518,13 @@ export default function MyAccountScreen() {
           <View style={[styles.tileRow, { marginTop: 8 }]}>
             <TouchableOpacity
               style={styles.tileBtnThird}
-              onPress={() => router.push('/settings/persona' as any)}
-              data-testid="quick-action-ai-persona"
+              onPress={() => router.push('/admin/brand-assets' as any)}
+              data-testid="quick-action-brand-assets"
             >
               <View style={[styles.tileIcon, { backgroundColor: '#AF52DE20' }]}>
-                <Ionicons name="person" size={20} color="#AF52DE" />
+                <Ionicons name="images" size={20} color="#AF52DE" />
               </View>
-              <Text style={styles.tileLabel}>AI Persona</Text>
+              <Text style={styles.tileLabel}>Brand Assets</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.tileBtnThird}
