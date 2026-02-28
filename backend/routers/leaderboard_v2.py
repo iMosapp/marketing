@@ -168,7 +168,10 @@ async def org_leaderboard(
 ):
     """Leaderboard ranking stores/accounts within the same org."""
     db = get_db()
-    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Invalid user ID")
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
