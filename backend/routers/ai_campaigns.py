@@ -378,11 +378,10 @@ Reply naturally and briefly as me. Just the reply text, nothing else."""
     try:
         chat = LlmChat(
             api_key=emergent_key,
-            model="gpt-5.2",
-            session_id=f"campaign-reply-{user_id}-{contact_id}-{uuid.uuid4()}",
+            session_id=f"campaign-reply-{user_id}-{contact_id}",
             system_message=system_prompt,
-        )
-        response = await chat.send_message_async(UserMessage(content=user_prompt))
+        ).with_model("openai", "gpt-5.2")
+        response = await chat.send_message(UserMessage(text=user_prompt))
         generated = response.strip().strip('"').strip("'")
 
         # Random delay 1-3 minutes (returned as metadata, not actually delayed here)
