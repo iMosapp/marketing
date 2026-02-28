@@ -141,6 +141,26 @@ export default function ReportsScreen() {
           </View>
         ) : (
           <>
+            {/* Comprehensive Dashboard Link */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 12,
+                backgroundColor: '#007AFF15', borderRadius: 14, padding: 16,
+                marginBottom: 16, borderWidth: 1, borderColor: '#007AFF30',
+              }}
+              onPress={() => router.push('/analytics')}
+              data-testid="analytics-dashboard-link"
+            >
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#007AFF20', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="bar-chart" size={22} color="#007AFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>Comprehensive Analytics</Text>
+                <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>KPIs, trends, charts, team & store breakdown</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#007AFF" />
+            </TouchableOpacity>
+
             {/* Summary Stats */}
             <Text style={styles.sectionTitle}>Summary</Text>
             <View style={styles.statsGrid}>
