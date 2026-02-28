@@ -191,6 +191,59 @@ export default function DocsHubScreen() {
     );
   };
 
+  const TYPE_COLORS: Record<string, string> = {
+    nda: '#007AFF',
+    partner_agreement: '#5856D6',
+    quote: '#FF9500',
+    referral_agreement: '#00C7BE',
+    contract: '#FF3B30',
+  };
+
+  const TYPE_ICONS: Record<string, string> = {
+    nda: 'lock-closed',
+    partner_agreement: 'handshake-outline',
+    quote: 'receipt',
+    referral_agreement: 'people',
+    contract: 'document-attach',
+  };
+
+  const renderSignedDoc = (item: any) => {
+    const color = TYPE_COLORS[item.type] || '#34C759';
+    const fmt = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={styles.docCard}
+        onPress={() => router.push(item.link)}
+      >
+        <View style={[styles.docIcon, { backgroundColor: color + '20' }]}>
+          <Ionicons name={(TYPE_ICONS[item.type] || 'document') as any} size={22} color={color} />
+        </View>
+        <View style={styles.docContent}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.docTitle} numberOfLines={1}>{item.title}</Text>
+          </View>
+          <Text style={styles.docSummary} numberOfLines={1}>
+            {item.counterparty_company ? `${item.counterparty} — ${item.counterparty_company}` : item.counterparty}
+            {item.counterparty_email ? ` (${item.counterparty_email})` : ''}
+          </Text>
+          <View style={styles.docMeta}>
+            <View style={[styles.versionBadge, { backgroundColor: '#34C75920' }]}>
+              <Text style={[styles.versionText, { color: '#34C759' }]}>SIGNED</Text>
+            </View>
+            <View style={[styles.versionBadge, { backgroundColor: color + '20' }]}>
+              <Text style={[styles.versionText, { color }]}>{item.type_label}</Text>
+            </View>
+            {item.signed_at && (
+              <Text style={styles.metaText}>{fmt(item.signed_at)}</Text>
+            )}
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+      </TouchableOpacity>
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
