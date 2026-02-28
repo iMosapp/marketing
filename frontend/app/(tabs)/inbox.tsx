@@ -28,6 +28,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { messagesAPI, contactsAPI, emailAPI } from '../../services/api';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
+import WebSwipeableItem from '../../components/WebSwipeableItem';
 import AppointmentModal from '../../components/AppointmentModal';
 
 const IS_WEB = Platform.OS === 'web';
