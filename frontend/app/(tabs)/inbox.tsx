@@ -806,6 +806,9 @@ export default function InboxScreen() {
                   <Ionicons name="sparkles" size={9} color={COLORS.success} />
                 </View>
               )}
+              {item.flagged && (
+                <Ionicons name="flag" size={12} color="#FF9500" style={{ marginLeft: 4 }} />
+              )}
             </View>
             <Text style={[
               styles.timestamp,
