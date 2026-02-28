@@ -164,13 +164,18 @@ async def get_user_showcase(user_id: str):
     """Public endpoint: Get showcase data for a salesperson."""
     db = get_db()
 
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0, "photo_url": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Check if user has a photo (without loading the full blob)
+    has_photo = await db.users.count_documents({"_id": ObjectId(user_id), "photo_url": {"$exists": True, "$ne": None, "$ne": ""}})
+
     store = None
     if user.get("store_id"):
-        store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
+        store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"logo_url": 0})
+        # Check if store has a logo
+        has_logo = await db.stores.count_documents({"_id": ObjectId(user["store_id"]), "logo_url": {"$exists": True, "$ne": None, "$ne": ""}}) if store else 0
 
     entries = await _build_showcase_entries(
         db,
@@ -183,12 +188,12 @@ async def get_user_showcase(user_id: str):
             "id": str(user["_id"]),
             "name": user.get("name", ""),
             "title": user.get("title", "Sales Professional"),
-            "photo_url": user.get("photo_url"),
+            "photo_url": f"/api/showcase/user-photo/{user_id}" if has_photo else None,
             "phone": user.get("phone"),
         },
         "store": {
             "name": store.get("name", "") if store else None,
-            "logo_url": store.get("logo_url") if store else None,
+            "logo_url": f"/api/showcase/store-logo/{user.get('store_id')}" if store and has_logo else None,
             "primary_color": store.get("primary_color", "#C9A962") if store else "#C9A962",
         } if store else None,
         "entries": entries,
