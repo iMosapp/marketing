@@ -238,6 +238,16 @@ export default function DocViewerScreen() {
                     Last reviewed: {new Date(doc.last_reviewed).toLocaleDateString()}
                   </Text>
                 )}
+                {doc.slug === 'imos-nda' && (
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, marginTop: 16 }}
+                    onPress={() => router.push('/admin/nda/create')}
+                    data-testid="nda-prepare-send-btn"
+                  >
+                    <Ionicons name="send" size={18} color="#FFF" />
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFF' }}>Prepare & Send NDA</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </>
