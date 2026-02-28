@@ -46,6 +46,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   integrations: 'Integrations',
 };
 
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  operations: 'Standard procedures & guidelines',
+  signed: 'NDAs, agreements & contracts',
+  security: 'Cybersecurity policies & protocols',
+  company_policy: 'Internal policies & handbooks',
+  legal: 'Legal documents & compliance',
+  training: 'Training materials & resources',
+  integrations: 'API docs & integration guides',
+};
+
 export default function DocsHubScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
