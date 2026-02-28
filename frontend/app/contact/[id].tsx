@@ -556,6 +556,36 @@ export default function ContactDetailScreen() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  // ===== AI RELATIONSHIP INTEL =====
+  const loadCachedIntel = async () => {
+    if (!user || isNewContact) return;
+    try {
+      const data = await contactsAPI.getContactIntel(user._id, id as string);
+      if (data.summary) setIntelData(data);
+    } catch (e) {
+      // No cached intel — that's fine
+    }
+  };
+
+  React.useEffect(() => {
+    if (!isNewContact && user) loadCachedIntel();
+  }, [id, user, isNewContact]);
+
+  const generateIntel = async () => {
+    if (!user) return;
+    try {
+      setIntelGenerating(true);
+      setShowIntel(true);
+      const data = await contactsAPI.generateContactIntel(user._id, id as string);
+      setIntelData(data);
+    } catch (e) {
+      console.error('Failed to generate intel:', e);
+      showSimpleAlert('Error', 'Failed to generate AI summary. Please try again.');
+    } finally {
+      setIntelGenerating(false);
+    }
+  };
+
   // ===== DATE PICKER =====
   const openDatePicker = (field: string, currentDate: Date | null, label?: string) => {
     const d = currentDate || new Date();
