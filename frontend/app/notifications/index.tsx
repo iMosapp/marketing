@@ -33,6 +33,7 @@ function getNotifIcon(type: string): string {
     digital_card_sent: 'card', review_request_sent: 'star-half',
     congrats_card_sent: 'gift', email_sent: 'mail', sms_sent: 'chatbox',
     badge_earned: 'trophy',
+    campaign_send: 'megaphone',
   };
   return map[type] || 'notifications';
 }
