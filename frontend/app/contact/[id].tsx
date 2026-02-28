@@ -83,7 +83,24 @@ function getTimeInSystemLabel(createdAt: string | null): string {
 function formatEventTime(timestamp: string): string {
   if (!timestamp) return '';
   try {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    // Today: show time only
+    if (diffDays === 0 && date.getDate() === now.getDate()) {
+      return format(date, 'h:mm a');
+    }
+    // Yesterday
+    if (diffDays <= 1 && date.getDate() === now.getDate() - 1) {
+      return 'Yesterday at ' + format(date, 'h:mm a');
+    }
+    // Within this year
+    if (date.getFullYear() === now.getFullYear()) {
+      return format(date, 'MMM d \'at\' h:mm a');
+    }
+    // Older
+    return format(date, 'MMM d, yyyy \'at\' h:mm a');
   } catch {
     return '';
   }
