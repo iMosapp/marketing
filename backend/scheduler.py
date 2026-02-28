@@ -230,6 +230,17 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
 
             send_result = {"sms": False, "email": False}
 
+            # Auto-create a birthday card if this is a birthday trigger
+            if trigger_type == "birthday":
+                try:
+                    from routers.birthday_cards import auto_create_birthday_card
+                    bday_result = await auto_create_birthday_card(user_id, contact_id, custom_message=None)
+                    if bday_result and bday_result.get("short_url"):
+                        message += f"\n\nView your birthday card: {bday_result['short_url']}"
+                        logger.info(f"[Scheduler] Birthday card created for {contact_name}: {bday_result.get('card_id')}")
+                except Exception as e:
+                    logger.error(f"[Scheduler] Birthday card creation failed for {contact_name}: {e}")
+
             if delivery in ("sms", "both") and contact.get("phone"):
                 try:
                     await db.messages.insert_one({
