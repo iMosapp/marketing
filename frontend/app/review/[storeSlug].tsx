@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
+import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 const REVIEW_PLATFORMS = [
   { key: 'google', name: 'Google', icon: 'logo-google', color: '#4285F4', bgColor: '#F0F5FF' },
@@ -291,14 +292,7 @@ export default function PublicReviewPage() {
           </View>
 
           {/* Footer */}
-          <TouchableOpacity 
-            style={styles.footer}
-            onPress={() => Linking.openURL('https://app.imosapp.com/imos')}
-          >
-            <Text style={styles.footerText}>Powered by i'M On Social</Text>
-            <Text style={[styles.footerText, styles.footerBrand]}>iMOs</Text>
-            <Text style={styles.footerUrl}> — app.imosapp.com</Text>
-          </TouchableOpacity>
+          <PoweredByFooter />
         </View>
       </ScrollView>
     </View>
