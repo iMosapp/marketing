@@ -401,8 +401,8 @@ export default function LoginScreen() {
                 }}
                 data-testid="refresh-app-btn"
               >
-                <Ionicons name="refresh" size={18} color="#8E8E93" />
-                <Text style={styles.refreshButtonText}>Refresh App</Text>
+                <Ionicons name="refresh" size={18} color={theme.textSecondary} />
+                <Text style={[styles.refreshButtonText, { color: theme.textSecondary }]}>Refresh App</Text>
               </TouchableOpacity>
             )}
           </View>
