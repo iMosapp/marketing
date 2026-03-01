@@ -98,115 +98,110 @@ function ContactActionModal({
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
       <SafeAreaView style={[{ flex: 1, backgroundColor: colors.bg }]} edges={['top']}>
-        {/* Clean header — just back + title */}
+        {/* Clean header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
           <TouchableOpacity onPress={onClose} style={{ padding: 4 }} data-testid="close-action-modal">
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Quick Dial' : 'Add Contact'}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Keypad' : 'Add Contact'}</Text>
           <View style={{ width: 32 }} />
         </View>
 
-        {/* Mode tabs */}
-        <View style={[styles.modeTabs, { borderColor: colors.border, marginHorizontal: 16, marginTop: 12 }]}>
-            <TouchableOpacity style={[styles.modeTab, mode === 'search' && { backgroundColor: colors.accent + '20' }]} onPress={() => setMode('search')} data-testid="mode-search">
-              <Ionicons name="search" size={16} color={mode === 'search' ? colors.accent : colors.textSecondary} />
-              <Text style={{ color: mode === 'search' ? colors.accent : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>Contacts</Text>
+        {initialMode === 'search' ? (
+          /* ─── ADD CONTACT: Search + Import + Manual ─── */
+          <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+            <TextInput style={[styles.searchInput, { backgroundColor: colors.searchBg, color: colors.text, borderColor: colors.border }]} placeholder="Search name, phone, or email..." placeholderTextColor={colors.textTertiary} value={search} onChangeText={setSearch} data-testid="contact-search-input" />
+            
+            {/* Import options */}
+            <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={goToImportFromPhone} data-testid="import-from-phone">
+              <Ionicons name="phone-portrait-outline" size={18} color={colors.accent} />
+              <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Import from Phone Contacts</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modeTab, mode === 'keypad' && { backgroundColor: colors.accent + '20' }]} onPress={() => setMode('keypad')} data-testid="mode-keypad">
-              <Ionicons name="keypad" size={16} color={mode === 'keypad' ? colors.accent : colors.textSecondary} />
-              <Text style={{ color: mode === 'keypad' ? colors.accent : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>Keypad</Text>
+            <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={handleVcfUpload} data-testid="import-vcf">
+              <Ionicons name="document-outline" size={18} color={colors.accent} />
+              <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Upload Contact File (.vcf)</Text>
+            </TouchableOpacity>
+
+            {/* Hidden file input for vcf */}
+            {IS_WEB && <input ref={vcfInputRef as any} type="file" accept=".vcf,text/vcard" style={{ display: 'none' }} onChange={onVcfSelected as any} />}
+
+            {loading ? <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} /> : (
+              <FlatList data={filtered.slice(0, 50)} keyExtractor={(item) => item._id} style={{ flex: 1 }}
+                renderItem={({ item }) => (
+                  <View style={[styles.contactRow, { borderBottomColor: colors.border }]}>
+                    <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20` }]}>
+                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.contactName, { color: colors.text }]}>{item.first_name} {item.last_name || ''}</Text>
+                      <Text style={{ color: colors.textTertiary, fontSize: 12 }}>{item.phone || item.email || ''}</Text>
+                    </View>
+                    <View style={styles.actionBtns}>
+                      {item.phone ? <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#32ADE620' }]} onPress={() => logAndDial(item.phone, item)}><Ionicons name="call" size={16} color="#32ADE6" /></TouchableOpacity> : null}
+                      {item.phone ? <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34C75920' }]} onPress={() => logAndText(item.phone, item)}><Ionicons name="chatbubble" size={16} color="#34C759" /></TouchableOpacity> : null}
+                      {item.email ? <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#AF52DE20' }]} onPress={() => logAndEmail(item.email, item)}><Ionicons name="mail" size={16} color="#AF52DE" /></TouchableOpacity> : null}
+                    </View>
+                  </View>
+                )}
+                ListEmptyComponent={<Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 30, fontSize: 14 }}>{search ? 'No contacts match your search' : 'No contacts yet'}</Text>}
+              />
+            )}
+            <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact">
+              <Ionicons name="person-add" size={18} color="#000" />
+              <Text style={{ color: '#000', fontSize: 14, fontWeight: '700' }}>Enter Manually</Text>
             </TouchableOpacity>
           </View>
-
-          {mode === 'search' ? (
-            <View style={{ flex: 1, paddingHorizontal: 16 }}>
-              <TextInput style={[styles.searchInput, { backgroundColor: colors.searchBg, color: colors.text, borderColor: colors.border }]} placeholder="Search name, phone, or email..." placeholderTextColor={colors.textTertiary} value={search} onChangeText={setSearch} data-testid="contact-search-input" />
-              <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={goToImportFromPhone} data-testid="import-from-phone">
-                <Ionicons name="phone-portrait-outline" size={18} color={colors.accent} />
-                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Import from Phone Contacts</Text>
-              </TouchableOpacity>
-              {loading ? <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} /> : (
-                <FlatList data={filtered.slice(0, 50)} keyExtractor={(item) => item._id} style={{ flex: 1 }}
-                  renderItem={({ item }) => (
-                    <View style={[styles.contactRow, { borderBottomColor: colors.border }]}>
-                      <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20` }]}>
-                        <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.contactName, { color: colors.text }]}>{item.first_name} {item.last_name || ''}</Text>
-                        <Text style={{ color: colors.textTertiary, fontSize: 12 }}>{item.phone || item.email || ''}</Text>
-                      </View>
-                      <View style={styles.actionBtns}>
-                        {item.phone ? <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#32ADE620' }]} onPress={() => logAndDial(item.phone, item)}><Ionicons name="call" size={16} color="#32ADE6" /></TouchableOpacity> : null}
-                        {item.phone ? <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34C75920' }]} onPress={() => logAndText(item.phone, item)}><Ionicons name="chatbubble" size={16} color="#34C759" /></TouchableOpacity> : null}
-                        {item.email ? <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#AF52DE20' }]} onPress={() => logAndEmail(item.email, item)}><Ionicons name="mail" size={16} color="#AF52DE" /></TouchableOpacity> : null}
-                      </View>
-                    </View>
-                  )}
-                  ListEmptyComponent={<Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 30, fontSize: 14 }}>{search ? 'No contacts match your search' : 'No contacts yet'}</Text>}
-                />
-              )}
-              <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact">
-                <Ionicons name="person-add" size={18} color="#000" />
-                <Text style={{ color: '#000', fontSize: 14, fontWeight: '700' }}>Enter Manually</Text>
-              </TouchableOpacity>
+        ) : (
+          /* ─── KEYPAD: Dial pad + contact matching ─── */
+          <View style={{ flex: 1 }}>
+            <View style={[styles.dialDisplay, { borderColor: colors.border }]}>
+              <Text style={[styles.dialNumber, { color: dialNumber ? colors.text : colors.textTertiary }]}>{dialNumber || '\u00A0'}</Text>
+              {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
             </View>
-          ) : (
-            <View style={{ flex: 1 }}>
-              {/* Number display */}
-              <View style={[styles.dialDisplay, { borderColor: colors.border }]}>
-                <Text style={[styles.dialNumber, { color: dialNumber ? colors.text : colors.textTertiary }]}>{dialNumber || '\u00A0'}</Text>
-                {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
-              </View>
 
-              {/* Matching contacts as you type */}
-              {dialNumber.length >= 2 && (() => {
-                const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(dialNumber.replace(/\D/g, '')));
-                if (matches.length === 0) return null;
-                return (
-                  <View style={{ maxHeight: 130, paddingHorizontal: 16, marginBottom: 4 }}>
-                    <FlatList
-                      data={matches.slice(0, 3)}
-                      keyExtractor={(item) => item._id}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }}
-                          onPress={() => logAndDial(item.phone, item)}
-                        >
-                          <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20`, width: 34, height: 34 }]}>
-                            <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{item.first_name} {item.last_name || ''}</Text>
-                            <Text style={{ color: colors.textTertiary, fontSize: 11 }}>{item.phone}</Text>
-                          </View>
-                          <Ionicons name="call" size={18} color="#34C759" />
-                        </TouchableOpacity>
-                      )}
-                    />
-                  </View>
-                );
-              })()}
-
-              {/* Keypad */}
-              <View style={styles.keypadGrid}>
-                {KEYS.map((row, ri) => (
-                  <View key={ri} style={styles.keypadRow}>
-                    {row.map((key) => (
-                      <TouchableOpacity key={key} style={[styles.keypadKey, { backgroundColor: colors.card }]} onPress={() => setDialNumber(d => d + key)}>
-                        <Text style={[styles.keypadKeyText, { color: colors.text }]}>{key}</Text>
+            {/* Matching contacts as you type */}
+            {dialNumber.length >= 2 && (() => {
+              const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(dialNumber.replace(/\D/g, '')));
+              if (matches.length === 0) return null;
+              return (
+                <View style={{ maxHeight: 130, paddingHorizontal: 16, marginBottom: 4 }}>
+                  <FlatList
+                    data={matches.slice(0, 3)}
+                    keyExtractor={(item) => item._id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }} onPress={() => logAndDial(item.phone, item)}>
+                        <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20`, width: 34, height: 34 }]}>
+                          <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{item.first_name} {item.last_name || ''}</Text>
+                          <Text style={{ color: colors.textTertiary, fontSize: 11 }}>{item.phone}</Text>
+                        </View>
+                        <Ionicons name="call" size={18} color="#34C759" />
                       </TouchableOpacity>
-                    ))}
-                  </View>
-                ))}
-              </View>
-              <TouchableOpacity style={[styles.dialBtn, { backgroundColor: '#34C759' }]} onPress={() => logAndDial(dialNumber)}>
-                <Ionicons name="call" size={22} color="#FFF" />
-              </TouchableOpacity>
-              <View style={{ height: 20 }} />
+                    )}
+                  />
+                </View>
+              );
+            })()}
+
+            <View style={styles.keypadGrid}>
+              {KEYS.map((row, ri) => (
+                <View key={ri} style={styles.keypadRow}>
+                  {row.map((key) => (
+                    <TouchableOpacity key={key} style={[styles.keypadKey, { backgroundColor: colors.card }]} onPress={() => setDialNumber(d => d + key)}>
+                      <Text style={[styles.keypadKeyText, { color: colors.text }]}>{key}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
             </View>
-          )}
+            <TouchableOpacity style={[styles.dialBtn, { backgroundColor: '#34C759' }]} onPress={() => logAndDial(dialNumber)}>
+              <Ionicons name="call" size={22} color="#FFF" />
+            </TouchableOpacity>
+            <View style={{ height: 20 }} />
+          </View>
+        )}
       </SafeAreaView>
     </Modal>
   );
