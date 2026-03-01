@@ -81,6 +81,11 @@ export function UniversalShareModal({
   const [saving, setSaving] = useState(false);
   const [showQRView, setShowQRView] = useState(false);
 
+  // Contact search state
+  const [contactSuggestions, setContactSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const defaultShareText = shareText || `Check this out: ${shareUrl}`;
 
   const reset = () => {
@@ -88,11 +93,49 @@ export function UniversalShareModal({
     setRecipientPhone('');
     setRecipientEmail('');
     setShowQRView(false);
+    setContactSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const close = () => {
     reset();
     onClose();
+  };
+
+  // Search contacts as user types
+  const searchContacts = (query: string) => {
+    setRecipientName(query);
+    if (!userId || query.trim().length < 2) {
+      setContactSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await api.get(`/contacts/${userId}`);
+        const contacts = res.data || [];
+        const q = query.toLowerCase();
+        const matches = contacts.filter((c: any) => {
+          const fullName = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
+          const phone = (c.phone || '').replace(/\D/g, '');
+          return fullName.includes(q) || phone.includes(q.replace(/\D/g, ''));
+        }).slice(0, 5);
+        setContactSuggestions(matches);
+        setShowSuggestions(matches.length > 0);
+      } catch {
+        setContactSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+  };
+
+  const selectContact = (contact: any) => {
+    setRecipientName(`${contact.first_name || ''} ${contact.last_name || ''}`.trim());
+    setRecipientPhone(contact.phone || '');
+    setRecipientEmail(contact.email || '');
+    setContactSuggestions([]);
+    setShowSuggestions(false);
   };
 
   // Log share event
