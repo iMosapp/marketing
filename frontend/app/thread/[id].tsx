@@ -517,6 +517,7 @@ export default function ThreadScreen() {
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
   // Initialize with param photo if available, will be overwritten by API if different
   const [contactPhoto, setContactPhoto] = useState<string | null>((paramPhoto as string) || null);
+  const [contactIdForNav, setContactIdForNav] = useState<string | null>(null);
   
   useEffect(() => {
     if (user?._id && id) {

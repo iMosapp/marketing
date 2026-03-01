@@ -801,6 +801,7 @@ async def get_conversation_info(conversation_id: str):
     # Try to get contact photo and email
     contact_id = conv.get("contact_id")
     if contact_id:
+        result["contact_id"] = str(contact_id)
         try:
             contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 0})
             if contact:
