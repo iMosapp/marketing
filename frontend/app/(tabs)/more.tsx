@@ -907,7 +907,7 @@ export default function MoreScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
         {/* Impersonation Banner */}
         {isImpersonating && (
