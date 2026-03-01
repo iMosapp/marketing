@@ -311,6 +311,103 @@ async def show_showcase_entry(card_id: str):
     return {"success": True, "message": "Entry restored to showcase"}
 
 
+@router.post("/entry/{card_id}/approve")
+async def approve_showcase_entry(card_id: str):
+    """Approve a congrats card to appear in the public showroom."""
+    db = get_db()
+    result = await db.congrats_cards.update_one(
+        {"card_id": card_id},
+        {"$set": {"showcase_approved": True, "approved_at": datetime.now(timezone.utc)}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return {"success": True, "message": "Entry approved for showroom"}
+
+
+@router.post("/entry/{card_id}/reject")
+async def reject_showcase_entry(card_id: str):
+    """Reject a congrats card from the showroom (hides it)."""
+    db = get_db()
+    result = await db.congrats_cards.update_one(
+        {"card_id": card_id},
+        {"$set": {"showcase_approved": False, "hidden": True}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return {"success": True, "message": "Entry rejected from showroom"}
+
+
+@router.get("/pending/{user_id}")
+async def get_pending_showcase_entries(user_id: str):
+    """Get showcase entries pending approval for a manager/admin."""
+    db = get_db()
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "role": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    store_id = user.get("store_id")
+    role = user.get("role", "")
+
+    # Build query: admins/managers see all pending for their store, users see only their own
+    query = {"showcase_approved": {"$ne": True}, "hidden": {"$ne": True}}
+    if role in ("super_admin", "org_admin", "store_manager") and store_id:
+        users_in_store = await db.users.find({"store_id": store_id}, {"_id": 1}).to_list(200)
+        user_ids = [str(u["_id"]) for u in users_in_store]
+        query["salesman_id"] = {"$in": user_ids}
+    else:
+        query["salesman_id"] = user_id
+
+    cards = await db.congrats_cards.find(
+        query,
+        {"customer_photo": 0, "salesman_photo": 0}
+    ).sort("created_at", -1).to_list(100)
+
+    # Check which have photos
+    card_ids_with_photos = set()
+    if cards:
+        card_obj_ids = [c["_id"] for c in cards]
+        photo_check = await db.congrats_cards.find(
+            {"_id": {"$in": card_obj_ids}, "customer_photo": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"_id": 1}
+        ).to_list(100)
+        card_ids_with_photos = {str(c["_id"]) for c in photo_check}
+
+    return [{
+        "card_id": c.get("card_id", str(c["_id"])),
+        "customer_name": c.get("customer_name", "Customer"),
+        "customer_phone": c.get("customer_phone"),
+        "salesman_name": c.get("salesman_name"),
+        "salesman_id": c.get("salesman_id"),
+        "customer_photo": f"/api/showcase/photo/{c.get('card_id', str(c['_id']))}" if str(c["_id"]) in card_ids_with_photos else None,
+        "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,
+    } for c in cards]
+
+
+@router.get("/pending-count/{user_id}")
+async def get_pending_showcase_count(user_id: str):
+    """Get count of pending showcase entries for badge display."""
+    db = get_db()
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "role": 1})
+    if not user:
+        return {"count": 0}
+
+    store_id = user.get("store_id")
+    role = user.get("role", "")
+
+    query = {"showcase_approved": {"$ne": True}, "hidden": {"$ne": True}}
+    if role in ("super_admin", "org_admin", "store_manager") and store_id:
+        users_in_store = await db.users.find({"store_id": store_id}, {"_id": 1}).to_list(200)
+        user_ids = [str(u["_id"]) for u in users_in_store]
+        query["salesman_id"] = {"$in": user_ids}
+    else:
+        query["salesman_id"] = user_id
+
+    count = await db.congrats_cards.count_documents(query)
+    return {"count": count}
+
+
 @router.get("/manage/{user_id}")
 async def get_manage_showcase(user_id: str):
     """Private endpoint: Get all entries (including hidden) for management."""
