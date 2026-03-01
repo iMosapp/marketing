@@ -559,7 +559,7 @@ export default function MoreScreen() {
         },
         {
           icon: 'images',
-          title: 'Manage Showroom',
+          title: 'Manage Showcase',
           subtitle: 'Edit your happy customers page',
           onPress: () => router.push(`/showroom-manage` as any),
           color: '#34C759',
@@ -603,8 +603,8 @@ export default function MoreScreen() {
         },
         {
           icon: 'shield-checkmark-outline',
-          title: 'Showroom Approvals',
-          subtitle: 'Approve showroom posts',
+          title: 'Showcase Approvals',
+          subtitle: 'Approve showcase posts',
           onPress: () => router.push('/settings/showroom-approvals'),
           color: '#34C759',
         },
@@ -1163,7 +1163,7 @@ export default function MoreScreen() {
             <TouchableOpacity onPress={() => setShowShowroomShare(false)} data-testid="showroom-share-close">
               <Ionicons name="close" size={24} color="#8E8E93" />
             </TouchableOpacity>
-            <Text style={shareStyles.headerTitle}>Share My Showroom</Text>
+            <Text style={shareStyles.headerTitle}>Share My Showcase</Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -1206,11 +1206,11 @@ export default function MoreScreen() {
 
           <TouchableOpacity style={shareStyles.manageLink} onPress={() => { setShowShowroomShare(false); router.push('/showroom-manage' as any); }} data-testid="showroom-manage-btn">
             <Ionicons name="settings-outline" size={16} color="#8E8E93" />
-            <Text style={shareStyles.manageLinkText}>Manage Showroom Entries</Text>
+            <Text style={shareStyles.manageLinkText}>Manage Showcase Entries</Text>
             <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
           </TouchableOpacity>
 
-          <Text style={shareStyles.hint}>Share your Showroom link to showcase your happy customers and reviews.</Text>
+          <Text style={shareStyles.hint}>Share your Showcase link to showcase your happy customers and reviews.</Text>
         </View>
       </WebModal>
 
