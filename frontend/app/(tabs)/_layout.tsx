@@ -7,17 +7,6 @@ import { View, Text } from 'react-native';
 import api from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
 
-const getInitialTab = (role?: string): string => {
-  switch (role) {
-    case 'super_admin':
-    case 'org_admin':
-    case 'store_manager':
-      return 'more';
-    default:
-      return 'inbox';
-  }
-};
-
 export default function TabLayout() {
   const { user, isAuthenticated, isLoading, partnerBranding } = useAuthStore();
   const router = useRouter();
@@ -28,19 +17,7 @@ export default function TabLayout() {
   const { subscribe } = useWebSocket();
 
   // Tab badge counts
-  const [teamUnreadCount, setTeamUnreadCount] = useState(0);
   const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
-
-  const fetchTeamUnreadCount = useCallback(async () => {
-    if (!user?._id) return;
-    try {
-      const response = await api.get(`/team-chat/channels?user_id=${user._id}`);
-      if (response.data.success) {
-        const total = response.data.channels.reduce((sum: number, ch: any) => sum + (ch.unread_count || 0), 0);
-        setTeamUnreadCount(total);
-      }
-    } catch { /* silent */ }
-  }, [user?._id]);
 
   const fetchInboxUnreadCount = useCallback(async () => {
     if (!user?._id) return;
@@ -56,23 +33,18 @@ export default function TabLayout() {
   // Initial fetch + polling
   useEffect(() => {
     if (mounted && user?._id) {
-      fetchTeamUnreadCount();
       fetchInboxUnreadCount();
       const interval = setInterval(() => {
-        fetchTeamUnreadCount();
         fetchInboxUnreadCount();
       }, 15000);
       return () => clearInterval(interval);
     }
-  }, [mounted, user?._id, fetchTeamUnreadCount, fetchInboxUnreadCount]);
+  }, [mounted, user?._id, fetchInboxUnreadCount]);
 
   // WebSocket real-time updates
   useEffect(() => {
     if (!subscribe) return;
     return subscribe((msg: any) => {
-      if (msg.type === 'team_chat_message' || (msg.type === 'notification_update' && msg.reason === 'team_chat')) {
-        setTeamUnreadCount(prev => prev + 1);
-      }
       if (msg.type === 'new_customer_message' || (msg.type === 'notification_update' && msg.reason === 'new_message')) {
         setInboxUnreadCount(prev => prev + 1);
       }
@@ -115,7 +87,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      initialRouteName={getInitialTab(user?.role)}
+      initialRouteName="home"
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
@@ -126,11 +98,31 @@ export default function TabLayout() {
           paddingBottom: 32,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: partnerBranding?.primary_color || '#007AFF',
+        tabBarActiveTintColor: partnerBranding?.primary_color || '#C9A962',
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={isPending ? '#3C3C3E' : color} />
+          ),
+        }}
+        listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
+      />
+      <Tabs.Screen
+        name="contacts"
+        options={{
+          title: 'Contacts',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={isPending ? '#3C3C3E' : color} />
+          ),
+        }}
+        listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
+      />
       <Tabs.Screen
         name="inbox"
         options={{
@@ -147,47 +139,25 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="more"
+        options={{
+          title: 'Menu',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="grid" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Hidden tabs - accessible via Menu but not shown in tab bar */}
+      <Tabs.Screen
         name="dialer"
         options={{
-          title: 'Keypad',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="keypad" size={size} color={isPending ? '#3C3C3E' : color} />
-          ),
+          href: null,
         }}
-        listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
-      />
-      <Tabs.Screen
-        name="contacts"
-        options={{
-          title: 'Contacts',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={isPending ? '#3C3C3E' : color} />
-          ),
-        }}
-        listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
       />
       <Tabs.Screen
         name="team"
         options={{
-          title: 'Team',
-          tabBarIcon: ({ color, size }) => (
-            <BadgeIcon name="chatbox-ellipses" color={color} size={size} count={teamUnreadCount} />
-          ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            if (isPending) e.preventDefault();
-            else setTeamUnreadCount(0);
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: 'More',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
     </Tabs>
