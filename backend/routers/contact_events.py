@@ -103,6 +103,8 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
                 "color": "#FF9500",
                 "title": f"Campaign Message Sent",
                 "description": f"{campaign_name} - Step {msg.get('step', '?')}",
+                "full_content": msg.get("body") or msg.get("message") or f"{campaign_name} - Step {msg.get('step', '?')}",
+                "channel": msg.get("channel", "sms"),
                 "timestamp": msg_ts,
                 "category": "campaign",
             })
