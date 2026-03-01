@@ -355,9 +355,9 @@ export default function DialerScreen() {
   ];
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header Icons */}
-      <View style={styles.headerIcons}>
+      <View style={[styles.headerIcons, { backgroundColor: colors.bg }]}>
         <WebIconButton 
           onPress={() => setShowSearchModal(true)}
           iconName="search"
@@ -380,8 +380,8 @@ export default function DialerScreen() {
       {!showCallLog ? (
         <View style={styles.dialerContainer}>
           {/* Number Display - moved up */}
-          <View style={styles.numberDisplay}>
-            <Text style={styles.numberText} numberOfLines={1} adjustsFontSizeToFit>
+          <View style={[styles.numberDisplay, { backgroundColor: colors.bg }]}>
+            <Text style={[styles.numberText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
               {phoneNumber || '\u00A0'}
             </Text>
           </View>
@@ -394,10 +394,10 @@ export default function DialerScreen() {
                   {row.map((num) => (
                     <TouchableOpacity
                       key={num}
-                      style={styles.dialButton}
+                      style={[styles.dialButton, { backgroundColor: colors.card }]}
                       onPress={() => handleDialPress(num)}
                     >
-                      <Text style={styles.dialButtonText}>{num}</Text>
+                      <Text style={[styles.dialButtonText, { color: colors.text }]}>{num}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
