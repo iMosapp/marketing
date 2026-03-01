@@ -256,7 +256,7 @@ export default function LoginScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -268,19 +268,19 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image 
-                source={{ uri: '/logo512-transparent.png' }}
+                source={{ uri: '/logo512-nobg.png' }}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.tagline}>Relationship Management System</Text>
+            <Text style={[styles.tagline, { color: theme.textSecondary }]}>Relationship Management System</Text>
           </View>
           
           <View style={styles.form}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
               placeholder="Email"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={theme.textSecondary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
