@@ -362,69 +362,6 @@ export default function ShowcasePage() {
           ))
         )}
 
-        {/* Share section */}
-        <View style={styles.shareSection}>
-          {/* Leave a Review CTA */}
-          <TouchableOpacity
-            style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
-            onPress={() => router.push(`/p/${id}`)}
-            data-testid="leave-review-btn"
-          >
-            <Ionicons name="star" size={20} color="#FFD60A" />
-            <View style={styles.reviewCTAContent}>
-              <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
-              <Text style={[styles.reviewCTASubtitle, { color: accent }]}>Leave a Review</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={accent} />
-          </TouchableOpacity>
-
-          {/* View Digital Business Card */}
-          <TouchableOpacity
-            style={styles.cardLink}
-            onPress={() => router.push(`/p/${id}`)}
-            data-testid="view-business-card-btn"
-          >
-            <Ionicons name="card-outline" size={18} color={accent} />
-            <Text style={[styles.cardLinkText, { color: accent }]}>View My Digital Business Card</Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={{ height: 1, backgroundColor: '#1C1C1E', width: '80%', marginVertical: 8 }} />
-
-          <TouchableOpacity
-            style={[styles.shareButton, { backgroundColor: accent }]}
-            onPress={handleShare}
-            data-testid="share-showcase-btn"
-          >
-            <Ionicons name="share-outline" size={18} color="#000" />
-            <Text style={styles.shareButtonText}>Share My Showroom</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.qrButton}
-            onPress={() => setShowQR(!showQR)}
-            data-testid="qr-code-btn"
-          >
-            <Ionicons name="qr-code-outline" size={18} color={accent} />
-            <Text style={[styles.qrButtonText, { color: accent }]}>
-              {showQR ? 'Hide' : 'Show'} QR Code
-            </Text>
-          </TouchableOpacity>
-
-          {showQR && (
-            <View style={styles.qrContainer}>
-              <Image
-                source={{
-                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}&bgcolor=000000&color=C9A962`,
-                }}
-                style={styles.qrImage}
-                resizeMode="contain"
-              />
-              <Text style={styles.qrHint}>Scan to view this page</Text>
-            </View>
-          )}
-        </View>
-
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Powered by i'M On Social</Text>
