@@ -153,11 +153,43 @@ function ContactActionModal({
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={{ flex: 1, justifyContent: 'center' }}>
+            <View style={{ flex: 1 }}>
+              {/* Number display */}
               <View style={[styles.dialDisplay, { borderColor: colors.border }]}>
-                <Text style={[styles.dialNumber, { color: colors.text }]}>{dialNumber || 'Enter number'}</Text>
+                <Text style={[styles.dialNumber, { color: dialNumber ? colors.text : colors.textTertiary }]}>{dialNumber || '\u00A0'}</Text>
                 {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
               </View>
+
+              {/* Matching contacts as you type */}
+              {dialNumber.length >= 2 && (() => {
+                const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(dialNumber.replace(/\D/g, '')));
+                if (matches.length === 0) return null;
+                return (
+                  <View style={{ maxHeight: 130, paddingHorizontal: 16, marginBottom: 4 }}>
+                    <FlatList
+                      data={matches.slice(0, 3)}
+                      keyExtractor={(item) => item._id}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }}
+                          onPress={() => logAndDial(item.phone, item)}
+                        >
+                          <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20`, width: 34, height: 34 }]}>
+                            <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{item.first_name} {item.last_name || ''}</Text>
+                            <Text style={{ color: colors.textTertiary, fontSize: 11 }}>{item.phone}</Text>
+                          </View>
+                          <Ionicons name="call" size={18} color="#34C759" />
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </View>
+                );
+              })()}
+
+              {/* Keypad */}
               <View style={styles.keypadGrid}>
                 {KEYS.map((row, ri) => (
                   <View key={ri} style={styles.keypadRow}>
