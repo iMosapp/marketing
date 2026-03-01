@@ -149,6 +149,8 @@ const { showToast } = useToast();
       { 
         id: newId,
         step: sequences.length + 1,
+        actionType: 'message',
+        cardType: '',
         message: '', 
         delayDays: 0, 
         delayMonths: (lastStep?.delayMonths || 0) + 1,
