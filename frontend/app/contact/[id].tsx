@@ -193,7 +193,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
 
 export default function ContactDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const colors = useThemeStore((s) => s.colors);  const { id } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
