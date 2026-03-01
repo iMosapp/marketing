@@ -120,14 +120,14 @@ function ContactActionModal({
           </View>
 
           {mode === 'search' ? (
-            <>
+            <View style={{ flex: 1, paddingHorizontal: 16 }}>
               <TextInput style={[styles.searchInput, { backgroundColor: colors.searchBg, color: colors.text, borderColor: colors.border }]} placeholder="Search name, phone, or email..." placeholderTextColor={colors.textTertiary} value={search} onChangeText={setSearch} data-testid="contact-search-input" />
               <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={goToImportFromPhone} data-testid="import-from-phone">
                 <Ionicons name="phone-portrait-outline" size={18} color={colors.accent} />
                 <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Import from Phone Contacts</Text>
               </TouchableOpacity>
               {loading ? <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} /> : (
-                <FlatList data={filtered.slice(0, 50)} keyExtractor={(item) => item._id} style={{ maxHeight: 320 }}
+                <FlatList data={filtered.slice(0, 50)} keyExtractor={(item) => item._id} style={{ flex: 1 }}
                   renderItem={({ item }) => (
                     <View style={[styles.contactRow, { borderBottomColor: colors.border }]}>
                       <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20` }]}>
