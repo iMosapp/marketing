@@ -138,13 +138,13 @@ export default function DialerScreen() {
   // Show restricted access screen for pending users
   if (isPending) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.restrictedContainer}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+        <View style={[styles.restrictedContainer, { backgroundColor: colors.bg }]}>
           <View style={styles.restrictedIcon}>
             <Ionicons name="lock-closed" size={48} color="#FF9500" />
           </View>
-          <Text style={styles.restrictedTitle}>Access Pending</Text>
-          <Text style={styles.restrictedText}>
+          <Text style={[styles.restrictedTitle, { color: colors.text }]}>Access Pending</Text>
+          <Text style={[styles.restrictedText, { color: colors.textSecondary }]}>
             Your account is being reviewed by an admin. You'll have full access to calls once your account is configured.
           </Text>
           <TouchableOpacity 
