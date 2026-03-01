@@ -802,6 +802,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     marginRight: 12,
+    resizeMode: 'cover',
   },
   avatarText: {
     color: '#FFF',
