@@ -469,6 +469,32 @@ export default function HomeScreen() {
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
 
+  // Robust clipboard copy
+  const copyToClipboard = (text: string, title: string, msg: string) => {
+    try {
+      if (IS_WEB && navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showSimpleAlert(title, msg);
+        }).catch(() => {
+          // Fallback: use textarea
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showSimpleAlert(title, msg);
+        });
+      } else {
+        showSimpleAlert(title, text);
+      }
+    } catch {
+      showSimpleAlert(title, text);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       if (user?._id) {
