@@ -248,7 +248,7 @@ export default function CreateCardPage() {
               { key: 'facebook', icon: 'logo-facebook', color: '#1877F2', label: 'Facebook' },
               { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2', label: 'Twitter' },
             ].map(p => (
-              <TouchableOpacity key={p.key} style={s.shareBtn} onPress={() => handleShare(p.key)}>
+              <TouchableOpacity key={p.key} style={s.shareBtn} onPress={() => handleShare(p.key)} data-testid={`card-share-${p.key}`}>
                 <View style={[s.shareIcon, { backgroundColor: p.color + '20' }]}><Ionicons name={p.icon as any} size={22} color={p.color} /></View>
                 <Text style={s.shareLabel}>{p.label}</Text>
               </TouchableOpacity>
