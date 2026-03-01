@@ -495,6 +495,39 @@ async def _process_photo(photo_data: str) -> tuple:
     return thumb_b64, highres_b64
 
 
+@router.post("/admin/regenerate-thumbnails")
+async def regenerate_thumbnails():
+    """One-time migration: regenerate all contact thumbnails at higher quality (256x256 @ 85%)."""
+    db = get_db()
+    contacts = await db.contacts.find(
+        {"photo": {"$exists": True, "$nin": [None, "", "None"]}},
+        {"_id": 1, "photo": 1}
+    ).to_list(5000)
+    
+    updated = 0
+    failed = 0
+    for c in contacts:
+        try:
+            photo_data = c.get("photo", "")
+            if photo_data and len(photo_data) > 100:
+                thumbnail, high_res = await _process_photo(photo_data)
+                await db.contacts.update_one(
+                    {"_id": c["_id"]},
+                    {"$set": {"photo_thumbnail": thumbnail, "photo_url": thumbnail}}
+                )
+                await db.contact_photos.update_one(
+                    {"contact_id": str(c["_id"])},
+                    {"$set": {"contact_id": str(c["_id"]), "photo_full": high_res}},
+                    upsert=True
+                )
+                updated += 1
+        except Exception as e:
+            failed += 1
+            logger.error(f"Failed to regenerate thumbnail for {c['_id']}: {e}")
+    
+    return {"updated": updated, "failed": failed, "total_processed": len(contacts)}
+
+
 @router.get("/{user_id}/{contact_id}/photos/all")
 async def get_all_contact_photos(user_id: str, contact_id: str):
     """Get all photos associated with a contact: profile, congrats cards, birthday cards."""
