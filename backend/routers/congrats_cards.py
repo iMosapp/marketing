@@ -175,6 +175,7 @@ async def create_congrats_card(
     customer_name: str = Form(...),
     customer_phone: str = Form(None),
     custom_message: str = Form(None),
+    card_type: str = Form("congrats"),
     photo: UploadFile = File(...)
 ):
     """
