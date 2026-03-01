@@ -382,6 +382,17 @@ export default function ShowcasePage() {
                   )}
                 </View>
 
+                {/* Show salesperson name in store view */}
+                {isStoreView && entry.salesman_name && (
+                  <TouchableOpacity
+                    onPress={() => entry.salesman_id ? router.push(`/showcase/${entry.salesman_id}` as any) : null}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}
+                  >
+                    <Ionicons name="person-outline" size={12} color="#8E8E93" />
+                    <Text style={{ fontSize: 12, color: accent, fontWeight: '500' }}>{entry.salesman_name}</Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Matched review */}
                 {entry.review && (
                   <View style={[styles.reviewSection, { borderLeftColor: accent }]}>
