@@ -135,6 +135,15 @@ export function UniversalShareModal({
     close();
   };
 
+  // Helper to navigate to thread with URL string format (reliable on web)
+  const navigateToThread = (contactId: string, params: Record<string, string>) => {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v) qs.set(k, v);
+    }
+    router.push(`/thread/${contactId}?${qs.toString()}` as any);
+  };
+
   // Via Text — route through internal inbox for tracking
   const handleViaText = async () => {
     const phone = recipientPhone.trim();
@@ -163,15 +172,12 @@ export function UniversalShareModal({
       });
       const contactId = res.data.contact_id;
       close();
-      router.push({
-        pathname: `/thread/${contactId}`,
-        params: {
-          contact_name: res.data.contact_name || name || phone,
-          contact_phone: res.data.contact_phone || phone,
-          mode: 'sms',
-          prefill: defaultShareText,
-        },
-      } as any);
+      navigateToThread(contactId, {
+        contact_name: res.data.contact_name || name || phone,
+        contact_phone: res.data.contact_phone || phone,
+        mode: 'sms',
+        prefill: defaultShareText,
+      });
     } catch {
       showSimpleAlert('Error', 'Failed to find or create contact.');
     } finally { setSaving(false); }
@@ -205,15 +211,12 @@ export function UniversalShareModal({
       });
       const contactId = res.data.contact_id;
       close();
-      router.push({
-        pathname: `/thread/${contactId}`,
-        params: {
-          contact_name: res.data.contact_name || name || email,
-          contact_email: res.data.contact_email || email,
-          mode: 'email',
-          prefill: defaultShareText,
-        },
-      } as any);
+      navigateToThread(contactId, {
+        contact_name: res.data.contact_name || name || email,
+        contact_email: res.data.contact_email || email,
+        mode: 'email',
+        prefill: defaultShareText,
+      });
     } catch {
       showSimpleAlert('Error', 'Failed to find or create contact.');
     } finally { setSaving(false); }
