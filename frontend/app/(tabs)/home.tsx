@@ -338,7 +338,7 @@ export default function HomeScreen() {
   const TILES = [
     { key: 'share-card', icon: 'card-outline', label: 'Share My Card', color: '#007AFF', onPress: () => openShareModal('share-card') },
     { key: 'share-review', icon: 'star-outline', label: 'Review Link', color: '#FFD60A', onPress: () => openShareModal('share-review') },
-    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => setShowSendCard(true) },
+    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => openShareModal('send-card') },
     { key: 'showroom', icon: 'storefront-outline', label: 'My Showroom', color: '#34C759', onPress: () => openShareModal('showroom') },
     { key: 'quick-dial', icon: 'call-outline', label: 'Quick Dial', color: '#32ADE6', onPress: () => { setContactActionMode('keypad'); setShowContactAction(true); } },
     { key: 'add-contact', icon: 'person-add-outline', label: 'Add Contact', color: '#AF52DE', onPress: () => { setContactActionMode('search'); setShowContactAction(true); } },
