@@ -105,6 +105,8 @@ const { showToast } = useToast();
       const seqs = (data.sequences || []).map((s: any, idx: number) => ({
         id: String(idx + 1),
         step: s.step || idx + 1,
+        actionType: s.action_type || 'message',
+        cardType: s.card_type || '',
         message: s.message_template || s.message || '',
         delayDays: s.delay_days || 0,
         delayMonths: s.delay_months || 0,
@@ -112,7 +114,7 @@ const { showToast } = useToast();
       }));
       
       if (seqs.length === 0) {
-        seqs.push({ id: '1', step: 1, message: data.message_template || '', delayDays: 0, delayMonths: 0, media_urls: [] });
+        seqs.push({ id: '1', step: 1, actionType: 'message', cardType: '', message: data.message_template || '', delayDays: 0, delayMonths: 0, media_urls: [] });
       }
       
       setSequences(seqs);
