@@ -331,6 +331,11 @@ export default function HomeScreen() {
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
   const [showSendCard, setShowSendCard] = useState(false);
+  const [sendCardStep, setSendCardStep] = useState<'type' | 'contact'>('type');
+  const [selectedCardType, setSelectedCardType] = useState('');
+  const [cardContacts, setCardContacts] = useState<any[]>([]);
+  const [cardSearch, setCardSearch] = useState('');
+  const [cardContactsLoading, setCardContactsLoading] = useState(false);
 
   // Universal share modals
   const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showPreview: boolean; previewUrl?: string; showQR: boolean; eventType: string }>({
