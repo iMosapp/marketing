@@ -1133,7 +1133,7 @@ export default function InboxScreen() {
   // Show restricted access screen for pending users
   if (isPending) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.bg }]} edges={['top']}>
         <View style={[styles.header, styles.headerWeb]}>
           <View style={styles.headerInner}>
             <Text style={styles.title}>Inbox</Text>
