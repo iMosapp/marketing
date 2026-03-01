@@ -327,7 +327,7 @@ export default function LoginScreen() {
                     <Ionicons name="checkmark" size={14} color="#FFF" />
                   )}
                 </View>
-                <Text style={styles.rememberMeText}>Remember me</Text>
+                <Text style={[styles.rememberMeText, { color: theme.textSecondary }]}>Remember me</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
