@@ -416,8 +416,8 @@ export default function LoginScreen() {
         transparent={true}
         onRequestClose={handleSkipBiometric}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modalBg }]}>
             <View style={styles.modalIcon}>
               <Ionicons
                 name={getBiometricIcon(biometricStatus?.biometricType || 'none') as any}
@@ -426,21 +426,21 @@ export default function LoginScreen() {
               />
             </View>
             
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
               Enable {biometricStatus?.biometricLabel}?
             </Text>
             
-            <Text style={styles.modalDescription}>
+            <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
               Login faster next time using {biometricStatus?.biometricLabel}. 
               Your credentials will be stored securely on this device.
             </Text>
             
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={styles.modalButtonSecondary}
+                style={[styles.modalButtonSecondary, { backgroundColor: theme.surface }]}
                 onPress={handleSkipBiometric}
               >
-                <Text style={styles.modalButtonSecondaryText}>Not Now</Text>
+                <Text style={[styles.modalButtonSecondaryText, { color: theme.text }]}>Not Now</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
