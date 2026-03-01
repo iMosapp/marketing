@@ -29,6 +29,9 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     for e in custom_events:
         if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
             e["timestamp"] = e["timestamp"].isoformat()
+        # Ensure full_content is available for rich preview
+        if not e.get("full_content") and e.get("content"):
+            e["full_content"] = e["content"]
         events.append(e)
 
     # 2) Messages sent to/from this contact
