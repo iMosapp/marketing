@@ -505,12 +505,7 @@ export default function HomeScreen() {
     }
     const spParam = user?._id ? `?sp=${user._id}` : '';
     const url = `https://app.imosapp.com/review/${storeSlug}${spParam}`;
-    if (IS_WEB && navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      showSimpleAlert('Review Link Copied!', 'Share this with your customer.');
-    } else {
-      Linking.openURL(url);
-    }
+    copyToClipboard(url, 'Review Link Copied!', 'Share this with your customer.');
   };
 
   const handleShowroom = () => {
