@@ -336,14 +336,36 @@ export function UniversalShareModal({
             {/* Recipient Info */}
             <View style={styles.recipientSection}>
               <Text style={styles.recipientLabel}>SEND TO (OPTIONAL)</Text>
-              <TextInput
-                style={styles.recipientInput}
-                placeholder="Recipient Name"
-                placeholderTextColor="#6E6E73"
-                value={recipientName}
-                onChangeText={setRecipientName}
-                data-testid="share-recipient-name"
-              />
+              <View style={{ position: 'relative', zIndex: 10 }}>
+                <TextInput
+                  style={styles.recipientInput}
+                  placeholder="Search contact or type name..."
+                  placeholderTextColor="#6E6E73"
+                  value={recipientName}
+                  onChangeText={searchContacts}
+                  data-testid="share-recipient-name"
+                />
+                {showSuggestions && contactSuggestions.length > 0 && (
+                  <View style={styles.suggestionsDropdown} data-testid="share-contact-suggestions">
+                    {contactSuggestions.map((c: any) => (
+                      <TouchableOpacity
+                        key={c._id}
+                        style={styles.suggestionRow}
+                        onPress={() => selectContact(c)}
+                        data-testid={`suggestion-${c._id}`}
+                      >
+                        <View style={styles.suggestionAvatar}>
+                          <Text style={styles.suggestionAvatarText}>{(c.first_name || '?')[0].toUpperCase()}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionName}>{c.first_name} {c.last_name || ''}</Text>
+                          <Text style={styles.suggestionDetail}>{c.phone || c.email || ''}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
               <TextInput
                 style={styles.recipientInput}
                 placeholder="Phone"
