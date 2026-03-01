@@ -112,6 +112,17 @@ export default function CreateCardPage() {
     } catch { showSimpleAlert('Error', 'Failed to copy link'); }
   };
 
+  const navigateToThread = (contactId: string, cName: string, cPhone: string, cEmail: string, mode: string, prefillText: string) => {
+    const params = new URLSearchParams();
+    if (cName) params.set('contact_name', cName);
+    if (cPhone) params.set('contact_phone', cPhone);
+    if (cEmail) params.set('contact_email', cEmail);
+    params.set('mode', mode);
+    if (prefillText) params.set('prefill', prefillText);
+    const url = `/thread/${contactId}?${params.toString()}`;
+    router.push(url as any);
+  };
+
   const handleShare = async (platform: string) => {
     if (!createdCard || !user?._id) return;
     const url = createdCard.share_url;
@@ -119,6 +130,16 @@ export default function CreateCardPage() {
 
     // For SMS and Email — route through internal inbox for tracking
     if (platform === 'sms' || platform === 'email') {
+      // Validate: need phone for SMS, email for email
+      if (platform === 'sms' && !customerPhone.trim()) {
+        showSimpleAlert('Phone Required', 'Please enter a phone number to send via SMS.');
+        return;
+      }
+      if (platform === 'email' && !customerEmail.trim()) {
+        showSimpleAlert('Email Required', 'Please enter an email address to send via Email.');
+        return;
+      }
+
       try {
         // Find or create contact
         const payload: any = { name: customerName.trim(), event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`, event_description: `Sent ${meta.label.toLowerCase()} via ${platform}`, event_icon: meta.icon, event_color: accent };
@@ -127,9 +148,9 @@ export default function CreateCardPage() {
 
         const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, payload);
         const contactId = res.data.contact_id;
-        const contactName = res.data.contact_name || customerName.trim();
-        const contactPhone = res.data.contact_phone || customerPhone.trim();
-        const contactEmail = res.data.contact_email || customerEmail.trim();
+        const cName = res.data.contact_name || customerName.trim();
+        const cPhone = res.data.contact_phone || customerPhone.trim();
+        const cEmail = res.data.contact_email || customerEmail.trim();
 
         if (res.data.needs_confirmation) {
           setMatchInfo(res.data);
@@ -139,19 +160,14 @@ export default function CreateCardPage() {
         }
 
         // Navigate to inbox thread with pre-filled message
-        router.push({
-          pathname: `/thread/${contactId}`,
-          params: {
-            contact_name: contactName,
-            contact_phone: contactPhone,
-            contact_email: contactEmail,
-            mode: platform,
-            prefill: text,
-          },
-        } as any);
-      } catch (err) {
-        // Fallback: if no phone/email, ask user to enter one
-        showSimpleAlert('Missing Info', 'Please add a phone number or email for the recipient to send via ' + platform.toUpperCase());
+        navigateToThread(contactId, cName, cPhone, cEmail, platform, text);
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail || '';
+        if (detail.includes('Phone or email')) {
+          showSimpleAlert('Missing Info', 'Please add a phone number or email for the recipient.');
+        } else {
+          showSimpleAlert('Error', 'Something went wrong. Please try again.');
+        }
       }
       return;
     }
@@ -175,24 +191,28 @@ export default function CreateCardPage() {
     const url = createdCard.share_url;
     const text = `Check out this ${meta.label.toLowerCase()} for ${customerName}! ${url}`;
     try {
-      const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-        phone: customerPhone.trim(), name: customerName.trim(),
+      const payload: any = {
+        name: customerName.trim(),
         event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`,
         event_description: `Sent ${meta.label.toLowerCase()} via ${pendingSharePlatform}`,
         event_icon: meta.icon, event_color: accent, force_action: action,
-      });
+      };
+      if (customerPhone.trim()) payload.phone = customerPhone.trim();
+      if (customerEmail.trim()) payload.email = customerEmail.trim();
+
+      const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, payload);
       const contactId = res.data.contact_id;
-      router.push({
-        pathname: `/thread/${contactId}`,
-        params: {
-          contact_name: res.data.contact_name || customerName.trim(),
-          contact_phone: res.data.contact_phone || customerPhone.trim(),
-          contact_email: res.data.contact_email || customerEmail.trim(),
-          mode: pendingSharePlatform,
-          prefill: text,
-        },
-      } as any);
-    } catch {}
+      navigateToThread(
+        contactId,
+        res.data.contact_name || customerName.trim(),
+        res.data.contact_phone || customerPhone.trim(),
+        res.data.contact_email || customerEmail.trim(),
+        pendingSharePlatform,
+        text
+      );
+    } catch (err) {
+      showSimpleAlert('Error', 'Failed to process contact. Please try again.');
+    }
     setMatchInfo(null); setPendingSharePlatform(null);
   };
 

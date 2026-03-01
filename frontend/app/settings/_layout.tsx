@@ -14,6 +14,9 @@ export default function SettingsLayout() {
       <Stack.Screen name="security" />
       <Stack.Screen name="store-profile" />
       <Stack.Screen name="integrations" />
+      <Stack.Screen name="create-card" />
+      <Stack.Screen name="card-templates" />
+      <Stack.Screen name="showroom-approvals" />
     </Stack>
   );
 }
