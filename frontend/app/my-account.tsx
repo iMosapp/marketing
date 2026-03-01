@@ -424,7 +424,7 @@ export default function MyAccountScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="back-button">
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Account</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>My Account</Text>
         <View style={{ width: 28 }} />
       </View>
 
