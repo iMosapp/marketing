@@ -701,6 +701,43 @@ const { showToast } = useToast();
         
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Card Preview Modal */}
+      <Modal visible={!!previewCardType} animationType="fade" transparent>
+        <View style={styles.previewOverlay}>
+          <View style={styles.previewContainer}>
+            <TouchableOpacity style={styles.previewClose} onPress={() => setPreviewCardType(null)} data-testid="preview-card-close">
+              <Ionicons name="close-circle" size={28} color="#FFF" />
+            </TouchableOpacity>
+            {(() => {
+              const cards: Record<string, { label: string; icon: string; color: string; message: string; image: string }> = {
+                congrats: { label: 'Congratulations!', icon: 'gift', color: '#C9A962', message: 'Congratulations on your incredible achievement! Wishing you continued success on this exciting journey.', image: 'confetti' },
+                birthday: { label: 'Happy Birthday!', icon: 'balloon', color: '#FF2D55', message: 'Wishing you a wonderful birthday filled with joy, laughter, and all the things that make you happiest!', image: 'cake' },
+                anniversary: { label: 'Happy Anniversary!', icon: 'heart', color: '#FF6B6B', message: "Celebrating this special milestone with you! Here's to many more wonderful memories ahead.", image: 'heart' },
+                thankyou: { label: 'Thank You!', icon: 'thumbs-up', color: '#34C759', message: "Your kindness and generosity mean the world to me. I truly appreciate everything you've done!", image: 'star' },
+                welcome: { label: 'Welcome!', icon: 'hand-left', color: '#007AFF', message: "We're thrilled to have you! Welcome to the family. We look forward to building a great relationship.", image: 'wave' },
+                holiday: { label: 'Happy Holidays!', icon: 'snow', color: '#5AC8FA', message: 'Wishing you a season filled with warmth, happiness, and cherished moments with loved ones!', image: 'snowflake' },
+              };
+              const card = cards[previewCardType || 'congrats'];
+              return (
+                <View style={[styles.previewCard, { borderColor: card.color }]}>
+                  <View style={[styles.previewCardHeader, { backgroundColor: card.color }]}>
+                    <Ionicons name={card.icon as any} size={40} color="#FFF" />
+                    <Text style={styles.previewCardTitle}>{card.label}</Text>
+                  </View>
+                  <View style={styles.previewCardBody}>
+                    <Text style={styles.previewCardMessage}>{card.message}</Text>
+                    <Text style={styles.previewCardPlaceholder}>— {'{ Contact Name }'}</Text>
+                  </View>
+                  <View style={styles.previewCardFooter}>
+                    <Text style={styles.previewCardFooterText}>Sent via i'M On Social</Text>
+                  </View>
+                </View>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
