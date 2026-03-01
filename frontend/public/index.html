@@ -38,6 +38,10 @@
     <noscript>Redirecting to login...</noscript>
     <div id="root"></div>
     <script>
+      // Register service worker for PWA install
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
       // Fallback redirect if meta refresh doesn't work
       window.location.replace('/auth/login');
     </script>
