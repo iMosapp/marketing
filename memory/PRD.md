@@ -32,6 +32,11 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Via Text/Email now route through internal inbox (/thread/[id]) for tracking
 - Uses URL string format (URLSearchParams) for reliable cross-stack navigation on web
 
+### Inbox Thread Enhancements
+- Contact name in header is clickable → navigates to contact detail page
+- **Relationship Intel bar** below SMS/Email mode banner — shows AI analysis of the contact, collapsible with Refresh
+- **Auto-return from card creation**: Creating a card FROM inbox auto-returns with card link pre-filled (skips share screen)
+
 **Sharing Flow Architecture** (Fixed Mar 1, 2026):
 - All "Via SMS/Email" share actions route through internal inbox thread
 - Navigation uses URL string format: `/thread/{contactId}?mode=sms&prefill=...`
