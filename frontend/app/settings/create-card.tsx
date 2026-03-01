@@ -96,7 +96,7 @@ export default function CreateCardPage() {
       const res = await api.post('/congrats/create', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       const cardId = res.data?.card_id;
       setShowPreview(false);
-      setCreatedCard({ card_id: cardId, share_url: `https://app.imosapp.com/congrats/${cardId}` });
+      setCreatedCard({ card_id: cardId, share_url: `${BASE_URL}/congrats/${cardId}` });
     } catch (err: any) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to create card';
       showSimpleAlert('Error', typeof detail === 'string' ? detail : JSON.stringify(detail));
