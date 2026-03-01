@@ -45,10 +45,11 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         for m in messages:
             sender = m.get("sender", "user")
             msg_type = m.get("type", "sms")
+            channel = m.get("channel", msg_type)
             direction = "outbound" if sender == "user" else "inbound"
             icon = "chatbubble" if msg_type == "sms" else "mail"
             color = "#007AFF" if direction == "outbound" else "#8E8E93"
-            body_preview = (m.get("body") or "")[:80]
+            body = m.get("body") or ""
             ts = m.get("timestamp")
             if ts and hasattr(ts, "isoformat"):
                 ts = ts.isoformat()
@@ -57,7 +58,10 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
                 "icon": icon,
                 "color": color,
                 "title": f"{'Sent' if direction == 'outbound' else 'Received'} {msg_type.upper()}",
-                "description": body_preview,
+                "description": body[:80],
+                "full_content": body,
+                "channel": channel,
+                "subject": m.get("subject"),
                 "timestamp": ts,
                 "category": "message",
             })
