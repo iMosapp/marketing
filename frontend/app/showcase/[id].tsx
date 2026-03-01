@@ -194,7 +194,7 @@ export default function ShowcasePage() {
         <View style={styles.header}>
           {/* Store logo — clickable to store showcase (only in user view) */}
           {data.store?.logo_url && !isStoreView && storeId ? (
-            <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)} data-testid="store-logo-link">
+            <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)} data-testid="store-logo-link">
               <Image source={{ uri: data.store.logo_url }} style={styles.storeLogo} resizeMode="contain" />
             </TouchableOpacity>
           ) : data.store?.logo_url ? (
