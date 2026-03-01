@@ -75,6 +75,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Light & Dark mode with persistence — **all pages now theme-aware** (My Account, Contact Detail, Share Modal)
 - **Login page** auto-detects system light/dark mode preference; logo displayed without tile background
 - **Send a Card flow** now searches existing contacts before creating a card; contact info is pre-filled on the card creation page
+- **Campaign "Send Card" steps** — each campaign sequence step can now be "Send Message" or "Send Card", with a 6-card template picker; scheduler creates pending tasks for card steps in manual mode
 
 ### Administration
 - Soft-delete user system with data retention
