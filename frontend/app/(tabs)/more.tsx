@@ -930,7 +930,7 @@ export default function MoreScreen() {
         
         {/* Partner Branding Banner */}
         {partnerBranding && (
-          <View style={[styles.partnerBanner, { borderBottomColor: partnerBranding.primary_color + '30' }]} data-testid="partner-branding-banner">
+          <View style={[styles.partnerBanner, { borderBottomColor: partnerBranding.primary_color + '30', backgroundColor: colors.cardAlt }]} data-testid="partner-branding-banner">
             <View style={styles.partnerBannerInner}>
               {partnerBranding.logo ? (
                 <Image source={{ uri: partnerBranding.logo }} style={styles.partnerLogo} resizeMode="contain" />
