@@ -389,20 +389,34 @@ export default function MoreScreen() {
 
   // Define all sections with their items
   const sections: Section[] = [
-    // Essentials - Always show, expanded by default
+    // Tools - Daily use items not on the Home tab
     {
-      id: 'essentials',
-      title: 'Essentials',
-      icon: 'star',
-      color: '#FFD60A',
+      id: 'tools',
+      title: 'Tools',
+      icon: 'apps',
+      color: '#007AFF',
       defaultExpanded: true,
       items: [
         {
-          icon: 'school',
-          title: 'Training Hub',
-          subtitle: 'Learn how to use iMos',
-          onPress: () => router.push('/training-hub'),
-          color: '#FF9500',
+          icon: 'call',
+          title: 'Phone / Dialer',
+          subtitle: 'Keypad & call log',
+          onPress: () => router.push('/(tabs)/dialer'),
+          color: '#32ADE6',
+        },
+        {
+          icon: 'chatbox-ellipses',
+          title: 'Team Chat',
+          subtitle: 'Internal team messaging',
+          onPress: () => router.push('/(tabs)/team'),
+          color: '#5856D6',
+        },
+        {
+          icon: 'checkmark-done',
+          title: 'Tasks & Reminders',
+          subtitle: 'Manage follow-ups',
+          onPress: () => router.push('/tasks'),
+          color: '#34C759',
         },
         {
           icon: 'sparkles',
@@ -412,35 +426,21 @@ export default function MoreScreen() {
           color: '#C9A962',
         },
         {
-          icon: 'checkmark-done',
-          title: 'Tasks & Reminders',
-          subtitle: 'Manage follow-ups',
-          onPress: () => router.push('/tasks'),
-          color: '#34C759',
+          icon: 'school',
+          title: 'Training Hub',
+          subtitle: 'Learn how to use iMOs',
+          onPress: () => router.push('/training-hub'),
+          color: '#FF9500',
         },
       ],
     },
-    // Communication Tools
+    // Campaigns & Outreach
     {
-      id: 'communication',
-      title: 'Communication',
-      icon: 'chatbubbles',
-      color: '#007AFF',
+      id: 'campaigns',
+      title: 'Campaigns',
+      icon: 'rocket',
+      color: '#FF2D55',
       items: [
-        {
-          icon: 'call',
-          title: 'Phone',
-          subtitle: 'Dialer & call log',
-          onPress: () => router.push('/(tabs)/dialer'),
-          color: '#32ADE6',
-        },
-        {
-          icon: 'megaphone',
-          title: 'Broadcast',
-          subtitle: 'Mass messaging',
-          onPress: () => router.push('/broadcast'),
-          color: '#FF9500',
-        },
         {
           icon: 'chatbubbles',
           title: 'SMS Campaigns',
@@ -456,6 +456,13 @@ export default function MoreScreen() {
           color: '#AF52DE',
         },
         {
+          icon: 'megaphone',
+          title: 'Broadcast',
+          subtitle: 'Mass messaging',
+          onPress: () => router.push('/broadcast'),
+          color: '#FF9500',
+        },
+        {
           icon: 'speedometer',
           title: 'Campaign Dashboard',
           subtitle: 'View enrollments',
@@ -468,6 +475,50 @@ export default function MoreScreen() {
           subtitle: 'Birthdays, anniversaries, holidays',
           onPress: () => router.push('/settings/date-triggers'),
           color: '#FF9500',
+        },
+      ],
+    },
+    // Reports & Performance
+    {
+      id: 'performance',
+      title: 'Reports',
+      icon: 'stats-chart',
+      color: '#34C759',
+      items: [
+        {
+          icon: 'bar-chart',
+          title: 'Activity Reports',
+          subtitle: 'Activity reports & analytics',
+          onPress: () => router.push('/reports/activity'),
+          color: '#007AFF',
+        },
+        {
+          icon: 'stats-chart',
+          title: 'Analytics',
+          subtitle: 'Performance metrics',
+          onPress: () => router.push('/analytics'),
+          color: '#34C759',
+        },
+        {
+          icon: 'bar-chart',
+          title: 'Email Analytics',
+          subtitle: 'Opens, clicks, engagement',
+          onPress: () => router.push('/settings/email-analytics'),
+          color: '#FF2D55',
+        },
+        {
+          icon: 'trophy',
+          title: 'My Rankings',
+          subtitle: 'Your personal performance',
+          onPress: () => router.push('/admin/my-rankings'),
+          color: '#FFD60A',
+        },
+        {
+          icon: 'podium',
+          title: 'Leaderboard',
+          subtitle: 'Team rankings & performance',
+          onPress: () => router.push('/admin/leaderboard'),
+          color: '#AF52DE',
         },
       ],
     },
@@ -506,74 +557,12 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/congrats-template'),
           color: '#C9A962',
         },
-      ],
-    },
-    // Performance & Analytics
-    {
-      id: 'performance',
-      title: 'Performance',
-      icon: 'stats-chart',
-      color: '#34C759',
-      items: [
         {
           icon: 'images',
-          title: 'The Showroom',
-          subtitle: 'Your happy customers page',
-          onPress: () => router.push(`/showcase/${user?._id}`),
-          color: '#C9A962',
-        },
-        {
-          icon: 'share-outline',
-          title: 'Share Showroom Link',
-          subtitle: 'Copy your public Showroom URL',
-          onPress: () => {
-            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            const showroomUrl = `${baseUrl}/showcase/${user?._id}`;
-            if (typeof navigator !== 'undefined' && navigator.clipboard) {
-              navigator.clipboard.writeText(showroomUrl);
-              showSimpleAlert('Link Copied', `Your Showroom URL has been copied to clipboard:\n${showroomUrl}`);
-            } else if (typeof navigator !== 'undefined' && navigator.share) {
-              navigator.share({ title: 'My Showroom', url: showroomUrl }).catch(() => {});
-            } else {
-              showSimpleAlert('Your Showroom URL', showroomUrl);
-            }
-          },
-          color: '#FF9500',
-        },
-        {
-          icon: 'stats-chart',
-          title: 'Analytics',
-          subtitle: 'Performance metrics',
-          onPress: () => router.push('/analytics'),
+          title: 'Manage Showroom',
+          subtitle: 'Edit your happy customers page',
+          onPress: () => router.push(`/showroom-manage` as any),
           color: '#34C759',
-        },
-        {
-          icon: 'bar-chart',
-          title: 'Reports',
-          subtitle: 'Activity reports & analytics',
-          onPress: () => router.push('/reports/activity'),
-          color: '#007AFF',
-        },
-        {
-          icon: 'bar-chart',
-          title: 'Email Analytics',
-          subtitle: 'Opens, clicks, engagement',
-          onPress: () => router.push('/settings/email-analytics'),
-          color: '#FF2D55',
-        },
-        {
-          icon: 'trophy',
-          title: 'My Rankings',
-          subtitle: 'Your personal performance',
-          onPress: () => router.push('/admin/my-rankings'),
-          color: '#FFD60A',
-        },
-        {
-          icon: 'podium',
-          title: 'Leaderboard',
-          subtitle: 'Team rankings & performance',
-          onPress: () => router.push('/admin/leaderboard'),
-          color: '#AF52DE',
         },
       ],
     },
