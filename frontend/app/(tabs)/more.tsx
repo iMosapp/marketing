@@ -23,6 +23,7 @@ import { showSimpleAlert } from '../../services/alert';
 import api from '../../services/api';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { WebModal } from '../../components/WebModal';
+import { BRAND } from '../../config/brand';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -1050,7 +1051,7 @@ export default function MoreScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.version}>Powered by i'M On Social</Text>
+              <Text style={styles.version}>{BRAND.poweredByText}</Text>
               <Text style={[styles.version, { marginTop: 4 }]}>v1.0.0</Text>
             </>
           )}
