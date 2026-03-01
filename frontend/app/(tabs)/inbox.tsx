@@ -144,7 +144,7 @@ const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'selection' = 'light
 export default function InboxScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const colors = useThemeStore((s) => s.colors);
+  const themeColors = useThemeStore((s) => s.colors);
   
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai'>('active');
@@ -161,8 +161,8 @@ export default function InboxScreen() {
   const [messageMode, setMessageMode] = useState<MessageModeType>('sms');
   const [toggleStyle, setToggleStyle] = useState<string>('pill');
   
-  // Get current colors based on mode
-  const colors = messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK;
+  // Get current colors based on mode — in light theme, always use light colors
+  const colors = themeColors.bg === '#F2F2F7' ? COLORS_LIGHT : (messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK);
   
   // Bulk selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
