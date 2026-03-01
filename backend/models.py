@@ -245,6 +245,14 @@ class Contact(BaseModel):
     custom_dates: List[CustomDateField] = []  # Additional custom dates
     
     purchase_date: Optional[datetime] = None  # Legacy - alias for date_sold
+    
+    # Physical address
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    address_country: Optional[str] = None
+    
     source: str = "manual"  # manual, csv, phone_contacts, lead_form, referral, api, dms, crm
     ownership_type: str = "org"  # org (belongs to org) or personal (imported/personal to user)
     status: str = "active"  # active, hidden (hidden when user deactivated from org), purged
@@ -293,6 +301,14 @@ class ContactCreate(BaseModel):
     custom_dates: List[CustomDateField] = []
     
     purchase_date: Optional[datetime] = None
+    
+    # Physical address
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    address_country: Optional[str] = None
+    
     referred_by: Optional[str] = None
     referred_by_name: Optional[str] = None
     referral_notes: Optional[str] = None
