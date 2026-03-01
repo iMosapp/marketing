@@ -12,45 +12,55 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 
 ### Core CRM
 - Contact management with tagging, campaigns, activity tracking
-- **Physical address fields** on contacts (street, city, state, zip, country) for gift sending
+- Physical address fields on contacts (street, city, state, zip, country)
 - Inbox with SMS (personal fallback + Twilio MOCK) and email channels
 - All outbound communication logged as `contact_events`
 - Contact Intel (AI-powered relationship insights)
 
-### UX Overhaul (Mar 1, 2026)
-- **New Home Tab** — "Daily command center" with 6 quick action tiles:
-  - Share My Card, Review Link, Create Card, My Showroom, Quick Dial, Add Contact
-  - Recent Activity feed below tiles
-- **Simplified 4-tab navigation**: Home, Contacts, Inbox, Menu
-  - Removed Dialer and Team as standalone tabs (moved to Menu → Tools)
-  - Gold (#C9A962) active tab color for brand consistency
-- **Reorganized Menu** — 8 clean categorized sections:
-  - Tools, Campaigns, Reports, Templates & Branding, Contacts & Leads, Profile & AI, Settings, Administration (role-gated)
-- **Quick Dial flow** — Pick contact → log call event → open native dialer
-  - Follows same pattern as personal SMS: if no Twilio, hand off to phone but still log activity
+### UX Overhaul — "Daily Driver" Simplification (Mar 1, 2026)
+**Phase 1 — Tab Restructure & Home Tab:**
+- New **Home Tab** as "daily command center" with 6 quick action tiles
+- Simplified **4-tab navigation**: Home, Contacts, Inbox, Menu
+- Dialer & Team moved to Menu → Tools
+- All roles now land on Home tab after login
+
+**Phase 2 — 7 Feature Enhancements (Mar 1, 2026):**
+1. **Login Logo** — Rounded corners matching app icon style
+2. **Share My Card** — Action sheet: "Share Landing Page" (copies /p/{userId} URL) + "Save to Contacts vCard" (downloads .vcf with landing page, review, showroom links)
+3. **Review Link** — Robust clipboard copy with fallback (fixed "failed to execute" errors)
+4. **Send a Card** — Template picker: Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday cards
+5. **Showroom** — Sticky top bar with back button + "Copy Link" at top (no scrolling)
+6. **Add Contact** — Unified modal: Import from Phone / Search CRM contacts / Enter Manually + action buttons (Call, Text, Email)
+7. **Quick Dial** — Two modes: Contacts search + Numeric keypad. Both log activity
+
+**Menu Reorganization:**
+- 8 clean categorized sections: Tools, Campaigns, Reports, Templates & Branding, Contacts & Leads, Profile & AI, Settings, Administration (role-gated)
+- Removed duplicate quick action rows (now on Home tab)
+
+### vCard Enhancement
+- vCard now includes 4 URLs: store website, landing page, review link, showroom
+- Uses Apple vCard labels for Review and Showroom links
 
 ### Cards & Celebrations
 - Congrats Card creation with preview step + sharing
 - Birthday Card creation with preview step + campaign integration
+- Unified card template picker for all card types
 - Digital Business Card (shareable profile page)
-- Showcase/Inventory display
 
 ### Marketing & Public Pages
-- Full `/imos/` marketing site (home, features, pricing, demo, etc.)
-- **88+ preview pages** under `/imos/` for every app feature
-- App Directory with search, preview, copy link, and share functionality
-- Onboarding flow with quick-win demos
+- Full `/imos/` marketing site
+- 88+ preview pages under `/imos/`
+- App Directory
+- Onboarding flow
 
 ### Reporting & Analytics
 - Activity reports with 14+ metrics and date filters
 - Scheduled email delivery of reports
-- SMS tally bug fixed (personal SMS counted correctly)
+- Leaderboard system
 
 ### Branding & Logos
-- Custom glossy 3D logo across all assets
-- White-label HTML email templates
-- Brand Assets download page
-- Logo transparency preservation in image upload pipeline
+- Custom glossy 3D logo, white-label HTML email templates
+- Logo transparency preservation in upload pipeline
 - Light & Dark mode with persistence
 
 ### Administration
@@ -65,19 +75,19 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Mobile app tags sync (P2)
 
 ## Upcoming Tasks (Priority Order)
-1. (P0) **Card Template System** — Unified "Create Card" with template picker (Congrats, Birthday, Anniversary, custom). Templates saveable like tags, store-level.
-2. (P0) Onboarding Checklist Tracking — save user progress
-3. (P1) Gamification & Leaderboards
-4. (P1) AI-Powered Outreach (sold tag → AI follow-up suggestions)
-5. (P1) Auth refactor (bcrypt password hashing)
-6. (P1) Clean production database for launch
+1. (P0) **Card Template System — Backend** — Store custom templates in DB, CRUD API, per-store templates
+2. (P0) **Onboarding Checklist Tracking** — Save user progress
+3. (P1) **Gamification & Leaderboards**
+4. (P1) **AI-Powered Outreach** (sold tag → AI follow-up suggestions)
+5. (P1) **Auth refactor** (bcrypt password hashing)
+6. (P1) **Clean production database for launch**
 
 ## Future/Backlog
 - Card style customization (P2)
 - Full Twilio live integration (P2)
 - WhatsApp Integration (P2)
 - TestFlight iOS build (P2)
-- Code cleanup (~80 files)
+- Code cleanup (~80 files, 3 files over 1700+ lines)
 
 ## Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
