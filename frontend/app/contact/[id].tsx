@@ -23,6 +23,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import { contactsAPI, campaignsAPI, tagsAPI } from '../../services/api';
+import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
