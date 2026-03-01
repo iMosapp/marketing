@@ -609,11 +609,11 @@ export default function ContactsScreen() {
         onRequestClose={resetAddContactModal}
       >
         <View style={styles.addContactModalOverlay}>
-          <View style={styles.addContactModalContent}>
+          <View style={[styles.addContactModalContent, { backgroundColor: colors.modalBg }]}>
             <View style={styles.addContactModalHeader}>
-              <Text style={styles.addContactModalTitle}>Add New Contact</Text>
+              <Text style={[styles.addContactModalTitle, { color: colors.text }]}>Add New Contact</Text>
               <TouchableOpacity onPress={resetAddContactModal}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
