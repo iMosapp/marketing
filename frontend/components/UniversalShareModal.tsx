@@ -357,7 +357,7 @@ export function UniversalShareModal({
                         </View>
                       </TouchableOpacity>
                     ))}
-                  </View>
+                  </ScrollView>
                 )}
               </View>
               <TextInput
