@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../../services/api';
+import { PoweredByFooter } from '../../../components/PoweredByFooter';
 
 const openProtocolUrl = (url: string) => {
   if (Platform.OS === 'web') {
@@ -241,10 +242,7 @@ export default function StoreCardPage() {
         </View>
 
         {/* Footer */}
-        <TouchableOpacity style={styles.footer} onPress={() => Linking.openURL('https://app.imosapp.com/imos')}>
-          <Text style={styles.footerText}>{data?.partner_branding ? `${data.partner_branding.name} \u2022 ` : "Powered by i'M On Social"}</Text>
-          <Text style={styles.footerBrand}>{data?.partner_branding ? data.partner_branding.powered_by_text : 'iMOs'}</Text>
-        </TouchableOpacity>
+        <PoweredByFooter />
       </ScrollView>
     </View>
   );
