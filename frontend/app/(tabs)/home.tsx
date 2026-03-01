@@ -293,6 +293,7 @@ export default function HomeScreen() {
   // Modals
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
+  const [showSendCard, setShowSendCard] = useState(false);
 
   // Universal share modals
   const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showPreview: boolean; previewUrl?: string; showQR: boolean; eventType: string }>({
