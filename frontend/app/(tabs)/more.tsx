@@ -1001,14 +1001,14 @@ export default function MoreScreen() {
         {/* Quick Actions Row */}
         <View style={styles.quickSettingsRow}>
           <TouchableOpacity
-            style={styles.quickSettingsBtn}
+            style={[styles.quickSettingsBtn, { backgroundColor: colors.card }]}
             onPress={() => router.push(`/card/${user?._id}` as any)}
             data-testid="quick-digital-card"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#5856D620' }]}>
               <Ionicons name="card" size={18} color="#5856D6" />
             </View>
-            <Text style={styles.quickSettingsLabel}>My Digital Card</Text>
+            <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>My Digital Card</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickSettingsBtn}
