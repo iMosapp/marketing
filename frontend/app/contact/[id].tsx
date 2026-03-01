@@ -318,6 +318,11 @@ export default function ContactDetailScreen() {
         birthday: parseDate(data.birthday), anniversary: parseDate(data.anniversary),
         date_sold: parseDate(data.date_sold) || parseDate(data.purchase_date),
         custom_dates: customDates,
+        address_street: data.address_street || '',
+        address_city: data.address_city || '',
+        address_state: data.address_state || '',
+        address_zip: data.address_zip || '',
+        address_country: data.address_country || '',
       });
     } catch (e) {
       console.error('Failed to load contact:', e);
