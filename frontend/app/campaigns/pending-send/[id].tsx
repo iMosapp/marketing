@@ -214,53 +214,83 @@ export default function PendingSendPage() {
           </Text>
         </View>
 
-        {/* Editable Message */}
-        <View style={styles.messageSection}>
-          <Text style={styles.messageLabel}>Message</Text>
-          <TextInput
-            style={styles.messageInput}
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-            placeholderTextColor="#6E6E73"
-            data-testid="pending-send-message"
-          />
-          <Text style={styles.charCount}>{message.length} chars</Text>
-        </View>
-
-        {/* Media Attachments */}
-        {(pendingSend.media_urls || []).length > 0 && (
-          <View style={styles.mediaSection}>
-            <Text style={styles.messageLabel}>Attachments</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {pendingSend.media_urls.map((url: string, i: number) => (
-                <Image key={i} source={{ uri: url }} style={styles.mediaThumb} />
-              ))}
-            </ScrollView>
+        {isCardTask ? (
+          /* Card Task UI */
+          <View style={styles.messageSection}>
+            <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: `${cardColors[pendingSend.card_type] || '#C9A962'}20`, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                <Ionicons name="gift" size={32} color={cardColors[pendingSend.card_type] || '#C9A962'} />
+              </View>
+              <Text style={{ color: '#FFF', fontSize: 17, fontWeight: '700', marginBottom: 4 }}>
+                {cardLabels[pendingSend.card_type] || 'Card'}
+              </Text>
+              <Text style={{ color: '#8E8E93', fontSize: 13, textAlign: 'center' }}>
+                Create and send this card to {pendingSend.contact_name || 'your contact'}
+              </Text>
+            </View>
           </View>
+        ) : (
+          <>
+            {/* Editable Message */}
+            <View style={styles.messageSection}>
+              <Text style={styles.messageLabel}>Message</Text>
+              <TextInput
+                style={styles.messageInput}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                numberOfLines={8}
+                textAlignVertical="top"
+                placeholderTextColor="#6E6E73"
+                data-testid="pending-send-message"
+              />
+              <Text style={styles.charCount}>{message.length} chars</Text>
+            </View>
+
+            {/* Media Attachments */}
+            {(pendingSend.media_urls || []).length > 0 && (
+              <View style={styles.mediaSection}>
+                <Text style={styles.messageLabel}>Attachments</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {pendingSend.media_urls.map((url: string, i: number) => (
+                    <Image key={i} source={{ uri: url }} style={styles.mediaThumb} />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </>
         )}
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={handleSendViaNative}
-            disabled={sending}
-            data-testid="pending-send-button"
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name={channel === 'email' ? 'mail' : 'chatbubble'} size={18} color="#FFF" />
-                <Text style={styles.sendButtonText}>
-                  {channel === 'email' ? 'Open Email App & Send' : 'Open SMS App & Send'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {isCardTask ? (
+            <TouchableOpacity
+              style={[styles.sendButton, { backgroundColor: cardColors[pendingSend.card_type] || '#C9A962' }]}
+              onPress={handleCreateCard}
+              data-testid="pending-send-create-card"
+            >
+              <Ionicons name="gift" size={18} color="#FFF" />
+              <Text style={styles.sendButtonText}>Create & Send Card</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSendViaNative}
+              disabled={sending}
+              data-testid="pending-send-button"
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name={channel === 'email' ? 'mail' : 'chatbubble'} size={18} color="#FFF" />
+                  <Text style={styles.sendButtonText}>
+                    {channel === 'email' ? 'Open Email App & Send' : 'Open SMS App & Send'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.markSentButton} onPress={markAsSent} data-testid="mark-sent-only">
             <Ionicons name="checkmark-circle" size={18} color="#34C759" />
