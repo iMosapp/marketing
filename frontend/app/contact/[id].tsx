@@ -835,14 +835,14 @@ export default function ContactDetailScreen() {
 
   // ===== RENDER =====
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         {/* HEADER */}
-        <View style={s.header} data-testid="contact-detail-header">
+        <View style={[s.header, { borderBottomColor: colors.border }]} data-testid="contact-detail-header">
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} data-testid="contact-back-button">
-            <Ionicons name="chevron-back" size={24} color="#FFF" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={s.headerTitle} numberOfLines={1}>{isNewContact ? 'New Contact' : fullName}</Text>
+          <Text style={[s.headerTitle, { color: colors.text }]} numberOfLines={1}>{isNewContact ? 'New Contact' : fullName}</Text>
           {isEditing ? (
             <TouchableOpacity onPress={handleSave} style={s.headerBtn} disabled={saving} data-testid="contact-save-button">
               {saving ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={s.headerAction}>Save</Text>}
