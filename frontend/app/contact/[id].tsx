@@ -22,6 +22,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, campaignsAPI, tagsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
