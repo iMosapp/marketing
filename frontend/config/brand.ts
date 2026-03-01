@@ -3,8 +3,8 @@
  * When the domain changes (e.g., to imonsocial.com), update ONLY here.
  */
 export const BRAND = {
-  name: "i'M On Social",
-  poweredByText: "Powered by i'M On Social",
+  name: "i'MOnsocial",
+  poweredByText: "Powered by i'MOnsocial",
   url: "https://app.imosapp.com/imos",
   domain: "app.imosapp.com/imos",
 };
