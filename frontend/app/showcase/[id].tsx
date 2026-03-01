@@ -125,7 +125,7 @@ export default function ShowcasePage() {
   const handleShare = async () => {
     if (IS_WEB && navigator.share) {
       try {
-        await navigator.share({ title: `${data?.salesperson?.name}'s Showroom`, url: shareUrl });
+        await navigator.share({ title: `${data?.salesperson?.name}'s Showcase`, url: shareUrl });
       } catch {}
     } else if (IS_WEB) {
       try {
@@ -179,7 +179,7 @@ export default function ShowcasePage() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="showroom-back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>{isStoreView ? `${data.store?.name || 'Store'} Showroom` : 'The Showroom'}</Text>
+        <Text style={styles.topBarTitle}>{isStoreView ? `${data.store?.name || 'Store'} Showcase` : 'The Showcase'}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -190,7 +190,7 @@ export default function ShowcasePage() {
       >
         {/* Header */}
         <View style={styles.header}>
-          {/* Store logo — clickable to store showroom (only in user view) */}
+          {/* Store logo — clickable to store showcase (only in user view) */}
           {data.store?.logo_url && !isStoreView && storeId ? (
             <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)} data-testid="store-logo-link">
               <Image source={{ uri: data.store.logo_url }} style={styles.storeLogo} resizeMode="contain" />
@@ -257,7 +257,7 @@ export default function ShowcasePage() {
             </View>
           </View>
 
-          {/* Quick action links — under profile, above showroom feed */}
+          {/* Quick action links — under profile, above showcase feed */}
           <View style={styles.quickLinks}>
             {!isStoreView && (
               <TouchableOpacity
@@ -341,7 +341,7 @@ export default function ShowcasePage() {
           {/* Page title */}
           <View style={styles.titleSection}>
             <View style={[styles.titleAccent, { backgroundColor: accent }]} />
-            <Text style={styles.titleText}>The Showroom</Text>
+            <Text style={styles.titleText}>The Showcase</Text>
           </View>
         </View>
 
