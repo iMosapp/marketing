@@ -856,7 +856,7 @@ export default function ContactDetailScreen() {
 
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
           {/* ===== PROFILE HERO ===== */}
-          <View style={s.heroSection} data-testid="contact-hero">
+          <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
             <View style={s.heroAvatarContainer}>
               <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8}>
                 {contact.photo ? (
@@ -872,7 +872,6 @@ export default function ContactDetailScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-              {/* Touch point badge */}
               {!isNewContact && stats.total_touchpoints > 0 && (
                 <View style={s.touchpointBadge} data-testid="touchpoint-badge">
                   <Text style={s.touchpointBadgeText}>{stats.total_touchpoints}</Text>
@@ -880,12 +879,12 @@ export default function ContactDetailScreen() {
               )}
             </View>
 
-            <Text style={s.heroName} data-testid="contact-name">{fullName}</Text>
-            {contact.vehicle ? <Text style={s.heroVehicle}>{contact.vehicle}</Text> : null}
+            <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name">{fullName}</Text>
+            {contact.vehicle ? <Text style={[s.heroVehicle, { color: colors.textSecondary }]}>{contact.vehicle}</Text> : null}
             {(contact.address_city || contact.address_state) ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="location-outline" size={14} color="#8E8E93" style={{ marginRight: 4 }} />
-                <Text style={{ fontSize: 13, color: '#8E8E93' }}>
+                <Ionicons name="location-outline" size={14} color={colors.textTertiary} style={{ marginRight: 4 }} />
+                <Text style={{ fontSize: 13, color: colors.textTertiary }}>
                   {[contact.address_city, contact.address_state].filter(Boolean).join(', ')}
                 </Text>
               </View>
@@ -894,7 +893,7 @@ export default function ContactDetailScreen() {
             {/* Contact chips */}
             <View style={s.heroChips}>
               {contact.phone ? (
-                <TouchableOpacity style={s.heroChip} onPress={() => {
+                <TouchableOpacity style={[s.heroChip, { backgroundColor: colors.card }]} onPress={() => {
                   if (Platform.OS === 'web') {
                     const a = document.createElement('a');
                     a.href = `tel:${contact.phone}`;
@@ -907,13 +906,13 @@ export default function ContactDetailScreen() {
                   }
                 }}>
                   <Ionicons name="call" size={14} color="#34C759" />
-                  <Text style={s.heroChipText}>{contact.phone}</Text>
+                  <Text style={[s.heroChipText, { color: colors.text }]}>{contact.phone}</Text>
                 </TouchableOpacity>
               ) : null}
               {contact.email ? (
-                <TouchableOpacity style={s.heroChip} onPress={() => Linking.openURL(`mailto:${contact.email}`)}>
+                <TouchableOpacity style={[s.heroChip, { backgroundColor: colors.card }]} onPress={() => Linking.openURL(`mailto:${contact.email}`)}>
                   <Ionicons name="mail" size={14} color="#AF52DE" />
-                  <Text style={s.heroChipText} numberOfLines={1}>{contact.email}</Text>
+                  <Text style={[s.heroChipText, { color: colors.text }]} numberOfLines={1}>{contact.email}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
