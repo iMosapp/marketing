@@ -20,75 +20,153 @@ from routers.short_urls import create_short_url, get_short_url_base
 
 router = APIRouter(prefix="/congrats", tags=["congrats-cards"])
 
+# ===== Card Type Defaults =====
+CARD_TYPE_DEFAULTS = {
+    "congrats": {
+        "headline": "Congratulations!",
+        "message": "Thank you for choosing us, {customer_name}! We truly appreciate your business.",
+        "accent_color": "#C9A962",
+        "background_color": "#1A1A1A",
+        "text_color": "#FFFFFF",
+    },
+    "birthday": {
+        "headline": "Happy Birthday!",
+        "message": "Wishing you the happiest of birthdays, {customer_name}!",
+        "accent_color": "#FF2D55",
+        "background_color": "#1A1A1A",
+        "text_color": "#FFFFFF",
+    },
+    "anniversary": {
+        "headline": "Happy Anniversary!",
+        "message": "Celebrating this special milestone with you, {customer_name}!",
+        "accent_color": "#FF6B6B",
+        "background_color": "#1A1A1A",
+        "text_color": "#FFFFFF",
+    },
+    "thankyou": {
+        "headline": "Thank You!",
+        "message": "We truly appreciate your loyalty and trust, {customer_name}!",
+        "accent_color": "#34C759",
+        "background_color": "#1A1A1A",
+        "text_color": "#FFFFFF",
+    },
+    "welcome": {
+        "headline": "Welcome!",
+        "message": "We're so excited to have you, {customer_name}! Welcome to the family.",
+        "accent_color": "#007AFF",
+        "background_color": "#1A1A1A",
+        "text_color": "#FFFFFF",
+    },
+    "holiday": {
+        "headline": "Happy Holidays!",
+        "message": "Warm wishes this holiday season, {customer_name}! Thank you for being part of our family.",
+        "accent_color": "#5AC8FA",
+        "background_color": "#1A1A1A",
+        "text_color": "#FFFFFF",
+    },
+}
+
+
+def _get_type_defaults(card_type: str) -> dict:
+    return CARD_TYPE_DEFAULTS.get(card_type, CARD_TYPE_DEFAULTS["congrats"])
+
 
 @router.get("/template/{store_id}")
-async def get_store_template(store_id: str):
-    """
-    Get the congrats card template for a store
-    """
+async def get_store_template(store_id: str, card_type: str = "congrats"):
+    """Get the card template for a store by card type."""
     db = get_db()
-    
-    template = await db.congrats_templates.find_one({"store_id": store_id})
-    
+    defaults = _get_type_defaults(card_type)
+
+    template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": card_type})
+
     if not template:
-        # Return default template
+        # Fall back to store-level generic template
+        template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": {"$exists": False}})
+
+    if not template:
         return {
             "exists": False,
+            "card_type": card_type,
             "template": {
-                "headline": "Thank You!",
-                "message": "Thank you for choosing us, {customer_name}! We truly appreciate your business and look forward to serving you again.",
-                "footer_text": "Your satisfaction is our priority",
+                "headline": defaults["headline"],
+                "message": defaults["message"],
+                "footer_text": "",
                 "show_salesman": True,
                 "show_store_logo": True,
-                "background_color": "#1A1A1A",
-                "accent_color": "#C9A962",
-                "text_color": "#FFFFFF",
+                "background_color": defaults["background_color"],
+                "accent_color": defaults["accent_color"],
+                "text_color": defaults["text_color"],
             }
         }
-    
+
     return {
         "exists": True,
+        "card_type": card_type,
         "template": {
             "id": str(template["_id"]),
-            "headline": template.get("headline", "Thank You!"),
-            "message": template.get("message", "Thank you for choosing us, {customer_name}!"),
+            "headline": template.get("headline", defaults["headline"]),
+            "message": template.get("message", defaults["message"]),
             "footer_text": template.get("footer_text", ""),
             "show_salesman": template.get("show_salesman", True),
             "show_store_logo": template.get("show_store_logo", True),
-            "background_color": template.get("background_color", "#1A1A1A"),
-            "accent_color": template.get("accent_color", "#C9A962"),
-            "text_color": template.get("text_color", "#FFFFFF"),
+            "background_color": template.get("background_color", defaults["background_color"]),
+            "accent_color": template.get("accent_color", defaults["accent_color"]),
+            "text_color": template.get("text_color", defaults["text_color"]),
         }
     }
+
+
+@router.get("/templates/all/{store_id}")
+async def get_all_store_templates(store_id: str):
+    """Get all card templates for a store (for template management UI)."""
+    db = get_db()
+    templates = await db.congrats_templates.find({"store_id": store_id}).to_list(50)
+    template_map = {t.get("card_type", "congrats"): t for t in templates}
+
+    result = []
+    for card_type, defaults in CARD_TYPE_DEFAULTS.items():
+        t = template_map.get(card_type)
+        result.append({
+            "card_type": card_type,
+            "customized": t is not None,
+            "headline": t.get("headline", defaults["headline"]) if t else defaults["headline"],
+            "message": t.get("message", defaults["message"]) if t else defaults["message"],
+            "accent_color": t.get("accent_color", defaults["accent_color"]) if t else defaults["accent_color"],
+            "background_color": t.get("background_color", defaults["background_color"]) if t else defaults["background_color"],
+            "text_color": t.get("text_color", defaults["text_color"]) if t else defaults["text_color"],
+            "footer_text": t.get("footer_text", "") if t else "",
+        })
+    return result
 
 
 @router.post("/template/{store_id}")
 async def save_store_template(store_id: str, data: dict):
-    """
-    Save/update the congrats card template for a store
-    """
+    """Save/update a card template for a store (by card_type)."""
     db = get_db()
-    
+    card_type = data.get("card_type", "congrats")
+    defaults = _get_type_defaults(card_type)
+
     template_data = {
         "store_id": store_id,
-        "headline": data.get("headline", "Thank You!"),
-        "message": data.get("message", "Thank you for choosing us, {customer_name}!"),
+        "card_type": card_type,
+        "headline": data.get("headline", defaults["headline"]),
+        "message": data.get("message", defaults["message"]),
         "footer_text": data.get("footer_text", ""),
         "show_salesman": data.get("show_salesman", True),
         "show_store_logo": data.get("show_store_logo", True),
-        "background_color": data.get("background_color", "#1A1A1A"),
-        "accent_color": data.get("accent_color", "#C9A962"),
-        "text_color": data.get("text_color", "#FFFFFF"),
+        "background_color": data.get("background_color", defaults["background_color"]),
+        "accent_color": data.get("accent_color", defaults["accent_color"]),
+        "text_color": data.get("text_color", defaults["text_color"]),
         "updated_at": datetime.now(timezone.utc),
     }
-    
+
     await db.congrats_templates.update_one(
-        {"store_id": store_id},
+        {"store_id": store_id, "card_type": card_type},
         {"$set": template_data, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
         upsert=True
     )
-    
-    return {"success": True, "message": "Template saved"}
+
+    return {"success": True, "message": f"{card_type} template saved"}
 
 
 @router.post("/create")
