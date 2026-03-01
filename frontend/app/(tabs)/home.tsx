@@ -151,9 +151,9 @@ function ContactActionModal({
                 <Ionicons name="person-add" size={18} color="#000" />
                 <Text style={{ color: '#000', fontSize: 14, fontWeight: '700' }}>Enter Manually</Text>
               </TouchableOpacity>
-            </>
+            </View>
           ) : (
-            <>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               <View style={[styles.dialDisplay, { borderColor: colors.border }]}>
                 <Text style={[styles.dialNumber, { color: colors.text }]}>{dialNumber || 'Enter number'}</Text>
                 {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
