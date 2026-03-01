@@ -30,8 +30,36 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
             e["timestamp"] = e["timestamp"].isoformat()
         # Ensure full_content is available for rich preview
-        if not e.get("full_content") and e.get("content"):
-            e["full_content"] = e["content"]
+        if not e.get("full_content"):
+            e["full_content"] = e.get("content") or e.get("content_preview") or e.get("description") or ""
+        # Ensure description exists for collapsed view
+        if not e.get("description"):
+            e["description"] = (e.get("content_preview") or e.get("content") or e.get("full_content") or "")[:80]
+        # Ensure title exists
+        if not e.get("title"):
+            etype = e.get("event_type", "")
+            if etype == "personal_sms":
+                e["title"] = "Sent Personal SMS"
+                e["icon"] = e.get("icon", "chatbubble")
+                e["color"] = e.get("color", "#34C759")
+                e["category"] = "message"
+            elif etype == "call_placed":
+                e["title"] = e.get("title", "Outbound Call")
+            elif etype == "email_sent":
+                e["title"] = "Sent Email"
+                e["icon"] = e.get("icon", "mail")
+                e["color"] = e.get("color", "#007AFF")
+                e["category"] = "message"
+        # Pull full message body from messages collection if we have a message_id
+        if e.get("message_id") and not e.get("full_content"):
+            try:
+                msg = await db.messages.find_one({"_id": ObjectId(e["message_id"])}, {"body": 1, "subject": 1})
+                if msg:
+                    e["full_content"] = msg.get("body", "")
+                    if msg.get("subject"):
+                        e["subject"] = msg["subject"]
+            except Exception:
+                pass
         events.append(e)
 
     # 2) Messages sent to/from this contact
