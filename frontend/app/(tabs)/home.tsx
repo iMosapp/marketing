@@ -405,7 +405,8 @@ export default function HomeScreen() {
         subtitle={shareConfig.subtitle}
         shareUrl={shareConfig.url}
         shareText={shareConfig.text}
-        showVCard={shareConfig.showVCard}
+        showPreview={shareConfig.showPreview}
+        previewUrl={shareConfig.previewUrl}
         showQR={shareConfig.showQR}
         vCardUserId={user?._id}
         userId={user?._id}
