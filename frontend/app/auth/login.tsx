@@ -268,7 +268,7 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image 
-                source={{ uri: '/logo512-nobg.png' }}
+                source={{ uri: isDark ? '/new-logo-512-dark.png' : '/new-logo-512-light.png' }}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
