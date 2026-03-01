@@ -58,7 +58,7 @@ export default function ShowroomApprovalsScreen() {
     try {
       await api.post(`/showcase/entry/${cardId}/approve`);
       setEntries(prev => prev.filter(e => e.card_id !== cardId));
-      Alert.alert('Approved', 'Entry is now visible in the showroom.');
+      Alert.alert('Approved', 'Entry is now visible in the showcase.');
     } catch {
       Alert.alert('Error', 'Failed to approve entry.');
     } finally {
@@ -69,7 +69,7 @@ export default function ShowroomApprovalsScreen() {
   const handleReject = async (cardId: string) => {
     Alert.alert(
       'Reject Entry',
-      'Are you sure? This entry will be hidden from the showroom.',
+      'Are you sure? This entry will be hidden from the showcase.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -115,7 +115,7 @@ export default function ShowroomApprovalsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="showroom-approvals-back">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Showroom Approvals</Text>
+        <Text style={styles.headerTitle}>Showcase Approvals</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -129,7 +129,7 @@ export default function ShowroomApprovalsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="checkmark-circle" size={64} color="#34C759" />
             <Text style={styles.emptyTitle}>All Caught Up!</Text>
-            <Text style={styles.emptySubtitle}>No pending showroom entries to approve. New posts will appear here.</Text>
+            <Text style={styles.emptySubtitle}>No pending showcase entries to approve. New posts will appear here.</Text>
           </View>
         ) : (
           <>
