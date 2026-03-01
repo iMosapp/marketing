@@ -73,7 +73,10 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - White-label HTML email templates via Resend
 - Centralized `PoweredByFooter.tsx` + `brand.ts` config
 - Light & Dark mode with persistence — **all pages now theme-aware** (My Account, Contact Detail, Share Modal)
-- **New logo deployed** across all touchpoints: favicon, PWA icons, Apple Touch Icon, login screen (dark/light mode variants), and Brand Assets page (6 logos + 4 icons)
+### PWA & Installation
+- Full Progressive Web App with service worker, manifest.json, and proper icons
+- Smart install page at `/install.html` with device detection (iPhone/Android/Desktop), step-by-step instructions, and QR code
+- Apple Touch Icon, Android Chrome icons, all favicon sizes generated from new logo
 - **Send a Card flow** now searches existing contacts before creating a card; contact info is pre-filled on the card creation page
 - **Contact search** — All modals (Share My Card, Send Card, Showcase, Add Contact) use strict first_name/last_name matching only, not conversations
 - **Campaign card preview** — "Preview Card" button shows a styled preview modal with card header, message, contact placeholder, and footer
