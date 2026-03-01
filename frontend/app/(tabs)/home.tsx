@@ -470,6 +470,43 @@ export default function HomeScreen() {
       />
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
+
+      {/* Send a Card — Template Picker */}
+      <Modal visible={showSendCard} animationType="slide" transparent={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowSendCard(false)} style={{ padding: 4 }}>
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>Send a Card</Text>
+            <View style={{ width: 32 }} />
+          </View>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Choose a card type to create and send</Text>
+          <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
+            {[
+              { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962', route: '/settings/create-congrats' },
+              { key: 'birthday', label: 'Birthday Card', icon: 'balloon', color: '#FF2D55', route: '/settings/create-birthday-card' },
+              { key: 'anniversary', label: 'Anniversary Card', icon: 'heart', color: '#FF6B6B', route: '/settings/create-congrats' },
+              { key: 'thankyou', label: 'Thank You Card', icon: 'thumbs-up', color: '#34C759', route: '/settings/create-congrats' },
+              { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#007AFF', route: '/settings/create-congrats' },
+              { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA', route: '/settings/create-congrats' },
+            ].map((card) => (
+              <TouchableOpacity
+                key={card.key}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.border }}
+                onPress={() => { setShowSendCard(false); router.push(card.route as any); }}
+                data-testid={`card-type-${card.key}`}
+              >
+                <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={card.icon as any} size={24} color={card.color} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text }}>{card.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
