@@ -617,18 +617,18 @@ export default function MyAccountScreen() {
               {/* Custom Date Range Picker */}
               {showDatePicker && activityPeriod === 'custom' && (
                 <View style={{
-                  backgroundColor: '#1C1C1E',
+                  backgroundColor: colors.card,
                   borderRadius: 12,
                   padding: 14,
                   marginBottom: 14,
                   gap: 10,
                 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E8E93', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                     Custom Date Range
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 4 }}>Start Date</Text>
+                      <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 4 }}>Start Date</Text>
                       {Platform.OS === 'web' ? (
                         <input
                           type="date"
@@ -636,29 +636,28 @@ export default function MyAccountScreen() {
                           onChange={(e: any) => setCustomStartDate(e.target.value)}
                           data-testid="custom-start-date"
                           style={{
-                            backgroundColor: '#2C2C2E',
-                            color: '#FFF',
-                            border: '1px solid #3A3A3C',
+                            backgroundColor: colors.bg,
+                            color: colors.text,
+                            border: `1px solid ${colors.border}`,
                             borderRadius: 8,
                             padding: '10px 12px',
                             fontSize: 14,
                             width: '100%',
-                            colorScheme: 'dark',
                           }}
                         />
                       ) : (
                         <TextInput
                           style={{
-                            backgroundColor: '#2C2C2E',
+                            backgroundColor: colors.bg,
                             borderRadius: 8,
                             padding: 10,
-                            color: '#FFF',
+                            color: colors.text,
                             fontSize: 14,
                             borderWidth: 1,
-                            borderColor: '#3A3A3C',
+                            borderColor: colors.border,
                           }}
                           placeholder="YYYY-MM-DD"
-                          placeholderTextColor="#6E6E73"
+                          placeholderTextColor={colors.textTertiary}
                           value={customStartDate}
                           onChangeText={setCustomStartDate}
                           data-testid="custom-start-date"
@@ -666,7 +665,7 @@ export default function MyAccountScreen() {
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 4 }}>End Date</Text>
+                      <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 4 }}>End Date</Text>
                       {Platform.OS === 'web' ? (
                         <input
                           type="date"
@@ -674,29 +673,28 @@ export default function MyAccountScreen() {
                           onChange={(e: any) => setCustomEndDate(e.target.value)}
                           data-testid="custom-end-date"
                           style={{
-                            backgroundColor: '#2C2C2E',
-                            color: '#FFF',
-                            border: '1px solid #3A3A3C',
+                            backgroundColor: colors.bg,
+                            color: colors.text,
+                            border: `1px solid ${colors.border}`,
                             borderRadius: 8,
                             padding: '10px 12px',
                             fontSize: 14,
                             width: '100%',
-                            colorScheme: 'dark',
                           }}
                         />
                       ) : (
                         <TextInput
                           style={{
-                            backgroundColor: '#2C2C2E',
+                            backgroundColor: colors.bg,
                             borderRadius: 8,
                             padding: 10,
-                            color: '#FFF',
+                            color: colors.text,
                             fontSize: 14,
                             borderWidth: 1,
-                            borderColor: '#3A3A3C',
+                            borderColor: colors.border,
                           }}
                           placeholder="YYYY-MM-DD"
-                          placeholderTextColor="#6E6E73"
+                          placeholderTextColor={colors.textTertiary}
                           value={customEndDate}
                           onChangeText={setCustomEndDate}
                           data-testid="custom-end-date"
