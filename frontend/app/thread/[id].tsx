@@ -177,6 +177,13 @@ export default function ThreadScreen() {
       loadMessagePreferences();
     }
   }, [mode]);
+
+  // Pre-fill message from share flow
+  useEffect(() => {
+    if (prefill && typeof prefill === 'string') {
+      setMessage(prefill);
+    }
+  }, [prefill]);
   
   const loadMessagePreferences = async () => {
     try {
