@@ -217,6 +217,12 @@ export default function ThreadScreen() {
   const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
   const [showCardTypePicker, setShowCardTypePicker] = useState(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+
+  // Relationship Intel state
+  const [intelData, setIntelData] = useState<any>(null);
+  const [showIntel, setShowIntel] = useState(false);
+  const [intelGenerating, setIntelGenerating] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   const [promptEmail, setPromptEmail] = useState('');
   const [savedContactEmail, setSavedContactEmail] = useState<string | null>(null);
   const hasEmail = !!(contact_email || savedContactEmail);
