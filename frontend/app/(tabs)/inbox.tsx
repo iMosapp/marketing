@@ -1275,6 +1275,7 @@ export default function InboxScreen() {
           data={teamConversations}
           renderItem={renderTeamConversation}
           keyExtractor={(item) => item.id || item._id}
+          extraData={themeMode}
           contentContainerStyle={styles.listContent}
           style={styles.listContainer}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -1300,6 +1301,7 @@ export default function InboxScreen() {
           data={filteredConversations}
           renderItem={renderConversation}
           keyExtractor={(item) => item._id || item.id}
+          extraData={themeMode}
           contentContainerStyle={styles.listContent}
           style={styles.listContainer}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
