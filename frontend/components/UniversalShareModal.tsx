@@ -290,16 +290,16 @@ export function UniversalShareModal({
                 <Text style={styles.shareOptionText}>Via Email</Text>
               </TouchableOpacity>
 
-              {showVCard && vCardUserId && (
-                <TouchableOpacity style={styles.shareOption} onPress={handleSaveVCard} disabled={saving} data-testid="share-save-vcard">
+              {showPreview && (
+                <TouchableOpacity style={styles.shareOption} onPress={() => {
+                  const url = previewUrl || shareUrl;
+                  if (IS_WEB) { window.open(url, '_blank'); } else { Linking.openURL(url); }
+                  logEvent('preview');
+                }} data-testid="share-preview">
                   <View style={[styles.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
-                    {saving ? (
-                      <ActivityIndicator size="small" color="#C9A962" />
-                    ) : (
-                      <Ionicons name="download-outline" size={24} color="#C9A962" />
-                    )}
+                    <Ionicons name="eye-outline" size={24} color="#C9A962" />
                   </View>
-                  <Text style={styles.shareOptionText}>Save vCard</Text>
+                  <Text style={styles.shareOptionText}>Preview</Text>
                 </TouchableOpacity>
               )}
 
