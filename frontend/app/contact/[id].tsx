@@ -943,6 +943,40 @@ export default function ContactDetailScreen() {
                 </View>
               </View>
 
+              {/* Address Section */}
+              <View style={s.section}>
+                <Text style={s.sectionHeader}>Address</Text>
+                <View style={s.inputGroup}>
+                  <Text style={s.inputLabel}>Street</Text>
+                  <TextInput style={s.input} placeholder="123 Main St" placeholderTextColor="#636366"
+                    value={contact.address_street} onChangeText={t => setContact({ ...contact, address_street: t })} data-testid="input-address-street" />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.inputLabel}>City</Text>
+                    <TextInput style={s.input} placeholder="City" placeholderTextColor="#636366"
+                      value={contact.address_city} onChangeText={t => setContact({ ...contact, address_city: t })} data-testid="input-address-city" />
+                  </View>
+                  <View style={[s.inputGroup, { flex: 0.5 }]}>
+                    <Text style={s.inputLabel}>State</Text>
+                    <TextInput style={s.input} placeholder="ST" placeholderTextColor="#636366"
+                      value={contact.address_state} onChangeText={t => setContact({ ...contact, address_state: t })} autoCapitalize="characters" data-testid="input-address-state" />
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.inputLabel}>ZIP Code</Text>
+                    <TextInput style={s.input} placeholder="12345" placeholderTextColor="#636366"
+                      value={contact.address_zip} onChangeText={t => setContact({ ...contact, address_zip: t })} keyboardType="number-pad" data-testid="input-address-zip" />
+                  </View>
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.inputLabel}>Country</Text>
+                    <TextInput style={s.input} placeholder="US" placeholderTextColor="#636366"
+                      value={contact.address_country} onChangeText={t => setContact({ ...contact, address_country: t })} data-testid="input-address-country" />
+                  </View>
+                </View>
+              </View>
+
               {/* Tags (edit mode — at top) */}
               <View style={s.section}>
                 <Text style={s.sectionHeader}>Tags</Text>
