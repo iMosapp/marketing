@@ -37,6 +37,7 @@ function ContactActionModal({
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [dialNumber, setDialNumber] = useState('');
+  const vcfInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (visible) { setMode(initialMode); setSearch(''); setDialNumber(''); loadContacts(); }
@@ -53,6 +54,76 @@ function ContactActionModal({
     if (!q) return true;
     return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q);
   });
+
+  // VCF file upload handler
+  const handleVcfUpload = () => {
+    if (IS_WEB && vcfInputRef.current) {
+      vcfInputRef.current.click();
+    } else {
+      goToImportFromPhone();
+    }
+  };
+
+  const parseVcf = (text: string) => {
+    const cards: any[] = [];
+    const vcards = text.split('BEGIN:VCARD');
+    for (const vc of vcards) {
+      if (!vc.trim()) continue;
+      const lines = vc.split('\n').map(l => l.trim());
+      const contact: any = {};
+      for (const line of lines) {
+        if (line.startsWith('FN:')) contact.name = line.substring(3);
+        if (line.startsWith('N:')) {
+          const parts = line.substring(2).split(';');
+          contact.last_name = parts[0] || '';
+          contact.first_name = parts[1] || '';
+        }
+        if (line.startsWith('TEL') && line.includes(':')) contact.phone = line.split(':').pop() || '';
+        if (line.startsWith('EMAIL') && line.includes(':')) contact.email = line.split(':').pop() || '';
+      }
+      if (contact.first_name || contact.name || contact.phone) {
+        if (!contact.first_name && contact.name) {
+          const parts = contact.name.split(' ');
+          contact.first_name = parts[0] || '';
+          contact.last_name = parts.slice(1).join(' ') || '';
+        }
+        cards.push(contact);
+      }
+    }
+    return cards;
+  };
+
+  const onVcfSelected = async (e: any) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = parseVcf(text);
+      if (parsed.length === 0) {
+        showSimpleAlert('No Contacts', 'Could not find any contacts in this file.');
+        return;
+      }
+      // Import each contact
+      let imported = 0;
+      for (const c of parsed) {
+        try {
+          await api.post(`/contacts/${userId}`, {
+            first_name: c.first_name || '',
+            last_name: c.last_name || '',
+            phone: c.phone || '',
+            email: c.email || '',
+            source: 'vcf_import',
+          });
+          imported++;
+        } catch {}
+      }
+      showSimpleAlert('Imported!', `${imported} contact${imported !== 1 ? 's' : ''} imported successfully.`);
+      loadContacts();
+    } catch {
+      showSimpleAlert('Error', 'Could not read the contact file.');
+    }
+    if (vcfInputRef.current) vcfInputRef.current.value = '';
+  };
 
   const logAndDial = async (phone: string, contact?: any) => {
     if (!phone) { showSimpleAlert('No Number', 'No phone number to dial.'); return; }
