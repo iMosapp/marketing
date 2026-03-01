@@ -579,6 +579,16 @@ const { showToast } = useToast();
                       </TouchableOpacity>
                     ))}
                   </View>
+                  {step.cardType ? (
+                    <TouchableOpacity
+                      style={styles.previewCardBtn}
+                      onPress={() => setPreviewCardType(step.cardType)}
+                      data-testid={`step-${index}-preview-card`}
+                    >
+                      <Ionicons name="eye-outline" size={16} color="#007AFF" />
+                      <Text style={styles.previewCardBtnText}>Preview Card</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               ) : (
                 /* Message Input (existing) */
