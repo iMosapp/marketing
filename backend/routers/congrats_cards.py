@@ -200,10 +200,13 @@ async def create_congrats_card(
     if store_id:
         store = await db.stores.find_one({"_id": ObjectId(store_id)})
     
-    # Get store template
+    # Get store template (type-specific, then generic fallback)
     template = None
+    type_defaults = _get_type_defaults(card_type)
     if store_id:
-        template = await db.congrats_templates.find_one({"store_id": store_id})
+        template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": card_type})
+        if not template:
+            template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": {"$exists": False}})
     
     # Process photo
     contents = await photo.read()
