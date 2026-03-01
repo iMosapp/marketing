@@ -425,14 +425,14 @@ export default function ContactsScreen() {
   }, [tagMap, router, user, selectMode, selectedIds]);
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Normal header or Select mode header */}
       {selectMode ? (
-        <View style={styles.selectHeader}>
+        <View style={[styles.selectHeader, { backgroundColor: colors.bg }]}>
           <TouchableOpacity onPress={exitSelectMode} style={styles.headerButton}>
-            <Ionicons name="close" size={24} color="#FFF" />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.selectHeaderTitle}>{selectedIds.size} selected</Text>
+          <Text style={[styles.selectHeaderTitle, { color: colors.text }]}>{selectedIds.size} selected</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity onPress={toggleSelectAll} style={styles.headerButton}>
               <Ionicons 
@@ -455,8 +455,8 @@ export default function ContactsScreen() {
           </View>
         </View>
       ) : (
-        <View style={styles.header}>
-          <Text style={styles.title}>Contacts</Text>
+        <View style={[styles.header, { backgroundColor: colors.bg }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Contacts</Text>
           <View style={styles.headerButtons}>
             {isWeb && (
               <TouchableOpacity 
@@ -494,12 +494,12 @@ export default function ContactsScreen() {
         </View>
       )}
       
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+        <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search contacts"
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           value={search}
           onChangeText={handleSearch}
         />
