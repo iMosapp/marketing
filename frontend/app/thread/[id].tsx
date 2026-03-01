@@ -532,6 +532,9 @@ export default function ThreadScreen() {
     if (!id) return;
     try {
       const response = await api.get(`/messages/conversation/${id}/info`);
+      if (response.data?.contact_id) {
+        setContactIdForNav(response.data.contact_id);
+      }
       if (response.data?.contact_photo) {
         setContactPhoto(response.data.contact_photo);
       }
@@ -623,6 +626,10 @@ export default function ThreadScreen() {
     try {
       const res = await api.post(`/contact-intel/${user._id}/${id}`);
       setIntelData(res.data);
+      // Scroll to top so user sees the refreshed intel
+      if (Platform.OS === 'web') {
+        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+      }
     } catch (e: any) {
       console.error('Intel generation failed:', e);
     } finally {
@@ -1656,7 +1663,7 @@ export default function ThreadScreen() {
         )}
         
         <View style={styles.headerInfo}>
-          <TouchableOpacity onPress={() => router.push(`/contact/${id}` as any)} data-testid="thread-contact-name-link">
+          <TouchableOpacity onPress={() => router.push(`/contact/${contactIdForNav || id}` as any)} data-testid="thread-contact-name-link">
             <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
           </TouchableOpacity>
           <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
