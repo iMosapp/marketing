@@ -450,10 +450,6 @@ async def health_check():
 async def app_root():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
-@app.get("/install")
-async def install_page():
-    return RedirectResponse(url="/install.html")
-
 
 # Include the api_router in the main app
 app.include_router(api_router)
