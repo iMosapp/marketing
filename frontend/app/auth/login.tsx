@@ -38,6 +38,20 @@ export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
+  const systemScheme = useColorScheme();
+  const isDark = systemScheme === 'dark';
+
+  // Theme colors based on system preference
+  const theme = {
+    bg: isDark ? '#000000' : '#FFFFFF',
+    surface: isDark ? '#1C1C1E' : '#F2F2F7',
+    border: isDark ? '#2C2C2E' : '#D1D1D6',
+    text: isDark ? '#FFFFFF' : '#000000',
+    textSecondary: isDark ? '#8E8E93' : '#6C6C70',
+    modalBg: isDark ? '#1C1C1E' : '#FFFFFF',
+    modalOverlay: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.4)',
+    errorBg: isDark ? '#FF3B3010' : '#FF3B3015',
+  };
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
