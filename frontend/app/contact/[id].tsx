@@ -2033,36 +2033,59 @@ const s = StyleSheet.create({
     borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerContent: {
-    width: '85%', aspectRatio: 0.85, justifyContent: 'center', alignItems: 'center', marginTop: 20,
+    width: '90%', maxHeight: '70%', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerImage: {
-    width: '100%', height: '100%', borderRadius: 12,
+    width: '100%', height: '100%', borderRadius: 12, maxHeight: 500,
   },
   photoViewerName: {
-    color: '#F2F2F7', fontSize: 16, fontWeight: '600', marginTop: 12,
+    color: '#F2F2F7', fontSize: 16, fontWeight: '600', marginTop: 12, textAlign: 'center' as const,
   },
-  galleryStrip: {
-    width: '100%', marginTop: 16, paddingBottom: 24,
+  photoViewerDate: {
+    color: '#8E8E93', fontSize: 13, marginTop: 4,
   },
-  galleryStripInner: {
-    paddingHorizontal: 16, gap: 8, alignItems: 'center',
+  photoNavRow: {
+    flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'center', gap: 24, marginTop: 20,
   },
-  galleryThumb: {
-    width: 64, height: 64, borderRadius: 10, overflow: 'hidden',
-    borderWidth: 2, borderColor: 'transparent',
+  photoNavBtn: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center' as const, alignItems: 'center' as const,
   },
-  galleryThumbActive: {
-    borderColor: '#C9A962',
+  photoNavCount: {
+    color: '#8E8E93', fontSize: 14, fontWeight: '600' as const, minWidth: 60, textAlign: 'center' as const,
   },
-  galleryThumbImg: {
+  backToGridBtn: {
+    flexDirection: 'row' as const, alignItems: 'center', gap: 6, marginTop: 20,
+    paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  backToGridText: {
+    color: '#FFF', fontSize: 14, fontWeight: '500' as const,
+  },
+  // Gallery grid
+  galleryGridContainer: {
+    width: '90%', maxHeight: '80%', alignItems: 'center',
+  },
+  galleryGridTitle: {
+    color: '#FFF', fontSize: 22, fontWeight: '700', marginBottom: 4,
+  },
+  galleryGridCount: {
+    color: '#8E8E93', fontSize: 14, marginBottom: 20,
+  },
+  galleryGrid: {
+    flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 4, justifyContent: 'flex-start' as const, width: '100%',
+  },
+  galleryTile: {
+    width: '32%', aspectRatio: 1, borderRadius: 8, overflow: 'hidden' as const, position: 'relative' as const,
+  },
+  galleryTileImg: {
     width: '100%', height: '100%',
   },
-  galleryThumbBadge: {
+  galleryTileBadge: {
     position: 'absolute' as const, bottom: 0, left: 0, right: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)', paddingVertical: 2,
+    backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 4,
   },
-  galleryThumbBadgeText: {
-    color: '#FFF', fontSize: 8, fontWeight: '700', textAlign: 'center' as const, textTransform: 'uppercase' as const,
+  galleryTileBadgeText: {
+    color: '#FFF', fontSize: 10, fontWeight: '600', textAlign: 'center' as const, textTransform: 'uppercase' as const,
   },
   // Voice notes
   vnRecordBtn: {
