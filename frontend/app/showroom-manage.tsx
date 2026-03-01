@@ -66,7 +66,7 @@ export default function ManageShowroom() {
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="manage-showroom-back">
           <Ionicons name="chevron-back" size={24} color="#F2F2F7" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Edit Showroom</Text>
+        <Text style={s.headerTitle}>Edit Showcase</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -85,14 +85,14 @@ export default function ManageShowroom() {
         </View>
       </View>
 
-      <Text style={s.hint}>Toggle off entries you don't want on your public Showroom page.</Text>
+      <Text style={s.hint}>Toggle off entries you don't want on your public Showcase page.</Text>
 
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color="#C9A962" /></View>
       ) : entries.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="images-outline" size={48} color="#636366" />
-          <Text style={s.emptyText}>No Showroom entries yet</Text>
+          <Text style={s.emptyText}>No Showcase entries yet</Text>
           <Text style={s.emptySubtext}>Create a Congrats Card to add your first entry</Text>
         </View>
       ) : (
