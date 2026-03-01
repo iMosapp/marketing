@@ -216,48 +216,110 @@ export default function CreateCardPage() {
     setMatchInfo(null); setPendingSharePlatform(null);
   };
 
-  // ---- Created: sharing options ----
+  // ---- Created: share screen matching UniversalShareModal style ----
   if (createdCard) {
+    const shareUrl = createdCard.share_url;
+    const defaultShareText = `Check out this ${meta.label.toLowerCase()} for ${customerName}! ${shareUrl}`;
+
+    const handleShareLink = async () => {
+      try {
+        if (IS_WEB && navigator.share) {
+          await navigator.share({ title: meta.label, text: defaultShareText, url: shareUrl });
+        } else {
+          await navigator.clipboard?.writeText(shareUrl);
+          showSimpleAlert('Link Copied!', 'Link has been copied to clipboard.');
+        }
+      } catch {}
+    };
+
     return (
       <SafeAreaView style={s.container} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} data-testid="card-share-back"><Ionicons name="chevron-back" size={28} color={accent} /></TouchableOpacity>
-          <Text style={s.headerTitle}>Card Created!</Text>
-          <View style={{ width: 28 }} />
-        </View>
-        <ScrollView style={s.scroll} contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
-          <View style={{ marginTop: 30, marginBottom: 16 }}><Ionicons name="checkmark-circle" size={64} color="#34C759" /></View>
-          <Text style={s.successTitle}>{meta.label} Ready!</Text>
-          <Text style={s.successSub}>Share it with {customerName}</Text>
-          <View style={s.linkBox}><Text style={[s.linkText, { color: accent }]} numberOfLines={1}>{createdCard.share_url}</Text></View>
-          <View style={s.actionGrid}>
-            <TouchableOpacity style={s.actionBtn} onPress={handleCopyLink} data-testid="card-copy-link">
-              <View style={[s.actionIcon, { backgroundColor: accent + '20' }]}><Ionicons name="copy-outline" size={24} color={accent} /></View>
-              <Text style={s.actionLabel}>Copy Link</Text>
+        <View style={s.shareModalInner}>
+          <View style={s.shareHandle} />
+          <Text style={s.shareTitle}>Share {meta.label}</Text>
+          <Text style={s.shareSubtitle}>Share it with {customerName}</Text>
+
+          {/* Pre-filled recipient section */}
+          <View style={s.recipientSection}>
+            <Text style={s.recipientLabel}>SEND TO (OPTIONAL)</Text>
+            <TextInput style={s.recipientInput} placeholder="Recipient Name" placeholderTextColor="#6E6E73" value={customerName} onChangeText={setCustomerName} data-testid="card-share-name" />
+            <TextInput style={s.recipientInput} placeholder="Phone" placeholderTextColor="#6E6E73" value={customerPhone} onChangeText={setCustomerPhone} keyboardType="phone-pad" data-testid="card-share-phone" />
+            <TextInput style={s.recipientInput} placeholder="Email" placeholderTextColor="#6E6E73" value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" autoCapitalize="none" data-testid="card-share-email" />
+          </View>
+
+          {/* 2×3 action grid matching UniversalShareModal */}
+          <View style={s.shareOptionsGrid}>
+            <TouchableOpacity style={s.shareOption} onPress={handleShareLink} data-testid="card-share-link">
+              <View style={[s.shareOptionIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="share-outline" size={24} color="#007AFF" />
+              </View>
+              <Text style={s.shareOptionText}>Share Link</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.actionBtn} onPress={() => router.push(`/congrats/${createdCard.card_id}` as any)} data-testid="card-view">
-              <View style={[s.actionIcon, { backgroundColor: accent + '20' }]}><Ionicons name="eye-outline" size={24} color={accent} /></View>
-              <Text style={s.actionLabel}>View Card</Text>
+
+            <TouchableOpacity style={s.shareOption} onPress={handleCopyLink} data-testid="card-copy-link">
+              <View style={[s.shareOptionIcon, { backgroundColor: '#5856D620' }]}>
+                <Ionicons name="copy-outline" size={24} color="#5856D6" />
+              </View>
+              <Text style={s.shareOptionText}>Copy Link</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.shareOption} onPress={() => handleShare('sms')} data-testid="card-share-sms">
+              <View style={[s.shareOptionIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
+              </View>
+              <Text style={s.shareOptionText}>Via Text</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.shareOption} onPress={() => handleShare('email')} data-testid="card-share-email">
+              <View style={[s.shareOptionIcon, { backgroundColor: '#FF950020' }]}>
+                <Ionicons name="mail-outline" size={24} color="#FF9500" />
+              </View>
+              <Text style={s.shareOptionText}>Via Email</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.shareOption} onPress={() => { if (IS_WEB) { window.open(`/congrats/${createdCard.card_id}`, '_blank'); } else { Linking.openURL(`${BASE_URL}/congrats/${createdCard.card_id}`); } }} data-testid="card-share-preview">
+              <View style={[s.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
+                <Ionicons name="eye-outline" size={24} color="#C9A962" />
+              </View>
+              <Text style={s.shareOptionText}>Preview</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.shareOption} onPress={() => showSimpleAlert('QR Code', 'QR code feature coming soon!')} data-testid="card-share-qr">
+              <View style={[s.shareOptionIcon, { backgroundColor: '#AF52DE20' }]}>
+                <Ionicons name="qr-code-outline" size={24} color="#AF52DE" />
+              </View>
+              <Text style={s.shareOptionText}>Show QR</Text>
             </TouchableOpacity>
           </View>
-          <Text style={s.sectionLabel}>SHARE VIA</Text>
-          <View style={s.shareRow}>
-            {[
-              { key: 'sms', icon: 'chatbubble', color: '#34C759', label: 'SMS' },
-              { key: 'email', icon: 'mail', color: '#007AFF', label: 'Email' },
-              { key: 'facebook', icon: 'logo-facebook', color: '#1877F2', label: 'Facebook' },
-              { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2', label: 'Twitter' },
-            ].map(p => (
-              <TouchableOpacity key={p.key} style={s.shareBtn} onPress={() => handleShare(p.key)} data-testid={`card-share-${p.key}`}>
-                <View style={[s.shareIcon, { backgroundColor: p.color + '20' }]}><Ionicons name={p.icon as any} size={22} color={p.color} /></View>
-                <Text style={s.shareLabel}>{p.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity style={[s.outlineBtn, { borderColor: accent }]} onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); }} data-testid="card-create-another">
-            <Ionicons name="add-circle-outline" size={20} color={accent} /><Text style={[s.outlineBtnText, { color: accent }]}>Create Another</Text>
+
+          {/* Create Another + Cancel */}
+          <TouchableOpacity style={s.createAnotherBtn} onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); }} data-testid="card-create-another">
+            <Ionicons name="add-circle-outline" size={18} color={accent} />
+            <Text style={[s.createAnotherText, { color: accent }]}>Create Another Card</Text>
           </TouchableOpacity>
-        </ScrollView>
+
+          <TouchableOpacity style={s.cancelBtn} onPress={() => router.back()} data-testid="card-share-cancel">
+            <Text style={s.cancelBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Contact Match Modal */}
+        {matchModalVisible && matchInfo && (
+          <View style={s.modalOverlay}>
+            <View style={s.modalCard} data-testid="card-match-modal">
+              <View style={{ alignItems: 'center', marginBottom: 16 }}><View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF950015', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person-circle" size={44} color="#FF9500" /></View></View>
+              <Text style={s.modalTitle}>Contact Already Exists</Text>
+              <Text style={s.modalSub}>A contact with this number already exists:</Text>
+              <View style={s.modalBox}><Text style={s.modalBoxLabel}>EXISTING CONTACT</Text><Text style={s.modalBoxName}>{matchInfo.existing_name}</Text>{matchInfo.phone ? <Text style={s.modalBoxPhone}>{matchInfo.phone}</Text> : null}</View>
+              <View style={s.modalDivRow}><View style={s.modalDivLine} /><Text style={s.modalDivText}>You entered</Text><View style={s.modalDivLine} /></View>
+              <View style={[s.modalBox, { marginBottom: 20 }]}><Text style={[s.modalBoxName, { color: '#FF9500' }]}>{matchInfo.provided_name}</Text></View>
+              {[{ action: 'use_existing', icon: 'checkmark-circle', color: '#34C759', text: 'Use Existing Contact' }, { action: 'update_name', icon: 'create', color: '#007AFF', text: `Update to "${matchInfo.provided_name}"` }, { action: 'create_new', icon: 'person-add', color: '#FF9500', text: 'Create New Contact' }].map(opt => (
+                <TouchableOpacity key={opt.action} style={s.modalAction} onPress={() => resolveMatch(opt.action)}><Ionicons name={opt.icon as any} size={20} color={opt.color} /><Text style={s.modalActionText}>{opt.text}</Text></TouchableOpacity>
+              ))}
+              <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text></TouchableOpacity>
+            </View>
+          </View>
+        )}
       </SafeAreaView>
     );
   }
