@@ -393,28 +393,28 @@ export function UniversalShareModal({
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#007AFF20' }]}>
                   <Ionicons name="share-outline" size={24} color="#007AFF" />
                 </View>
-                <Text style={styles.shareOptionText}>Share Link</Text>
+                <Text style={[styles.shareOptionText, { color: colors.text }]}>Share Link</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.shareOption} onPress={handleCopyLink} data-testid="share-copy-link">
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#5856D620' }]}>
                   <Ionicons name="copy-outline" size={24} color="#5856D6" />
                 </View>
-                <Text style={styles.shareOptionText}>Copy Link</Text>
+                <Text style={[styles.shareOptionText, { color: colors.text }]}>Copy Link</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.shareOption} onPress={handleViaText} data-testid="share-via-text">
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#34C75920' }]}>
                   <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
                 </View>
-                <Text style={styles.shareOptionText}>Via Text</Text>
+                <Text style={[styles.shareOptionText, { color: colors.text }]}>Via Text</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.shareOption} onPress={handleViaEmail} data-testid="share-via-email">
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#FF950020' }]}>
                   <Ionicons name="mail-outline" size={24} color="#FF9500" />
                 </View>
-                <Text style={styles.shareOptionText}>Via Email</Text>
+                <Text style={[styles.shareOptionText, { color: colors.text }]}>Via Email</Text>
               </TouchableOpacity>
 
               {showPreview && (
