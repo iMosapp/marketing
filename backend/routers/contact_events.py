@@ -393,6 +393,8 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
         "contact_id": contact_id,
         "contact_created": created,
         "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+        "contact_phone": contact.get("phone", ""),
+        "contact_email": contact.get("email", ""),
         "event_logged": True,
         "match_found": not created,
         "needs_confirmation": False,
