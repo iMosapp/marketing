@@ -72,7 +72,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 ### Branding
 - White-label HTML email templates via Resend
 - Centralized `PoweredByFooter.tsx` + `brand.ts` config
-- Light & Dark mode with persistence
+- Light & Dark mode with persistence — **all pages now theme-aware** (My Account, Contact Detail, Share Modal)
 
 ### Administration
 - Soft-delete user system with data retention
