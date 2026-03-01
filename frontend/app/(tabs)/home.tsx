@@ -357,19 +357,6 @@ export default function HomeScreen() {
           eventType: 'review_invite_sent',
         });
         break;
-      case 'send-card':
-        setShareConfig({
-          visible: true,
-          title: 'Send a Card',
-          subtitle: 'Share a congrats or celebration card',
-          url: `${baseUrl}/card/${userId}`,
-          text: `Check out this card from me: ${baseUrl}/card/${userId}`,
-          showPreview: true,
-          previewUrl: `${baseUrl}/card/${userId}`,
-          showQR: true,
-          eventType: 'card_shared',
-        });
-        break;
       case 'showroom':
         setShareConfig({
           visible: true,
