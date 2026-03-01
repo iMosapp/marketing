@@ -1041,4 +1041,71 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '600',
   },
+  // Action type toggle
+  actionTypeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  actionTypeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#2C2C2E',
+  },
+  actionTypeBtnActive: {
+    backgroundColor: '#007AFF',
+  },
+  actionTypeBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  actionTypeBtnTextActive: {
+    color: '#FFF',
+  },
+  // Card picker
+  cardPickerSection: {
+    marginTop: 4,
+  },
+  cardPickerLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  cardPickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  cardPickerItem: {
+    width: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: '#3A3A3C',
+  },
+  cardPickerIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardPickerItemText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+    flex: 1,
+  },
 });
