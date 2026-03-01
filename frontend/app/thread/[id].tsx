@@ -2588,6 +2588,45 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </Modal>
       
+      {/* Card Type Picker Modal */}
+      <Modal visible={showCardTypePicker} transparent animationType="slide" onRequestClose={() => setShowCardTypePicker(false)}>
+        <TouchableOpacity style={styles.photoOptionsOverlay} activeOpacity={1} onPress={() => setShowCardTypePicker(false)}>
+          <View style={styles.photoOptionsModal} onStartShouldSetResponder={() => true}>
+            <Text style={styles.photoOptionsTitle}>Choose Card Type</Text>
+            {[
+              { key: 'congrats', icon: 'gift-outline', color: '#C9A962', label: 'Congrats Card' },
+              { key: 'birthday', icon: 'balloon-outline', color: '#FF2D55', label: 'Birthday Card' },
+              { key: 'anniversary', icon: 'heart-outline', color: '#FF6B6B', label: 'Anniversary Card' },
+              { key: 'thankyou', icon: 'thumbs-up-outline', color: '#34C759', label: 'Thank You Card' },
+              { key: 'welcome', icon: 'hand-left-outline', color: '#007AFF', label: 'Welcome Card' },
+              { key: 'holiday', icon: 'snow-outline', color: '#5AC8FA', label: 'Holiday Card' },
+            ].map(card => (
+              <TouchableOpacity
+                key={card.key}
+                style={styles.photoOptionButton}
+                onPress={() => {
+                  setShowCardTypePicker(false);
+                  const params = new URLSearchParams();
+                  params.set('type', card.key);
+                  if (contactName && contactName !== 'Contact') params.set('prefillName', contactName);
+                  if (contactPhone) params.set('prefillPhone', contactPhone);
+                  const email = savedContactEmail || (contact_email as string) || '';
+                  if (email) params.set('prefillEmail', email);
+                  router.push(`/settings/create-card?${params.toString()}` as any);
+                }}
+                data-testid={`card-type-${card.key}`}
+              >
+                <Ionicons name={card.icon as any} size={24} color={card.color} />
+                <Text style={styles.photoOptionText}>{card.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={[styles.photoOptionButton, styles.photoOptionCancel]} onPress={() => setShowCardTypePicker(false)} data-testid="card-type-cancel">
+              <Text style={styles.photoOptionCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Congrats Card Modal */}
       <Modal
         visible={showCongratsCardModal}
