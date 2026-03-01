@@ -952,7 +952,7 @@ export default function MoreScreen() {
         {/* Profile Card - Digital Card Style */}
         <View style={styles.profileCardContainer}>
           <TouchableOpacity 
-            style={styles.profileCard}
+            style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => router.push('/my-account')}
             activeOpacity={0.7}
             data-testid="profile-card"
@@ -973,11 +973,11 @@ export default function MoreScreen() {
               )}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
+              <Text style={[styles.profileName, { color: colors.text }]}>{user?.name || 'Guest'}</Text>
               {user?.title ? (
                 <Text style={styles.profileTitle}>{user.title}</Text>
               ) : null}
-              <Text style={styles.profileEmail}>{user?.email || ''}</Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || ''}</Text>
               {user?.phone && (
                 <Text style={styles.profilePhone}>{user.phone}</Text>
               )}
@@ -989,7 +989,7 @@ export default function MoreScreen() {
           <View style={styles.profileActions}>
             <NotificationBell />
             <TouchableOpacity
-              style={styles.profileSignOutBtn}
+              style={[styles.profileSignOutBtn, { backgroundColor: colors.card }]}
               onPress={handleLogout}
               data-testid="logout-button"
             >
