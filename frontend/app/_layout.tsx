@@ -45,11 +45,14 @@ function usePWAMetaTags() {
 
 export default function RootLayout() {
   const loadAuth = useAuthStore((state) => state.loadAuth);
+  const loadTheme = useThemeStore((state) => state.loadTheme);
+  const colors = useThemeStore((state) => state.colors);
   
   usePWAMetaTags();
   
   useEffect(() => {
     loadAuth();
+    loadTheme();
   }, []);
   
   return (
