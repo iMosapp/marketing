@@ -485,6 +485,26 @@ const { showToast } = useToast();
                 )}
               </View>
               
+              {/* Action Type Toggle */}
+              <View style={styles.actionTypeRow}>
+                <TouchableOpacity
+                  style={[styles.actionTypeBtn, step.actionType === 'message' && styles.actionTypeBtnActive]}
+                  onPress={() => { updateSequenceStep(step.id, 'actionType', 'message'); }}
+                  data-testid={`step-${index}-type-message`}
+                >
+                  <Ionicons name="chatbubble-outline" size={16} color={step.actionType === 'message' ? '#FFF' : '#8E8E93'} />
+                  <Text style={[styles.actionTypeBtnText, step.actionType === 'message' && styles.actionTypeBtnTextActive]}>Send Message</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionTypeBtn, step.actionType === 'send_card' && styles.actionTypeBtnActive]}
+                  onPress={() => { updateSequenceStep(step.id, 'actionType', 'send_card'); }}
+                  data-testid={`step-${index}-type-card`}
+                >
+                  <Ionicons name="gift-outline" size={16} color={step.actionType === 'send_card' ? '#FFF' : '#8E8E93'} />
+                  <Text style={[styles.actionTypeBtnText, step.actionType === 'send_card' && styles.actionTypeBtnTextActive]}>Send Card</Text>
+                </TouchableOpacity>
+              </View>
+              
               {/* Delay Controls */}
               {index > 0 && (
                 <View style={styles.delayControls}>
@@ -528,52 +548,86 @@ const { showToast } = useToast();
                 </View>
               )}
               
-              {/* Message Input */}
-              <TextInput
-                style={styles.messageInput}
-                value={step.message}
-                onChangeText={(text) => updateSequenceStep(step.id, 'message', text)}
-                placeholder="Enter message template... Use {name}, {vehicle}, etc."
-                placeholderTextColor="#6E6E73"
-                multiline
-                numberOfLines={4}
-              />
-              
-              <Text style={styles.charCount}>{step.message.length}/320</Text>
-              
-              {/* Media Attachments */}
-              <View style={styles.mediaSection}>
-                <Text style={styles.mediaLabel}>Media Attachments</Text>
-                <View style={styles.mediaGrid}>
-                  {step.media_urls.map((url, mediaIndex) => (
-                    <View key={mediaIndex} style={styles.mediaPreview}>
-                      <Image source={{ uri: url }} style={styles.mediaThumbnail} />
-                      <TouchableOpacity 
-                        style={styles.mediaRemoveButton}
-                        onPress={() => removeMediaFromStep(step.id, mediaIndex)}
+              {step.actionType === 'send_card' ? (
+                /* Card Type Picker */
+                <View style={styles.cardPickerSection}>
+                  <Text style={styles.cardPickerLabel}>Select Card Template</Text>
+                  <View style={styles.cardPickerGrid}>
+                    {[
+                      { key: 'congrats', label: 'Congrats', icon: 'gift', color: '#C9A962' },
+                      { key: 'birthday', label: 'Birthday', icon: 'balloon', color: '#FF2D55' },
+                      { key: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF6B6B' },
+                      { key: 'thankyou', label: 'Thank You', icon: 'thumbs-up', color: '#34C759' },
+                      { key: 'welcome', label: 'Welcome', icon: 'hand-left', color: '#007AFF' },
+                      { key: 'holiday', label: 'Holiday', icon: 'snow', color: '#5AC8FA' },
+                    ].map((card) => (
+                      <TouchableOpacity
+                        key={card.key}
+                        style={[
+                          styles.cardPickerItem,
+                          step.cardType === card.key && { borderColor: card.color, borderWidth: 2 },
+                        ]}
+                        onPress={() => updateSequenceStep(step.id, 'cardType', card.key)}
+                        data-testid={`step-${index}-card-${card.key}`}
                       >
-                        <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                        <View style={[styles.cardPickerIcon, { backgroundColor: `${card.color}20` }]}>
+                          <Ionicons name={card.icon as any} size={20} color={card.color} />
+                        </View>
+                        <Text style={[styles.cardPickerItemText, step.cardType === card.key && { color: card.color }]}>{card.label}</Text>
                       </TouchableOpacity>
-                    </View>
-                  ))}
-                  {step.media_urls.length < 3 && (
-                    <TouchableOpacity 
-                      style={styles.addMediaButton}
-                      onPress={() => pickMediaForStep(step.id)}
-                      disabled={uploadingMedia === step.id}
-                    >
-                      {uploadingMedia === step.id ? (
-                        <ActivityIndicator size="small" color="#007AFF" />
-                      ) : (
-                        <>
-                          <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
-                          <Text style={styles.addMediaText}>Add Photo</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  )}
+                    ))}
+                  </View>
                 </View>
-              </View>
+              ) : (
+                /* Message Input (existing) */
+                <>
+                  <TextInput
+                    style={styles.messageInput}
+                    value={step.message}
+                    onChangeText={(text) => updateSequenceStep(step.id, 'message', text)}
+                    placeholder="Enter message template... Use {name}, {vehicle}, etc."
+                    placeholderTextColor="#6E6E73"
+                    multiline
+                    numberOfLines={4}
+                  />
+                  
+                  <Text style={styles.charCount}>{step.message.length}/320</Text>
+                  
+                  {/* Media Attachments */}
+                  <View style={styles.mediaSection}>
+                    <Text style={styles.mediaLabel}>Media Attachments</Text>
+                    <View style={styles.mediaGrid}>
+                      {step.media_urls.map((url, mediaIndex) => (
+                        <View key={mediaIndex} style={styles.mediaPreview}>
+                          <Image source={{ uri: url }} style={styles.mediaThumbnail} />
+                          <TouchableOpacity 
+                            style={styles.mediaRemoveButton}
+                            onPress={() => removeMediaFromStep(step.id, mediaIndex)}
+                          >
+                            <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {step.media_urls.length < 3 && (
+                        <TouchableOpacity 
+                          style={styles.addMediaButton}
+                          onPress={() => pickMediaForStep(step.id)}
+                          disabled={uploadingMedia === step.id}
+                        >
+                          {uploadingMedia === step.id ? (
+                            <ActivityIndicator size="small" color="#007AFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
+                              <Text style={styles.addMediaText}>Add Photo</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
           ))}
         </View>
