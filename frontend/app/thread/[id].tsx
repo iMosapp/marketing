@@ -2702,8 +2702,9 @@ export default function ThreadScreen() {
                   if (contactPhone) params.set('prefillPhone', contactPhone);
                   const email = savedContactEmail || (contact_email as string) || '';
                   if (email) params.set('prefillEmail', email);
+                  params.set('returnToThread', id as string);
                   router.push(`/settings/create-card?${params.toString()}` as any);
-                }}
+                }}}
                 data-testid={`card-type-${card.key}`}
               >
                 <Ionicons name={card.icon as any} size={24} color={card.color} />
