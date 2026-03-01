@@ -921,6 +921,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  // Quick Links (Showroom, Save Contact)
+  quickLinksSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  quickLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#1C1C1E',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  quickLinkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickLinkText: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   reviewLinksContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
