@@ -1776,59 +1776,101 @@ export default function ContactDetailScreen() {
         <View style={s.photoViewerOverlay}>
           <TouchableOpacity
             style={s.photoViewerClose}
-            onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); }}
+            onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
             data-testid="close-photo-viewer"
           >
             <Ionicons name="close" size={28} color="#FFF" />
           </TouchableOpacity>
 
-          {/* Main Photo */}
-          <View style={s.photoViewerContent}>
-            {fullPhotoLoading ? (
-              <ActivityIndicator size="large" color="#C9A962" />
-            ) : fullPhoto ? (
+          {fullPhotoLoading ? (
+            <ActivityIndicator size="large" color="#C9A962" />
+          ) : selectedPhotoIndex >= 0 && fullPhoto ? (
+            /* === SINGLE PHOTO FULL-SCREEN VIEW === */
+            <View style={s.photoViewerContent}>
               <Image
                 source={{ uri: fullPhoto }}
                 style={s.photoViewerImage}
                 resizeMode="contain"
                 data-testid="full-photo-image"
               />
-            ) : (
-              <Text style={{ color: '#8E8E93', fontSize: 16 }}>No photo available</Text>
-            )}
-          </View>
+              <Text style={s.photoViewerName}>
+                {allPhotos[selectedPhotoIndex]?.label || `${contact.first_name} ${contact.last_name}`}
+              </Text>
+              {allPhotos[selectedPhotoIndex]?.date && (
+                <Text style={s.photoViewerDate}>{new Date(allPhotos[selectedPhotoIndex].date).toLocaleDateString()}</Text>
+              )}
 
-          {/* Photo label */}
-          <Text style={s.photoViewerName}>
-            {allPhotos.length > 0 && allPhotos[selectedPhotoIndex]
-              ? allPhotos[selectedPhotoIndex].label
-              : `${contact.first_name} ${contact.last_name}`}
-          </Text>
+              {/* Navigation arrows */}
+              {allPhotos.length > 1 && (
+                <View style={s.photoNavRow}>
+                  <TouchableOpacity
+                    style={[s.photoNavBtn, selectedPhotoIndex === 0 && { opacity: 0.3 }]}
+                    disabled={selectedPhotoIndex === 0}
+                    onPress={() => {
+                      const prev = selectedPhotoIndex - 1;
+                      setSelectedPhotoIndex(prev);
+                      setFullPhoto(allPhotos[prev].url);
+                    }}
+                    data-testid="photo-nav-prev"
+                  >
+                    <Ionicons name="chevron-back" size={28} color="#FFF" />
+                  </TouchableOpacity>
+                  <Text style={s.photoNavCount}>{selectedPhotoIndex + 1} / {allPhotos.length}</Text>
+                  <TouchableOpacity
+                    style={[s.photoNavBtn, selectedPhotoIndex === allPhotos.length - 1 && { opacity: 0.3 }]}
+                    disabled={selectedPhotoIndex === allPhotos.length - 1}
+                    onPress={() => {
+                      const next = selectedPhotoIndex + 1;
+                      setSelectedPhotoIndex(next);
+                      setFullPhoto(allPhotos[next].url);
+                    }}
+                    data-testid="photo-nav-next"
+                  >
+                    <Ionicons name="chevron-forward" size={28} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
+              )}
 
-          {/* Thumbnail Gallery Strip */}
-          {allPhotos.length > 1 && (
-            <View style={s.galleryStrip}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.galleryStripInner}>
+              {/* Back to grid */}
+              {allPhotos.length > 1 && (
+                <TouchableOpacity
+                  style={s.backToGridBtn}
+                  onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
+                  data-testid="back-to-gallery-grid"
+                >
+                  <Ionicons name="grid-outline" size={18} color="#FFF" />
+                  <Text style={s.backToGridText}>All Photos</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : allPhotos.length > 0 ? (
+            /* === GALLERY GRID VIEW === */
+            <View style={s.galleryGridContainer}>
+              <Text style={s.galleryGridTitle}>Photos</Text>
+              <Text style={s.galleryGridCount}>{allPhotos.length} photo{allPhotos.length !== 1 ? 's' : ''}</Text>
+              <View style={s.galleryGrid}>
                 {allPhotos.map((photo: any, idx: number) => (
                   <TouchableOpacity
                     key={`${photo.type}-${idx}`}
-                    style={[s.galleryThumb, selectedPhotoIndex === idx && s.galleryThumbActive]}
+                    style={s.galleryTile}
                     onPress={() => {
                       setSelectedPhotoIndex(idx);
                       setFullPhoto(photo.url);
                     }}
-                    data-testid={`gallery-thumb-${idx}`}
+                    data-testid={`gallery-tile-${idx}`}
                   >
-                    <Image source={{ uri: photo.url }} style={s.galleryThumbImg} resizeMode="cover" />
-                    <View style={s.galleryThumbBadge}>
-                      <Text style={s.galleryThumbBadgeText}>
-                        {photo.type === 'profile' ? 'Profile' : photo.type === 'congrats' ? 'Congrats' : 'Birthday'}
+                    <Image source={{ uri: photo.url }} style={s.galleryTileImg} resizeMode="cover" />
+                    <View style={s.galleryTileBadge}>
+                      <Text style={s.galleryTileBadgeText}>
+                        {photo.type === 'profile' ? 'Profile' : photo.type === 'congrats' ? 'Congrats' : photo.type === 'birthday' ? 'Birthday' : photo.type}
                       </Text>
                     </View>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
             </View>
+          ) : (
+            <Text style={{ color: '#8E8E93', fontSize: 16 }}>No photos available</Text>
           )}
         </View>
       </Modal>
