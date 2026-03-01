@@ -604,6 +604,35 @@ export default function ThreadScreen() {
       setRefreshing(false);
     }
   };
+
+  // Relationship Intel functions
+  const loadIntel = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await api.get(`/contact-intel/${user._id}/${id}`);
+      if (res.data?.summary) setIntelData(res.data);
+    } catch {}
+  };
+
+  const generateIntel = async () => {
+    if (!user?._id) return;
+    setIntelGenerating(true);
+    setShowIntel(true);
+    try {
+      const res = await api.post(`/contact-intel/${user._id}/${id}/generate`);
+      setIntelData(res.data);
+    } catch (e: any) {
+      console.error('Intel generation failed:', e);
+    } finally {
+      setIntelGenerating(false);
+    }
+  };
+
+  // Load intel on mount
+  useEffect(() => {
+    if (user?._id && id) loadIntel();
+  }, [user?._id, id]);
+
   
   const loadMessages = async () => {
     const convId = actualConversationId || id as string;
