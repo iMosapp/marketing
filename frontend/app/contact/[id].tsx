@@ -1321,6 +1321,9 @@ export default function ContactDetailScreen() {
                   {visibleEvents.map((evt, i) => {
                     const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
                     const isExpanded = expandedEvents[i] === true;
+                    const fullContent = evt.full_content || evt.description || '';
+                    const hasLink = !!evt.link;
+                    const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'Personal SMS' : evt.channel === 'sms' ? 'SMS' : '';
                     return (
                       <TouchableOpacity
                         key={i}
@@ -1341,9 +1344,38 @@ export default function ContactDetailScreen() {
                             <Text style={s.feedTitle}>{getEventTitle(evt)}</Text>
                             <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#636366" />
                           </View>
-                          {evt.description ? (
-                            <Text style={s.feedDesc} numberOfLines={isExpanded ? undefined : 1}>{evt.description}</Text>
+                          {!isExpanded && evt.description ? (
+                            <Text style={s.feedDesc} numberOfLines={1}>{evt.description}</Text>
                           ) : null}
+                          {isExpanded && (
+                            <View style={s.feedExpandedPreview}>
+                              {channelLabel ? (
+                                <View style={[s.feedChannelBadge, { backgroundColor: `${evt.color || '#007AFF'}20` }]}>
+                                  <Ionicons name={evt.channel === 'email' ? 'mail' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
+                                  <Text style={[s.feedChannelText, { color: evt.color || '#007AFF' }]}>{channelLabel}</Text>
+                                </View>
+                              ) : null}
+                              {evt.subject ? (
+                                <Text style={s.feedSubject}>{evt.subject}</Text>
+                              ) : null}
+                              <View style={s.feedMessageBubble}>
+                                <Text style={s.feedMessageText}>{fullContent}</Text>
+                              </View>
+                              {hasLink && (
+                                <TouchableOpacity
+                                  style={s.feedViewLink}
+                                  onPress={(e) => {
+                                    e.stopPropagation?.();
+                                    router.push(evt.link as any);
+                                  }}
+                                  data-testid={`feed-view-link-${i}`}
+                                >
+                                  <Ionicons name="open-outline" size={14} color="#007AFF" />
+                                  <Text style={s.feedViewLinkText}>View Card</Text>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          )}
                           <Text style={s.feedTime}>{formatEventTime(evt.timestamp)}</Text>
                         </View>
                       </TouchableOpacity>
