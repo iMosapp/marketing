@@ -186,7 +186,10 @@ function ContactActionModal({
             {/* Import options */}
             <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={goToImportFromPhone} data-testid="import-from-phone">
               <Ionicons name="phone-portrait-outline" size={18} color={colors.accent} />
-              <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Import from Phone Contacts</Text>
+              <View>
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Import from Phone Contacts</Text>
+                <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Requires App Store version</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={handleVcfUpload} data-testid="import-vcf">
               <Ionicons name="document-outline" size={18} color={colors.accent} />
