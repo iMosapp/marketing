@@ -762,50 +762,50 @@ export default function MyAccountScreen() {
 
                   {/* Category Grid */}
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                    <View style={actStyles.statCard}>
+                    <View style={[actStyles.statCard, { backgroundColor: colors.card }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#007AFF20' }]}>
                         <Ionicons name="chatbubble" size={18} color="#007AFF" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.communication?.texts_sent || 0}</Text>
-                      <Text style={actStyles.statLabel}>Texts Sent</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.communication?.texts_sent || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Texts Sent</Text>
                     </View>
-                    <View style={actStyles.statCard}>
+                    <View style={[actStyles.statCard, { backgroundColor: colors.card }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#5856D620' }]}>
                         <Ionicons name="mail" size={18} color="#5856D6" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.communication?.emails_sent || 0}</Text>
-                      <Text style={actStyles.statLabel}>Emails Sent</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.communication?.emails_sent || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Emails Sent</Text>
                     </View>
-                    <View style={actStyles.statCard}>
+                    <View style={[actStyles.statCard, { backgroundColor: colors.card }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#34C75920' }]}>
                         <Ionicons name="call" size={18} color="#34C759" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.communication?.calls_placed || 0}</Text>
-                      <Text style={actStyles.statLabel}>Calls</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.communication?.calls_placed || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Calls</Text>
                     </View>
                   </View>
 
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                    <View style={actStyles.statCard}>
+                    <View style={[actStyles.statCard, { backgroundColor: colors.card }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#C9A96220' }]}>
                         <Ionicons name="person-circle" size={18} color="#C9A962" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.sharing?.digital_cards || 0}</Text>
-                      <Text style={actStyles.statLabel}>Cards Shared</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.sharing?.digital_cards || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Cards Shared</Text>
                     </View>
-                    <View style={actStyles.statCard}>
+                    <View style={[actStyles.statCard, { backgroundColor: colors.card }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#FFD60A20' }]}>
                         <Ionicons name="star" size={18} color="#FFD60A" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.sharing?.review_links || 0}</Text>
-                      <Text style={actStyles.statLabel}>Reviews Shared</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.sharing?.review_links || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Reviews Shared</Text>
                     </View>
-                    <View style={actStyles.statCard}>
+                    <View style={[actStyles.statCard, { backgroundColor: colors.card }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#FF950020' }]}>
                         <Ionicons name="gift" size={18} color="#FF9500" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.sharing?.congrats_cards || 0}</Text>
-                      <Text style={actStyles.statLabel}>Congrats Sent</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.sharing?.congrats_cards || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Congrats Sent</Text>
                     </View>
                   </View>
 
@@ -815,15 +815,15 @@ export default function MyAccountScreen() {
                       <View style={[actStyles.statIcon, { backgroundColor: '#FF375F20' }]}>
                         <Ionicons name="finger-print" size={18} color="#FF375F" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.engagement?.total_clicks + (activityData.engagement?.review_clicks || 0) || 0}</Text>
-                      <Text style={actStyles.statLabel}>Link Clicks</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.engagement?.total_clicks + (activityData.engagement?.review_clicks || 0) || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>Link Clicks</Text>
                     </View>
                     <View style={[actStyles.statCard, { flex: 1 }]}>
                       <View style={[actStyles.statIcon, { backgroundColor: '#30D15820' }]}>
                         <Ionicons name="people" size={18} color="#30D158" />
                       </View>
-                      <Text style={actStyles.statNum}>{activityData.contacts?.new_contacts || 0}</Text>
-                      <Text style={actStyles.statLabel}>New Contacts</Text>
+                      <Text style={[actStyles.statNum, { color: colors.text }]}>{activityData.contacts?.new_contacts || 0}</Text>
+                      <Text style={[actStyles.statLabel, { color: colors.textTertiary }]}>New Contacts</Text>
                     </View>
                   </View>
 
