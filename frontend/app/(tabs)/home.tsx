@@ -269,15 +269,16 @@ function ContactActionModal({
               {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
             </View>
 
-            {/* Matching contacts as you type */}
-            {dialNumber.length >= 2 && (() => {
-              const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(dialNumber.replace(/\D/g, '')));
-              if (matches.length === 0) return null;
-              return (
-                <View style={{ maxHeight: 130, paddingHorizontal: 16, marginBottom: 4 }}>
+            {/* Matching contacts — scrollable, fixed height area above keypad */}
+            <View style={{ height: 130, paddingHorizontal: 16 }}>
+              {dialNumber.length >= 2 && (() => {
+                const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(dialNumber.replace(/\D/g, '')));
+                if (matches.length === 0) return null;
+                return (
                   <FlatList
-                    data={matches.slice(0, 3)}
+                    data={matches.slice(0, 5)}
                     keyExtractor={(item) => item._id}
+                    style={{ flex: 1 }}
                     renderItem={({ item }) => (
                       <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }} onPress={() => logAndDial(item.phone, item)}>
                         <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20`, width: 34, height: 34 }]}>
@@ -291,9 +292,9 @@ function ContactActionModal({
                       </TouchableOpacity>
                     )}
                   />
-                </View>
-              );
-            })()}
+                );
+              })()}
+            </View>
 
             <View style={styles.keypadGrid}>
               {KEYS.map((row, ri) => (
