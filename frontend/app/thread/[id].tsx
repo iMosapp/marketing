@@ -1768,6 +1768,59 @@ export default function ThreadScreen() {
         </View>
       )}
 
+      {/* Relationship Intel Bar */}
+      <TouchableOpacity
+        style={[styles.intelBar, showIntel && styles.intelBarExpanded]}
+        onPress={() => {
+          if (!intelData && !intelGenerating) {
+            generateIntel();
+          } else {
+            setShowIntel(!showIntel);
+          }
+        }}
+        activeOpacity={0.7}
+        data-testid="thread-intel-bar"
+      >
+        <View style={styles.intelBarLeft}>
+          <Ionicons name="sparkles" size={16} color="#C9A962" />
+          <Text style={styles.intelBarTitle}>Relationship Intel</Text>
+          {intelData?.generated_at && !showIntel && (
+            <Text style={styles.intelBarMeta}> · Updated {new Date(intelData.generated_at).toLocaleDateString()}</Text>
+          )}
+        </View>
+        <Ionicons name={showIntel ? 'chevron-up' : 'chevron-down'} size={16} color="#636366" />
+      </TouchableOpacity>
+
+      {showIntel && (
+        <View style={styles.intelContent} data-testid="thread-intel-content">
+          {intelGenerating ? (
+            <View style={styles.intelLoadingRow}>
+              <ActivityIndicator size="small" color="#C9A962" />
+              <Text style={styles.intelLoadingText}>Analyzing relationship...</Text>
+            </View>
+          ) : intelData?.summary ? (
+            <>
+              <Text style={styles.intelSummaryText}>{intelData.summary}</Text>
+              <View style={styles.intelMetaRow}>
+                <Text style={styles.intelMetaText}>
+                  {intelData.data_points?.messages || 0} messages · {intelData.data_points?.events || 0} events
+                </Text>
+                <TouchableOpacity
+                  style={styles.intelRefreshBtn}
+                  onPress={generateIntel}
+                  data-testid="thread-intel-refresh"
+                >
+                  <Ionicons name="refresh" size={14} color="#007AFF" />
+                  <Text style={styles.intelRefreshText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.intelEmptyText}>Tap to generate an AI briefing about this contact</Text>
+          )}
+        </View>
+      )}
+
       {/* Quick Contact Creation Panel */}
       {isNewContact && showQuickContactPanel && !contactCreated && (
         <View style={styles.quickContactPanel} data-testid="quick-contact-panel">
