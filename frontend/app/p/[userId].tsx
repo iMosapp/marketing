@@ -16,6 +16,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { PoweredByFooter } from '../../components/PoweredByFooter';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -534,9 +535,7 @@ export default function PublicLandingPage() {
       )}
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Powered by i'M On Social</Text>
-      </View>
+      <PoweredByFooter />
 
       {/* Review Modal */}
       <Modal
