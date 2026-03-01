@@ -484,17 +484,17 @@ export default function HomeScreen() {
           <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Choose a card type to create and send</Text>
           <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
             {[
-              { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962', route: '/settings/create-congrats' },
-              { key: 'birthday', label: 'Birthday Card', icon: 'balloon', color: '#FF2D55', route: '/settings/create-birthday-card' },
-              { key: 'anniversary', label: 'Anniversary Card', icon: 'heart', color: '#FF6B6B', route: '/settings/create-congrats' },
-              { key: 'thankyou', label: 'Thank You Card', icon: 'thumbs-up', color: '#34C759', route: '/settings/create-congrats' },
-              { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#007AFF', route: '/settings/create-congrats' },
-              { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA', route: '/settings/create-congrats' },
+              { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962' },
+              { key: 'birthday', label: 'Birthday Card', icon: 'balloon', color: '#FF2D55' },
+              { key: 'anniversary', label: 'Anniversary Card', icon: 'heart', color: '#FF6B6B' },
+              { key: 'thankyou', label: 'Thank You Card', icon: 'thumbs-up', color: '#34C759' },
+              { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#007AFF' },
+              { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA' },
             ].map((card) => (
               <TouchableOpacity
                 key={card.key}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.border }}
-                onPress={() => { setShowSendCard(false); router.push(card.route as any); }}
+                onPress={() => { setShowSendCard(false); router.push(`/settings/create-card?type=${card.key}` as any); }}
                 data-testid={`card-type-${card.key}`}
               >
                 <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center' }}>
