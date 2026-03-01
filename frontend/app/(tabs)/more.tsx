@@ -852,7 +852,7 @@ export default function MoreScreen() {
   const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity
       key={`${item.title}-${index}`}
-      style={styles.menuItemCard}
+      style={[styles.menuItemCard, { backgroundColor: colors.surface }]}
       onPress={item.onPress}
       activeOpacity={0.7}
       data-testid={`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
@@ -861,15 +861,15 @@ export default function MoreScreen() {
         <Ionicons name={item.icon as any} size={20} color={item.color} />
       </View>
       <View style={styles.menuContent}>
-        <Text style={styles.menuTitle}>{item.title}</Text>
-        <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+        <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+        <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
       </View>
       {item.badge && item.badge > 0 && (
         <View style={styles.notificationBadge}>
           <Text style={styles.notificationBadgeText}>{item.badge}</Text>
         </View>
       )}
-      <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -882,7 +882,7 @@ export default function MoreScreen() {
         {/* Section Header Card */}
         <TouchableOpacity
           ref={(el: any) => { sectionRefs.current[section.id] = el; }}
-          style={styles.sectionHeaderCard}
+          style={[styles.sectionHeaderCard, { backgroundColor: colors.card }]}
           onPress={() => toggleSection(section.id)}
           activeOpacity={0.7}
           data-testid={`section-header-${section.id}`}
@@ -890,11 +890,11 @@ export default function MoreScreen() {
           <View style={[styles.sectionIcon, { backgroundColor: `${section.color}20` }]}>
             <Ionicons name={section.icon as any} size={20} color={section.color} />
           </View>
-          <Text style={styles.sectionTitleText}>{section.title}</Text>
+          <Text style={[styles.sectionTitleText, { color: colors.text }]}>{section.title}</Text>
           <Ionicons 
             name={isExpanded ? 'chevron-up' : 'chevron-down'} 
             size={20} 
-            color="#8E8E93" 
+            color={colors.textSecondary} 
           />
         </TouchableOpacity>
         
