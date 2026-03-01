@@ -218,7 +218,6 @@ export function UniversalShareModal({
       showSimpleAlert('Error', 'Failed to find or create contact.');
     } finally { setSaving(false); }
   };
-  };
 
   // Save vCard
   const handleSaveVCard = async () => {
