@@ -352,7 +352,7 @@ export default function LoginScreen() {
             
             {/* Error Message */}
             {loginError ? (
-              <View style={styles.errorContainer}>
+              <View style={[styles.errorContainer, { backgroundColor: theme.errorBg }]}>
                 <Ionicons name="alert-circle" size={18} color="#FF3B30" />
                 <Text style={styles.errorText}>{loginError}</Text>
               </View>
