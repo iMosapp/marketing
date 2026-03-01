@@ -34,6 +34,7 @@ interface Tag {
 export default function ContactsScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const colors = useThemeStore((s) => s.colors);
   
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);

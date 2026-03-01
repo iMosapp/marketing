@@ -101,6 +101,7 @@ const mockCallLogs = [
 export default function DialerScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const colors = useThemeStore((s) => s.colors);
   const inputRef = useRef<TextInput>(null);
   
   const [phoneNumber, setPhoneNumber] = useState('');

@@ -144,6 +144,7 @@ const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'selection' = 'light
 export default function InboxScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const colors = useThemeStore((s) => s.colors);
   
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai'>('active');

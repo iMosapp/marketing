@@ -75,6 +75,7 @@ interface Member {
 export default function TeamChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const colors = useThemeStore((s) => s.colors);
   
   // State
   const { showToast } = useToast();
