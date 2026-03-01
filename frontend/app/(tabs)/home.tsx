@@ -176,42 +176,6 @@ function ContactActionModal({
   );
 }
 
-// ─── Send a Card Template Picker ──────────────────────────────────
-function SendCardModal({ visible, onClose, colors }: { visible: boolean; onClose: () => void; colors: any; }) {
-  const router = useRouter();
-  const CARD_TYPES = [
-    { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962', route: '/settings/create-congrats' },
-    { key: 'birthday', label: 'Birthday Card', icon: 'balloon', color: '#FF2D55', route: '/settings/create-birthday-card' },
-    { key: 'anniversary', label: 'Anniversary Card', icon: 'heart', color: '#FF6B6B', route: '/settings/create-congrats' },
-    { key: 'thankyou', label: 'Thank You Card', icon: 'thumbs-up', color: '#34C759', route: '/settings/create-congrats' },
-    { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#007AFF', route: '/settings/create-congrats' },
-    { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA', route: '/settings/create-congrats' },
-  ];
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
-        <View style={[styles.modalContent, { backgroundColor: colors.modalBg }]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Send a Card</Text>
-            <TouchableOpacity onPress={onClose} data-testid="close-card-modal"><Ionicons name="close" size={24} color={colors.textSecondary} /></TouchableOpacity>
-          </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>Choose a card type to send to a customer</Text>
-          <ScrollView style={{ maxHeight: 400 }}>
-            {CARD_TYPES.map((card) => (
-              <TouchableOpacity key={card.key} style={[styles.cardTypeRow, { borderColor: colors.border }]} onPress={() => { onClose(); router.push(card.route as any); }} data-testid={`card-type-${card.key}`}>
-                <View style={[styles.cardTypeIcon, { backgroundColor: `${card.color}18` }]}><Ionicons name={card.icon as any} size={24} color={card.color} /></View>
-                <Text style={[styles.cardTypeLabel, { color: colors.text }]}>{card.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 // ─── Main Home Screen ─────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
