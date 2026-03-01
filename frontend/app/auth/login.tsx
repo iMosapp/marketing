@@ -477,6 +477,7 @@ const styles = StyleSheet.create({
     height: 280,
     maxWidth: '80%',
     marginBottom: 8,
+    borderRadius: 32,
   },
   tagline: {
     fontSize: 14,
