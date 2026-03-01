@@ -453,6 +453,50 @@ export default function PublicLandingPage() {
         </TouchableOpacity>
       </View>
 
+      {/* Quick Links — Showroom, Save Contact */}
+      <View style={styles.quickLinksSection}>
+        <TouchableOpacity
+          style={styles.quickLinkBtn}
+          onPress={() => Linking.openURL(`${typeof window !== 'undefined' ? window.location.origin : ''}/showcase/${userId}`)}
+          data-testid="landing-view-showroom"
+        >
+          <View style={[styles.quickLinkIcon, { backgroundColor: '#34C75918' }]}>
+            <Ionicons name="storefront-outline" size={20} color="#34C759" />
+          </View>
+          <Text style={styles.quickLinkText}>View My Showroom</Text>
+          <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickLinkBtn}
+          onPress={async () => {
+            try {
+              const res = await api.get(`/card/vcard/${userId}`);
+              if (Platform.OS === 'web' && res.data) {
+                const vcardData = typeof res.data === 'string' ? res.data : res.data.vcard || '';
+                const filename = res.data.filename || 'contact.vcf';
+                const blob = new Blob([vcardData], { type: 'text/vcard' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }
+            } catch {}
+          }}
+          data-testid="landing-save-contact"
+        >
+          <View style={[styles.quickLinkIcon, { backgroundColor: '#C9A96218' }]}>
+            <Ionicons name="download-outline" size={20} color="#C9A962" />
+          </View>
+          <Text style={styles.quickLinkText}>Save My Contact</Text>
+          <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+        </TouchableOpacity>
+      </View>
+
       {/* External Review Links */}
       {data.store?.review_links && Object.keys(data.store.review_links).length > 0 && (
         <View style={styles.section}>
