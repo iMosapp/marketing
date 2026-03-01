@@ -295,7 +295,7 @@ export default function ShowcasePage() {
                 <>
                   <TouchableOpacity
                     style={styles.quickLinkItem}
-                    onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)}
+                    onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)}
                     data-testid="store-showroom-link"
                   >
                     <Ionicons name="storefront-outline" size={18} color={accent} />
