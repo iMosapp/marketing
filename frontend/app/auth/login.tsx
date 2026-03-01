@@ -378,7 +378,7 @@ export default function LoginScreen() {
             )}
             
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account?</Text>
+              <Text style={[styles.signupText, { color: theme.textSecondary }]}>Don't have an account?</Text>
               <WebSafeButton
                 onPress={() => router.push('/auth/signup')}
                 title="Sign Up"
