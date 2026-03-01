@@ -340,7 +340,7 @@ export function UniversalShareModal({
                   data-testid="share-recipient-name"
                 />
                 {showSuggestions && contactSuggestions.length > 0 && (
-                  <View style={[styles.suggestionsDropdown, { backgroundColor: colors.cardAlt, borderColor: colors.border }]} data-testid="share-contact-suggestions">
+                  <ScrollView style={[styles.suggestionsDropdown, { backgroundColor: colors.cardAlt, borderColor: colors.border }]} nestedScrollEnabled data-testid="share-contact-suggestions">
                     {contactSuggestions.map((c: any) => (
                       <TouchableOpacity
                         key={c._id}
