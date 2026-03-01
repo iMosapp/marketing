@@ -74,6 +74,7 @@ export function UniversalShareModal({
   eventType,
 }: UniversalShareModalProps) {
   const colors = useThemeStore((s) => s.colors);
+  const router = useRouter();
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
