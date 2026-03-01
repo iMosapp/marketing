@@ -219,6 +219,8 @@ async def create_congrats_card(
         "shares": 0,
         "created_at": datetime.now(timezone.utc),
         "contact_photo_updated": contact_updated,
+        # Showroom moderation — requires admin/manager approval before appearing publicly
+        "showcase_approved": False,
     }
     
     await db.congrats_cards.insert_one(card_doc)
