@@ -157,6 +157,24 @@ export default function PendingSendPage() {
   }
 
   const channel = pendingSend.channel || 'sms';
+  const isCardTask = pendingSend.action_type === 'send_card';
+  const cardLabels: Record<string, string> = {
+    congrats: 'Congrats Card', birthday: 'Birthday Card',
+    anniversary: 'Anniversary Card', thankyou: 'Thank You Card',
+    welcome: 'Welcome Card', holiday: 'Holiday Card',
+  };
+  const cardColors: Record<string, string> = {
+    congrats: '#C9A962', birthday: '#FF2D55', anniversary: '#FF6B6B',
+    thankyou: '#34C759', welcome: '#007AFF', holiday: '#5AC8FA',
+  };
+
+  const handleCreateCard = () => {
+    const params = new URLSearchParams();
+    params.set('type', pendingSend.card_type || 'congrats');
+    if (pendingSend.contact_name) params.set('prefillName', pendingSend.contact_name);
+    if (pendingSend.contact_phone) params.set('prefillPhone', pendingSend.contact_phone);
+    router.push(`/settings/create-card?${params.toString()}` as any);
+  };
 
   return (
     <SafeAreaView style={styles.container} data-testid="pending-send-page">
@@ -165,7 +183,7 @@ export default function PendingSendPage() {
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>Campaign Message</Text>
+          <Text style={styles.headerTitle}>{isCardTask ? 'Send a Card' : 'Campaign Message'}</Text>
           <Text style={styles.headerSub}>{allPending.length} pending</Text>
         </View>
         <TouchableOpacity onPress={handleSkip} data-testid="pending-send-skip">
@@ -177,12 +195,12 @@ export default function PendingSendPage() {
         {/* Campaign Info */}
         <View style={styles.infoCard}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={[styles.channelBadge, { backgroundColor: channel === 'email' ? '#AF52DE20' : '#007AFF20' }]}>
-              <Ionicons name={channel === 'email' ? 'mail' : 'chatbubble'} size={16} color={channel === 'email' ? '#AF52DE' : '#007AFF'} />
+            <View style={[styles.channelBadge, { backgroundColor: isCardTask ? `${cardColors[pendingSend.card_type] || '#C9A962'}20` : (channel === 'email' ? '#AF52DE20' : '#007AFF20') }]}>
+              <Ionicons name={isCardTask ? 'gift' : (channel === 'email' ? 'mail' : 'chatbubble')} size={16} color={isCardTask ? (cardColors[pendingSend.card_type] || '#C9A962') : (channel === 'email' ? '#AF52DE' : '#007AFF')} />
             </View>
             <View>
               <Text style={styles.campaignName}>{pendingSend.campaign_name}</Text>
-              <Text style={styles.stepInfo}>Step {pendingSend.step} - {channel.toUpperCase()}</Text>
+              <Text style={styles.stepInfo}>Step {pendingSend.step} - {isCardTask ? (cardLabels[pendingSend.card_type] || 'Card') : channel.toUpperCase()}</Text>
             </View>
           </View>
         </View>
