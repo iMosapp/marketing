@@ -43,7 +43,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', audience: 'Customers' },
       { name: 'Birthday Card', description: 'Personalized birthday card with photo & message', path: '/imos/birthday-card', icon: 'gift-outline', color: '#FF6B8A', audience: 'Customers' },
       { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/imos/reviews', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
-      { name: 'Showroom', description: 'User showcase page — congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', audience: 'Customers, public' },
+      { name: 'Showcase', description: 'User showcase page — congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', audience: 'Customers, public' },
       { name: 'Join / Invite Page', description: 'Team invite link landing page', path: '/imos/join', icon: 'person-add-outline', color: '#34C759', audience: 'New team members' },
       { name: 'Partner Agreement', description: 'Public partner agreement signing page', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', audience: 'Partners' },
       { name: 'NDA Signing', description: 'Public NDA signing page', path: '/imos/nda', icon: 'lock-closed-outline', color: '#FF3B30', audience: 'Partners, employees' },

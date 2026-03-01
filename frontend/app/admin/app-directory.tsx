@@ -55,7 +55,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', requiresAuth: false, audience: 'Customers, public' },
       { name: 'Birthday Card', description: 'Personalized birthday card with photo & message', path: '/imos/birthday-card', icon: 'gift-outline', color: '#FF6B8A', requiresAuth: false, audience: 'Customers, public' },
       { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/imos/reviews', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'Customers, public' },
-      { name: 'Showroom', description: 'User showcase page — congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', requiresAuth: false, audience: 'Customers, public' },
+      { name: 'Showcase', description: 'User showcase page — congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', requiresAuth: false, audience: 'Customers, public' },
       { name: 'Join / Invite Page', description: 'Team invite link landing page', path: '/imos/join', icon: 'person-add-outline', color: '#34C759', requiresAuth: false, audience: 'New team members' },
       { name: 'Partner Agreement', description: 'Public partner agreement signing page', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', requiresAuth: false, audience: 'Partners' },
       { name: 'NDA Signing', description: 'Public NDA signing page', path: '/imos/nda', icon: 'lock-closed-outline', color: '#FF3B30', requiresAuth: false, audience: 'Partners, employees' },
@@ -69,7 +69,7 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Create Congrats Card', description: 'Upload photo, preview, and share a congrats card', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', requiresAuth: false, audience: 'All users' },
       { name: 'Create Birthday Card', description: 'Upload photo, preview, and share a birthday card', path: '/imos/birthday-card', icon: 'gift-outline', color: '#FF6B8A', requiresAuth: false, audience: 'All users' },
-      { name: 'Manage Showroom', description: 'Edit what shows on your showroom page', path: '/imos/showcase-manage', icon: 'images-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Manage Showcase', description: 'Edit what shows on your showcase page', path: '/imos/showcase-manage', icon: 'images-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
       { name: 'Import Contacts (CSV)', description: 'Bulk import contacts from spreadsheet', path: '/imos/import', icon: 'cloud-upload-outline', color: '#34C759', requiresAuth: false, audience: 'All users' },
       { name: 'Store Profile / Digital Card Setup', description: 'Set up your digital business card & store branding', path: '/imos/store-profile', icon: 'card-outline', color: '#5856D6', requiresAuth: false, audience: 'All users' },
       { name: 'Review Links Setup', description: 'Configure Google, Yelp, Facebook review URLs', path: '/imos/review-links', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'All users' },

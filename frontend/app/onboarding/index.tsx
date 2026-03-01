@@ -354,7 +354,7 @@ const ReviewPageDemo = () => (
 const ShowroomDemo = () => (
   <View style={demoStyles.phoneFrame}>
     <View style={{ padding: 10 }}>
-      <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>My Showroom</Text>
+      <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>My Showcase</Text>
       <View style={{ flexDirection: 'row', gap: 6 }}>
         {[{ color: '#C9A962', label: 'Congrats' }, { color: '#FF6B8A', label: 'Birthday' }, { color: '#5856D6', label: 'Featured' }].map(card => (
           <View key={card.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 8, alignItems: 'center' }}>
