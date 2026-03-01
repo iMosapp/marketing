@@ -368,7 +368,7 @@ export default function TeamChatScreen() {
 
     return (
       <View
-        style={[styles.channelItem, item.unread_count > 0 && styles.channelUnread]}
+        style={[styles.channelItem, { backgroundColor: colors.card, borderBottomColor: colors.border }, item.unread_count > 0 && styles.channelUnread]}
         data-testid={`channel-${item.id}`}
       >
         <TouchableOpacity
