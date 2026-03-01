@@ -15,52 +15,48 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Physical address fields on contacts (street, city, state, zip, country)
 - Inbox with SMS (personal fallback + Twilio MOCK) and email channels
 - All outbound communication logged as `contact_events`
-- Contact Intel (AI-powered relationship insights)
 
 ### UX Overhaul — "Daily Driver" Simplification (Mar 1, 2026)
-**Phase 1 — Tab Restructure & Home Tab:**
-- New **Home Tab** as "daily command center" with 6 quick action tiles
-- Simplified **4-tab navigation**: Home, Contacts, Inbox, Menu
-- Dialer & Team moved to Menu → Tools
-- All roles now land on Home tab after login
+**Tab Restructure**: 4 tabs (Home, Contacts, Inbox, Menu) replacing 5 tabs.
 
-**Phase 2 — 7 Feature Enhancements (Mar 1, 2026):**
-1. **Login Logo** — Rounded corners matching app icon style
-2. **Share My Card** — Action sheet: "Share Landing Page" (copies /p/{userId} URL) + "Save to Contacts vCard" (downloads .vcf with landing page, review, showroom links)
-3. **Review Link** — Robust clipboard copy with fallback (fixed "failed to execute" errors)
-4. **Send a Card** — Template picker: Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday cards
-5. **Showroom** — Sticky top bar with back button + "Copy Link" at top (no scrolling)
-6. **Add Contact** — Unified modal: Import from Phone / Search CRM contacts / Enter Manually + action buttons (Call, Text, Email)
-7. **Quick Dial** — Two modes: Contacts search + Numeric keypad. Both log activity
+**Home Tab** — 6 daily action tiles:
+1. **Share My Card** → Universal share modal (Share Link, Copy Link, Via Text, Via Email, Save vCard, Show QR)
+2. **Review Link** → Universal share modal with review URL
+3. **Send a Card** → Template picker (Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday)
+4. **My Showroom** → Universal share modal with showroom URL
+5. **Quick Dial** → Contact search + numeric keypad, logs calls as activity
+6. **Add Contact** → CRM search + phone import + manual entry + inline Call/Text/Email actions
 
-**Menu Reorganization:**
-- 8 clean categorized sections: Tools, Campaigns, Reports, Templates & Branding, Contacts & Leads, Profile & AI, Settings, Administration (role-gated)
-- Removed duplicate quick action rows (now on Home tab)
+**Universal Share Modal** — Reusable component (`/components/UniversalShareModal.tsx`) matching existing "Share My Contact" UI pattern:
+- Optional recipient fields (Name, Phone, Email)
+- 6 action buttons: Share Link, Copy Link, Via Text, Via Email, Save vCard, Show QR
+- Used by Share My Card, Review Link, and My Showroom tiles
 
-### vCard Enhancement
-- vCard now includes 4 URLs: store website, landing page, review link, showroom
-- Uses Apple vCard labels for Review and Showroom links
+**Personal Landing Page** (`/p/{userId}`) — Enhanced with:
+- "View My Showroom" link
+- "Save My Contact" (vCard download)
+- Existing: Leave a Review, Refer a Friend, Call/Text/Email buttons
+
+**vCard Enhancement**: Now includes 4 URLs — store website, landing page, review link (labeled), showroom (labeled)
+
+**Menu Reorganization**: 8 clean categorized sections — Tools, Campaigns, Reports, Templates & Branding, Contacts & Leads, Profile & AI, Settings, Administration (role-gated)
+
+**Showroom**: Sticky top bar with back button + "Copy Link" button at top
+
+**Login**: Rounded logo corners, all roles land on Home tab
 
 ### Cards & Celebrations
-- Congrats Card creation with preview step + sharing
-- Birthday Card creation with preview step + campaign integration
-- Unified card template picker for all card types
-- Digital Business Card (shareable profile page)
-
-### Marketing & Public Pages
-- Full `/imos/` marketing site
-- 88+ preview pages under `/imos/`
-- App Directory
-- Onboarding flow
+- Unified card template picker for 6+ card types
+- Congrats/Birthday card creation with preview + sharing
+- Digital Business Card
 
 ### Reporting & Analytics
-- Activity reports with 14+ metrics and date filters
-- Scheduled email delivery of reports
+- Activity reports with 14+ metrics, date filters, scheduled email delivery
 - Leaderboard system
 
-### Branding & Logos
-- Custom glossy 3D logo, white-label HTML email templates
-- Logo transparency preservation in upload pipeline
+### Branding
+- White-label HTML email templates
+- Logo transparency preservation
 - Light & Dark mode with persistence
 
 ### Administration
@@ -70,28 +66,23 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 
 ## Known Issues
 - **Production email delivery** — Code works in preview; needs RESEND_API_KEY verification on production
-- **Production SMS tally** — Fix deployed to preview, pending production deployment
+- **Production SMS tally** — Fix in preview, pending deployment
 - React Hydration Error #418 (P2)
-- Mobile app tags sync (P2)
 
-## Upcoming Tasks (Priority Order)
-1. (P0) **Card Template System — Backend** — Store custom templates in DB, CRUD API, per-store templates
-2. (P0) **Onboarding Checklist Tracking** — Save user progress
+## Upcoming Tasks
+1. (P0) **Card Template System — Backend** — Dynamic templates in DB, CRUD API, per-store
+2. (P0) **Onboarding Checklist Tracking**
 3. (P1) **Gamification & Leaderboards**
-4. (P1) **AI-Powered Outreach** (sold tag → AI follow-up suggestions)
+4. (P1) **AI-Powered Outreach** (sold tag → follow-up suggestions)
 5. (P1) **Auth refactor** (bcrypt password hashing)
 6. (P1) **Clean production database for launch**
 
 ## Future/Backlog
-- Card style customization (P2)
-- Full Twilio live integration (P2)
-- WhatsApp Integration (P2)
-- TestFlight iOS build (P2)
-- Code cleanup (~80 files, 3 files over 1700+ lines)
+- Card style customization, Full Twilio live, WhatsApp, TestFlight iOS, Code cleanup
 
 ## Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
 
 ## Project Health
 - **Mocked**: Twilio SMS
-- **Broken (Production only)**: Email delivery via Resend, SMS tallying (pending deployment)
+- **Broken (Production only)**: Email delivery, SMS tallying
