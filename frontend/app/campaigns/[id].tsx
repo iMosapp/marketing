@@ -27,6 +27,8 @@ import { useToast } from '../../components/common/Toast';
 interface SequenceStep {
   id: string;
   step: number;
+  actionType: 'message' | 'send_card';
+  cardType: string;
   message: string;
   message_template?: string;
   delayDays: number;
