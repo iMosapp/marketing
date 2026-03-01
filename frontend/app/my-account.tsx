@@ -418,9 +418,9 @@ export default function MyAccountScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="back-button">
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
