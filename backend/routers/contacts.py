@@ -478,11 +478,11 @@ async def _process_photo(photo_data: str) -> tuple:
     if img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
     
-    # Generate thumbnail (96x96 for avatars, ~3-5KB)
+    # Generate thumbnail (256x256 for avatars — crisp on 3x Retina, ~10-15KB)
     thumb = img.copy()
-    thumb.thumbnail((96, 96), Image.LANCZOS)
+    thumb.thumbnail((256, 256), Image.LANCZOS)
     thumb_buffer = io.BytesIO()
-    thumb.save(thumb_buffer, 'JPEG', quality=60, optimize=True)
+    thumb.save(thumb_buffer, 'JPEG', quality=85, optimize=True)
     thumb_b64 = prefix + base64.b64encode(thumb_buffer.getvalue()).decode()
     
     # Generate high-res (1080px for social media/email/MMS sharing)
