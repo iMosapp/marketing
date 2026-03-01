@@ -417,4 +417,12 @@ const styles = StyleSheet.create({
   actionBtns: { flexDirection: 'row', gap: 6 },
   actionBtn: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   manualAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 12 },
+  // Keypad
+  dialDisplay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, marginBottom: 4 },
+  dialNumber: { fontSize: 24, fontWeight: '300', letterSpacing: 2 },
+  keypadGrid: { paddingHorizontal: 16, marginBottom: 8 },
+  keypadRow: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginBottom: 8 },
+  keypadKey: { width: 64, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  keypadKeyText: { fontSize: 22, fontWeight: '500' },
+  dialBtn: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
 });
