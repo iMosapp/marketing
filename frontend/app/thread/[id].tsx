@@ -2569,12 +2569,12 @@ export default function ThreadScreen() {
               style={styles.photoOptionButton}
               onPress={() => {
                 setShowPhotoOptionsModal(false);
-                openCongratsModal();
+                setShowCardTypePicker(true);
               }}
-              data-testid="photo-option-congrats"
+              data-testid="photo-option-create-card"
             >
               <Ionicons name="gift-outline" size={24} color="#C9A962" />
-              <Text style={styles.photoOptionText}>Create Congrats Card</Text>
+              <Text style={styles.photoOptionText}>Create Card</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
