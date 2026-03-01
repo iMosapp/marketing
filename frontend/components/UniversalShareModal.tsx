@@ -24,7 +24,8 @@ interface UniversalShareModalProps {
   subtitle: string;
   shareUrl: string;
   shareText?: string;
-  showVCard?: boolean;
+  showPreview?: boolean;
+  previewUrl?: string;
   showQR?: boolean;
   vCardUserId?: string;
   userId?: string;
