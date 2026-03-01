@@ -1619,7 +1619,9 @@ export default function ThreadScreen() {
         )}
         
         <View style={styles.headerInfo}>
-          <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
+          <TouchableOpacity onPress={() => router.push(`/contact/${id}` as any)} data-testid="thread-contact-name-link">
+            <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
+          </TouchableOpacity>
           <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
         </View>
         
