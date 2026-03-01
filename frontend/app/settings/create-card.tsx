@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 
 const IS_WEB = Platform.OS === 'web';
+const BASE_URL = IS_WEB ? (typeof window !== 'undefined' ? window.location.origin : '') : 'https://app.imosapp.com';
 
 // Fallback defaults per card type (used while template loads)
 const TYPE_META: Record<string, { label: string; icon: string; accent: string; headline: string; message: string }> = {
