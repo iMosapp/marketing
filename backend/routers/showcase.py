@@ -102,6 +102,7 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
             "salesman_photo": None,
             "store_name": card.get("store_name"),
             "created_at": card.get("created_at").isoformat() if card.get("created_at") else None,
+            "showcase_approved": card.get("showcase_approved", False),
             "review": None,
         }
 
