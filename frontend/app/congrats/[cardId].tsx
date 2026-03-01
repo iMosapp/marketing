@@ -238,19 +238,86 @@ export default function CongratsCardPage() {
         )}
       </View>
 
+      {/* Quick Links — under salesman info */}
+      {cardData.salesman_id && (
+        <View style={styles.quickLinksSection}>
+          {/* Leave a Review CTA */}
+          <TouchableOpacity
+            style={[styles.reviewCTA, { borderColor: style.accent_color }]}
+            onPress={() => router.push(`/p/${cardData.salesman_id}` as any)}
+            data-testid="card-leave-review-btn"
+          >
+            <Ionicons name="star" size={20} color="#FFD60A" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
+              <Text style={[styles.reviewCTASubtitle, { color: style.accent_color }]}>Leave a Review</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={style.accent_color} />
+          </TouchableOpacity>
+
+          {/* Quick link row */}
+          <View style={styles.quickLinksRow}>
+            <TouchableOpacity
+              style={styles.quickLinkItem}
+              onPress={() => router.push(`/p/${cardData.salesman_id}` as any)}
+              data-testid="card-view-profile-btn"
+            >
+              <Ionicons name="card-outline" size={18} color={style.accent_color} />
+              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>My Card</Text>
+            </TouchableOpacity>
+
+            <View style={styles.quickLinkDivider} />
+
+            <TouchableOpacity
+              style={styles.quickLinkItem}
+              onPress={() => router.push(`/showcase/${cardData.salesman_id}` as any)}
+              data-testid="card-view-showcase-btn"
+            >
+              <Ionicons name="storefront-outline" size={18} color={style.accent_color} />
+              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Showcase</Text>
+            </TouchableOpacity>
+
+            <View style={styles.quickLinkDivider} />
+
+            {cardData.salesman?.phone && (
+              <>
+                <TouchableOpacity
+                  style={styles.quickLinkItem}
+                  onPress={() => Linking.openURL(`tel:${cardData.salesman?.phone}`)}
+                  data-testid="card-call-btn"
+                >
+                  <Ionicons name="call-outline" size={18} color={style.accent_color} />
+                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Call</Text>
+                </TouchableOpacity>
+                <View style={styles.quickLinkDivider} />
+                <TouchableOpacity
+                  style={styles.quickLinkItem}
+                  onPress={() => Linking.openURL(`sms:${cardData.salesman?.phone}`)}
+                  data-testid="card-text-btn"
+                >
+                  <Ionicons name="chatbubble-outline" size={18} color={style.accent_color} />
+                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Text</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {cardData.salesman?.email && (
+            <TouchableOpacity
+              style={styles.quickLinkItem}
+              onPress={() => Linking.openURL(`mailto:${cardData.salesman?.email}`)}
+              data-testid="card-email-btn"
+            >
+              <Ionicons name="mail-outline" size={18} color={style.accent_color} />
+              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Email {cardData.salesman.name?.split(' ')[0]}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* Action Buttons */}
       <View style={styles.actionsSection}>
-        <TouchableOpacity 
-          style={styles.actionsTitleLink}
-          onPress={() => {
-            if (cardData?.salesman_id) {
-              router.push(`/p/${cardData.salesman_id}` as any);
-            }
-          }}
-        >
-          <Text style={styles.actionsTitle}>Share Your Experience</Text>
-          <Ionicons name="chevron-forward" size={18} color="#C9A962" />
-        </TouchableOpacity>
+        <Text style={styles.actionsTitle}>Share Your Experience</Text>
         
         {/* Download Button */}
         <TouchableOpacity
@@ -303,61 +370,6 @@ export default function CongratsCardPage() {
           </TouchableOpacity>
         )}
       </View>
-
-      {/* View Salesman Profile Link */}
-      {cardData.salesman_id && (
-        <TouchableOpacity
-          style={styles.profileLinkSection}
-          onPress={() => {
-            router.push(`/p/${cardData.salesman_id}` as any);
-          }}
-        >
-          <View style={styles.profileLinkContent}>
-            <Ionicons name="person-circle-outline" size={24} color={style.accent_color} />
-            <View style={styles.profileLinkText}>
-              <Text style={styles.profileLinkTitle}>View {cardData.salesman?.name?.split(' ')[0]}'s Profile</Text>
-              <Text style={styles.profileLinkSubtitle}>Leave a review or refer a friend</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-        </TouchableOpacity>
-      )}
-
-      {/* Contact Salesman */}
-      {cardData.salesman && (cardData.salesman.phone || cardData.salesman.email) && (
-        <View style={styles.contactSection}>
-          <Text style={styles.contactTitle}>Stay Connected</Text>
-          <View style={styles.contactButtons}>
-            {cardData.salesman.phone && (
-              <TouchableOpacity
-                style={styles.contactButton}
-                onPress={() => Linking.openURL(`tel:${cardData.salesman?.phone}`)}
-              >
-                <Ionicons name="call-outline" size={20} color={style.accent_color} />
-                <Text style={[styles.contactButtonText, { color: style.accent_color }]}>Call</Text>
-              </TouchableOpacity>
-            )}
-            {cardData.salesman.phone && (
-              <TouchableOpacity
-                style={styles.contactButton}
-                onPress={() => Linking.openURL(`sms:${cardData.salesman?.phone}`)}
-              >
-                <Ionicons name="chatbubble-outline" size={20} color={style.accent_color} />
-                <Text style={[styles.contactButtonText, { color: style.accent_color }]}>Text</Text>
-              </TouchableOpacity>
-            )}
-            {cardData.salesman.email && (
-              <TouchableOpacity
-                style={styles.contactButton}
-                onPress={() => Linking.openURL(`mailto:${cardData.salesman?.email}`)}
-              >
-                <Ionicons name="mail-outline" size={20} color={style.accent_color} />
-                <Text style={[styles.contactButtonText, { color: style.accent_color }]}>Email</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
 
       <View style={{ height: 40 }} />
     </ScrollView>
