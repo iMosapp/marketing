@@ -600,14 +600,14 @@ export default function MyAccountScreen() {
                         paddingHorizontal: 14,
                         paddingVertical: 7,
                         borderRadius: 18,
-                        backgroundColor: activityPeriod === p.key ? '#C9A962' : '#1C1C1E',
+                        backgroundColor: activityPeriod === p.key ? '#C9A962' : colors.card,
                       }}
                       data-testid={`activity-period-${p.key}`}
                     >
                       <Text style={{
                         fontSize: 13,
                         fontWeight: '600',
-                        color: activityPeriod === p.key ? '#000' : '#8E8E93',
+                        color: activityPeriod === p.key ? '#000' : colors.textSecondary,
                       }}>{p.label}</Text>
                     </TouchableOpacity>
                   ))}
