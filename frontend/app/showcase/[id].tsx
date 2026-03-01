@@ -433,12 +433,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     width: '100%',
     maxWidth: 400,
-    marginBottom: 28,
+    marginBottom: 20,
   },
   statItem: { flex: 1, alignItems: 'center' },
   statNumber: { fontSize: 22, fontWeight: '800', marginBottom: 2 },
   statLabel: { fontSize: 11, color: '#6E6E73', fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.3 },
   statDivider: { width: 1, height: '80%', alignSelf: 'center' },
+
+  // Quick links under profile
+  quickLinks: { width: '100%', maxWidth: 400, alignItems: 'center', gap: 12, marginBottom: 28 },
+  quickLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    paddingVertical: 4,
+  },
+  quickLinkItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 8 },
+  quickLinkText: { fontSize: 13, fontWeight: '600' },
 
   // Title
   titleSection: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24, width: '100%', maxWidth: 600 },
