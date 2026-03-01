@@ -12,13 +12,28 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 
 ### Core CRM
 - Contact management with tagging, campaigns, activity tracking
+- **Physical address fields** on contacts (street, city, state, zip, country) for gift sending
 - Inbox with SMS (personal fallback + Twilio MOCK) and email channels
 - All outbound communication logged as `contact_events`
+- Contact Intel (AI-powered relationship insights)
+
+### UX Overhaul (Mar 1, 2026)
+- **New Home Tab** — "Daily command center" with 6 quick action tiles:
+  - Share My Card, Review Link, Create Card, My Showroom, Quick Dial, Add Contact
+  - Recent Activity feed below tiles
+- **Simplified 4-tab navigation**: Home, Contacts, Inbox, Menu
+  - Removed Dialer and Team as standalone tabs (moved to Menu → Tools)
+  - Gold (#C9A962) active tab color for brand consistency
+- **Reorganized Menu** — 8 clean categorized sections:
+  - Tools, Campaigns, Reports, Templates & Branding, Contacts & Leads, Profile & AI, Settings, Administration (role-gated)
+- **Quick Dial flow** — Pick contact → log call event → open native dialer
+  - Follows same pattern as personal SMS: if no Twilio, hand off to phone but still log activity
 
 ### Cards & Celebrations
 - Congrats Card creation with preview step + sharing
 - Birthday Card creation with preview step + campaign integration
-- Card view pages with back navigation
+- Digital Business Card (shareable profile page)
+- Showcase/Inventory display
 
 ### Marketing & Public Pages
 - Full `/imos/` marketing site (home, features, pricing, demo, etc.)
@@ -35,20 +50,13 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Custom glossy 3D logo across all assets
 - White-label HTML email templates
 - Brand Assets download page
-- **FIXED: Logo transparency preservation** — image upload now detects and preserves PNG transparency across originals, thumbnails, and avatars
+- Logo transparency preservation in image upload pipeline
+- Light & Dark mode with persistence
 
 ### Administration
 - Soft-delete user system with data retention
 - Public REST API + outgoing webhooks
 - Automated lifecycle scans via apscheduler
-
-## Recent Changes (Feb 28, 2026)
-1. **FIXED: App Directory 404s** — All pages in both admin and public App Directories now point to working `/imos/` preview routes. Created 17 new preview pages.
-2. **FIXED: Logo black background bug** — Root cause: `image_storage.py` was converting all uploads to JPEG (destroying transparency). Now:
-   - Detects PNG alpha channel and preserves it
-   - Thumbnails and avatars keep PNG format when source has transparency
-   - Added `backgroundColor: 'transparent'` to all logo Image styles across 8 frontend files
-   - Affected files: `/card/[userId].tsx`, `/p/[userId].tsx`, `/congrats/[cardId].tsx`, `/birthday/[cardId].tsx`, `/showcase/[id].tsx`, `/join/[code].tsx`, `/card/store/[storeSlug].tsx`, `/review/[storeSlug].tsx`, `/settings/store-profile.tsx`
 
 ## Known Issues
 - **Production email delivery** — Code works in preview; needs RESEND_API_KEY verification on production
@@ -56,15 +64,13 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - React Hydration Error #418 (P2)
 - Mobile app tags sync (P2)
 
-## Action Required by User
-- **Re-upload your iM On Social logo** as a transparent PNG via Settings > Store Profile on production. The system will now preserve transparency.
-
 ## Upcoming Tasks (Priority Order)
-1. (P0) Onboarding Checklist Tracking — save user progress
-2. (P1) Gamification & Leaderboards
-3. (P1) AI-Powered Outreach (sold tag → AI follow-up suggestions)
-4. (P1) Auth refactor (bcrypt password hashing)
-5. (P1) Clean production database for launch
+1. (P0) **Card Template System** — Unified "Create Card" with template picker (Congrats, Birthday, Anniversary, custom). Templates saveable like tags, store-level.
+2. (P0) Onboarding Checklist Tracking — save user progress
+3. (P1) Gamification & Leaderboards
+4. (P1) AI-Powered Outreach (sold tag → AI follow-up suggestions)
+5. (P1) Auth refactor (bcrypt password hashing)
+6. (P1) Clean production database for launch
 
 ## Future/Backlog
 - Card style customization (P2)
