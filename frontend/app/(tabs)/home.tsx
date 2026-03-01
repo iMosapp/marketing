@@ -173,7 +173,7 @@ function ContactActionModal({
                 <Ionicons name="call" size={22} color="#FFF" />
               </TouchableOpacity>
               <View style={{ height: 20 }} />
-            </>
+            </View>
           )}
       </SafeAreaView>
     </Modal>
