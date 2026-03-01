@@ -38,6 +38,14 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Contact find-or-create API handles deduplication before navigation
 - Works across Expo Router stack boundaries (settings → thread)
 
+### Avatar & Photo Quality
+- Thumbnails generated at 256×256 @ 85% JPEG (was 96×96 @ 60%) — crisp on 3x Retina
+- `resizeMode: 'cover'` on all Image components (Avatar, contacts list, contact detail hero)
+- One-time migration endpoint: `POST /api/contacts/admin/regenerate-thumbnails`
+- **Photo Gallery**: Tapping contact avatar opens a grid of photo tiles (profile, congrats, birthday)
+  - Tap tile → full-screen view with prev/next navigation and "All Photos" grid button
+  - Single photo contacts skip grid, go straight to full-screen
+
 ### Cards & Celebrations
 - Unified card creation page (`/settings/create-card.tsx`) supports 6 card types via `?type=` param
 - Card templates manageable by admins (`/settings/card-templates.tsx`)
