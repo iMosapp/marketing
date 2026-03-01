@@ -361,7 +361,7 @@ export default function LoginScreen() {
             {/* Biometric Login Button */}
             {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
               <TouchableOpacity
-                style={[styles.biometricButton, biometricLoading && styles.buttonDisabled]}
+                style={[styles.biometricButton, { backgroundColor: theme.surface, borderColor: '#007AFF' }, biometricLoading && styles.buttonDisabled]}
                 onPress={handleBiometricLogin}
                 disabled={biometricLoading}
                 data-testid="biometric-login-button"
