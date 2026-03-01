@@ -565,6 +565,13 @@ export default function MoreScreen() {
           onPress: () => router.push(`/showroom-manage` as any),
           color: '#34C759',
         },
+        {
+          icon: 'color-palette-outline',
+          title: 'Card Templates',
+          subtitle: 'Customize card designs & messages',
+          onPress: () => router.push('/settings/card-templates'),
+          color: '#FF9500',
+        },
       ],
     },
     // Contacts & Leads
