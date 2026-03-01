@@ -189,7 +189,7 @@ def get_brand_wrapper(brand_kit: dict = None) -> tuple:
     
     footer = f"""
 <div style="margin-top: 30px; padding: 20px; background-color: #f5f5f5; text-align: center;">
-    <p style="color: #999; font-size: 12px; margin: 0;">{footer_text}</p>
+    <p style="color: #999; font-size: 12px; margin: 0;"><a href="{BRAND_URL}" style="color: #999; text-decoration: none;">{footer_text}</a></p>
 </div>
 """
     return header, footer
