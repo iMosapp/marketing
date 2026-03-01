@@ -613,7 +613,7 @@ export default function MoreScreen() {
           icon: 'shield-checkmark-outline',
           title: 'Showcase Approvals',
           subtitle: 'Approve showcase posts',
-          onPress: () => router.push('/settings/showroom-approvals'),
+          onPress: () => router.push('/settings/showcase-approvals'),
           color: '#34C759',
         },
       ],
