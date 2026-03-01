@@ -1686,6 +1686,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6E6E73',
   },
+  themeToggleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 12,
+  },
+  themeToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  themeToggleTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  themeToggleSub: {
+    fontSize: 12,
+    marginTop: 1,
+  },
 });
 
 const shareStyles = StyleSheet.create({
