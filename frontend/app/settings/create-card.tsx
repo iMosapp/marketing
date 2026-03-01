@@ -26,15 +26,15 @@ const TYPE_META: Record<string, { label: string; icon: string; accent: string; h
 
 export default function CreateCardPage() {
   const router = useRouter();
-  const { type } = useLocalSearchParams<{ type: string }>();
+  const { type, prefillName, prefillPhone, prefillEmail } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
   const meta = TYPE_META[cardType] || TYPE_META.congrats;
 
   const [template, setTemplate] = useState<any>(null);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState(prefillName || '');
+  const [customerPhone, setCustomerPhone] = useState(prefillPhone || '');
+  const [customerEmail, setCustomerEmail] = useState(prefillEmail || '');
   const [customMessage, setCustomMessage] = useState('');
   const [photo, setPhoto] = useState<{ uri: string; type: string; name: string } | null>(null);
   const [creating, setCreating] = useState(false);
