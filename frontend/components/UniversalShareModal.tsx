@@ -11,6 +11,7 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
