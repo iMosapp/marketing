@@ -291,11 +291,11 @@ export default function LoginScreen() {
               blurOnSubmit={false}
             />
             
-            <View style={styles.passwordContainer}>
+            <View style={[styles.passwordContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <TextInput
-                style={styles.passwordInput}
+                style={[styles.passwordInput, { color: theme.text }]}
                 placeholder="Password"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={theme.textSecondary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
