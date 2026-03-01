@@ -88,7 +88,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export default function ShowcasePage() {
-  const { id, scope } = useLocalSearchParams();
+  const { id, scope, from } = useLocalSearchParams();
   const router = useRouter();
   const [data, setData] = useState<ShowcaseData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,6 +96,7 @@ export default function ShowcasePage() {
   const [showQR, setShowQR] = useState(false);
 
   const pageScope = (scope as string) || 'user';
+  const fromUserId = from as string | undefined;
 
   useEffect(() => {
     loadShowcase();
