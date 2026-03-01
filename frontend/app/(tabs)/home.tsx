@@ -404,9 +404,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5 },
-  greeting: { fontSize: 13, fontWeight: '500' },
-  userName: { fontSize: 24, fontWeight: '800', marginTop: 2 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
+  userName: { fontSize: 18, fontWeight: '700' },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
