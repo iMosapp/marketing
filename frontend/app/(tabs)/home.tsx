@@ -96,14 +96,19 @@ function ContactActionModal({
   const KEYS = [['1','2','3'],['4','5','6'],['7','8','9'],['*','0','#']];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
-        <View style={[styles.modalContent, { backgroundColor: colors.modalBg }]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{initialMode === 'keypad' ? 'Quick Dial' : 'Add Contact'}</Text>
-            <TouchableOpacity onPress={onClose} data-testid="close-action-modal"><Ionicons name="close" size={24} color={colors.textSecondary} /></TouchableOpacity>
-          </View>
-          <View style={[styles.modeTabs, { borderColor: colors.border }]}>
+    <Modal visible={visible} animationType="slide" transparent={false}>
+      <SafeAreaView style={[{ flex: 1, backgroundColor: colors.bg }]} edges={['top']}>
+        {/* Clean header — just back + title */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
+          <TouchableOpacity onPress={onClose} style={{ padding: 4 }} data-testid="close-action-modal">
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Quick Dial' : 'Add Contact'}</Text>
+          <View style={{ width: 32 }} />
+        </View>
+
+        {/* Mode tabs */}
+        <View style={[styles.modeTabs, { borderColor: colors.border, marginHorizontal: 16, marginTop: 12 }]}>
             <TouchableOpacity style={[styles.modeTab, mode === 'search' && { backgroundColor: colors.accent + '20' }]} onPress={() => setMode('search')} data-testid="mode-search">
               <Ionicons name="search" size={16} color={mode === 'search' ? colors.accent : colors.textSecondary} />
               <Text style={{ color: mode === 'search' ? colors.accent : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>Contacts</Text>
