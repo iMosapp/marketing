@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   activityTime: { fontSize: 11, marginTop: 2 },
   // Modal shared
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
-  modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '85%' },
+  modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, maxHeight: '75%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 20, fontWeight: '700' },
   searchInput: { borderRadius: 12, padding: 12, fontSize: 15, marginBottom: 8, borderWidth: 1 },
