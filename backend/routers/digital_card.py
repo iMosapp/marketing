@@ -236,6 +236,22 @@ async def generate_vcard(user_id: str):
     if user.get("photo_url"):
         vcard_lines.append(f"PHOTO;VALUE=URI:{user.get('photo_url')}")
     
+    # Add links: landing page, review page, showroom
+    base_url = "https://app.imosapp.com"
+    vcard_lines.append(f"URL;TYPE=PREF:{base_url}/p/{user_id}")
+    
+    # Add store review link if available
+    store_slug = None
+    if store:
+        store_slug = store.get("slug") or store.get("name", "").lower().replace(" ", "-")
+    if store_slug:
+        vcard_lines.append(f"item1.URL:{base_url}/review/{store_slug}?sp={user_id}")
+        vcard_lines.append("item1.X-ABLabel:Leave a Review")
+    
+    # Showroom link
+    vcard_lines.append(f"item2.URL:{base_url}/showcase/{user_id}")
+    vcard_lines.append("item2.X-ABLabel:My Showroom")
+    
     vcard_lines.append("END:VCARD")
     
     vcard_content = "\n".join(vcard_lines)
