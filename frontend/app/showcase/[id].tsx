@@ -277,6 +277,37 @@ export default function ShowcasePage() {
             )}
 
             <View style={styles.quickLinksRow}>
+              {/* Store view: Back to user's showcase */}
+              {isStoreView && fromUserId && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickLinkItem}
+                    onPress={() => router.push(`/showcase/${fromUserId}` as any)}
+                    data-testid="back-to-user-showcase"
+                  >
+                    <Ionicons name="person-outline" size={18} color={accent} />
+                    <Text style={[styles.quickLinkText, { color: accent }]}>Back to Showcase</Text>
+                  </TouchableOpacity>
+                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+                </>
+              )}
+
+              {/* Store view: View store landing page */}
+              {isStoreView && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickLinkItem}
+                    onPress={() => router.push(`/p/${fromUserId || id}` as any)}
+                    data-testid="view-store-page"
+                  >
+                    <Ionicons name="globe-outline" size={18} color={accent} />
+                    <Text style={[styles.quickLinkText, { color: accent }]}>Landing Page</Text>
+                  </TouchableOpacity>
+                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+                </>
+              )}
+
+              {/* User view: My Card */}
               {!isStoreView && (
                 <>
                   <TouchableOpacity
@@ -291,6 +322,7 @@ export default function ShowcasePage() {
                 </>
               )}
 
+              {/* User view: Store Showcase */}
               {!isStoreView && storeId && (
                 <>
                   <TouchableOpacity
