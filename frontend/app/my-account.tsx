@@ -828,7 +828,7 @@ export default function MyAccountScreen() {
                   {/* Click-Through Rates by Content Type */}
                   {activityData.ctr && (
                     <View style={{ marginTop: 14 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 10 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 }}>
                         Click-Through Rates
                       </Text>
                       {[
@@ -840,7 +840,7 @@ export default function MyAccountScreen() {
                         if (!data || data.sent === 0) return null;
                         return (
                           <View key={item.key} style={{
-                            backgroundColor: '#1C1C1E',
+                            backgroundColor: colors.card,
                             borderRadius: 12,
                             padding: 14,
                             marginBottom: 8,
@@ -848,10 +848,10 @@ export default function MyAccountScreen() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                 <Ionicons name={item.icon} size={16} color={item.color} />
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFF' }}>{item.label}</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{item.label}</Text>
                               </View>
                               <View style={{
-                                backgroundColor: data.ctr > 0 ? '#34C75920' : '#3A3A3C',
+                                backgroundColor: data.ctr > 0 ? '#34C75920' : colors.bg,
                                 paddingHorizontal: 10,
                                 paddingVertical: 3,
                                 borderRadius: 10,
@@ -859,28 +859,27 @@ export default function MyAccountScreen() {
                                 <Text style={{
                                   fontSize: 13,
                                   fontWeight: '700',
-                                  color: data.ctr > 0 ? '#34C759' : '#8E8E93',
+                                  color: data.ctr > 0 ? '#34C759' : colors.textTertiary,
                                 }}>
                                   {Math.min(data.ctr, 100)}% CTR
                                 </Text>
                               </View>
                             </View>
-                            {/* Stats row */}
                             <View style={{ flexDirection: 'row', gap: 16 }}>
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>Sent</Text>
-                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFF' }}>{data.sent}</Text>
+                                <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 2 }}>Sent</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{data.sent}</Text>
                               </View>
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>Clicks</Text>
-                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFF' }}>{data.clicks}</Text>
+                                <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 2 }}>Clicks</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{data.clicks}</Text>
                               </View>
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>via SMS</Text>
+                                <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 2 }}>via SMS</Text>
                                 <Text style={{ fontSize: 16, fontWeight: '700', color: '#007AFF' }}>{data.by_channel?.sms || 0}</Text>
                               </View>
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 11, color: '#6E6E73', marginBottom: 2 }}>via Email</Text>
+                                <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 2 }}>via Email</Text>
                                 <Text style={{ fontSize: 16, fontWeight: '700', color: '#5856D6' }}>{data.by_channel?.email || 0}</Text>
                               </View>
                             </View>
