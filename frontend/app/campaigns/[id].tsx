@@ -69,6 +69,7 @@ const { showToast } = useToast();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
+  const [previewCardType, setPreviewCardType] = useState<string | null>(null);
   
   useFocusEffect(
     useCallback(() => {
