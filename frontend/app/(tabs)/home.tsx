@@ -151,7 +151,7 @@ function ContactActionModal({
             <>
               <View style={[styles.dialDisplay, { borderColor: colors.border }]}>
                 <Text style={[styles.dialNumber, { color: colors.text }]}>{dialNumber || 'Enter number'}</Text>
-                {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={24} color={colors.textSecondary} /></TouchableOpacity>}
+                {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
               </View>
               <View style={styles.keypadGrid}>
                 {KEYS.map((row, ri) => (
@@ -167,6 +167,7 @@ function ContactActionModal({
               <TouchableOpacity style={[styles.dialBtn, { backgroundColor: '#34C759' }]} onPress={() => logAndDial(dialNumber)}>
                 <Ionicons name="call" size={22} color="#FFF" />
               </TouchableOpacity>
+              <View style={{ height: 20 }} />
             </>
           )}
         </View>
