@@ -167,7 +167,9 @@ export default function ShowcasePage() {
   }
 
   const accent = data.store?.primary_color || ACCENT;
-  const spName = data.salesperson?.name || 'Our Team';
+  const isStoreView = pageScope === 'store';
+  const spName = isStoreView ? (data.store?.name || 'Our Team') : (data.salesperson?.name || 'Our Team');
+  const storeId = data.store?.id;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -176,7 +178,7 @@ export default function ShowcasePage() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="showroom-back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>The Showroom</Text>
+        <Text style={styles.topBarTitle}>{isStoreView ? `${data.store?.name || 'Store'} Showroom` : 'The Showroom'}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -187,26 +189,50 @@ export default function ShowcasePage() {
       >
         {/* Header */}
         <View style={styles.header}>
-          {/* Store logo */}
-          {data.store?.logo_url && (
+          {/* Store logo — clickable to store showroom (only in user view) */}
+          {data.store?.logo_url && !isStoreView && storeId ? (
+            <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)} data-testid="store-logo-link">
+              <Image source={{ uri: data.store.logo_url }} style={styles.storeLogo} resizeMode="contain" />
+            </TouchableOpacity>
+          ) : data.store?.logo_url ? (
             <Image source={{ uri: data.store.logo_url }} style={styles.storeLogo} resizeMode="contain" />
-          )}
+          ) : null}
 
-          {/* Salesperson hero */}
+          {/* Hero section — salesperson (user view) or store (store view) */}
           <View style={styles.heroSection}>
-            {data.salesperson.photo_url ? (
-              <Image source={{ uri: data.salesperson.photo_url }} style={[styles.heroAvatar, { borderColor: accent }]} />
+            {isStoreView ? (
+              <>
+                {data.store?.logo_url ? (
+                  <Image source={{ uri: data.store.logo_url }} style={[styles.heroAvatar, { borderColor: accent }]} />
+                ) : (
+                  <View style={[styles.heroAvatarFallback, { backgroundColor: accent }]}>
+                    <Ionicons name="storefront" size={36} color="#000" />
+                  </View>
+                )}
+                <Text style={styles.heroName}>{data.store?.name || 'Our Store'}</Text>
+                <Text style={styles.heroTitle}>{data.team?.length || 0} Team Members</Text>
+              </>
             ) : (
-              <View style={[styles.heroAvatarFallback, { backgroundColor: accent }]}>
-                <Text style={styles.heroAvatarText}>
-                  {spName.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2)}
-                </Text>
-              </View>
-            )}
-            <Text style={styles.heroName}>{spName}</Text>
-            <Text style={styles.heroTitle}>{data.salesperson.title}</Text>
-            {data.store?.name && (
-              <Text style={[styles.heroStore, { color: accent }]}>{data.store.name}</Text>
+              <>
+                {data.salesperson?.photo_url ? (
+                  <Image source={{ uri: data.salesperson.photo_url }} style={[styles.heroAvatar, { borderColor: accent }]} />
+                ) : (
+                  <View style={[styles.heroAvatarFallback, { backgroundColor: accent }]}>
+                    <Text style={styles.heroAvatarText}>
+                      {spName.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2)}
+                    </Text>
+                  </View>
+                )}
+                <Text style={styles.heroName}>{spName}</Text>
+                <Text style={styles.heroTitle}>{data.salesperson?.title}</Text>
+                {data.store?.name && storeId ? (
+                  <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)} data-testid="store-name-link">
+                    <Text style={[styles.heroStore, { color: accent }]}>{data.store.name}</Text>
+                  </TouchableOpacity>
+                ) : data.store?.name ? (
+                  <Text style={[styles.heroStore, { color: accent }]}>{data.store.name}</Text>
+                ) : null}
+              </>
             )}
           </View>
 
