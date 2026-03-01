@@ -870,6 +870,14 @@ export default function ContactDetailScreen() {
 
             <Text style={s.heroName} data-testid="contact-name">{fullName}</Text>
             {contact.vehicle ? <Text style={s.heroVehicle}>{contact.vehicle}</Text> : null}
+            {(contact.address_city || contact.address_state) ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="location-outline" size={14} color="#8E8E93" style={{ marginRight: 4 }} />
+                <Text style={{ fontSize: 13, color: '#8E8E93' }}>
+                  {[contact.address_city, contact.address_state].filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            ) : null}
 
             {/* Contact chips */}
             <View style={s.heroChips}>
