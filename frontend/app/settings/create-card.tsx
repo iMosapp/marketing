@@ -26,7 +26,7 @@ const TYPE_META: Record<string, { label: string; icon: string; accent: string; h
 
 export default function CreateCardPage() {
   const router = useRouter();
-  const { type, prefillName, prefillPhone, prefillEmail } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string }>();
+  const { type, prefillName, prefillPhone, prefillEmail, returnToThread } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
   const meta = TYPE_META[cardType] || TYPE_META.congrats;
