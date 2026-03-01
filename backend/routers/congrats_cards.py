@@ -439,8 +439,8 @@ def create_circular_mask(size):
 @router.get("/card/{card_id}/image")
 async def get_card_image(card_id: str):
     """
-    Generate a downloadable image of the congrats card
-    Perfect for saving and sharing on social media
+    Generate a clean, social-media-ready card image.
+    Compact layout — just the card: headline, photo, name, message, sender.
     """
     db = get_db()
     
@@ -448,9 +448,9 @@ async def get_card_image(card_id: str):
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
     
-    # Card dimensions (phone-friendly 9:16 aspect ratio)
+    # Social-friendly dimensions (4:5 portrait, ideal for Instagram/FB)
     width = 1080
-    height = 1920
+    height = 1350
     
     # Get colors
     bg_color = hex_to_rgb(card.get("background_color", "#1A1A1A"))
@@ -461,180 +461,118 @@ async def get_card_image(card_id: str):
     img = Image.new('RGB', (width, height), bg_color)
     draw = ImageDraw.Draw(img)
     
-    # Try to load fonts (fall back to default if not available)
+    # Load fonts
     try:
-        font_headline = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
-        font_name = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 56)
-        font_message = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 36)
-        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
-        font_salesman = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
+        font_headline = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 64)
+        font_name = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
+        font_message = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
+        font_salesman = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
     except Exception:
-        font_headline = ImageFont.load_default()
-        font_name = ImageFont.load_default()
-        font_message = ImageFont.load_default()
-        font_small = ImageFont.load_default()
-        font_salesman = ImageFont.load_default()
+        font_headline = font_name = font_message = font_salesman = font_small = ImageFont.load_default()
     
-    y_offset = 120
+    # Subtle accent border at top
+    draw.rectangle([0, 0, width, 6], fill=accent_color)
     
-    # Draw headline
-    headline = card.get("headline", "Thank You!")
+    y = 80
+    
+    # Headline
+    headline = card.get("headline", "Congratulations!")
     bbox = draw.textbbox((0, 0), headline, font=font_headline)
-    text_width = bbox[2] - bbox[0]
-    draw.text(((width - text_width) // 2, y_offset), headline, fill=accent_color, font=font_headline)
-    y_offset += 120
+    tw = bbox[2] - bbox[0]
+    draw.text(((width - tw) // 2, y), headline, fill=accent_color, font=font_headline)
+    y += 100
     
-    # Draw customer photo
+    # Customer photo (large, centered, circular with accent ring)
     customer_photo_data = card.get("customer_photo", "")
-    photo_size = 320
+    photo_size = 380
     photo_x = (width - photo_size) // 2
     
     if customer_photo_data and customer_photo_data.startswith("data:"):
         try:
-            # Extract base64 data
             base64_str = customer_photo_data.split(",")[1]
             photo_bytes = base64.b64decode(base64_str)
-            customer_photo = Image.open(io.BytesIO(photo_bytes))
-            
-            # Resize and crop to square
-            customer_photo = customer_photo.convert("RGBA")
+            customer_photo = Image.open(io.BytesIO(photo_bytes)).convert("RGBA")
             min_dim = min(customer_photo.size)
             left = (customer_photo.width - min_dim) // 2
             top = (customer_photo.height - min_dim) // 2
             customer_photo = customer_photo.crop((left, top, left + min_dim, top + min_dim))
             customer_photo = customer_photo.resize((photo_size, photo_size), Image.Resampling.LANCZOS)
-            
-            # Create circular photo
             mask = create_circular_mask(photo_size)
-            
-            # Draw gold ring behind photo
-            ring_size = photo_size + 20
-            ring_x = (width - ring_size) // 2
-            draw.ellipse([ring_x, y_offset - 10, ring_x + ring_size, y_offset + ring_size - 10], 
-                        fill=accent_color)
-            
-            # Paste photo with circular mask
-            img.paste(customer_photo.convert("RGB"), (photo_x, y_offset), mask)
-            
-        except Exception as e:
-            # Draw placeholder circle if photo fails
-            draw.ellipse([photo_x, y_offset, photo_x + photo_size, y_offset + photo_size], 
-                        fill=accent_color, outline=accent_color, width=8)
+            # Accent ring
+            ring = photo_size + 16
+            rx = (width - ring) // 2
+            draw.ellipse([rx, y - 8, rx + ring, y + ring - 8], fill=accent_color)
+            img.paste(customer_photo.convert("RGB"), (photo_x, y), mask)
+        except Exception:
+            draw.ellipse([photo_x, y, photo_x + photo_size, y + photo_size], outline=accent_color, width=6)
     else:
-        # Draw placeholder circle
-        draw.ellipse([photo_x, y_offset, photo_x + photo_size, y_offset + photo_size], 
-                    outline=accent_color, width=8)
+        draw.ellipse([photo_x, y, photo_x + photo_size, y + photo_size], outline=accent_color, width=6)
     
-    y_offset += photo_size + 50
+    y += photo_size + 40
     
-    # Draw customer name
+    # Customer name
     customer_name = card.get("customer_name", "Customer")
     bbox = draw.textbbox((0, 0), customer_name, font=font_name)
-    text_width = bbox[2] - bbox[0]
-    draw.text(((width - text_width) // 2, y_offset), customer_name, fill=text_color, font=font_name)
-    y_offset += 80
+    tw = bbox[2] - bbox[0]
+    draw.text(((width - tw) // 2, y), customer_name, fill=text_color, font=font_name)
+    y += 70
     
-    # Draw main message
+    # Message (word-wrapped, max 3 lines)
     message = card.get("message", "Thank you for choosing us!")
-    if "{customer_name}" in message:
-        message = message.replace("{customer_name}", customer_name)
+    message = message.replace("{customer_name}", customer_name).replace("{name}", customer_name)
     if "{salesman_name}" in message:
         message = message.replace("{salesman_name}", card.get("salesman_name", ""))
     
-    # Word wrap message
-    max_width = width - 120
+    max_text_w = width - 140
     words = message.split()
     lines = []
-    current_line = ""
-    for word in words:
-        test_line = f"{current_line} {word}".strip()
-        bbox = draw.textbbox((0, 0), test_line, font=font_message)
-        if bbox[2] - bbox[0] <= max_width:
-            current_line = test_line
+    cur = ""
+    for w in words:
+        test = f"{cur} {w}".strip()
+        bbox = draw.textbbox((0, 0), test, font=font_message)
+        if bbox[2] - bbox[0] <= max_text_w:
+            cur = test
         else:
-            if current_line:
-                lines.append(current_line)
-            current_line = word
-    if current_line:
-        lines.append(current_line)
+            if cur:
+                lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    lines = lines[:4]  # Max 4 lines
     
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_message)
-        text_width = bbox[2] - bbox[0]
-        draw.text(((width - text_width) // 2, y_offset), line, fill=text_color, font=font_message)
-        y_offset += 50
+        tw = bbox[2] - bbox[0]
+        draw.text(((width - tw) // 2, y), line, fill=text_color, font=font_message)
+        y += 42
     
-    y_offset += 20
+    # Accent divider
+    y += 20
+    dw = 80
+    dx = (width - dw) // 2
+    draw.rounded_rectangle([dx, y, dx + dw, y + 4], radius=2, fill=accent_color)
+    y += 40
     
-    # Draw custom message if present
-    custom_message = card.get("custom_message")
-    if custom_message:
-        custom_text = f'"{custom_message}"'
-        # Word wrap
-        words = custom_text.split()
-        lines = []
-        current_line = ""
-        for word in words:
-            test_line = f"{current_line} {word}".strip()
-            bbox = draw.textbbox((0, 0), test_line, font=font_small)
-            if bbox[2] - bbox[0] <= max_width:
-                current_line = test_line
-            else:
-                if current_line:
-                    lines.append(current_line)
-                current_line = word
-        if current_line:
-            lines.append(current_line)
-        
-        for line in lines:
-            bbox = draw.textbbox((0, 0), line, font=font_small)
-            text_width = bbox[2] - bbox[0]
-            # Lighter color for custom message
-            light_text = tuple(min(255, c + 40) for c in text_color)
-            draw.text(((width - text_width) // 2, y_offset), line, fill=light_text, font=font_small)
-            y_offset += 40
-        y_offset += 30
-    
-    # Draw divider line
-    divider_width = 100
-    divider_x = (width - divider_width) // 2
-    draw.rounded_rectangle([divider_x, y_offset, divider_x + divider_width, y_offset + 6], 
-                          radius=3, fill=accent_color)
-    y_offset += 60
-    
-    # Draw salesman info
+    # Sender info
     if card.get("show_salesman"):
-        salesman_name = card.get("salesman_name", "")
-        salesman_title = card.get("salesman_title", "")
-        store_name = card.get("store_name", "")
-        
-        if salesman_name:
-            bbox = draw.textbbox((0, 0), salesman_name, font=font_salesman)
-            text_width = bbox[2] - bbox[0]
-            draw.text(((width - text_width) // 2, y_offset), salesman_name, fill=text_color, font=font_salesman)
-            y_offset += 45
-        
-        if salesman_title:
-            bbox = draw.textbbox((0, 0), salesman_title, font=font_small)
-            text_width = bbox[2] - bbox[0]
-            draw.text(((width - text_width) // 2, y_offset), salesman_title, fill=accent_color, font=font_small)
-            y_offset += 40
-        
-        if store_name:
-            bbox = draw.textbbox((0, 0), store_name, font=font_small)
-            text_width = bbox[2] - bbox[0]
-            gray_color = (142, 142, 147)
-            draw.text(((width - text_width) // 2, y_offset), store_name, fill=gray_color, font=font_small)
-            y_offset += 40
-    
-    # Draw footer text
-    footer_text = card.get("footer_text")
-    if footer_text:
-        y_offset = height - 100
-        bbox = draw.textbbox((0, 0), footer_text, font=font_small)
-        text_width = bbox[2] - bbox[0]
-        gray_color = (142, 142, 147)
-        draw.text(((width - text_width) // 2, y_offset), footer_text, fill=gray_color, font=font_small)
+        name = card.get("salesman_name", "")
+        title = card.get("salesman_title", "")
+        store = card.get("store_name", "")
+        if name:
+            bbox = draw.textbbox((0, 0), name, font=font_salesman)
+            tw = bbox[2] - bbox[0]
+            draw.text(((width - tw) // 2, y), name, fill=text_color, font=font_salesman)
+            y += 38
+        if title:
+            bbox = draw.textbbox((0, 0), title, font=font_small)
+            tw = bbox[2] - bbox[0]
+            draw.text(((width - tw) // 2, y), title, fill=accent_color, font=font_small)
+            y += 34
+        if store:
+            bbox = draw.textbbox((0, 0), store, font=font_small)
+            tw = bbox[2] - bbox[0]
+            draw.text(((width - tw) // 2, y), store, fill=(142, 142, 147), font=font_small)
     
     # Save to bytes
     img_bytes = io.BytesIO()
@@ -647,12 +585,11 @@ async def get_card_image(card_id: str):
         {"$inc": {"downloads": 1}}
     )
     
-    # Return as inline image (not attachment) so it displays in browser and can be long-pressed
     return Response(
         content=img_bytes.getvalue(),
         media_type="image/png",
         headers={
-            "Content-Disposition": f'inline; filename="congrats-card-{card_id}.png"',
+            "Content-Disposition": f'inline; filename="card-{card_id}.png"',
             "Cache-Control": "public, max-age=3600"
         }
     )
