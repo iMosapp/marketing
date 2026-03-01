@@ -205,6 +205,7 @@ export default function ContactDetailScreen() {
     referral_notes: '', referral_count: 0,
     birthday: null as Date | null, anniversary: null as Date | null,
     date_sold: null as Date | null, custom_dates: [] as CustomDateField[],
+    address_street: '', address_city: '', address_state: '', address_zip: '', address_country: '',
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
