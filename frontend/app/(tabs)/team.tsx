@@ -494,10 +494,10 @@ export default function TeamChatScreen() {
   // Channel list view
   if (!selectedChannel) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Team Chat</Text>
+        <View style={[styles.header, { backgroundColor: colors.bg }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Team Chat</Text>
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => {
@@ -511,14 +511,14 @@ export default function TeamChatScreen() {
         </View>
 
         {/* Channel Search Bar */}
-        <View style={styles.channelSearchBar}>
-          <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+        <View style={[styles.channelSearchBar, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
-            style={styles.channelSearchInput}
+            style={[styles.channelSearchInput, { color: colors.text }]}
             value={channelSearch}
             onChangeText={setChannelSearch}
             placeholder="Search channels..."
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
           {channelSearch.length > 0 && (
             <TouchableOpacity onPress={() => setChannelSearch('')}>
