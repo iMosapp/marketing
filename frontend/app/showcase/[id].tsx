@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
+import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
@@ -422,9 +423,7 @@ export default function ShowcasePage() {
         )}
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Powered by i'M On Social</Text>
-        </View>
+        <PoweredByFooter />
       </ScrollView>
     </SafeAreaView>
   );
