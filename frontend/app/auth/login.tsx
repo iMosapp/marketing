@@ -311,7 +311,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off' : 'eye'}
                   size={22}
-                  color="#8E8E93"
+                  color={theme.textSecondary}
                 />
               </TouchableOpacity>
             </View>
