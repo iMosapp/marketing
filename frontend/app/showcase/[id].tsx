@@ -258,30 +258,49 @@ export default function ShowcasePage() {
 
           {/* Quick action links — under profile, above showroom feed */}
           <View style={styles.quickLinks}>
-            <TouchableOpacity
-              style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
-              onPress={() => router.push(`/p/${id}`)}
-              data-testid="leave-review-btn"
-            >
-              <Ionicons name="star" size={20} color="#FFD60A" />
-              <View style={styles.reviewCTAContent}>
-                <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
-                <Text style={[styles.reviewCTASubtitle, { color: accent }]}>Leave a Review</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={accent} />
-            </TouchableOpacity>
+            {!isStoreView && (
+              <TouchableOpacity
+                style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
+                onPress={() => router.push(`/p/${id}`)}
+                data-testid="leave-review-btn"
+              >
+                <Ionicons name="star" size={20} color="#FFD60A" />
+                <View style={styles.reviewCTAContent}>
+                  <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
+                  <Text style={[styles.reviewCTASubtitle, { color: accent }]}>Leave a Review</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={accent} />
+              </TouchableOpacity>
+            )}
 
             <View style={styles.quickLinksRow}>
-              <TouchableOpacity
-                style={styles.quickLinkItem}
-                onPress={() => router.push(`/p/${id}`)}
-                data-testid="view-business-card-btn"
-              >
-                <Ionicons name="card-outline" size={18} color={accent} />
-                <Text style={[styles.quickLinkText, { color: accent }]}>My Card</Text>
-              </TouchableOpacity>
+              {!isStoreView && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickLinkItem}
+                    onPress={() => router.push(`/p/${id}`)}
+                    data-testid="view-business-card-btn"
+                  >
+                    <Ionicons name="card-outline" size={18} color={accent} />
+                    <Text style={[styles.quickLinkText, { color: accent }]}>My Card</Text>
+                  </TouchableOpacity>
+                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+                </>
+              )}
 
-              <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+              {!isStoreView && storeId && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickLinkItem}
+                    onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)}
+                    data-testid="store-showroom-link"
+                  >
+                    <Ionicons name="storefront-outline" size={18} color={accent} />
+                    <Text style={[styles.quickLinkText, { color: accent }]}>Store</Text>
+                  </TouchableOpacity>
+                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+                </>
+              )}
 
               <TouchableOpacity
                 style={styles.quickLinkItem}
