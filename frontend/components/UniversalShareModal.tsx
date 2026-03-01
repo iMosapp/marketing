@@ -426,7 +426,7 @@ export function UniversalShareModal({
                   <View style={[styles.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
                     <Ionicons name="eye-outline" size={24} color="#C9A962" />
                   </View>
-                  <Text style={styles.shareOptionText}>Preview</Text>
+                  <Text style={[styles.shareOptionText, { color: colors.text }]}>Preview</Text>
                 </TouchableOpacity>
               )}
 
@@ -435,7 +435,7 @@ export function UniversalShareModal({
                   <View style={[styles.shareOptionIcon, { backgroundColor: '#AF52DE20' }]}>
                     <Ionicons name="qr-code-outline" size={24} color="#AF52DE" />
                   </View>
-                  <Text style={styles.shareOptionText}>Show QR</Text>
+                  <Text style={[styles.shareOptionText, { color: colors.text }]}>Show QR</Text>
                 </TouchableOpacity>
               )}
             </View>
