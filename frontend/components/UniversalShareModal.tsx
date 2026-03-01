@@ -328,29 +328,29 @@ export function UniversalShareModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={close}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View style={styles.shareModal}>
-            <View style={styles.shareModalHandle} />
-            <Text style={styles.shareModalTitle}>{title}</Text>
-            <Text style={styles.shareModalSubtitle}>{subtitle}</Text>
+          <View style={[styles.shareModal, { backgroundColor: colors.card }]}>
+            <View style={[styles.shareModalHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.shareModalTitle, { color: colors.text }]}>{title}</Text>
+            <Text style={[styles.shareModalSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
 
             {/* Recipient Info */}
             <View style={styles.recipientSection}>
-              <Text style={styles.recipientLabel}>SEND TO (OPTIONAL)</Text>
+              <Text style={[styles.recipientLabel, { color: colors.textTertiary }]}>SEND TO (OPTIONAL)</Text>
               <View style={{ position: 'relative', zIndex: 10 }}>
                 <TextInput
-                  style={styles.recipientInput}
+                  style={[styles.recipientInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
                   placeholder="Search contact or type name..."
-                  placeholderTextColor="#6E6E73"
+                  placeholderTextColor={colors.textTertiary}
                   value={recipientName}
                   onChangeText={searchContacts}
                   data-testid="share-recipient-name"
                 />
                 {showSuggestions && contactSuggestions.length > 0 && (
-                  <View style={styles.suggestionsDropdown} data-testid="share-contact-suggestions">
+                  <View style={[styles.suggestionsDropdown, { backgroundColor: colors.cardAlt, borderColor: colors.border }]} data-testid="share-contact-suggestions">
                     {contactSuggestions.map((c: any) => (
                       <TouchableOpacity
                         key={c._id}
-                        style={styles.suggestionRow}
+                        style={[styles.suggestionRow, { borderBottomColor: colors.border }]}
                         onPress={() => selectContact(c)}
                         data-testid={`suggestion-${c._id}`}
                       >
@@ -358,8 +358,8 @@ export function UniversalShareModal({
                           <Text style={styles.suggestionAvatarText}>{(c.first_name || '?')[0].toUpperCase()}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.suggestionName}>{c.first_name} {c.last_name || ''}</Text>
-                          <Text style={styles.suggestionDetail}>{c.phone || c.email || ''}</Text>
+                          <Text style={[styles.suggestionName, { color: colors.text }]}>{c.first_name} {c.last_name || ''}</Text>
+                          <Text style={[styles.suggestionDetail, { color: colors.textSecondary }]}>{c.phone || c.email || ''}</Text>
                         </View>
                       </TouchableOpacity>
                     ))}
@@ -367,18 +367,18 @@ export function UniversalShareModal({
                 )}
               </View>
               <TextInput
-                style={styles.recipientInput}
+                style={[styles.recipientInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
                 placeholder="Phone"
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
                 value={recipientPhone}
                 onChangeText={setRecipientPhone}
                 keyboardType="phone-pad"
                 data-testid="share-recipient-phone"
               />
               <TextInput
-                style={styles.recipientInput}
+                style={[styles.recipientInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
                 placeholder="Email"
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
                 value={recipientEmail}
                 onChangeText={setRecipientEmail}
                 keyboardType="email-address"
