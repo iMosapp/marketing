@@ -463,7 +463,7 @@ export default function PublicLandingPage() {
           <View style={[styles.quickLinkIcon, { backgroundColor: '#34C75918' }]}>
             <Ionicons name="storefront-outline" size={20} color="#34C759" />
           </View>
-          <Text style={styles.quickLinkText}>View My Showroom</Text>
+          <Text style={styles.quickLinkText}>View My Showcase</Text>
           <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
         </TouchableOpacity>
 
