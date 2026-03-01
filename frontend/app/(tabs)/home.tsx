@@ -255,7 +255,7 @@ export default function HomeScreen() {
   // Open share modal for a tile
   const openShareModal = (tile: string) => {
     const userId = user?._id || '';
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.imosapp.com';
 
     switch (tile) {
       case 'share-card':
@@ -265,7 +265,8 @@ export default function HomeScreen() {
           subtitle: 'Choose how to share your digital card',
           url: `${baseUrl}/p/${userId}`,
           text: `Check out my digital business card: ${baseUrl}/p/${userId}`,
-          showVCard: true,
+          showPreview: true,
+          previewUrl: `${baseUrl}/p/${userId}`,
           showQR: true,
           eventType: 'digital_card_shared',
         });
@@ -281,9 +282,23 @@ export default function HomeScreen() {
           subtitle: 'Ask your customer to leave a review',
           url: `${baseUrl}/review/${storeSlug}?sp=${userId}`,
           text: `I'd really appreciate it if you could leave me a review: ${baseUrl}/review/${storeSlug}?sp=${userId}`,
-          showVCard: false,
+          showPreview: true,
+          previewUrl: `${baseUrl}/review/${storeSlug}?sp=${userId}`,
           showQR: true,
           eventType: 'review_invite_sent',
+        });
+        break;
+      case 'send-card':
+        setShareConfig({
+          visible: true,
+          title: 'Send a Card',
+          subtitle: 'Share a congrats or celebration card',
+          url: `${baseUrl}/card/${userId}`,
+          text: `Check out this card from me: ${baseUrl}/card/${userId}`,
+          showPreview: true,
+          previewUrl: `${baseUrl}/card/${userId}`,
+          showQR: true,
+          eventType: 'card_shared',
         });
         break;
       case 'showroom':
@@ -293,7 +308,8 @@ export default function HomeScreen() {
           subtitle: 'Show off your happy customers',
           url: `${baseUrl}/showcase/${userId}`,
           text: `Check out my showroom of happy customers: ${baseUrl}/showcase/${userId}`,
-          showVCard: false,
+          showPreview: true,
+          previewUrl: `${baseUrl}/showcase/${userId}`,
           showQR: true,
           eventType: 'showroom_shared',
         });
