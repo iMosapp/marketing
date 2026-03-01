@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>i'M On Social — Logo Preview</title>
+<link rel="icon" href="/new-favicon.ico">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif; background: #111; color: #fff; }
+  .section { padding: 40px 24px; max-width: 900px; margin: 0 auto; }
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E93; margin-bottom: 20px; font-weight: 700; }
+  .divider { border-bottom: 1px solid #2C2C2E; margin: 0 24px; }
+  
+  /* Browser Tab Mockup */
+  .browser-frame { background: #1C1C1E; border-radius: 12px; overflow: hidden; border: 1px solid #3A3A3C; }
+  .browser-toolbar { background: #2C2C2E; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .browser-dots .red { background: #FF5F57; }
+  .browser-dots .yellow { background: #FEBC2E; }
+  .browser-dots .green { background: #28C840; }
+  .browser-tab { display: flex; align-items: center; gap: 6px; background: #3A3A3C; border-radius: 6px; padding: 4px 12px; margin-left: 8px; }
+  .browser-tab img { width: 14px; height: 14px; border-radius: 2px; }
+  .browser-tab span { font-size: 12px; color: #ccc; }
+  .url-bar { flex: 1; background: #1C1C1E; border-radius: 6px; padding: 4px 12px; margin-left: 12px; display: flex; align-items: center; gap: 6px; }
+  .url-bar .lock { font-size: 10px; color: #34C759; }
+  .url-bar .url { font-size: 12px; color: #8E8E93; }
+  .browser-content { height: 60px; background: #000; }
+  
+  /* Webapp Icon Mockups */
+  .icon-grid { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; }
+  .icon-item { text-align: center; }
+  .icon-item img { border-radius: 22%; display: block; margin-bottom: 6px; }
+  .icon-item .label { font-size: 11px; color: #8E8E93; }
+  .icon-item .sublabel { font-size: 10px; color: #555; }
+  
+  /* Home Screen Mockup */
+  .homescreen { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 24px; padding: 40px 30px 20px; max-width: 260px; border: 1px solid #3A3A3C; position: relative; }
+  .homescreen-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .app-icon { text-align: center; }
+  .app-icon img { width: 54px; height: 54px; border-radius: 12px; display: block; margin: 0 auto 4px; }
+  .app-icon .placeholder { width: 54px; height: 54px; border-radius: 12px; background: #3A3A3C; margin: 0 auto 4px; }
+  .app-icon span { font-size: 9px; color: #ccc; }
+  
+  /* Login Screen Mockup */
+  .login-mockups { display: flex; gap: 20px; flex-wrap: wrap; }
+  .login-phone { width: 260px; border-radius: 24px; overflow: hidden; border: 2px solid #3A3A3C; }
+  .login-screen { padding: 40px 20px 30px; text-align: center; }
+  .login-screen.dark { background: #000; }
+  .login-screen.light { background: #fff; }
+  .login-screen img { width: 140px; height: 140px; margin-bottom: 8px; }
+  .login-screen .tagline { font-size: 11px; margin-bottom: 24px; }
+  .login-screen.dark .tagline { color: #8E8E93; }
+  .login-screen.light .tagline { color: #6C6C70; }
+  .login-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid; font-size: 13px; margin-bottom: 8px; outline: none; }
+  .login-screen.dark .login-input { background: #1C1C1E; border-color: #2C2C2E; color: #fff; }
+  .login-screen.light .login-input { background: #F2F2F7; border-color: #D1D1D6; color: #000; }
+  .login-btn { width: 100%; padding: 10px; border-radius: 10px; background: #C9A962; color: #000; font-size: 14px; font-weight: 700; border: none; margin-top: 8px; cursor: pointer; }
+  .mode-label { text-align: center; font-size: 11px; color: #8E8E93; padding: 6px 0; background: #1C1C1E; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+  
+  /* Comparison */
+  .compare { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .compare-item { text-align: center; }
+  .compare-item img { width: 80px; height: 80px; border-radius: 18px; display: block; margin-bottom: 8px; }
+  .compare-item .label { font-size: 12px; color: #8E8E93; }
+  .arrow { font-size: 24px; color: #34C759; }
+  
+  .note { font-size: 12px; color: #6E6E73; margin-top: 12px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 4px;">Logo Preview — i'M On Social</h1>
+  <p style="font-size: 14px; color: #8E8E93;">See how the new logo will look across all touchpoints before deploying</p>
+</div>
+<div class="divider"></div>
+
+<!-- Browser Tab -->
+<div class="section">
+  <div class="section-title">Browser Tab (Favicon)</div>
+  <div class="browser-frame">
+    <div class="browser-toolbar">
+      <div class="browser-dots"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+      <div class="browser-tab">
+        <img src="/new-favicon-32.png" alt="favicon">
+        <span>i'M On Social</span>
+      </div>
+      <div class="url-bar">
+        <span class="lock">&#x1f512;</span>
+        <span class="url">imosapp.com</span>
+      </div>
+    </div>
+    <div class="browser-content"></div>
+  </div>
+  <p class="note">The favicon appears in the browser tab, bookmarks bar, and browser history.</p>
+</div>
+<div class="divider"></div>
+
+<!-- Webapp Icons -->
+<div class="section">
+  <div class="section-title">Webapp / PWA Icons</div>
+  <div class="icon-grid">
+    <div class="icon-item">
+      <img src="/new-favicon-16.png" width="16" height="16" alt="16px">
+      <div class="label">16px</div>
+      <div class="sublabel">Favicon</div>
+    </div>
+    <div class="icon-item">
+      <img src="/new-favicon-32.png" width="32" height="32" alt="32px">
+      <div class="label">32px</div>
+      <div class="sublabel">Tab icon</div>
+    </div>
+    <div class="icon-item">
+      <img src="/new-logo-192.png" width="64" height="64" alt="192px">
+      <div class="label">192px</div>
+      <div class="sublabel">Android icon</div>
+    </div>
+    <div class="icon-item">
+      <img src="/new-logo-512.png" width="80" height="80" style="border-radius: 18px;" alt="512px">
+      <div class="label">512px</div>
+      <div class="sublabel">Splash / PWA</div>
+    </div>
+  </div>
+</div>
+<div class="divider"></div>
+
+<!-- Home Screen Mockup -->
+<div class="section">
+  <div class="section-title">Mobile Home Screen</div>
+  <div class="homescreen">
+    <div class="homescreen-grid">
+      <div class="app-icon"><div class="placeholder"></div><span>Messages</span></div>
+      <div class="app-icon"><div class="placeholder"></div><span>Photos</span></div>
+      <div class="app-icon"><div class="placeholder"></div><span>Camera</span></div>
+      <div class="app-icon"><div class="placeholder"></div><span>Settings</span></div>
+      <div class="app-icon"><div class="placeholder"></div><span>Mail</span></div>
+      <div class="app-icon"><img src="/new-logo-192.png" alt="iM On Social"><span>iM Social</span></div>
+      <div class="app-icon"><div class="placeholder"></div><span>Calendar</span></div>
+      <div class="app-icon"><div class="placeholder"></div><span>Notes</span></div>
+    </div>
+  </div>
+</div>
+<div class="divider"></div>
+
+<!-- Login Screen -->
+<div class="section">
+  <div class="section-title">Login Screen (Dark & Light Mode)</div>
+  <div class="login-mockups">
+    <div>
+      <div class="login-phone">
+        <div class="login-screen dark">
+          <img src="/new-logo-512-nobg.png" alt="logo dark">
+          <div class="tagline">Relationship Management System</div>
+          <input class="login-input" placeholder="Email" disabled>
+          <input class="login-input" placeholder="Password" type="password" disabled>
+          <button class="login-btn">Log In</button>
+        </div>
+        <div class="mode-label">Dark Mode</div>
+      </div>
+    </div>
+    <div>
+      <div class="login-phone">
+        <div class="login-screen light">
+          <img src="/new-logo-512-nobg.png" alt="logo light">
+          <div class="tagline">Relationship Management System</div>
+          <input class="login-input" placeholder="Email" disabled>
+          <input class="login-input" placeholder="Password" type="password" disabled>
+          <button class="login-btn">Log In</button>
+        </div>
+        <div class="mode-label">Light Mode</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="divider"></div>
+
+<!-- Before / After -->
+<div class="section">
+  <div class="section-title">Before → After</div>
+  <div class="compare">
+    <div class="compare-item">
+      <img src="/logo512.png" alt="current">
+      <div class="label">Current</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="compare-item">
+      <img src="/new-logo-512.png" alt="new">
+      <div class="label">New</div>
+    </div>
+  </div>
+  <p class="note" style="margin-top: 20px;">If you approve, I'll replace the current logo across favicon, manifest icons, login screen, and all in-app references.</p>
+</div>
+
+<div style="height: 60px;"></div>
+</body>
+</html>
