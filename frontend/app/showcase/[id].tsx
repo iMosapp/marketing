@@ -229,7 +229,7 @@ export default function ShowcasePage() {
                 <Text style={styles.heroName}>{spName}</Text>
                 <Text style={styles.heroTitle}>{data.salesperson?.title}</Text>
                 {data.store?.name && storeId ? (
-                  <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store` as any)} data-testid="store-name-link">
+                  <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)} data-testid="store-name-link">
                     <Text style={[styles.heroStore, { color: accent }]}>{data.store.name}</Text>
                   </TouchableOpacity>
                 ) : data.store?.name ? (
