@@ -413,7 +413,6 @@ export default function HomeScreen() {
         eventType={shareConfig.eventType}
       />
 
-      <SendCardModal visible={showSendCard} onClose={() => setShowSendCard(false)} colors={colors} />
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
     </SafeAreaView>
   );
