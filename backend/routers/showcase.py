@@ -36,12 +36,19 @@ def name_match(a: str, b: str) -> bool:
     return a_parts[0] == b_parts[0] or a.strip().lower() == b.strip().lower()
 
 
-async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict):
-    """Core logic: fetch congrats cards, match with reviews, return entries."""
+async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict, include_pending: bool = False):
+    """Core logic: fetch congrats cards, match with reviews, return entries.
+    If include_pending is False (default/public), only show approved entries.
+    """
+
+    # For public view, only show approved entries
+    card_filter = {**query_filter}
+    if not include_pending:
+        card_filter["showcase_approved"] = True
 
     # Fetch congrats cards - exclude massive base64 photo blobs for list performance
     cards = await db.congrats_cards.find(
-        query_filter,
+        card_filter,
         {"customer_photo": 0, "salesman_photo": 0}
     ).sort("created_at", -1).to_list(500)
 
