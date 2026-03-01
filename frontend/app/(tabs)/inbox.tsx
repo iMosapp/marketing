@@ -839,6 +839,7 @@ export default function InboxScreen() {
           <Text
             style={[
               styles.messageText,
+              { color: colors.textSecondary },
               isUrgent && styles.messageTextUnread,
               item.status === 'closed' && styles.messageTextClosed,
             ]}
