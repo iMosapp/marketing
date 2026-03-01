@@ -42,7 +42,8 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Unified card creation page (`/settings/create-card.tsx`) supports 6 card types via `?type=` param
 - Card templates manageable by admins (`/settings/card-templates.tsx`)
 - Clean, social-media-ready card image generation (1080x1350) via Pillow
-- Share buttons (SMS/Email/Facebook/Twitter) with tracking
+- **Card success/share screen matches UniversalShareModal design** — 2×3 grid (Share Link, Copy Link, Via Text, Via Email, Preview, Show QR), pre-filled recipient fields, no raw URL
+- Inbox thread "Create Card" option opens 6-type template picker, navigates with contact info pre-filled
 
 ### Showcase & Approvals
 - User-level and store-level showcase views
