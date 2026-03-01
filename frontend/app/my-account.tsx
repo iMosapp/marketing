@@ -900,21 +900,21 @@ export default function MyAccountScreen() {
         {/* Upgrade Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upgrade & Rewards</Text>
-          <View style={styles.menuList}>
+          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
             {upgradeItems.map((item, index) => (
               <TouchableOpacity 
                 key={index} 
-                style={[styles.menuItem, index === upgradeItems.length - 1 && { borderBottomWidth: 0 }]}
+                style={[styles.menuItem, { borderBottomColor: colors.border }, index === upgradeItems.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={item.onPress}
               >
                 <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={22} color={item.color} />
                 </View>
                 <View style={styles.menuContent}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+                  <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -922,40 +922,40 @@ export default function MyAccountScreen() {
 
         {/* Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.menuList}>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Settings</Text>
+          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
             {settingsItems.map((item, index) => (
               <TouchableOpacity 
                 key={index} 
-                style={[styles.menuItem, index === settingsItems.length - 1 && { borderBottomWidth: 0 }]}
+                style={[styles.menuItem, { borderBottomColor: colors.border }, index === settingsItems.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={item.onPress}
               >
                 <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={22} color={item.color} />
                 </View>
                 <View style={styles.menuContent}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+                  <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Account Info */}
-        <View style={styles.accountInfo}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone</Text>
-            <Text style={styles.infoValue}>{user?.mvpline_number || 'Not assigned'}</Text>
+        <View style={[styles.accountInfo, { backgroundColor: colors.card }]}>
+          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Phone</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.mvpline_number || 'Not assigned'}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Organization</Text>
-            <Text style={styles.infoValue}>{user?.organization_name || 'Independent'}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Organization</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.organization_name || 'Independent'}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Store</Text>
-            <Text style={styles.infoValue}>{user?.store_name || 'N/A'}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Store</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.store_name || 'N/A'}</Text>
           </View>
         </View>
       </ScrollView>
