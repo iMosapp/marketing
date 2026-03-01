@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../services/api';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
 import WebSwipeableItem from '../../components/WebSwipeableItem';

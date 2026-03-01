@@ -12,11 +12,13 @@ import {
   UIManager,
   Linking,
   TextInput,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { showSimpleAlert } from '../../services/alert';
 import api from '../../services/api';
 import { NotificationBell } from '../../components/notifications/NotificationBell';

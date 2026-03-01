@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI } from '../../services/api';
 import api from '../../services/api';
 import { Linking } from 'react-native';
