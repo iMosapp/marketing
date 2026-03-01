@@ -93,6 +93,7 @@ export default function TabLayout() {
   }, [mounted, isLoading, isAuthenticated, user?.onboarding_complete]);
 
   const isPending = user?.status === 'pending';
+  const colors = useThemeStore((state) => state.colors);
 
   const BadgeIcon = ({ name, color, size, count }: { name: string; color: string; size: number; count: number }) => (
     <View>
