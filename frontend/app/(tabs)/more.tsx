@@ -1021,48 +1021,48 @@ export default function MoreScreen() {
             <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>Congrats Card</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickSettingsBtn}
+            style={[styles.quickSettingsBtn, { backgroundColor: colors.card }]}
             onPress={() => setShowShareModal(true)}
             data-testid="quick-share-review"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FFD60A20' }]}>
               <Ionicons name="star" size={18} color="#FFD60A" />
             </View>
-            <Text style={styles.quickSettingsLabel}>Share Review</Text>
+            <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>Share Review</Text>
           </TouchableOpacity>
         </View>
 
         {/* Quick Actions Row 2 */}
         <View style={styles.quickSettingsRow}>
           <TouchableOpacity
-            style={styles.quickSettingsBtn}
+            style={[styles.quickSettingsBtn, { backgroundColor: colors.card }]}
             onPress={() => { setShowShowroomShare(true); setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail(''); setCopiedLink(false); }}
             data-testid="quick-my-showroom"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF950020' }]}>
               <Ionicons name="images" size={18} color="#FF9500" />
             </View>
-            <Text style={styles.quickSettingsLabel}>My Showroom</Text>
+            <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>My Showroom</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickSettingsBtn}
+            style={[styles.quickSettingsBtn, { backgroundColor: colors.card }]}
             onPress={() => router.push('/settings/create-birthday-card' as any)}
             data-testid="quick-birthday-card"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#FF2D5520' }]}>
               <Ionicons name="balloon" size={18} color="#FF2D55" />
             </View>
-            <Text style={styles.quickSettingsLabel}>Birthday Card</Text>
+            <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>Birthday Card</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickSettingsBtn}
+            style={[styles.quickSettingsBtn, { backgroundColor: colors.card }]}
             onPress={() => router.push(`/showroom-manage` as any)}
             data-testid="quick-manage-showroom"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#34C75920' }]}>
               <Ionicons name="settings" size={18} color="#34C759" />
             </View>
-            <Text style={styles.quickSettingsLabel}>Edit Showroom</Text>
+            <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>Edit Showroom</Text>
           </TouchableOpacity>
         </View>
 
