@@ -363,6 +363,45 @@ export default function HomeScreen() {
     try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=5`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
   };
 
+  // Send a Card — contact search helpers
+  const loadCardContacts = async () => {
+    if (!user?._id) return;
+    setCardContactsLoading(true);
+    try { const data = await contactsAPI.getAll(user._id); setCardContacts(data || []); } catch {}
+    setCardContactsLoading(false);
+  };
+
+  const filteredCardContacts = cardContacts.filter(c => {
+    const q = cardSearch.toLowerCase();
+    if (!q) return true;
+    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q);
+  });
+
+  const handleCardTypeSelect = (cardKey: string) => {
+    setSelectedCardType(cardKey);
+    setSendCardStep('contact');
+    setCardSearch('');
+    loadCardContacts();
+  };
+
+  const handleCardContactSelect = (contact: any) => {
+    setShowSendCard(false);
+    setSendCardStep('type');
+    const name = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+    const params = new URLSearchParams();
+    params.set('type', selectedCardType);
+    if (name) params.set('prefillName', name);
+    if (contact.phone) params.set('prefillPhone', contact.phone);
+    if (contact.email) params.set('prefillEmail', contact.email);
+    router.push(`/settings/create-card?${params.toString()}` as any);
+  };
+
+  const handleCardSkipContact = () => {
+    setShowSendCard(false);
+    setSendCardStep('type');
+    router.push(`/settings/create-card?type=${selectedCardType}` as any);
+  };
+
   // Open share modal for a tile
   const openShareModal = (tile: string) => {
     const userId = user?._id || '';
