@@ -601,6 +601,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/settings/review-approvals'),
           color: '#AF52DE',
         },
+        {
+          icon: 'shield-checkmark-outline',
+          title: 'Showroom Approvals',
+          subtitle: 'Approve showroom posts',
+          onPress: () => router.push('/settings/showroom-approvals'),
+          color: '#34C759',
+        },
       ],
     },
     // Profile & AI
