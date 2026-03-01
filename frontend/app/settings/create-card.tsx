@@ -95,8 +95,22 @@ export default function CreateCardPage() {
       }
       const res = await api.post('/congrats/create', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       const cardId = res.data?.card_id;
+      const shareUrl = `${BASE_URL}/congrats/${cardId}`;
       setShowPreview(false);
-      setCreatedCard({ card_id: cardId, share_url: `${BASE_URL}/congrats/${cardId}` });
+
+      // If we came from an inbox thread, auto-return with the card link pre-filled
+      if (returnToThread) {
+        const prefillMsg = `Check out this ${meta.label.toLowerCase()} for ${customerName}! ${shareUrl}`;
+        const qs = new URLSearchParams();
+        if (customerName) qs.set('contact_name', customerName);
+        if (customerPhone) qs.set('contact_phone', customerPhone);
+        if (customerEmail) qs.set('contact_email', customerEmail);
+        qs.set('prefill', prefillMsg);
+        router.replace(`/thread/${returnToThread}?${qs.toString()}` as any);
+        return;
+      }
+
+      setCreatedCard({ card_id: cardId, share_url: shareUrl });
     } catch (err: any) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to create card';
       showSimpleAlert('Error', typeof detail === 'string' ? detail : JSON.stringify(detail));
