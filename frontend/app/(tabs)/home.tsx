@@ -52,7 +52,7 @@ function ContactActionModal({
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase();
     if (!q) return true;
-    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q);
+    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q);
   });
 
   // VCF file upload handler
