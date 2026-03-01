@@ -1770,8 +1770,8 @@ export default function ThreadScreen() {
       )}
 
       {/* Relationship Intel Bar */}
-      <TouchableOpacity
-        style={[styles.intelBar, showIntel && styles.intelBarExpanded]}
+      <Pressable
+        style={({ pressed }) => [styles.intelBar, showIntel && styles.intelBarExpanded, pressed && { opacity: 0.7 }, { cursor: 'pointer' } as any]}
         onPress={() => {
           if (!intelData && !intelGenerating) {
             generateIntel();
@@ -1779,7 +1779,7 @@ export default function ThreadScreen() {
             setShowIntel(!showIntel);
           }
         }}
-        activeOpacity={0.7}
+        role="button"
         data-testid="thread-intel-bar"
       >
         <View style={styles.intelBarLeft}>
