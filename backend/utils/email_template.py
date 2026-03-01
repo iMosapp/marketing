@@ -18,7 +18,7 @@ async def get_brand_context(db, user_id: str) -> dict:
         "sender_name": "",
         "social_links": {},
         "footer_text": "",
-        "powered_by": "i'M On Social",
+        "powered_by": "i'MOnsocial",
         "powered_by_url": "https://app.imosapp.com/imos",
     }
 
