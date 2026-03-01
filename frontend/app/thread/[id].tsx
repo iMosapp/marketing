@@ -619,7 +619,7 @@ export default function ThreadScreen() {
     setIntelGenerating(true);
     setShowIntel(true);
     try {
-      const res = await api.post(`/contact-intel/${user._id}/${id}/generate`);
+      const res = await api.post(`/contact-intel/${user._id}/${id}`);
       setIntelData(res.data);
     } catch (e: any) {
       console.error('Intel generation failed:', e);
