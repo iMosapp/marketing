@@ -513,7 +513,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['name', 'type', 'trigger_tag', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level']
+    allowed_fields = ['name', 'type', 'trigger_tag', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
     
     result = await get_db().campaigns.update_one(
