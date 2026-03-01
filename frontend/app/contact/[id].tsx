@@ -510,25 +510,35 @@ export default function ContactDetailScreen() {
   };
 
   const viewFullPhoto = async () => {
-    if (!user || isNewContact || !contact.photo) return;
+    if (!user || isNewContact) return;
     setShowPhotoViewer(true);
     setFullPhotoLoading(true);
-    setSelectedPhotoIndex(0);
+    setSelectedPhotoIndex(-1); // -1 = show grid, >=0 = show single photo
+    setFullPhoto(null);
     try {
-      // Load full-res profile photo
-      const res = await contactsAPI.getFullPhoto(user._id, id as string);
-      setFullPhoto(res.photo);
+      // Load all photos gallery
+      const galleryRes = await api.get(`/contacts/${user._id}/${id}/photos/all`);
+      const photos = galleryRes.data?.photos || [];
+      // If profile photo exists, load high-res version for it
+      if (photos.length > 0 && photos[0].type === 'profile') {
+        try {
+          const res = await contactsAPI.getFullPhoto(user._id, id as string);
+          if (res.photo) photos[0].url = res.photo;
+        } catch {}
+      }
+      setAllPhotos(photos);
+      // If only 1 photo, go straight to full view
+      if (photos.length <= 1) {
+        setSelectedPhotoIndex(0);
+        setFullPhoto(photos[0]?.url || contact.photo);
+      }
     } catch {
+      // Fallback to just the profile photo
+      setAllPhotos([]);
+      setSelectedPhotoIndex(0);
       setFullPhoto(contact.photo);
     } finally {
       setFullPhotoLoading(false);
-    }
-    // Load all photos gallery in background
-    try {
-      const galleryRes = await api.get(`/contacts/${user._id}/${id}/photos/all`);
-      setAllPhotos(galleryRes.data?.photos || []);
-    } catch {
-      // Gallery load failed, just show the single photo
     }
   };
 
