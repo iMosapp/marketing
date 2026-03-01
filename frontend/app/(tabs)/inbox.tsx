@@ -797,7 +797,7 @@ export default function InboxScreen() {
               <Text
                 style={[
                   styles.contactName,
-                  { color: colors.text || '#FFF' },
+                  { color: colors.textPrimary },
                   isUrgent && styles.contactNameUnread,
                   item.status === 'closed' && styles.contactNameClosed,
                 ]}
