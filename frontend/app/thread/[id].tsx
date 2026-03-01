@@ -1790,7 +1790,7 @@ export default function ThreadScreen() {
           )}
         </View>
         <Ionicons name={showIntel ? 'chevron-up' : 'chevron-down'} size={16} color="#636366" />
-      </TouchableOpacity>
+      </Pressable>
 
       {showIntel && (
         <View style={styles.intelContent} data-testid="thread-intel-content">
