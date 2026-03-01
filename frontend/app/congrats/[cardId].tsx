@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../services/api';
+import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 interface CongratsCardData {
   card_id: string;
@@ -371,6 +372,7 @@ export default function CongratsCardPage() {
         )}
       </View>
 
+      <PoweredByFooter light />
       <View style={{ height: 40 }} />
     </ScrollView>
   );
