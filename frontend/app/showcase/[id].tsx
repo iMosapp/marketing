@@ -366,6 +366,27 @@ export default function ShowcasePage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
+  // Top bar
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#1C1C1E',
+  },
+  backBtn: { padding: 4 },
+  topBarTitle: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  copyLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  copyLinkText: { fontSize: 13, fontWeight: '700', color: '#000' },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
