@@ -169,16 +169,13 @@ export default function ShowcasePage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Sticky top bar with back + copy link */}
+      {/* Sticky top bar */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="showroom-back-btn">
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>The Showroom</Text>
-        <TouchableOpacity onPress={handleShare} style={[styles.copyLinkBtn, { backgroundColor: accent }]} data-testid="showroom-copy-link">
-          <Ionicons name="copy-outline" size={16} color="#000" />
-          <Text style={styles.copyLinkText}>Copy Link</Text>
-        </TouchableOpacity>
+        <View style={{ width: 32 }} />
       </View>
 
       <ScrollView
