@@ -312,7 +312,7 @@ export default function ContactsScreen() {
 
     return (
     <TouchableOpacity
-      style={styles.contactItem}
+      style={[styles.contactItem, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
       onPress={() => {
         if (selectMode) {
           toggleSelect(item._id);
@@ -344,10 +344,10 @@ export default function ContactsScreen() {
       )}
       
       <View style={styles.contactInfo}>
-        <Text style={styles.contactName}>
+        <Text style={[styles.contactName, { color: colors.text }]}>
           {item.first_name} {item.last_name || ''}
         </Text>
-        <Text style={styles.contactPhone} dataDetectorType="none">{item.phone}</Text>
+        <Text style={[styles.contactPhone, { color: colors.textSecondary }]} dataDetectorType="none">{item.phone}</Text>
         {contactTags.length > 0 && (
           <View style={styles.tags}>
             {contactTags.map((tag: { name: string; color: string }, index: number) => (
