@@ -1,1 +1,229 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="13" time="37.947" timestamp="2026-02-28T03:07:17.131150+00:00" hostname="agent-env-8651593a-3219-43de-b9e7-99ba376b5ae0"><testcase classname="tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_returns_200" time="0.280" /><testcase classname="tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_summary_field" time="0.125" /><testcase classname="tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_data_points" time="0.172" /><testcase classname="tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_generated_at" time="0.120" /><testcase classname="tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_contact_name" time="0.104" /><testcase classname="tests.test_contact_intel.TestContactIntelGetCached" name="test_get_intel_nonexistent_contact_returns_404" time="0.123" /><testcase classname="tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_200" time="6.403" /><testcase classname="tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_summary" time="6.066" /><testcase classname="tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_data_points" time="6.940" /><testcase classname="tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_generated_at" time="5.612" /><testcase classname="tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_invalid_contact_returns_404" time="0.134" /><testcase classname="tests.test_contact_intel.TestContactIntelCaching" name="test_cached_intel_matches_generated" time="5.167" /><testcase classname="tests.test_contact_intel.TestContactIntelCaching" name="test_refresh_generates_new_summary" time="6.631" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="13" skipped="0" tests="13" time="0.372" timestamp="2026-03-01T18:43:49.982621+00:00" hostname="agent-env-8651593a-3219-43de-b9e7-99ba376b5ae0"><testcase classname="backend.tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_returns_200" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:22: in test_get_cached_intel_returns_200
+    response = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/{CONTACT_ID}")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_summary_field" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:28: in test_get_cached_intel_has_summary_field
+    response = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/{CONTACT_ID}")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_data_points" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:35: in test_get_cached_intel_has_data_points
+    response = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/{CONTACT_ID}")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_generated_at" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:50: in test_get_cached_intel_has_generated_at
+    response = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/{CONTACT_ID}")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGetCached" name="test_get_cached_intel_has_contact_name" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:61: in test_get_cached_intel_has_contact_name
+    response = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/{CONTACT_ID}")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGetCached" name="test_get_intel_nonexistent_contact_returns_404" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000?">backend/tests/test_contact_intel.py:71: in test_get_intel_nonexistent_contact_returns_404
+    response = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/000000000000000000000000")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_200" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:85: in test_generate_intel_returns_200
+    response = requests.post(
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_summary" time="0.001"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:94: in test_generate_intel_returns_summary
+    response = requests.post(
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_data_points" time="0.000"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:106: in test_generate_intel_returns_data_points
+    response = requests.post(
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_returns_generated_at" time="0.000"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:121: in test_generate_intel_returns_generated_at
+    response = requests.post(
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelGenerate" name="test_generate_intel_invalid_contact_returns_404" time="0.000"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000?">backend/tests/test_contact_intel.py:132: in test_generate_intel_invalid_contact_returns_404
+    response = requests.post(
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/000000000000000000000000?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelCaching" name="test_cached_intel_matches_generated" time="0.000"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:146: in test_cached_intel_matches_generated
+    post_response = requests.post(
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase><testcase classname="backend.tests.test_contact_intel.TestContactIntelCaching" name="test_refresh_generates_new_summary" time="0.000"><failure message="requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?">backend/tests/test_contact_intel.py:165: in test_refresh_generates_new_summary
+    get1 = requests.get(f"{BASE_URL}/api/contact-intel/{USER_ID}/{CONTACT_ID}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: in prepare_url
+    raise MissingSchema(
+E   requests.exceptions.MissingSchema: Invalid URL '/api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1': No scheme supplied. Perhaps you meant https:///api/contact-intel/69a0b7095fddcede09591667/69a1354f2c0649ac6fb7f3f1?</failure></testcase></testsuite></testsuites>
