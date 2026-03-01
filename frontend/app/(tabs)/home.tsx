@@ -222,7 +222,6 @@ export default function HomeScreen() {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   // Modals
-  const [showSendCard, setShowSendCard] = useState(false);
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
 
