@@ -33,6 +33,7 @@ interface ShowcaseEntry {
   customer_name: string;
   customer_photo: string | null;
   card_id: string | null;
+  salesman_id: string | null;
   salesman_name: string | null;
   salesman_photo: string | null;
   store_name: string | null;
