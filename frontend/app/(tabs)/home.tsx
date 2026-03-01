@@ -360,10 +360,10 @@ export default function HomeScreen() {
       case 'showroom':
         setShareConfig({
           visible: true,
-          title: 'Share My Showroom',
+          title: 'Share My Showcase',
           subtitle: 'Show off your happy customers',
           url: `${baseUrl}/showcase/${userId}`,
-          text: `Check out my showroom of happy customers: ${baseUrl}/showcase/${userId}`,
+          text: `Check out my showcase of happy customers: ${baseUrl}/showcase/${userId}`,
           showPreview: true,
           previewUrl: `${baseUrl}/showcase/${userId}`,
           showQR: true,
