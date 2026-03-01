@@ -113,39 +113,60 @@ export default function CreateCardPage() {
   };
 
   const handleShare = async (platform: string) => {
-    if (!createdCard) return;
+    if (!createdCard || !user?._id) return;
     const url = createdCard.share_url;
-    const text = `Check out this ${meta.label.toLowerCase()} for ${customerName}!`;
+    const text = `Check out this ${meta.label.toLowerCase()} for ${customerName}! ${url}`;
+
+    // For SMS and Email — route through internal inbox for tracking
+    if (platform === 'sms' || platform === 'email') {
+      try {
+        // Find or create contact
+        const payload: any = { name: customerName.trim(), event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`, event_description: `Sent ${meta.label.toLowerCase()} via ${platform}`, event_icon: meta.icon, event_color: accent };
+        if (customerPhone.trim()) payload.phone = customerPhone.trim();
+        if (customerEmail.trim()) payload.email = customerEmail.trim();
+
+        const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, payload);
+        const contactId = res.data.contact_id;
+        const contactName = res.data.contact_name || customerName.trim();
+        const contactPhone = res.data.contact_phone || customerPhone.trim();
+        const contactEmail = res.data.contact_email || customerEmail.trim();
+
+        if (res.data.needs_confirmation) {
+          setMatchInfo(res.data);
+          setPendingSharePlatform(platform);
+          setMatchModalVisible(true);
+          return;
+        }
+
+        // Navigate to inbox thread with pre-filled message
+        router.push({
+          pathname: `/thread/${contactId}`,
+          params: {
+            contact_name: contactName,
+            contact_phone: contactPhone,
+            contact_email: contactEmail,
+            mode: platform,
+            prefill: text,
+          },
+        } as any);
+      } catch (err) {
+        // Fallback: if no phone/email, ask user to enter one
+        showSimpleAlert('Missing Info', 'Please add a phone number or email for the recipient to send via ' + platform.toUpperCase());
+      }
+      return;
+    }
+
+    // For social platforms — open external share links
     let shareUrl = '';
     switch (platform) {
       case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`; break;
       case 'twitter': shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`; break;
-      case 'sms': {
-        const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-        const sep = isApple ? '&' : '?';
-        const ph = customerPhone.trim();
-        shareUrl = ph ? `sms:${ph}${sep}body=${encodeURIComponent(text + ' ' + url)}` : `sms:${sep}body=${encodeURIComponent(text + ' ' + url)}`;
-        break;
-      }
-      case 'email': shareUrl = `mailto:?subject=${encodeURIComponent(meta.label)}&body=${encodeURIComponent(text + '\n\n' + url)}`; break;
     }
     if (IS_WEB) {
-      if (platform === 'sms' || platform === 'email') {
-        const a = document.createElement('a'); a.href = shareUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      } else if (navigator.share) { try { await navigator.share({ url }); } catch {} }
+      if (navigator.share) { try { await navigator.share({ url }); } catch {} }
+      else if (shareUrl) { window.open(shareUrl, '_blank'); }
       else { navigator.clipboard?.writeText(url); alert('Link copied!'); }
     } else { Linking.openURL(shareUrl); }
-
-    if (customerPhone.trim() && user?._id) {
-      try {
-        const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-          phone: customerPhone.trim(), name: customerName.trim(),
-          event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`,
-          event_description: `Sent ${meta.label.toLowerCase()} via ${platform}`, event_icon: meta.icon, event_color: accent,
-        });
-        if (res.data.needs_confirmation) { setMatchInfo(res.data); setPendingSharePlatform(platform); setMatchModalVisible(true); }
-      } catch {}
-    }
   };
 
   const resolveMatch = async (action: string) => {
