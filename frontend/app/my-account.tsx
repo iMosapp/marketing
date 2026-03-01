@@ -430,7 +430,7 @@ export default function MyAccountScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Profile Photo Section */}
-        <View style={styles.photoSection}>
+        <View style={[styles.photoSection, { borderBottomColor: colors.border }]}>
           <TouchableOpacity 
             style={styles.photoContainer} 
             onPress={showPhotoOptions}
@@ -448,13 +448,13 @@ export default function MyAccountScreen() {
                 <Text style={styles.photoInitials}>{getInitials()}</Text>
               </View>
             )}
-            <View style={styles.cameraButton}>
+            <View style={[styles.cameraButton, { borderColor: colors.bg }]}>
               <Ionicons name="camera" size={16} color="#FFF" />
             </View>
           </TouchableOpacity>
           
-          <Text style={styles.userName}>{user?.name || 'Guest'}</Text>
-          <Text style={styles.userEmail}>{user?.email || ''}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'Guest'}</Text>
+          <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email || ''}</Text>
           
           {user?.role && user.role !== 'user' && (
             <View style={styles.roleBadge}>
