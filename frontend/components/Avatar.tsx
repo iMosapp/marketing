@@ -70,6 +70,7 @@ export const Avatar: React.FC<AvatarProps> = ({
     width: dimensions.container,
     height: dimensions.container,
     borderRadius: dimensions.container / 2,
+    resizeMode: 'cover',
   };
 
   const initialsStyle: TextStyle = {
