@@ -1844,7 +1844,7 @@ const s = StyleSheet.create({
   // Hero
   heroSection: { alignItems: 'center', paddingTop: 24, paddingBottom: 20, paddingHorizontal: 16 },
   heroAvatarContainer: { position: 'relative', marginBottom: 14 },
-  heroAvatar: { width: 96, height: 96, borderRadius: 22, borderWidth: 3, borderColor: '#C9A962' },
+  heroAvatar: { width: 96, height: 96, borderRadius: 22, borderWidth: 3, borderColor: '#C9A962', resizeMode: 'cover' as const },
   heroAvatarPlaceholder: {
     width: 96, height: 96, borderRadius: 22,
     backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center',
