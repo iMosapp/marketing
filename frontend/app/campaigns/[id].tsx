@@ -262,8 +262,13 @@ const { showToast } = useToast();
       return;
     }
     
-    if (sequences.some(s => !s.message.trim())) {
+    if (sequences.some(s => s.actionType === 'message' && !s.message.trim())) {
       Alert.alert('Error', 'Please fill in all message templates');
+      return;
+    }
+    
+    if (sequences.some(s => s.actionType === 'send_card' && !s.cardType)) {
+      Alert.alert('Error', 'Please select a card type for all card steps');
       return;
     }
     
@@ -276,6 +281,8 @@ const { showToast } = useToast();
         send_time: format(sendTime, 'HH:mm'),
         sequences: sequences.map((s, idx) => ({
           step: idx + 1,
+          action_type: s.actionType,
+          card_type: s.cardType,
           message_template: s.message,
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
