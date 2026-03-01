@@ -3088,6 +3088,81 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  // Relationship Intel bar
+  intelBar: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#1A1A1C',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  intelBarExpanded: {
+    borderBottomWidth: 0,
+  },
+  intelBarLeft: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  intelBarTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#C9A962',
+  },
+  intelBarMeta: {
+    fontSize: 11,
+    color: '#636366',
+  },
+  intelContent: {
+    backgroundColor: '#1A1A1C',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2E',
+  },
+  intelLoadingRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    paddingVertical: 8,
+  },
+  intelLoadingText: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  intelSummaryText: {
+    fontSize: 13,
+    color: '#E5E5EA',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  intelMetaRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  intelMetaText: {
+    fontSize: 11,
+    color: '#636366',
+  },
+  intelRefreshBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  intelRefreshText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600' as const,
+  },
+  intelEmptyText: {
+    fontSize: 13,
+    color: '#636366',
+    paddingVertical: 4,
+  },
   emailPromptBanner: {
     flexDirection: 'row',
     alignItems: 'center',
