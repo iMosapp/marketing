@@ -99,7 +99,7 @@ const HELP_ARTICLES: HelpArticle[] = [
       'The card is automatically generated with your branding and a shareable link',
       'Send the link via SMS or Email from the Inbox',
     ],
-    tip: 'Congrats cards automatically appear on your Showroom page — great for social proof!',
+    tip: 'Congrats cards automatically appear on your Showcase page — great for social proof!',
   },
   {
     id: 'birthday-card',
