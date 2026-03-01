@@ -227,8 +227,8 @@ export default function HomeScreen() {
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
 
   // Universal share modals
-  const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showVCard: boolean; showQR: boolean; eventType: string }>({
-    visible: false, title: '', subtitle: '', url: '', showVCard: false, showQR: false, eventType: '',
+  const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showPreview: boolean; previewUrl?: string; showQR: boolean; eventType: string }>({
+    visible: false, title: '', subtitle: '', url: '', showPreview: true, showQR: false, eventType: '',
   });
 
   useFocusEffect(
