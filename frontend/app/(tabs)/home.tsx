@@ -376,11 +376,27 @@ function ShareCardModal({
   const landingUrl = `https://app.imosapp.com/p/${userId}`;
 
   const shareLandingPage = () => {
-    if (IS_WEB && navigator.clipboard) {
-      navigator.clipboard.writeText(landingUrl);
-      showSimpleAlert('Link Copied!', 'Your digital card landing page URL has been copied.');
-    } else {
-      Linking.openURL(landingUrl);
+    const url = landingUrl;
+    try {
+      if (IS_WEB && navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          showSimpleAlert('Link Copied!', 'Your digital card landing page URL has been copied.');
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = url;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showSimpleAlert('Link Copied!', 'Your digital card landing page URL has been copied.');
+        });
+      } else {
+        showSimpleAlert('Your Card URL', url);
+      }
+    } catch {
+      showSimpleAlert('Your Card URL', url);
     }
     onClose();
   };
