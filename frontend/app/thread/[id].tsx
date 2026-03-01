@@ -1806,14 +1806,15 @@ export default function ThreadScreen() {
                 <Text style={styles.intelMetaText}>
                   {intelData.data_points?.messages || 0} messages · {intelData.data_points?.events || 0} events
                 </Text>
-                <TouchableOpacity
-                  style={styles.intelRefreshBtn}
+                <Pressable
+                  style={[styles.intelRefreshBtn, { cursor: 'pointer' } as any]}
                   onPress={generateIntel}
+                  role="button"
                   data-testid="thread-intel-refresh"
                 >
                   <Ionicons name="refresh" size={14} color="#007AFF" />
                   <Text style={styles.intelRefreshText}>Refresh</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </>
           ) : (
