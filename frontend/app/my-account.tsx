@@ -470,11 +470,11 @@ export default function MyAccountScreen() {
           {/* Photo action buttons - only show when photo exists */}
           {photoUrl && (
             <View style={styles.photoActions}>
-              <TouchableOpacity style={styles.photoActionBtn} onPress={showPhotoOptions}>
+              <TouchableOpacity style={[styles.photoActionBtn, { backgroundColor: colors.card }]} onPress={showPhotoOptions}>
                 <Ionicons name="refresh" size={18} color="#007AFF" />
                 <Text style={styles.photoActionText}>Change</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.photoActionBtn} onPress={removePhoto}>
+              <TouchableOpacity style={[styles.photoActionBtn, { backgroundColor: colors.card }]} onPress={removePhoto}>
                 <Ionicons name="trash" size={18} color="#FF3B30" />
                 <Text style={[styles.photoActionText, { color: '#FF3B30' }]}>Remove</Text>
               </TouchableOpacity>
