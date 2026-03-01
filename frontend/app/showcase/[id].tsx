@@ -228,6 +228,68 @@ export default function ShowcasePage() {
             </View>
           </View>
 
+          {/* Quick action links — under profile, above showroom feed */}
+          <View style={styles.quickLinks}>
+            <TouchableOpacity
+              style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
+              onPress={() => router.push(`/p/${id}`)}
+              data-testid="leave-review-btn"
+            >
+              <Ionicons name="star" size={20} color="#FFD60A" />
+              <View style={styles.reviewCTAContent}>
+                <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
+                <Text style={[styles.reviewCTASubtitle, { color: accent }]}>Leave a Review</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={accent} />
+            </TouchableOpacity>
+
+            <View style={styles.quickLinksRow}>
+              <TouchableOpacity
+                style={styles.quickLinkItem}
+                onPress={() => router.push(`/p/${id}`)}
+                data-testid="view-business-card-btn"
+              >
+                <Ionicons name="card-outline" size={18} color={accent} />
+                <Text style={[styles.quickLinkText, { color: accent }]}>My Card</Text>
+              </TouchableOpacity>
+
+              <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+
+              <TouchableOpacity
+                style={styles.quickLinkItem}
+                onPress={handleShare}
+                data-testid="share-showcase-btn"
+              >
+                <Ionicons name="share-outline" size={18} color={accent} />
+                <Text style={[styles.quickLinkText, { color: accent }]}>Share</Text>
+              </TouchableOpacity>
+
+              <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
+
+              <TouchableOpacity
+                style={styles.quickLinkItem}
+                onPress={() => setShowQR(!showQR)}
+                data-testid="qr-code-btn"
+              >
+                <Ionicons name="qr-code-outline" size={18} color={accent} />
+                <Text style={[styles.quickLinkText, { color: accent }]}>QR Code</Text>
+              </TouchableOpacity>
+            </View>
+
+            {showQR && (
+              <View style={styles.qrContainer}>
+                <Image
+                  source={{
+                    uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}&bgcolor=000000&color=C9A962`,
+                  }}
+                  style={styles.qrImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.qrHint}>Scan to view this page</Text>
+              </View>
+            )}
+          </View>
+
           {/* Page title */}
           <View style={styles.titleSection}>
             <View style={[styles.titleAccent, { backgroundColor: accent }]} />
