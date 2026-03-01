@@ -286,15 +286,16 @@ async def create_congrats_card(
         "customer_phone": customer_phone,
         "customer_photo": photo_url,
         "custom_message": custom_message,
-        # Template settings
-        "headline": template.get("headline", "Thank You!") if template else "Thank You!",
-        "message": template.get("message", "Thank you for choosing us, {customer_name}!") if template else "Thank you for choosing us, {customer_name}!",
+        "card_type": card_type,
+        # Template settings (use type-specific defaults)
+        "headline": template.get("headline", type_defaults["headline"]) if template else type_defaults["headline"],
+        "message": template.get("message", type_defaults["message"]) if template else type_defaults["message"],
         "footer_text": template.get("footer_text", "") if template else "",
         "show_salesman": template.get("show_salesman", True) if template else True,
         "show_store_logo": template.get("show_store_logo", True) if template else True,
-        "background_color": template.get("background_color", "#1A1A1A") if template else "#1A1A1A",
-        "accent_color": template.get("accent_color", "#C9A962") if template else "#C9A962",
-        "text_color": template.get("text_color", "#FFFFFF") if template else "#FFFFFF",
+        "background_color": template.get("background_color", type_defaults["background_color"]) if template else type_defaults["background_color"],
+        "accent_color": template.get("accent_color", type_defaults["accent_color"]) if template else type_defaults["accent_color"],
+        "text_color": template.get("text_color", type_defaults["text_color"]) if template else type_defaults["text_color"],
         # Tracking
         "views": 0,
         "downloads": 0,
