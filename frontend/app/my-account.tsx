@@ -896,7 +896,7 @@ export default function MyAccountScreen() {
 
         {/* Upgrade Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upgrade & Rewards</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Upgrade & Rewards</Text>
           <View style={[styles.menuList, { backgroundColor: colors.card }]}>
             {upgradeItems.map((item, index) => (
               <TouchableOpacity 
