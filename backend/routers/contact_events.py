@@ -119,6 +119,10 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
             "color": "#C9A962",
             "title": "Sent Congrats Card",
             "description": c.get("message", "")[:60],
+            "full_content": c.get("message", ""),
+            "card_id": c.get("card_id"),
+            "card_type": c.get("card_type", "congrats"),
+            "link": f"/congrats/{c.get('card_id')}" if c.get("card_id") else None,
             "timestamp": ts,
             "category": "card",
         })
