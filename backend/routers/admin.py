@@ -69,12 +69,12 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
         "subject": f"You're Invited to Join iMOs as {role_title}",
         "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-                <div style="text-align: center; margin-bottom: 20px; padding: 20px; background-color: #1A1A2E; border-radius: 16px 16px 0 0;">
-                    <img src="cid:imos-logo" alt="iMOs" width="150" style="max-width: 150px; height: auto;" />
-                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #ffffff; letter-spacing: 1px;">Relationship Management System</p>
+                <div style="text-align: center; margin-bottom: 0; padding: 24px 20px 16px 20px; background-color: #ffffff; border-radius: 16px 16px 0 0; border-bottom: 2px solid #C9A962;">
+                    <img src="cid:imos-logo" alt="iMOs" width="120" style="max-width: 120px; height: auto;" />
+                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #666; letter-spacing: 1px;">Relationship Management System</p>
                 </div>
                 
-                <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 16px; color: white;">
+                <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 0 0 16px 16px; color: white;">
                     <h2 style="margin-top: 0; color: #C9A962;">Welcome, {name}!</h2>
                     <p style="font-size: 16px; line-height: 1.6;">You've been invited to join <strong>iMOs</strong> as a <strong style="color: #C9A962;">{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
                     
