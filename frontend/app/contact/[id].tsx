@@ -820,7 +820,7 @@ export default function ContactDetailScreen() {
   // ===== LOADING =====
   if (loading) {
     return (
-      <SafeAreaView style={s.container} edges={['top']}>
+      <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
         <View style={s.loadingContainer}>
           <ActivityIndicator size="large" color="#C9A962" />
         </View>
