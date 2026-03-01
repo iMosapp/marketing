@@ -1011,14 +1011,14 @@ export default function MoreScreen() {
             <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>My Digital Card</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickSettingsBtn}
+            style={[styles.quickSettingsBtn, { backgroundColor: colors.card }]}
             onPress={() => router.push('/settings/create-congrats' as any)}
             data-testid="quick-congrats-card"
           >
             <View style={[styles.quickSettingsIcon, { backgroundColor: '#C9A96220' }]}>
               <Ionicons name="gift" size={18} color="#C9A962" />
             </View>
-            <Text style={styles.quickSettingsLabel}>Congrats Card</Text>
+            <Text style={[styles.quickSettingsLabel, { color: colors.textSecondary }]}>Congrats Card</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickSettingsBtn}
