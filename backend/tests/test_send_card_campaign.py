@@ -299,28 +299,4 @@ class TestCampaignUpdatePayload:
         print("Campaign updated with mixed message and card steps successfully")
 
 
-# Run cleanup to restore campaign after tests
-@pytest.fixture(scope="module", autouse=True)
-def restore_campaign(api_client):
-    """Restore the test campaign after all tests complete"""
-    yield
-    # Restore to a default state
-    try:
-        restore_payload = {
-            "name": "Test Campaign",
-            "sequences": [
-                {
-                    "step": 1,
-                    "action_type": "message",
-                    "card_type": "",
-                    "message_template": "Hello {name}!",
-                    "delay_days": 0,
-                    "delay_months": 0,
-                    "media_urls": [],
-                    "channel": "sms"
-                }
-            ]
-        }
-        requests.put(f"{BASE_URL}/api/campaigns/{USER_ID}/{CAMPAIGN_ID}", json=restore_payload)
-    except Exception as e:
-        print(f"Warning: Could not restore campaign: {e}")
+# No cleanup fixture needed - tests are independent
