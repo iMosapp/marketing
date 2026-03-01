@@ -84,6 +84,8 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Production SMS tally** — Fix in preview, pending deployment
 - React Hydration Error #418 (P2)
 - Phone matching edge case with heavily formatted numbers (LOW)
+- ~~Thread header contact name navigation regression~~ — **FIXED** (Feb 2026)
+- ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
 
 ## Upcoming Tasks
 1. (P0) **Onboarding/Setup Wizard** — Multi-step setup for new Organizations, Admins, Users
