@@ -510,10 +510,7 @@ const styles = StyleSheet.create({
 
   entryDivider: { height: 1, backgroundColor: '#1C1C1E', marginVertical: 20 },
 
-  // Share
-  shareSection: { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20, gap: 12 },
-
-  // Leave a Review CTA
+  // Review CTA
   reviewCTA: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -529,33 +526,8 @@ const styles = StyleSheet.create({
   reviewCTATitle: { fontSize: 14, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
   reviewCTASubtitle: { fontSize: 16, fontWeight: '700' },
 
-  // Business card link
-  cardLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-  },
-  cardLinkText: { fontSize: 14, fontWeight: '600' },
-
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 30,
-  },
-  shareButtonText: { fontSize: 15, fontWeight: '700', color: '#000' },
-  qrButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  qrButtonText: { fontSize: 14, fontWeight: '600' },
-  qrContainer: { alignItems: 'center', marginTop: 12, padding: 16, backgroundColor: '#111', borderRadius: 16 },
+  // QR
+  qrContainer: { alignItems: 'center', marginTop: 4, padding: 16, backgroundColor: '#111', borderRadius: 16 },
   qrImage: { width: 180, height: 180, borderRadius: 8 },
   qrHint: { fontSize: 12, color: '#6E6E73', marginTop: 10 },
 
