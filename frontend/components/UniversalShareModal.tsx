@@ -440,7 +440,7 @@ export function UniversalShareModal({
               )}
             </View>
 
-            <TouchableOpacity style={styles.shareModalCancel} onPress={close}>
+            <TouchableOpacity style={[styles.shareModalCancel, { backgroundColor: colors.bg }]} onPress={close}>
               <Text style={styles.shareModalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
