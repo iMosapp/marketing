@@ -718,7 +718,7 @@ export default function MyAccountScreen() {
                 <View>
                   {/* Summary Banner */}
                   <View style={{
-                    backgroundColor: '#1C1C1E',
+                    backgroundColor: colors.card,
                     borderRadius: 12,
                     padding: 16,
                     marginBottom: 10,
@@ -727,10 +727,10 @@ export default function MyAccountScreen() {
                     justifyContent: 'space-between',
                   }}>
                     <View>
-                      <Text style={{ fontSize: 28, fontWeight: '800', color: '#FFF' }}>
+                      <Text style={{ fontSize: 28, fontWeight: '800', color: colors.text }}>
                         {activityData.summary?.total_touchpoints || 0}
                       </Text>
-                      <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>Total Touchpoints</Text>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Total Touchpoints</Text>
                     </View>
                     {activityData.summary?.trend_pct !== 0 && activityData.summary?.prev_total > 0 && (
                       <View style={{
