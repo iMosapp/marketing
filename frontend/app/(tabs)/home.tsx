@@ -552,40 +552,103 @@ export default function HomeScreen() {
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
 
-      {/* Send a Card — Template Picker */}
+      {/* Send a Card — Step 1: Template Picker, Step 2: Contact Search */}
       <Modal visible={showSendCard} animationType="slide" transparent={false}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-            <TouchableOpacity onPress={() => setShowSendCard(false)} style={{ padding: 4 }}>
+            <TouchableOpacity onPress={() => { if (sendCardStep === 'contact') { setSendCardStep('type'); } else { setShowSendCard(false); } }} style={{ padding: 4 }} data-testid="send-card-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>Send a Card</Text>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
+              {sendCardStep === 'type' ? 'Send a Card' : 'Select Contact'}
+            </Text>
             <View style={{ width: 32 }} />
           </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Choose a card type to create and send</Text>
-          <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
-            {[
-              { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962' },
-              { key: 'birthday', label: 'Birthday Card', icon: 'balloon', color: '#FF2D55' },
-              { key: 'anniversary', label: 'Anniversary Card', icon: 'heart', color: '#FF6B6B' },
-              { key: 'thankyou', label: 'Thank You Card', icon: 'thumbs-up', color: '#34C759' },
-              { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#007AFF' },
-              { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA' },
-            ].map((card) => (
+
+          {sendCardStep === 'type' ? (
+            <>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Choose a card type to create and send</Text>
+              <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
+                {[
+                  { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962' },
+                  { key: 'birthday', label: 'Birthday Card', icon: 'balloon', color: '#FF2D55' },
+                  { key: 'anniversary', label: 'Anniversary Card', icon: 'heart', color: '#FF6B6B' },
+                  { key: 'thankyou', label: 'Thank You Card', icon: 'thumbs-up', color: '#34C759' },
+                  { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#007AFF' },
+                  { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA' },
+                ].map((card) => (
+                  <TouchableOpacity
+                    key={card.key}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.border }}
+                    onPress={() => handleCardTypeSelect(card.key)}
+                    data-testid={`card-type-${card.key}`}
+                  >
+                    <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={card.icon as any} size={24} color={card.color} />
+                    </View>
+                    <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text }}>{card.label}</Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          ) : (
+            <>
+              <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+                <TextInput
+                  style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, fontSize: 15, color: colors.text, borderWidth: 1, borderColor: colors.border }}
+                  placeholder="Search by name, phone, or email..."
+                  placeholderTextColor={colors.textTertiary}
+                  value={cardSearch}
+                  onChangeText={setCardSearch}
+                  autoFocus
+                  data-testid="send-card-contact-search"
+                />
+              </View>
               <TouchableOpacity
-                key={card.key}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.border }}
-                onPress={() => { setShowSendCard(false); router.push(`/settings/create-card?type=${card.key}` as any); }}
-                data-testid={`card-type-${card.key}`}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}
+                onPress={handleCardSkipContact}
+                data-testid="send-card-skip-contact"
               >
-                <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={card.icon as any} size={24} color={card.color} />
-                </View>
-                <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text }}>{card.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                <Ionicons name="arrow-forward-circle-outline" size={20} color={colors.accent} />
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Skip — create without selecting a contact</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+              {cardContactsLoading ? (
+                <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
+              ) : (
+                <FlatList
+                  data={filteredCardContacts}
+                  keyExtractor={(item) => item._id}
+                  style={{ flex: 1, paddingHorizontal: 16 }}
+                  renderItem={({ item }) => {
+                    const name = `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.phone || 'Unknown';
+                    const initials = `${(item.first_name || '?')[0]}${(item.last_name || '')[0] || ''}`.toUpperCase();
+                    return (
+                      <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: colors.border, gap: 10 }}
+                        onPress={() => handleCardContactSelect(item)}
+                        data-testid={`card-contact-${item._id}`}
+                      >
+                        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{initials}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{name}</Text>
+                          {item.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.phone}</Text> : null}
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                      </TouchableOpacity>
+                    );
+                  }}
+                  ListEmptyComponent={
+                    <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 14 }}>
+                      {cardSearch ? 'No contacts found' : 'No contacts yet'}
+                    </Text>
+                  }
+                />
+              )}
+            </>
+          )}
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
