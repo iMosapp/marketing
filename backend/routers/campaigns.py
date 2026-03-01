@@ -668,12 +668,64 @@ async def trigger_scheduler():
                 )
                 continue
             
-            # Get current step message
+            # Get current step
             step = sequences[current_step - 1]
-            message_content = step.get('message', '')
+            action_type = step.get('action_type', 'message')
+            delivery_mode = campaign.get('delivery_mode', 'manual')
             
-            # Mock: Log the message that would be sent
-            logger.info(f"[MOCK] Sending campaign message to {enrollment['contact_phone']}: {message_content[:50]}...")
+            if action_type == 'send_card':
+                card_type = step.get('card_type', 'congrats')
+                card_labels = {
+                    'congrats': 'Congrats Card', 'birthday': 'Birthday Card',
+                    'anniversary': 'Anniversary Card', 'thankyou': 'Thank You Card',
+                    'welcome': 'Welcome Card', 'holiday': 'Holiday Card',
+                }
+                card_label = card_labels.get(card_type, card_type.title() + ' Card')
+                
+                if delivery_mode == 'automated':
+                    # TODO: Auto-generate and send card via Twilio when live
+                    logger.info(f"[MOCK] Auto-sending {card_label} to {enrollment['contact_phone']}")
+                else:
+                    # Create pending task for user to send the card manually
+                    await get_db().campaign_pending_sends.insert_one({
+                        "user_id": enrollment['user_id'],
+                        "campaign_id": enrollment['campaign_id'],
+                        "campaign_name": campaign.get('name', ''),
+                        "contact_id": enrollment.get('contact_id', ''),
+                        "contact_name": enrollment.get('contact_name', ''),
+                        "contact_phone": enrollment.get('contact_phone', ''),
+                        "step": current_step,
+                        "action_type": "send_card",
+                        "card_type": card_type,
+                        "message": f"Send a {card_label} to {enrollment.get('contact_name', 'contact')}",
+                        "channel": step.get('channel', 'sms'),
+                        "status": "pending",
+                        "created_at": now,
+                    })
+                    logger.info(f"Created pending send_card task: {card_label} for {enrollment.get('contact_name')}")
+            else:
+                message_content = step.get('message_template', step.get('message', ''))
+                
+                if delivery_mode == 'automated':
+                    # Mock: Log the message that would be sent
+                    logger.info(f"[MOCK] Sending campaign message to {enrollment['contact_phone']}: {message_content[:50]}...")
+                else:
+                    # Create pending task for manual send
+                    await get_db().campaign_pending_sends.insert_one({
+                        "user_id": enrollment['user_id'],
+                        "campaign_id": enrollment['campaign_id'],
+                        "campaign_name": campaign.get('name', ''),
+                        "contact_id": enrollment.get('contact_id', ''),
+                        "contact_name": enrollment.get('contact_name', ''),
+                        "contact_phone": enrollment.get('contact_phone', ''),
+                        "step": current_step,
+                        "action_type": "message",
+                        "message": message_content,
+                        "channel": step.get('channel', 'sms'),
+                        "status": "pending",
+                        "created_at": now,
+                    })
+                    logger.info(f"Created pending message task for {enrollment.get('contact_name')}")
             
             # Calculate next send time
             if current_step < len(sequences):
@@ -682,27 +734,31 @@ async def trigger_scheduler():
             else:
                 next_send = None
             
+            # Build log entry
+            step_description = step.get('card_type', '') if action_type == 'send_card' else (step.get('message_template', '')[:100])
+            
             # Update enrollment
-            update_data = {
+            update_set = {
                 "current_step": current_step + 1,
                 "last_sent_at": now,
-                "$push": {"messages_sent": {
-                    "step": current_step,
-                    "sent_at": now,
-                    "content": message_content[:100]
-                }}
             }
-            
             if next_send:
-                update_data["next_send_at"] = next_send
+                update_set["next_send_at"] = next_send
             else:
-                update_data["status"] = "completed"
-                update_data["next_send_at"] = None
+                update_set["status"] = "completed"
+                update_set["next_send_at"] = None
             
             await get_db().campaign_enrollments.update_one(
                 {"_id": enrollment['_id']},
-                {"$set": {k: v for k, v in update_data.items() if not k.startswith('$')},
-                 "$push": update_data.get("$push", {})} if "$push" in update_data else {"$set": update_data}
+                {
+                    "$set": update_set,
+                    "$push": {"messages_sent": {
+                        "step": current_step,
+                        "action_type": action_type,
+                        "sent_at": now,
+                        "content": step_description,
+                    }}
+                }
             )
             
             processed += 1
