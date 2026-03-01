@@ -102,7 +102,7 @@ export function UniversalShareModal({
     onClose();
   };
 
-  // Search contacts as user types
+  // Search contacts as user types — strict name-only match via backend
   const searchContacts = (query: string) => {
     setRecipientName(query);
     if (!userId || query.trim().length < 2) {
@@ -113,14 +113,8 @@ export function UniversalShareModal({
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(async () => {
       try {
-        const res = await api.get(`/contacts/${userId}`);
-        const contacts = res.data || [];
-        const q = query.toLowerCase();
-        const matches = contacts.filter((c: any) => {
-          const fullName = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
-          const phone = (c.phone || '').replace(/\D/g, '');
-          return fullName.includes(q) || phone.includes(q.replace(/\D/g, ''));
-        }).slice(0, 5);
+        const res = await api.get(`/contacts/${userId}?search=${encodeURIComponent(query.trim())}`);
+        const matches = (res.data || []).slice(0, 5);
         setContactSuggestions(matches);
         setShowSuggestions(matches.length > 0);
       } catch {
