@@ -24,6 +24,7 @@ import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import api from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 // Web-safe URL opener — Linking.openURL uses window.open('_blank')
 // which popup blockers intercept for sms: and mailto: protocols.
@@ -811,9 +812,7 @@ export default function DigitalCardPage() {
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>{partnerBrand ? `${partnerBrand.name} \u2022 ${partnerBrand.powered_by_text}` : "Powered by i'M On Social"}</Text>
-          </View>
+          <PoweredByFooter />
         </ScrollView>
       </SafeAreaView>
 
