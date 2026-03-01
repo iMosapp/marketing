@@ -41,7 +41,7 @@ interface ShowcaseEntry {
 }
 
 interface ShowcaseData {
-  salesperson: {
+  salesperson?: {
     id: string;
     name: string;
     title: string;
@@ -49,6 +49,7 @@ interface ShowcaseData {
     phone: string | null;
   };
   store: {
+    id?: string;
     name: string | null;
     logo_url: string | null;
     primary_color: string;
@@ -56,6 +57,7 @@ interface ShowcaseData {
   entries: ShowcaseEntry[];
   total_deliveries: number;
   total_reviews: number;
+  team?: { id: string; name: string; photo_url: string }[];
 }
 
 function StarRating({ rating }: { rating: number }) {
