@@ -145,6 +145,7 @@ export default function InboxScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const themeColors = useThemeStore((s) => s.colors);
+  const themeMode = useThemeStore((s) => s.mode);
   
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai'>('active');
@@ -162,7 +163,7 @@ export default function InboxScreen() {
   const [toggleStyle, setToggleStyle] = useState<string>('pill');
   
   // Get current colors based on mode — in light theme, always use light colors
-  const colors = themeColors.bg === '#F2F2F7' ? COLORS_LIGHT : (messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK);
+  const colors = themeMode === 'light' ? COLORS_LIGHT : (messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK);
   
   // Bulk selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
