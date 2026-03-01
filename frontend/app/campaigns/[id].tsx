@@ -1157,4 +1157,77 @@ const styles = StyleSheet.create({
     color: '#FFF',
     flex: 1,
   },
+  previewCardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 8,
+    backgroundColor: '#007AFF15',
+    borderRadius: 8,
+  },
+  previewCardBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  // Preview modal
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  previewContainer: {
+    width: '100%',
+    maxWidth: 360,
+  },
+  previewClose: {
+    alignSelf: 'flex-end',
+    marginBottom: 12,
+  },
+  previewCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    backgroundColor: '#1C1C1E',
+  },
+  previewCardHeader: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    gap: 10,
+  },
+  previewCardTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  previewCardBody: {
+    padding: 20,
+    gap: 12,
+  },
+  previewCardMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#E0E0E0',
+    textAlign: 'center',
+  },
+  previewCardPlaceholder: {
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  previewCardFooter: {
+    borderTopWidth: 0.5,
+    borderTopColor: '#3A3A3C',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  previewCardFooterText: {
+    fontSize: 11,
+    color: '#6E6E73',
+  },
 });
