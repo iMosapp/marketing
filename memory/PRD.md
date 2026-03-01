@@ -21,16 +21,17 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 **Tab Restructure**: 4 tabs (Home, Contacts, Inbox, Menu) replacing 5 tabs.
 
 **Home Tab** — 6 daily action tiles:
-1. **Share My Card** → Universal share modal
+1. **Share My Card** → Universal share modal (with contact search)
 2. **Review Link** → Universal share modal with review URL
-3. **Send a Card** → Template picker (Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday) → navigates to unified create-card page
+3. **Send a Card** → Template picker → unified create-card page
 4. **My Showcase** → Universal share modal with showcase URL
-5. **Quick Dial** → Contact search + numeric keypad
-6. **Add Contact** → CRM search + phone import + manual entry
+5. **Quick Dial** → Full-size keypad (88×60px buttons) + contact matching as you dial
+6. **Add Contact** → Search-first flow: search existing → go to contact page OR no match → New Contact / Upload .vcf
 
 **Universal Share Modal** — Reusable component (`/components/UniversalShareModal.tsx`):
 - Via Text/Email now route through internal inbox (/thread/[id]) for tracking
 - Uses URL string format (URLSearchParams) for reliable cross-stack navigation on web
+- **Contact auto-fill**: Typing 2+ chars in recipient name triggers debounced contact search; dropdown shows matches, tapping auto-fills name/phone/email
 
 ### Inbox Thread Enhancements
 - Contact name in header is clickable → navigates to contact detail page
