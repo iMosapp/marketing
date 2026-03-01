@@ -977,6 +977,7 @@ export default function InboxScreen() {
       <TouchableOpacity
         style={[
           styles.conversationItem,
+          { backgroundColor: colors.card, borderColor: colors.border },
           !isClaimed && styles.teamConversationUnclaimed,
         ]}
         onPress={handlePress}
