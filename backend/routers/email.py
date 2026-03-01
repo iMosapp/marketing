@@ -80,7 +80,7 @@ DEFAULT_EMAIL_TEMPLATES = [
     <p style="color: #666; line-height: 1.6;">Thank you for connecting with us. We're excited to have you!</p>
     <p style="color: #666; line-height: 1.6;">If you have any questions, don't hesitate to reach out.</p>
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p style="color: #999; font-size: 12px;">Powered by i'M On Social</p>
+        {BRAND_FOOTER_HTML}
     </div>
 </div>
 """,
@@ -100,7 +100,7 @@ DEFAULT_EMAIL_TEMPLATES = [
     </div>
     <p style="color: #666; line-height: 1.6;">Looking forward to connecting!</p>
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p style="color: #999; font-size: 12px;">Powered by i'M On Social</p>
+        {BRAND_FOOTER_HTML}
     </div>
 </div>
 """,
@@ -120,7 +120,7 @@ DEFAULT_EMAIL_TEMPLATES = [
     </div>
     <p style="color: #666; line-height: 1.6;">Thank you for your time!</p>
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p style="color: #999; font-size: 12px;">Powered by i'M On Social</p>
+        {BRAND_FOOTER_HTML}
     </div>
 </div>
 """,
@@ -140,7 +140,7 @@ DEFAULT_EMAIL_TEMPLATES = [
     </div>
     <p style="color: #666; line-height: 1.6;">Let me know if you need anything else!</p>
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p style="color: #999; font-size: 12px;">Powered by i'M On Social</p>
+        {BRAND_FOOTER_HTML}
     </div>
 </div>
 """,
@@ -157,7 +157,7 @@ DEFAULT_EMAIL_TEMPLATES = [
     <p style="color: #666; line-height: 1.6;">I'm here to help whenever you're ready!</p>
     <p style="color: #666; line-height: 1.6;">Best regards,<br>{sender_name}</p>
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p style="color: #999; font-size: 12px;">Powered by i'M On Social</p>
+        {BRAND_FOOTER_HTML}
     </div>
 </div>
 """,
