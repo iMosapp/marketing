@@ -717,6 +717,7 @@ export default function InboxScreen() {
       <TouchableOpacity
         style={[
           styles.conversationItem,
+          { backgroundColor: colors.card, borderColor: colors.border },
           item.status === 'closed' && styles.conversationItemClosed,
           hasAiOutcome && !isAcknowledged && styles.conversationItemAI,
           isSelected && styles.conversationItemSelected,
