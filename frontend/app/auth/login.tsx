@@ -30,14 +30,7 @@ import {
 
 // Helper to get the right landing page based on user role
 const getDefaultRoute = (role?: string): string => {
-  switch (role) {
-    case 'super_admin':
-    case 'org_admin':
-    case 'store_manager':
-      return '/(tabs)/more';  // Admins and managers go to More tab
-    default:
-      return '/(tabs)/inbox'; // Regular users go to Inbox
-  }
+  return '/(tabs)/home';  // Everyone starts at Home — the daily command center
 };
 
 export default function LoginScreen() {
