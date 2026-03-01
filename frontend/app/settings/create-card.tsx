@@ -171,14 +171,27 @@ export default function CreateCardPage() {
 
   const resolveMatch = async (action: string) => {
     setMatchModalVisible(false);
-    if (!user?._id || !pendingSharePlatform) return;
+    if (!user?._id || !pendingSharePlatform || !createdCard) return;
+    const url = createdCard.share_url;
+    const text = `Check out this ${meta.label.toLowerCase()} for ${customerName}! ${url}`;
     try {
-      await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+      const res = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
         phone: customerPhone.trim(), name: customerName.trim(),
         event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`,
         event_description: `Sent ${meta.label.toLowerCase()} via ${pendingSharePlatform}`,
         event_icon: meta.icon, event_color: accent, force_action: action,
       });
+      const contactId = res.data.contact_id;
+      router.push({
+        pathname: `/thread/${contactId}`,
+        params: {
+          contact_name: res.data.contact_name || customerName.trim(),
+          contact_phone: res.data.contact_phone || customerPhone.trim(),
+          contact_email: res.data.contact_email || customerEmail.trim(),
+          mode: pendingSharePlatform,
+          prefill: text,
+        },
+      } as any);
     } catch {}
     setMatchInfo(null); setPendingSharePlatform(null);
   };
