@@ -175,8 +175,7 @@ function ContactActionModal({
               <View style={{ height: 20 }} />
             </>
           )}
-        </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
