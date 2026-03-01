@@ -141,12 +141,15 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         ts = b.get("sent_at")
         if ts and hasattr(ts, "isoformat"):
             ts = ts.isoformat()
+        full_msg = b.get("message") or ""
         events.append({
             "event_type": "broadcast_sent",
             "icon": "megaphone",
             "color": "#FF2D55",
             "title": "Broadcast Message",
-            "description": (b.get("message") or "")[:60],
+            "description": full_msg[:60],
+            "full_content": full_msg,
+            "channel": b.get("channel", "sms"),
             "timestamp": ts,
             "category": "broadcast",
         })
