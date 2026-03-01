@@ -200,6 +200,7 @@ async def get_user_showcase(user_id: str):
             "phone": user.get("phone"),
         },
         "store": {
+            "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
             "logo_url": f"/api/showcase/store-logo/{user.get('store_id')}" if store and has_logo else None,
             "primary_color": store.get("primary_color", "#C9A962") if store else "#C9A962",
