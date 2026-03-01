@@ -135,31 +135,89 @@ export function UniversalShareModal({
     close();
   };
 
-  // Via Text
-  const handleViaText = () => {
+  // Via Text — route through internal inbox for tracking
+  const handleViaText = async () => {
     const phone = recipientPhone.trim();
-    const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator?.userAgent || '');
-    const sep = isApple ? '&' : '?';
-    const msg = encodeURIComponent(defaultShareText);
-    const smsUrl = phone
-      ? `sms:${phone}${sep}body=${msg}`
-      : `sms:${sep === '&' ? '&' : '?'}body=${msg}`;
-    IS_WEB ? (window.location.href = smsUrl) : Linking.openURL(smsUrl);
-    logEvent('sms');
-    close();
+    const name = recipientName.trim();
+    if (!phone) {
+      showSimpleAlert('Phone Required', 'Please enter a phone number to send via text.');
+      return;
+    }
+    if (!userId) {
+      // Fallback for non-logged-in: open native SMS
+      const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator?.userAgent || '');
+      const sep = isApple ? '&' : '?';
+      const smsUrl = `sms:${phone}${sep}body=${encodeURIComponent(defaultShareText)}`;
+      IS_WEB ? (window.location.href = smsUrl) : Linking.openURL(smsUrl);
+      close();
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.post(`/contacts/${userId}/find-or-create-and-log`, {
+        phone, name: name || phone,
+        event_type: eventType || 'link_shared',
+        event_title: title,
+        event_description: `Shared via text`,
+        event_icon: 'share', event_color: '#007AFF',
+      });
+      const contactId = res.data.contact_id;
+      close();
+      router.push({
+        pathname: `/thread/${contactId}`,
+        params: {
+          contact_name: res.data.contact_name || name || phone,
+          contact_phone: res.data.contact_phone || phone,
+          mode: 'sms',
+          prefill: defaultShareText,
+        },
+      } as any);
+    } catch {
+      showSimpleAlert('Error', 'Failed to find or create contact.');
+    } finally { setSaving(false); }
   };
 
-  // Via Email
-  const handleViaEmail = () => {
+  // Via Email — route through internal inbox for tracking
+  const handleViaEmail = async () => {
     const email = recipientEmail.trim();
-    const subject = encodeURIComponent(title);
-    const body = encodeURIComponent(`Hi!\n\n${defaultShareText}\n\n`);
-    const mailto = email
-      ? `mailto:${email}?subject=${subject}&body=${body}`
-      : `mailto:?subject=${subject}&body=${body}`;
-    IS_WEB ? (window.location.href = mailto) : Linking.openURL(mailto);
-    logEvent('email');
-    close();
+    const name = recipientName.trim();
+    if (!email) {
+      showSimpleAlert('Email Required', 'Please enter an email address to send via email.');
+      return;
+    }
+    if (!userId) {
+      // Fallback for non-logged-in: open native email
+      const subject = encodeURIComponent(title);
+      const body = encodeURIComponent(`Hi!\n\n${defaultShareText}\n\n`);
+      const mailto = `mailto:${email}?subject=${subject}&body=${body}`;
+      IS_WEB ? (window.location.href = mailto) : Linking.openURL(mailto);
+      close();
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.post(`/contacts/${userId}/find-or-create-and-log`, {
+        email, name: name || email,
+        event_type: eventType || 'link_shared',
+        event_title: title,
+        event_description: `Shared via email`,
+        event_icon: 'share', event_color: '#007AFF',
+      });
+      const contactId = res.data.contact_id;
+      close();
+      router.push({
+        pathname: `/thread/${contactId}`,
+        params: {
+          contact_name: res.data.contact_name || name || email,
+          contact_email: res.data.contact_email || email,
+          mode: 'email',
+          prefill: defaultShareText,
+        },
+      } as any);
+    } catch {
+      showSimpleAlert('Error', 'Failed to find or create contact.');
+    } finally { setSaving(false); }
+  };
   };
 
   // Save vCard
