@@ -125,7 +125,18 @@ export default function ShowcasePage() {
         await navigator.share({ title: `${data?.salesperson?.name}'s Showroom`, url: shareUrl });
       } catch {}
     } else if (IS_WEB) {
-      navigator.clipboard?.writeText(shareUrl);
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       alert('Link copied to clipboard!');
     } else {
       Share.share({ message: shareUrl });
