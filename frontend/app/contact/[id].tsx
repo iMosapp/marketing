@@ -93,21 +93,23 @@ function formatEventTime(timestamp: string): string {
   try {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    // Compare by calendar date in local timezone
+    const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayDiff = Math.round((nowDay.getTime() - dateDay.getTime()) / 86400000);
     // Future dates
-    if (diffMs < 0) {
-      if (diffDays === 0 || diffDays === -1) {
+    if (dayDiff < 0) {
+      if (dayDiff === -1) {
         return 'Tomorrow at ' + format(date, 'h:mm a');
       }
       return format(date, 'MMM d \'at\' h:mm a');
     }
     // Today: show time only
-    if (diffDays === 0 && date.getDate() === now.getDate()) {
+    if (dayDiff === 0) {
       return format(date, 'h:mm a');
     }
     // Yesterday
-    if (diffDays <= 1 && date.getDate() === now.getDate() - 1) {
+    if (dayDiff === 1) {
       return 'Yesterday at ' + format(date, 'h:mm a');
     }
     // Within this year
@@ -120,6 +122,18 @@ function formatEventTime(timestamp: string): string {
     return '';
   }
 }
+
+// Format date-only fields using UTC to prevent timezone from shifting the day
+function formatDateUTC(dateStr: string, fmt: string = 'MMM d'): string {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    // Create local date from UTC components to avoid timezone shift
+    const local = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    return format(local, fmt);
+  } catch { return ''; }
+}
+
 
 // ===== EVENT TITLE FALLBACK =====
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -858,11 +872,12 @@ export default function ContactDetailScreen() {
     const groups: { label: string; events: ContactEvent[] }[] = [];
     const map: Record<string, ContactEvent[]> = {};
     const now = new Date();
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     evts.forEach(evt => {
       if (!evt.timestamp) return;
       const d = new Date(evt.timestamp);
-      const diff = now.getTime() - d.getTime();
-      const days = Math.floor(diff / 86400000);
+      const evtDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const days = Math.round((nowDay.getTime() - evtDay.getTime()) / 86400000);
       const label = days < 0 ? 'Upcoming' : days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? `${days} days ago` : format(d, 'MMM d, yyyy');
       if (!map[label]) { map[label] = []; groups.push({ label, events: map[label] }); }
       map[label].push(evt);
@@ -1364,7 +1379,7 @@ export default function ContactDetailScreen() {
                     >
                       <Ionicons name="gift" size={13} color="#FF2D55" />
                       <Text style={[s.heroCampaignChipText, { color: '#FF2D55' }]} numberOfLines={1}>Birthday</Text>
-                      <Text style={s.heroCampaignDate}>{format(new Date(contact.birthday), 'MMM d')}</Text>
+                      <Text style={s.heroCampaignDate}>{formatDateUTC(contact.birthday)}</Text>
                     </TouchableOpacity>
                   )}
                   {contact.anniversary && (
@@ -1379,7 +1394,7 @@ export default function ContactDetailScreen() {
                     >
                       <Ionicons name="heart" size={13} color="#FF6B6B" />
                       <Text style={[s.heroCampaignChipText, { color: '#FF6B6B' }]} numberOfLines={1}>Anniversary</Text>
-                      <Text style={s.heroCampaignDate}>{format(new Date(contact.anniversary), 'MMM d')}</Text>
+                      <Text style={s.heroCampaignDate}>{formatDateUTC(contact.anniversary)}</Text>
                     </TouchableOpacity>
                   )}
                   {contact.date_sold && (
@@ -1394,7 +1409,7 @@ export default function ContactDetailScreen() {
                     >
                       <Ionicons name="car-sport" size={13} color="#34C759" />
                       <Text style={[s.heroCampaignChipText, { color: '#34C759' }]} numberOfLines={1}>Sold Date</Text>
-                      <Text style={s.heroCampaignDate}>{format(new Date(contact.date_sold), 'MMM d')}</Text>
+                      <Text style={s.heroCampaignDate}>{formatDateUTC(contact.date_sold)}</Text>
                     </TouchableOpacity>
                   )}
                   {/* Enrolled campaigns */}
@@ -2504,7 +2519,7 @@ export default function ContactDetailScreen() {
             <TouchableOpacity activeOpacity={1} style={s.labelModal} onPress={() => {}}>
               <Text style={s.labelTitle}>Edit {editingAutomation.label}</Text>
               <Text style={[s.labelSub, { color: editingAutomation.color }]}>
-                {editingAutomation.value ? format(new Date(editingAutomation.value), 'MMM d, yyyy') : 'No date set'}
+                {editingAutomation.value ? formatDateUTC(editingAutomation.value, 'MMM d, yyyy') : 'No date set'}
               </Text>
               {IS_WEB ? (
                 <input

@@ -11,6 +11,15 @@ import logging
 
 from routers.database import get_db
 
+def _ts_iso(dt) -> str:
+    """Convert a datetime to ISO string with UTC indicator for correct browser parsing."""
+    if dt is None:
+        return None
+    s = dt.isoformat() if hasattr(dt, 'isoformat') else str(dt)
+    if not s.endswith('Z') and '+' not in s and s != 'None':
+        s += 'Z'
+    return s
+
 router = APIRouter(prefix="/contacts", tags=["Contact Events"])
 logger = logging.getLogger(__name__)
 
@@ -77,7 +86,7 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
     feed_items = []
     for evt in recent_events:
         if evt.get("timestamp") and hasattr(evt["timestamp"], "isoformat"):
-            evt["timestamp"] = evt["timestamp"].isoformat()
+            evt["timestamp"] = _ts_iso(evt["timestamp"])
         cid = evt.get("contact_id")
         contact_info = contacts_map.get(cid, {"id": cid, "name": "Unknown", "photo": None, "tags": [], "vehicle": ""})
         is_inbound = evt.get("direction") == "inbound" or evt.get("event_type") == "customer_reply"
@@ -248,7 +257,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     ).sort("timestamp", -1).limit(limit).to_list(limit)
     for e in custom_events:
         if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
-            e["timestamp"] = e["timestamp"].isoformat()
+            e["timestamp"] = _ts_iso(e["timestamp"])
         # Ensure full_content is available for rich preview
         if not e.get("full_content"):
             e["full_content"] = e.get("content") or e.get("content_preview") or e.get("description") or ""
@@ -309,7 +318,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
             body = m.get("body") or ""
             ts = m.get("timestamp")
             if ts and hasattr(ts, "isoformat"):
-                ts = ts.isoformat()
+                ts = _ts_iso(ts)
             events.append({
                 "event_type": f"message_{direction}",
                 "icon": icon,
@@ -336,7 +345,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         campaign_name = campaign.get("name", "Unknown") if campaign else "Unknown"
         ts = e.get("enrolled_at")
         if ts and hasattr(ts, "isoformat"):
-            ts = ts.isoformat()
+            ts = _ts_iso(ts)
         events.append({
             "event_type": "campaign_enrolled",
             "icon": "rocket",
@@ -350,7 +359,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         for msg in (e.get("messages_sent") or []):
             msg_ts = msg.get("sent_at")
             if msg_ts and hasattr(msg_ts, "isoformat"):
-                msg_ts = msg_ts.isoformat()
+                msg_ts = _ts_iso(msg_ts)
             events.append({
                 "event_type": "campaign_message_sent",
                 "icon": "megaphone",
@@ -371,7 +380,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     for c in congrats:
         ts = c.get("sent_at")
         if ts and hasattr(ts, "isoformat"):
-            ts = ts.isoformat()
+            ts = _ts_iso(ts)
         events.append({
             "event_type": "congrats_card_sent",
             "icon": "gift",
@@ -394,7 +403,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     for b in broadcasts:
         ts = b.get("sent_at")
         if ts and hasattr(ts, "isoformat"):
-            ts = ts.isoformat()
+            ts = _ts_iso(ts)
         full_msg = b.get("message") or ""
         events.append({
             "event_type": "broadcast_sent",
@@ -469,7 +478,7 @@ async def get_contact_stats(user_id: str, contact_id: str):
         pass  # Invalid ObjectId format
     created_at = None
     if contact and contact.get("created_at"):
-        created_at = contact["created_at"].isoformat() if hasattr(contact["created_at"], "isoformat") else str(contact["created_at"])
+        created_at = _ts_iso(contact["created_at"])
 
     total_touchpoints = message_count + campaign_count + card_count + broadcast_count + custom_count
 
@@ -503,7 +512,7 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     await db.contact_events.insert_one(event)
     event.pop("_id", None)
     if hasattr(event["timestamp"], "isoformat"):
-        event["timestamp"] = event["timestamp"].isoformat()
+        event["timestamp"] = _ts_iso(event["timestamp"])
 
     return event
 
@@ -546,7 +555,7 @@ async def log_customer_reply(user_id: str, contact_id: str, reply_data: dict):
     await db.contact_events.insert_one(event)
     event.pop("_id", None)
     if hasattr(event["timestamp"], "isoformat"):
-        event["timestamp"] = event["timestamp"].isoformat()
+        event["timestamp"] = _ts_iso(event["timestamp"])
     # Don't return base64 photo in response
     event.pop("photo", None)
     event["has_photo"] = bool(photo_data)

@@ -3,7 +3,7 @@ iMOs API Server - Main entry point
 Refactored to use modular routers for maintainability
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse as _JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
@@ -11,6 +11,17 @@ import os
 import logging
 from pathlib import Path
 from datetime import datetime
+import json
+
+class UTCDateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder that ensures naive datetimes (from MongoDB) get Z suffix."""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            s = obj.isoformat()
+            if obj.tzinfo is None and not s.endswith('Z'):
+                s += 'Z'
+            return s
+        return super().default(obj)
 
 # Load environment
 # In production: Kubernetes/deployment platform injects env vars (MONGO_URL, DB_NAME, etc.)
@@ -24,8 +35,24 @@ from routers import auth, contacts, tasks, messages, calls, campaigns, admin, le
 from routers.database import get_db
 from websocket_manager import manager as ws_manager
 
+# Patch jsonable_encoder to append Z to naive datetime ISO strings
+import re
+_ISO_NAIVE_RE = re.compile(r'"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?"')
+
+class UTCJSONResponse(_JSONResponse):
+    """JSONResponse that fixes naive datetime strings by appending Z."""
+    def render(self, content) -> bytes:
+        body = json.dumps(content, ensure_ascii=False)
+        def _add_z(m):
+            s = m.group(0)
+            if 'Z' not in s and '+' not in s:
+                return s[:-1] + 'Z"'
+            return s
+        body = _ISO_NAIVE_RE.sub(_add_z, body)
+        return body.encode("utf-8")
+
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-app = FastAPI(title="iMOs API", version="2.0", redirect_slashes=False)
+app = FastAPI(title="iMOs API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")

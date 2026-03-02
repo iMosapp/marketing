@@ -46,11 +46,12 @@ const formatFeedTime = (ts: string) => {
 const groupByDate = (items: any[]) => {
   const groups: Record<string, any[]> = {};
   const now = new Date();
+  const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   items.forEach(item => {
     if (!item.timestamp) return;
     const d = new Date(item.timestamp);
-    const diff = now.getTime() - d.getTime();
-    const days = Math.floor(diff / 86400000);
+    const evtDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const days = Math.round((nowDay.getTime() - evtDay.getTime()) / 86400000);
     let label = days < 0 ? (days === -1 ? 'Tomorrow' : 'Upcoming') : days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? `${days} days ago` : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     if (!groups[label]) groups[label] = [];
     groups[label].push(item);
