@@ -648,6 +648,30 @@ export default function MyAccountScreen() {
           </View>
         </View>
 
+        {/* Install App Button */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.installBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => {
+              if (Platform.OS === 'web') {
+                window.open('/install.html', '_self');
+              } else {
+                Linking.openURL('https://app.imosapp.com/install.html');
+              }
+            }}
+            data-testid="install-app-btn"
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#007AFF20' }]}>
+              <Ionicons name="download-outline" size={22} color="#007AFF" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuTitle, { color: colors.text }]}>Install App</Text>
+              <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>Add to home screen for fullscreen mode</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
         {/* My Activity Dashboard */}
         <View style={styles.section}>
           <TouchableOpacity
