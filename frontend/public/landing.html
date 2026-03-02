@@ -647,6 +647,39 @@
   }, { threshold: 0.15 });
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
+  // Audio player
+  const audio = document.getElementById('voiceoverAudio');
+  const videoArea = document.getElementById('video-area');
+  const playBtn = document.getElementById('playBtn');
+  const audioWave = document.getElementById('audioWave');
+  const audioLabel = document.getElementById('audioLabel');
+  let isPlaying = false;
+
+  function toggleAudio() {
+    if (isPlaying) {
+      audio.pause();
+      videoArea.classList.remove('playing');
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';
+      audioWave.style.display = 'none';
+      audioLabel.textContent = 'Listen to our story';
+      isPlaying = false;
+    } else {
+      audio.play();
+      videoArea.classList.add('playing');
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+      audioWave.style.display = 'block';
+      audioLabel.textContent = 'Now playing...';
+      isPlaying = true;
+    }
+  }
+  audio.addEventListener('ended', function() {
+    videoArea.classList.remove('playing');
+    playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';
+    audioWave.style.display = 'none';
+    audioLabel.textContent = 'Listen again';
+    isPlaying = false;
+  });
+
   // Modal
   function openModal(e) { e && e.preventDefault(); document.getElementById('demoModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
   function closeModal() { document.getElementById('demoModal').classList.remove('active'); document.body.style.overflow = ''; }
