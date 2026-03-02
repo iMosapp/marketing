@@ -778,7 +778,7 @@ const getS = (colors: any) => StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerBack: { width: 32, height: 32, justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.card },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
 
   // Step indicator
   stepBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 0 },
@@ -796,20 +796,20 @@ const getS = (colors: any) => StyleSheet.create({
   // Body
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },
-  stepTitle: { fontSize: 24, fontWeight: '800', color: colors.card, marginBottom: 8 },
+  stepTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 8 },
   stepDesc: { fontSize: 14, color: '#8E8E93', lineHeight: 20, marginBottom: 24 },
 
   // Form fields
   fieldWrap: { marginBottom: 18 },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.card, borderWidth: 1, borderColor: colors.surface },
+  input: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.surface },
   row: { flexDirection: 'row' },
 
   // Existing org/store selection
   existingSection: { marginBottom: 24 },
   existingLabel: { fontSize: 13, color: '#8E8E93', marginBottom: 10 },
   existingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 12, marginBottom: 8, gap: 12, borderWidth: 1, borderColor: colors.surface },
-  existingName: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.card },
+  existingName: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   newCard: { borderColor: '#34C759', borderStyle: 'dashed' as any },
 
   // Industry chips
@@ -817,7 +817,7 @@ const getS = (colors: any) => StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface },
   chipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   chipText: { fontSize: 13, color: '#AAA' },
-  chipTextActive: { color: colors.card, fontWeight: '700' },
+  chipTextActive: { color: colors.text, fontWeight: '700' },
 
   // Colors
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
@@ -839,8 +839,8 @@ const getS = (colors: any) => StyleSheet.create({
   reviewCard: { backgroundColor: colors.bg, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.card },
   reviewIconRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   reviewIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  reviewIconText: { fontSize: 16, fontWeight: '800', color: colors.card },
-  reviewLinkLabel: { fontSize: 15, fontWeight: '600', color: colors.card },
+  reviewIconText: { fontSize: 16, fontWeight: '800', color: colors.text },
+  reviewLinkLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
   skipHint: { fontSize: 12, color: '#555', textAlign: 'center', marginTop: 8, marginBottom: 16 },
 
   // Team members
@@ -851,16 +851,16 @@ const getS = (colors: any) => StyleSheet.create({
   roleChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.card, alignItems: 'center', borderWidth: 1, borderColor: colors.surface },
   roleChipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   roleChipText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
-  roleChipTextActive: { color: colors.card },
+  roleChipTextActive: { color: colors.text },
   addMemberBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.surface, borderStyle: 'dashed' as any, marginBottom: 8 },
   addMemberText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
 
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   nextBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 16, borderRadius: 50, marginTop: 16 },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: colors.card },
+  nextBtnText: { fontSize: 16, fontWeight: '800', color: colors.text },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 50, backgroundColor: colors.card, marginTop: 16 },
-  backBtnText: { fontSize: 14, fontWeight: '600', color: colors.card },
+  backBtnText: { fontSize: 14, fontWeight: '600', color: colors.text },
   launchBtn: { backgroundColor: '#34C759' },
 
   // Summary
@@ -868,7 +868,7 @@ const getS = (colors: any) => StyleSheet.create({
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   summaryInfo: { flex: 1 },
   summaryLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 2 },
-  summaryValue: { fontSize: 15, fontWeight: '600', color: colors.card },
+  summaryValue: { fontSize: 15, fontWeight: '600', color: colors.text },
   summaryColorDot: { width: 20, height: 20, borderRadius: 10 },
 
   // Credentials
@@ -876,15 +876,15 @@ const getS = (colors: any) => StyleSheet.create({
   credentialsTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962', marginBottom: 4 },
   credentialsHint: { fontSize: 12, color: '#8E8E93', marginBottom: 12 },
   credentialRow: { backgroundColor: colors.bg, borderRadius: 10, padding: 12, marginBottom: 8 },
-  credentialName: { fontSize: 14, fontWeight: '700', color: colors.card, marginBottom: 2 },
+  credentialName: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 2 },
   credentialDetail: { fontSize: 12, color: '#8E8E93', marginBottom: 4 },
   credentialPassword: { fontSize: 13, color: '#C9A962', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
 
   // Done
   doneContainer: { alignItems: 'center', paddingTop: 40 },
   doneIconWrap: { marginBottom: 20 },
-  doneTitle: { fontSize: 28, fontWeight: '900', color: colors.card, marginBottom: 12 },
+  doneTitle: { fontSize: 28, fontWeight: '900', color: colors.text, marginBottom: 12 },
   doneDesc: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, marginBottom: 32, paddingHorizontal: 10 },
   doneBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 50, marginBottom: 12, width: '100%' as any },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: colors.card },
+  doneBtnText: { fontSize: 16, fontWeight: '800', color: colors.text },
 });
