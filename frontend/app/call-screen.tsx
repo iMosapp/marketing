@@ -11,6 +11,7 @@ import api from '../services/api';
 import { useThemeStore } from '../store/themeStore';
 export default function CallScreen() {
   const { colors } = useThemeStore();
+  const st = getST(colors);
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -187,19 +188,19 @@ export default function CallScreen() {
   );
 }
 
-const st = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000000' },
+const getST = (colors: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
   container: { flex: 1, justifyContent: 'space-between' },
 
   topSection: { alignItems: 'center', paddingTop: 60, flex: 1, justifyContent: 'center' },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF3B3020', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginBottom: 24 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF3B30' },
   statusText: { fontSize: 13, fontWeight: '700', color: '#FF3B30' },
-  avatarCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 3, borderColor: '#2C2C2E' },
+  avatarCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 3, borderColor: colors.surface },
   avatarLetter: { fontSize: 36, fontWeight: '800', color: '#C9A962' },
-  contactName: { fontSize: 26, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
+  contactName: { fontSize: 26, fontWeight: '800', color: colors.card, marginBottom: 4 },
   contactPhone: { fontSize: 16, color: '#8E8E93', marginBottom: 16 },
-  timer: { fontSize: 48, fontWeight: '300', color: '#FFFFFF', fontVariant: ['tabular-nums'], letterSpacing: 2 },
+  timer: { fontSize: 48, fontWeight: '300', color: colors.card, fontVariant: ['tabular-nums'], letterSpacing: 2 },
   readyHint: { fontSize: 14, color: '#555', marginTop: 8 },
 
   bottomSection: { alignItems: 'center', paddingBottom: 50, paddingHorizontal: 20 },
@@ -220,5 +221,5 @@ const st = StyleSheet.create({
   loggedTitle: { fontSize: 15, fontWeight: '700', color: '#34C759', marginBottom: 2 },
   loggedDetail: { fontSize: 12, color: '#8E8E93' },
   doneBtn: { backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 50, width: '100%' as any, alignItems: 'center' },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  doneBtnText: { fontSize: 16, fontWeight: '800', color: colors.card },
 });

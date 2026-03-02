@@ -48,6 +48,7 @@ interface Client {
 
 export default function ClientOnboardingScreen() {
   const { colors } = useThemeStore();
+  const st = getSt(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
@@ -607,130 +608,130 @@ export default function ClientOnboardingScreen() {
   );
 }
 
-const st = StyleSheet.create({
+const getSt = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#000000' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 50 },
 
   newBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A96215', borderWidth: 1, borderColor: '#C9A96240', borderStyle: 'dashed' as any, borderRadius: 14, padding: 14, marginBottom: 14 },
   newBtnText: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
-  newForm: { backgroundColor: '#0D0D0D', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#C9A96240' },
+  newForm: { backgroundColor: colors.bg, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#C9A96240' },
   newFormHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  newFormTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+  newFormTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
   createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 50, marginTop: 4 },
-  createBtnText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
+  createBtnText: { fontSize: 15, fontWeight: '800', color: colors.text },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyText: { fontSize: 16, color: '#3A3A3C' },
+  emptyText: { fontSize: 16, color: colors.borderLight },
 
   // Client
-  clientCard: { backgroundColor: '#0D0D0D', borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#1C1C1E', overflow: 'hidden' },
+  clientCard: { backgroundColor: colors.bg, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.card, overflow: 'hidden' },
   clientHead: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   avatarDone: { backgroundColor: '#34C759' },
   avatarText: { fontSize: 15, fontWeight: '800', color: '#C9A962' },
   clientInfo: { flex: 1 },
-  clientName: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  clientMeta: { fontSize: 11, color: '#8E8E93', marginTop: 1 },
-  miniBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#1C1C1E', overflow: 'hidden' },
+  clientName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  clientMeta: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
+  miniBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.card, overflow: 'hidden' },
   miniBarFill: { height: '100%' as any, backgroundColor: '#C9A962', borderRadius: 2 },
 
   // Steps
-  stepsWrap: { borderTopWidth: 1, borderTopColor: '#1C1C1E' },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
+  stepsWrap: { borderTopWidth: 1, borderTopColor: colors.card },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: colors.card },
   stepIconBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  stepTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
-  stepTitleDone: { textDecorationLine: 'line-through', color: '#8E8E93' },
+  stepTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text },
+  stepTitleDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
 
   // Forms
   form: { padding: 14, paddingTop: 8, backgroundColor: '#080808' },
-  formDesc: { fontSize: 13, color: '#8E8E93', marginBottom: 14, lineHeight: 18 },
+  formDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 14, lineHeight: 18 },
   label: { fontSize: 11, fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 },
   sectionHead: { fontSize: 13, fontWeight: '700', color: '#C9A962', marginTop: 18, marginBottom: 8 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 10, padding: 12, fontSize: 14, color: '#FFFFFF', borderWidth: 1, borderColor: '#2C2C2E', marginBottom: 6 },
+  input: { backgroundColor: colors.card, borderRadius: 10, padding: 12, fontSize: 14, color: colors.text, borderWidth: 1, borderColor: colors.surface, marginBottom: 6 },
   row: { flexDirection: 'row', marginBottom: 6 },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 50, marginTop: 16 },
-  saveBtnText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
+  saveBtnText: { fontSize: 15, fontWeight: '800', color: colors.text },
   btnRow: { flexDirection: 'row', gap: 8 },
 
   // What You Need box
-  wynBox: { backgroundColor: '#0D1117', borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#1C2333', borderLeftWidth: 3, borderLeftColor: '#C9A962' },
+  wynBox: { backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: '#C9A962' },
   wynTitle: { fontSize: 12, fontWeight: '800', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   wynRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 5 },
   wynBullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#C9A962', marginTop: 5 },
   wynText: { fontSize: 13, color: '#CCC', flex: 1, lineHeight: 18 },
 
   // Action links
-  actionLink: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#C9A96233' },
+  actionLink: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#C9A96233' },
   actionLinkIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' },
-  actionLinkText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  actionLinkText: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.text },
 
   // Plans
   planGrid: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  planCard: { flex: 1, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 2, borderColor: '#2C2C2E' },
+  planCard: { flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 2, borderColor: colors.surface },
   planCardActive: { borderColor: '#C9A962', backgroundColor: '#C9A96215' },
-  planPrice: { fontSize: 22, fontWeight: '900', color: '#FFFFFF', marginBottom: 2 },
+  planPrice: { fontSize: 22, fontWeight: '900', color: colors.text, marginBottom: 2 },
   planPriceActive: { color: '#C9A962' },
-  planName: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
+  planName: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 2 },
   planNameActive: { color: '#C9A962' },
   planUsers: { fontSize: 10, color: '#555' },
 
   // Status chips
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  statusChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
+  statusChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface },
   statusChipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
-  statusChipText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
-  statusChipTextActive: { color: '#FFFFFF' },
+  statusChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  statusChipTextActive: { color: colors.text },
 
   // Industry chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface },
   chipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   chipText: { fontSize: 12, color: '#AAA' },
-  chipTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  chipTextActive: { color: colors.text, fontWeight: '700' },
 
   // Colors
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorDot: { width: 32, height: 32, borderRadius: 16, borderWidth: 3, borderColor: 'transparent' },
-  colorDotActive: { borderColor: '#2C2C2E' },
+  colorDotActive: { borderColor: colors.surface },
 
   // Review links
   reviewRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   reviewBadge: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  reviewBadgeText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+  reviewBadgeText: { fontSize: 14, fontWeight: '800', color: colors.text },
 
   // Team
-  teamCard: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#1C1C1E' },
+  teamCard: { backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.card },
   teamCardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   teamNum: { fontSize: 12, fontWeight: '700', color: '#C9A962' },
   roleWrap: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  roleBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#1C1C1E', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E' },
+  roleBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.card, alignItems: 'center', borderWidth: 1, borderColor: colors.surface },
   roleBtnActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
-  roleBtnText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
-  roleBtnTextActive: { color: '#FFFFFF' },
-  addRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' as any, marginBottom: 8 },
+  roleBtnText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  roleBtnTextActive: { color: colors.text },
+  addRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.surface, borderStyle: 'dashed' as any, marginBottom: 8 },
   addRowText: { fontSize: 13, fontWeight: '600', color: '#C9A962' },
   resultsCard: { backgroundColor: '#1A1500', borderRadius: 12, padding: 12, marginTop: 10, borderWidth: 1, borderColor: '#C9A96233' },
   resultsTitle: { fontSize: 13, fontWeight: '700', color: '#C9A962', marginBottom: 8 },
-  resultRow: { backgroundColor: '#0D0D0D', borderRadius: 8, padding: 10, marginBottom: 6 },
-  resultName: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
+  resultRow: { backgroundColor: colors.bg, borderRadius: 8, padding: 10, marginBottom: 6 },
+  resultName: { fontSize: 13, fontWeight: '600', color: colors.text },
   resultPw: { fontSize: 12, color: '#C9A962', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, marginTop: 2 },
 
   // Go Live
   liveReady: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  liveTitle: { fontSize: 20, fontWeight: '900', color: '#FFFFFF' },
-  liveDesc: { fontSize: 13, color: '#8E8E93', textAlign: 'center', lineHeight: 18, marginBottom: 8 },
+  liveTitle: { fontSize: 20, fontWeight: '900', color: colors.text },
+  liveDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', lineHeight: 18, marginBottom: 8 },
 
   // Archive
-  archiveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#1C1C1E' },
+  archiveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.card },
   archiveText: { fontSize: 12, color: '#FF3B30', fontWeight: '600' },
 
   archived: { marginTop: 20 },
   archivedLabel: { fontSize: 12, fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
-  archivedRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
+  archivedRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.card },
   archivedName: { fontSize: 13, color: '#555' },
-  archivedMeta: { fontSize: 12, color: '#3A3A3C' },
+  archivedMeta: { fontSize: 12, color: colors.borderLight },
 });

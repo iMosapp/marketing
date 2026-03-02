@@ -20,6 +20,7 @@ interface ShowroomEntry {
 
 export default function ManageShowroom() {
   const { colors } = useThemeStore();
+  const s = getS(colors);
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [entries, setEntries] = useState<ShowroomEntry[]>([]);
@@ -130,12 +131,12 @@ export default function ManageShowroom() {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000000' },
+const getS = (colors: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#000000', letterSpacing: 0.5 },
-  statsRow: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: '#1C1C1E', borderRadius: 14, marginBottom: 12, overflow: 'hidden' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.bg, letterSpacing: 0.5 },
+  statsRow: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 14, marginBottom: 12, overflow: 'hidden' },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 14 },
   statNum: { fontSize: 22, fontWeight: '800', color: '#C9A962' },
   statLabel: { fontSize: 11, color: '#8E8E93', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -145,11 +146,11 @@ const s = StyleSheet.create({
   emptySubtext: { fontSize: 13, color: '#636366' },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 8 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 14, padding: 12, gap: 12 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 12, gap: 12 },
   cardHidden: { opacity: 0.5 },
-  thumb: { width: 56, height: 56, borderRadius: 10, backgroundColor: '#2C2C2E' },
+  thumb: { width: 56, height: 56, borderRadius: 10, backgroundColor: colors.surface },
   info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '600', color: '#000000' },
+  name: { fontSize: 15, fontWeight: '600', color: colors.bg },
   nameHidden: { color: '#636366' },
   meta: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
   toggleWrap: { width: 52, alignItems: 'center' },

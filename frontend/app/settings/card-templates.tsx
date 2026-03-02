@@ -28,6 +28,7 @@ interface Template {
 
 export default function ManageCardTemplatesPage() {
   const { colors } = useThemeStore();
+  const s = getS(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -148,24 +149,24 @@ export default function ManageCardTemplatesPage() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000000' },
-  loading: { flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
+const getS = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  loading: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.card },
   content: { flex: 1, padding: 16 },
   sectionNote: { fontSize: 13, color: '#8E8E93', marginBottom: 20, lineHeight: 18 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, marginBottom: 12, gap: 14 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 12, gap: 14 },
   cardIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  cardTitle: { fontSize: 16, fontWeight: '600', color: colors.card },
   cardSub: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
   label: { fontSize: 10, fontWeight: '700', color: '#6E6E73', marginTop: 16, marginBottom: 6, letterSpacing: 1 },
   hint: { fontSize: 11, color: '#8E8E93', marginBottom: 6 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFFFFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
+  input: { backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: colors.card, borderWidth: 1.5, borderColor: colors.borderLight },
   previewBox: { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 24, marginTop: 20, borderWidth: 1, alignItems: 'center' },
   previewHL: { fontSize: 24, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
   previewMsg: { fontSize: 14, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 20 },
   previewFooter: { fontSize: 11, color: '#8E8E93', marginTop: 12 },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12, marginTop: 24, marginBottom: 40 },
-  saveBtnText: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+  saveBtnText: { fontSize: 17, fontWeight: '700', color: colors.card },
 });

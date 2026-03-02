@@ -31,6 +31,7 @@ const COLORS = [
 
 export default function SetupWizardScreen() {
   const { colors } = useThemeStore();
+  const s = getS(colors);
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -771,119 +772,119 @@ export default function SetupWizardScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000000' },
+const getS = (colors: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerBack: { width: 32, height: 32, justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.card },
 
   // Step indicator
   stepBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 0 },
   stepDot: { alignItems: 'center', flex: 1, position: 'relative' },
-  dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#2C2C2E' },
+  dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.surface },
   dotDone: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
-  dotActive: { borderColor: '#C9A962', backgroundColor: '#1C1C1E' },
+  dotActive: { borderColor: '#C9A962', backgroundColor: colors.card },
   dotText: { fontSize: 12, fontWeight: '700', color: '#555' },
   dotTextActive: { color: '#C9A962' },
   stepLabel: { fontSize: 10, color: '#555', marginTop: 4, textAlign: 'center' },
   stepLabelActive: { color: '#C9A962', fontWeight: '600' },
-  stepLine: { position: 'absolute', top: 13, right: -50 + '%' as any, width: '100%' as any, height: 2, backgroundColor: '#1C1C1E', zIndex: -1 },
+  stepLine: { position: 'absolute', top: 13, right: -50 + '%' as any, width: '100%' as any, height: 2, backgroundColor: colors.card, zIndex: -1 },
   stepLineDone: { backgroundColor: '#C9A962' },
 
   // Body
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },
-  stepTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginBottom: 8 },
+  stepTitle: { fontSize: 24, fontWeight: '800', color: colors.card, marginBottom: 8 },
   stepDesc: { fontSize: 14, color: '#8E8E93', lineHeight: 20, marginBottom: 24 },
 
   // Form fields
   fieldWrap: { marginBottom: 18 },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, fontSize: 16, color: '#FFFFFF', borderWidth: 1, borderColor: '#2C2C2E' },
+  input: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.card, borderWidth: 1, borderColor: colors.surface },
   row: { flexDirection: 'row' },
 
   // Existing org/store selection
   existingSection: { marginBottom: 24 },
   existingLabel: { fontSize: 13, color: '#8E8E93', marginBottom: 10 },
-  existingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', padding: 14, borderRadius: 12, marginBottom: 8, gap: 12, borderWidth: 1, borderColor: '#2C2C2E' },
-  existingName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
+  existingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 12, marginBottom: 8, gap: 12, borderWidth: 1, borderColor: colors.surface },
+  existingName: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.card },
   newCard: { borderColor: '#34C759', borderStyle: 'dashed' as any },
 
   // Industry chips
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface },
   chipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   chipText: { fontSize: 13, color: '#AAA' },
-  chipTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  chipTextActive: { color: colors.card, fontWeight: '700' },
 
   // Colors
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
   colorSwatch: { width: 40, height: 40, borderRadius: 20, borderWidth: 3, borderColor: 'transparent' },
-  colorSwatchActive: { borderColor: '#2C2C2E' },
+  colorSwatchActive: { borderColor: colors.surface },
   colorPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   colorPreviewDot: { width: 16, height: 16, borderRadius: 8 },
   colorPreviewText: { fontSize: 13, color: '#8E8E93', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
 
   // Logo
   logoSection: { marginBottom: 24 },
-  logoUploadBox: { width: '100%' as any, height: 180, borderRadius: 16, borderWidth: 2, borderColor: '#2C2C2E', borderStyle: 'dashed' as any, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0D0D0D', overflow: 'hidden' },
+  logoUploadBox: { width: '100%' as any, height: 180, borderRadius: 16, borderWidth: 2, borderColor: colors.surface, borderStyle: 'dashed' as any, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg, overflow: 'hidden' },
   logoImage: { width: '100%' as any, height: '100%' as any },
   logoPlaceholder: { alignItems: 'center', gap: 8 },
   logoPlaceholderText: { fontSize: 15, color: '#8E8E93', fontWeight: '600' },
   logoHint: { fontSize: 12, color: '#555' },
 
   // Review links
-  reviewCard: { backgroundColor: '#0D0D0D', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#1C1C1E' },
+  reviewCard: { backgroundColor: colors.bg, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.card },
   reviewIconRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   reviewIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  reviewIconText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
-  reviewLinkLabel: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
+  reviewIconText: { fontSize: 16, fontWeight: '800', color: colors.card },
+  reviewLinkLabel: { fontSize: 15, fontWeight: '600', color: colors.card },
   skipHint: { fontSize: 12, color: '#555', textAlign: 'center', marginTop: 8, marginBottom: 16 },
 
   // Team members
-  teamRow: { backgroundColor: '#0D0D0D', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#1C1C1E' },
+  teamRow: { backgroundColor: colors.bg, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.card },
   teamRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   teamRowNum: { fontSize: 13, fontWeight: '700', color: '#C9A962' },
   roleRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  roleChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#1C1C1E', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E' },
+  roleChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.card, alignItems: 'center', borderWidth: 1, borderColor: colors.surface },
   roleChipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   roleChipText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
-  roleChipTextActive: { color: '#FFFFFF' },
-  addMemberBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' as any, marginBottom: 8 },
+  roleChipTextActive: { color: colors.card },
+  addMemberBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.surface, borderStyle: 'dashed' as any, marginBottom: 8 },
   addMemberText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
 
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   nextBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 16, borderRadius: 50, marginTop: 16 },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 50, backgroundColor: '#1C1C1E', marginTop: 16 },
-  backBtnText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  nextBtnText: { fontSize: 16, fontWeight: '800', color: colors.card },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 50, backgroundColor: colors.card, marginTop: 16 },
+  backBtnText: { fontSize: 14, fontWeight: '600', color: colors.card },
   launchBtn: { backgroundColor: '#34C759' },
 
   // Summary
-  summaryCard: { backgroundColor: '#0D0D0D', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#1C1C1E' },
+  summaryCard: { backgroundColor: colors.bg, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.card },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   summaryInfo: { flex: 1 },
   summaryLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 2 },
-  summaryValue: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
+  summaryValue: { fontSize: 15, fontWeight: '600', color: colors.card },
   summaryColorDot: { width: 20, height: 20, borderRadius: 10 },
 
   // Credentials
   credentialsCard: { backgroundColor: '#1A1500', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#C9A96233' },
   credentialsTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962', marginBottom: 4 },
   credentialsHint: { fontSize: 12, color: '#8E8E93', marginBottom: 12 },
-  credentialRow: { backgroundColor: '#0D0D0D', borderRadius: 10, padding: 12, marginBottom: 8 },
-  credentialName: { fontSize: 14, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
+  credentialRow: { backgroundColor: colors.bg, borderRadius: 10, padding: 12, marginBottom: 8 },
+  credentialName: { fontSize: 14, fontWeight: '700', color: colors.card, marginBottom: 2 },
   credentialDetail: { fontSize: 12, color: '#8E8E93', marginBottom: 4 },
   credentialPassword: { fontSize: 13, color: '#C9A962', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
 
   // Done
   doneContainer: { alignItems: 'center', paddingTop: 40 },
   doneIconWrap: { marginBottom: 20 },
-  doneTitle: { fontSize: 28, fontWeight: '900', color: '#FFFFFF', marginBottom: 12 },
+  doneTitle: { fontSize: 28, fontWeight: '900', color: colors.card, marginBottom: 12 },
   doneDesc: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, marginBottom: 32, paddingHorizontal: 10 },
   doneBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 50, marginBottom: 12, width: '100%' as any },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  doneBtnText: { fontSize: 16, fontWeight: '800', color: colors.card },
 });

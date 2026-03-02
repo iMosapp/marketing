@@ -8,6 +8,7 @@ import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 export default function WhiteLabelPartnersScreen() {
   const { colors } = useThemeStore();
+  const s = getS(colors);
   const router = useRouter();
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,31 +162,31 @@ export default function WhiteLabelPartnersScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000000' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
+const getS = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerBtn: { padding: 4, minWidth: 50 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFFFFF', flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.card, flex: 1, textAlign: 'center' },
   scroll: { padding: 16 },
-  formCard: { backgroundColor: '#1C1C1E', borderRadius: 14, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#2C2C2E' },
-  formTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 16 },
+  formCard: { backgroundColor: colors.card, borderRadius: 14, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: colors.surface },
+  formTitle: { fontSize: 18, fontWeight: '700', color: colors.card, marginBottom: 16 },
   inputGroup: { marginBottom: 12 },
   inputLabel: { fontSize: 12, fontWeight: '500', color: '#8E8E93', marginBottom: 4, marginLeft: 2 },
-  input: { backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, fontSize: 16, color: '#FFFFFF', borderWidth: 1, borderColor: '#3A3A3C' },
+  input: { backgroundColor: colors.surface, borderRadius: 10, padding: 14, fontSize: 16, color: colors.card, borderWidth: 1, borderColor: colors.borderLight },
   saveBtn: { backgroundColor: '#C9A962', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  saveBtnText: { fontSize: 16, fontWeight: '700', color: colors.card },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 18, color: '#8E8E93', marginTop: 12 },
   emptySub: { fontSize: 14, color: '#636366', marginTop: 4 },
-  partnerCard: { backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#2C2C2E' },
+  partnerCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.surface },
   partnerIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   partnerIconText: { fontSize: 16, fontWeight: '800' },
-  partnerName: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  partnerName: { fontSize: 16, fontWeight: '600', color: colors.card },
   partnerSlug: { fontSize: 13, color: '#636366', marginTop: 1 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: '#2C2C2E' },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: colors.surface },
   statusActive: { backgroundColor: '#34C75920' },
   statusText: { fontSize: 11, fontWeight: '600', color: '#8E8E93' },
-  partnerActions: { flexDirection: 'row', gap: 16, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#2C2C2E' },
+  partnerActions: { flexDirection: 'row', gap: 16, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.surface },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionText: { fontSize: 13, fontWeight: '600' },
 });

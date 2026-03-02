@@ -27,6 +27,7 @@ const ALL_CATEGORIES = [
 
 export default function LeaderboardPage() {
   const { colors } = useThemeStore();
+  const s = getS(colors);
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [level, setLevel] = useState('store');
@@ -256,65 +257,65 @@ export default function LeaderboardPage() {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000000' },
+const getS = (colors: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { padding: 4 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#000000', letterSpacing: 1.5 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.bg, letterSpacing: 1.5 },
   membersBadge: { backgroundColor: '#007AFF', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
-  membersText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  membersText: { fontSize: 12, fontWeight: '700', color: colors.card },
   // Level tabs
   levelRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 12 },
-  levelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10, backgroundColor: '#1C1C1E' },
+  levelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.card },
   levelTabActive: { backgroundColor: '#C9A96220', borderWidth: 1, borderColor: '#C9A96250' },
   levelText: { fontSize: 13, fontWeight: '600', color: '#636366' },
   levelTextActive: { color: '#C9A962' },
   // Month
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 10 },
   monthArrow: { padding: 4 },
-  monthText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  monthText: { fontSize: 15, fontWeight: '700', color: colors.bg },
   // Category pills
   catScroll: { maxHeight: 44, marginBottom: 8 },
   catRow: { paddingHorizontal: 16, gap: 8 },
-  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#1C1C1E' },
+  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card },
   catPillActive: { backgroundColor: '#C9A962' },
   catText: { fontSize: 12, fontWeight: '600', color: '#AEAEB2' },
-  catTextActive: { color: '#FFFFFF' },
+  catTextActive: { color: colors.card },
   // List
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 20 },
   // Card
-  card: { backgroundColor: '#1C1C1E', borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
+  card: { backgroundColor: colors.card, borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
   cardYou: { borderWidth: 1, borderColor: '#C9A96250' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, gap: 10 },
   rankCol: { width: 28, alignItems: 'center' },
   badge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  badgeText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+  badgeText: { fontSize: 12, fontWeight: '800', color: colors.card },
   rankText: { fontSize: 14, fontWeight: '700', color: '#636366' },
   avatar: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarImg: { width: 40, height: 40, borderRadius: 10 },
-  avatarText: { fontSize: 16, fontWeight: '700', color: '#000000' },
-  crownWrap: { position: 'absolute', top: -2, right: -2, backgroundColor: '#000000', borderRadius: 8, padding: 1 },
+  avatarText: { fontSize: 16, fontWeight: '700', color: colors.bg },
+  crownWrap: { position: 'absolute', top: -2, right: -2, backgroundColor: colors.bg, borderRadius: 8, padding: 1 },
   nameCol: { flex: 1 },
-  entryName: { fontSize: 14, fontWeight: '700', color: '#000000' },
+  entryName: { fontSize: 14, fontWeight: '700', color: colors.bg },
   entryRole: { fontSize: 11, color: '#636366' },
   scoreCol: { alignItems: 'flex-end', marginRight: 4 },
   scoreNum: { fontSize: 20, fontWeight: '800', color: '#34C759' },
   scoreLabel: { fontSize: 9, fontWeight: '600', color: '#636366', letterSpacing: 1 },
   // Expanded stats
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, paddingBottom: 12, gap: 6 },
-  statBox: { backgroundColor: '#2C2C2E', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignItems: 'center', minWidth: 56 },
-  statNum: { fontSize: 16, fontWeight: '800', color: '#000000' },
+  statBox: { backgroundColor: colors.surface, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignItems: 'center', minWidth: 56 },
+  statNum: { fontSize: 16, fontWeight: '800', color: colors.bg },
   statLabel: { fontSize: 9, color: '#8E8E93', marginTop: 2 },
   // Empty
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#3A3A3C' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.borderLight },
   emptySub: { fontSize: 14, color: '#636366', textAlign: 'center', paddingHorizontal: 40 },
   // Footer
-  footer: { flexDirection: 'row', backgroundColor: '#1C1C1E', borderTopWidth: 1, borderTopColor: '#2C2C2E', paddingVertical: 12, paddingHorizontal: 16 },
+  footer: { flexDirection: 'row', backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.surface, paddingVertical: 12, paddingHorizontal: 16 },
   footerStat: { flex: 1, alignItems: 'center' },
   footerNum: { fontSize: 18, fontWeight: '800', color: '#34C759' },
   footerLabel: { fontSize: 9, fontWeight: '600', color: '#636366', letterSpacing: 0.5, marginTop: 2 },
-  footerDivider: { width: 1, backgroundColor: '#2C2C2E', marginVertical: 4 },
+  footerDivider: { width: 1, backgroundColor: colors.surface, marginVertical: 4 },
 });

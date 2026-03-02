@@ -42,6 +42,7 @@ const COLORS = {
   accent: '#007AFF',
   textPrimary: '#FFFFFF',
   textSecondary: '#8E8E93',
+  textTertiary: '#636366',
   border: '#2C2C2E',
 };
 
@@ -133,9 +134,10 @@ export default function ThreadScreen() {
     accent: '#007AFF',
     textPrimary: themeColors.text,
     textSecondary: themeColors.textSecondary,
-    textTertiary: themeColors.textTertiary || colors.textTertiary,
+    textTertiary: themeColors.textTertiary || '#8E8E93',
     border: themeColors.border,
   } : COLORS;
+  const styles = getStyles(colors);
   
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -3029,17 +3031,17 @@ export default function ThreadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 0,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background,
   },
   backButton: {
     padding: 4,
@@ -3061,7 +3063,7 @@ const styles = StyleSheet.create({
   headerAvatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   headerInfo: {
     flex: 1,
@@ -3070,11 +3072,11 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   headerPhone: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   settingsButton: {
     padding: 8,
@@ -3092,7 +3094,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   modeBannerText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
     flex: 1,
@@ -3107,7 +3109,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   modeSwitchText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -3118,9 +3120,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between' as const,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#1A1A1C',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border,
   },
   intelBarExpanded: {
     borderBottomWidth: 0,
@@ -3137,14 +3139,14 @@ const styles = StyleSheet.create({
   },
   intelBarMeta: {
     fontSize: 11,
-    color: '#636366',
+    color: colors.textTertiary,
   },
   intelContent: {
-    backgroundColor: '#1A1A1C',
+    backgroundColor: colors.surface,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border,
   },
   intelLoadingRow: {
     flexDirection: 'row' as const,
@@ -3154,7 +3156,7 @@ const styles = StyleSheet.create({
   },
   intelLoadingText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   intelSummaryText: {
     fontSize: 13,
@@ -3169,7 +3171,7 @@ const styles = StyleSheet.create({
   },
   intelMetaText: {
     fontSize: 11,
-    color: '#636366',
+    color: colors.textTertiary,
   },
   intelRefreshBtn: {
     flexDirection: 'row' as const,
@@ -3183,7 +3185,7 @@ const styles = StyleSheet.create({
   },
   intelEmptyText: {
     fontSize: 13,
-    color: '#636366',
+    color: colors.textTertiary,
     paddingVertical: 4,
   },
   emailPromptBanner: {
@@ -3198,14 +3200,14 @@ const styles = StyleSheet.create({
   },
   emailPromptInput: {
     flex: 1,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontSize: 15,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.border,
   },
   emailPromptSave: {
     backgroundColor: '#C9A962',
@@ -3214,7 +3216,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emailPromptSaveText: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -3237,12 +3239,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   messageContainer: {
@@ -3282,12 +3284,12 @@ const styles = StyleSheet.create({
     borderColor: '#1E3A6E',
   },
   contactMessageBubble: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderColor: '#2A2A2A',
   },
   richMessageBubble: {
     borderLeftWidth: 3,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderColor: '#2A2A2A',
   },
   richContentHeader: {
@@ -3332,7 +3334,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   userMessageText: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   intentBadge: {
     flexDirection: 'row',
@@ -3359,7 +3361,7 @@ const styles = StyleSheet.create({
   },
   personalSmsText: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   personalSmsHint: {
     flexDirection: 'row',
@@ -3382,11 +3384,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userMessageTime: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     opacity: 0.7,
   },
   contactMessageTime: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   aiLoadingContainer: {
     flexDirection: 'row',
@@ -3404,9 +3406,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
     gap: 24,
     justifyContent: 'center',
   },
@@ -3416,13 +3418,13 @@ const styles = StyleSheet.create({
   },
   attachOptionText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   attachButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3430,7 +3432,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
     alignItems: 'flex-end',
     gap: 8,
   },
@@ -3445,7 +3447,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     paddingLeft: 16,
     paddingRight: 8,
@@ -3456,7 +3458,7 @@ const styles = StyleSheet.create({
   inputField: {
     flex: 1,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     maxHeight: 100,
     paddingTop: 0,
     paddingBottom: 0,
@@ -3476,7 +3478,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
     alignItems: 'flex-end',
     gap: 8,
   },
@@ -3484,18 +3486,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     maxHeight: 100,
   },
   sendButton: {
@@ -3507,7 +3509,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
   },
   
   // New Composer Box Styles
@@ -3515,20 +3517,20 @@ const styles = StyleSheet.create({
     padding: 12,
     paddingBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
   },
   composerBox: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   mediaPreview: {
     padding: 12,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border,
     alignItems: 'center',
   },
   mediaPreviewImage: {
@@ -3544,7 +3546,7 @@ const styles = StyleSheet.create({
   },
   mediaPreviewText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   // MMS Image styles in message bubbles
   mediaContainer: {
@@ -3555,20 +3557,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 4,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
   },
   mediaImage: {
     width: 200,
     height: 200,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
   },
   mediaImageError: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   mediaErrorText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 12,
     marginTop: 4,
   },
@@ -3580,11 +3582,11 @@ const styles = StyleSheet.create({
   },
   mediaOnlyText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   composerInput: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
@@ -3599,8 +3601,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
-    backgroundColor: '#151515',
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
   composerTools: {
     flexDirection: 'row',
@@ -3623,7 +3625,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   composerSendButtonDisabled: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
   },
   // Modal styles
   modalOverlay: {
@@ -3633,7 +3635,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   templatesModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderBottomLeftRadius: 20,
@@ -3647,7 +3649,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border,
   },
   modalHandle: {
     width: 36,
@@ -3660,7 +3662,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   templatesList: {
@@ -3674,10 +3676,10 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
   },
   modalCloseButton: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -3693,26 +3695,26 @@ const styles = StyleSheet.create({
   },
   emptyTemplatesText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   modalSectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     textTransform: 'uppercase',
   },
   modeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
   },
   modeOptionActive: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.border,
   },
   modeIcon: {
     width: 40,
@@ -3728,17 +3730,17 @@ const styles = StyleSheet.create({
   modeName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   modeDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statusOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 12,
     padding: 14,
   },
@@ -3752,11 +3754,11 @@ const styles = StyleSheet.create({
   closeModalText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   // Settings Modal specific
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -3765,7 +3767,7 @@ const styles = StyleSheet.create({
   templateItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -3785,11 +3787,11 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   templatePreview: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   emptyReviews: {
@@ -3798,7 +3800,7 @@ const styles = StyleSheet.create({
   },
   emptyReviewsText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
     marginBottom: 20,
   },
@@ -3811,7 +3813,7 @@ const styles = StyleSheet.create({
   setupReviewsButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   // Business Card Modal Styles
   cardModalContent: {
@@ -3819,7 +3821,7 @@ const styles = StyleSheet.create({
   },
   cardPreview: {
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 16,
     padding: 24,
     marginBottom: 20,
@@ -3827,12 +3829,12 @@ const styles = StyleSheet.create({
   cardPreviewTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     marginTop: 12,
   },
   cardPreviewDesc: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
@@ -3840,7 +3842,7 @@ const styles = StyleSheet.create({
   campaignPickerLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   campaignScroller: {
@@ -3853,7 +3855,7 @@ const styles = StyleSheet.create({
   campaignChip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 2,
@@ -3865,7 +3867,7 @@ const styles = StyleSheet.create({
   },
   campaignChipText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   campaignChipTextSelected: {
@@ -3877,7 +3879,7 @@ const styles = StyleSheet.create({
   },
   noCampaignsText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   noCampaignsSubtext: {
     fontSize: 13,
@@ -3896,7 +3898,7 @@ const styles = StyleSheet.create({
   sendCardButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   // Share Options Styles
   shareOptionsContainer: {
@@ -3906,7 +3908,7 @@ const styles = StyleSheet.create({
   shareOptionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 14,
     padding: 16,
   },
@@ -3914,7 +3916,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -3925,19 +3927,19 @@ const styles = StyleSheet.create({
   shareOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   shareOptionDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   landingPageOptions: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
   },
   landingPageOptionsHeader: {
     flexDirection: 'row',
@@ -3948,7 +3950,7 @@ const styles = StyleSheet.create({
   landingPageOptionsTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   // Photo Options Modal Styles (for Web)
   photoOptionsOverlay: {
@@ -3958,7 +3960,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   photoOptionsModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 20,
     width: '80%',
@@ -3967,7 +3969,7 @@ const styles = StyleSheet.create({
   photoOptionsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -3976,13 +3978,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     marginBottom: 10,
     gap: 12,
   },
   photoOptionText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   photoOptionCancel: {
     backgroundColor: 'transparent',
@@ -4004,7 +4006,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   congratsModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -4021,8 +4023,8 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
-    backgroundColor: '#1C1C1E',
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
   congratsPhotoUpload: {
     width: 150,
@@ -4043,13 +4045,13 @@ const styles = StyleSheet.create({
   congratsPhotoPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   congratsPhotoText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 10,
@@ -4057,16 +4059,16 @@ const styles = StyleSheet.create({
   congratsLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     marginBottom: 8,
     marginTop: 8,
   },
   congratsInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   congratsTextArea: {
@@ -4104,7 +4106,7 @@ const styles = StyleSheet.create({
   congratsCreateButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   // Congrats Tag Picker Styles
   congratsTagSection: {
@@ -4128,14 +4130,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderWidth: 1,
-    borderColor: '#3A3A3C',
+    borderColor: colors.border,
   },
   congratsTagText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   congratsCampaignBadge: {
     width: 18,
@@ -4161,7 +4163,7 @@ const styles = StyleSheet.create({
   },
   // Quick Contact Panel Styles
   quickContactPanel: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     marginHorizontal: 12,
     marginTop: 12,
     borderRadius: 12,
@@ -4176,7 +4178,7 @@ const styles = StyleSheet.create({
   quickContactTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   quickContactClose: {
     padding: 4,
@@ -4198,7 +4200,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4213,19 +4215,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#1C1C1E',
+    borderColor: colors.border,
   },
   quickContactFields: {
     flex: 1,
     gap: 8,
   },
   quickContactInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   quickContactTagsSection: {
     flexDirection: 'row',
@@ -4235,7 +4237,7 @@ const styles = StyleSheet.create({
   },
   quickContactTagsLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   quickContactTagsScroll: {
     flex: 1,
@@ -4252,7 +4254,7 @@ const styles = StyleSheet.create({
   quickContactTagText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   quickContactAddTag: {
     flexDirection: 'row',
@@ -4260,7 +4262,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     gap: 4,
   },
   quickContactAddTagText: {
@@ -4278,7 +4280,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 8,
     paddingVertical: 10,
     gap: 6,
@@ -4289,7 +4291,7 @@ const styles = StyleSheet.create({
   quickContactActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   quickContactHint: {
     fontSize: 11,
@@ -4302,7 +4304,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     marginHorizontal: 12,
     marginTop: 8,
     paddingVertical: 10,
@@ -4321,7 +4323,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   tagPickerContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '60%',
@@ -4332,12 +4334,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border,
   },
   tagPickerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   tagPickerList: {
     padding: 8,
@@ -4361,11 +4363,11 @@ const styles = StyleSheet.create({
   tagPickerItemText: {
     flex: 1,
     fontSize: 15,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   tagPickerEmpty: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     padding: 20,
   },
@@ -4379,14 +4381,14 @@ const styles = StyleSheet.create({
   tagPickerDoneText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   // Create User Section Styles (Admin Only)
   createUserSection: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.border,
   },
   createUserToggle: {
     flexDirection: 'row',
@@ -4403,7 +4405,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#3A3A3C',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4414,11 +4416,11 @@ const styles = StyleSheet.create({
   createUserToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   createUserToggleHint: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 1,
   },
   createUserFields: {
@@ -4428,7 +4430,7 @@ const styles = StyleSheet.create({
   createUserInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -4437,7 +4439,7 @@ const styles = StyleSheet.create({
   createUserInput: {
     flex: 1,
     fontSize: 15,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   createUserRoleContainer: {
     flexDirection: 'row',
@@ -4446,7 +4448,7 @@ const styles = StyleSheet.create({
   },
   createUserRoleLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   createUserRoleOptions: {
     flex: 1,
@@ -4458,7 +4460,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.elevated,
     alignItems: 'center',
   },
   createUserRoleBtnActive: {
@@ -4467,9 +4469,9 @@ const styles = StyleSheet.create({
   createUserRoleBtnText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   createUserRoleBtnTextActive: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
 });
