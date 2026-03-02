@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime, timezone
 from bson import ObjectId
-from database import get_db
+from routers.database import get_db
 import secrets
 import logging
 
