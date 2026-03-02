@@ -687,9 +687,9 @@ export default function MoreScreen() {
     items: [
       {
         icon: 'rocket-outline',
-        title: 'Setup Wizard',
-        subtitle: 'Configure a new business',
-        onPress: () => router.push('/admin/setup-wizard'),
+        title: 'Client Onboarding',
+        subtitle: 'Step-by-step setup checklist',
+        onPress: () => router.push('/admin/client-onboarding'),
         color: '#C9A962',
       },
       {
