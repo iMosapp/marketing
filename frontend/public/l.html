@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="/favicon.ico">
+<title>Loading...</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex; justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.dark { background: #000; color: #fff; }
+  body.light { background: #F2F2F7; color: #000; }
+
+  .page { width: 100%; max-width: 480px; padding: 48px 20px 32px; min-height: 100vh; display: flex; flex-direction: column; }
+  .profile { text-align: center; margin-bottom: 28px; }
+  .avatar {
+    width: 96px; height: 96px; border-radius: 50%;
+    object-fit: cover; margin: 0 auto 14px; display: block;
+    border: 3px solid var(--accent, #C9A962);
+  }
+  .avatar-placeholder {
+    width: 96px; height: 96px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 800; margin: 0 auto 14px;
+    border: 3px solid var(--accent, #C9A962);
+  }
+  body.dark .avatar-placeholder { background: #1C1C1E; color: #fff; }
+  body.light .avatar-placeholder { background: #E5E5EA; color: #000; }
+
+  .name { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+  .company { font-size: 13px; font-weight: 600; margin-top: 2px; opacity: 0.5; }
+  .bio { font-size: 14px; margin-top: 8px; line-height: 1.5; opacity: 0.7; max-width: 320px; margin-left: auto; margin-right: auto; }
+
+  .links { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .link-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-radius: 14px;
+    text-decoration: none; font-size: 15px; font-weight: 600;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .link-btn:active { transform: scale(0.98); }
+  body.dark .link-btn { background: #1C1C1E; color: #fff; border: 1px solid #2C2C2E; }
+  body.light .link-btn { background: #fff; color: #000; border: 1px solid #D1D1D6; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .link-btn:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+
+  .link-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 18px;
+  }
+  .link-label { flex: 1; }
+  .link-arrow { opacity: 0.3; font-size: 14px; }
+
+  .section-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    font-weight: 700; opacity: 0.35; margin: 18px 0 8px 4px;
+  }
+
+  .footer {
+    text-align: center; margin-top: 36px; padding-top: 20px;
+    border-top: 1px solid rgba(128,128,128,0.15);
+  }
+  .footer a {
+    font-size: 12px; font-weight: 600; text-decoration: none;
+    opacity: 0.4; transition: opacity 0.2s;
+  }
+  .footer a:hover { opacity: 0.7; }
+  body.dark .footer a { color: #fff; }
+  body.light .footer a { color: #000; }
+  .footer-brand { font-weight: 800; }
+
+  .loading { text-align: center; padding: 80px 0; opacity: 0.4; }
+  .not-found { text-align: center; padding: 80px 0; }
+  .not-found h2 { font-size: 20px; margin-bottom: 8px; }
+  .not-found p { font-size: 14px; opacity: 0.5; }
+
+  /* Icon font fallback */
+  .icon-svg { width: 20px; height: 20px; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="dark">
+
+<div class="page" id="page">
+  <div class="loading" id="loading">Loading...</div>
+</div>
+
+<script>
+const ICON_MAP = {
+  'logo-instagram': 'fa-brands fa-instagram',
+  'logo-facebook': 'fa-brands fa-facebook',
+  'logo-tiktok': 'fa-brands fa-tiktok',
+  'logo-linkedin': 'fa-brands fa-linkedin',
+  'logo-youtube': 'fa-brands fa-youtube',
+  'logo-twitter': 'fa-brands fa-x-twitter',
+  'call': 'fa-solid fa-phone',
+  'mail': 'fa-solid fa-envelope',
+  'card': 'fa-solid fa-id-card',
+  'star': 'fa-solid fa-star',
+  'globe': 'fa-solid fa-globe',
+  'link': 'fa-solid fa-link',
+};
+
+function getIcon(iconName) {
+  return ICON_MAP[iconName] || ICON_MAP['link'];
+}
+
+async function loadPage() {
+  const path = window.location.pathname;
+  const parts = path.split('/');
+  const username = parts[parts.length - 1] || parts[parts.length - 2];
+
+  if (!username) {
+    showNotFound();
+    return;
+  }
+
+  try {
+    const apiBase = window.location.origin;
+    const res = await fetch(`${apiBase}/api/linkpage/public/${username}`);
+    if (!res.ok) throw new Error('Not found');
+    const data = await res.json();
+    renderPage(data);
+  } catch (e) {
+    showNotFound();
+  }
+}
+
+function renderPage(data) {
+  document.title = `${data.display_name} | i'MOnsocial`;
+  document.body.className = data.theme || 'dark';
+  if (data.accent_color) {
+    document.documentElement.style.setProperty('--accent', data.accent_color);
+  }
+
+  const page = document.getElementById('page');
+  const allLinks = [...(data.links || []), ...(data.custom_links || [])].filter(l => l.visible !== false);
+  const socialLinks = allLinks.filter(l => ['logo-instagram','logo-facebook','logo-tiktok','logo-linkedin','logo-youtube','logo-twitter'].includes(l.icon));
+  const otherLinks = allLinks.filter(l => !socialLinks.includes(l));
+
+  let html = `<div class="profile">`;
+  if (data.photo_url) {
+    html += `<img src="${data.photo_url}" alt="${data.display_name}" class="avatar">`;
+  } else {
+    const initials = data.display_name ? data.display_name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase() : '?';
+    html += `<div class="avatar-placeholder">${initials}</div>`;
+  }
+  html += `<div class="name">${data.display_name || 'Unknown'}</div>`;
+  if (data.company) html += `<div class="company">${data.company}</div>`;
+  if (data.bio) html += `<div class="bio">${data.bio}</div>`;
+  html += `</div>`;
+
+  html += `<div class="links">`;
+  if (otherLinks.length > 0) {
+    otherLinks.forEach(link => {
+      html += renderLink(link, data.username);
+    });
+  }
+  if (socialLinks.length > 0) {
+    html += `<div class="section-label">Socials</div>`;
+    socialLinks.forEach(link => {
+      html += renderLink(link, data.username);
+    });
+  }
+  html += `</div>`;
+
+  html += `<div class="footer"><a href="https://app.imosapp.com/install.html">powered by <span class="footer-brand">i'MOnsocial</span></a></div>`;
+
+  page.innerHTML = html;
+}
+
+function renderLink(link, username) {
+  const iconClass = getIcon(link.icon);
+  const bgColor = (link.color || '#C9A962') + '18';
+  const url = link.url.startsWith('/') ? window.location.origin + link.url : link.url;
+  return `<a href="${url}" target="_blank" rel="noopener" class="link-btn" onclick="trackClick('${username}','${link.id}')">
+    <div class="link-icon" style="background:${bgColor}"><i class="${iconClass}" style="color:${link.color || '#C9A962'}"></i></div>
+    <span class="link-label">${link.label}</span>
+    <span class="link-arrow">&rsaquo;</span>
+  </a>`;
+}
+
+function trackClick(username, linkId) {
+  fetch(`${window.location.origin}/api/linkpage/public/${username}/click`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({link_id: linkId})
+  }).catch(() => {});
+}
+
+function showNotFound() {
+  document.getElementById('page').innerHTML = `
+    <div class="not-found">
+      <h2>Page Not Found</h2>
+      <p>This link page doesn't exist yet.</p>
+    </div>
+    <div class="footer"><a href="https://app.imosapp.com/install.html">powered by <span class="footer-brand">i'MOnsocial</span></a></div>
+  `;
+}
+
+loadPage();
+</script>
+</body>
+</html>
