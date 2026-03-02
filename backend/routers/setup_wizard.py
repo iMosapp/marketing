@@ -191,9 +191,13 @@ async def mark_wizard_complete(org_id: str, x_user_id: str = Header(None, alias=
         }},
         upsert=True,
     )
-    # Also mark on the org itself
-    await db.organizations.update_one(
-        {"_id": ObjectId(org_id)},
-        {"$set": {"setup_complete": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
+    # Also mark on the org itself if org_id is a valid ObjectId
+    try:
+        if ObjectId.is_valid(org_id):
+            await db.organizations.update_one(
+                {"_id": ObjectId(org_id)},
+                {"$set": {"setup_complete": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+    except Exception as e:
+        logger.warning(f"Could not update org {org_id} setup_complete flag: {e}")
     return {"success": True, "message": "Setup wizard completed"}
