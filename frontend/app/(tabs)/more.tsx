@@ -72,58 +72,6 @@ export default function MoreScreen() {
   const [showShowroomShare, setShowShowroomShare] = useState(false);
   const [showBirthdayShare, setShowBirthdayShare] = useState(false);
   const [shareMode, setShareMode] = useState<'review' | 'showroom' | 'birthday'>('review');
-  const [editingQuickActions, setEditingQuickActions] = useState(false);
-  const [quickActionIds, setQuickActionIds] = useState<string[]>([]);
-
-  // Master list of all Quick Action items
-  const ALL_ACTIONS: { id: string; icon: string; label: string; color: string; onPress: () => void }[] = [
-    { id: 'share_review', icon: 'star', label: 'Share Review', color: '#FFD60A', onPress: () => { setShareMode('review'); setShowShareModal(true); } },
-    { id: 'send_card', icon: 'card', label: 'Send Card', color: '#007AFF', onPress: () => router.push('/settings/create-card' as any) },
-    { id: 'ask_jessi', icon: 'sparkles', label: 'Ask Jessi', color: '#C9A962', onPress: () => router.push('/jessie') },
-    { id: 'showcase', icon: 'images', label: 'Showcase', color: '#34C759', onPress: () => { setShowShowroomShare(true); } },
-    { id: 'leaderboard', icon: 'trophy', label: 'Leaderboard', color: '#AF52DE', onPress: () => router.push('/admin/leaderboard') },
-    { id: 'my_activity', icon: 'bar-chart', label: 'My Activity', color: '#5AC8FA', onPress: () => router.push('/reports/activity') },
-    { id: 'tasks', icon: 'checkmark-done', label: 'Tasks', color: '#34C759', onPress: () => router.push('/tasks') },
-    { id: 'dialer', icon: 'call', label: 'Dialer', color: '#32ADE6', onPress: () => router.push('/(tabs)/dialer') },
-    { id: 'team_chat', icon: 'chatbox-ellipses', label: 'Team Chat', color: '#5856D6', onPress: () => router.push('/(tabs)/team') },
-    { id: 'sms_campaigns', icon: 'chatbubbles', label: 'SMS Campaigns', color: '#FF2D55', onPress: () => router.push('/campaigns') },
-    { id: 'email_campaigns', icon: 'mail', label: 'Email Campaigns', color: '#AF52DE', onPress: () => router.push('/campaigns/email') },
-    { id: 'broadcast', icon: 'megaphone', label: 'Broadcast', color: '#FF9500', onPress: () => router.push('/broadcast') },
-    { id: 'birthday', icon: 'gift', label: 'Birthday', color: '#FF2D55', onPress: () => { setShowBirthdayShare(true); } },
-    { id: 'analytics', icon: 'stats-chart', label: 'Analytics', color: '#34C759', onPress: () => router.push('/analytics') },
-    { id: 'training', icon: 'school', label: 'Training', color: '#FF9500', onPress: () => router.push('/training-hub') },
-    { id: 'templates', icon: 'document-text', label: 'Templates', color: '#FFD60A', onPress: () => router.push('/settings/templates') },
-    { id: 'link_page', icon: 'link', label: 'Link Page', color: '#C9A962', onPress: () => router.push('/settings/link-page' as any) },
-    { id: 'rankings', icon: 'podium', label: 'My Rankings', color: '#FFD60A', onPress: () => router.push('/admin/my-rankings') },
-  ];
-
-  const DEFAULT_QUICK_IDS = ['share_review', 'send_card', 'ask_jessi', 'showcase', 'leaderboard', 'my_activity'];
-
-  // Load Quick Actions from storage
-  useEffect(() => {
-    AsyncStorage.getItem('quick_action_ids').then(val => {
-      if (val) {
-        try { setQuickActionIds(JSON.parse(val)); } catch { setQuickActionIds(DEFAULT_QUICK_IDS); }
-      } else {
-        setQuickActionIds(DEFAULT_QUICK_IDS);
-      }
-    });
-  }, []);
-
-  const saveQuickActions = (ids: string[]) => {
-    setQuickActionIds(ids);
-    AsyncStorage.setItem('quick_action_ids', JSON.stringify(ids));
-  };
-
-  const toggleQuickAction = (id: string) => {
-    if (quickActionIds.includes(id)) {
-      saveQuickActions(quickActionIds.filter(i => i !== id));
-    } else if (quickActionIds.length < 6) {
-      saveQuickActions([...quickActionIds, id]);
-    } else {
-      showSimpleAlert('Limit Reached', 'You can have up to 6 Quick Actions. Remove one first.');
-    }
-  };
   
   // Load pending count for super admins
   useFocusEffect(
