@@ -59,9 +59,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <SafeAreaProvider>
         <ToastProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="auth/login" />
+          <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
+            <Stack.Screen name="index" options={{ animation: 'none' }} />
+            <Stack.Screen name="auth/login" options={{ animation: 'none' }} />
             <Stack.Screen name="auth/signup" />
             <Stack.Screen name="auth/forgot-password" />
             <Stack.Screen name="onboarding/index" />

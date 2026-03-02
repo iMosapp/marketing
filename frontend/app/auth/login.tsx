@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,10 @@ import {
   Alert,
   Modal,
   Image,
+  Animated,
   useColorScheme,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,6 +40,17 @@ export default function LoginScreen() {
   const user = useAuthStore((state) => state.user);
   const systemScheme = useColorScheme();
   const isDark = systemScheme === 'dark';
+
+  // Fade-in animation to prevent flash
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   // Theme colors based on system preference
   const theme = {
@@ -256,158 +267,158 @@ export default function LoginScreen() {
   };
   
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <Animated.View style={[styles.innerContainer, { opacity: fadeAnim }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardView}
         >
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image 
-                source={{ uri: '/new-logo-512-transparent.png' }}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={[styles.tagline, { color: theme.textSecondary }]}>Relationship Management System</Text>
-          </View>
-          
-          <View style={styles.form}>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
-              placeholder="Email"
-              placeholderTextColor={theme.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="emailAddress"
-              returnKeyType="next"
-              blurOnSubmit={false}
-            />
-            
-            <View style={[styles.passwordContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <TextInput
-                style={[styles.passwordInput, { color: theme.text }]}
-                placeholder="Password"
-                placeholderTextColor={theme.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                textContentType="password"
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={22}
-                  color={theme.textSecondary}
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <Image 
+                  source={{ uri: '/new-logo-512-transparent.png' }}
+                  style={styles.logoImage}
+                  resizeMode="contain"
                 />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={styles.rememberMeContainer}
-                onPress={() => setRememberMe(!rememberMe)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                  {rememberMe && (
-                    <Ionicons name="checkmark" size={14} color="#FFF" />
-                  )}
-                </View>
-                <Text style={[styles.rememberMeText, { color: theme.textSecondary }]}>Remember me</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.forgotButton}
-                onPress={handleForgotPassword}
-              >
-                <Text style={styles.forgotText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <WebSafeButton
-              onPress={handleLogin}
-              title={loading ? 'Logging in...' : 'Log In'}
-              loading={loading}
-              disabled={loading}
-              variant="primary"
-              size="large"
-              fullWidth
-              testID="login-button"
-              style={{ marginTop: 8 }}
-            />
-            
-            {/* Error Message */}
-            {loginError ? (
-              <View style={[styles.errorContainer, { backgroundColor: theme.errorBg }]}>
-                <Ionicons name="alert-circle" size={18} color="#FF3B30" />
-                <Text style={styles.errorText}>{loginError}</Text>
               </View>
-            ) : null}
+              <Text style={[styles.tagline, { color: theme.textSecondary }]}>Relationship Management System</Text>
+            </View>
             
-            {/* Biometric Login Button */}
-            {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
-              <TouchableOpacity
-                style={[styles.biometricButton, { backgroundColor: theme.surface, borderColor: '#007AFF' }, biometricLoading && styles.buttonDisabled]}
-                onPress={handleBiometricLogin}
-                disabled={biometricLoading}
-                data-testid="biometric-login-button"
-              >
-                <Ionicons
-                  name={getBiometricIcon(biometricStatus.biometricType) as any}
-                  size={24}
-                  color="#007AFF"
+            <View style={styles.form}>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="emailAddress"
+                returnKeyType="next"
+                blurOnSubmit={false}
+              />
+              
+              <View style={[styles.passwordContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <TextInput
+                  style={[styles.passwordInput, { color: theme.text }]}
+                  placeholder="Password"
+                  placeholderTextColor={theme.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  textContentType="password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
                 />
-                <Text style={styles.biometricButtonText}>
-                  {biometricLoading ? 'Authenticating...' : `Login with ${biometricStatus.biometricLabel}`}
-                </Text>
-              </TouchableOpacity>
-            )}
-            
-            <View style={styles.signupContainer}>
-              <Text style={[styles.signupText, { color: theme.textSecondary }]}>Don't have an account?</Text>
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={22}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.optionsRow}>
+                <TouchableOpacity
+                  style={styles.rememberMeContainer}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                    {rememberMe && (
+                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                    )}
+                  </View>
+                  <Text style={[styles.rememberMeText, { color: theme.textSecondary }]}>Remember me</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.forgotButton}
+                  onPress={handleForgotPassword}
+                >
+                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                </TouchableOpacity>
+              </View>
+              
               <WebSafeButton
-                onPress={() => router.push('/auth/signup')}
-                title="Sign Up"
-                variant="outline"
+                onPress={handleLogin}
+                title={loading ? 'Logging in...' : 'Log In'}
+                loading={loading}
+                disabled={loading}
+                variant="primary"
                 size="large"
                 fullWidth
-                testID="signup-button"
-                style={{ marginTop: 12 }}
+                testID="login-button"
+                style={{ marginTop: 8 }}
               />
+              
+              {loginError ? (
+                <View style={[styles.errorContainer, { backgroundColor: theme.errorBg }]}>
+                  <Ionicons name="alert-circle" size={18} color="#FF3B30" />
+                  <Text style={styles.errorText}>{loginError}</Text>
+                </View>
+              ) : null}
+              
+              {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
+                <TouchableOpacity
+                  style={[styles.biometricButton, { backgroundColor: theme.surface, borderColor: '#007AFF' }, biometricLoading && styles.buttonDisabled]}
+                  onPress={handleBiometricLogin}
+                  disabled={biometricLoading}
+                  data-testid="biometric-login-button"
+                >
+                  <Ionicons
+                    name={getBiometricIcon(biometricStatus.biometricType) as any}
+                    size={24}
+                    color="#007AFF"
+                  />
+                  <Text style={styles.biometricButtonText}>
+                    {biometricLoading ? 'Authenticating...' : `Login with ${biometricStatus.biometricLabel}`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              <View style={styles.signupContainer}>
+                <Text style={[styles.signupText, { color: theme.textSecondary }]}>Don't have an account?</Text>
+                <WebSafeButton
+                  onPress={() => router.push('/auth/signup')}
+                  title="Sign Up"
+                  variant="outline"
+                  size="large"
+                  fullWidth
+                  testID="signup-button"
+                  style={{ marginTop: 12 }}
+                />
+              </View>
+              
+              {Platform.OS === 'web' && (
+                <TouchableOpacity
+                  style={styles.refreshButton}
+                  onPress={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.reload();
+                    }
+                  }}
+                  data-testid="refresh-app-btn"
+                >
+                  <Ionicons name="refresh" size={18} color={theme.textSecondary} />
+                  <Text style={[styles.refreshButtonText, { color: theme.textSecondary }]}>Refresh App</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            
-            {/* Refresh Button for Web */}
-            {Platform.OS === 'web' && (
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={() => {
-                  if (typeof window !== 'undefined') {
-                    window.location.reload();
-                  }
-                }}
-                data-testid="refresh-app-btn"
-              >
-                <Ionicons name="refresh" size={18} color={theme.textSecondary} />
-                <Text style={[styles.refreshButtonText, { color: theme.textSecondary }]}>Refresh App</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
       
       {/* Biometric Enable Prompt Modal */}
       <Modal
@@ -453,7 +464,7 @@ export default function LoginScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -462,97 +473,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  innerContainer: {
+    flex: 1,
+  },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    maxWidth: 440,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     marginBottom: 32,
     alignItems: 'center',
     width: '100%',
+    minHeight: 220,
+    justifyContent: 'center',
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
+    width: 200,
+    height: 200,
   },
   logoImage: {
-    width: 280,
-    height: 280,
-    maxWidth: '80%',
-    marginBottom: 8,
+    width: 200,
+    height: 200,
   },
   tagline: {
     fontSize: 14,
     color: '#8E8E93',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    marginBottom: 24,
-  },
-  logoText: {
-    fontSize: 72,
-    fontWeight: '700',
-  },
-  logoI: {
-    color: '#FF3B30',
-  },
-  logoM: {
-    color: '#007AFF',
-  },
-  logoO: {
-    color: '#FFD60A',
-  },
-  logoS: {
-    color: '#34C759',
-  },
-  brandTitle: {
-    fontFamily: 'Playfair Display, Georgia, serif',
-    fontSize: 42,
-    fontWeight: '700',
-    fontStyle: 'italic',
-    lineHeight: 52,
     textAlign: 'center',
-  },
-  brandWhite: {
-    color: '#FFFFFF',
-  },
-  brandBlue: {
-    color: '#007AFF',
-  },
-  brandPurple: {
-    color: '#9B7BC7',
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginTop: 16,
-  },
-  logo: {
-    width: 1000,
-    height: 460,
-    maxWidth: '100%',
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#8E8E93',
+    marginTop: 8,
   },
   form: {
     gap: 16,
@@ -612,31 +571,13 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontSize: 14,
   },
-  forgotButton: {
-  },
+  forgotButton: {},
   forgotText: {
     color: '#007AFF',
     fontSize: 14,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-    cursor: 'pointer',
-  },
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
   buttonDisabled: {
     opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 17,
-    fontWeight: '600',
   },
   biometricButton: {
     flexDirection: 'row',
@@ -654,18 +595,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
   },
-  linkButton: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#8E8E93',
-    fontSize: 15,
-  },
-  linkTextBold: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
   signupContainer: {
     marginTop: 24,
     alignItems: 'center',
@@ -674,30 +603,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontSize: 15,
     marginBottom: 8,
-  },
-  signupButton: {
-    padding: 8,
-  },
-  signupButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signupButtonLarge: {
-    backgroundColor: '#1C1C1E',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    marginTop: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
-  signupButtonTextLarge: {
-    color: '#007AFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   refreshButton: {
     flexDirection: 'row',
@@ -727,7 +632,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
