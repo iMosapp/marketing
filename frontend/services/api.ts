@@ -182,6 +182,11 @@ export const contactsAPI = {
     return response.data;
   },
 
+  suggestMessage: async (userId: string, contactId: string) => {
+    const response = await api.post(`/contact-intel/${userId}/${contactId}/suggest-message`, {}, { timeout: 20000 });
+    return response.data;
+  },
+
   create: async (userId: string, data: any) => {
     const response = await api.post(`/contacts/${userId}`, data);
     return response.data;
@@ -240,8 +245,13 @@ export const messagesAPI = {
     return response.data;
   },
 
-  send: async (userId: string, data: { conversation_id: string; content: string; media_url?: string }) => {
-    const response = await api.post(`/messages/send/${userId}`, data);
+  send: async (userId: string, data: { conversation_id: string; content: string; media_url?: string; channel?: string }) => {
+    const response = await api.post(`/messages/send/${userId}/${data.conversation_id}`, data);
+    return response.data;
+  },
+
+  createConversation: async (userId: string, data: { contact_id: string; contact_phone?: string }) => {
+    const response = await api.post(`/messages/conversations/${userId}`, data);
     return response.data;
   },
 

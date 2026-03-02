@@ -268,3 +268,76 @@ async def get_cached_intel(user_id: str, contact_id: str):
         "generated_at": doc["generated_at"].isoformat() if doc.get("generated_at") else None,
         "data_points": doc.get("data_points", {}),
     }
+
+
+
+@router.post("/{user_id}/{contact_id}/suggest-message")
+async def suggest_message(user_id: str, contact_id: str):
+    """AI-powered message suggestion based on relationship context, recent activity, and upcoming events."""
+    db = get_db()
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    ctx = await _gather_contact_context(db, user_id, contact_id)
+    contact_data = _build_prompt(ctx)
+    name = f"{ctx['contact'].get('first_name', '')} {ctx['contact'].get('last_name', '')}".strip()
+
+    # Get suggested actions (upcoming birthdays, anniversaries, milestones)
+    from routers.contact_events import get_suggested_actions
+    try:
+        actions_resp = await get_suggested_actions(user_id, contact_id)
+        upcoming_actions = actions_resp.get("actions", []) if isinstance(actions_resp, dict) else []
+    except Exception:
+        upcoming_actions = []
+
+    actions_text = ""
+    if upcoming_actions:
+        actions_text = "\n\nUPCOMING ACTIONS/REMINDERS:\n"
+        for a in upcoming_actions[:5]:
+            actions_text += f"- {a.get('title', '')}: {a.get('description', '')}\n"
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+        system_prompt = """You are a smart CRM assistant that suggests the perfect next message to send to a customer.
+Based on the relationship history, recent activity, and any upcoming events, write ONE short, natural, personalized message.
+
+RULES:
+- Write in a warm, professional, first-person tone (as the salesperson)
+- Keep it under 160 characters if possible (SMS-friendly)
+- Reference something specific from their recent activity or an upcoming event
+- If there's a birthday/anniversary coming up, prioritize that
+- If there's been no contact in 30+ days, write a friendly check-in
+- If they recently bought something, write a follow-up
+- If they left a review, write a thank-you
+- Do NOT use emojis excessively (1-2 max)
+- Do NOT use placeholder brackets like [name]
+- Be specific and personal, not generic
+
+Return ONLY the message text, nothing else. No quotes, no explanation."""
+
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"suggest_{contact_id}_{user_id}",
+            system_message=system_prompt
+        ).with_model("openai", "gpt-5.2")
+
+        prompt = f"Suggest a message to send to this contact:\n\n{contact_data}{actions_text}"
+        response = await chat.send_message(UserMessage(text=prompt))
+        suggestion = response if isinstance(response, str) else (response.text if hasattr(response, 'text') else str(response))
+
+        # Determine intent
+        intent = "general"
+        if upcoming_actions:
+            intent = upcoming_actions[0].get("type", "general")
+
+        return {
+            "suggestion": suggestion.strip().strip('"').strip("'"),
+            "intent": intent,
+            "contact_name": name,
+        }
+
+    except Exception as e:
+        logger.error(f"AI message suggestion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI suggestion failed: {str(e)}")

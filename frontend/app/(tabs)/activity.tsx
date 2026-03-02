@@ -69,6 +69,7 @@ export default function ActivityTab() {
   const [upcoming, setUpcoming] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const loadFeed = useCallback(async () => {
     if (!userId) return;
@@ -202,14 +203,24 @@ export default function ActivityTab() {
             <Text style={s.emptySubtext}>Send a message or card to get started</Text>
           </View>
         ) : (
-          Object.entries(grouped).map(([dateLabel, events]) => (
+          Object.entries(grouped).map(([dateLabel, events]) => {
+            const isCollapsed = collapsedGroups[dateLabel] === true;
+            const eventCount = (events as any[]).length;
+            return (
             <View key={dateLabel} style={s.dateGroup}>
-              <View style={s.dateLabelRow}>
+              <TouchableOpacity
+                style={s.dateLabelRow}
+                onPress={() => setCollapsedGroups(prev => ({ ...prev, [dateLabel]: !prev[dateLabel] }))}
+                activeOpacity={0.7}
+                data-testid={`activity-date-toggle-${dateLabel}`}
+              >
                 <View style={s.dateLine} />
                 <Text style={s.dateLabel}>{dateLabel}</Text>
+                <View style={s.dateBadge}><Text style={s.dateBadgeText}>{eventCount}</Text></View>
+                <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color="#636366" />
                 <View style={s.dateLine} />
-              </View>
-              {(events as any[]).map((item: any, idx: number) => {
+              </TouchableOpacity>
+              {!isCollapsed && (events as any[]).map((item: any, idx: number) => {
                 const isInbound = item.is_inbound;
                 const evtLabel = FEED_EVENT_LABELS[item.event_type] || item.title || 'Activity';
                 return (
@@ -252,7 +263,8 @@ export default function ActivityTab() {
                 );
               })}
             </View>
-          ))
+            );
+          })
         )}
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -307,6 +319,8 @@ const s = StyleSheet.create({
   dateLabelRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 12 },
   dateLine: { flex: 1, height: 1, backgroundColor: '#1C1C1E' },
   dateLabel: { fontSize: 12, fontWeight: '700', color: '#636366', textTransform: 'uppercase', letterSpacing: 1 },
+  dateBadge: { backgroundColor: '#1C1C1E', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: '#2C2C2E' },
+  dateBadgeText: { fontSize: 10, fontWeight: '700', color: '#636366' },
 
   // Event cards
   eventCard: {

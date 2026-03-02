@@ -23,7 +23,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { contactsAPI, campaignsAPI, tagsAPI } from '../../services/api';
+import { contactsAPI, campaignsAPI, tagsAPI, messagesAPI } from '../../services/api';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
@@ -317,6 +317,16 @@ export default function ContactDetailScreen() {
   const [showTagPicker, setShowTagPicker] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
   const [referrals, setReferrals] = useState<any[]>([]);
+
+  // Composer state (inline inbox)
+  const [composerMessage, setComposerMessage] = useState('');
+  const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
+  const [composerSending, setComposerSending] = useState(false);
+  const [showSendPicker, setShowSendPicker] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [showAISuggestion, setShowAISuggestion] = useState(false);
+  const [collapsedDateGroups, setCollapsedDateGroups] = useState<Record<string, boolean>>({});
 
   // ===== DATA LOADING =====
   useEffect(() => {
@@ -614,6 +624,118 @@ export default function ContactDetailScreen() {
         break;
     }
   };
+
+  // ===== COMPOSER: Send message directly from contact page =====
+  const handleComposerSend = async (textOverride?: string) => {
+    const content = textOverride || composerMessage.trim();
+    if (!content || !user) return;
+    
+    const contactEmail = contact.email || '';
+    if (composerMode === 'email' && !contactEmail) {
+      showSimpleAlert('Missing Info', 'No email address available for this contact');
+      return;
+    }
+    if (composerMode === 'sms' && !contact.phone) {
+      showSimpleAlert('Missing Info', 'No phone number available for this contact');
+      return;
+    }
+    
+    setComposerSending(true);
+    try {
+      // Create or get existing conversation for this contact
+      const conv = await messagesAPI.createConversation(user._id, {
+        contact_id: id as string,
+        contact_phone: contact.phone || undefined,
+      });
+      const conversationId = conv._id || conv.id;
+      
+      await messagesAPI.send(user._id, {
+        conversation_id: conversationId,
+        content,
+        channel: composerMode,
+      });
+      showToast('Message sent!');
+      setComposerMessage('');
+      setShowAISuggestion(false);
+      setAiSuggestion('');
+      // Refresh events to show the new message in the feed
+      loadEvents();
+    } catch (e: any) {
+      showSimpleAlert('Send Failed', e?.response?.data?.detail || 'Could not send message');
+    } finally {
+      setComposerSending(false);
+    }
+  };
+
+  // ===== AI: Suggest a message based on relationship context =====
+  const loadAISuggestionForComposer = async () => {
+    if (!user || !id || id === 'new') return;
+    setLoadingAI(true);
+    try {
+      const data = await contactsAPI.suggestMessage(user._id, id as string);
+      if (data?.suggestion) {
+        setAiSuggestion(data.suggestion);
+        setShowAISuggestion(true);
+      }
+    } catch (e: any) {
+      console.error('AI suggestion failed:', e);
+      showToast('AI suggestion unavailable');
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  // Handle "Send Something" picker action
+  const handleSendPickerAction = (action: string) => {
+    setShowSendPicker(false);
+    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contact.email || '')}`;
+    switch (action) {
+      case 'card':
+        router.push(`/thread/${id}?${threadParams}&mode=card`);
+        break;
+      case 'congrats':
+        router.push(`/thread/${id}?${threadParams}&mode=congrats`);
+        break;
+      case 'review':
+        router.push(`/thread/${id}?${threadParams}&mode=review`);
+        break;
+      case 'showcase':
+        const baseUrl = process.env.REACT_APP_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const showcaseUrl = user?.store_slug ? `${baseUrl}/showcase/${user.store_slug}` : '';
+        if (showcaseUrl) setComposerMessage(prev => prev ? `${prev}\n${showcaseUrl}` : `Check out my showcase: ${showcaseUrl}`);
+        else showSimpleAlert('Missing Info', 'No showcase URL configured');
+        break;
+      case 'linkpage':
+        const linkBase = process.env.REACT_APP_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const linkUrl = user?.link_username ? `${linkBase}/l/${user.link_username}` : '';
+        if (linkUrl) setComposerMessage(prev => prev ? `${prev}\n${linkUrl}` : `Check out my links: ${linkUrl}`);
+        else showSimpleAlert('Missing Info', 'No link page configured');
+        break;
+      case 'call':
+        if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
+        router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
+        break;
+    }
+  };
+
+  // Group events by date for collapsible sections
+  const groupEventsByDate = (evts: ContactEvent[]) => {
+    const groups: { label: string; events: ContactEvent[] }[] = [];
+    const map: Record<string, ContactEvent[]> = {};
+    const now = new Date();
+    evts.forEach(evt => {
+      if (!evt.timestamp) return;
+      const d = new Date(evt.timestamp);
+      const diff = now.getTime() - d.getTime();
+      const days = Math.floor(diff / 86400000);
+      const label = days < 0 ? 'Upcoming' : days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? `${days} days ago` : format(d, 'MMM d, yyyy');
+      if (!map[label]) { map[label] = []; groups.push({ label, events: map[label] }); }
+      map[label].push(evt);
+    });
+    return groups;
+  };
+
+  const eventDateGroups = groupEventsByDate(filteredEvents);
 
   // ===== PHOTO =====
   const pickImage = async () => {
@@ -1530,9 +1652,31 @@ export default function ContactDetailScreen() {
                 </View>
               ) : (
                 <View style={s.feedTimeline}>
-                  {visibleEvents.map((evt, i) => {
+                  {eventDateGroups.map((group, gi) => {
+                    const isCollapsed = collapsedDateGroups[group.label] === true;
+                    const groupEvents = showAllEvents ? group.events : (gi === 0 ? group.events.slice(0, INITIAL_EVENT_COUNT) : group.events);
+                    if (groupEvents.length === 0) return null;
+                    return (
+                      <View key={group.label}>
+                        {/* Collapsible date header */}
+                        <TouchableOpacity
+                          style={s.feedDateHeader}
+                          onPress={() => setCollapsedDateGroups(prev => ({ ...prev, [group.label]: !prev[group.label] }))}
+                          activeOpacity={0.7}
+                          data-testid={`feed-date-${group.label}`}
+                        >
+                          <View style={s.feedDateLine} />
+                          <Text style={s.feedDateText}>{group.label}</Text>
+                          <Text style={s.feedDateCount}>{group.events.length}</Text>
+                          <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color="#636366" />
+                          <View style={s.feedDateLine} />
+                        </TouchableOpacity>
+
+                        {/* Events within this date group */}
+                        {!isCollapsed && groupEvents.map((evt, i) => {
                     const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
-                    const isExpanded = expandedEvents[i] === true;
+                    const evtKey = `${group.label}-${i}`;
+                    const isExpanded = expandedEvents[evtKey] === true;
                     const fullContent = evt.full_content || evt.description || '';
                     const hasLink = !!evt.link;
                     const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
@@ -1540,19 +1684,16 @@ export default function ContactDetailScreen() {
                     const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'Personal SMS' : evt.channel === 'sms' ? 'SMS' : '';
                     return (
                       <TouchableOpacity
-                        key={i}
+                        key={evtKey}
                         activeOpacity={0.7}
-                        onPress={() => setExpandedEvents(prev => ({ ...prev, [i]: !prev[i] }))}
+                        onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))}
                         style={[s.feedItem, isInbound && s.feedItemInbound]}
-                        data-testid={`feed-event-${i}`}
+                        data-testid={`feed-event-${evtKey}`}
                       >
-                        {/* Timeline line */}
-                        {i < visibleEvents.length - 1 && <View style={s.feedLine} />}
-                        {/* Icon */}
+                        {i < groupEvents.length - 1 && <View style={s.feedLine} />}
                         <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
                           <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
                         </View>
-                        {/* Content */}
                         <View style={s.feedContent}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
@@ -1604,7 +1745,7 @@ export default function ContactDetailScreen() {
                                     e.stopPropagation?.();
                                     router.push(evt.link as any);
                                   }}
-                                  data-testid={`feed-view-link-${i}`}
+                                  data-testid={`feed-view-link-${evtKey}`}
                                 >
                                   <Ionicons name="open-outline" size={14} color="#007AFF" />
                                   <Text style={s.feedViewLinkText}>View Card</Text>
@@ -1617,7 +1758,9 @@ export default function ContactDetailScreen() {
                       </TouchableOpacity>
                     );
                   })}
-                  {/* Show More / Show Less toggle */}
+                      </View>
+                    );
+                  })}
                   {filteredEvents.length > INITIAL_EVENT_COUNT && (
                     <TouchableOpacity
                       style={s.showMoreBtn}
@@ -1814,44 +1957,199 @@ export default function ContactDetailScreen() {
             </>
           )}
 
-          <View style={{ height: 50 }} />
+          <View style={{ height: 140 }} />
         </ScrollView>
 
-        {/* ===== STICKY ACTION BAR ===== */}
+        {/* ===== INLINE COMPOSER (Inbox-Style) ===== */}
         {!isNewContact && !isEditing && (
-          <View style={s.stickyBar} data-testid="sticky-action-bar">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.stickyBarInner}>
-              {QUICK_ACTIONS.map(a => (
-                <TouchableOpacity
-                  key={a.key}
-                  style={s.stickyBtn}
-                  onPress={() => handleQuickAction(a.key)}
-                  activeOpacity={0.7}
-                  data-testid={`sticky-action-${a.key}`}
-                >
-                  <View style={[s.stickyBtnIcon, { backgroundColor: `${a.color}20` }]}>
-                    <Ionicons name={a.icon as any} size={18} color={a.color} />
-                  </View>
-                  <Text style={s.stickyBtnLabel} numberOfLines={1}>{a.label}</Text>
-                </TouchableOpacity>
-              ))}
+          <View style={s.composerContainer} data-testid="contact-composer">
+            {/* SMS/Email mode toggle */}
+            <View style={s.composerModeRow}>
               <TouchableOpacity
-                style={s.stickyBtn}
-                onPress={() => setShowLogReply(true)}
-                activeOpacity={0.7}
-                data-testid="sticky-action-log-reply"
+                style={[s.composerModeBtn, composerMode === 'sms' && s.composerModeBtnActive]}
+                onPress={() => setComposerMode('sms')}
+                data-testid="composer-mode-sms"
               >
-                <View style={[s.stickyBtnIcon, { backgroundColor: '#30D15820' }]}>
-                  <Ionicons name="chatbubble-ellipses" size={18} color="#30D158" />
-                </View>
-                <Text style={s.stickyBtnLabel}>Log Reply</Text>
+                <Ionicons name="chatbubble" size={14} color={composerMode === 'sms' ? '#34C759' : '#636366'} />
+                <Text style={[s.composerModeBtnText, composerMode === 'sms' && { color: '#34C759' }]}>SMS</Text>
               </TouchableOpacity>
-            </ScrollView>
+              <TouchableOpacity
+                style={[s.composerModeBtn, composerMode === 'email' && s.composerModeBtnActive]}
+                onPress={() => setComposerMode('email')}
+                data-testid="composer-mode-email"
+              >
+                <Ionicons name="mail" size={14} color={composerMode === 'email' ? '#AF52DE' : '#636366'} />
+                <Text style={[s.composerModeBtnText, composerMode === 'email' && { color: '#AF52DE' }]}>Email</Text>
+              </TouchableOpacity>
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity
+                style={s.composerCallBtn}
+                onPress={() => handleSendPickerAction('call')}
+                data-testid="composer-call-btn"
+              >
+                <Ionicons name="call" size={16} color="#32ADE6" />
+              </TouchableOpacity>
+            </View>
+
+            {/* AI Suggestion bubble */}
+            {showAISuggestion && aiSuggestion ? (
+              <View style={s.aiSuggestionBubble} data-testid="ai-suggestion-bubble">
+                <View style={s.aiSuggestionHeader}>
+                  <Ionicons name="sparkles" size={14} color="#34C759" />
+                  <Text style={s.aiSuggestionLabel}>AI Suggestion</Text>
+                  <TouchableOpacity onPress={() => { setShowAISuggestion(false); setAiSuggestion(''); }}>
+                    <Ionicons name="close-circle" size={16} color="#636366" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={s.aiSuggestionText}>{aiSuggestion}</Text>
+                <View style={s.aiSuggestionActions}>
+                  <TouchableOpacity
+                    style={s.aiActionBtn}
+                    onPress={() => { setComposerMessage(aiSuggestion); setShowAISuggestion(false); }}
+                    data-testid="ai-edit-btn"
+                  >
+                    <Ionicons name="pencil" size={14} color="#007AFF" />
+                    <Text style={s.aiActionBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.aiActionBtn, s.aiActionBtnSend]}
+                    onPress={() => { handleComposerSend(aiSuggestion); setShowAISuggestion(false); setAiSuggestion(''); }}
+                    data-testid="ai-send-btn"
+                  >
+                    <Ionicons name="send" size={14} color="#FFF" />
+                    <Text style={[s.aiActionBtnText, { color: '#FFF' }]}>Send Now</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Composer box */}
+            <View style={s.composerBox}>
+              <TextInput
+                style={s.composerInput}
+                placeholder="Type your message..."
+                placeholderTextColor="#636366"
+                value={composerMessage}
+                onChangeText={setComposerMessage}
+                multiline
+                maxLength={1000}
+                data-testid="composer-input"
+              />
+              <View style={s.composerToolbar}>
+                <View style={s.composerTools}>
+                  {/* Send Something (consolidated) */}
+                  <TouchableOpacity
+                    style={s.composerToolBtn}
+                    onPress={() => setShowSendPicker(true)}
+                    data-testid="send-picker-btn"
+                  >
+                    <Ionicons name="add-circle-outline" size={22} color="#8E8E93" />
+                  </TouchableOpacity>
+                  {/* Log Reply */}
+                  <TouchableOpacity
+                    style={s.composerToolBtn}
+                    onPress={() => setShowLogReply(true)}
+                    data-testid="composer-log-reply-btn"
+                  >
+                    <Ionicons name="chatbubble-ellipses-outline" size={22} color="#30D158" />
+                  </TouchableOpacity>
+                  {/* AI Sparkle */}
+                  <TouchableOpacity
+                    style={s.composerToolBtn}
+                    onPress={loadAISuggestionForComposer}
+                    disabled={loadingAI}
+                    data-testid="ai-sparkle-btn"
+                  >
+                    {loadingAI ? (
+                      <ActivityIndicator size="small" color="#34C759" />
+                    ) : (
+                      <Ionicons name="sparkles" size={20} color="#34C759" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {/* Send button */}
+                {IS_WEB ? (
+                  <button
+                    type="button"
+                    onClick={() => handleComposerSend()}
+                    disabled={!composerMessage.trim() || composerSending}
+                    data-testid="composer-send-btn"
+                    style={{
+                      width: 36, height: 36, borderRadius: 18,
+                      backgroundColor: composerMessage.trim() && !composerSending
+                        ? (composerMode === 'sms' ? '#34C759' : '#AF52DE')
+                        : '#3A3A3C',
+                      border: 'none',
+                      cursor: !composerMessage.trim() || composerSending ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {composerSending ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <Ionicons
+                        name={composerMode === 'sms' ? 'send' : 'mail'}
+                        size={18}
+                        color={composerMessage.trim() ? '#FFF' : '#6E6E73'}
+                      />
+                    )}
+                  </button>
+                ) : (
+                  <TouchableOpacity
+                    style={[s.composerSendBtn, { backgroundColor: composerMode === 'sms' ? '#34C759' : '#AF52DE' },
+                      (!composerMessage.trim() || composerSending) && { backgroundColor: '#3A3A3C' }]}
+                    onPress={() => handleComposerSend()}
+                    disabled={!composerMessage.trim() || composerSending}
+                    data-testid="composer-send-btn"
+                  >
+                    {composerSending ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <Ionicons name={composerMode === 'sms' ? 'send' : 'mail'} size={18} color={composerMessage.trim() ? '#FFF' : '#6E6E73'} />
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
           </View>
         )}
       </KeyboardAvoidingView>
 
       {/* ===== MODALS ===== */}
+
+      {/* Send Something Picker */}
+      <Modal visible={showSendPicker} animationType="fade" transparent onRequestClose={() => setShowSendPicker(false)}>
+        <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowSendPicker(false)}>
+          <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
+            <View style={s.sendPickerHandle} />
+            <Text style={s.sendPickerTitle}>Send Something</Text>
+            {[
+              { key: 'card', icon: 'card', label: 'Digital Card', sub: 'Send your business card', color: '#007AFF' },
+              { key: 'congrats', icon: 'gift', label: 'Congrats Card', sub: 'Photo card with templates', color: '#C9A962' },
+              { key: 'review', icon: 'star', label: 'Review Link', sub: 'Request a review', color: '#FFD60A' },
+              { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
+              { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
+            ].map(item => (
+              <TouchableOpacity
+                key={item.key}
+                style={s.sendPickerItem}
+                onPress={() => handleSendPickerAction(item.key)}
+                activeOpacity={0.7}
+                data-testid={`send-picker-${item.key}`}
+              >
+                <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.sendPickerLabel}>{item.label}</Text>
+                  <Text style={s.sendPickerSub}>{item.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Referral Picker */}
       <Modal visible={showReferralPicker} animationType="slide" presentationStyle="pageSheet">
@@ -2229,7 +2527,7 @@ const s = StyleSheet.create({
   heroStatLbl: { fontSize: 11, color: '#636366' },
   heroStatDot: { fontSize: 11, color: '#3A3A3C', marginHorizontal: 2 },
 
-  // Sticky action bar
+  // Sticky action bar → replaced by Composer
   stickyBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: '#0D0D0D', borderTopWidth: 1, borderTopColor: '#1C1C1E',
@@ -2244,6 +2542,130 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   stickyBtnLabel: { fontSize: 9, color: '#8E8E93', fontWeight: '600', textAlign: 'center' },
+
+  // ===== INLINE COMPOSER =====
+  composerContainer: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: '#0D0D0D', borderTopWidth: 1, borderTopColor: '#1C1C1E',
+    paddingHorizontal: 12, paddingTop: 8, paddingBottom: 16,
+  },
+  composerModeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8,
+  },
+  composerModeBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16,
+    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  composerModeBtnActive: {
+    borderColor: '#3A3A3C', backgroundColor: '#1A1A1A',
+  },
+  composerModeBtnText: {
+    fontSize: 12, fontWeight: '600', color: '#636366',
+  },
+  composerCallBtn: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: '#32ADE615',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  composerBox: {
+    backgroundColor: '#1C1C1E', borderRadius: 16,
+    borderWidth: 1, borderColor: '#2C2C2E', overflow: 'hidden',
+  },
+  composerInput: {
+    fontSize: 16, color: '#FFF',
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
+    minHeight: 44, maxHeight: 100,
+  },
+  composerToolbar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 8, paddingVertical: 6,
+    borderTopWidth: 1, borderTopColor: '#2C2C2E', backgroundColor: '#151515',
+  },
+  composerTools: {
+    flexDirection: 'row', alignItems: 'center', gap: 2,
+  },
+  composerToolBtn: {
+    width: 38, height: 34, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  composerSendBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  // AI Suggestion bubble
+  aiSuggestionBubble: {
+    backgroundColor: '#1A2E1A', borderRadius: 14,
+    padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#34C75930',
+  },
+  aiSuggestionHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
+  },
+  aiSuggestionLabel: {
+    fontSize: 12, fontWeight: '700', color: '#34C759', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  aiSuggestionText: {
+    fontSize: 14, color: '#E5E5EA', lineHeight: 20, marginBottom: 10,
+  },
+  aiSuggestionActions: {
+    flexDirection: 'row', gap: 8, justifyContent: 'flex-end',
+  },
+  aiActionBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  aiActionBtnSend: {
+    backgroundColor: '#34C759', borderColor: '#34C759',
+  },
+  aiActionBtnText: {
+    fontSize: 13, fontWeight: '600', color: '#007AFF',
+  },
+  // Send Something Picker Modal
+  sendPickerOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  sendPickerSheet: {
+    backgroundColor: '#1C1C1E', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingTop: 12, paddingBottom: 32, paddingHorizontal: 16,
+  },
+  sendPickerHandle: {
+    width: 36, height: 4, backgroundColor: '#3A3A3C', borderRadius: 2,
+    alignSelf: 'center', marginBottom: 16,
+  },
+  sendPickerTitle: {
+    fontSize: 18, fontWeight: '700', color: '#FFF', marginBottom: 16,
+  },
+  sendPickerItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#2C2C2E',
+  },
+  sendPickerIcon: {
+    width: 42, height: 42, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  sendPickerLabel: {
+    fontSize: 16, fontWeight: '600', color: '#FFF',
+  },
+  sendPickerSub: {
+    fontSize: 12, color: '#8E8E93', marginTop: 2,
+  },
+  // Feed date group header (collapsible)
+  feedDateHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 10, marginTop: 4,
+  },
+  feedDateLine: {
+    flex: 1, height: 1, backgroundColor: '#2C2C2E',
+  },
+  feedDateText: {
+    fontSize: 11, fontWeight: '700', color: '#8E8E93',
+    textTransform: 'uppercase', letterSpacing: 0.8,
+  },
+  feedDateCount: {
+    fontSize: 10, fontWeight: '700', color: '#636366',
+    backgroundColor: '#1C1C1E', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+  },
 
   // Action progress tracker
   progressSection: {
