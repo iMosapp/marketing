@@ -562,6 +562,33 @@ export default function MyAccountScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Profile & AI Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Profile & AI</Text>
+          {[
+            { icon: 'card', title: 'My Digital Card', subtitle: 'Bio, socials & preview', color: '#007AFF', route: '/settings/my-profile' },
+            { icon: 'link', title: 'My Link Page', subtitle: 'Linktree-style page for socials', color: '#C9A962', route: '/settings/link-page' },
+            { icon: 'person', title: 'AI Persona', subtitle: 'Communication style', color: '#AF52DE', route: '/settings/persona' },
+            { icon: 'mic', title: 'Voice Training', subtitle: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.title}
+              style={[styles.settingsItem, { backgroundColor: colors.card }]}
+              onPress={() => router.push(item.route as any)}
+              data-testid={`profile-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <View style={[styles.settingsIconBox, { backgroundColor: `${item.color}20` }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <View style={styles.settingsContent}>
+                <Text style={[styles.settingsTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[styles.settingsSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* My Activity Dashboard */}
         <View style={styles.section}>
           <TouchableOpacity
