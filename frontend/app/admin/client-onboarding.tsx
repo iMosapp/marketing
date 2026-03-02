@@ -461,9 +461,14 @@ export default function ClientOnboardingScreen() {
 
   const renderStepLive = (client: Client) => {
     const doneCount = (client.completed_step_ids || []).length;
-    const allPrevDone = doneCount >= 5; // all 5 previous steps done
+    const allPrevDone = doneCount >= 5;
     return (
       <View style={st.form}>
+        <WhatYouNeed items={[
+          "Verify all 5 steps above are complete",
+          "Print or screenshot the team login credentials",
+          "Hand the client their logins and show them the app",
+        ]} />
         {allPrevDone ? (
           <View style={st.liveReady}>
             <Ionicons name="checkmark-circle" size={48} color="#34C759" />
