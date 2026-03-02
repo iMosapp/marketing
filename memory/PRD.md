@@ -73,10 +73,20 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - White-label HTML email templates via Resend
 - Centralized `PoweredByFooter.tsx` + `brand.ts` config
 - Light & Dark mode with persistence — **all pages now theme-aware** (My Account, Contact Detail, Share Modal)
+### Linktree-Style Public Link Page (Completed Mar 2, 2026)
+- Public URL per user: `/l/{username}` (e.g., `/l/forestward`)
+- Auto-populates links from user's digital card (social links, phone, email, review link)
+- Dark/Light theme support with accent color customization
+- Click tracking analytics per link
+- "powered by i'MOnsocial" branded footer
+- Management UI at `/settings/link-page.tsx`
+- Backend: `/backend/routers/linkpage.py` (auto-creates on first access, username uniqueness)
+
 ### PWA & Installation
 - Full Progressive Web App with service worker, manifest.json, and proper icons
 - Smart install page at `/install.html` with device detection (iPhone/Android/Desktop), step-by-step instructions, and QR code
 - Apple Touch Icon, Android Chrome icons, all favicon sizes generated from new logo
+- **PWA Black Background Fix** (Mar 2, 2026): html/body elements set to `backgroundColor: #000000` with `env(safe-area-inset-bottom)` CSS to eliminate white bar at bottom on iOS standalone mode
 - **Send a Card flow** now searches existing contacts before creating a card; contact info is pre-filled on the card creation page
 - **Contact search** — All modals (Share My Card, Send Card, Showcase, Add Contact) use strict first_name/last_name matching only, not conversations
 - **Campaign card preview** — "Preview Card" button shows a styled preview modal with card header, message, contact placeholder, and footer
@@ -124,3 +134,6 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - `/app/backend/routers/contact_events.py` — Contact matching + event logging
 - `/app/backend/routers/congrats_cards.py` — Card template system
 - `/app/frontend/app/settings/showcase-approvals.tsx` — Showcase moderation
+- `/app/frontend/app/l/[username].tsx` — Public Linktree-style page
+- `/app/backend/routers/linkpage.py` — Link page API (CRUD + public + analytics)
+- `/app/frontend/app/+html.tsx` — PWA HTML template (black background, safe area)
