@@ -138,6 +138,8 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - ~~Thread header contact name navigation regression~~ — **FIXED** (Feb 2026)
 - ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
 - ~~"-1 days ago" for future dates~~ — **FIXED** (Mar 2026): Activity tab and contact detail timestamps now show "Tomorrow"/"Upcoming" for future dates
+- ~~Timezone: Today events showing as Tomorrow~~ — **FIXED** (Mar 2026): Backend appends Z to all naive datetime strings globally via UTCJSONResponse. Frontend uses calendar-day comparison instead of millisecond diff. User profile has timezone field (default: America/Denver).
+- ~~Edit/Remove Automations~~ — **FIXED** (Mar 2026): Tapping automation chips opens edit modal with date picker and clear option.
 
 ## Upcoming Tasks
 1. (P0) **SMS/MMS Provider Integration** — User researching Telnyx vs Twilio vs Plivo for real two-way SMS/MMS with inbound webhook replies. Decision pending.
