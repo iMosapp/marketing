@@ -206,12 +206,40 @@ export default function ClientOnboardingScreen() {
 
   // ─── Inline Step Forms ───
 
+  const ActionLink = ({ icon, label, onPress, testId }: { icon: string; label: string; onPress: () => void; testId: string }) => (
+    <TouchableOpacity style={st.actionLink} onPress={onPress} data-testid={testId}>
+      <View style={st.actionLinkIcon}><Ionicons name={icon as any} size={18} color="#C9A962" /></View>
+      <Text style={st.actionLinkText}>{label}</Text>
+      <Ionicons name="arrow-forward" size={16} color="#C9A962" />
+    </TouchableOpacity>
+  );
+
+  const WhatYouNeed = ({ items }: { items: string[] }) => (
+    <View style={st.wynBox}>
+      <Text style={st.wynTitle}>What You Need</Text>
+      {items.map((item, i) => (
+        <View key={i} style={st.wynRow}>
+          <View style={st.wynBullet} />
+          <Text style={st.wynText}>{item}</Text>
+        </View>
+      ))}
+    </View>
+  );
+
   const renderStepQuote = (client: Client) => {
     const d = formData.quote || {};
     return (
       <View style={st.form}>
-        <Text style={st.formDesc}>Create and send a pricing quote to {client.client_name}.</Text>
-        <Text style={st.label}>Select Plan</Text>
+        <WhatYouNeed items={[
+          "Ask the client: How many users will need access?",
+          "Get their email address to send the quote",
+          "Decide on a plan or custom pricing",
+        ]} />
+
+        <Text style={st.sectionHead}>1. Create the Quote</Text>
+        <ActionLink icon="document-text-outline" label="Open Quote Builder" onPress={() => router.push('/admin/create-quote' as any)} testId="action-create-quote" />
+
+        <Text style={st.sectionHead}>2. Select Plan Here for Reference</Text>
         <View style={st.planGrid}>
           {PLANS.map(plan => (
             <TouchableOpacity key={plan.id} style={[st.planCard, d.plan === plan.id && st.planCardActive]} onPress={() => updateField('quote', 'plan', plan.id)} data-testid={`plan-${plan.id}`}>
@@ -238,8 +266,17 @@ export default function ClientOnboardingScreen() {
     const d = formData.agreement || {};
     return (
       <View style={st.form}>
-        <Text style={st.formDesc}>Send or track the service agreement for {client.client_name}.</Text>
-        <Text style={st.label}>Agreement Status</Text>
+        <WhatYouNeed items={[
+          "Client's email to send the agreement to",
+          "Any custom terms or special conditions",
+          "Wait for their digital signature",
+        ]} />
+
+        <Text style={st.sectionHead}>1. Create & Send Agreement</Text>
+        <ActionLink icon="create-outline" label="Open Agreement Builder" onPress={() => router.push('/admin/nda/create' as any)} testId="action-create-agreement" />
+        <ActionLink icon="list-outline" label="View All Agreements" onPress={() => router.push('/admin/nda' as any)} testId="action-view-agreements" />
+
+        <Text style={st.sectionHead}>2. Track Status</Text>
         <View style={st.statusRow}>
           {['not_sent', 'sent', 'viewed', 'signed'].map(s => (
             <TouchableOpacity key={s} style={[st.statusChip, d.status === s && st.statusChipActive]} onPress={() => updateField('agreement', 'status', s)} data-testid={`agreement-status-${s}`}>
@@ -247,12 +284,12 @@ export default function ClientOnboardingScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={st.label}>Send Agreement To</Text>
+        <Text style={st.label}>Sent To</Text>
         <TextInput style={st.input} value={d.send_to || client.contact_email || ''} onChangeText={v => updateField('agreement', 'send_to', v)} placeholder="client@email.com" placeholderTextColor="#555" keyboardType="email-address" autoCapitalize="none" data-testid="agreement-email" />
-        <Text style={st.label}>Agreement Notes</Text>
-        <TextInput style={[st.input, { height: 60, textAlignVertical: 'top' }]} value={d.notes || ''} onChangeText={v => updateField('agreement', 'notes', v)} placeholder="Custom terms, expiration date, etc." placeholderTextColor="#555" multiline data-testid="agreement-notes" />
         <Text style={st.label}>Signed Date</Text>
         <TextInput style={st.input} value={d.signed_date || ''} onChangeText={v => updateField('agreement', 'signed_date', v)} placeholder="MM/DD/YYYY" placeholderTextColor="#555" data-testid="agreement-signed-date" />
+        <Text style={st.label}>Notes</Text>
+        <TextInput style={[st.input, { height: 60, textAlignVertical: 'top' }]} value={d.notes || ''} onChangeText={v => updateField('agreement', 'notes', v)} placeholder="Custom terms, expiration, etc." placeholderTextColor="#555" multiline data-testid="agreement-notes" />
         <TouchableOpacity style={st.saveBtn} onPress={() => saveStepAndMarkDone(client._id, 'agreement')} disabled={saving} data-testid="save-agreement">
           {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
         </TouchableOpacity>
@@ -264,7 +301,16 @@ export default function ClientOnboardingScreen() {
     const d = formData.payment || {};
     return (
       <View style={st.form}>
-        <Text style={st.formDesc}>Record payment information for {client.client_name}.</Text>
+        <WhatYouNeed items={[
+          "Payment method (credit card, check, wire, etc.)",
+          "Payment amount and any confirmation number",
+          "Billing cycle or next due date",
+        ]} />
+
+        <Text style={st.sectionHead}>1. Process Payment</Text>
+        <ActionLink icon="card-outline" label="Open Billing / Invoices" onPress={() => router.push('/admin/billing' as any)} testId="action-billing" />
+
+        <Text style={st.sectionHead}>2. Record Payment Details</Text>
         <Text style={st.label}>Payment Method</Text>
         <View style={st.statusRow}>
           {['stripe', 'check', 'wire', 'cash', 'other'].map(m => (
@@ -292,19 +338,32 @@ export default function ClientOnboardingScreen() {
     const d = formData.configure || {};
     return (
       <View style={st.form}>
-        <Text style={st.formDesc}>Set up the account: company info, branding, and review links.</Text>
+        <WhatYouNeed items={[
+          "Company name, phone number, and address",
+          "Logo file (PNG or JPG, 512x512 recommended)",
+          "Their brand color preference",
+          "Google, Facebook, and/or Yelp review page URLs",
+        ]} />
 
-        <Text style={st.sectionHead}>Company Info</Text>
+        <Text style={st.sectionHead}>1. Use the Setup Wizard for Full Config</Text>
+        <ActionLink icon="settings-outline" label="Open Full Setup Wizard" onPress={() => router.push('/admin/setup-wizard' as any)} testId="action-setup-wizard" />
+
+        <Text style={st.sectionHead}>2. Or Quick-Enter Details Here</Text>
+
+        <Text style={st.label}>Company Name</Text>
         <TextInput style={st.input} value={d.company_name || client.client_name || ''} onChangeText={v => updateField('configure', 'company_name', v)} placeholder="Company Name" placeholderTextColor="#555" data-testid="config-company" />
-        <TextInput style={st.input} value={d.phone || client.contact_phone || ''} onChangeText={v => updateField('configure', 'phone', v)} placeholder="Phone" placeholderTextColor="#555" keyboardType="phone-pad" data-testid="config-phone" />
-        <TextInput style={st.input} value={d.address || ''} onChangeText={v => updateField('configure', 'address', v)} placeholder="Address" placeholderTextColor="#555" data-testid="config-address" />
+        <Text style={st.label}>Phone</Text>
+        <TextInput style={st.input} value={d.phone || client.contact_phone || ''} onChangeText={v => updateField('configure', 'phone', v)} placeholder="(555) 123-4567" placeholderTextColor="#555" keyboardType="phone-pad" data-testid="config-phone" />
+        <Text style={st.label}>Address</Text>
+        <TextInput style={st.input} value={d.address || ''} onChangeText={v => updateField('configure', 'address', v)} placeholder="123 Main St" placeholderTextColor="#555" data-testid="config-address" />
         <View style={st.row}>
           <TextInput style={[st.input, { flex: 1, marginRight: 8 }]} value={d.city || ''} onChangeText={v => updateField('configure', 'city', v)} placeholder="City" placeholderTextColor="#555" data-testid="config-city" />
           <TextInput style={[st.input, { width: 70 }]} value={d.state || ''} onChangeText={v => updateField('configure', 'state', v)} placeholder="State" placeholderTextColor="#555" data-testid="config-state" />
         </View>
-        <TextInput style={st.input} value={d.website || ''} onChangeText={v => updateField('configure', 'website', v)} placeholder="Website" placeholderTextColor="#555" data-testid="config-website" />
+        <Text style={st.label}>Website</Text>
+        <TextInput style={st.input} value={d.website || ''} onChangeText={v => updateField('configure', 'website', v)} placeholder="https://example.com" placeholderTextColor="#555" data-testid="config-website" />
 
-        <Text style={st.sectionHead}>Industry</Text>
+        <Text style={st.label}>Industry</Text>
         <View style={st.chipWrap}>
           {INDUSTRIES.map(ind => (
             <TouchableOpacity key={ind} style={[st.chip, d.industry === ind && st.chipActive]} onPress={() => updateField('configure', 'industry', ind)} data-testid={`config-industry-${ind}`}>
@@ -313,26 +372,19 @@ export default function ClientOnboardingScreen() {
           ))}
         </View>
 
-        <Text style={st.sectionHead}>Brand Color</Text>
+        <Text style={st.label}>Brand Color</Text>
         <View style={st.colorRow}>
           {COLORS.map(c => (
             <TouchableOpacity key={c} style={[st.colorDot, { backgroundColor: c }, d.primary_color === c && st.colorDotActive]} onPress={() => updateField('configure', 'primary_color', c)} data-testid={`config-color-${c}`} />
           ))}
         </View>
 
-        <Text style={st.sectionHead}>Review Links</Text>
-        <View style={st.reviewRow}>
-          <View style={[st.reviewBadge, { backgroundColor: '#4285F4' }]}><Text style={st.reviewBadgeText}>G</Text></View>
-          <TextInput style={[st.input, { flex: 1 }]} value={d.google_review || ''} onChangeText={v => updateField('configure', 'google_review', v)} placeholder="Google review link" placeholderTextColor="#555" data-testid="config-google" />
-        </View>
-        <View style={st.reviewRow}>
-          <View style={[st.reviewBadge, { backgroundColor: '#1877F2' }]}><Text style={st.reviewBadgeText}>f</Text></View>
-          <TextInput style={[st.input, { flex: 1 }]} value={d.facebook_review || ''} onChangeText={v => updateField('configure', 'facebook_review', v)} placeholder="Facebook review link" placeholderTextColor="#555" data-testid="config-facebook" />
-        </View>
-        <View style={st.reviewRow}>
-          <View style={[st.reviewBadge, { backgroundColor: '#FF1A1A' }]}><Text style={st.reviewBadgeText}>Y</Text></View>
-          <TextInput style={[st.input, { flex: 1 }]} value={d.yelp_review || ''} onChangeText={v => updateField('configure', 'yelp_review', v)} placeholder="Yelp review link" placeholderTextColor="#555" data-testid="config-yelp" />
-        </View>
+        <Text style={st.label}>Google Review Link</Text>
+        <TextInput style={st.input} value={d.google_review || ''} onChangeText={v => updateField('configure', 'google_review', v)} placeholder="https://g.page/your-business/review" placeholderTextColor="#555" data-testid="config-google" />
+        <Text style={st.label}>Facebook Review Link</Text>
+        <TextInput style={st.input} value={d.facebook_review || ''} onChangeText={v => updateField('configure', 'facebook_review', v)} placeholder="https://facebook.com/your-page/reviews" placeholderTextColor="#555" data-testid="config-facebook" />
+        <Text style={st.label}>Yelp Review Link</Text>
+        <TextInput style={st.input} value={d.yelp_review || ''} onChangeText={v => updateField('configure', 'yelp_review', v)} placeholder="https://yelp.com/biz/your-business" placeholderTextColor="#555" data-testid="config-yelp" />
 
         <TouchableOpacity style={st.saveBtn} onPress={() => saveStepAndMarkDone(client._id, 'configure')} disabled={saving} data-testid="save-config">
           {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
