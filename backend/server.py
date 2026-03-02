@@ -452,6 +452,16 @@ async def app_root():
     return {"status": "healthy", "message": "iMOs API v2.0"}
 
 
+@app.get("/l/{username}")
+async def serve_link_page(username: str):
+    """Serve the public link page HTML for any username."""
+    from pathlib import Path
+    html_path = Path(__file__).parent.parent / "frontend" / "public" / "l.html"
+    if html_path.exists():
+        return FileResponse(str(html_path), media_type="text/html")
+    raise HTTPException(status_code=404, detail="Page template not found")
+
+
 # Include the api_router in the main app
 app.include_router(api_router)
 
