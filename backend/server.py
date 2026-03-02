@@ -80,8 +80,8 @@ async def get_branding_logo():
 
 # ============= INCLUDE ROUTERS =============
 api_router.include_router(auth.router)
-api_router.include_router(contacts.router)
 api_router.include_router(contact_events.router)
+api_router.include_router(contacts.router)
 api_router.include_router(white_label.router)
 api_router.include_router(image_router.router)
 api_router.include_router(tasks.router)

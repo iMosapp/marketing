@@ -272,6 +272,11 @@ export default function ContactDetailScreen() {
   const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
   const [submittingReply, setSubmittingReply] = useState(false);
 
+  // Action progress tracker
+  const [actionProgress, setActionProgress] = useState<any[]>([]);
+  const [progressCompleted, setProgressCompleted] = useState(0);
+  const [progressTotal, setProgressTotal] = useState(0);
+
   // Computed: filtered events for search (must come after state declarations)
   const feedQuery = feedSearch.toLowerCase().trim();
   const filteredEvents = feedQuery
@@ -312,6 +317,7 @@ export default function ContactDetailScreen() {
       loadContact();
       loadEvents();
       loadSuggestedActions();
+      loadActionProgress();
       loadReferrals();
       loadCampaignsAndEnrollments();
       loadTags();
@@ -394,6 +400,18 @@ export default function ContactDetailScreen() {
       setSuggestedActions(resp.data.actions || []);
     } catch (e) {
       console.error('Failed to load suggested actions:', e);
+    }
+  };
+
+  const loadActionProgress = async () => {
+    if (!user || isNewContact) return;
+    try {
+      const resp = await api.get(`/contacts/${user._id}/${id}/action-progress`);
+      setActionProgress(resp.data.progress || []);
+      setProgressCompleted(resp.data.completed || 0);
+      setProgressTotal(resp.data.total || 0);
+    } catch (e) {
+      console.error('Failed to load action progress:', e);
     }
   };
 
@@ -1186,7 +1204,37 @@ export default function ContactDetailScreen() {
             </>
           )}
 
-          {/* Quick actions removed — now in sticky bar at bottom */}
+          {/* ===== ACTION PROGRESS TRACKER ===== */}
+          {!isNewContact && !isEditing && actionProgress.length > 0 && (
+            <View style={s.progressSection} data-testid="action-progress">
+              <View style={s.progressHeader}>
+                <Text style={s.progressLabel}>{progressCompleted}/{progressTotal} Actions</Text>
+                <View style={s.progressBarBg}>
+                  <View style={[s.progressBarFill, { width: `${progressTotal > 0 ? (progressCompleted / progressTotal) * 100 : 0}%` }]} />
+                </View>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.progressRow}>
+                {actionProgress.map((a: any) => (
+                  <TouchableOpacity
+                    key={a.key}
+                    style={[s.progressItem, a.done && s.progressItemDone]}
+                    onPress={() => !a.done && handleQuickAction(a.key === 'personal_sms' ? 'sms' : a.key === 'congrats_card_sent' ? 'congrats' : a.key === 'review_request_sent' ? 'review' : a.key === 'email_sent' ? 'email' : a.key === 'link_page_shared' ? 'linkpage' : a.key === 'digital_card_sent' ? 'digitalcard' : a.key)}
+                    activeOpacity={a.done ? 1 : 0.7}
+                    data-testid={`progress-${a.key}`}
+                  >
+                    <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : '#1C1C1E' }]}>
+                      {a.done ? (
+                        <Ionicons name="checkmark-circle" size={18} color={a.color} />
+                      ) : (
+                        <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color="#3A3A3C" />
+                      )}
+                    </View>
+                    <Text style={[s.progressText, a.done && { color: a.color }]} numberOfLines={1}>{a.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* ===== RELATIONSHIP INTEL ===== */}
           {!isNewContact && (
@@ -2166,6 +2214,27 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   stickyBtnLabel: { fontSize: 9, color: '#8E8E93', fontWeight: '600', textAlign: 'center' },
+
+  // Action progress tracker
+  progressSection: {
+    marginHorizontal: 16, marginBottom: 12, backgroundColor: '#1C1C1E',
+    borderRadius: 14, padding: 12,
+  },
+  progressHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10,
+  },
+  progressLabel: { fontSize: 12, fontWeight: '700', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5 },
+  progressBarBg: { flex: 1, height: 4, backgroundColor: '#2C2C2E', borderRadius: 2, overflow: 'hidden' },
+  progressBarFill: { height: 4, backgroundColor: '#C9A962', borderRadius: 2 },
+  progressRow: { flexDirection: 'row', gap: 8 },
+  progressItem: { alignItems: 'center', gap: 4, minWidth: 56 },
+  progressItemDone: {},
+  progressIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  progressText: { fontSize: 9, fontWeight: '600', color: '#3A3A3C', textAlign: 'center' },
 
   // Section
   section: { marginHorizontal: 16, marginBottom: 16 },

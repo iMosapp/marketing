@@ -15,6 +15,226 @@ router = APIRouter(prefix="/contacts", tags=["Contact Events"])
 logger = logging.getLogger(__name__)
 
 
+# ===== KEY ACTIONS FOR PROGRESS TRACKER =====
+KEY_ACTIONS = [
+    {"key": "digital_card_sent", "label": "Contact Card", "icon": "card", "color": "#007AFF",
+     "event_types": ["digital_card_sent", "vcard_sent"]},
+    {"key": "congrats_card_sent", "label": "Congrats", "icon": "gift", "color": "#C9A962",
+     "event_types": ["congrats_card_sent"]},
+    {"key": "review_request_sent", "label": "Review Link", "icon": "star", "color": "#FFD60A",
+     "event_types": ["review_request_sent"]},
+    {"key": "link_page_shared", "label": "Link Page", "icon": "link", "color": "#AF52DE",
+     "event_types": ["link_page_shared"]},
+    {"key": "email_sent", "label": "Email", "icon": "mail", "color": "#34C759",
+     "event_types": ["email_sent"]},
+    {"key": "personal_sms", "label": "Text", "icon": "chatbubble", "color": "#007AFF",
+     "event_types": ["personal_sms"]},
+    {"key": "call_placed", "label": "Call", "icon": "call", "color": "#30D158",
+     "event_types": ["call_placed"]},
+]
+
+
+@router.get("/{user_id}/master-feed")
+async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
+    """
+    Aggregate a social-media-style feed across ALL contacts for a user.
+    Returns recent events + upcoming campaign actions + suggested next steps.
+    """
+    db = get_db()
+
+    now = datetime.now(timezone.utc)
+
+    # 1) Recent events across all contacts (newest first)
+    recent_events = await db.contact_events.find(
+        {"user_id": user_id},
+        {"_id": 0, "photo": 0}
+    ).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+
+    # Get all contact IDs referenced
+    contact_ids = list({e.get("contact_id") for e in recent_events if e.get("contact_id")})
+
+    # Bulk fetch contact info
+    contacts_map = {}
+    if contact_ids:
+        try:
+            oids = [ObjectId(cid) for cid in contact_ids]
+            contacts_cursor = db.contacts.find(
+                {"_id": {"$in": oids}},
+                {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "tags": 1, "vehicle": 1}
+            )
+            async for c in contacts_cursor:
+                contacts_map[str(c["_id"])] = {
+                    "id": str(c["_id"]),
+                    "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
+                    "photo": c.get("photo"),
+                    "tags": c.get("tags", []),
+                    "vehicle": c.get("vehicle", ""),
+                }
+        except Exception:
+            pass
+
+    # Format events with contact info
+    feed_items = []
+    for evt in recent_events:
+        if evt.get("timestamp") and hasattr(evt["timestamp"], "isoformat"):
+            evt["timestamp"] = evt["timestamp"].isoformat()
+        cid = evt.get("contact_id")
+        contact_info = contacts_map.get(cid, {"id": cid, "name": "Unknown", "photo": None, "tags": [], "vehicle": ""})
+        is_inbound = evt.get("direction") == "inbound" or evt.get("event_type") == "customer_reply"
+        feed_items.append({
+            "type": "event",
+            "event_type": evt.get("event_type", "custom"),
+            "title": evt.get("title", "Activity"),
+            "description": evt.get("description", ""),
+            "icon": evt.get("icon", "flag"),
+            "color": evt.get("color", "#8E8E93"),
+            "timestamp": evt.get("timestamp"),
+            "contact": contact_info,
+            "category": evt.get("category", "custom"),
+            "is_inbound": is_inbound,
+            "channel": evt.get("channel"),
+        })
+
+    # 2) Upcoming campaign events (next 48 hours)
+    upcoming = []
+    try:
+        enrollments = await db.campaign_enrollments.find(
+            {"user_id": user_id, "status": "active"}
+        ).to_list(100)
+        for enrollment in enrollments[:20]:
+            cid = enrollment.get("contact_id")
+            contact_info = contacts_map.get(cid)
+            if not contact_info:
+                try:
+                    c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"_id": 0, "first_name": 1, "last_name": 1, "photo": 1})
+                    if c:
+                        contact_info = {"id": cid, "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(), "photo": c.get("photo"), "tags": [], "vehicle": ""}
+                except Exception:
+                    pass
+            if contact_info:
+                try:
+                    campaign = await db.campaigns.find_one({"_id": ObjectId(enrollment.get("campaign_id"))}, {"_id": 0, "name": 1, "steps": 1})
+                    if campaign:
+                        step_idx = enrollment.get("current_step", 0)
+                        steps = campaign.get("steps", [])
+                        if step_idx < len(steps):
+                            upcoming.append({
+                                "type": "campaign_upcoming",
+                                "title": f"Campaign: {campaign['name']}",
+                                "description": f"Step {step_idx + 1} of {len(steps)} — {steps[step_idx].get('type', 'action')}",
+                                "icon": "rocket",
+                                "color": "#AF52DE",
+                                "contact": contact_info,
+                                "campaign_name": campaign["name"],
+                                "step_number": step_idx + 1,
+                                "total_steps": len(steps),
+                            })
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.error(f"Error fetching campaign upcoming: {e}")
+
+    # 3) Suggested actions across all contacts
+    suggested = []
+    try:
+        all_contacts = await db.contacts.find(
+            {"user_id": user_id, "status": {"$ne": "deleted"}},
+            {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "birthday": 1, "date_sold": 1, "purchase_date": 1, "tags": 1}
+        ).to_list(500)
+
+        for contact in all_contacts:
+            cid = str(contact["_id"])
+            name = contact.get("first_name", "")
+
+            # Birthday check
+            bday = contact.get("birthday")
+            if bday and hasattr(bday, "month"):
+                try:
+                    bday_aware = bday.replace(year=now.year, tzinfo=timezone.utc) if not getattr(bday, 'tzinfo', None) else bday.replace(year=now.year)
+                    days_until = (bday_aware - now).days % 365
+                    if days_until <= 3:
+                        suggested.append({
+                            "type": "suggested",
+                            "priority": 0,
+                            "title": f"Birthday {'today' if days_until == 0 else f'in {days_until}d'}!",
+                            "description": f"Send {name} a birthday card",
+                            "icon": "gift",
+                            "color": "#FF9500",
+                            "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo"), "tags": contact.get("tags", [])},
+                            "action": "congrats",
+                            "suggested_message": f"Happy Birthday, {name}! Hope you have an amazing day!",
+                        })
+                except Exception:
+                    pass
+
+            # 30-day follow-up
+            sold = contact.get("date_sold") or contact.get("purchase_date")
+            if sold and hasattr(sold, "date"):
+                try:
+                    sold_aware = sold.replace(tzinfo=timezone.utc) if not getattr(sold, 'tzinfo', None) else sold
+                    days_since = (now - sold_aware).days
+                    for milestone in [30, 60, 90]:
+                        if milestone - 2 <= days_since <= milestone + 2:
+                            suggested.append({
+                                "type": "suggested",
+                                "priority": 1,
+                                "title": f"{milestone}-day check-in",
+                                "description": f"Follow up with {name}",
+                                "icon": "time",
+                                "color": "#34C759",
+                                "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo"), "tags": contact.get("tags", [])},
+                                "action": "sms",
+                                "suggested_message": f"Hey {name}! It's been {milestone} days — how's everything going? Let me know if you need anything!",
+                            })
+                            break
+                except Exception:
+                    pass
+
+        suggested.sort(key=lambda x: x.get("priority", 99))
+    except Exception as e:
+        logger.error(f"Error generating suggested actions: {e}")
+
+    return {
+        "feed": feed_items,
+        "upcoming": upcoming[:10],
+        "suggested": suggested[:10],
+        "total_events": len(feed_items),
+        "has_more": len(feed_items) == limit,
+    }
+
+
+@router.get("/{user_id}/{contact_id}/action-progress")
+async def get_action_progress(user_id: str, contact_id: str):
+    """Return which key CRM actions have been completed for this contact."""
+    db = get_db()
+
+    event_types = await db.contact_events.distinct(
+        "event_type", {"contact_id": contact_id, "user_id": user_id}
+    )
+    msg_types = await db.messages.distinct(
+        "channel", {"contact_id": contact_id, "user_id": user_id}
+    )
+    all_types = set(event_types + msg_types)
+
+    progress = []
+    for action in KEY_ACTIONS:
+        done = any(t in all_types for t in action["event_types"])
+        progress.append({
+            "key": action["key"],
+            "label": action["label"],
+            "icon": action["icon"],
+            "color": action["color"],
+            "done": done,
+        })
+
+    completed = sum(1 for p in progress if p["done"])
+    return {
+        "progress": progress,
+        "completed": completed,
+        "total": len(progress),
+    }
+
+
 @router.get("/{user_id}/{contact_id}/events")
 async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     db = get_db()
@@ -660,3 +880,4 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
         "match_found": not created,
         "needs_confirmation": False,
     }
+
