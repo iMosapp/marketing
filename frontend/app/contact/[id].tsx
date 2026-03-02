@@ -1257,35 +1257,9 @@ export default function ContactDetailScreen() {
                 )}
               </View>
 
-              {/* Right: Name + Tags + Info */}
+              {/* Right: Name + Info */}
               <View style={s.heroInfo}>
                 <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name" numberOfLines={1}>{fullName}</Text>
-
-                {/* Tags inline with add button */}
-                <View style={s.heroTagsRow}>
-                  {contact.tags.slice(0, 4).map((tag, i) => {
-                    const info = availableTags.find(t => t.name === tag);
-                    return (
-                      <View key={i} style={[s.heroTag, info?.color && { borderColor: info.color, backgroundColor: `${info.color}15` }]}>
-                        {info?.icon && <Ionicons name={info.icon as any} size={10} color={info.color || '#8E8E93'} />}
-                        <Text style={[s.heroTagText, info?.color && { color: info.color }]} numberOfLines={1}>{tag}</Text>
-                      </View>
-                    );
-                  })}
-                  {contact.tags.length > 4 && (
-                    <Text style={s.heroTagMore}>+{contact.tags.length - 4}</Text>
-                  )}
-                  {!isNewContact && (
-                    <TouchableOpacity
-                      style={s.heroTagAdd}
-                      onPress={() => { loadTags(); setShowTagPicker(true); }}
-                      data-testid="hero-add-tag-btn"
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="add" size={12} color="#007AFF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
 
                 {/* Vehicle / Product / Highlight */}
                 {contact.vehicle ? (
@@ -1335,6 +1309,35 @@ export default function ContactDetailScreen() {
                   <Text style={s.heroStatVal}>{contact.referral_count}</Text>
                   <Text style={s.heroStatLbl}>referrals</Text>
                 </View>
+              </View>
+            )}
+
+            {/* Tags Strip */}
+            {!isNewContact && (
+              <View style={s.heroTagsStrip} data-testid="hero-tags-strip">
+                <View style={s.heroTagsStripHeader}>
+                  <Ionicons name="pricetags" size={14} color="#FF9500" />
+                  <Text style={s.heroTagsStripTitle}>Tags</Text>
+                  <TouchableOpacity onPress={() => { loadTags(); setShowTagPicker(true); }} style={s.heroTagsStripAdd} data-testid="hero-add-tag-btn">
+                    <Ionicons name="add" size={14} color="#007AFF" />
+                  </TouchableOpacity>
+                </View>
+                {contact.tags.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {contact.tags.map((tag, i) => {
+                      const info = availableTags.find(t => t.name === tag);
+                      const chipColor = info?.color || '#8E8E93';
+                      return (
+                        <View key={i} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]}>
+                          <Ionicons name={(info?.icon || 'pricetag') as any} size={13} color={chipColor} />
+                          <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{tag}</Text>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                ) : (
+                  <Text style={s.heroTagsEmpty}>No tags yet</Text>
+                )}
               </View>
             )}
 
@@ -2896,6 +2899,33 @@ const s = StyleSheet.create({
   heroStatVal: { fontSize: 14, fontWeight: '700', color: '#FFF' },
   heroStatLbl: { fontSize: 11, color: '#636366' },
   heroStatDot: { fontSize: 11, color: '#3A3A3C', marginHorizontal: 2 },
+
+  // Hero tags strip
+  heroTagsStrip: {
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: '#1C1C1E',
+  },
+  heroTagsStripHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
+  },
+  heroTagsStripTitle: {
+    fontSize: 11, fontWeight: '700', color: '#FF9500', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1,
+  },
+  heroTagsStripAdd: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF15',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroTagChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14,
+    borderWidth: 1,
+  },
+  heroTagChipText: {
+    fontSize: 12, fontWeight: '600', maxWidth: 120,
+  },
+  heroTagsEmpty: {
+    fontSize: 12, color: '#636366', fontStyle: 'italic', paddingBottom: 4,
+  },
 
   // Hero campaigns strip
   heroCampaignsStrip: {
