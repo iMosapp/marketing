@@ -158,19 +158,9 @@ export default function CallScreen() {
 
           {callState === 'calling' && (
             <>
-              <View style={st.callingActions}>
-                <TouchableOpacity style={st.muteBtn} onPress={() => {}}>
-                  <Ionicons name="mic-off-outline" size={24} color="#FFF" />
-                  <Text style={st.actionLabel}>Mute</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={st.endBtn} onPress={endCall} data-testid="end-call">
-                  <Ionicons name="call" size={32} color="#FFF" style={{ transform: [{ rotate: '135deg' }] }} />
-                </TouchableOpacity>
-                <TouchableOpacity style={st.muteBtn} onPress={() => {}}>
-                  <Ionicons name="keypad-outline" size={24} color="#FFF" />
-                  <Text style={st.actionLabel}>Keypad</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={st.endBtn} onPress={endCall} data-testid="end-call">
+                <Ionicons name="call" size={32} color="#FFF" style={{ transform: [{ rotate: '135deg' }] }} />
+              </TouchableOpacity>
               <Text style={st.endLabel}>End Call & Log</Text>
             </>
           )}
