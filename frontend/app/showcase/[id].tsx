@@ -279,82 +279,68 @@ export default function ShowcasePage() {
             <View style={styles.quickLinksRow}>
               {/* Store view: Back to user's showcase */}
               {isStoreView && fromUserId && (
-                <>
-                  <TouchableOpacity
-                    style={styles.quickLinkItem}
-                    onPress={() => router.push(`/showcase/${fromUserId}` as any)}
-                    data-testid="back-to-user-showcase"
-                  >
-                    <Ionicons name="person-outline" size={18} color={accent} />
-                    <Text style={[styles.quickLinkText, { color: accent }]}>Back to Showcase</Text>
-                  </TouchableOpacity>
-                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
-                </>
+                <TouchableOpacity
+                  style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
+                  onPress={() => router.push(`/showcase/${fromUserId}` as any)}
+                  data-testid="back-to-user-showcase"
+                >
+                  <Ionicons name="person-outline" size={15} color={accent} />
+                  <Text style={[styles.quickLinkText, { color: accent }]}>Back to Showcase</Text>
+                </TouchableOpacity>
               )}
 
               {/* Store view: View store landing page */}
               {isStoreView && (
-                <>
-                  <TouchableOpacity
-                    style={styles.quickLinkItem}
-                    onPress={() => router.push(`/p/${fromUserId || id}` as any)}
-                    data-testid="view-store-page"
-                  >
-                    <Ionicons name="globe-outline" size={18} color={accent} />
-                    <Text style={[styles.quickLinkText, { color: accent }]}>Landing Page</Text>
-                  </TouchableOpacity>
-                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
-                </>
+                <TouchableOpacity
+                  style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
+                  onPress={() => router.push(`/p/${fromUserId || id}` as any)}
+                  data-testid="view-store-page"
+                >
+                  <Ionicons name="globe-outline" size={15} color={accent} />
+                  <Text style={[styles.quickLinkText, { color: accent }]}>Landing Page</Text>
+                </TouchableOpacity>
               )}
 
               {/* User view: My Card */}
               {!isStoreView && (
-                <>
-                  <TouchableOpacity
-                    style={styles.quickLinkItem}
-                    onPress={() => router.push(`/p/${id}`)}
-                    data-testid="view-business-card-btn"
-                  >
-                    <Ionicons name="card-outline" size={18} color={accent} />
-                    <Text style={[styles.quickLinkText, { color: accent }]}>My Card</Text>
-                  </TouchableOpacity>
-                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
-                </>
+                <TouchableOpacity
+                  style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
+                  onPress={() => router.push(`/p/${id}`)}
+                  data-testid="view-business-card-btn"
+                >
+                  <Ionicons name="card-outline" size={15} color={accent} />
+                  <Text style={[styles.quickLinkText, { color: accent }]}>My Card</Text>
+                </TouchableOpacity>
               )}
 
               {/* User view: Store Showcase */}
               {!isStoreView && storeId && (
-                <>
-                  <TouchableOpacity
-                    style={styles.quickLinkItem}
-                    onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)}
-                    data-testid="store-showroom-link"
-                  >
-                    <Ionicons name="storefront-outline" size={18} color={accent} />
-                    <Text style={[styles.quickLinkText, { color: accent }]}>Store</Text>
-                  </TouchableOpacity>
-                  <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
-                </>
+                <TouchableOpacity
+                  style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
+                  onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)}
+                  data-testid="store-showroom-link"
+                >
+                  <Ionicons name="storefront-outline" size={15} color={accent} />
+                  <Text style={[styles.quickLinkText, { color: accent }]}>Store</Text>
+                </TouchableOpacity>
               )}
 
               <TouchableOpacity
-                style={styles.quickLinkItem}
+                style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
                 onPress={handleShare}
                 data-testid="share-showcase-btn"
               >
-                <Ionicons name="share-outline" size={18} color={accent} />
+                <Ionicons name="share-outline" size={15} color={accent} />
                 <Text style={[styles.quickLinkText, { color: accent }]}>Share</Text>
               </TouchableOpacity>
 
-              <View style={{ width: 1, height: 20, backgroundColor: '#2C2C2E' }} />
-
               <TouchableOpacity
-                style={styles.quickLinkItem}
+                style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
                 onPress={() => setShowQR(!showQR)}
                 data-testid="qr-code-btn"
               >
-                <Ionicons name="qr-code-outline" size={18} color={accent} />
-                <Text style={[styles.quickLinkText, { color: accent }]}>QR Code</Text>
+                <Ionicons name="qr-code-outline" size={15} color={accent} />
+                <Text style={[styles.quickLinkText, { color: accent }]}>QR</Text>
               </TouchableOpacity>
             </View>
 
