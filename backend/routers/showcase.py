@@ -473,8 +473,13 @@ async def get_feedback_photo(feedback_id: str):
     """Serve a customer feedback photo as an actual image."""
     db = get_db()
 
+    try:
+        oid = ObjectId(feedback_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid feedback ID")
+
     feedback = await db.customer_feedback.find_one(
-        {"_id": ObjectId(feedback_id)},
+        {"_id": oid},
         {"purchase_photo_url": 1}
     )
     if not feedback or not feedback.get("purchase_photo_url"):

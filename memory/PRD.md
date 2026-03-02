@@ -200,6 +200,20 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - New utility: `/backend/utils/contact_activity.py` — reusable module for finding contacts by phone/name and logging customer-initiated events
 - All events appear in the contact's activity feed on the contact detail page
 
+### Relationship Feed + Log Customer Reply (Mar 2, 2026)
+- **Contact "Activity Feed" redesigned as "Relationship Feed"** — social-media-style timeline
+- **"Log Customer Reply"** — inline composer to paste customer text messages + attach photos. Creates `customer_reply` events with `direction: inbound`
+- **INBOUND badge** — green badge on customer reply events to distinguish them from outbound
+- **CUSTOMER badge** — yellow badge on customer-initiated activity (card views, downloads, shares, reviews)
+- **"Next Actions" (Suggested Actions)** — smart recommendations at top of feed:
+  - Birthday reminders (within 7 days)
+  - Anniversary reminders (within 7 days)
+  - 30/60/90/180/365-day purchase follow-up nudges
+  - Re-engagement nudge when 30+ days since last touchpoint
+  - Thank-you prompt for unacknowledged customer reviews
+  - Each action includes a pre-written suggested message and one-tap action button
+- Backend: `POST /api/contacts/{userId}/{contactId}/log-reply`, `GET /api/contacts/{userId}/{contactId}/suggested-actions`
+
 
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
