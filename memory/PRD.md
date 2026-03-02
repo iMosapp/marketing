@@ -137,6 +137,15 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Profile & AI on My Account**: My Digital Card, My Link Page, AI Persona, Voice Training moved from Menu to dedicated section on My Account page.
 - **Showcase mobile fix**: Quick links bar uses flexWrap with chip-style buttons — no more horizontal overflow on mobile
 
+### Marketing Landing Page (Mar 2, 2026)
+- Public landing page at `/landing.html` — high-converting marketing page inspired by healthbusiness.ai
+- Sections: Hero, How It Works (3 steps), Platform Features (6 cards), Stats bar, Who We Help (6 industries), 4-Step Process, Testimonials (3 placeholder), FAQ (5 items), Final CTA, Footer
+- **Demo Booking System**: Modal form captures name, email, phone, business type, company. Saves to `demo_requests` collection with `lead_source: "landing_page"` for tracking. Backend at `POST /api/demo-requests`.
+- Dark theme with gold (#C9A962) accent, Playfair Display + Inter fonts
+- Fully responsive (desktop, tablet, mobile)
+- Scroll animations (fade-up on section entry)
+- Target audiences: Car dealers, small businesses, bartenders/hospitality, real estate, sales teams, event professionals
+
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component
