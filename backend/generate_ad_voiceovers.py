@@ -1,9 +1,12 @@
 """Generate voiceovers for 4 ad videos using OpenAI TTS via emergentintegrations"""
 import os
 import asyncio
-from emergentintegrations.llm.openai import generate_speech
+from dotenv import load_dotenv
+from emergentintegrations.llm.openai import OpenAITextToSpeech
 
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY", "sk-emergent-f03D630881c37F9Cf1")
+load_dotenv()
+
+EMERGENT_KEY = os.getenv("EMERGENT_LLM_KEY")
 OUTPUT_DIR = "/app/frontend/public"
 
 ADS = [
@@ -17,7 +20,7 @@ ADS = [
             "Know exactly who opened it, when they saved your contact, and when they shared it with a friend. "
             "Every interaction tracked. Every connection counted. "
             "Stop handing out paper. Start building relationships that stick. "
-            "Get started at i-m-on-social dot com."
+            "Get started at i'm on social dot com."
         ),
     },
     {
@@ -30,7 +33,7 @@ ADS = [
             "Send it to a prospect and let your results speak for themselves. "
             "No website needed. No design skills required. Just real results, beautifully displayed. "
             "Your reputation, amplified. "
-            "See it in action at i-m-on-social dot com."
+            "See it in action at i'm on social dot com."
         ),
     },
     {
@@ -42,7 +45,7 @@ ADS = [
             "Pick a customer, hit send, and a branded review link goes out instantly via text or email. "
             "No copying links. No awkward asks. Just a simple, professional request that gets results. "
             "Our users have tripled their Google reviews in ninety days. "
-            "Your turn. Try it at i-m-on-social dot com."
+            "Your turn. Try it at i'm on social dot com."
         ),
     },
     {
@@ -55,28 +58,28 @@ ADS = [
             "i'M On Social makes it effortless. Set it up once, and watch your relationships grow on autopilot. "
             "AI-powered messaging. Automated campaigns. Real-time tracking. "
             "All from an app your whole team will actually use. "
-            "Book a demo at i-m-on-social dot com."
+            "Book a demo at i'm on social dot com."
         ),
     },
 ]
 
 
 async def generate_all():
+    tts = OpenAITextToSpeech(api_key=EMERGENT_KEY)
     for ad in ADS:
         output_path = os.path.join(OUTPUT_DIR, ad["filename"])
         print(f"Generating {ad['filename']} with voice '{ad['voice']}'...")
         try:
-            result = await generate_speech(
-                emergent_key=EMERGENT_KEY,
-                input_text=ad["script"],
-                voice=ad["voice"],
+            audio_bytes = await tts.generate_speech(
+                text=ad["script"],
                 model="tts-1-hd",
+                voice=ad["voice"],
                 response_format="mp3",
             )
             with open(output_path, "wb") as f:
-                f.write(result)
+                f.write(audio_bytes)
             size = os.path.getsize(output_path)
-            print(f"  -> Saved {ad['filename']} ({size} bytes)")
+            print(f"  -> Saved {ad['filename']} ({size:,} bytes)")
         except Exception as e:
             print(f"  -> ERROR generating {ad['filename']}: {e}")
 
