@@ -98,7 +98,11 @@ const PAGE_CATALOG: Category[] = [
     icon: 'diamond-outline',
     color: '#C9A962',
     pages: [
-      { name: 'Marketing Landing Page', description: 'Video landing page with voiceover & app demo slideshow', path: '/landing.html', icon: 'videocam-outline', color: '#FF2D55', requiresAuth: false, audience: 'Prospects, customers' },
+      { name: 'Marketing Landing Page', description: 'Full landing page with voiceover & demo slideshow', path: '/landing.html', icon: 'videocam-outline', color: '#FF2D55', requiresAuth: false, audience: 'Prospects, customers' },
+      { name: 'Ad: Digital Business Card', description: 'Sponsored ad — share trackable digital cards', path: '/ad-digital-card.html', icon: 'card-outline', color: '#007AFF', requiresAuth: false, audience: 'FB/IG Ad' },
+      { name: 'Ad: Customer Showcase', description: 'Sponsored ad — showcase happy customers & reviews', path: '/ad-showcase.html', icon: 'images-outline', color: '#34C759', requiresAuth: false, audience: 'FB/IG Ad' },
+      { name: 'Ad: Review Link Machine', description: 'Sponsored ad — one-tap Google & Facebook review requests', path: '/ad-reviews.html', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'FB/IG Ad' },
+      { name: 'Ad: Stay Connected', description: 'Sponsored ad — automated follow-ups & AI messaging', path: '/ad-autopilot.html', icon: 'rocket-outline', color: '#AF52DE', requiresAuth: false, audience: 'FB/IG Ad' },
       { name: 'iMOs Home', description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Everyone' },
       { name: 'Schedule a Demo', description: 'Lead capture form', path: '/imos/demo', icon: 'calendar-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects' },
       { name: 'Why Use iMOs', description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
