@@ -1459,50 +1459,53 @@ export default function ContactDetailScreen() {
                 )}
               </View>
 
-              {/* Log Reply Inline Composer */}
+              {/* Log Reply Inline Composer — Chat Bubble Style */}
               {showLogReply && (
-                <View style={s.logReplyComposer} data-testid="log-reply-composer">
-                  <View style={s.logReplyHeader}>
-                    <View style={s.logReplyDot} />
-                    <Text style={s.logReplyLabel}>Paste customer's message</Text>
-                    <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }}>
-                      <Ionicons name="close" size={18} color="#8E8E93" />
+                <View style={s.logReplyBubble} data-testid="log-reply-composer">
+                  {/* Bubble tail indicator */}
+                  <View style={s.bubbleTail} />
+                  <View style={s.bubbleHeader}>
+                    <Ionicons name="arrow-down-circle" size={18} color="#30D158" />
+                    <Text style={s.bubbleHeaderText}>Customer said...</Text>
+                    <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }} style={s.bubbleClose}>
+                      <Ionicons name="close-circle" size={22} color="#636366" />
                     </TouchableOpacity>
                   </View>
-                  <TextInput
-                    style={s.logReplyInput}
-                    placeholder="What did they say?..."
-                    placeholderTextColor="#636366"
-                    value={replyText}
-                    onChangeText={setReplyText}
-                    multiline
-                    data-testid="log-reply-input"
-                  />
+                  <View style={s.bubbleInputWrap}>
+                    <TextInput
+                      style={s.bubbleInput}
+                      placeholder="Paste what they said..."
+                      placeholderTextColor="#636366"
+                      value={replyText}
+                      onChangeText={setReplyText}
+                      multiline
+                      data-testid="log-reply-input"
+                    />
+                  </View>
                   {replyPhoto && (
-                    <View style={s.replyPhotoPreview}>
-                      <Image source={{ uri: replyPhoto }} style={s.replyPhotoThumb} resizeMode="cover" />
-                      <TouchableOpacity style={s.replyPhotoRemove} onPress={() => setReplyPhoto(null)}>
-                        <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                    <View style={s.bubblePhotoPreview}>
+                      <Image source={{ uri: replyPhoto }} style={s.bubblePhotoThumb} resizeMode="cover" />
+                      <TouchableOpacity style={s.bubblePhotoRemove} onPress={() => setReplyPhoto(null)}>
+                        <Ionicons name="close-circle" size={22} color="#FF3B30" />
                       </TouchableOpacity>
                     </View>
                   )}
-                  <View style={s.logReplyActions}>
-                    <TouchableOpacity style={s.logReplyPhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
-                      <Ionicons name="camera" size={18} color="#8E8E93" />
-                      <Text style={s.logReplyPhotoBtnText}>Photo</Text>
+                  <View style={s.bubbleFooter}>
+                    <TouchableOpacity style={s.bubblePhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
+                      <Ionicons name="image" size={20} color="#636366" />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[s.logReplySendBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.4 }]}
+                      style={[s.bubbleSaveBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.35 }]}
                       onPress={handleLogReply}
                       disabled={(!replyText.trim() && !replyPhoto) || submittingReply}
                       data-testid="log-reply-submit"
                     >
                       {submittingReply ? (
-                        <ActivityIndicator size="small" color="#000" />
+                        <ActivityIndicator size="small" color="#FFF" />
                       ) : (
                         <>
-                          <Ionicons name="checkmark" size={16} color="#000" />
-                          <Text style={s.logReplySendText}>Log Reply</Text>
+                          <Text style={s.bubbleSaveText}>Save Reply</Text>
+                          <Ionicons name="arrow-up-circle" size={22} color="#FFF" />
                         </>
                       )}
                     </TouchableOpacity>
@@ -2340,30 +2343,49 @@ const s = StyleSheet.create({
   },
   feedSearchInputCompact: { flex: 1, fontSize: 13, color: '#F2F2F7', padding: 0 },
 
-  // Log Reply Composer
-  logReplyComposer: {
-    backgroundColor: '#1A1A1C', borderRadius: 14, padding: 14, marginBottom: 14,
-    borderWidth: 1, borderColor: '#30D15840',
+  // Log Reply — Chat Bubble Style
+  logReplyBubble: {
+    backgroundColor: '#1A2E1A', borderRadius: 20, padding: 16, marginBottom: 14,
+    borderWidth: 1.5, borderColor: '#30D15850',
+    position: 'relative',
   },
-  logReplyHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  logReplyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#30D158' },
-  logReplyLabel: { fontSize: 13, fontWeight: '600', color: '#30D158', flex: 1 },
-  logReplyInput: {
-    backgroundColor: '#0D0D0D', borderRadius: 10, padding: 12,
-    fontSize: 14, color: '#F2F2F7', minHeight: 70, textAlignVertical: 'top',
-    borderWidth: 1, borderColor: '#2C2C2E',
+  bubbleTail: {
+    position: 'absolute', top: -8, left: 24,
+    width: 16, height: 16, backgroundColor: '#1A2E1A',
+    borderTopWidth: 1.5, borderLeftWidth: 1.5, borderColor: '#30D15850',
+    transform: [{ rotate: '45deg' }],
   },
-  logReplyActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
-  logReplyPhotoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2C2C2E' },
-  logReplyPhotoBtnText: { fontSize: 13, color: '#8E8E93' },
-  logReplySendBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#30D158', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14,
+  bubbleHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
   },
-  logReplySendText: { fontSize: 13, fontWeight: '700', color: '#000' },
-  replyPhotoPreview: { position: 'relative', marginTop: 10, width: 80, height: 80, borderRadius: 10, overflow: 'hidden' },
-  replyPhotoThumb: { width: 80, height: 80, borderRadius: 10 },
-  replyPhotoRemove: { position: 'absolute', top: -4, right: -4 },
+  bubbleHeaderText: { fontSize: 14, fontWeight: '700', color: '#30D158', flex: 1 },
+  bubbleClose: { padding: 2 },
+  bubbleInputWrap: {
+    backgroundColor: '#0D1A0D', borderRadius: 16, borderWidth: 1, borderColor: '#30D15830',
+    marginBottom: 10,
+  },
+  bubbleInput: {
+    fontSize: 15, color: '#E5E5EA', padding: 14, minHeight: 80, textAlignVertical: 'top',
+    lineHeight: 22,
+  },
+  bubblePhotoPreview: {
+    position: 'relative', width: 80, height: 80, borderRadius: 12, overflow: 'hidden', marginBottom: 10,
+  },
+  bubblePhotoThumb: { width: 80, height: 80, borderRadius: 12 },
+  bubblePhotoRemove: { position: 'absolute', top: -2, right: -2 },
+  bubbleFooter: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  bubblePhotoBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#0D1A0D',
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#30D15830',
+  },
+  bubbleSaveBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#30D158', borderRadius: 24,
+    paddingVertical: 12, paddingHorizontal: 20,
+  },
+  bubbleSaveText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
 
   // Suggested Actions
   actionBadge: { backgroundColor: '#FF9500', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
