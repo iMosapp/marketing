@@ -238,6 +238,7 @@ async def create_onboarding_client(data: ClientCreate, x_user_id: str = Header(N
         "industry": data.industry or "",
         "notes": data.notes or "",
         "completed_step_ids": [],
+        "step_data": {},
         "status": "active",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": x_user_id or "",
