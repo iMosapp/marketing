@@ -654,6 +654,18 @@ const st = StyleSheet.create({
   saveBtnText: { fontSize: 15, fontWeight: '800', color: '#000' },
   btnRow: { flexDirection: 'row', gap: 8 },
 
+  // What You Need box
+  wynBox: { backgroundColor: '#0D1117', borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#1C2333', borderLeftWidth: 3, borderLeftColor: '#C9A962' },
+  wynTitle: { fontSize: 12, fontWeight: '800', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  wynRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 5 },
+  wynBullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#C9A962', marginTop: 5 },
+  wynText: { fontSize: 13, color: '#CCC', flex: 1, lineHeight: 18 },
+
+  // Action links
+  actionLink: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#C9A96233' },
+  actionLinkIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' },
+  actionLinkText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#FFF' },
+
   // Plans
   planGrid: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   planCard: { flex: 1, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 2, borderColor: '#2C2C2E' },
