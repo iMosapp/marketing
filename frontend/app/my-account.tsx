@@ -40,6 +40,57 @@ export default function MyAccountScreen() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [editingQuickActions, setEditingQuickActions] = useState(false);
+  const [quickActionIds, setQuickActionIds] = useState<string[]>([]);
+
+  // All available Quick Action items
+  const ALL_ACTIONS: { id: string; icon: string; label: string; color: string; route: string }[] = [
+    { id: 'account_setup', icon: 'storefront', label: 'Account Setup', color: '#34C759', route: '/settings/store-profile' },
+    { id: 'brand_kit', icon: 'color-palette', label: 'Brand Kit', color: '#C9A962', route: '/settings/brand-kit' },
+    { id: 'review_links', icon: 'star', label: 'Review Links', color: '#FFD60A', route: '/settings/review-links' },
+    { id: 'brand_assets', icon: 'images', label: 'Brand Assets', color: '#AF52DE', route: '/admin/brand-assets' },
+    { id: 'approvals', icon: 'chatbubbles', label: 'Approvals', color: '#FF9500', route: '/settings/review-approvals' },
+    { id: 'edit_card', icon: 'create', label: 'Edit Card', color: '#007AFF', route: '/settings/my-profile' },
+    { id: 'leaderboard', icon: 'trophy', label: 'Leaderboard', color: '#FFD700', route: '/leaderboard' },
+    { id: 'link_page', icon: 'link', label: 'Link Page', color: '#C9A962', route: '/settings/link-page' },
+    { id: 'digital_card', icon: 'card', label: 'Digital Card', color: '#007AFF', route: '/settings/my-profile' },
+    { id: 'ai_persona', icon: 'person', label: 'AI Persona', color: '#AF52DE', route: '/settings/persona' },
+    { id: 'voice_training', icon: 'mic', label: 'Voice Training', color: '#FF3B30', route: '/voice-training' },
+    { id: 'send_card', icon: 'paper-plane', label: 'Send Card', color: '#32ADE6', route: '/settings/create-card' },
+    { id: 'ask_jessi', icon: 'sparkles', label: 'Ask Jessi', color: '#C9A962', route: '/jessie' },
+    { id: 'my_activity', icon: 'bar-chart', label: 'My Activity', color: '#5AC8FA', route: '/reports/activity' },
+    { id: 'tasks', icon: 'checkmark-done', label: 'Tasks', color: '#34C759', route: '/tasks' },
+    { id: 'analytics', icon: 'stats-chart', label: 'Analytics', color: '#34C759', route: '/analytics' },
+    { id: 'templates', icon: 'document-text', label: 'Templates', color: '#FFD60A', route: '/settings/templates' },
+    { id: 'training', icon: 'school', label: 'Training', color: '#FF9500', route: '/training-hub' },
+  ];
+
+  const DEFAULT_QUICK_IDS = ['account_setup', 'brand_kit', 'review_links', 'brand_assets', 'approvals', 'edit_card'];
+
+  useEffect(() => {
+    AsyncStorage.getItem('quick_action_ids').then(val => {
+      if (val) {
+        try { setQuickActionIds(JSON.parse(val)); } catch { setQuickActionIds(DEFAULT_QUICK_IDS); }
+      } else {
+        setQuickActionIds(DEFAULT_QUICK_IDS);
+      }
+    });
+  }, []);
+
+  const saveQuickActions = (ids: string[]) => {
+    setQuickActionIds(ids);
+    AsyncStorage.setItem('quick_action_ids', JSON.stringify(ids));
+  };
+
+  const toggleQuickAction = (id: string) => {
+    if (quickActionIds.includes(id)) {
+      saveQuickActions(quickActionIds.filter(i => i !== id));
+    } else if (quickActionIds.length < 6) {
+      saveQuickActions([...quickActionIds, id]);
+    } else {
+      showSimpleAlert('Limit Reached', 'You can have up to 6 Quick Actions. Remove one first.');
+    }
+  };
 
   const loadActivity = useCallback(async (period: string, startDate?: string, endDate?: string) => {
     if (!user?._id) return;
