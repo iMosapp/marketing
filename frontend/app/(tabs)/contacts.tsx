@@ -22,7 +22,6 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, messagesAPI, tagsAPI } from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
-import api from '../../services/api';
 
 interface Tag {
   _id: string;
@@ -31,37 +30,6 @@ interface Tag {
   icon: string;
   contact_count: number;
 }
-
-// Event type label map
-const FEED_EVENT_LABELS: Record<string, string> = {
-  email_sent: 'Email Sent',
-  personal_sms: 'Text Sent',
-  digital_card_sent: 'Shared Contact Card',
-  review_request_sent: 'Review Invite Sent',
-  congrats_card_sent: 'Congrats Card Sent',
-  vcard_sent: 'Shared vCard',
-  call_placed: 'Call Placed',
-  customer_reply: 'Customer Reply',
-  congrats_card_viewed: 'Viewed Congrats Card',
-  congrats_card_download: 'Downloaded Card',
-  review_submitted: 'Left a Review',
-  review_link_clicked: 'Clicked Review Link',
-};
-
-const formatFeedTime = (ts: string) => {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-};
 
 export default function ContactsScreen() {
   const router = useRouter();
@@ -87,13 +55,6 @@ export default function ContactsScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-
-  // View mode: 'feed' (social) or 'list' (classic)
-  const [viewMode, setViewMode] = useState<'feed' | 'list'>('feed');
-  const [masterFeed, setMasterFeed] = useState<any[]>([]);
-  const [feedSuggested, setFeedSuggested] = useState<any[]>([]);
-  const [feedUpcoming, setFeedUpcoming] = useState<any[]>([]);
-  const [feedLoading, setFeedLoading] = useState(false);
   
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
@@ -108,26 +69,10 @@ export default function ContactsScreen() {
     if (!isPending && userId) {
       loadContacts();
       loadTags();
-      loadMasterFeed();
       initialLoadDone.current = true;
     }
   }, [userId, isPending]);
 
-  const loadMasterFeed = async () => {
-    if (!userId) return;
-    try {
-      setFeedLoading(true);
-      const resp = await api.get(`/contacts/${userId}/master-feed?limit=50`);
-      setMasterFeed(resp.data.feed || []);
-      setFeedSuggested(resp.data.suggested || []);
-      setFeedUpcoming(resp.data.upcoming || []);
-    } catch (e) {
-      console.error('Failed to load master feed:', e);
-    } finally {
-      setFeedLoading(false);
-    }
-  };
-  
   const loadTags = async () => {
     if (!user?._id) return;
     try {
@@ -179,7 +124,7 @@ export default function ContactsScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Promise.all([loadContacts(), loadTags(), loadMasterFeed()]);
+    await Promise.all([loadContacts(), loadTags()]);
     setRefreshing(false);
   };
   
@@ -513,23 +458,6 @@ export default function ContactsScreen() {
         <View style={[styles.header, { backgroundColor: colors.bg }]}>
           <Text style={[styles.title, { color: colors.text }]}>Contacts</Text>
           <View style={styles.headerButtons}>
-            {/* Feed/List Toggle */}
-            <View style={styles.viewToggle}>
-              <TouchableOpacity
-                style={[styles.viewToggleBtn, viewMode === 'feed' && styles.viewToggleBtnActive]}
-                onPress={() => setViewMode('feed')}
-                data-testid="view-toggle-feed"
-              >
-                <Ionicons name="newspaper" size={16} color={viewMode === 'feed' ? '#FFF' : '#636366'} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
-                onPress={() => setViewMode('list')}
-                data-testid="view-toggle-list"
-              >
-                <Ionicons name="list" size={16} color={viewMode === 'list' ? '#FFF' : '#636366'} />
-              </TouchableOpacity>
-            </View>
             {isWeb && (
               <TouchableOpacity 
                 onPress={onRefresh}
@@ -638,161 +566,7 @@ export default function ContactsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
-      ) : viewMode === 'feed' ? (
-        /* ===== MASTER FEED VIEW ===== */
-        <ScrollView
-          contentContainerStyle={styles.feedContainer}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />}
-          showsVerticalScrollIndicator={false}
-          data-testid="master-feed"
-        >
-          {/* Suggested actions */}
-          {feedSuggested.length > 0 && (
-            <View style={styles.feedSection}>
-              <View style={styles.feedSectionHeader}>
-                <Ionicons name="bulb" size={16} color="#FF9500" />
-                <Text style={styles.feedSectionTitle}>Action Items</Text>
-                <View style={styles.feedBadge}><Text style={styles.feedBadgeText}>{feedSuggested.length}</Text></View>
-              </View>
-              {feedSuggested.map((item: any, idx: number) => (
-                <TouchableOpacity
-                  key={`sug-${idx}`}
-                  style={styles.feedSuggestedCard}
-                  onPress={() => item.contact?.id && router.push(`/contact/${item.contact.id}`)}
-                  activeOpacity={0.7}
-                  data-testid={`feed-suggested-${idx}`}
-                >
-                  <View style={[styles.feedSuggestedIcon, { backgroundColor: `${item.color}20` }]}>
-                    <Ionicons name={(item.icon || 'flag') as any} size={18} color={item.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      {item.contact?.photo ? (
-                        <Image source={{ uri: item.contact.photo }} style={styles.feedMiniAvatar} />
-                      ) : (
-                        <View style={styles.feedMiniAvatarPlaceholder}>
-                          <Text style={styles.feedMiniAvatarText}>{item.contact?.name?.[0] || '?'}</Text>
-                        </View>
-                      )}
-                      <Text style={styles.feedSuggestedTitle}>{item.title}</Text>
-                    </View>
-                    <Text style={styles.feedSuggestedDesc}>{item.description}</Text>
-                    {item.suggested_message && (
-                      <Text style={styles.feedSuggestedMsg} numberOfLines={1}>"{item.suggested_message}"</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {/* Upcoming campaign events */}
-          {feedUpcoming.length > 0 && (
-            <View style={styles.feedSection}>
-              <View style={styles.feedSectionHeader}>
-                <Ionicons name="rocket" size={16} color="#AF52DE" />
-                <Text style={styles.feedSectionTitle}>Upcoming</Text>
-              </View>
-              {feedUpcoming.map((item: any, idx: number) => (
-                <TouchableOpacity
-                  key={`up-${idx}`}
-                  style={styles.feedUpcomingCard}
-                  onPress={() => item.contact?.id && router.push(`/contact/${item.contact.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {item.contact?.photo ? (
-                      <Image source={{ uri: item.contact.photo }} style={styles.feedMiniAvatar} />
-                    ) : (
-                      <View style={styles.feedMiniAvatarPlaceholder}>
-                        <Text style={styles.feedMiniAvatarText}>{item.contact?.name?.[0] || '?'}</Text>
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.feedUpcomingTitle}>{item.contact?.name}</Text>
-                      <Text style={styles.feedUpcomingDesc}>{item.description}</Text>
-                    </View>
-                    <View style={styles.feedCampaignBadge}>
-                      <Text style={styles.feedCampaignBadgeText}>{item.campaign_name}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {/* Recent activity feed */}
-          <View style={styles.feedSection}>
-            <View style={styles.feedSectionHeader}>
-              <Ionicons name="time" size={16} color="#007AFF" />
-              <Text style={styles.feedSectionTitle}>Recent Activity</Text>
-              <Text style={styles.feedSectionCount}>{masterFeed.length} events</Text>
-            </View>
-            {feedLoading && masterFeed.length === 0 ? (
-              <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 20 }} />
-            ) : masterFeed.length === 0 ? (
-              <View style={styles.feedEmpty}>
-                <Ionicons name="pulse-outline" size={40} color="#2C2C2E" />
-                <Text style={styles.feedEmptyText}>No activity yet</Text>
-                <Text style={styles.feedEmptySubtext}>Send a message or card to get started</Text>
-              </View>
-            ) : (
-              masterFeed.map((item: any, idx: number) => {
-                const isInbound = item.is_inbound;
-                const evtLabel = FEED_EVENT_LABELS[item.event_type] || item.title || 'Activity';
-                return (
-                  <TouchableOpacity
-                    key={`evt-${idx}`}
-                    style={styles.feedEventCard}
-                    onPress={() => item.contact?.id && router.push(`/contact/${item.contact.id}`)}
-                    activeOpacity={0.7}
-                    data-testid={`master-feed-event-${idx}`}
-                  >
-                    {/* Contact avatar + event icon */}
-                    <View style={styles.feedEventAvatarGroup}>
-                      {item.contact?.photo ? (
-                        <Image source={{ uri: item.contact.photo }} style={styles.feedEventAvatar} />
-                      ) : (
-                        <View style={styles.feedEventAvatarPlaceholder}>
-                          <Text style={styles.feedEventAvatarText}>{item.contact?.name?.[0] || '?'}</Text>
-                        </View>
-                      )}
-                      <View style={[styles.feedEventIconBadge, { backgroundColor: item.color || '#007AFF' }]}>
-                        <Ionicons name={(item.icon || 'flag') as any} size={10} color="#FFF" />
-                      </View>
-                    </View>
-
-                    {/* Content */}
-                    <View style={styles.feedEventContent}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={styles.feedEventName} numberOfLines={1}>{item.contact?.name || 'Unknown'}</Text>
-                        {isInbound && (
-                          <View style={styles.feedInboundBadge}><Text style={styles.feedInboundBadgeText}>INBOUND</Text></View>
-                        )}
-                        {item.contact?.tags?.slice(0, 2).map((t: string, ti: number) => (
-                          <View key={ti} style={styles.feedMiniTag}><Text style={styles.feedMiniTagText}>{t}</Text></View>
-                        ))}
-                      </View>
-                      <Text style={[styles.feedEventTitle, isInbound && { color: '#30D158' }]}>
-                        {isInbound ? `"${item.description}"` : evtLabel}
-                      </Text>
-                      {!isInbound && item.description && item.description !== evtLabel && (
-                        <Text style={styles.feedEventDesc} numberOfLines={1}>{item.description}</Text>
-                      )}
-                    </View>
-
-                    {/* Time */}
-                    <Text style={styles.feedEventTime}>{formatFeedTime(item.timestamp)}</Text>
-                  </TouchableOpacity>
-                );
-              })
-            )}
-          </View>
-          <View style={{ height: 40 }} />
-        </ScrollView>
       ) : (
-        /* ===== LIST VIEW ===== */
         <FlatList
           data={filteredContacts}
           renderItem={renderContact}

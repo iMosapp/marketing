@@ -124,6 +124,16 @@ export default function TabLayout() {
         listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
       />
       <Tabs.Screen
+        name="activity"
+        options={{
+          title: 'Activity',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="pulse" size={size} color={isPending ? '#3C3C3E' : color} />
+          ),
+        }}
+        listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
+      />
+      <Tabs.Screen
         name="inbox"
         options={{
           title: 'Inbox',

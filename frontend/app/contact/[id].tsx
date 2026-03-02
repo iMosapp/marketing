@@ -1030,7 +1030,7 @@ export default function ContactDetailScreen() {
                   {!isNewContact && (
                     <View style={s.heroMetaItem}>
                       <Ionicons name="time-outline" size={11} color="#636366" />
-                      <Text style={s.heroMetaText}>{timeValue}{timeLabel} in system</Text>
+                      <Text style={s.heroMetaText}>{timeValue} {timeLabel} relationship</Text>
                     </View>
                   )}
                 </View>
@@ -2090,6 +2090,26 @@ export default function ContactDetailScreen() {
                   <Text style={s.backToGridText}>All Photos</Text>
                 </TouchableOpacity>
               )}
+
+              {/* Set as Profile Photo */}
+              {fullPhoto && allPhotos[selectedPhotoIndex]?.type !== 'profile' && (
+                <TouchableOpacity
+                  style={s.setProfileBtn}
+                  onPress={async () => {
+                    try {
+                      await api.put(`/contacts/${user._id}/${id}`, { photo: fullPhoto });
+                      setContact((prev: any) => ({ ...prev, photo: fullPhoto }));
+                      showToast('Profile photo updated!');
+                    } catch (e: any) {
+                      showSimpleAlert('Error', 'Failed to update profile photo');
+                    }
+                  }}
+                  data-testid="set-as-profile-btn"
+                >
+                  <Ionicons name="person-circle" size={18} color="#000" />
+                  <Text style={s.setProfileBtnText}>Set as Profile Photo</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : allPhotos.length > 0 ? (
             /* === GALLERY GRID VIEW === */
@@ -2402,6 +2422,12 @@ const s = StyleSheet.create({
   backToGridText: {
     color: '#FFF', fontSize: 14, fontWeight: '500' as const,
   },
+  setProfileBtn: {
+    flexDirection: 'row' as const, alignItems: 'center', gap: 6,
+    backgroundColor: '#C9A962', borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 16, marginTop: 8,
+  },
+  setProfileBtnText: { color: '#000', fontSize: 14, fontWeight: '700' as const },
   // Gallery grid
   galleryGridContainer: {
     width: '90%', maxHeight: '80%', alignItems: 'center',
