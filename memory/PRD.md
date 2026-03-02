@@ -215,6 +215,17 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Backend: `POST /api/contacts/{userId}/{contactId}/log-reply`, `GET /api/contacts/{userId}/{contactId}/suggested-actions`
 
 
+### Contact Page Phase 2: Compact Hero + Sticky Action Bar (Mar 2, 2026)
+- **Compact left-aligned hero** — Photo tile (68px) top-left with gold touchpoint badge, name + tags inline on the right
+- **Industry-agnostic highlight field** — Shows vehicle, house, product, or any custom info without labeling it
+- **Tags inline** — Colored tag pills display right next to the contact name (up to 4 shown + overflow count)
+- **Compact stats line** — "X touches · Y msgs · Z campaigns · N referrals" replaces the old stats box grid
+- **Phone/email removed from hero** — Cleaner profile, still accessible in edit mode
+- **Sticky action bar** — Always-visible bottom bar with SMS, Call, Email, Review, Card, Congrats, Log Reply buttons
+- **Next Actions elevated** — Above the feed with pre-written suggested messages and one-tap action buttons
+- Old standalone Tags section and Quick Actions grid removed (replaced by hero tags and sticky bar)
+
+
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component
