@@ -203,3 +203,60 @@ async def mark_wizard_complete(org_id: str, x_user_id: str = Header(None, alias=
     except Exception as e:
         logger.warning(f"Could not update org {org_id} setup_complete flag: {e}")
     return {"success": True, "message": "Setup wizard completed"}
+
+
+# ─── Multi-Client Onboarding CRUD ───
+
+class ClientCreate(BaseModel):
+    client_name: str
+    contact_email: Optional[str] = ""
+    contact_phone: Optional[str] = ""
+    industry: Optional[str] = ""
+    notes: Optional[str] = ""
+
+
+@router.get("/clients")
+async def list_onboarding_clients(x_user_id: str = Header(None, alias="X-User-ID")):
+    """List all onboarding client records"""
+    db = get_db()
+    cursor = db.onboarding_clients.find({}, {"_id": 1, "client_name": 1, "contact_email": 1, "contact_phone": 1, "industry": 1, "notes": 1, "completed_step_ids": 1, "status": 1, "created_at": 1})
+    results = []
+    async for doc in cursor.sort("created_at", -1):
+        doc["_id"] = str(doc["_id"])
+        results.append(doc)
+    return results
+
+
+@router.post("/clients")
+async def create_onboarding_client(data: ClientCreate, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Create a new client onboarding record"""
+    db = get_db()
+    doc = {
+        "client_name": data.client_name,
+        "contact_email": data.contact_email or "",
+        "contact_phone": data.contact_phone or "",
+        "industry": data.industry or "",
+        "notes": data.notes or "",
+        "completed_step_ids": [],
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": x_user_id or "",
+    }
+    result = await db.onboarding_clients.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
+    return doc
+
+
+@router.put("/clients/{client_id}")
+async def update_onboarding_client(client_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Update a client onboarding record (step progress, status, etc.)"""
+    db = get_db()
+    allowed = {"completed_step_ids", "status", "client_name", "contact_email", "contact_phone", "industry", "notes"}
+    update = {k: v for k, v in data.items() if k in allowed}
+    update["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    await db.onboarding_clients.update_one(
+        {"_id": ObjectId(client_id)},
+        {"$set": update},
+    )
+    return {"success": True}
