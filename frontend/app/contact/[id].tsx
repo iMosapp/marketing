@@ -779,6 +779,11 @@ export default function ContactDetailScreen() {
         }
         break;
       }
+      case 'campaign': {
+        // Open campaign picker
+        setShowCampaignPicker(true);
+        break;
+      }
       case 'call': {
         if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
         if (IS_WEB && typeof window !== 'undefined') {
@@ -1271,6 +1276,59 @@ export default function ContactDetailScreen() {
                   <Text style={s.heroStatVal}>{contact.referral_count}</Text>
                   <Text style={s.heroStatLbl}>referrals</Text>
                 </View>
+              </View>
+            )}
+
+            {/* Active Campaigns & Date Automations Strip */}
+            {!isNewContact && (contactEnrollments.length > 0 || contact.birthday || contact.anniversary || contact.date_sold) && (
+              <View style={s.heroCampaignsStrip} data-testid="hero-campaigns-strip">
+                <View style={s.heroCampaignsHeader}>
+                  <Ionicons name="rocket" size={14} color="#AF52DE" />
+                  <Text style={s.heroCampaignsTitle}>Automations</Text>
+                  <TouchableOpacity onPress={() => setShowCampaignPicker(true)} style={s.heroCampaignsAdd}>
+                    <Ionicons name="add" size={14} color="#007AFF" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                  {/* Date-based automations from contact dates */}
+                  {contact.birthday && (
+                    <View style={[s.heroCampaignChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510' }]} data-testid="auto-birthday">
+                      <Ionicons name="gift" size={13} color="#FF2D55" />
+                      <Text style={[s.heroCampaignChipText, { color: '#FF2D55' }]} numberOfLines={1}>Birthday</Text>
+                      <Text style={s.heroCampaignDate}>{format(new Date(contact.birthday), 'MMM d')}</Text>
+                    </View>
+                  )}
+                  {contact.anniversary && (
+                    <View style={[s.heroCampaignChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }]} data-testid="auto-anniversary">
+                      <Ionicons name="heart" size={13} color="#FF6B6B" />
+                      <Text style={[s.heroCampaignChipText, { color: '#FF6B6B' }]} numberOfLines={1}>Anniversary</Text>
+                      <Text style={s.heroCampaignDate}>{format(new Date(contact.anniversary), 'MMM d')}</Text>
+                    </View>
+                  )}
+                  {contact.date_sold && (
+                    <View style={[s.heroCampaignChip, { borderColor: '#34C75940', backgroundColor: '#34C75910' }]} data-testid="auto-sold">
+                      <Ionicons name="car-sport" size={13} color="#34C759" />
+                      <Text style={[s.heroCampaignChipText, { color: '#34C759' }]} numberOfLines={1}>Sold Date</Text>
+                      <Text style={s.heroCampaignDate}>{format(new Date(contact.date_sold), 'MMM d')}</Text>
+                    </View>
+                  )}
+                  {/* Enrolled campaigns */}
+                  {contactEnrollments.map((e, i) => {
+                    const chipColor = e.status === 'completed' ? '#34C759' : '#007AFF';
+                    return (
+                      <View key={i} style={[s.heroCampaignChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]} data-testid={`campaign-chip-${i}`}>
+                        <Ionicons 
+                          name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} 
+                          size={13} color={chipColor} 
+                        />
+                        <Text style={[s.heroCampaignChipText, { color: chipColor }]} numberOfLines={1}>{e.campaign_name}</Text>
+                        {e.status !== 'completed' && (
+                          <Text style={s.heroCampaignStep}>{e.current_step}/{e.total_steps}</Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
               </View>
             )}
           </View>
@@ -2213,6 +2271,7 @@ export default function ContactDetailScreen() {
               { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
               { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
               { key: 'photo', icon: 'camera', label: 'Photo', sub: 'Take or upload a photo', color: '#32ADE6' },
+              { key: 'campaign', icon: 'rocket', label: 'Enroll in Campaign', sub: 'Add to an active campaign', color: '#AF52DE' },
             ].map(item => (
               <TouchableOpacity
                 key={item.key}
@@ -2520,22 +2579,47 @@ export default function ContactDetailScreen() {
 
               {/* Set as Profile Photo */}
               {fullPhoto && allPhotos[selectedPhotoIndex]?.type !== 'profile' && (
-                <TouchableOpacity
-                  style={s.setProfileBtn}
-                  onPress={async () => {
-                    try {
-                      await api.put(`/contacts/${user._id}/${id}`, { photo: fullPhoto });
-                      setContact((prev: any) => ({ ...prev, photo: fullPhoto }));
-                      showToast('Profile photo updated!');
-                    } catch (e: any) {
-                      showSimpleAlert('Error', 'Failed to update profile photo');
-                    }
-                  }}
-                  data-testid="set-as-profile-btn"
-                >
-                  <Ionicons name="person-circle" size={18} color="#000" />
-                  <Text style={s.setProfileBtnText}>Set as Profile Photo</Text>
-                </TouchableOpacity>
+                IS_WEB ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await api.put(`/contacts/${user._id}/${id}`, { photo: fullPhoto });
+                        setContact((prev: any) => ({ ...prev, photo: fullPhoto }));
+                        showToast('Profile photo updated!');
+                      } catch (e: any) {
+                        showSimpleAlert('Error', 'Failed to update profile photo');
+                      }
+                    }}
+                    data-testid="set-as-profile-btn"
+                    style={{
+                      display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6,
+                      backgroundColor: '#C9A962', borderRadius: 10, border: 'none',
+                      padding: '10px 16px', marginTop: 8, cursor: 'pointer',
+                      fontSize: 14, fontWeight: 700, color: '#000',
+                    }}
+                  >
+                    <Ionicons name="person-circle" size={18} color="#000" />
+                    Set as Profile Photo
+                  </button>
+                ) : (
+                  <TouchableOpacity
+                    style={s.setProfileBtn}
+                    onPress={async () => {
+                      try {
+                        await api.put(`/contacts/${user._id}/${id}`, { photo: fullPhoto });
+                        setContact((prev: any) => ({ ...prev, photo: fullPhoto }));
+                        showToast('Profile photo updated!');
+                      } catch (e: any) {
+                        showSimpleAlert('Error', 'Failed to update profile photo');
+                      }
+                    }}
+                    data-testid="set-as-profile-btn"
+                  >
+                    <Ionicons name="person-circle" size={18} color="#000" />
+                    <Text style={s.setProfileBtnText}>Set as Profile Photo</Text>
+                  </TouchableOpacity>
+                )
               )}
             </View>
           ) : allPhotos.length > 0 ? (
@@ -2645,6 +2729,38 @@ const s = StyleSheet.create({
   heroStatVal: { fontSize: 14, fontWeight: '700', color: '#FFF' },
   heroStatLbl: { fontSize: 11, color: '#636366' },
   heroStatDot: { fontSize: 11, color: '#3A3A3C', marginHorizontal: 2 },
+
+  // Hero campaigns strip
+  heroCampaignsStrip: {
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: '#1C1C1E',
+  },
+  heroCampaignsHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
+  },
+  heroCampaignsTitle: {
+    fontSize: 11, fontWeight: '700', color: '#AF52DE', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1,
+  },
+  heroCampaignsAdd: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF15',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroCampaignChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14,
+    borderWidth: 1,
+  },
+  heroCampaignChipText: {
+    fontSize: 12, fontWeight: '600', maxWidth: 120,
+  },
+  heroCampaignStep: {
+    fontSize: 10, fontWeight: '700', color: '#636366', backgroundColor: '#1C1C1E',
+    paddingHorizontal: 4, paddingVertical: 1, borderRadius: 6,
+  },
+  heroCampaignDate: {
+    fontSize: 10, fontWeight: '700', color: '#8E8E93', backgroundColor: '#1C1C1E',
+    paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
+  },
 
   // Sticky action bar → replaced by Composer
   stickyBar: {
@@ -2964,7 +3080,7 @@ const s = StyleSheet.create({
     borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerContent: {
-    width: '90%', maxHeight: '70%', justifyContent: 'center', alignItems: 'center',
+    width: '90%', maxHeight: '80%', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerImage: {
     width: '100%', height: '100%', borderRadius: 12, maxHeight: 500,
