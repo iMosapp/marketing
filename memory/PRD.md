@@ -109,11 +109,12 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
 
 ## Upcoming Tasks
-1. (P0) **Onboarding/Setup Wizard** — Multi-step setup for new Organizations, Admins, Users
-2. (P1) **Gamification & Leaderboards** — Based on activity tracking data
-3. (P1) **AI-Powered Outreach** — sold tag → follow-up suggestions
-4. (P1) **Auth refactor** — bcrypt password hashing
-5. (P1) **Clean production database for launch**
+1. (P0) **Onboarding/Setup Wizard — Phase 2** — First-login user welcome flow (auto-profile, card preview, quick tour, first action)
+2. (P0) **Onboarding/Setup Wizard — Phase 3** — Home checklist widget driving 14-day trial adoption
+3. (P1) **Gamification & Leaderboards** — Based on activity tracking data
+4. (P1) **AI-Powered Outreach** — sold tag → follow-up suggestions
+5. (P1) **Auth refactor** — bcrypt password hashing
+6. (P1) **Clean production database for launch**
 
 ## Future/Backlog
 - **Full LMS (Learning Management System)** — Course builder, video lessons (YouTube embed), modules with "Next" progression, quizzes, completion certificates/badges, admin dashboard for tracking. Supports both internal team training and external customer-facing courses. YouTube (unlisted) recommended for video hosting.
