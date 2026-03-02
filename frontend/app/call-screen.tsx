@@ -209,11 +209,8 @@ const st = StyleSheet.create({
   cancelBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
 
   // Calling state
-  callingActions: { flexDirection: 'row', alignItems: 'center', gap: 32, marginBottom: 10 },
-  muteBtn: { alignItems: 'center', gap: 6, width: 60 },
-  actionLabel: { fontSize: 11, color: '#8E8E93' },
   endBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 20 },
-  endLabel: { fontSize: 14, color: '#8E8E93' },
+  endLabel: { fontSize: 14, color: '#8E8E93', marginTop: 10 },
 
   // Ended state
   loggedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#34C75910', borderRadius: 14, padding: 16, width: '100%' as any, marginBottom: 16, borderWidth: 1, borderColor: '#34C75930' },
