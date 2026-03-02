@@ -102,7 +102,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 ### Branding
 - White-label HTML email templates via Resend
 - Centralized `PoweredByFooter.tsx` + `brand.ts` config
-- Light & Dark mode with persistence — **all pages now theme-aware** (My Account, Contact Detail, Share Modal)
+- Light & Dark mode with persistence — **full app-wide theme refactor COMPLETED** (Mar 2, 2026). 250+ files converted to dynamic theme-aware StyleSheets using `getStyles(colors)` pattern. All major pages tested and verified in both light and dark mode.
 ### Linktree-Style Public Link Page (Completed Mar 2, 2026)
 - Public URL per user: `/l/{username}` (e.g., `/l/forestward`)
 - **Social Links**: All 6 major platforms (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube) pre-populated by default. Users only enter their username — the URL prefix is built automatically (matching My Profile pattern).
@@ -135,6 +135,10 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Production SMS tally** — Fix in preview, pending deployment
 - React Hydration Error #418 (P2)
 - Phone matching edge case with heavily formatted numbers (LOW)
+- ~~Thread header contact name navigation regression~~ — **FIXED** (Feb 2026)
+- ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
+- ~~"-1 days ago" for future dates~~ — **FIXED** (Mar 2026)
+- ~~Light mode UI disaster~~ — **FIXED** (Mar 2, 2026): Full app-wide audit complete. 250+ files refactored. All pages verified in both themes.
 - ~~Thread header contact name navigation regression~~ — **FIXED** (Feb 2026)
 - ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
 - ~~"-1 days ago" for future dates~~ — **FIXED** (Mar 2026): Activity tab and contact detail timestamps now show "Tomorrow"/"Upcoming" for future dates
