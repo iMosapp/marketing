@@ -87,7 +87,8 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Backend**: `POST /api/contact-intel/{user_id}/{contact_id}/suggest-message` endpoint for AI-powered message suggestions.
 
 - **Automations Strip in Hero** (Mar 2, 2026): Shows date-triggered automations (Birthday, Anniversary, Sold Date) as colored chips with dates in the contact hero section. Only displays for contacts that have dates set. Includes a + button to enroll in campaigns. **Chips are tappable** - opens an edit modal with a date picker to update the date, or a "Clear Date" button to remove it entirely.
-- **Hero Tag Add Button** (Mar 2, 2026): A blue "+" button is always visible next to the tag pills in the contact hero section. Tapping it opens the tag picker modal, and selecting a tag immediately saves it to the backend without needing to enter edit mode.
+- **Hero Tag Add Button** (Mar 2, 2026): Tags moved to their own horizontal scrollable strip (like Automations) below the stats line. A blue "+" button opens the tag picker, and selecting a tag saves immediately without edit mode. Tags are fully scrollable side-to-side.
+- **Contact Search by Tag** (Mar 2, 2026): The contacts list search field now matches contacts by tag name in addition to name/phone. The tag filter bar with chip buttons also provides quick tag-based filtering.
 - **"Send Something" Picker — 7 options** (Mar 2, 2026): Added "Enroll in Campaign" and "Photo" options. All items pre-fill the composer with URLs instead of redirecting to inbox. "Create a Card" shows a 6-template secondary picker.
 - **Profile Photo Button Fix** (Mar 2, 2026): "Set as Profile Photo" in the gallery now uses a native HTML `<button>` on web for reliable click handling.
 - **Toolbar Icons Differentiated** (Mar 2, 2026): Blue + (Send Something), Orange ↩ (Log Reply), Purple ✨ (AI) — no longer "three green dots"
