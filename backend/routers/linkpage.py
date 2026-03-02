@@ -7,7 +7,7 @@ from bson import ObjectId
 from datetime import datetime, timezone
 import re
 
-from db import get_db
+from routers.database import get_db
 
 router = APIRouter(prefix="/linkpage", tags=["linkpage"])
 
