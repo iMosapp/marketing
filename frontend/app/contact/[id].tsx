@@ -944,68 +944,103 @@ export default function ContactDetailScreen() {
           )}
         </View>
 
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-          {/* ===== PROFILE HERO ===== */}
+        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: 80 }]} showsVerticalScrollIndicator={false}>
+          {/* ===== COMPACT PROFILE HERO ===== */}
           <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
-            <View style={s.heroAvatarContainer}>
-              <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8}>
-                {contact.photo ? (
-                  <Image source={{ uri: contact.photo }} style={s.heroAvatar} />
-                ) : (
-                  <View style={s.heroAvatarPlaceholder}>
-                    <Text style={s.heroInitials}>{initials}</Text>
+            <View style={s.heroRow}>
+              {/* Left: Avatar */}
+              <View style={s.heroAvatarContainer}>
+                <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8}>
+                  {contact.photo ? (
+                    <Image source={{ uri: contact.photo }} style={s.heroAvatar} />
+                  ) : (
+                    <View style={s.heroAvatarPlaceholder}>
+                      <Text style={s.heroInitials}>{initials}</Text>
+                    </View>
+                  )}
+                  {isEditing && (
+                    <View style={s.heroCameraBadge}>
+                      <Ionicons name="camera" size={12} color="#FFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+                {!isNewContact && stats.total_touchpoints > 0 && (
+                  <View style={s.touchpointBadge} data-testid="touchpoint-badge">
+                    <Text style={s.touchpointBadgeText}>{stats.total_touchpoints}</Text>
                   </View>
                 )}
-                {isEditing && (
-                  <View style={s.heroCameraBadge}>
-                    <Ionicons name="camera" size={14} color="#FFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-              {!isNewContact && stats.total_touchpoints > 0 && (
-                <View style={s.touchpointBadge} data-testid="touchpoint-badge">
-                  <Text style={s.touchpointBadgeText}>{stats.total_touchpoints}</Text>
-                </View>
-              )}
-            </View>
-
-            <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name">{fullName}</Text>
-            {contact.vehicle ? <Text style={[s.heroVehicle, { color: colors.textSecondary }]}>{contact.vehicle}</Text> : null}
-            {(contact.address_city || contact.address_state) ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="location-outline" size={14} color={colors.textTertiary} style={{ marginRight: 4 }} />
-                <Text style={{ fontSize: 13, color: colors.textTertiary }}>
-                  {[contact.address_city, contact.address_state].filter(Boolean).join(', ')}
-                </Text>
               </View>
-            ) : null}
 
-            {/* Contact chips */}
-            <View style={s.heroChips}>
-              {contact.phone ? (
-                <TouchableOpacity style={[s.heroChip, { backgroundColor: colors.card }]} onPress={() => {
-                  router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
-                }}>
-                  <Ionicons name="call" size={14} color="#34C759" />
-                  <Text style={[s.heroChipText, { color: colors.text }]}>{contact.phone}</Text>
-                </TouchableOpacity>
-              ) : null}
-              {contact.email ? (
-                <TouchableOpacity style={[s.heroChip, { backgroundColor: colors.card }]} onPress={() => Linking.openURL(`mailto:${contact.email}`)}>
-                  <Ionicons name="mail" size={14} color="#AF52DE" />
-                  <Text style={[s.heroChipText, { color: colors.text }]} numberOfLines={1}>{contact.email}</Text>
-                </TouchableOpacity>
-              ) : null}
+              {/* Right: Name + Tags + Info */}
+              <View style={s.heroInfo}>
+                <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name" numberOfLines={1}>{fullName}</Text>
+
+                {/* Tags inline */}
+                {contact.tags.length > 0 && (
+                  <View style={s.heroTagsRow}>
+                    {contact.tags.slice(0, 4).map((tag, i) => {
+                      const info = availableTags.find(t => t.name === tag);
+                      return (
+                        <View key={i} style={[s.heroTag, info?.color && { borderColor: info.color, backgroundColor: `${info.color}15` }]}>
+                          {info?.icon && <Ionicons name={info.icon as any} size={10} color={info.color || '#8E8E93'} />}
+                          <Text style={[s.heroTagText, info?.color && { color: info.color }]} numberOfLines={1}>{tag}</Text>
+                        </View>
+                      );
+                    })}
+                    {contact.tags.length > 4 && (
+                      <Text style={s.heroTagMore}>+{contact.tags.length - 4}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Vehicle / Product / Highlight */}
+                {contact.vehicle ? (
+                  <View style={s.heroHighlight}>
+                    <Ionicons name="pricetag" size={12} color="#C9A962" />
+                    <Text style={s.heroHighlightText} numberOfLines={1}>{contact.vehicle}</Text>
+                  </View>
+                ) : null}
+
+                {/* Location + Time compact */}
+                <View style={s.heroMetaRow}>
+                  {(contact.address_city || contact.address_state) ? (
+                    <View style={s.heroMetaItem}>
+                      <Ionicons name="location-outline" size={11} color="#636366" />
+                      <Text style={s.heroMetaText}>{[contact.address_city, contact.address_state].filter(Boolean).join(', ')}</Text>
+                    </View>
+                  ) : null}
+                  {!isNewContact && (
+                    <View style={s.heroMetaItem}>
+                      <Ionicons name="time-outline" size={11} color="#636366" />
+                      <Text style={s.heroMetaText}>{timeValue}{timeLabel} in system</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             </View>
 
-            {/* Time in system counter */}
+            {/* Compact stats line */}
             {!isNewContact && (
-              <View style={s.timeCounter} data-testid="time-in-system">
-                <View style={s.timeCounterInner}>
-                  <Text style={s.timeValue}>{timeValue}</Text>
-                  <Text style={s.timeLabel}>{timeLabel}</Text>
+              <View style={s.heroStatsLine} data-testid="contact-stats-row">
+                <View style={s.heroStatChip}>
+                  <Text style={s.heroStatVal}>{stats.total_touchpoints}</Text>
+                  <Text style={s.heroStatLbl}>touches</Text>
                 </View>
-                <Text style={s.timeSubLabel}>in system</Text>
+                <Text style={s.heroStatDot}>·</Text>
+                <View style={s.heroStatChip}>
+                  <Text style={s.heroStatVal}>{stats.messages_sent}</Text>
+                  <Text style={s.heroStatLbl}>msgs</Text>
+                </View>
+                <Text style={s.heroStatDot}>·</Text>
+                <View style={s.heroStatChip}>
+                  <Text style={s.heroStatVal}>{stats.campaigns}</Text>
+                  <Text style={s.heroStatLbl}>campaigns</Text>
+                </View>
+                <Text style={s.heroStatDot}>·</Text>
+                <View style={s.heroStatChip}>
+                  <Text style={s.heroStatVal}>{contact.referral_count}</Text>
+                  <Text style={s.heroStatLbl}>referrals</Text>
+                </View>
               </View>
             )}
           </View>
@@ -1151,49 +1186,7 @@ export default function ContactDetailScreen() {
             </>
           )}
 
-          {/* ===== QUICK STATS BAR ===== */}
-          {!isNewContact && (
-            <View style={s.statsRow} data-testid="contact-stats-row">
-              <View style={s.statItem}>
-                <Text style={s.statValue}>{stats.total_touchpoints}</Text>
-                <Text style={s.statLabel}>Touches</Text>
-              </View>
-              <View style={s.statDivider} />
-              <View style={s.statItem}>
-                <Text style={s.statValue}>{stats.messages_sent}</Text>
-                <Text style={s.statLabel}>Messages</Text>
-              </View>
-              <View style={s.statDivider} />
-              <View style={s.statItem}>
-                <Text style={s.statValue}>{stats.campaigns}</Text>
-                <Text style={s.statLabel}>Campaigns</Text>
-              </View>
-              <View style={s.statDivider} />
-              <View style={s.statItem}>
-                <Text style={s.statValue}>{contact.referral_count}</Text>
-                <Text style={s.statLabel}>Referrals</Text>
-              </View>
-            </View>
-          )}
-
-          {/* ===== QUICK ACTIONS ===== */}
-          {!isNewContact && (
-            <View style={s.quickActions} data-testid="quick-actions">
-              {QUICK_ACTIONS.map(a => (
-                <TouchableOpacity
-                  key={a.key}
-                  style={s.quickActionBtn}
-                  onPress={() => handleQuickAction(a.key)}
-                  data-testid={`quick-action-${a.key}`}
-                >
-                  <View style={[s.quickActionIcon, { backgroundColor: `${a.color}20` }]}>
-                    <Ionicons name={a.icon as any} size={20} color={a.color} />
-                  </View>
-                  <Text style={s.quickActionLabel}>{a.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {/* Quick actions removed — now in sticky bar at bottom */}
 
           {/* ===== RELATIONSHIP INTEL ===== */}
           {!isNewContact && (
@@ -1252,34 +1245,7 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
-          {/* ===== TAGS (view mode only — edit mode renders at top) ===== */}
-          {!isEditing && contact.tags.length > 0 && (
-            <View style={s.section}>
-              <Text style={s.sectionHeader}>Tags</Text>
-              <View style={s.tagsWrap}>
-                {contact.tags.map((tag, i) => {
-                  const info = availableTags.find(t => t.name === tag);
-                  return (
-                    <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
-                      {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || '#8E8E93'} />}
-                      <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
-                      {isEditing && (
-                        <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={15} color="#8E8E93" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  );
-                })}
-                {isEditing && (
-                  <TouchableOpacity style={s.addTagChip} onPress={() => { loadTags(); setShowTagPicker(true); }} data-testid="add-tag-button">
-                    <Ionicons name="add" size={16} color="#007AFF" />
-                    <Text style={s.addTagChipText}>Add</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
+          {/* Tags now shown inline in hero — edit-mode tags remain in edit form */}
 
 
           {/* ===== VOICE NOTES ===== */}
@@ -1792,6 +1758,39 @@ export default function ContactDetailScreen() {
 
           <View style={{ height: 50 }} />
         </ScrollView>
+
+        {/* ===== STICKY ACTION BAR ===== */}
+        {!isNewContact && !isEditing && (
+          <View style={s.stickyBar} data-testid="sticky-action-bar">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.stickyBarInner}>
+              {QUICK_ACTIONS.map(a => (
+                <TouchableOpacity
+                  key={a.key}
+                  style={s.stickyBtn}
+                  onPress={() => handleQuickAction(a.key)}
+                  activeOpacity={0.7}
+                  data-testid={`sticky-action-${a.key}`}
+                >
+                  <View style={[s.stickyBtnIcon, { backgroundColor: `${a.color}20` }]}>
+                    <Ionicons name={a.icon as any} size={18} color={a.color} />
+                  </View>
+                  <Text style={s.stickyBtnLabel} numberOfLines={1}>{a.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={s.stickyBtn}
+                onPress={() => setShowLogReply(true)}
+                activeOpacity={0.7}
+                data-testid="sticky-action-log-reply"
+              >
+                <View style={[s.stickyBtnIcon, { backgroundColor: '#30D15820' }]}>
+                  <Ionicons name="chatbubble-ellipses" size={18} color="#30D158" />
+                </View>
+                <Text style={s.stickyBtnLabel}>Log Reply</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* ===== MODALS ===== */}
@@ -2095,67 +2094,78 @@ const s = StyleSheet.create({
   headerAction: { fontSize: 17, fontWeight: '600', color: '#C9A962' },
   scroll: { paddingBottom: 32 },
 
-  // Hero
-  heroSection: { alignItems: 'center', paddingTop: 24, paddingBottom: 20, paddingHorizontal: 16 },
-  heroAvatarContainer: { position: 'relative', marginBottom: 14 },
-  heroAvatar: { width: 96, height: 96, borderRadius: 22, borderWidth: 3, borderColor: '#C9A962', resizeMode: 'cover' as const },
-  heroAvatarPlaceholder: {
-    width: 96, height: 96, borderRadius: 22,
-    backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: '#2C2C2E',
+  // Hero section — compact left-aligned
+  heroSection: {
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
   },
-  heroInitials: { fontSize: 32, fontWeight: '700', color: '#C9A962' },
+  heroRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 14,
+  },
+  heroAvatarContainer: { position: 'relative' },
+  heroAvatar: { width: 68, height: 68, borderRadius: 18, borderWidth: 2, borderColor: '#C9A962', resizeMode: 'cover' as const },
+  heroAvatarPlaceholder: {
+    width: 68, height: 68, borderRadius: 18,
+    backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#2C2C2E',
+  },
+  heroInitials: { fontSize: 24, fontWeight: '700', color: '#C9A962' },
   heroCameraBadge: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 30, height: 30, borderRadius: 15,
+    position: 'absolute', bottom: -2, right: -2,
+    width: 24, height: 24, borderRadius: 12,
     backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: '#000',
   },
   touchpointBadge: {
     position: 'absolute', top: -4, right: -4,
-    backgroundColor: '#C9A962', borderRadius: 12,
-    minWidth: 24, height: 24, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 6, borderWidth: 2, borderColor: '#000',
+    backgroundColor: '#C9A962', borderRadius: 10,
+    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 5, borderWidth: 2, borderColor: '#000',
   },
-  touchpointBadgeText: { fontSize: 11, fontWeight: '800', color: '#000' },
-  heroName: { fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 4 },
-  heroVehicle: { fontSize: 14, color: '#C9A962', fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 },
-  heroChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 },
-  heroChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#1C1C1E', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12,
+  touchpointBadgeText: { fontSize: 10, fontWeight: '800', color: '#000' },
+  heroInfo: { flex: 1, paddingTop: 2 },
+  heroName: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 4 },
+  heroTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
+  heroTag: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingVertical: 2, paddingHorizontal: 7,
+    borderRadius: 10, borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: '#1C1C1E',
   },
-  heroChipText: { fontSize: 13, color: '#8E8E93' },
+  heroTagText: { fontSize: 10, fontWeight: '600', color: '#8E8E93' },
+  heroTagMore: { fontSize: 10, fontWeight: '600', color: '#636366', alignSelf: 'center' },
+  heroHighlight: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4,
+  },
+  heroHighlightText: { fontSize: 13, color: '#C9A962', fontWeight: '600' },
+  heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  heroMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  heroMetaText: { fontSize: 11, color: '#636366' },
+  // Compact stats line
+  heroStatsLine: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E',
+    gap: 4,
+  },
+  heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
+  heroStatVal: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  heroStatLbl: { fontSize: 11, color: '#636366' },
+  heroStatDot: { fontSize: 11, color: '#3A3A3C', marginHorizontal: 2 },
 
-  // Time counter
-  timeCounter: { alignItems: 'center', marginTop: 4 },
-  timeCounterInner: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  timeValue: { fontSize: 28, fontWeight: '800', color: '#C9A962' },
-  timeLabel: { fontSize: 14, fontWeight: '600', color: '#8E8E93' },
-  timeSubLabel: { fontSize: 11, color: '#636366', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
-
-  // Stats row
-  statsRow: {
-    flexDirection: 'row', marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16,
-    alignItems: 'center',
+  // Sticky action bar
+  stickyBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: '#0D0D0D', borderTopWidth: 1, borderTopColor: '#1C1C1E',
+    paddingVertical: 8, paddingBottom: 12,
   },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 2 },
-  statLabel: { fontSize: 11, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statDivider: { width: 1, height: 28, backgroundColor: '#2C2C2E' },
-
-  // Quick actions
-  quickActions: {
-    flexDirection: 'row', marginHorizontal: 16, marginBottom: 16,
-    justifyContent: 'space-between',
+  stickyBarInner: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12,
   },
-  quickActionBtn: { alignItems: 'center', gap: 6, flex: 1 },
-  quickActionIcon: {
-    width: 44, height: 44, borderRadius: 22,
+  stickyBtn: { alignItems: 'center', gap: 4, paddingHorizontal: 8, minWidth: 50 },
+  stickyBtnIcon: {
+    width: 38, height: 38, borderRadius: 19,
     alignItems: 'center', justifyContent: 'center',
   },
-  quickActionLabel: { fontSize: 11, color: '#8E8E93', fontWeight: '500' },
+  stickyBtnLabel: { fontSize: 9, color: '#8E8E93', fontWeight: '600', textAlign: 'center' },
 
   // Section
   section: { marginHorizontal: 16, marginBottom: 16 },
