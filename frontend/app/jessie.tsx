@@ -19,6 +19,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 
 
@@ -36,6 +37,7 @@ const IS_WEB = Platform.OS === 'web';
 export default function JessiScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const colors = useThemeStore(s => s.colors);
   const [textInput, setTextInput] = useState('');
   
   const [state, setState] = useState<ConversationState>('idle');
@@ -554,18 +556,18 @@ export default function JessiScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton} data-testid="jessi-back-btn">
             <Ionicons name="chevron-back" size={28} color="#FFF" />
           </TouchableOpacity>
           
-          <Text style={styles.headerTitle}>Jessi</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Jessi</Text>
           
           {state === 'listening' ? (
             <TouchableOpacity onPress={cancelListening} style={styles.cancelButton}>
@@ -588,12 +590,12 @@ export default function JessiScreen() {
               {transcript ? (
                 <Text style={styles.transcriptText}>"{transcript}"</Text>
               ) : null}
-              <Text style={styles.responseText}>{response}</Text>
+              <Text style={[styles.responseText, { color: colors.text }]}>{response}</Text>
             </ScrollView>
           ) : (
             <View style={styles.introContainer}>
-              <Text style={styles.introTitle}>Hi, I'm Jessi!</Text>
-              <Text style={styles.introText}>
+              <Text style={[styles.introTitle, { color: colors.text }]}>Hi, I'm Jessi!</Text>
+              <Text style={[styles.introText, { color: colors.textSecondary }]}>
                 Your voice assistant for iMOs.{'\n'}
                 Tap to talk or type below.
               </Text>
@@ -686,9 +688,9 @@ export default function JessiScreen() {
           </View>
           
           {/* Text Input */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: colors.card, color: colors.text }]}
               placeholder="Or type your question..."
               placeholderTextColor="#6E6E73"
               value={textInput}
@@ -717,7 +719,6 @@ export default function JessiScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -726,7 +727,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
   },
   backButton: {
     padding: 4,
@@ -735,7 +735,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
   },
   placeholder: {
     width: 60,
@@ -764,12 +763,10 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFF',
     marginBottom: 12,
   },
   introText: {
     fontSize: 17,
-    color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 26,
   },
@@ -798,7 +795,6 @@ const styles = StyleSheet.create({
   },
   responseText: {
     fontSize: 17,
-    color: '#FFF',
     textAlign: 'left',
     lineHeight: 26,
   },
@@ -861,24 +857,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#1C1C1E',
-    backgroundColor: '#000',
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#FFF',
     marginRight: 10,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
     justifyContent: 'center',
     alignItems: 'center',
   },

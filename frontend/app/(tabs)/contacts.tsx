@@ -86,13 +86,13 @@ export default function ContactsScreen() {
   // Show restricted access screen for pending users
   if (isPending) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
         <View style={styles.restrictedContainer}>
           <View style={styles.restrictedIcon}>
             <Ionicons name="lock-closed" size={48} color="#FF9500" />
           </View>
-          <Text style={styles.restrictedTitle}>Access Pending</Text>
-          <Text style={styles.restrictedText}>
+          <Text style={[styles.restrictedTitle, { color: colors.text }]}>Access Pending</Text>
+          <Text style={[styles.restrictedText, { color: colors.textSecondary }]}>
             Your account is being reviewed by an admin. You'll have full access to contacts once your account is configured.
           </Text>
           <TouchableOpacity 
@@ -294,7 +294,7 @@ export default function ContactsScreen() {
   };
 
   const keyExtractor = useCallback((item: any) => item._id || item.id, []);
-  const ListSeparator = useCallback(() => <View style={styles.separator} />, []);
+  const ListSeparator = useCallback(() => <View style={[styles.separator, { backgroundColor: colors.border }]} />, [colors]);
   
   // Pre-build tag lookup map for O(1) access
   const tagMap = useMemo(() => {
@@ -516,6 +516,7 @@ export default function ContactsScreen() {
             <TouchableOpacity
               style={[
                 styles.tagFilterChip,
+                { backgroundColor: colors.card },
                 !selectedTag && styles.tagFilterChipActive,
               ]}
               onPress={() => handleTagFilter(null)}
@@ -530,6 +531,7 @@ export default function ContactsScreen() {
                 key={tag._id}
                 style={[
                   styles.tagFilterChip,
+                  { backgroundColor: colors.card },
                   selectedTag === tag.name && styles.tagFilterChipActive,
                   selectedTag === tag.name && { backgroundColor: tag.color },
                 ]}
@@ -587,8 +589,8 @@ export default function ContactsScreen() {
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={64} color="#2C2C2E" />
-              <Text style={styles.emptyText}>No contacts yet</Text>
-              <Text style={styles.emptySubtext}>Tap + to add or import contacts</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>No contacts yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Tap + to add or import contacts</Text>
               <TouchableOpacity 
                 style={styles.importButton}
                 onPress={() => router.push('/contacts/import')}
@@ -617,14 +619,14 @@ export default function ContactsScreen() {
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.addContactModalSubtitle}>
+            <Text style={[styles.addContactModalSubtitle, { color: colors.textSecondary }]}>
               Fill in their details while you're with them
             </Text>
             
             <View style={{ gap: 10 }}>
               <View style={styles.addContactNameRow}>
-                <View style={[styles.addContactInputContainer, { flex: 1 }]}>
-                  <Ionicons name="person-outline" size={18} color="#8E8E93" />
+                <View style={[styles.addContactInputContainer, { flex: 1, backgroundColor: colors.surface || colors.card }]}>
+                  <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
                   <TextInput
                     style={styles.addContactInput}
                     placeholder="First name"
@@ -714,7 +716,6 @@ export default function ContactsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -726,14 +727,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#1C1C1E',
     gap: 12,
   },
   selectHeaderTitle: {
     flex: 1,
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
   },
   checkbox: {
     width: 24,
@@ -760,7 +759,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 34,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -778,7 +776,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 17,
-    color: '#FFF',
   },
   listContent: {
     paddingBottom: 16,
@@ -815,12 +812,10 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
     marginBottom: 2,
   },
   contactPhone: {
     fontSize: 14,
-    color: '#8E8E93',
     marginBottom: 4,
     textDecorationLine: 'none',
   },
@@ -830,7 +825,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tag: {
-    backgroundColor: '#1C1C1E',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -849,7 +843,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#2C2C2E',
     marginLeft: 76,
   },
   loadingContainer: {
@@ -866,13 +859,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#8E8E93',
     textAlign: 'center',
   },
   importButton: {
@@ -902,7 +893,6 @@ const styles = StyleSheet.create({
   tagFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -920,9 +910,7 @@ const styles = StyleSheet.create({
   },
   tagFilterCount: {
     fontSize: 11,
-    color: '#6E6E73',
     marginLeft: 4,
-    backgroundColor: '#2C2C2E',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 8,
@@ -951,12 +939,10 @@ const styles = StyleSheet.create({
   restrictedTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
     marginBottom: 12,
   },
   restrictedText: {
     fontSize: 16,
-    color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -985,7 +971,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   addContactModalContent: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     width: '100%',
@@ -1000,17 +985,14 @@ const styles = StyleSheet.create({
   addContactModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
   },
   addContactModalSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
     marginBottom: 20,
   },
   addContactInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -1023,7 +1005,6 @@ const styles = StyleSheet.create({
   addContactInput: {
     flex: 1,
     fontSize: 17,
-    color: '#FFF',
   },
   addContactHint: {
     fontSize: 12,
@@ -1042,7 +1023,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
   },
   addContactCancelText: {
     fontSize: 16,

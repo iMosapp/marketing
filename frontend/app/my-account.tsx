@@ -1138,7 +1138,7 @@ export default function MyAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: undefined,
   },
   header: {
     flexDirection: 'row',
@@ -1154,7 +1154,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
   },
   scrollContent: {
     paddingBottom: 32,
@@ -1189,7 +1189,7 @@ const styles = StyleSheet.create({
   photoInitials: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#FFF',
+    color: undefined,
   },
   cameraButton: {
     position: 'absolute',
@@ -1207,12 +1207,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: undefined,
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: undefined,
     marginBottom: 8,
   },
   roleBadge: {
@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 20,
   },
   photoActionText: {
@@ -1256,7 +1256,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: undefined,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -1267,7 +1267,7 @@ const styles = StyleSheet.create({
   },
   tileBtnThird: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1283,7 +1283,7 @@ const styles = StyleSheet.create({
   tileLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: undefined,
     textAlign: 'center',
   },
   shareReviewBtn: {
@@ -1304,7 +1304,7 @@ const styles = StyleSheet.create({
     color: '#FFD60A',
   },
   menuList: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -1313,7 +1313,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: undefined,
   },
   menuIcon: {
     width: 36,
@@ -1329,15 +1329,15 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
     marginBottom: 2,
   },
   menuSubtitle: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: undefined,
   },
   accountInfo: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 16,
   },
@@ -1346,16 +1346,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: undefined,
   },
   infoLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: undefined,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
   },
   // Edit Quick Actions panel
   editPanel: {
@@ -1423,7 +1423,7 @@ const styles = StyleSheet.create({
 const actStyles = StyleSheet.create({
   statCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -1439,12 +1439,12 @@ const actStyles = StyleSheet.create({
   statNum: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#FFF',
+    color: undefined,
   },
   statLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: undefined,
     textAlign: 'center',
   },
 });
@@ -1453,7 +1453,7 @@ const actStyles = StyleSheet.create({
 const shareStyles = StyleSheet.create({
   modal: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: undefined,
     paddingTop: 8,
   },
   header: {
@@ -1468,24 +1468,24 @@ const shareStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
   },
   linkBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     marginHorizontal: 16,
     marginTop: 24,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: undefined,
   },
   linkText: {
     flex: 1,
     fontSize: 14,
-    color: '#FFF',
+    color: undefined,
     fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
   actions: {
@@ -1508,7 +1508,7 @@ const shareStyles = StyleSheet.create({
   actionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: undefined,
   },
   hint: {
     fontSize: 13,

@@ -163,7 +163,16 @@ export default function InboxScreen() {
   const [toggleStyle, setToggleStyle] = useState<string>('pill');
   
   // Get current colors based on mode  - in light theme, always use light colors
-  const colors = themeMode === 'light' ? COLORS_LIGHT : (messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK);
+  const colors = themeMode === 'light' ? {
+    ...COLORS_LIGHT,
+    background: themeColors.bg,
+    surface: themeColors.card,
+    elevated: themeColors.surface || themeColors.card,
+    textPrimary: themeColors.text,
+    textSecondary: themeColors.textSecondary,
+    textTertiary: themeColors.textTertiary,
+    border: themeColors.border,
+  } : COLORS_DARK;
   
   // Bulk selection mode state
   const [selectionMode, setSelectionMode] = useState(false);

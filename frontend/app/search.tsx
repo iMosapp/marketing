@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import { searchAPI } from '../services/api';
 
 interface SearchResult {
@@ -40,7 +41,7 @@ interface SearchResults {
 export default function SearchScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [query, setQuery] = useState('');
+  const colors = useThemeStore(s => s.colors);  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -289,7 +290,7 @@ export default function SearchScreen() {
   const allResults = getAllResults();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} data-testid="search-back-btn">
@@ -357,7 +358,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: undefined,
   },
   header: {
     flexDirection: 'row',
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 40,
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: undefined,
   },
   loadingContainer: {
     flex: 1,
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: undefined,
   },
   listContent: {
     padding: 16,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -417,11 +418,11 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: undefined,
     fontWeight: '500',
   },
   filterChipTextActive: {
-    color: '#FFF',
+    color: undefined,
   },
   filterCount: {
     fontSize: 11,
@@ -432,13 +433,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   filterCountActive: {
-    color: '#FFF',
+    color: undefined,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
     flex: 1,
   },
   aiTag: {
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
   },
   resultSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: undefined,
     marginTop: 2,
   },
   matchField: {
@@ -514,7 +515,7 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: undefined,
   },
   resultType: {
     paddingHorizontal: 8,
@@ -533,12 +534,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: undefined,
     marginTop: 4,
   },
   footer: {
@@ -561,7 +562,7 @@ const styles = StyleSheet.create({
   recentTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: undefined,
   },
   clearButton: {
     fontSize: 14,
@@ -575,7 +576,7 @@ const styles = StyleSheet.create({
   },
   recentText: {
     fontSize: 16,
-    color: '#FFF',
+    color: undefined,
   },
   suggestionsSection: {
     marginBottom: 24,
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: undefined,
     marginBottom: 12,
   },
   quickActions: {
@@ -604,7 +605,7 @@ const styles = StyleSheet.create({
   },
   quickText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: undefined,
     textAlign: 'center',
   },
 });

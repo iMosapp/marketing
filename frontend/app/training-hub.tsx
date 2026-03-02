@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 
@@ -375,6 +376,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
 export default function TrainingHubScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const colors = useThemeStore(s => s.colors);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -478,7 +480,7 @@ export default function TrainingHubScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="training-hub-back">
@@ -676,7 +678,7 @@ export default function TrainingHubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: undefined,
   },
   header: {
     flexDirection: 'row',
@@ -684,7 +686,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: undefined,
   },
   backButton: {
     padding: 4,
@@ -692,7 +694,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
   },
   content: {
     flex: 1,
@@ -702,7 +704,7 @@ const styles = StyleSheet.create({
   },
   // Voice Help
   voiceHelpSection: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
@@ -717,11 +719,11 @@ const styles = StyleSheet.create({
   voiceHelpTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: undefined,
   },
   voiceHelpSubtitle: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: undefined,
     marginTop: 2,
   },
   askContainer: {
@@ -731,10 +733,10 @@ const styles = StyleSheet.create({
   },
   askInput: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 14,
-    color: '#FFF',
+    color: undefined,
     fontSize: 15,
     minHeight: 48,
     maxHeight: 100,
@@ -767,7 +769,7 @@ const styles = StyleSheet.create({
   },
   aiResponseContainer: {
     marginTop: 16,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 16,
   },
@@ -784,7 +786,7 @@ const styles = StyleSheet.create({
   },
   aiResponseText: {
     fontSize: 15,
-    color: '#FFF',
+    color: undefined,
     lineHeight: 22,
   },
   clearButton: {
@@ -795,13 +797,13 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: undefined,
   },
   // Search
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -811,7 +813,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: undefined,
   },
   // Category Filter
   categoryFilterRow: {
@@ -822,7 +824,7 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 20,
   },
   categoryChipActive: {
@@ -831,10 +833,10 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: undefined,
   },
   categoryChipTextActive: {
-    color: '#FFF',
+    color: undefined,
   },
   // Category Section
   categorySection: {
@@ -843,7 +845,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: undefined,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -852,7 +854,7 @@ const styles = StyleSheet.create({
   topicCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
@@ -876,12 +878,12 @@ const styles = StyleSheet.create({
   topicTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
     marginBottom: 4,
   },
   topicDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: undefined,
   },
   topicMeta: {
     alignItems: 'flex-end',
@@ -901,7 +903,7 @@ const styles = StyleSheet.create({
   },
   // Expanded Panel
   expandedPanel: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     paddingHorizontal: 16,
@@ -923,13 +925,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginTop: 16,
-    backgroundColor: '#000',
+    backgroundColor: undefined,
   },
   videoPlaceholder: {
     width: '100%',
     aspectRatio: 16 / 9,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: undefined,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
@@ -945,12 +947,12 @@ const styles = StyleSheet.create({
   },
   videoPlaceholderText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: undefined,
   },
   // Steps
   stepsContainer: {
     marginTop: 16,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 16,
   },

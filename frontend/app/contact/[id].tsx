@@ -1931,14 +1931,14 @@ export default function ContactDetailScreen() {
                         style={[s.feedItem, isInbound && s.feedItemInbound]}
                         data-testid={`feed-event-${evtKey}`}
                       >
-                        {i < groupEvents.length - 1 && <View style={s.feedLine} />}
+                        {i < groupEvents.length - 1 && <View style={[s.feedLine, { backgroundColor: colors.border }]} />}
                         <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
                           <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
                         </View>
                         <View style={s.feedContent}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                              <Text style={s.feedTitle}>{getEventTitle(evt)}</Text>
+                              <Text style={[s.feedTitle, { color: colors.text }]}>{getEventTitle(evt)}</Text>
                               {isInbound && (
                                 <View style={s.inboundBadge}>
                                   <Text style={s.inboundBadgeText}>INBOUND</Text>
@@ -2265,9 +2265,9 @@ export default function ContactDetailScreen() {
             ) : null}
 
             {/* Composer box */}
-            <View style={s.composerBox}>
+            <View style={[s.composerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
-                style={s.composerInput}
+                style={[s.composerInput, { color: colors.text }]}
                 placeholder="Type your message..."
                 placeholderTextColor="#636366"
                 value={composerMessage}
@@ -2276,7 +2276,7 @@ export default function ContactDetailScreen() {
                 maxLength={1000}
                 data-testid="composer-input"
               />
-              <View style={s.composerToolbar}>
+              <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
                 <View style={s.composerTools}>
                   {/* Send Something (consolidated) */}
                   <TouchableOpacity
@@ -2838,17 +2838,17 @@ export default function ContactDetailScreen() {
 
 // ===== STYLES =====
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 12, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
+    borderBottomWidth: 1,
   },
   headerBtn: { padding: 4, minWidth: 50 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF', flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 17, fontWeight: '600', flex: 1, textAlign: 'center' },
   headerAction: { fontSize: 17, fontWeight: '600', color: '#C9A962' },
   scroll: { paddingBottom: 32 },
 
@@ -2863,8 +2863,8 @@ const s = StyleSheet.create({
   heroAvatar: { width: 68, height: 68, borderRadius: 18, borderWidth: 2, borderColor: '#C9A962', resizeMode: 'cover' as const },
   heroAvatarPlaceholder: {
     width: 68, height: 68, borderRadius: 18,
-    backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#2C2C2E',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2,
   },
   heroInitials: { fontSize: 24, fontWeight: '700', color: '#C9A962' },
   heroCameraBadge: {
@@ -2881,7 +2881,7 @@ const s = StyleSheet.create({
   },
   touchpointBadgeText: { fontSize: 10, fontWeight: '800', color: '#000' },
   heroInfo: { flex: 1, paddingTop: 2 },
-  heroName: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 4 },
+  heroName: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
   heroTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   heroTag: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -2911,7 +2911,7 @@ const s = StyleSheet.create({
     gap: 4,
   },
   heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
-  heroStatVal: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  heroStatVal: { fontSize: 14, fontWeight: '700' },
   heroStatLbl: { fontSize: 11, color: '#636366' },
   heroStatDot: { fontSize: 11, color: '#3A3A3C', marginHorizontal: 2 },
 
@@ -2966,11 +2966,11 @@ const s = StyleSheet.create({
     fontSize: 12, fontWeight: '600', maxWidth: 120,
   },
   heroCampaignStep: {
-    fontSize: 10, fontWeight: '700', color: '#636366', backgroundColor: '#1C1C1E',
+    fontSize: 10, fontWeight: '700',
     paddingHorizontal: 4, paddingVertical: 1, borderRadius: 6,
   },
   heroCampaignDate: {
-    fontSize: 10, fontWeight: '700', color: '#8E8E93', backgroundColor: '#1C1C1E',
+    fontSize: 10, fontWeight: '700',
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
   },
 
@@ -3002,31 +3002,30 @@ const s = StyleSheet.create({
   composerModeBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+    borderWidth: 1,
   },
   composerModeBtnActive: {
-    borderColor: '#3A3A3C', backgroundColor: '#1A1A1A',
   },
   composerModeBtnText: {
-    fontSize: 12, fontWeight: '600', color: '#636366',
+    fontSize: 12, fontWeight: '600',
   },
   composerCallBtn: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: '#32ADE615',
     alignItems: 'center', justifyContent: 'center',
   },
   composerBox: {
-    backgroundColor: '#1C1C1E', borderRadius: 16,
-    borderWidth: 1, borderColor: '#2C2C2E', overflow: 'hidden',
+    borderRadius: 16,
+    borderWidth: 1, overflow: 'hidden',
   },
   composerInput: {
-    fontSize: 16, color: '#FFF',
+    fontSize: 16,
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
     minHeight: 44, maxHeight: 100,
   },
   composerToolbar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 8, paddingVertical: 6,
-    borderTopWidth: 1, borderTopColor: '#2C2C2E', backgroundColor: '#151515',
+    borderTopWidth: 1,
   },
   composerTools: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
@@ -3081,18 +3080,18 @@ const s = StyleSheet.create({
     alignSelf: 'center', marginBottom: 16,
   },
   sendPickerTitle: {
-    fontSize: 18, fontWeight: '700', color: '#FFF', marginBottom: 16,
+    fontSize: 18, fontWeight: '700', marginBottom: 16,
   },
   sendPickerItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#2C2C2E',
+    paddingVertical: 14, borderBottomWidth: 1,
   },
   sendPickerIcon: {
     width: 42, height: 42, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
   },
   sendPickerLabel: {
-    fontSize: 16, fontWeight: '600', color: '#FFF',
+    fontSize: 16, fontWeight: '600',
   },
   sendPickerSub: {
     fontSize: 12, color: '#8E8E93', marginTop: 2,
@@ -3103,20 +3102,20 @@ const s = StyleSheet.create({
     paddingVertical: 10, marginTop: 4,
   },
   feedDateLine: {
-    flex: 1, height: 1, backgroundColor: '#2C2C2E',
+    flex: 1, height: 1,
   },
   feedDateText: {
-    fontSize: 11, fontWeight: '700', color: '#8E8E93',
+    fontSize: 11, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.8,
   },
   feedDateCount: {
-    fontSize: 10, fontWeight: '700', color: '#636366',
-    backgroundColor: '#1C1C1E', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+    fontSize: 10, fontWeight: '700',
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
   },
 
   // Action progress tracker
   progressSection: {
-    marginHorizontal: 16, marginBottom: 12, backgroundColor: '#1C1C1E',
+    marginHorizontal: 16, marginBottom: 12,
     borderRadius: 14, padding: 12,
   },
   progressHeader: {
@@ -3148,11 +3147,11 @@ const s = StyleSheet.create({
   tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#1C1C1E', borderRadius: 16,
+    borderRadius: 16,
     paddingVertical: 6, paddingHorizontal: 12,
     borderWidth: 1, borderColor: '#2C2C2E',
   },
-  tagPillText: { fontSize: 13, fontWeight: '500', color: '#FFF' },
+  tagPillText: { fontSize: 13, fontWeight: '500' },
   addTagChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#007AFF15', borderRadius: 16,
@@ -3175,7 +3174,7 @@ const s = StyleSheet.create({
   },
   feedLine: {
     position: 'absolute', left: 17, top: 42, bottom: -10,
-    width: 2, backgroundColor: '#1C1C1E',
+    width: 2,
   },
   feedIcon: {
     width: 36, height: 36, borderRadius: 18,
@@ -3183,15 +3182,15 @@ const s = StyleSheet.create({
     marginRight: 12,
   },
   feedContent: { flex: 1 },
-  feedTitle: { fontSize: 14, fontWeight: '600', color: '#FFF', marginBottom: 2 },
-  feedDesc: { fontSize: 13, color: '#8E8E93', marginBottom: 4 },
+  feedTitle: { fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  feedDesc: { fontSize: 13, marginBottom: 4 },
   feedExpandedPreview: { marginTop: 8, marginBottom: 4, gap: 6 },
   feedChannelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   feedChannelText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   feedSubject: { fontSize: 14, fontWeight: '600', color: '#E5E5EA' },
-  feedMessageBubble: { backgroundColor: '#1C1C1E', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#2C2C2E' },
+  feedMessageBubble: { borderRadius: 10, padding: 12, borderWidth: 1 },
   feedMessageBubbleInbound: { backgroundColor: '#30D15812', borderColor: '#30D15830' },
-  feedMessageText: { fontSize: 13, color: '#E5E5EA', lineHeight: 18 },
+  feedMessageText: { fontSize: 13, lineHeight: 18 },
   feedViewLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 4 },
   feedViewLinkText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
   feedTime: { fontSize: 12, color: '#636366' },
@@ -3215,9 +3214,9 @@ const s = StyleSheet.create({
   feedSearchRowCompact: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+    borderWidth: 1,
   },
-  feedSearchInputCompact: { flex: 1, fontSize: 13, color: '#F2F2F7', padding: 0 },
+  feedSearchInputCompact: { flex: 1, fontSize: 13, padding: 0 },
 
   // Log Reply  - Chat Bubble Style
   logReplyBubble: {
@@ -3268,19 +3267,19 @@ const s = StyleSheet.create({
   actionBadgeText: { fontSize: 11, fontWeight: '800', color: '#000' },
   suggestedCard: {
     flexDirection: 'row', alignItems: 'center', padding: 14,
-    backgroundColor: '#1C1C1E', borderRadius: 14, marginBottom: 8,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    borderRadius: 14, marginBottom: 8,
+    borderWidth: 1,
   },
   suggestedIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  suggestedTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginBottom: 2 },
-  suggestedDesc: { fontSize: 13, color: '#8E8E93' },
-  suggestedMsgPreview: { marginTop: 6, backgroundColor: '#0D0D0D', borderRadius: 8, padding: 8, borderWidth: 1, borderColor: '#2C2C2E' },
-  suggestedMsgText: { fontSize: 12, color: '#FFFFFFAA', fontStyle: 'italic', lineHeight: 16 },
+  suggestedTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  suggestedDesc: { fontSize: 13 },
+  suggestedMsgPreview: { marginTop: 6, borderRadius: 8, padding: 8, borderWidth: 1 },
+  suggestedMsgText: { fontSize: 12, fontStyle: 'italic', lineHeight: 16 },
   suggestedArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   showMoreBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     marginTop: 12, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+    borderWidth: 1,
   },
   showMoreText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
   // Photo viewer
@@ -3375,8 +3374,8 @@ const s = StyleSheet.create({
   },
   vnStopText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   vnCard: {
-    backgroundColor: '#1C1C1E', borderRadius: 12, padding: 12, marginBottom: 8,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    borderRadius: 12, padding: 12, marginBottom: 8,
+    borderWidth: 1,
   },
   vnCardHeader: { flexDirection: 'row', alignItems: 'center' },
   vnPlayBtn: {
@@ -3384,14 +3383,14 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   vnPlayBtnActive: { backgroundColor: '#34C759' },
-  vnCardDate: { fontSize: 13, fontWeight: '600', color: '#F2F2F7' },
+  vnCardDate: { fontSize: 13, fontWeight: '600' },
   vnCardDuration: { fontSize: 12, color: '#636366' },
   vnTranscript: { fontSize: 13, color: '#AEAEB2', lineHeight: 18, marginTop: 8 },
   // Relationship Intel
   intelBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#C9A96230',
+    borderWidth: 1, borderColor: '#C9A96230',
   },
   intelBtnLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   intelIcon: {

@@ -932,7 +932,7 @@ export default function MoreScreen() {
               ) : null}
               <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || ''}</Text>
               {user?.phone && (
-                <Text style={styles.profilePhone}>{user.phone}</Text>
+                <Text style={[styles.profilePhone, { color: colors.textSecondary }]}>{user.phone}</Text>
               )}
             </View>
             <Ionicons name="chevron-forward" size={18} color="#555" />
@@ -1441,12 +1441,10 @@ const styles = StyleSheet.create({
   },
   profileEmail: {
     fontSize: 12,
-    color: '#8E8E93',
     marginBottom: 1,
   },
   profilePhone: {
     fontSize: 12,
-    color: '#8E8E93',
   },
   // Section Wrapper
   sectionWrapper: {
@@ -1457,7 +1455,6 @@ const styles = StyleSheet.create({
   sectionHeaderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -1473,14 +1470,12 @@ const styles = StyleSheet.create({
   sectionTitleText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
     flex: 1,
   },
   // Indented child item card
   menuItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
     borderRadius: 10,
     padding: 12,
     marginBottom: 6,
@@ -1500,12 +1495,10 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
     marginBottom: 1,
   },
   menuSubtitle: {
     fontSize: 12,
-    color: '#8E8E93',
   },
   notificationBadge: {
     backgroundColor: '#FF3B30',
@@ -1607,7 +1600,6 @@ const styles = StyleSheet.create({
     width: '31%',
     flexGrow: 1,
     flexBasis: '30%',
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1699,24 +1691,20 @@ const shareStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
   },
   linkBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#1C1C1E',
     marginHorizontal: 16,
     marginTop: 24,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
   },
   linkText: {
     flex: 1,
     fontSize: 14,
-    color: '#FFF',
     fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
   actions: {

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useThemeStore } from '../store/themeStore';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -79,6 +80,7 @@ interface ChatMsg {
 
 export default function HelpPage() {
   const router = useRouter();
+  const colors = useThemeStore(s => s.colors);
   const [query, setQuery] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,23 +129,23 @@ export default function HelpPage() {
   }, [chatMessages]);
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="help-back-btn">
-          <Ionicons name="chevron-back" size={24} color="#F2F2F7" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Help Center</Text>
-        <TouchableOpacity onPress={() => { setShowAI(!showAI); if (!showAI && chatMessages.length === 0) setChatMessages([{ role: 'assistant', text: "Hi! I'm your iMOs assistant. Ask me anything about the app and I'll help you out." }]); }} style={s.aiToggle} data-testid="help-ai-toggle">
-          <Ionicons name={showAI ? 'book-outline' : 'sparkles'} size={20} color={showAI ? '#F2F2F7' : '#C9A962'} />
+        <Text style={[s.headerTitle, { color: colors.text }]}>Help Center</Text>
+        <TouchableOpacity onPress={() => { setShowAI(!showAI); if (!showAI && chatMessages.length === 0) setChatMessages([{ role: 'assistant', text: "Hi! I'm your iMOs assistant. Ask me anything about the app and I'll help you out." }]); }} style={[s.aiToggle, { backgroundColor: colors.card }]} data-testid="help-ai-toggle">
+          <Ionicons name={showAI ? 'book-outline' : 'sparkles'} size={20} color={showAI ? colors.text : '#C9A962'} />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
-      <View style={s.searchWrap}>
-        <Ionicons name="search" size={18} color="#636366" />
+      <View style={[s.searchWrap, { backgroundColor: colors.card }]}>
+        <Ionicons name="search" size={18} color={colors.textTertiary} />
         <TextInput
-          style={s.searchInput}
+          style={[s.searchInput, { color: colors.text }]}
           placeholder={showAI ? "Ask a question..." : "Search help articles..."}
           placeholderTextColor="#636366"
           value={query}
@@ -168,17 +170,17 @@ export default function HelpPage() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView ref={chatRef} style={s.chatArea} contentContainerStyle={s.chatContent}>
             {chatMessages.map((msg, i) => (
-              <View key={i} style={[s.chatBubble, msg.role === 'user' ? s.chatUser : s.chatBot]}>
+              <View key={i} style={[s.chatBubble, msg.role === 'user' ? s.chatUser : [s.chatBot, { backgroundColor: colors.card }]]}>
                 {msg.role === 'assistant' && (
                   <View style={s.botIcon}>
                     <Ionicons name="sparkles" size={12} color="#C9A962" />
                   </View>
                 )}
-                <Text style={[s.chatText, msg.role === 'user' && s.chatTextUser]}>{msg.text}</Text>
+                <Text style={[s.chatText, { color: colors.text }, msg.role === 'user' && s.chatTextUser]}>{msg.text}</Text>
               </View>
             ))}
             {loading && (
-              <View style={[s.chatBubble, s.chatBot]}>
+              <View style={[s.chatBubble, s.chatBot, { backgroundColor: colors.card }]}>
                 <View style={s.botIcon}><Ionicons name="sparkles" size={12} color="#C9A962" /></View>
                 <ActivityIndicator size="small" color="#C9A962" />
               </View>
@@ -200,23 +202,23 @@ export default function HelpPage() {
           {filtered.map(article => {
             const isOpen = expandedId === article.id;
             return (
-              <View key={article.id} style={s.card} data-testid={`help-article-${article.id}`}>
+              <View key={article.id} style={[s.card, { backgroundColor: colors.card }]} data-testid={`help-article-${article.id}`}>
                 <TouchableOpacity style={s.cardHeader} onPress={() => setExpandedId(isOpen ? null : article.id)} activeOpacity={0.7}>
                   <View style={s.iconWrap}>
                     <Ionicons name={article.icon as any} size={20} color="#C9A962" />
                   </View>
                   <View style={s.titleCol}>
-                    <Text style={s.articleTitle}>{article.title}</Text>
+                    <Text style={[s.articleTitle, { color: colors.text }]}>{article.title}</Text>
                     <Text style={s.articleCategory}>{article.category}</Text>
                   </View>
-                  <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#636366" />
+                  <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {isOpen && (
                   <View style={s.stepsContainer}>
                     {article.steps.map((step, i) => (
                       <View key={i} style={s.stepRow}>
                         <View style={s.stepNum}><Text style={s.stepNumText}>{i + 1}</Text></View>
-                        <Text style={s.stepText}>{step}</Text>
+                        <Text style={[s.stepText, { color: colors.textSecondary }]}>{step}</Text>
                       </View>
                     ))}
                     {article.tip && (
@@ -243,38 +245,38 @@ export default function HelpPage() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
+  safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#F2F2F7', letterSpacing: 0.5 },
-  aiToggle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+  aiToggle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   // Search
-  searchWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#1C1C1E', borderRadius: 12, gap: 10 },
-  searchInput: { flex: 1, fontSize: 15, color: '#F2F2F7', padding: 0 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, gap: 10 },
+  searchInput: { flex: 1, fontSize: 15, padding: 0 },
   sendBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#C9A962', justifyContent: 'center', alignItems: 'center' },
   // Chat
   chatArea: { flex: 1 },
   chatContent: { padding: 16, paddingBottom: 40, gap: 12 },
   chatBubble: { maxWidth: '85%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   chatUser: { alignSelf: 'flex-end', backgroundColor: '#007AFF', borderBottomRightRadius: 4 },
-  chatBot: { alignSelf: 'flex-start', backgroundColor: '#1C1C1E', borderBottomLeftRadius: 4 },
+  chatBot: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
   botIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#C9A96220', justifyContent: 'center', alignItems: 'center', marginTop: 1 },
-  chatText: { flex: 1, fontSize: 14, color: '#F2F2F7', lineHeight: 20 },
+  chatText: { flex: 1, fontSize: 14, lineHeight: 20 },
   chatTextUser: { color: '#FFF' },
   // Articles
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
-  card: { backgroundColor: '#1C1C1E', borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
+  card: { borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 14, gap: 12 },
   iconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#C9A96215', justifyContent: 'center', alignItems: 'center' },
   titleCol: { flex: 1 },
-  articleTitle: { fontSize: 14, fontWeight: '700', color: '#F2F2F7' },
+  articleTitle: { fontSize: 14, fontWeight: '700' },
   articleCategory: { fontSize: 11, color: '#636366', marginTop: 2 },
   stepsContainer: { paddingHorizontal: 14, paddingBottom: 14, gap: 10 },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#C9A96230', justifyContent: 'center', alignItems: 'center', marginTop: 1 },
   stepNumText: { fontSize: 11, fontWeight: '800', color: '#C9A962' },
-  stepText: { flex: 1, fontSize: 13, color: '#D1D1D6', lineHeight: 20 },
+  stepText: { flex: 1, fontSize: 13, lineHeight: 20 },
   tipBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#FFD60A10', borderRadius: 10, padding: 10, marginTop: 4 },
   tipText: { flex: 1, fontSize: 12, color: '#FFD60A', lineHeight: 18 },
   goBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 6, paddingVertical: 8, borderRadius: 10, backgroundColor: '#007AFF15' },

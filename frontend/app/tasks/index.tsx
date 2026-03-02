@@ -16,12 +16,14 @@ import { useRouter } from 'expo-router';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 
 export default function TasksScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const colors = useThemeStore(s => s.colors);
   
   const [tasks, setTasks] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -418,7 +420,7 @@ export default function TasksScreen() {
   );
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -513,7 +515,7 @@ export default function TasksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: undefined,
   },
   header: {
     flexDirection: 'row',
@@ -521,7 +523,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: undefined,
   },
   backButton: {
     padding: 4,
@@ -529,7 +531,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: undefined,
   },
   addButton: {
     padding: 4,
@@ -541,7 +543,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: undefined,
     textTransform: 'uppercase',
   },
   filterContainer: {
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     alignItems: 'center',
   },
   filterButtonActive: {
@@ -580,10 +582,10 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: undefined,
   },
   filterTextActive: {
-    color: '#FFF',
+    color: undefined,
   },
   listContent: {
     padding: 16,
@@ -591,7 +593,7 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: undefined,
     borderRadius: 12,
     padding: 16,
     alignItems: 'flex-start',
@@ -630,11 +632,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
   },
   taskTitleCompleted: {
     textDecorationLine: 'line-through',
-    color: '#8E8E93',
+    color: undefined,
   },
   priorityDot: {
     width: 8,
@@ -643,7 +645,7 @@ const styles = StyleSheet.create({
   },
   taskDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: undefined,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -711,12 +713,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: undefined,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: undefined,
   },
 });

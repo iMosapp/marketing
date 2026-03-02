@@ -26,6 +26,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
@@ -121,9 +122,20 @@ export default function ThreadScreen() {
   const user = useAuthStore((state) => state.user);
   const flatListRef = useRef<FlatList>(null);
   
-  // Color mode state - ALWAYS dark mode now
+  // Color mode state - theme-aware
   const [messageMode, setMessageMode] = useState<'sms' | 'email'>('sms');
-  const colors = COLORS;
+  const themeColors = useThemeStore(s => s.colors);
+  const themeMode = useThemeStore(s => s.mode);
+  const colors = themeMode === 'light' ? {
+    background: themeColors.bg,
+    surface: themeColors.card,
+    elevated: themeColors.surface || themeColors.card,
+    accent: '#007AFF',
+    textPrimary: themeColors.text,
+    textSecondary: themeColors.textSecondary,
+    textTertiary: themeColors.textTertiary || '#636366',
+    border: themeColors.border,
+  } : COLORS;
   
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
