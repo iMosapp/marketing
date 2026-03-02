@@ -552,13 +552,6 @@ export default function MoreScreen() {
           color: '#AF52DE',
         },
         {
-          icon: 'gift-outline',
-          title: 'Congrats Cards',
-          subtitle: 'Thank you card style',
-          onPress: () => router.push('/settings/congrats-template'),
-          color: '#C9A962',
-        },
-        {
           icon: 'images',
           title: 'Manage Showcase',
           subtitle: 'Edit your happy customers page',
