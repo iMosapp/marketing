@@ -172,13 +172,19 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 
 ### Client Onboarding Mission Control (Mar 2, 2026)
 - Multi-client onboarding tracker at `/admin/client-onboarding`
-- **"New Client" button** at top creates a fresh checklist instance with client name, email, phone, industry, notes
-- Each client is a collapsible card showing progress bar, step count, and "Next:" indicator
-- 6-step checklist per client: Send Quote → Get Agreement Signed → Collect Payment → Configure Account → Add Team Members → Account Live
-- Steps: toggleable checkmarks, "Do It" / "Open" action buttons linking to existing pages
-- Archive functionality for completed or cancelled clients
-- Backend: `/api/setup-wizard/clients` — full CRUD (GET list, POST create, PUT update)
+- **"New Client" button** at top creates a fresh checklist instance
+- 6-step inline checklist: Send Quote → Get Agreement Signed → Collect Payment → Configure Account → Add Team Members → Go Live
+- Each step has: "What You Need" checklist, direct action links to tools, inline forms, "Save & Mark Complete"
+- Reseller-ready: a field rep can sign up a new business in 15-30 minutes without knowing the app
+- Backend: `/api/setup-wizard/clients` — full CRUD with `step_data` persistence
 - Progress persisted in `onboarding_clients` collection
+
+### In-App Call Screen & Activity Auto-Refresh (Mar 2, 2026)
+- New call screen at `/call-screen` — contact avatar, timer, "Tap to call" → native dialer, "End Call & Log"
+- Calls logged to both `calls` collection and `contact_events` (activity feed)
+- Phone taps on contact detail now route through in-app call screen
+- `useFocusEffect` on contact detail page auto-refreshes activity log on return from any action
+- Future-proof: same screen works with Twilio VoIP when activated
 
 
 ## Key Files
