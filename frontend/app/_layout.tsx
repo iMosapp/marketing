@@ -71,6 +71,7 @@ export default function RootLayout() {
             <Stack.Screen name="thread/[id]" />
             <Stack.Screen name="contact/[id]" />
             <Stack.Screen name="review/[storeSlug]" />
+            <Stack.Screen name="l/[username]" />
           </Stack>
         </ToastProvider>
       </SafeAreaProvider>
