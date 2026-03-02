@@ -98,6 +98,7 @@ const PAGE_CATALOG: Category[] = [
     icon: 'diamond-outline',
     color: '#C9A962',
     pages: [
+      { name: 'Marketing Landing Page', description: 'Video landing page with voiceover & app demo slideshow', path: '/landing.html', icon: 'videocam-outline', color: '#FF2D55', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'iMOs Home', description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Everyone' },
       { name: 'Schedule a Demo', description: 'Lead capture form', path: '/imos/demo', icon: 'calendar-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects' },
       { name: 'Why Use iMOs', description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
