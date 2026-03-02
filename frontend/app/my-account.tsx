@@ -1333,6 +1333,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
+  // Edit Quick Actions panel
+  editPanel: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  editGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  editItem: {
+    width: '23%',
+    flexGrow: 1,
+    flexBasis: '22%',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  editIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative' as const,
+  },
+  editBadge: {
+    position: 'absolute' as const,
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#000',
+  },
+  editLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center' as const,
+    paddingHorizontal: 2,
+  },
 });
 
 const actStyles = StyleSheet.create({
