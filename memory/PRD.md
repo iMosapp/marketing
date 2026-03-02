@@ -107,6 +107,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Phone matching edge case with heavily formatted numbers (LOW)
 - ~~Thread header contact name navigation regression~~ — **FIXED** (Feb 2026)
 - ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
+- ~~"-1 days ago" for future dates~~ — **FIXED** (Mar 2026): Activity tab and contact detail timestamps now show "Tomorrow"/"Upcoming" for future dates
 
 ## Upcoming Tasks
 1. (P0) **SMS/MMS Provider Integration** — User researching Telnyx vs Twilio vs Plivo for real two-way SMS/MMS with inbound webhook replies. Decision pending.

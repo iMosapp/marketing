@@ -51,7 +51,7 @@ const groupByDate = (items: any[]) => {
     const d = new Date(item.timestamp);
     const diff = now.getTime() - d.getTime();
     const days = Math.floor(diff / 86400000);
-    let label = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? `${days} days ago` : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    let label = days < 0 ? (days === -1 ? 'Tomorrow' : 'Upcoming') : days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? `${days} days ago` : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     if (!groups[label]) groups[label] = [];
     groups[label].push(item);
   });

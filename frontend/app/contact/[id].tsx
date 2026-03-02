@@ -95,6 +95,13 @@ function formatEventTime(timestamp: string): string {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    // Future dates
+    if (diffMs < 0) {
+      if (diffDays === 0 || diffDays === -1) {
+        return 'Tomorrow at ' + format(date, 'h:mm a');
+      }
+      return format(date, 'MMM d \'at\' h:mm a');
+    }
     // Today: show time only
     if (diffDays === 0 && date.getDate() === now.getDate()) {
       return format(date, 'h:mm a');
