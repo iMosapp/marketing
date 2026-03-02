@@ -885,16 +885,7 @@ export default function ContactDetailScreen() {
             <View style={s.heroChips}>
               {contact.phone ? (
                 <TouchableOpacity style={[s.heroChip, { backgroundColor: colors.card }]} onPress={() => {
-                  if (Platform.OS === 'web') {
-                    const a = document.createElement('a');
-                    a.href = `tel:${contact.phone}`;
-                    a.target = '_self';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  } else {
-                    Linking.openURL(`tel:${contact.phone}`);
-                  }
+                  router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
                 }}>
                   <Ionicons name="call" size={14} color="#34C759" />
                   <Text style={[s.heroChipText, { color: colors.text }]}>{contact.phone}</Text>
