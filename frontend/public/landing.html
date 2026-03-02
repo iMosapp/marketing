@@ -667,36 +667,67 @@
   }, { threshold: 0.15 });
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-  // Audio player
+  // Audio player + slideshow
   const audio = document.getElementById('voiceoverAudio');
   const videoArea = document.getElementById('video-area');
   const playBtn = document.getElementById('playBtn');
-  const audioWave = document.getElementById('audioWave');
   const audioLabel = document.getElementById('audioLabel');
+  const progressBar = document.getElementById('progressBar');
   let isPlaying = false;
+  let slideInterval = null;
+  let currentSlide = 0;
+  const totalSlides = 4;
+
+  function showSlide(index) {
+    for (let i = 0; i < totalSlides; i++) {
+      document.getElementById('slide-' + i).classList.remove('active');
+    }
+    document.getElementById('slide-' + index).classList.add('active');
+  }
+
+  function startSlideshow() {
+    slideInterval = setInterval(function() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      showSlide(currentSlide);
+    }, 4000);
+  }
+
+  function stopSlideshow() {
+    if (slideInterval) { clearInterval(slideInterval); slideInterval = null; }
+  }
 
   function toggleAudio() {
     if (isPlaying) {
       audio.pause();
       videoArea.classList.remove('playing');
       playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';
-      audioWave.style.display = 'none';
-      audioLabel.textContent = 'Listen to our story';
+      audioLabel.textContent = 'Resume';
+      stopSlideshow();
       isPlaying = false;
     } else {
       audio.play();
       videoArea.classList.add('playing');
       playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
-      audioWave.style.display = 'block';
       audioLabel.textContent = 'Now playing...';
+      startSlideshow();
       isPlaying = true;
     }
   }
+
+  audio.addEventListener('timeupdate', function() {
+    if (audio.duration) {
+      progressBar.style.width = (audio.currentTime / audio.duration * 100) + '%';
+    }
+  });
+
   audio.addEventListener('ended', function() {
     videoArea.classList.remove('playing');
     playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';
-    audioWave.style.display = 'none';
     audioLabel.textContent = 'Listen again';
+    progressBar.style.width = '0%';
+    stopSlideshow();
+    currentSlide = 0;
+    showSlide(0);
     isPlaying = false;
   });
 
