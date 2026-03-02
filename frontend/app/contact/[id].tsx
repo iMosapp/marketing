@@ -2512,18 +2512,28 @@ export default function ContactDetailScreen() {
       {/* Full Photo Viewer Modal with Gallery */}
       <Modal visible={showPhotoViewer} animationType="fade" transparent onRequestClose={() => setShowPhotoViewer(false)}>
         <View style={s.photoViewerOverlay}>
-          <TouchableOpacity
-            style={s.photoViewerClose}
-            onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
-            data-testid="close-photo-viewer"
-          >
-            <Ionicons name="close" size={28} color="#FFF" />
-          </TouchableOpacity>
+          {IS_WEB ? (
+            <button
+              type="button"
+              onClick={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
+              data-testid="close-photo-viewer"
+              style={{ position: 'absolute', top: 16, right: 16, zIndex: 100, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: 20, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <Ionicons name="close" size={28} color="#FFF" />
+            </button>
+          ) : (
+            <TouchableOpacity
+              style={s.photoViewerClose}
+              onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
+              data-testid="close-photo-viewer"
+            >
+              <Ionicons name="close" size={28} color="#FFF" />
+            </TouchableOpacity>
+          )}
 
           {fullPhotoLoading ? (
             <ActivityIndicator size="large" color="#C9A962" />
           ) : selectedPhotoIndex >= 0 && fullPhoto ? (
-            /* === SINGLE PHOTO FULL-SCREEN VIEW === */
             <View style={s.photoViewerContent}>
               <Image
                 source={{ uri: fullPhoto }}
@@ -2540,45 +2550,59 @@ export default function ContactDetailScreen() {
 
               {/* Navigation arrows */}
               {allPhotos.length > 1 && (
-                <View style={s.photoNavRow}>
-                  <TouchableOpacity
-                    style={[s.photoNavBtn, selectedPhotoIndex === 0 && { opacity: 0.3 }]}
-                    disabled={selectedPhotoIndex === 0}
-                    onPress={() => {
-                      const prev = selectedPhotoIndex - 1;
-                      setSelectedPhotoIndex(prev);
-                      setFullPhoto(allPhotos[prev].url);
-                    }}
-                    data-testid="photo-nav-prev"
-                  >
-                    <Ionicons name="chevron-back" size={28} color="#FFF" />
-                  </TouchableOpacity>
-                  <Text style={s.photoNavCount}>{selectedPhotoIndex + 1} / {allPhotos.length}</Text>
-                  <TouchableOpacity
-                    style={[s.photoNavBtn, selectedPhotoIndex === allPhotos.length - 1 && { opacity: 0.3 }]}
-                    disabled={selectedPhotoIndex === allPhotos.length - 1}
-                    onPress={() => {
-                      const next = selectedPhotoIndex + 1;
-                      setSelectedPhotoIndex(next);
-                      setFullPhoto(allPhotos[next].url);
-                    }}
-                    data-testid="photo-nav-next"
-                  >
-                    <Ionicons name="chevron-forward" size={28} color="#FFF" />
-                  </TouchableOpacity>
-                </View>
+                IS_WEB ? (
+                  <div style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                    <button
+                      type="button"
+                      disabled={selectedPhotoIndex === 0}
+                      onClick={() => { const prev = selectedPhotoIndex - 1; setSelectedPhotoIndex(prev); setFullPhoto(allPhotos[prev].url); }}
+                      data-testid="photo-nav-prev"
+                      style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', cursor: selectedPhotoIndex === 0 ? 'not-allowed' : 'pointer', opacity: selectedPhotoIndex === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Ionicons name="chevron-back" size={28} color="#FFF" />
+                    </button>
+                    <span style={{ color: '#8E8E93', fontSize: 14 }}>{selectedPhotoIndex + 1} / {allPhotos.length}</span>
+                    <button
+                      type="button"
+                      disabled={selectedPhotoIndex === allPhotos.length - 1}
+                      onClick={() => { const next = selectedPhotoIndex + 1; setSelectedPhotoIndex(next); setFullPhoto(allPhotos[next].url); }}
+                      data-testid="photo-nav-next"
+                      style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', cursor: selectedPhotoIndex === allPhotos.length - 1 ? 'not-allowed' : 'pointer', opacity: selectedPhotoIndex === allPhotos.length - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Ionicons name="chevron-forward" size={28} color="#FFF" />
+                    </button>
+                  </div>
+                ) : (
+                  <View style={s.photoNavRow}>
+                    <TouchableOpacity style={[s.photoNavBtn, selectedPhotoIndex === 0 && { opacity: 0.3 }]} disabled={selectedPhotoIndex === 0} onPress={() => { const prev = selectedPhotoIndex - 1; setSelectedPhotoIndex(prev); setFullPhoto(allPhotos[prev].url); }}>
+                      <Ionicons name="chevron-back" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={s.photoNavCount}>{selectedPhotoIndex + 1} / {allPhotos.length}</Text>
+                    <TouchableOpacity style={[s.photoNavBtn, selectedPhotoIndex === allPhotos.length - 1 && { opacity: 0.3 }]} disabled={selectedPhotoIndex === allPhotos.length - 1} onPress={() => { const next = selectedPhotoIndex + 1; setSelectedPhotoIndex(next); setFullPhoto(allPhotos[next].url); }}>
+                      <Ionicons name="chevron-forward" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                )
               )}
 
               {/* Back to grid */}
               {allPhotos.length > 1 && (
-                <TouchableOpacity
-                  style={s.backToGridBtn}
-                  onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
-                  data-testid="back-to-gallery-grid"
-                >
-                  <Ionicons name="grid-outline" size={18} color="#FFF" />
-                  <Text style={s.backToGridText}>All Photos</Text>
-                </TouchableOpacity>
+                IS_WEB ? (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
+                    data-testid="back-to-gallery-grid"
+                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '8px 14px', marginTop: 8, cursor: 'pointer', color: '#FFF', fontSize: 14 }}
+                  >
+                    <Ionicons name="grid-outline" size={18} color="#FFF" />
+                    All Photos
+                  </button>
+                ) : (
+                  <TouchableOpacity style={s.backToGridBtn} onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }} data-testid="back-to-gallery-grid">
+                    <Ionicons name="grid-outline" size={18} color="#FFF" />
+                    <Text style={s.backToGridText}>All Photos</Text>
+                  </TouchableOpacity>
+                )
               )}
 
               {/* Set as Profile Photo */}
@@ -2588,8 +2612,8 @@ export default function ContactDetailScreen() {
                     type="button"
                     onClick={async () => {
                       try {
-                        await api.put(`/contacts/${user._id}/${id}`, { photo: fullPhoto });
-                        setContact((prev: any) => ({ ...prev, photo: fullPhoto }));
+                        await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: fullPhoto });
+                        setContact((prev: any) => ({ ...prev, photo: fullPhoto, photo_url: fullPhoto, photo_thumbnail: fullPhoto }));
                         showToast('Profile photo updated!');
                       } catch (e: any) {
                         showSimpleAlert('Error', 'Failed to update profile photo');
@@ -2611,8 +2635,8 @@ export default function ContactDetailScreen() {
                     style={s.setProfileBtn}
                     onPress={async () => {
                       try {
-                        await api.put(`/contacts/${user._id}/${id}`, { photo: fullPhoto });
-                        setContact((prev: any) => ({ ...prev, photo: fullPhoto }));
+                        await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: fullPhoto });
+                        setContact((prev: any) => ({ ...prev, photo: fullPhoto, photo_url: fullPhoto, photo_thumbnail: fullPhoto }));
                         showToast('Profile photo updated!');
                       } catch (e: any) {
                         showSimpleAlert('Error', 'Failed to update profile photo');

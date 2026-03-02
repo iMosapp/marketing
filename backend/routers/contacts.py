@@ -1,7 +1,7 @@
 """
 Contacts router - handles contact CRUD operations
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from bson import ObjectId
 from datetime import datetime
 from typing import List, Optional
@@ -271,6 +271,32 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     await _check_tag_campaign_enrollment(user_id, contact_id, update_dict)
     
     return {"message": "Contact updated successfully"}
+
+@router.patch("/{user_id}/{contact_id}/profile-photo")
+async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Set a contact's profile photo from an existing photo URL."""
+    db = get_db()
+    photo_url = data.get("photo_url", "")
+    if not photo_url:
+        raise HTTPException(status_code=400, detail="photo_url is required")
+
+    try:
+        result = await db.contacts.update_one(
+            {"_id": ObjectId(contact_id)},
+            {"$set": {"photo": photo_url, "photo_url": photo_url, "photo_thumbnail": photo_url, "updated_at": datetime.utcnow()}}
+        )
+    except Exception:
+        result = await db.contacts.update_one(
+            {"_id": contact_id},
+            {"$set": {"photo": photo_url, "photo_url": photo_url, "photo_thumbnail": photo_url, "updated_at": datetime.utcnow()}}
+        )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    return {"message": "Profile photo updated"}
+
+
 
 @router.delete("/{user_id}/{contact_id}")
 async def delete_contact(user_id: str, contact_id: str):
