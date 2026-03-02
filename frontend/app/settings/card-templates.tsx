@@ -111,7 +111,21 @@ export default function ManageCardTemplatesPage() {
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} data-testid="template-list-back"><Ionicons name="chevron-back" size={24} color="#FFF" /></TouchableOpacity>
         <Text style={s.headerTitle}>Card Templates</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity onPress={() => {
+          // Create a new template by pre-filling with defaults and opening the editor
+          setEditing({
+            card_type: 'custom',
+            customized: false,
+            headline: 'New Card',
+            message: 'Hey {customer_name}, just wanted to reach out!',
+            accent_color: '#C9A962',
+            background_color: '#1A1A1A',
+            text_color: '#FFFFFF',
+            footer_text: '',
+          });
+        }} data-testid="create-card-template-btn">
+          <Ionicons name="add-circle" size={26} color="#007AFF" />
+        </TouchableOpacity>
       </View>
       <ScrollView style={s.content}>
         <Text style={s.sectionNote}>Customize the look and message for each card type. These settings apply to all users in your store.</Text>

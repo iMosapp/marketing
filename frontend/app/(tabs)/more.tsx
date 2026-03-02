@@ -545,6 +545,13 @@ export default function MoreScreen() {
           color: '#34C759',
         },
         {
+          icon: 'color-palette-outline',
+          title: 'Card Templates',
+          subtitle: 'Customize card designs & messages',
+          onPress: () => router.push('/settings/card-templates'),
+          color: '#FF9500',
+        },
+        {
           icon: 'color-palette',
           title: 'Brand Kit',
           subtitle: 'Email branding & colors',
@@ -557,13 +564,6 @@ export default function MoreScreen() {
           subtitle: 'Edit your happy customers page',
           onPress: () => router.push(`/showroom-manage` as any),
           color: '#34C759',
-        },
-        {
-          icon: 'color-palette-outline',
-          title: 'Card Templates',
-          subtitle: 'Customize card designs & messages',
-          onPress: () => router.push('/settings/card-templates'),
-          color: '#FF9500',
         },
       ],
     },
