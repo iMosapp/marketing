@@ -56,6 +56,7 @@ async def get_wizard_progress(org_id: str, x_user_id: str = Header(None, alias="
             "organization_id": org_id,
             "current_step": 1,
             "completed_steps": [],
+            "completed_step_ids": [],
             "completed": False,
         }
     return progress
