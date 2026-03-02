@@ -232,6 +232,14 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Backend: `GET /api/contacts/{userId}/master-feed` (aggregates events + suggestions), `GET /api/contacts/{userId}/{contactId}/action-progress` (returns completion status for 7 key actions)
 
 
+### Activity Tab + Gallery Profile Photo + UX Polish (Mar 2, 2026)
+- **New "Activity" tab** in bottom navigation (between Contacts and Inbox) — social-media-style master feed across ALL contacts with date grouping (Today, Yesterday, etc.), contact avatars, INBOUND badges, event type icons, and relative timestamps. Includes "Action Items" and "Upcoming" sections at the top.
+- **"Set as Profile Photo"** button in the photo gallery modal — tap any gallery photo to make it the contact's display picture
+- **"X day relationship"** — Changed hero text from "in system" to "relationship" for a warmer, personal tone
+- **Contacts tab cleaned up** — Back to pure contact list (feed view moved to Activity tab)
+- Backend: `GET /api/contacts/{userId}/master-feed` powers the Activity tab
+
+
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component

@@ -64,28 +64,28 @@ interface ContactStats {
 
 // ===== HELPER: Time in System =====
 function getTimeInSystem(createdAt: string | null): string {
-  if (!createdAt) return '0d';
+  if (!createdAt) return '0';
   const created = new Date(createdAt);
   const now = new Date();
   const years = differenceInYears(now, created);
-  if (years >= 1) return `${years}y`;
+  if (years >= 1) return `${years}`;
   const months = differenceInMonths(now, created);
-  if (months >= 1) return `${months}mo`;
+  if (months >= 1) return `${months}`;
   const days = differenceInDays(now, created);
-  return `${Math.max(days, 0)}d`;
+  return `${Math.max(days, 0)}`;
 }
 
 function getTimeInSystemLabel(createdAt: string | null): string {
-  if (!createdAt) return 'New';
+  if (!createdAt) return 'day';
   const created = new Date(createdAt);
   const now = new Date();
   const years = differenceInYears(now, created);
-  if (years >= 1) return years === 1 ? 'year' : 'years';
+  if (years >= 1) return years === 1 ? 'year' : 'year';
   const months = differenceInMonths(now, created);
-  if (months >= 1) return months === 1 ? 'month' : 'months';
+  if (months >= 1) return months === 1 ? 'month' : 'month';
   const days = differenceInDays(now, created);
   if (days === 1) return 'day';
-  return 'days';
+  return 'day';
 }
 
 function formatEventTime(timestamp: string): string {
