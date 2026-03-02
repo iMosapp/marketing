@@ -171,13 +171,14 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Backend: `/api/setup-wizard/*` — progress tracking, bulk-invite, complete
 
 ### Client Onboarding Mission Control (Mar 2, 2026)
-- Unified onboarding checklist at `/admin/client-onboarding` — replaces Setup Wizard as the entry point
-- 6-step guided flow: Send Quote → Get Agreement Signed → Collect Payment → Configure Account → Add Team Members → Account Live
-- Each step: title, description, "Mark Done" toggle, "Do This Now" / "Open" action button linking to existing pages
-- Progress bar at top, timeline with numbered dots, "Quick Reference" tips at bottom
-- Steps link to existing pages: `/admin/create-quote`, `/admin/nda`, `/admin/billing`, `/admin/setup-wizard`, `/admin/manage-team`
-- Progress persisted per org via `/api/setup-wizard/progress/{org_id}` with `completed_step_ids`
-- Accessible from Menu > Administration as "Client Onboarding" (first item)
+- Multi-client onboarding tracker at `/admin/client-onboarding`
+- **"New Client" button** at top creates a fresh checklist instance with client name, email, phone, industry, notes
+- Each client is a collapsible card showing progress bar, step count, and "Next:" indicator
+- 6-step checklist per client: Send Quote → Get Agreement Signed → Collect Payment → Configure Account → Add Team Members → Account Live
+- Steps: toggleable checkmarks, "Do It" / "Open" action buttons linking to existing pages
+- Archive functionality for completed or cancelled clients
+- Backend: `/api/setup-wizard/clients` — full CRUD (GET list, POST create, PUT update)
+- Progress persisted in `onboarding_clients` collection
 
 
 ## Key Files
