@@ -22,8 +22,10 @@ const ICON_MAP: Record<string, string> = {
 interface LinkItem { id: string; label: string; url: string; icon: string; color: string; visible: boolean; }
 interface PageData {
   username: string; display_name: string; bio: string; photo_url: string;
-  company: string; links: LinkItem[]; custom_links: LinkItem[];
-  theme: string; accent_color: string;
+  company: string; built_social_links: LinkItem[]; contact_links: LinkItem[];
+  custom_links: LinkItem[]; theme: string; accent_color: string;
+  // Legacy fields for backward compat
+  links?: LinkItem[];
 }
 
 export default function PublicLinkPage() {
@@ -45,7 +47,6 @@ export default function PublicLinkPage() {
   };
 
   const openLink = (link: LinkItem) => {
-    // Track click
     api.post(`/linkpage/public/${username}/click`, { link_id: link.id }).catch(() => {});
     const url = link.url.startsWith('/') ? `${Platform.OS === 'web' ? window.location.origin : ''}${link.url}` : link.url;
     Linking.openURL(url).catch(() => {});
@@ -68,9 +69,10 @@ export default function PublicLinkPage() {
     </View>
   );
 
-  const allLinks = [...(data.links || []), ...(data.custom_links || [])].filter(l => l.visible !== false);
-  const socialLinks = allLinks.filter(l => ['logo-instagram','logo-facebook','logo-tiktok','logo-linkedin','logo-youtube','logo-twitter'].includes(l.icon));
-  const otherLinks = allLinks.filter(l => !socialLinks.includes(l));
+  // Use new separated fields, with fallback to legacy `links` array
+  const socialLinks = data.built_social_links || [];
+  const contactLinks = data.contact_links || data.links?.filter(l => l.visible !== false) || [];
+  const customLinks = (data.custom_links || []).filter(l => l.visible !== false);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: bg }} contentContainerStyle={s.page}>
@@ -80,7 +82,7 @@ export default function PublicLinkPage() {
         ) : (
           <View style={[s.avatarPlaceholder, { borderColor: accent, backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
             <Text style={{ fontSize: 36, fontWeight: '800', color: textColor }}>
-              {data.display_name ? data.display_name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase() : '?'}
+              {data.display_name ? data.display_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : '?'}
             </Text>
           </View>
         )}
@@ -89,8 +91,9 @@ export default function PublicLinkPage() {
         {data.bio ? <Text style={[s.bio, { color: subColor }]}>{data.bio}</Text> : null}
       </View>
 
+      {/* Contact Links */}
       <View style={s.links}>
-        {otherLinks.map(link => (
+        {contactLinks.map(link => (
           <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
             <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
               <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
@@ -99,21 +102,38 @@ export default function PublicLinkPage() {
             <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
           </TouchableOpacity>
         ))}
-        {socialLinks.length > 0 && (
-          <>
-            <Text style={[s.sectionLabel, { color: subColor }]}>Socials</Text>
-            {socialLinks.map(link => (
-              <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
-                <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
-                  <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
-                </View>
-                <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
-                <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
       </View>
+
+      {/* Social Links */}
+      {socialLinks.length > 0 && (
+        <View style={s.links}>
+          <Text style={[s.sectionLabel, { color: subColor }]}>Socials</Text>
+          {socialLinks.map(link => (
+            <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+              <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
+                <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
+              </View>
+              <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
+              <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Custom Links */}
+      {customLinks.length > 0 && (
+        <View style={s.links}>
+          {customLinks.map(link => (
+            <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+              <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
+                <Ionicons name={(ICON_MAP[link.icon] || 'globe-outline') as any} size={18} color={link.color} />
+              </View>
+              <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
+              <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <View style={s.footer}>
         <TouchableOpacity onPress={() => Linking.openURL('https://app.imosapp.com/install.html')}>
@@ -133,11 +153,11 @@ const s = StyleSheet.create({
   name: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
   company: { fontSize: 13, fontWeight: '600', marginTop: 2, opacity: 0.5 },
   bio: { fontSize: 14, marginTop: 8, lineHeight: 21, opacity: 0.7, textAlign: 'center', maxWidth: 320 },
-  links: { gap: 10 },
+  links: { gap: 10, marginBottom: 8 },
   linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1 },
   linkIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   linkLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
-  sectionLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700', marginTop: 18, marginBottom: -2, marginLeft: 4, opacity: 0.5 },
+  sectionLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700', marginTop: 10, marginBottom: -2, marginLeft: 4, opacity: 0.5 },
   footer: { alignItems: 'center', marginTop: 36, paddingTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' },
   footerText: { fontSize: 12, fontWeight: '600', opacity: 0.4 },
   footerBrand: { fontWeight: '800' },
