@@ -135,6 +135,7 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
                 "rating": matched_review.get("rating", 5),
                 "text": matched_review.get("text_review", ""),
                 "customer_name": matched_review.get("customer_name"),
+                "photo_url": f"/api/showcase/feedback-photo/{str(matched_review['_id'])}" if matched_review.get("purchase_photo_url") else None,
                 "created_at": matched_review.get("created_at").isoformat() if matched_review.get("created_at") else None,
             }
 
@@ -160,6 +161,7 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
                     "rating": r.get("rating", 5),
                     "text": r.get("text_review", ""),
                     "customer_name": r.get("customer_name"),
+                    "photo_url": f"/api/showcase/feedback-photo/{rid}" if r.get("purchase_photo_url") else None,
                     "created_at": r.get("created_at").isoformat() if r.get("created_at") else None,
                 },
             })
@@ -462,6 +464,42 @@ async def get_showcase_photo(card_id: str):
     # If it's a URL, redirect to it
     if photo_data.startswith("http"):
         from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=photo_data)
+    raise HTTPException(status_code=404, detail="Photo not found")
+
+
+@router.get("/feedback-photo/{feedback_id}")
+async def get_feedback_photo(feedback_id: str):
+    """Serve a customer feedback photo as an actual image."""
+    db = get_db()
+
+    feedback = await db.customer_feedback.find_one(
+        {"_id": ObjectId(feedback_id)},
+        {"purchase_photo_url": 1}
+    )
+    if not feedback or not feedback.get("purchase_photo_url"):
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    photo_data = feedback["purchase_photo_url"]
+
+    if photo_data.startswith("data:"):
+        parts = photo_data.split(",", 1)
+        if len(parts) == 2:
+            header = parts[0]
+            b64_data = parts[1]
+            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            try:
+                image_bytes = base64.b64decode(b64_data)
+                return Response(content=image_bytes, media_type=mime, headers={
+                    "Cache-Control": "public, max-age=86400",
+                })
+            except Exception:
+                raise HTTPException(status_code=500, detail="Failed to decode photo")
+    if photo_data.startswith("http"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=photo_data)
+    raise HTTPException(status_code=404, detail="Photo not found")
+
 
 @router.get("/user-photo/{user_id}")
 async def get_user_photo(user_id: str):

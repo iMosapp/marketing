@@ -128,6 +128,28 @@ async def track_review_click(store_slug: str, data: dict):
     
     await db.review_link_clicks.insert_one(click_doc)
     
+    # Log activity: customer clicked a review link
+    if salesperson_id:
+        try:
+            from utils.contact_activity import log_activity_for_customer
+            customer_name = data.get("customer_name")
+            customer_phone = data.get("customer_phone")
+            if customer_name or customer_phone:
+                await log_activity_for_customer(
+                    user_id=salesperson_id,
+                    customer_phone=customer_phone,
+                    customer_name=customer_name,
+                    event_type="review_link_clicked",
+                    title="Clicked Review Link",
+                    description=f"Clicked {platform.replace('_', ' ').title()} review link",
+                    icon="open",
+                    color="#FBBC04",
+                    category="customer_activity",
+                    metadata={"platform": platform, "url": data.get("url", "")},
+                )
+        except Exception as e:
+            print(f"[PublicReview] Failed to log click activity: {e}")
+    
     # Increment store-level click count
     await db.stores.update_one(
         {"_id": store["_id"]},
@@ -211,6 +233,30 @@ async def submit_feedback(store_slug: str, feedback: dict):
     }
     
     result = await db.customer_feedback.insert_one(feedback_doc)
+    
+    # Log activity: customer submitted feedback via review page
+    salesperson_id = feedback.get("salesperson_id")
+    if salesperson_id:
+        try:
+            from utils.contact_activity import log_activity_for_customer
+            cust_name = feedback.get("customer_name", "")
+            cust_phone = feedback.get("customer_phone")
+            cust_rating = feedback.get("rating", 5)
+            cust_text = feedback.get("text_review", "")
+            await log_activity_for_customer(
+                user_id=salesperson_id,
+                customer_phone=cust_phone,
+                customer_name=cust_name,
+                event_type="review_submitted",
+                title="Submitted a Review",
+                description=f"{cust_name or 'Customer'} left a {cust_rating}-star review" + (f': "{cust_text[:60]}"' if cust_text else ""),
+                icon="star",
+                color="#FFD60A",
+                category="customer_activity",
+                metadata={"feedback_id": str(result.inserted_id), "rating": cust_rating, "source": feedback.get("source", "review_page")},
+            )
+        except Exception as e:
+            print(f"[PublicReview] Failed to log review feedback activity: {e}")
     
     return {
         "success": True,

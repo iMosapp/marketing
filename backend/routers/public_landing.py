@@ -148,6 +148,24 @@ async def submit_review(
     
     result = await db.customer_feedback.insert_one(feedback_doc)
     
+    # Log activity: customer submitted a review/feedback
+    try:
+        from utils.contact_activity import log_activity_for_customer
+        await log_activity_for_customer(
+            user_id=user_id,
+            customer_phone=customer_phone,
+            customer_name=customer_name,
+            event_type="review_submitted",
+            title="Submitted a Review",
+            description=f"{customer_name} left a {rating}-star review" + (f': "{text_review[:60]}..."' if text_review and len(text_review) > 60 else f': "{text_review}"' if text_review else ""),
+            icon="star",
+            color="#FFD60A",
+            category="customer_activity",
+            metadata={"feedback_id": str(result.inserted_id), "rating": rating, "has_photo": purchase_photo_url is not None},
+        )
+    except Exception as e:
+        print(f"[PublicLanding] Failed to log review activity: {e}")
+    
     return {
         "success": True,
         "feedback_id": str(result.inserted_id),

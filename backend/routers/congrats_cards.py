@@ -354,6 +354,28 @@ async def get_congrats_card(card_id: str):
         {"$inc": {"views": 1}}
     )
     
+    # Log activity: customer viewed their congrats card
+    try:
+        from utils.contact_activity import log_activity_for_customer
+        salesman_id = card.get("salesman_id")
+        customer_phone = card.get("customer_phone")
+        customer_name = card.get("customer_name")
+        if salesman_id:
+            await log_activity_for_customer(
+                user_id=salesman_id,
+                customer_phone=customer_phone,
+                customer_name=customer_name,
+                event_type="congrats_card_viewed",
+                title="Viewed Congrats Card",
+                description=f"{customer_name or 'Customer'} opened their {card.get('card_type', 'congrats')} card",
+                icon="eye",
+                color="#C9A962",
+                category="customer_activity",
+                metadata={"card_id": card_id, "card_type": card.get("card_type", "congrats"), "views": card.get("views", 0) + 1},
+            )
+    except Exception as e:
+        print(f"[CongratsCard] Failed to log card view activity: {e}")
+    
     # Format the message with customer name
     message = card.get("message", "")
     if "{customer_name}" in message:
@@ -407,6 +429,27 @@ async def track_card_action(card_id: str, data: dict):
         {"card_id": card_id},
         {"$inc": {field: 1}}
     )
+    
+    # Log activity: customer downloaded/shared their congrats card
+    try:
+        card = await db.congrats_cards.find_one({"card_id": card_id}, {"salesman_id": 1, "customer_phone": 1, "customer_name": 1, "card_type": 1})
+        if card and card.get("salesman_id"):
+            from utils.contact_activity import log_activity_for_customer
+            action_label = "Downloaded" if action == "download" else "Shared"
+            await log_activity_for_customer(
+                user_id=card["salesman_id"],
+                customer_phone=card.get("customer_phone"),
+                customer_name=card.get("customer_name"),
+                event_type=f"congrats_card_{action}",
+                title=f"{action_label} Congrats Card",
+                description=f"{card.get('customer_name', 'Customer')} {action_label.lower()} their {card.get('card_type', 'congrats')} card",
+                icon="download" if action == "download" else "share-social",
+                color="#34C759" if action == "download" else "#007AFF",
+                category="customer_activity",
+                metadata={"card_id": card_id, "action": action},
+            )
+    except Exception as e:
+        print(f"[CongratsCard] Failed to log {action} activity: {e}")
     
     return {"success": True}
 

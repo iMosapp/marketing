@@ -25,6 +25,7 @@ interface ReviewData {
   rating: number;
   text: string;
   customer_name: string;
+  photo_url: string | null;
   created_at: string | null;
 }
 
@@ -414,21 +415,44 @@ export default function ShowcasePage() {
                   </TouchableOpacity>
                 )}
 
-                {/* Matched review */}
+                {/* Matched review / customer feedback */}
                 {entry.review && (
                   <View style={[styles.reviewSection, { borderLeftColor: accent }]}>
+                    <View style={styles.reviewHeader}>
+                      <Ionicons name="chatbubble-ellipses" size={14} color={accent} />
+                      <Text style={[styles.reviewLabel, { color: accent }]}>Customer Feedback</Text>
+                      {entry.review.created_at && (
+                        <Text style={styles.reviewDate}>{formatDate(entry.review.created_at)}</Text>
+                      )}
+                    </View>
                     <StarRating rating={entry.review.rating} />
                     {entry.review.text ? (
                       <Text style={styles.reviewText}>"{entry.review.text}"</Text>
                     ) : null}
+
+                    {/* Customer's feedback photo */}
+                    {entry.review.photo_url && (
+                      <View style={styles.feedbackPhotoContainer}>
+                        <Image
+                          source={{ uri: entry.review.photo_url }}
+                          style={styles.feedbackPhoto}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.feedbackPhotoBadge}>
+                          <Ionicons name="camera" size={10} color="#FFF" />
+                          <Text style={styles.feedbackPhotoBadgeText}>Customer Photo</Text>
+                        </View>
+                      </View>
+                    )}
+
                     <Text style={styles.reviewAttribution}>
                       — {entry.review.customer_name}
                     </Text>
                   </View>
                 )}
 
-                {/* Review-only entry (no photo) */}
-                {entry.type === 'review_only' && entry.review && (
+                {/* Review-only entry icon (no delivery photo) */}
+                {entry.type === 'review_only' && !entry.customer_photo && (
                   <View style={styles.reviewOnlyIcon}>
                     <Ionicons name="chatbubble-ellipses" size={16} color={accent} />
                   </View>
@@ -582,10 +606,46 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
   },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  reviewLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  reviewDate: { fontSize: 11, color: '#6E6E73', marginLeft: 'auto' },
   starRow: { flexDirection: 'row', gap: 2, marginBottom: 6 },
   reviewText: { fontSize: 14, color: '#E5E5EA', lineHeight: 20, fontStyle: 'italic', marginBottom: 6 },
-  reviewAttribution: { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
+  reviewAttribution: { fontSize: 12, color: '#8E8E93', fontWeight: '500', marginTop: 4 },
   reviewOnlyIcon: { position: 'absolute', top: 0, right: 0 },
+
+  // Feedback photo from customer
+  feedbackPhotoContainer: {
+    position: 'relative',
+    marginTop: 10,
+    marginBottom: 6,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  feedbackPhoto: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
+  },
+  feedbackPhotoBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  feedbackPhotoBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFF' },
 
   entryDivider: { height: 1, backgroundColor: '#1C1C1E', marginVertical: 20 },
 
