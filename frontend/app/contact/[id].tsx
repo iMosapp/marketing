@@ -820,6 +820,39 @@ export default function ContactDetailScreen() {
     }
   };
 
+  // Update a date automation field
+  const handleUpdateAutomationDate = async (field: string, date: Date) => {
+    if (!user) return;
+    try {
+      const isoDate = date.toISOString();
+      await contactsAPI.update(user._id, id as string, { [field]: isoDate });
+      setContact((prev: any) => ({ ...prev, [field]: isoDate }));
+      setEditingAutomation(null);
+      showToast('Date updated');
+    } catch (e: any) {
+      showSimpleAlert('Error', 'Could not update date');
+    }
+  };
+
+  // State for automation date edit picker
+  const [automationPickerDate, setAutomationPickerDate] = useState(new Date());
+
+  // Add tag from hero (immediate save)
+  const addTagFromHero = async (name: string) => {
+    if (!user || contact.tags.includes(name)) return;
+    const updatedTags = [...contact.tags, name];
+    setContact((prev: any) => ({ ...prev, tags: updatedTags }));
+    setShowTagPicker(false);
+    setTagSearch('');
+    try {
+      await contactsAPI.update(user._id, id as string, { tags: updatedTags });
+      showToast(`Tag "${name}" added`);
+    } catch (e: any) {
+      setContact((prev: any) => ({ ...prev, tags: prev.tags.filter((t: string) => t !== name) }));
+      showSimpleAlert('Error', 'Could not add tag');
+    }
+  };
+
   // Group events by date for collapsible sections
   const groupEventsByDate = (evts: ContactEvent[]) => {
     const groups: { label: string; events: ContactEvent[] }[] = [];
@@ -1228,23 +1261,31 @@ export default function ContactDetailScreen() {
               <View style={s.heroInfo}>
                 <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name" numberOfLines={1}>{fullName}</Text>
 
-                {/* Tags inline */}
-                {contact.tags.length > 0 && (
-                  <View style={s.heroTagsRow}>
-                    {contact.tags.slice(0, 4).map((tag, i) => {
-                      const info = availableTags.find(t => t.name === tag);
-                      return (
-                        <View key={i} style={[s.heroTag, info?.color && { borderColor: info.color, backgroundColor: `${info.color}15` }]}>
-                          {info?.icon && <Ionicons name={info.icon as any} size={10} color={info.color || '#8E8E93'} />}
-                          <Text style={[s.heroTagText, info?.color && { color: info.color }]} numberOfLines={1}>{tag}</Text>
-                        </View>
-                      );
-                    })}
-                    {contact.tags.length > 4 && (
-                      <Text style={s.heroTagMore}>+{contact.tags.length - 4}</Text>
-                    )}
-                  </View>
-                )}
+                {/* Tags inline with add button */}
+                <View style={s.heroTagsRow}>
+                  {contact.tags.slice(0, 4).map((tag, i) => {
+                    const info = availableTags.find(t => t.name === tag);
+                    return (
+                      <View key={i} style={[s.heroTag, info?.color && { borderColor: info.color, backgroundColor: `${info.color}15` }]}>
+                        {info?.icon && <Ionicons name={info.icon as any} size={10} color={info.color || '#8E8E93'} />}
+                        <Text style={[s.heroTagText, info?.color && { color: info.color }]} numberOfLines={1}>{tag}</Text>
+                      </View>
+                    );
+                  })}
+                  {contact.tags.length > 4 && (
+                    <Text style={s.heroTagMore}>+{contact.tags.length - 4}</Text>
+                  )}
+                  {!isNewContact && (
+                    <TouchableOpacity
+                      style={s.heroTagAdd}
+                      onPress={() => { loadTags(); setShowTagPicker(true); }}
+                      data-testid="hero-add-tag-btn"
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="add" size={12} color="#007AFF" />
+                    </TouchableOpacity>
+                  )}
+                </View>
 
                 {/* Vehicle / Product / Highlight */}
                 {contact.vehicle ? (
@@ -1311,7 +1352,10 @@ export default function ContactDetailScreen() {
                   {contact.birthday && (
                     <TouchableOpacity
                       style={[s.heroCampaignChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510' }]}
-                      onPress={() => setEditingAutomation({ field: 'birthday', label: 'Birthday', color: '#FF2D55', value: contact.birthday })}
+                      onPress={() => {
+                        setAutomationPickerDate(contact.birthday ? new Date(contact.birthday) : new Date());
+                        setEditingAutomation({ field: 'birthday', label: 'Birthday', color: '#FF2D55', value: contact.birthday });
+                      }}
                       activeOpacity={0.7}
                       data-testid="auto-birthday"
                     >
@@ -1323,7 +1367,10 @@ export default function ContactDetailScreen() {
                   {contact.anniversary && (
                     <TouchableOpacity
                       style={[s.heroCampaignChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }]}
-                      onPress={() => setEditingAutomation({ field: 'anniversary', label: 'Anniversary', color: '#FF6B6B', value: contact.anniversary })}
+                      onPress={() => {
+                        setAutomationPickerDate(contact.anniversary ? new Date(contact.anniversary) : new Date());
+                        setEditingAutomation({ field: 'anniversary', label: 'Anniversary', color: '#FF6B6B', value: contact.anniversary });
+                      }}
                       activeOpacity={0.7}
                       data-testid="auto-anniversary"
                     >
@@ -1335,7 +1382,10 @@ export default function ContactDetailScreen() {
                   {contact.date_sold && (
                     <TouchableOpacity
                       style={[s.heroCampaignChip, { borderColor: '#34C75940', backgroundColor: '#34C75910' }]}
-                      onPress={() => setEditingAutomation({ field: 'date_sold', label: 'Sold Date', color: '#34C759', value: contact.date_sold })}
+                      onPress={() => {
+                        setAutomationPickerDate(contact.date_sold ? new Date(contact.date_sold) : new Date());
+                        setEditingAutomation({ field: 'date_sold', label: 'Sold Date', color: '#34C759', value: contact.date_sold });
+                      }}
                       activeOpacity={0.7}
                       data-testid="auto-sold"
                     >
@@ -2404,7 +2454,7 @@ export default function ContactDetailScreen() {
           </View>
           <ScrollView style={{ flex: 1 }}>
             {filteredAvailableTags.length > 0 ? filteredAvailableTags.map(tag => (
-              <TouchableOpacity key={tag._id} style={s.pickerItem} onPress={() => addTag(tag.name)} data-testid={`tag-option-${tag.name}`}>
+              <TouchableOpacity key={tag._id} style={s.pickerItem} onPress={() => isEditing ? addTag(tag.name) : addTagFromHero(tag.name)} data-testid={`tag-option-${tag.name}`}>
                 <View style={[s.dateRowIcon, { backgroundColor: `${tag.color}20` }]}>
                   <Ionicons name={tag.icon || 'pricetag'} size={18} color={tag.color} />
                 </View>
@@ -2443,6 +2493,61 @@ export default function ContactDetailScreen() {
             )} ListEmptyComponent={<View style={s.emptyPicker}><Text style={s.emptyPickerText}>No available campaigns</Text></View>} />
         </SafeAreaView>
       </Modal>
+
+      {/* Automation Edit Modal */}
+      {editingAutomation && (
+        <Modal visible={!!editingAutomation} animationType="fade" transparent onRequestClose={() => setEditingAutomation(null)}>
+          <TouchableOpacity style={s.labelOverlay} activeOpacity={1} onPress={() => setEditingAutomation(null)}>
+            <TouchableOpacity activeOpacity={1} style={s.labelModal} onPress={() => {}}>
+              <Text style={s.labelTitle}>Edit {editingAutomation.label}</Text>
+              <Text style={[s.labelSub, { color: editingAutomation.color }]}>
+                {editingAutomation.value ? format(new Date(editingAutomation.value), 'MMM d, yyyy') : 'No date set'}
+              </Text>
+              {IS_WEB ? (
+                <input
+                  type="date"
+                  defaultValue={editingAutomation.value ? new Date(editingAutomation.value).toISOString().split('T')[0] : ''}
+                  onChange={(e: any) => {
+                    if (e.target.value) setAutomationPickerDate(new Date(e.target.value + 'T12:00:00'));
+                  }}
+                  style={{
+                    width: '100%', padding: 12, borderRadius: 10,
+                    backgroundColor: '#2C2C2E', color: '#FFF', border: '1px solid #3A3A3C',
+                    fontSize: 16, marginBottom: 12, marginTop: 8,
+                  }}
+                  data-testid="automation-date-input"
+                />
+              ) : (
+                <DateTimePicker
+                  value={editingAutomation.value ? new Date(editingAutomation.value) : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_, d) => { if (d) setAutomationPickerDate(d); }}
+                  textColor="#FFFFFF"
+                  themeVariant="dark"
+                  style={{ height: 150, marginVertical: 8 }}
+                />
+              )}
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                <TouchableOpacity
+                  style={[s.labelBtn, { backgroundColor: '#2C2C2E' }]}
+                  onPress={() => handleClearAutomation(editingAutomation.field)}
+                  data-testid="automation-clear-btn"
+                >
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>Clear Date</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.labelBtn, { backgroundColor: editingAutomation.color || '#007AFF' }]}
+                  onPress={() => handleUpdateAutomationDate(editingAutomation.field, automationPickerDate)}
+                  data-testid="automation-save-btn"
+                >
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFF' }}>Save Date</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      )}
 
       {/* Date Picker */}
       {showDatePicker && (
@@ -2768,6 +2873,12 @@ const s = StyleSheet.create({
   },
   heroTagText: { fontSize: 10, fontWeight: '600', color: '#8E8E93' },
   heroTagMore: { fontSize: 10, fontWeight: '600', color: '#636366', alignSelf: 'center' },
+  heroTagAdd: {
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: '#007AFF20', borderWidth: 1, borderColor: '#007AFF40',
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center',
+  },
   heroHighlight: {
     flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4,
   },
