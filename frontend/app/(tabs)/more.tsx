@@ -966,9 +966,16 @@ export default function MoreScreen() {
             <Ionicons name="chevron-forward" size={18} color="#555" />
           </TouchableOpacity>
           
-          {/* Stacked Bell + Logout */}
+          {/* Stacked Bell + Theme + Logout */}
           <View style={styles.profileActions}>
             <NotificationBell />
+            <TouchableOpacity
+              style={[styles.profileSignOutBtn, { backgroundColor: colors.card }]}
+              onPress={toggleTheme}
+              data-testid="theme-toggle-btn"
+            >
+              <Ionicons name={themeMode === 'dark' ? 'moon' : 'sunny'} size={18} color={themeMode === 'dark' ? '#5856D6' : '#FF9500'} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.profileSignOutBtn, { backgroundColor: colors.card }]}
               onPress={handleLogout}
@@ -979,26 +986,6 @@ export default function MoreScreen() {
           </View>
         </View>
         
-        {/* Appearance Toggle */}
-        <View style={[styles.themeToggleCard, { backgroundColor: colors.card }]}>
-          <View style={styles.themeToggleLeft}>
-            <View style={[styles.quickSettingsIcon, { backgroundColor: themeMode === 'dark' ? '#5856D620' : '#FF950020' }]}>
-              <Ionicons name={themeMode === 'dark' ? 'moon' : 'sunny'} size={18} color={themeMode === 'dark' ? '#5856D6' : '#FF9500'} />
-            </View>
-            <View>
-              <Text style={[styles.themeToggleTitle, { color: colors.text }]}>Appearance</Text>
-              <Text style={[styles.themeToggleSub, { color: colors.textSecondary }]}>{themeMode === 'dark' ? 'Dark Mode' : 'Light Mode'}</Text>
-            </View>
-          </View>
-          <Switch
-            value={themeMode === 'light'}
-            onValueChange={toggleTheme}
-            trackColor={{ false: '#3A3A3C', true: '#C9A962' }}
-            thumbColor="#FFF"
-            data-testid="theme-toggle-switch"
-          />
-        </View>
-
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
         
