@@ -1,0 +1,144 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Linking, Platform, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import api from '../../services/api';
+
+const ICON_MAP: Record<string, string> = {
+  'logo-instagram': 'logo-instagram',
+  'logo-facebook': 'logo-facebook',
+  'logo-tiktok': 'logo-tiktok',
+  'logo-linkedin': 'logo-linkedin',
+  'logo-youtube': 'logo-youtube',
+  'logo-twitter': 'logo-twitter',
+  'call': 'call',
+  'mail': 'mail',
+  'card': 'card',
+  'star': 'star',
+  'globe': 'globe-outline',
+  'link': 'link',
+};
+
+interface LinkItem { id: string; label: string; url: string; icon: string; color: string; visible: boolean; }
+interface PageData {
+  username: string; display_name: string; bio: string; photo_url: string;
+  company: string; links: LinkItem[]; custom_links: LinkItem[];
+  theme: string; accent_color: string;
+}
+
+export default function PublicLinkPage() {
+  const { username } = useLocalSearchParams<{ username: string }>();
+  const [data, setData] = useState<PageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (username) loadPage();
+  }, [username]);
+
+  const loadPage = async () => {
+    try {
+      const res = await api.get(`/linkpage/public/${username}`);
+      setData(res.data);
+    } catch { setNotFound(true); }
+    finally { setLoading(false); }
+  };
+
+  const openLink = (link: LinkItem) => {
+    // Track click
+    api.post(`/linkpage/public/${username}/click`, { link_id: link.id }).catch(() => {});
+    const url = link.url.startsWith('/') ? `${Platform.OS === 'web' ? window.location.origin : ''}${link.url}` : link.url;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const isDark = !data || data.theme === 'dark';
+  const accent = data?.accent_color || '#C9A962';
+  const bg = isDark ? '#000' : '#F2F2F7';
+  const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#000000';
+  const borderColor = isDark ? '#2C2C2E' : '#D1D1D6';
+  const subColor = isDark ? '#8E8E93' : '#6C6C70';
+
+  if (loading) return <View style={[s.center, { backgroundColor: bg }]}><ActivityIndicator size="large" color={accent} /></View>;
+  if (notFound || !data) return (
+    <View style={[s.center, { backgroundColor: bg }]}>
+      <Text style={{ fontSize: 20, fontWeight: '700', color: textColor, marginBottom: 8 }}>Page Not Found</Text>
+      <Text style={{ fontSize: 14, color: subColor }}>This link page doesn't exist yet.</Text>
+      <View style={s.footer}><Text style={[s.footerText, { color: subColor }]}>powered by <Text style={s.footerBrand}>i'MOnsocial</Text></Text></View>
+    </View>
+  );
+
+  const allLinks = [...(data.links || []), ...(data.custom_links || [])].filter(l => l.visible !== false);
+  const socialLinks = allLinks.filter(l => ['logo-instagram','logo-facebook','logo-tiktok','logo-linkedin','logo-youtube','logo-twitter'].includes(l.icon));
+  const otherLinks = allLinks.filter(l => !socialLinks.includes(l));
+
+  return (
+    <ScrollView style={{ flex: 1, backgroundColor: bg }} contentContainerStyle={s.page}>
+      <View style={s.profile}>
+        {data.photo_url ? (
+          <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor: accent }]} />
+        ) : (
+          <View style={[s.avatarPlaceholder, { borderColor: accent, backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
+            <Text style={{ fontSize: 36, fontWeight: '800', color: textColor }}>
+              {data.display_name ? data.display_name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase() : '?'}
+            </Text>
+          </View>
+        )}
+        <Text style={[s.name, { color: textColor }]}>{data.display_name}</Text>
+        {data.company ? <Text style={[s.company, { color: subColor }]}>{data.company}</Text> : null}
+        {data.bio ? <Text style={[s.bio, { color: subColor }]}>{data.bio}</Text> : null}
+      </View>
+
+      <View style={s.links}>
+        {otherLinks.map(link => (
+          <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+            <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
+              <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
+            </View>
+            <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
+            <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+          </TouchableOpacity>
+        ))}
+        {socialLinks.length > 0 && (
+          <>
+            <Text style={[s.sectionLabel, { color: subColor }]}>Socials</Text>
+            {socialLinks.map(link => (
+              <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+                <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
+                  <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
+                </View>
+                <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
+                <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+      </View>
+
+      <View style={s.footer}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://app.imosapp.com/install.html')}>
+          <Text style={[s.footerText, { color: subColor }]}>powered by <Text style={s.footerBrand}>i'MOnsocial</Text></Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
+const s = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  page: { maxWidth: 480, alignSelf: 'center', width: '100%', paddingHorizontal: 20, paddingTop: 48, paddingBottom: 32, minHeight: '100%' },
+  profile: { alignItems: 'center', marginBottom: 28 },
+  avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, marginBottom: 14 },
+  avatarPlaceholder: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, marginBottom: 14, alignItems: 'center', justifyContent: 'center' },
+  name: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+  company: { fontSize: 13, fontWeight: '600', marginTop: 2, opacity: 0.5 },
+  bio: { fontSize: 14, marginTop: 8, lineHeight: 21, opacity: 0.7, textAlign: 'center', maxWidth: 320 },
+  links: { gap: 10 },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1 },
+  linkIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  linkLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
+  sectionLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700', marginTop: 18, marginBottom: -2, marginLeft: 4, opacity: 0.5 },
+  footer: { alignItems: 'center', marginTop: 36, paddingTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' },
+  footerText: { fontSize: 12, fontWeight: '600', opacity: 0.4 },
+  footerBrand: { fontWeight: '800' },
+});
