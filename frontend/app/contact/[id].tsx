@@ -179,8 +179,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
 
   lines.forEach((line, i) => {
     const trimmed = line.trim()
-      .replace(/\*\*/g, '')  // strip any leftover markdown bold
-      .replace(/[ --]/g, ', '); // replace em/en dashes with commas
+      .replace(/\*\*/g, '');  // strip any leftover markdown bold
 
     const isHeader = SECTION_HEADERS.some(h => trimmed.toLowerCase().startsWith(h.toLowerCase()));
     const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•');
