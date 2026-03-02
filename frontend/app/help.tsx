@@ -271,7 +271,7 @@ const s = StyleSheet.create({
   iconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#C9A96215', justifyContent: 'center', alignItems: 'center' },
   titleCol: { flex: 1 },
   articleTitle: { fontSize: 14, fontWeight: '700' },
-  articleCategory: { fontSize: 11, color: '#636366', marginTop: 2 },
+  articleCategory: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
   stepsContainer: { paddingHorizontal: 14, paddingBottom: 14, gap: 10 },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#C9A96230', justifyContent: 'center', alignItems: 'center', marginTop: 1 },
@@ -283,7 +283,7 @@ const s = StyleSheet.create({
   goBtnText: { fontSize: 13, fontWeight: '600', color: '#007AFF' },
   // Empty state
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, color: '#636366' },
+  emptyText: { fontSize: 14, color: '#8E8E93' },
   askAIBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: '#C9A96215', marginTop: 8 },
   askAIText: { fontSize: 14, fontWeight: '600', color: '#C9A962' },
 });

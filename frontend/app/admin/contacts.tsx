@@ -279,7 +279,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   contactPhone: {
     fontSize: 13,
-    color: '#AEAEB2',
+    color: colors.textTertiary,
     marginTop: 2,
   },
   contactEmail: {

@@ -3160,7 +3160,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   intelSummaryText: {
     fontSize: 13,
-    color: '#3A3A3C',
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
   },
@@ -3330,7 +3330,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    color: '#3A3A3C',
+    color: colors.text,
     lineHeight: 21,
   },
   userMessageText: {

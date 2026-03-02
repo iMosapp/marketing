@@ -208,7 +208,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   referrerName: {
     fontSize: 13,
-    color: '#AEAEB2',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   storeName: {

@@ -196,7 +196,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   messageText: {
     fontSize: 14,
-    color: '#AEAEB2',
+    color: colors.textTertiary,
     marginTop: 6,
   },
   emptyContainer: {

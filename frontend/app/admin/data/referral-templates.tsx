@@ -199,7 +199,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   templateName: {
     fontSize: 13,
-    color: '#AEAEB2',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   statusBadge: {

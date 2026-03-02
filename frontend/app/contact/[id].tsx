@@ -188,6 +188,7 @@ const EVENT_CATEGORY_ICON: Record<string, { icon: string; color: string }> = {
 const SECTION_HEADERS = ['Quick Take', 'Key Facts', 'Communication Patterns', 'Personal Notes', 'Before Your Next Interaction'];
 
 const IntelRenderer = ({ text }: { text: string }) => {
+  const { colors } = useThemeStore();
   const lines = text.split('\n').filter(l => l.trim());
   const elements: React.ReactNode[] = [];
 
@@ -200,7 +201,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
 
     if (isHeader) {
       elements.push(
-        <Text key={i} style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
+        <Text key={i} style={{ color: colors.text, fontSize: 14, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
           {trimmed.replace(/:$/, '')}
         </Text>
       );
@@ -208,13 +209,13 @@ const IntelRenderer = ({ text }: { text: string }) => {
       const bulletText = trimmed.replace(/^[-•]\s*/, '');
       elements.push(
         <View key={i} style={{ flexDirection: 'row', paddingLeft: 4, marginBottom: 3 }}>
-          <Text style={{ color: '#8E8E93', fontSize: 13, marginRight: 6 }}>{'\u2022'}</Text>
-          <Text style={{ color: '#FFFFFFCC', fontSize: 13, lineHeight: 19, flex: 1 }}>{bulletText}</Text>
+          <Text style={{ color: colors.textTertiary, fontSize: 13, marginRight: 6 }}>{'\u2022'}</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19, flex: 1 }}>{bulletText}</Text>
         </View>
       );
     } else {
       elements.push(
-        <Text key={i} style={{ color: '#FFFFFFCC', fontSize: 13, lineHeight: 19, marginBottom: 4 }}>
+        <Text key={i} style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 4 }}>
           {trimmed}
         </Text>
       );
@@ -2850,7 +2851,7 @@ const getS = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerBtn: { padding: 4, minWidth: 50 },
-  headerTitle: { fontSize: 17, fontWeight: '600', flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 17, fontWeight: '600', flex: 1, textAlign: 'center', color: colors.text },
   headerAction: { fontSize: 17, fontWeight: '600', color: '#C9A962' },
   scroll: { paddingBottom: 32 },
 
@@ -2883,7 +2884,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   touchpointBadgeText: { fontSize: 10, fontWeight: '800', color: colors.text },
   heroInfo: { flex: 1, paddingTop: 2 },
-  heroName: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
+  heroName: { fontSize: 20, fontWeight: '700', marginBottom: 4, color: colors.text },
   heroTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   heroTag: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -2938,7 +2939,7 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1,
   },
   heroTagChipText: {
-    fontSize: 12, fontWeight: '600', maxWidth: 120,
+    fontSize: 12, fontWeight: '600', maxWidth: 120, color: colors.text,
   },
   heroTagsEmpty: {
     fontSize: 12, color: colors.textTertiary, fontStyle: 'italic', paddingBottom: 4,
@@ -2965,14 +2966,14 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1,
   },
   heroCampaignChipText: {
-    fontSize: 12, fontWeight: '600', maxWidth: 120,
+    fontSize: 12, fontWeight: '600', maxWidth: 120, color: colors.text,
   },
   heroCampaignStep: {
-    fontSize: 10, fontWeight: '700',
+    fontSize: 10, fontWeight: '700', color: colors.text,
     paddingHorizontal: 4, paddingVertical: 1, borderRadius: 6,
   },
   heroCampaignDate: {
-    fontSize: 10, fontWeight: '700',
+    fontSize: 10, fontWeight: '700', color: colors.text,
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
   },
 
@@ -3009,7 +3010,7 @@ const getS = (colors: any) => StyleSheet.create({
   composerModeBtnActive: {
   },
   composerModeBtnText: {
-    fontSize: 12, fontWeight: '600',
+    fontSize: 12, fontWeight: '600', color: colors.text,
   },
   composerCallBtn: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: '#32ADE615',
@@ -3020,7 +3021,7 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1, overflow: 'hidden',
   },
   composerInput: {
-    fontSize: 16,
+    fontSize: 16, color: colors.text,
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
     minHeight: 44, maxHeight: 100,
   },
@@ -3052,7 +3053,7 @@ const getS = (colors: any) => StyleSheet.create({
     fontSize: 12, fontWeight: '700', color: '#34C759', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   aiSuggestionText: {
-    fontSize: 14, color: '#3A3A3C', lineHeight: 20, marginBottom: 10,
+    fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginBottom: 10,
   },
   aiSuggestionActions: {
     flexDirection: 'row', gap: 8, justifyContent: 'flex-end',
@@ -3082,7 +3083,7 @@ const getS = (colors: any) => StyleSheet.create({
     alignSelf: 'center', marginBottom: 16,
   },
   sendPickerTitle: {
-    fontSize: 18, fontWeight: '700', marginBottom: 16,
+    fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.text,
   },
   sendPickerItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -3093,7 +3094,7 @@ const getS = (colors: any) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   sendPickerLabel: {
-    fontSize: 16, fontWeight: '600',
+    fontSize: 16, fontWeight: '600', color: colors.text,
   },
   sendPickerSub: {
     fontSize: 12, color: colors.textSecondary, marginTop: 2,
@@ -3135,7 +3136,7 @@ const getS = (colors: any) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.border,
   },
-  progressText: { fontSize: 9, fontWeight: '600', color: '#3A3A3C', textAlign: 'center' },
+  progressText: { fontSize: 9, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
 
   // Section
   section: { marginHorizontal: 16, marginBottom: 16 },
@@ -3243,7 +3244,7 @@ const getS = (colors: any) => StyleSheet.create({
     marginBottom: 10,
   },
   bubbleInput: {
-    fontSize: 15, color: '#3A3A3C', padding: 14, minHeight: 80, textAlignVertical: 'top',
+    fontSize: 15, color: colors.text, padding: 14, minHeight: 80, textAlignVertical: 'top',
     lineHeight: 22,
   },
   bubblePhotoPreview: {
@@ -3274,10 +3275,10 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1,
   },
   suggestedIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  suggestedTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  suggestedDesc: { fontSize: 13 },
+  suggestedTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2, color: colors.text },
+  suggestedDesc: { fontSize: 13, color: colors.textSecondary },
   suggestedMsgPreview: { marginTop: 6, borderRadius: 8, padding: 8, borderWidth: 1 },
-  suggestedMsgText: { fontSize: 12, fontStyle: 'italic', lineHeight: 16 },
+  suggestedMsgText: { fontSize: 12, fontStyle: 'italic', lineHeight: 16, color: colors.textSecondary },
   suggestedArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   showMoreBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -3386,9 +3387,9 @@ const getS = (colors: any) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   vnPlayBtnActive: { backgroundColor: '#34C759' },
-  vnCardDate: { fontSize: 13, fontWeight: '600' },
+  vnCardDate: { fontSize: 13, fontWeight: '600', color: colors.text },
   vnCardDuration: { fontSize: 12, color: colors.textTertiary },
-  vnTranscript: { fontSize: 13, color: '#AEAEB2', lineHeight: 18, marginTop: 8 },
+  vnTranscript: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginTop: 8 },
   // Relationship Intel
   intelBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -3404,14 +3405,14 @@ const getS = (colors: any) => StyleSheet.create({
   intelBtnSub: { fontSize: 11, color: colors.textTertiary, marginTop: 1 },
   intelCard: {
     marginTop: 8, padding: 14, borderRadius: 12,
-    backgroundColor: '#1A1A1C', borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
   intelLoading: {
     flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 20,
     justifyContent: 'center',
   },
   intelLoadingText: { fontSize: 14, color: '#C9A962', fontStyle: 'italic' },
-  intelSummary: { fontSize: 13.5, color: '#3A3A3C', lineHeight: 20 },
+  intelSummary: { fontSize: 13.5, color: colors.textSecondary, lineHeight: 20 },
   intelMeta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
@@ -3465,7 +3466,7 @@ const getS = (colors: any) => StyleSheet.create({
   deleteBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
 
   // View-only rows
-  viewText: { fontSize: 15, color: '#2C2C2E', lineHeight: 22 },
+  viewText: { fontSize: 15, color: colors.text, lineHeight: 22 },
   viewRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border,

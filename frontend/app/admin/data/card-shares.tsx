@@ -198,7 +198,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   contactName: {
     fontSize: 13,
-    color: '#AEAEB2',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   shareFooter: {

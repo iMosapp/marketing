@@ -215,7 +215,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   promptText: {
     fontSize: 13,
-    color: '#AEAEB2',
+    color: colors.textTertiary,
     marginTop: 6,
   },
   responseText: {
