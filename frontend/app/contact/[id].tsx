@@ -2913,9 +2913,9 @@ const getS = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
-  heroStatVal: { fontSize: 14, fontWeight: '700' },
+  heroStatVal: { fontSize: 14, fontWeight: '700', color: colors.text },
   heroStatLbl: { fontSize: 11, color: colors.textTertiary },
-  heroStatDot: { fontSize: 11, color: '#3A3A3C', marginHorizontal: 2 },
+  heroStatDot: { fontSize: 11, color: colors.textTertiary, marginHorizontal: 2 },
 
   // Hero tags strip
   heroTagsStrip: {
@@ -3104,15 +3104,16 @@ const getS = (colors: any) => StyleSheet.create({
     paddingVertical: 10, marginTop: 4,
   },
   feedDateLine: {
-    flex: 1, height: 1,
+    flex: 1, height: 1, backgroundColor: colors.border,
   },
   feedDateText: {
-    fontSize: 11, fontWeight: '700',
+    fontSize: 11, fontWeight: '700', color: colors.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.8,
   },
   feedDateCount: {
-    fontSize: 10, fontWeight: '700',
+    fontSize: 10, fontWeight: '700', color: colors.textSecondary,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+    backgroundColor: colors.surface,
   },
 
   // Action progress tracker
@@ -3153,7 +3154,7 @@ const getS = (colors: any) => StyleSheet.create({
     paddingVertical: 6, paddingHorizontal: 12,
     borderWidth: 1, borderColor: colors.border,
   },
-  tagPillText: { fontSize: 13, fontWeight: '500' },
+  tagPillText: { fontSize: 13, fontWeight: '500', color: colors.text },
   addTagChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#007AFF15', borderRadius: 16,
@@ -3184,15 +3185,15 @@ const getS = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   feedContent: { flex: 1 },
-  feedTitle: { fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  feedDesc: { fontSize: 13, marginBottom: 4 },
+  feedTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 2 },
+  feedDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 4 },
   feedExpandedPreview: { marginTop: 8, marginBottom: 4, gap: 6 },
   feedChannelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  feedChannelText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  feedSubject: { fontSize: 14, fontWeight: '600', color: '#3A3A3C' },
-  feedMessageBubble: { borderRadius: 10, padding: 12, borderWidth: 1 },
+  feedChannelText: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  feedSubject: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  feedMessageBubble: { borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.border },
   feedMessageBubbleInbound: { backgroundColor: '#30D15812', borderColor: '#30D15830' },
-  feedMessageText: { fontSize: 13, lineHeight: 18 },
+  feedMessageText: { fontSize: 13, lineHeight: 18, color: colors.text },
   feedViewLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 4 },
   feedViewLinkText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
   feedTime: { fontSize: 12, color: colors.textTertiary },
@@ -3216,9 +3217,9 @@ const getS = (colors: any) => StyleSheet.create({
   feedSearchRowCompact: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 1, borderColor: colors.border,
   },
-  feedSearchInputCompact: { flex: 1, fontSize: 13, padding: 0 },
+  feedSearchInputCompact: { flex: 1, fontSize: 13, padding: 0, color: colors.text },
 
   // Log Reply  - Chat Bubble Style
   logReplyBubble: {
