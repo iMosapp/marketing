@@ -633,6 +633,13 @@ export default function MoreScreen() {
           color: '#007AFF',
         },
         {
+          icon: 'link',
+          title: 'My Link Page',
+          subtitle: 'Linktree-style page for socials',
+          onPress: () => router.push('/settings/link-page' as any),
+          color: '#C9A962',
+        },
+        {
           icon: 'person',
           title: 'AI Persona',
           subtitle: 'Communication style',
