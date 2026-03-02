@@ -72,6 +72,7 @@ async def save_wizard_progress(org_id: str, data: dict, x_user_id: str = Header(
             "store_id": data.get("store_id"),
             "current_step": data.get("current_step", 1),
             "completed_steps": data.get("completed_steps", []),
+            "completed_step_ids": data.get("completed_step_ids", []),
             "completed": data.get("completed", False),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }},
