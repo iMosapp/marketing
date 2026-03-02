@@ -12,6 +12,7 @@ export default function Root({ children }: PropsWithChildren) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover"
         />
+        <title>i'M On Social</title>
         {/* PWA — must be in static HTML for iOS standalone mode */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -22,6 +23,8 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* Splash screen hints for iOS */}
+        <meta name="apple-mobile-web-app-orientations" content="portrait" />
         {/*
           Disable body scrolling on web to make ScrollView components work correctly.
           If you want to enable scrolling, remove `ScrollViewStyleReset` and
@@ -56,6 +59,16 @@ export default function Root({ children }: PropsWithChildren) {
         }}
       >
         {children}
+        {/* Register service worker on ALL routes — critical for iOS PWA standalone mode */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(function() {});
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
