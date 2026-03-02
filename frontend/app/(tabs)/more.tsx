@@ -671,43 +671,6 @@ export default function MoreScreen() {
         },
       ],
     },
-    // Profile & AI
-    {
-      id: 'profile',
-      title: 'Profile & AI',
-      icon: 'person',
-      color: '#FF9500',
-      items: [
-        {
-          icon: 'card',
-          title: 'My Digital Card',
-          subtitle: 'Bio, socials & preview',
-          onPress: () => router.push('/settings/my-profile'),
-          color: '#007AFF',
-        },
-        {
-          icon: 'link',
-          title: 'My Link Page',
-          subtitle: 'Linktree-style page for socials',
-          onPress: () => router.push('/settings/link-page' as any),
-          color: '#C9A962',
-        },
-        {
-          icon: 'person',
-          title: 'AI Persona',
-          subtitle: 'Communication style',
-          onPress: () => router.push('/settings/persona'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'mic',
-          title: 'Voice Training',
-          subtitle: 'Train AI with your voice',
-          onPress: () => router.push('/voice-training'),
-          color: '#FF3B30',
-        },
-      ],
-    },
     // Settings & Security
     {
       id: 'settings',
