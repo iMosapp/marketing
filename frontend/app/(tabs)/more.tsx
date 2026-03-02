@@ -1364,6 +1364,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     gap: 8,
+    zIndex: 10000,
   },
   profileCard: {
     flex: 1,
@@ -1379,6 +1380,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 8,
+    zIndex: 10000,
   },
   profileSignOutBtn: {
     width: 40,

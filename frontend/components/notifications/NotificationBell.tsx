@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
     zIndex: 9999,
+    ...(IS_WEB ? { overflow: 'visible' as any } : {}),
   },
   button: {
     width: 40,
