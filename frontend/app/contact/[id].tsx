@@ -327,6 +327,7 @@ export default function ContactDetailScreen() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestion, setShowAISuggestion] = useState(false);
   const [collapsedDateGroups, setCollapsedDateGroups] = useState<Record<string, boolean>>({});
+  const [editingAutomation, setEditingAutomation] = useState<{ field: string; label: string; color: string; value: string } | null>(null);
 
   // ===== DATA LOADING =====
   useEffect(() => {
@@ -805,6 +806,19 @@ export default function ContactDetailScreen() {
 
   // State for card template picker
   const [showCardTemplatePicker, setShowCardTemplatePicker] = useState(false);
+
+  // Clear a date automation field
+  const handleClearAutomation = async (field: string) => {
+    if (!user) return;
+    try {
+      await contactsAPI.update(user._id, id as string, { [field]: null });
+      setContact((prev: any) => ({ ...prev, [field]: null }));
+      setEditingAutomation(null);
+      showToast('Automation removed');
+    } catch (e: any) {
+      showSimpleAlert('Error', 'Could not update contact');
+    }
+  };
 
   // Group events by date for collapsible sections
   const groupEventsByDate = (evts: ContactEvent[]) => {
@@ -1294,27 +1308,41 @@ export default function ContactDetailScreen() {
                   </TouchableOpacity>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-                  {/* Date-based automations from contact dates */}
                   {contact.birthday && (
-                    <View style={[s.heroCampaignChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510' }]} data-testid="auto-birthday">
+                    <TouchableOpacity
+                      style={[s.heroCampaignChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510' }]}
+                      onPress={() => setEditingAutomation({ field: 'birthday', label: 'Birthday', color: '#FF2D55', value: contact.birthday })}
+                      activeOpacity={0.7}
+                      data-testid="auto-birthday"
+                    >
                       <Ionicons name="gift" size={13} color="#FF2D55" />
                       <Text style={[s.heroCampaignChipText, { color: '#FF2D55' }]} numberOfLines={1}>Birthday</Text>
                       <Text style={s.heroCampaignDate}>{format(new Date(contact.birthday), 'MMM d')}</Text>
-                    </View>
+                    </TouchableOpacity>
                   )}
                   {contact.anniversary && (
-                    <View style={[s.heroCampaignChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }]} data-testid="auto-anniversary">
+                    <TouchableOpacity
+                      style={[s.heroCampaignChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }]}
+                      onPress={() => setEditingAutomation({ field: 'anniversary', label: 'Anniversary', color: '#FF6B6B', value: contact.anniversary })}
+                      activeOpacity={0.7}
+                      data-testid="auto-anniversary"
+                    >
                       <Ionicons name="heart" size={13} color="#FF6B6B" />
                       <Text style={[s.heroCampaignChipText, { color: '#FF6B6B' }]} numberOfLines={1}>Anniversary</Text>
                       <Text style={s.heroCampaignDate}>{format(new Date(contact.anniversary), 'MMM d')}</Text>
-                    </View>
+                    </TouchableOpacity>
                   )}
                   {contact.date_sold && (
-                    <View style={[s.heroCampaignChip, { borderColor: '#34C75940', backgroundColor: '#34C75910' }]} data-testid="auto-sold">
+                    <TouchableOpacity
+                      style={[s.heroCampaignChip, { borderColor: '#34C75940', backgroundColor: '#34C75910' }]}
+                      onPress={() => setEditingAutomation({ field: 'date_sold', label: 'Sold Date', color: '#34C759', value: contact.date_sold })}
+                      activeOpacity={0.7}
+                      data-testid="auto-sold"
+                    >
                       <Ionicons name="car-sport" size={13} color="#34C759" />
                       <Text style={[s.heroCampaignChipText, { color: '#34C759' }]} numberOfLines={1}>Sold Date</Text>
                       <Text style={s.heroCampaignDate}>{format(new Date(contact.date_sold), 'MMM d')}</Text>
-                    </View>
+                    </TouchableOpacity>
                   )}
                   {/* Enrolled campaigns */}
                   {contactEnrollments.map((e, i) => {
