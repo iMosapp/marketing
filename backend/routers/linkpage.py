@@ -118,6 +118,25 @@ async def get_user_link_page(user_id: str):
             if platform["key"] not in social_links:
                 social_links[platform["key"]] = {"username": "", "visible": False}
                 updated = True
+
+        # Auto-sync: if ALL social usernames are empty, re-pull from user profile
+        all_empty = all(
+            not entry.get("username", "") for entry in social_links.values()
+            if isinstance(entry, dict)
+        )
+        if all_empty:
+            user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+            if user:
+                store = None
+                if user.get("store_id"):
+                    store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
+                user_social = user.get("social_links", {})
+                if not user_social and store:
+                    user_social = store.get("social_links", {})
+                if any(v for v in user_social.values()):
+                    social_links = build_default_social_links(user_social)
+                    updated = True
+
         if updated or "social_links" not in page:
             page["social_links"] = social_links
             await db.link_pages.update_one(
