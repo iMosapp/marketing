@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, Alert, Switch, Image, Platform, Linking,
+  ActivityIndicator, Alert, Switch, Platform, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,13 +10,17 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 
-const SOCIAL_ICONS: Record<string, { name: string; color: string }> = {
-  'logo-instagram': { name: 'logo-instagram', color: '#E4405F' },
-  'logo-facebook': { name: 'logo-facebook', color: '#1877F2' },
-  'logo-tiktok': { name: 'logo-tiktok', color: '#000' },
-  'logo-linkedin': { name: 'logo-linkedin', color: '#0A66C2' },
-  'logo-youtube': { name: 'logo-youtube', color: '#FF0000' },
-  'logo-twitter': { name: 'logo-twitter', color: '#000' },
+// Same platforms as My Profile — users only enter their username
+const SOCIAL_PLATFORMS = [
+  { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', prefix: 'facebook.com/', placeholder: 'yourprofile' },
+  { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
+  { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', prefix: 'linkedin.com/in/', placeholder: 'yourprofile' },
+  { key: 'twitter', label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2', prefix: 'x.com/', placeholder: 'yourhandle' },
+  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#000000', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
+  { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#FF0000', prefix: 'youtube.com/@', placeholder: 'yourchannel' },
+];
+
+const CONTACT_ICONS: Record<string, { name: string; color: string }> = {
   'call': { name: 'call', color: '#34C759' },
   'mail': { name: 'mail', color: '#007AFF' },
   'card': { name: 'card', color: '#C9A962' },
@@ -25,14 +29,8 @@ const SOCIAL_ICONS: Record<string, { name: string; color: string }> = {
   'link': { name: 'link', color: '#8E8E93' },
 };
 
-interface LinkItem {
-  id: string;
-  label: string;
-  url: string;
-  icon: string;
-  color: string;
-  visible: boolean;
-}
+interface LinkItem { id: string; label: string; url: string; icon: string; color: string; visible: boolean; }
+interface SocialEntry { username: string; visible: boolean; }
 
 export default function EditLinkPage() {
   const router = useRouter();
@@ -43,6 +41,7 @@ export default function EditLinkPage() {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [socialLinks, setSocialLinks] = useState<Record<string, SocialEntry>>({});
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [customLinks, setCustomLinks] = useState<LinkItem[]>([]);
   const [theme, setTheme] = useState('dark');
@@ -59,12 +58,13 @@ export default function EditLinkPage() {
       setUsername(d.username || '');
       setDisplayName(d.display_name || '');
       setBio(d.bio || '');
+      setSocialLinks(d.social_links || {});
       setLinks(d.links || []);
       setCustomLinks(d.custom_links || []);
       setTheme(d.theme || 'dark');
       setAccentColor(d.accent_color || '#C9A962');
       setViews(d.views || 0);
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Failed to load link page');
     } finally { setLoading(false); }
   };
@@ -82,6 +82,7 @@ export default function EditLinkPage() {
     try {
       await api.put(`/linkpage/user/${user?._id}`, {
         username, display_name: displayName, bio,
+        social_links: socialLinks,
         links, custom_links: customLinks, theme, accent_color: accentColor,
       });
       Alert.alert('Saved!', 'Your link page has been updated.');
@@ -90,18 +91,31 @@ export default function EditLinkPage() {
     } finally { setSaving(false); }
   };
 
-  const toggleLink = (id: string) => {
+  const updateSocialUsername = (key: string, value: string) => {
+    const cleaned = value.replace(/^@/, '');
+    setSocialLinks(prev => ({
+      ...prev,
+      [key]: { ...prev[key], username: cleaned },
+    }));
+  };
+
+  const toggleSocialVisibility = (key: string) => {
+    setSocialLinks(prev => ({
+      ...prev,
+      [key]: { ...prev[key], visible: !prev[key]?.visible },
+    }));
+  };
+
+  const toggleContactLink = (id: string) => {
     setLinks(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
   };
 
   const addCustomLink = () => {
     setCustomLinks(prev => [...prev, { id: `custom_${Date.now()}`, label: '', url: '', icon: 'globe', color: '#8E8E93', visible: true }]);
   };
-
   const updateCustomLink = (id: string, field: string, value: string) => {
     setCustomLinks(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
   };
-
   const removeCustomLink = (id: string) => {
     setCustomLinks(prev => prev.filter(l => l.id !== id));
   };
@@ -111,13 +125,13 @@ export default function EditLinkPage() {
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(url);
       Alert.alert('Copied!', url);
-    } else {
-      Linking.openURL(url);
-    }
+    } else { Linking.openURL(url); }
   };
 
   if (loading) return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} /></SafeAreaView>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]}>
+      <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
+    </SafeAreaView>
   );
 
   return (
@@ -144,7 +158,6 @@ export default function EditLinkPage() {
             <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '700' }}>Copy</Text>
           </View>
         </TouchableOpacity>
-
         <Text style={[s.statsText, { color: colors.textSecondary }]}>{views} page views</Text>
 
         {/* Username */}
@@ -180,8 +193,7 @@ export default function EditLinkPage() {
           onChangeText={setBio}
           placeholder="Short bio or tagline..."
           placeholderTextColor={colors.textTertiary}
-          multiline
-          numberOfLines={3}
+          multiline numberOfLines={3}
           data-testid="linkpage-bio"
         />
 
@@ -207,25 +219,66 @@ export default function EditLinkPage() {
           ))}
         </View>
 
-        {/* Links */}
-        <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>LINKS</Text>
-        {links.map(link => {
-          const iconInfo = SOCIAL_ICONS[link.icon] || SOCIAL_ICONS['link'];
+        {/* Social Links — prefix + username input (like My Profile) */}
+        <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>SOCIAL LINKS</Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12, opacity: 0.7 }}>
+          Just enter your username — the URL is built automatically.
+        </Text>
+        {SOCIAL_PLATFORMS.map(platform => {
+          const entry = socialLinks[platform.key] || { username: '', visible: true };
           return (
-            <View key={link.id} style={[s.linkRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[s.linkIconBox, { backgroundColor: `${link.color}18` }]}>
-                <Ionicons name={iconInfo.name as any} size={18} color={link.color} />
+            <View key={platform.key} style={[s.socialRow, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`social-${platform.key}`}>
+              <View style={s.socialHeader}>
+                <Ionicons name={platform.icon as any} size={20} color={platform.color} />
+                <Text style={[s.socialLabel, { color: colors.text }]}>{platform.label}</Text>
+                <Switch
+                  value={entry.visible}
+                  onValueChange={() => toggleSocialVisibility(platform.key)}
+                  trackColor={{ false: '#3A3A3C', true: `${colors.accent}60` }}
+                  thumbColor={entry.visible ? colors.accent : '#8E8E93'}
+                />
               </View>
-              <Text style={[s.linkLabel, { color: colors.text }]}>{link.label}</Text>
-              <Switch
-                value={link.visible}
-                onValueChange={() => toggleLink(link.id)}
-                trackColor={{ false: '#3A3A3C', true: `${colors.accent}60` }}
-                thumbColor={link.visible ? colors.accent : '#8E8E93'}
-              />
+              <View style={s.socialInputRow}>
+                <View style={[s.socialPrefix, { backgroundColor: colors.bg }]}>
+                  <Text style={[s.socialPrefixText, { color: colors.textSecondary }]}>{platform.prefix}</Text>
+                </View>
+                <TextInput
+                  style={[s.socialInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+                  value={entry.username}
+                  onChangeText={v => updateSocialUsername(platform.key, v)}
+                  placeholder={platform.placeholder}
+                  placeholderTextColor={colors.textTertiary}
+                  autoCapitalize="none"
+                  data-testid={`social-input-${platform.key}`}
+                />
+              </View>
             </View>
           );
         })}
+
+        {/* Contact Links — toggle visibility */}
+        {links.length > 0 && (
+          <>
+            <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>CONTACT LINKS</Text>
+            {links.map(link => {
+              const iconInfo = CONTACT_ICONS[link.icon] || CONTACT_ICONS['link'];
+              return (
+                <View key={link.id} style={[s.linkRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={[s.linkIconBox, { backgroundColor: `${link.color}18` }]}>
+                    <Ionicons name={iconInfo.name as any} size={18} color={link.color} />
+                  </View>
+                  <Text style={[s.linkLabel, { color: colors.text }]}>{link.label}</Text>
+                  <Switch
+                    value={link.visible}
+                    onValueChange={() => toggleContactLink(link.id)}
+                    trackColor={{ false: '#3A3A3C', true: `${colors.accent}60` }}
+                    thumbColor={link.visible ? colors.accent : '#8E8E93'}
+                  />
+                </View>
+              );
+            })}
+          </>
+        )}
 
         {/* Custom Links */}
         <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>CUSTOM LINKS</Text>
@@ -249,8 +302,7 @@ export default function EditLinkPage() {
               onChangeText={v => updateCustomLink(link.id, 'url', v)}
               placeholder="https://..."
               placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              keyboardType="url"
+              autoCapitalize="none" keyboardType="url"
             />
           </View>
         ))}
@@ -284,9 +336,19 @@ const s = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   colorDot: { width: 32, height: 32, borderRadius: 16 },
   colorDotActive: { borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  // Social links
+  socialRow: { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
+  socialHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  socialLabel: { flex: 1, fontSize: 14, fontWeight: '600' },
+  socialInputRow: { flexDirection: 'row', alignItems: 'center' },
+  socialPrefix: { paddingHorizontal: 10, paddingVertical: 10, borderTopLeftRadius: 8, borderBottomLeftRadius: 8 },
+  socialPrefixText: { fontSize: 13, fontWeight: '500' },
+  socialInput: { flex: 1, padding: 10, fontSize: 14, borderWidth: 1, borderTopRightRadius: 8, borderBottomRightRadius: 8 },
+  // Contact links
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
   linkIconBox: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   linkLabel: { flex: 1, fontSize: 14, fontWeight: '600' },
+  // Custom links
   customLinkCard: { padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 8 },
   customInput: { padding: 10, borderRadius: 8, fontSize: 14, borderWidth: 1 },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed' },
