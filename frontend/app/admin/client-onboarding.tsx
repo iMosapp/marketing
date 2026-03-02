@@ -396,7 +396,16 @@ export default function ClientOnboardingScreen() {
   const renderStepTeam = (client: Client) => {
     return (
       <View style={st.form}>
-        <Text style={st.formDesc}>Add team members for {client.client_name}. They'll get login credentials automatically.</Text>
+        <WhatYouNeed items={[
+          "Full name, email, and phone for each team member",
+          "Their role: Sales Rep or Manager",
+          "You'll hand them a login sheet before you leave",
+        ]} />
+
+        <Text style={st.sectionHead}>1. Manage Team in the App</Text>
+        <ActionLink icon="people-outline" label="Open Manage Team" onPress={() => router.push('/admin/manage-team' as any)} testId="action-manage-team" />
+
+        <Text style={st.sectionHead}>2. Quick-Add Members Here</Text>
 
         {teamRows.map((member, idx) => (
           <View key={idx} style={st.teamCard}>
