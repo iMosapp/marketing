@@ -649,12 +649,34 @@ export default function ContactDetailScreen() {
       });
       const conversationId = conv._id || conv.id;
       
-      await messagesAPI.send(user._id, {
-        conversation_id: conversationId,
-        content,
-        channel: composerMode,
-      });
-      showToast('Message sent!');
+      if (composerMode === 'sms') {
+        // For SMS: Use personal SMS flow — log the message server-side, then open native SMS app
+        await messagesAPI.send(user._id, {
+          conversation_id: conversationId,
+          content,
+          channel: 'sms_personal',
+        });
+        
+        // Open native SMS app with the message pre-filled
+        if (IS_WEB && typeof window !== 'undefined') {
+          const ua = window.navigator.userAgent.toLowerCase();
+          const isIos = /iphone|ipad|ipod/.test(ua);
+          const sep = isIos ? '&' : '?';
+          const smsUrl = `sms:${encodeURIComponent(contact.phone || '')}${sep}body=${encodeURIComponent(content)}`;
+          window.open(smsUrl, '_self');
+        }
+        
+        showToast('Message logged & SMS app opened!');
+      } else {
+        // Email: send directly via Resend
+        await messagesAPI.send(user._id, {
+          conversation_id: conversationId,
+          content,
+          channel: 'email',
+        });
+        showToast('Email sent!');
+      }
+      
       setComposerMessage('');
       setShowAISuggestion(false);
       setAiSuggestion('');
@@ -686,37 +708,98 @@ export default function ContactDetailScreen() {
   };
 
   // Handle "Send Something" picker action
-  const handleSendPickerAction = (action: string) => {
+  const handleSendPickerAction = async (action: string) => {
     setShowSendPicker(false);
-    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contact.email || '')}`;
+    const baseUrl = process.env.REACT_APP_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+    const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+    
     switch (action) {
-      case 'card':
-        router.push(`/thread/${id}?${threadParams}&mode=card`);
+      case 'card': {
+        // Digital Card — fetch short URL and pre-fill composer
+        try {
+          const resp = await api.get(`/card/short-url/${user._id}`);
+          const url = resp.data?.short_url || resp.data?.full_url || `${baseUrl}/p/${user._id}`;
+          setComposerMessage(prev => prev ? `${prev}\n${url}` : `Hey ${contact.first_name || ''}! Here's my card: ${url}`);
+        } catch {
+          setComposerMessage(prev => prev ? `${prev}\n${baseUrl}/p/${user._id}` : `Hey ${contact.first_name || ''}! Here's my card: ${baseUrl}/p/${user._id}`);
+        }
         break;
-      case 'congrats':
-        router.push(`/thread/${id}?${threadParams}&mode=congrats`);
+      }
+      case 'create-card': {
+        // Show card template picker (handled by showCardTemplatePicker state)
+        setShowCardTemplatePicker(true);
         break;
-      case 'review':
-        router.push(`/thread/${id}?${threadParams}&mode=review`);
+      }
+      case 'review': {
+        // Review Link — construct the review page URL using store_slug
+        const storeSlug = user?.store_slug;
+        if (storeSlug) {
+          const reviewUrl = `${baseUrl}/review/${storeSlug}`;
+          setComposerMessage(prev => prev ? `${prev}\n${reviewUrl}` : `Hi ${contact.first_name || ''}, would you mind leaving us a quick review? ${reviewUrl}`);
+        } else {
+          showSimpleAlert('Not Set Up', 'No review page configured yet');
+        }
         break;
-      case 'showcase':
-        const baseUrl = process.env.REACT_APP_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      }
+      case 'showcase': {
         const showcaseUrl = user?.store_slug ? `${baseUrl}/showcase/${user.store_slug}` : '';
         if (showcaseUrl) setComposerMessage(prev => prev ? `${prev}\n${showcaseUrl}` : `Check out my showcase: ${showcaseUrl}`);
         else showSimpleAlert('Missing Info', 'No showcase URL configured');
         break;
-      case 'linkpage':
-        const linkBase = process.env.REACT_APP_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-        const linkUrl = user?.link_username ? `${linkBase}/l/${user.link_username}` : '';
-        if (linkUrl) setComposerMessage(prev => prev ? `${prev}\n${linkUrl}` : `Check out my links: ${linkUrl}`);
-        else showSimpleAlert('Missing Info', 'No link page configured');
+      }
+      case 'linkpage': {
+        // Link Page — try user data first, then API
+        try {
+          const resp = await api.get(`/linkpage/user/${user._id}`);
+          const username = resp.data?.username;
+          if (username) {
+            const url = `${baseUrl}/l/${username}`;
+            setComposerMessage(prev => prev ? `${prev}\n${url}` : `Check out my links: ${url}`);
+          } else {
+            showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
+          }
+        } catch {
+          showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
+        }
         break;
-      case 'call':
+      }
+      case 'photo': {
+        // Open image picker
+        try {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.7,
+          });
+          if (!result.canceled && result.assets[0]?.uri) {
+            showToast('Photo selected — sending via MMS is not yet available');
+          }
+        } catch (e) {
+          console.error('Photo pick error:', e);
+        }
+        break;
+      }
+      case 'call': {
         if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
-        router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
+        if (IS_WEB && typeof window !== 'undefined') {
+          window.open(`tel:${contact.phone}`, '_self');
+        } else {
+          router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent(contactName)}&phone=${encodeURIComponent(contact.phone)}`);
+        }
         break;
+      }
     }
   };
+
+  // Handle card template selection → navigate to card creation and return
+  const handleCardTemplateSelect = (cardType: string) => {
+    setShowCardTemplatePicker(false);
+    const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+    router.push(`/settings/create-card?type=${cardType}&for_contact=${id}&contact_name=${encodeURIComponent(contactName)}&return_to_contact=true`);
+  };
+
+  // State for card template picker
+  const [showCardTemplatePicker, setShowCardTemplatePicker] = useState(false);
 
   // Group events by date for collapsible sections
   const groupEventsByDate = (evts: ContactEvent[]) => {
@@ -2043,7 +2126,7 @@ export default function ContactDetailScreen() {
                     onPress={() => setShowSendPicker(true)}
                     data-testid="send-picker-btn"
                   >
-                    <Ionicons name="add-circle-outline" size={22} color="#8E8E93" />
+                    <Ionicons name="add-circle" size={24} color="#007AFF" />
                   </TouchableOpacity>
                   {/* Log Reply */}
                   <TouchableOpacity
@@ -2051,19 +2134,19 @@ export default function ContactDetailScreen() {
                     onPress={() => setShowLogReply(true)}
                     data-testid="composer-log-reply-btn"
                   >
-                    <Ionicons name="chatbubble-ellipses-outline" size={22} color="#30D158" />
+                    <Ionicons name="arrow-undo" size={20} color="#FF9500" />
                   </TouchableOpacity>
                   {/* AI Sparkle */}
                   <TouchableOpacity
-                    style={s.composerToolBtn}
+                    style={[s.composerToolBtn, loadingAI && { opacity: 0.5 }]}
                     onPress={loadAISuggestionForComposer}
                     disabled={loadingAI}
                     data-testid="ai-sparkle-btn"
                   >
                     {loadingAI ? (
-                      <ActivityIndicator size="small" color="#34C759" />
+                      <ActivityIndicator size="small" color="#AF52DE" />
                     ) : (
-                      <Ionicons name="sparkles" size={20} color="#34C759" />
+                      <Ionicons name="sparkles" size={20} color="#AF52DE" />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -2124,11 +2207,12 @@ export default function ContactDetailScreen() {
             <View style={s.sendPickerHandle} />
             <Text style={s.sendPickerTitle}>Send Something</Text>
             {[
-              { key: 'card', icon: 'card', label: 'Digital Card', sub: 'Send your business card', color: '#007AFF' },
-              { key: 'congrats', icon: 'gift', label: 'Congrats Card', sub: 'Photo card with templates', color: '#C9A962' },
+              { key: 'card', icon: 'person-circle', label: 'My Digital Card', sub: 'Share your business card link', color: '#007AFF' },
+              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
               { key: 'review', icon: 'star', label: 'Review Link', sub: 'Request a review', color: '#FFD60A' },
               { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
               { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
+              { key: 'photo', icon: 'camera', label: 'Photo', sub: 'Take or upload a photo', color: '#32ADE6' },
             ].map(item => (
               <TouchableOpacity
                 key={item.key}
@@ -2136,6 +2220,41 @@ export default function ContactDetailScreen() {
                 onPress={() => handleSendPickerAction(item.key)}
                 activeOpacity={0.7}
                 data-testid={`send-picker-${item.key}`}
+              >
+                <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.sendPickerLabel}>{item.label}</Text>
+                  <Text style={s.sendPickerSub}>{item.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Card Template Picker */}
+      <Modal visible={showCardTemplatePicker} animationType="fade" transparent onRequestClose={() => setShowCardTemplatePicker(false)}>
+        <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowCardTemplatePicker(false)}>
+          <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
+            <View style={s.sendPickerHandle} />
+            <Text style={s.sendPickerTitle}>Choose a Card Template</Text>
+            {[
+              { type: 'congrats', label: 'Congratulations', sub: 'Celebrate a purchase or milestone', color: '#C9A962', icon: 'trophy' },
+              { type: 'birthday', label: 'Happy Birthday', sub: 'Send birthday wishes', color: '#FF2D55', icon: 'gift' },
+              { type: 'anniversary', label: 'Anniversary', sub: 'Celebrate their anniversary', color: '#FF6B6B', icon: 'heart' },
+              { type: 'thankyou', label: 'Thank You', sub: 'Show your appreciation', color: '#34C759', icon: 'thumbs-up' },
+              { type: 'welcome', label: 'Welcome', sub: 'Welcome a new customer', color: '#007AFF', icon: 'hand-left' },
+              { type: 'holiday', label: 'Holiday', sub: 'Seasonal greetings', color: '#5AC8FA', icon: 'snow' },
+            ].map(item => (
+              <TouchableOpacity
+                key={item.type}
+                style={s.sendPickerItem}
+                onPress={() => handleCardTemplateSelect(item.type)}
+                activeOpacity={0.7}
+                data-testid={`card-template-${item.type}`}
               >
                 <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={20} color={item.color} />
