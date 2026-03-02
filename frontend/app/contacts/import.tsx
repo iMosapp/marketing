@@ -273,7 +273,7 @@ export default function ImportContactsScreen() {
             </View>
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>From Phone</Text>
-              <Text style={styles.optionDesc}>Import contacts from your device's address book{'\n'}(Requires App Store version — not available on web)</Text>
+              <Text style={styles.optionDesc}>Import contacts from your device's address book{'\n'}(Requires App Store version  - not available on web)</Text>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#8E8E93" />
           </TouchableOpacity>

@@ -180,7 +180,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
   lines.forEach((line, i) => {
     const trimmed = line.trim()
       .replace(/\*\*/g, '')  // strip any leftover markdown bold
-      .replace(/[—–]/g, ', '); // replace em/en dashes with commas
+      .replace(/[ --]/g, ', '); // replace em/en dashes with commas
 
     const isHeader = SECTION_HEADERS.some(h => trimmed.toLowerCase().startsWith(h.toLowerCase()));
     const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•');
@@ -252,6 +252,7 @@ export default function ContactDetailScreen() {
   const [showAllNotes, setShowAllNotes] = useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const recordingTimerRef = React.useRef<any>(null);
+  const scrollRef = React.useRef<ScrollView>(null);
   const MAX_RECORDING_SECONDS = 120;
 
   // AI Relationship Intel
@@ -600,7 +601,7 @@ export default function ContactDetailScreen() {
       return;
     }
     
-    // Build thread URL with contact info — always include both email fields
+    // Build thread URL with contact info  - always include both email fields
     const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contactEmail)}`;
     
     switch (key) {
@@ -650,7 +651,7 @@ export default function ContactDetailScreen() {
       const conversationId = conv._id || conv.id;
       
       if (composerMode === 'sms') {
-        // For SMS: Use personal SMS flow — log the message server-side, then open native SMS app
+        // For SMS: Use personal SMS flow  - log the message server-side, then open native SMS app
         await messagesAPI.send(user._id, {
           conversation_id: conversationId,
           content,
@@ -715,7 +716,7 @@ export default function ContactDetailScreen() {
     
     switch (action) {
       case 'card': {
-        // Digital Card — fetch short URL and pre-fill composer
+        // Digital Card  - fetch short URL and pre-fill composer
         try {
           const resp = await api.get(`/card/short-url/${user._id}`);
           const url = resp.data?.short_url || resp.data?.full_url || `${baseUrl}/p/${user._id}`;
@@ -731,7 +732,7 @@ export default function ContactDetailScreen() {
         break;
       }
       case 'review': {
-        // Review Link — construct the review page URL using store_slug
+        // Review Link  - construct the review page URL using store_slug
         const storeSlug = user?.store_slug;
         if (storeSlug) {
           const reviewUrl = `${baseUrl}/review/${storeSlug}`;
@@ -748,7 +749,7 @@ export default function ContactDetailScreen() {
         break;
       }
       case 'linkpage': {
-        // Link Page — try user data first, then API
+        // Link Page  - try user data first, then API
         try {
           const resp = await api.get(`/linkpage/user/${user._id}`);
           const username = resp.data?.username;
@@ -772,7 +773,7 @@ export default function ContactDetailScreen() {
             quality: 0.7,
           });
           if (!result.canceled && result.assets[0]?.uri) {
-            showToast('Photo selected — sending via MMS is not yet available');
+            showToast('Photo selected  - sending via MMS is not yet available');
           }
         } catch (e) {
           console.error('Photo pick error:', e);
@@ -997,7 +998,7 @@ export default function ContactDetailScreen() {
       const data = await contactsAPI.getContactIntel(user._id, id as string);
       if (data.summary) setIntelData(data);
     } catch (e) {
-      // No cached intel — that's fine
+      // No cached intel  - that's fine
     }
   };
 
@@ -1012,6 +1013,10 @@ export default function ContactDetailScreen() {
       setShowIntel(true);
       const data = await contactsAPI.generateContactIntel(user._id, id as string);
       setIntelData(data);
+      // Scroll to top so user sees the refreshed Intel
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }, 300);
     } catch (e) {
       console.error('Failed to generate intel:', e);
       showSimpleAlert('Error', 'Failed to generate AI summary. Please try again.');
@@ -1179,7 +1184,7 @@ export default function ContactDetailScreen() {
           )}
         </View>
 
-        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: 80 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} contentContainerStyle={[s.scroll, { paddingBottom: 80 }]} showsVerticalScrollIndicator={false}>
           {/* ===== COMPACT PROFILE HERO ===== */}
           <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
             <View style={s.heroRow}>
@@ -1400,7 +1405,7 @@ export default function ContactDetailScreen() {
                 </View>
               </View>
 
-              {/* Tags (edit mode — at top) */}
+              {/* Tags (edit mode  - at top) */}
               <View style={s.section}>
                 <Text style={s.sectionHeader}>Tags</Text>
                 <View style={s.tagsWrap}>
@@ -1423,7 +1428,7 @@ export default function ContactDetailScreen() {
                 </View>
               </View>
 
-              {/* Important Dates (edit mode — at top) */}
+              {/* Important Dates (edit mode  - at top) */}
               <View style={s.section}>
                 <Text style={s.sectionHeader}>Important Dates</Text>
                 {[
@@ -1563,7 +1568,7 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
-          {/* Tags now shown inline in hero — edit-mode tags remain in edit form */}
+          {/* Tags now shown inline in hero  - edit-mode tags remain in edit form */}
 
 
           {/* ===== VOICE NOTES ===== */}
@@ -1729,7 +1734,7 @@ export default function ContactDetailScreen() {
                 )}
               </View>
 
-              {/* Log Reply Inline Composer — Chat Bubble Style */}
+              {/* Log Reply Inline Composer  - Chat Bubble Style */}
               {showLogReply && (
                 <View style={s.logReplyBubble} data-testid="log-reply-composer">
                   {/* Bubble tail indicator */}
@@ -2673,7 +2678,7 @@ const s = StyleSheet.create({
   headerAction: { fontSize: 17, fontWeight: '600', color: '#C9A962' },
   scroll: { paddingBottom: 32 },
 
-  // Hero section — compact left-aligned
+  // Hero section  - compact left-aligned
   heroSection: {
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
   },
@@ -3007,7 +3012,7 @@ const s = StyleSheet.create({
   },
   feedSearchInputCompact: { flex: 1, fontSize: 13, color: '#F2F2F7', padding: 0 },
 
-  // Log Reply — Chat Bubble Style
+  // Log Reply  - Chat Bubble Style
   logReplyBubble: {
     backgroundColor: '#1A2E1A', borderRadius: 20, padding: 16, marginBottom: 14,
     borderWidth: 1.5, borderColor: '#30D15850',

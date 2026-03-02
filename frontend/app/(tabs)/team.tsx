@@ -421,7 +421,7 @@ export default function TeamChatScreen() {
         )}
         </TouchableOpacity>
         
-        {/* 3-dot menu button — outside the tap area */}
+        {/* 3-dot menu button  - outside the tap area */}
         <TouchableOpacity
           style={styles.channelMenuBtn}
           onPress={(e: any) => {

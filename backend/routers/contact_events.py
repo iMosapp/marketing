@@ -121,7 +121,7 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
                             upcoming.append({
                                 "type": "campaign_upcoming",
                                 "title": f"Campaign: {campaign['name']}",
-                                "description": f"Step {step_idx + 1} of {len(steps)} — {steps[step_idx].get('type', 'action')}",
+                                "description": f"Step {step_idx + 1} of {len(steps)}  - {steps[step_idx].get('type', 'action')}",
                                 "icon": "rocket",
                                 "color": "#AF52DE",
                                 "contact": contact_info,
@@ -184,7 +184,7 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
                                 "color": "#34C759",
                                 "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo"), "tags": contact.get("tags", [])},
                                 "action": "sms",
-                                "suggested_message": f"Hey {name}! It's been {milestone} days — how's everything going? Let me know if you need anything!",
+                                "suggested_message": f"Hey {name}! It's been {milestone} days  - how's everything going? Let me know if you need anything!",
                             })
                             break
                 except Exception:
@@ -515,7 +515,7 @@ async def log_customer_reply(user_id: str, contact_id: str, reply_data: dict):
 
     text = (reply_data.get("text") or "").strip()
     photo_data = reply_data.get("photo")  # base64 or URL
-    reply_timestamp = reply_data.get("timestamp")  # optional — user can set when reply happened
+    reply_timestamp = reply_data.get("timestamp")  # optional  - user can set when reply happened
 
     if not text and not photo_data:
         raise HTTPException(status_code=400, detail="Reply must have text or a photo")
@@ -632,7 +632,7 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                 })
                 break
 
-    # Check last activity — nudge if no touchpoint in 30+ days
+    # Check last activity  - nudge if no touchpoint in 30+ days
     last_event = await db.contact_events.find_one(
         {"contact_id": contact_id, "event_type": {"$nin": ["customer_reply", "congrats_card_viewed"]}},
         {"_id": 0, "timestamp": 1},
@@ -650,7 +650,7 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                 "color": "#FF9F0A",
                 "title": f"Time to reconnect",
                 "description": f"It's been {days_since_contact} days since your last touchpoint with {name}",
-                "suggested_message": f"Hey {name}! Just checking in — haven't connected in a while. Hope everything's going great! Let me know if there's anything you need.",
+                "suggested_message": f"Hey {name}! Just checking in  - haven't connected in a while. Hope everything's going great! Let me know if there's anything you need.",
                 "action": "sms",
             })
 
@@ -674,8 +674,8 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                 "icon": "star",
                 "color": "#FFD60A",
                 "title": "Thank them for their review!",
-                "description": f"{name} left a review — send a thank you",
-                "suggested_message": f"Hey {name}! Thank you so much for leaving that review — it really means a lot! If you know anyone else looking, I'd love to help them out too.",
+                "description": f"{name} left a review  - send a thank you",
+                "suggested_message": f"Hey {name}! Thank you so much for leaving that review  - it really means a lot! If you know anyone else looking, I'd love to help them out too.",
                 "action": "sms",
             })
 

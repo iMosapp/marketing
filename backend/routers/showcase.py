@@ -1,5 +1,5 @@
 """
-The Showroom — Public social proof showcase page.
+The Showroom  - Public social proof showcase page.
 Displays delivery photos (congrats cards) paired with customer reviews.
 """
 from fastapi import APIRouter, HTTPException, Query

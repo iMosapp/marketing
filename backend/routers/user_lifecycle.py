@@ -2,7 +2,7 @@
 Internal User Lifecycle & Auto-Tagging System
 Tags users based on tenure, role changes, activity, and status.
 Sends automated messages from iMOs for milestones and retention.
-"Eat our own dog food" — use iMOs to manage iMOs users.
+"Eat our own dog food"  - use iMOs to manage iMOs users.
 """
 from fastapi import APIRouter, Header
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # ============= TAG DEFINITIONS =============
 
-# Tenure tags — applied based on user created_at
+# Tenure tags  - applied based on user created_at
 TENURE_MILESTONES = [
     (30, "tenure_30_days", "30 Days with iMOs!"),
     (90, "tenure_90_days", "90 Days with iMOs!"),
@@ -27,7 +27,7 @@ TENURE_MILESTONES = [
     (1095, "tenure_3_years", "3 Year Anniversary with iMOs!"),
 ]
 
-# Role tags — applied on role changes
+# Role tags  - applied on role changes
 ROLE_TAGS = {
     "user": "role_user",
     "store_manager": "role_manager",
@@ -35,7 +35,7 @@ ROLE_TAGS = {
     "super_admin": "role_super_admin",
 }
 
-# Activity tags — applied based on usage patterns
+# Activity tags  - applied based on usage patterns
 ACTIVITY_THRESHOLDS = {
     "power_user": {"messages_sent": 100, "contacts_added": 50},
     "active_user": {"messages_sent": 20, "contacts_added": 10},
@@ -168,7 +168,7 @@ async def on_user_reactivated(user_id: str, reactivated_by: str = None):
     await log_lifecycle_event(user_id, "reactivated", "Welcome back! Account reactivated", {"reactivated_by": reactivated_by})
 
 async def on_user_login(user_id: str):
-    """Called on each user login — updates activity tags"""
+    """Called on each user login  - updates activity tags"""
     db = get_db()
     await db.users.update_one(
         {"_id": ObjectId(user_id)},
@@ -253,7 +253,7 @@ async def run_lifecycle_scan(x_user_id: str = Header(None, alias="X-User-ID")):
             
             if days_inactive >= DORMANT_DAYS and "dormant" not in internal_tags:
                 await apply_user_tag(uid, "dormant", f"no login for {days_inactive} days")
-                await log_lifecycle_event(uid, "inactivity", f"Dormant — {days_inactive} days without login")
+                await log_lifecycle_event(uid, "inactivity", f"Dormant  - {days_inactive} days without login")
                 await db.lifecycle_messages.insert_one({
                     "user_id": uid,
                     "type": "inactivity_warning",
@@ -268,7 +268,7 @@ async def run_lifecycle_scan(x_user_id: str = Header(None, alias="X-User-ID")):
                 
             elif days_inactive >= INACTIVE_DAYS and "at_risk" not in internal_tags:
                 await apply_user_tag(uid, "at_risk", f"no login for {days_inactive} days")
-                await log_lifecycle_event(uid, "inactivity", f"At risk — {days_inactive} days without login")
+                await log_lifecycle_event(uid, "inactivity", f"At risk  - {days_inactive} days without login")
                 results["inactivity_tags_applied"] += 1
         
         # --- ACTIVITY LEVEL TAGS ---

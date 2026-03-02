@@ -193,7 +193,7 @@ export default function ShowcasePage() {
       >
         {/* Header */}
         <View style={styles.header}>
-          {/* Store logo — clickable to store showcase (only in user view) */}
+          {/* Store logo  - clickable to store showcase (only in user view) */}
           {data.store?.logo_url && !isStoreView && storeId ? (
             <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)} data-testid="store-logo-link">
               <Image source={{ uri: data.store.logo_url }} style={styles.storeLogo} resizeMode="contain" />
@@ -202,7 +202,7 @@ export default function ShowcasePage() {
             <Image source={{ uri: data.store.logo_url }} style={styles.storeLogo} resizeMode="contain" />
           ) : null}
 
-          {/* Hero section — salesperson (user view) or store (store view) */}
+          {/* Hero section  - salesperson (user view) or store (store view) */}
           <View style={styles.heroSection}>
             {isStoreView ? (
               <>
@@ -260,7 +260,7 @@ export default function ShowcasePage() {
             </View>
           </View>
 
-          {/* Quick action links — under profile, above showcase feed */}
+          {/* Quick action links  - under profile, above showcase feed */}
           <View style={styles.quickLinks}>
             {!isStoreView && (
               <TouchableOpacity
@@ -446,7 +446,7 @@ export default function ShowcasePage() {
                     )}
 
                     <Text style={styles.reviewAttribution}>
-                      — {entry.review.customer_name}
+                       - {entry.review.customer_name}
                     </Text>
                   </View>
                 )}

@@ -1,5 +1,5 @@
 // Role-Based Onboarding Slide Libraries
-// Focused on QUICK WINS — the immediate value each role gets
+// Focused on QUICK WINS  - the immediate value each role gets
 
 import { OnboardingSlide } from './types';
 
@@ -12,7 +12,7 @@ export const WELCOME_SLIDES: OnboardingSlide[] = [
     type: 'welcome',
     title: 'Welcome to Your New Sales Toolkit',
     subtitle: "i'M On Social",
-    description: "You're about to unlock a set of powerful tools that make you look great, stay connected, and close more deals — starting right now.",
+    description: "You're about to unlock a set of powerful tools that make you look great, stay connected, and close more deals  - starting right now.",
     icon: 'rocket',
     iconColor: '#C9A962',
     bgGradient: ['#1A1A2E', '#16213E'],
@@ -27,7 +27,7 @@ export const WELCOME_SLIDES: OnboardingSlide[] = [
     type: 'interactive',
     title: 'Quick Profile Check',
     subtitle: "Let's Make Sure We Got It Right",
-    description: "This info powers your digital business card and AI assistant — make it shine.",
+    description: "This info powers your digital business card and AI assistant  - make it shine.",
     icon: 'checkmark-circle',
     iconColor: '#34C759',
     bgGradient: ['#0F2E1A', '#1A2E1A'],
@@ -41,14 +41,14 @@ export const WELCOME_SLIDES: OnboardingSlide[] = [
 ];
 
 // ============================================
-// QUICK WIN SLIDES — The core value proposition
+// QUICK WIN SLIDES  - The core value proposition
 // ============================================
 const QUICK_WIN_DIGITAL_CARD: OnboardingSlide = {
   id: 'qw_digital_card',
   type: 'quick_win',
   title: 'Your Digital Business Card',
   subtitle: 'Quick Win #1',
-  description: "A sleek, shareable card with your photo, contact info, social links, and QR code. Text it, email it, or let customers scan it — your reputation in one link.",
+  description: "A sleek, shareable card with your photo, contact info, social links, and QR code. Text it, email it, or let customers scan it  - your reputation in one link.",
   icon: 'card',
   iconColor: '#5856D6',
   bgGradient: ['#1A0F2E', '#2D1B4E'],
@@ -123,7 +123,7 @@ const QUICK_WIN_REVIEW_PAGE: OnboardingSlide = {
     'Personal review landing page for YOUR name',
     'Drives Google reviews from happy customers',
     'Shows your social media links',
-    'Easy for customers — one tap to leave a review',
+    'Easy for customers  - one tap to leave a review',
   ],
 };
 
@@ -132,7 +132,7 @@ const QUICK_WIN_SHOWROOM: OnboardingSlide = {
   type: 'quick_win',
   title: 'Your Showroom Page',
   subtitle: 'Quick Win #5',
-  description: "A landing page that showcases your work — congrats cards, featured vehicles, happy customers. Edit what shows up. Perfect to text or email while a customer is waiting in your office.",
+  description: "A landing page that showcases your work  - congrats cards, featured vehicles, happy customers. Edit what shows up. Perfect to text or email while a customer is waiting in your office.",
   icon: 'images',
   iconColor: '#007AFF',
   bgGradient: ['#0F1A2E', '#1A2E4E'],
@@ -142,7 +142,7 @@ const QUICK_WIN_SHOWROOM: OnboardingSlide = {
   quickWinNumber: 5,
   benefits: [
     'Showcase your best work to new customers',
-    'Editable — choose what shows up',
+    'Editable  - choose what shows up',
     'Quick to share via text or email',
     'Builds trust while they wait',
   ],
@@ -153,7 +153,7 @@ const QUICK_WIN_QUICK_ACTIONS: OnboardingSlide = {
   type: 'quick_win',
   title: 'Email & Text in Seconds',
   subtitle: 'Quick Win #6',
-  description: "Reach anyone instantly from the inbox. Send a text, an email, a congrats card, or a review invite — all tracked so you never lose a touchpoint.",
+  description: "Reach anyone instantly from the inbox. Send a text, an email, a congrats card, or a review invite  - all tracked so you never lose a touchpoint.",
   icon: 'flash',
   iconColor: '#FF9500',
   bgGradient: ['#2E1F0F', '#1A1A1A'],
@@ -174,7 +174,7 @@ const QUICK_WIN_CSV_IMPORT: OnboardingSlide = {
   type: 'quick_win',
   title: 'Import Your Contacts',
   subtitle: 'Quick Win #7',
-  description: "Got a spreadsheet of customers? Upload a CSV and import them all in seconds. Tags, phone numbers, emails — everything comes in clean.",
+  description: "Got a spreadsheet of customers? Upload a CSV and import them all in seconds. Tags, phone numbers, emails  - everything comes in clean.",
   icon: 'cloud-upload',
   iconColor: '#34C759',
   bgGradient: ['#0F2E1A', '#1A2E1A'],
@@ -194,7 +194,7 @@ const QUICK_WIN_CAMPAIGNS: OnboardingSlide = {
   type: 'quick_win',
   title: 'Automated Campaigns',
   subtitle: 'Quick Win #8',
-  description: "Set up birthday greetings, anniversary messages, and post-sale follow-ups that run automatically. The system does the work — you get the credit.",
+  description: "Set up birthday greetings, anniversary messages, and post-sale follow-ups that run automatically. The system does the work  - you get the credit.",
   icon: 'calendar',
   iconColor: '#AF52DE',
   bgGradient: ['#1A0F2E', '#2D1B4E'],
@@ -206,7 +206,7 @@ const QUICK_WIN_CAMPAIGNS: OnboardingSlide = {
     'Auto-send birthday cards & greetings',
     'Post-sale follow-up sequences',
     'Anniversary & holiday messages',
-    'Runs daily — you just set it and forget it',
+    'Runs daily  - you just set it and forget it',
   ],
 };
 
@@ -259,7 +259,7 @@ const QUICK_WIN_USER_MANAGEMENT: OnboardingSlide = {
   type: 'quick_win',
   title: 'User & Store Management',
   subtitle: 'Admin Quick Win',
-  description: "Add users, assign roles, manage stores, and send invite links — all from the Admin dashboard. Your team is up and running in minutes.",
+  description: "Add users, assign roles, manage stores, and send invite links  - all from the Admin dashboard. Your team is up and running in minutes.",
   icon: 'people',
   iconColor: '#AF52DE',
   bgGradient: ['#1A0F2E', '#2D1B4E'],
@@ -279,7 +279,7 @@ const QUICK_WIN_USER_MANAGEMENT: OnboardingSlide = {
 const AI_STYLE_SLIDE: OnboardingSlide = {
   id: 'ai_style_sales',
   type: 'ai_setup',
-  title: 'Meet Jessi — Your AI Assistant',
+  title: 'Meet Jessi  - Your AI Assistant',
   subtitle: 'She Responds When You Can\'t',
   description: "Jessi learns your style and responds to customers 24/7. Pick how she should sound:",
   icon: 'sparkles',
@@ -361,10 +361,10 @@ const SALESPERSON_COMPLETE: OnboardingSlide = {
   iconColor: '#34C759',
   bgGradient: ['#0F2E1A', '#1A2E1A'],
   benefits: [
-    'Digital Business Card — ready to share',
-    'Congrats & Birthday Cards — create anytime',
-    'Review Page & Showroom — live now',
-    'Inbox — start conversations today',
+    'Digital Business Card  - ready to share',
+    'Congrats & Birthday Cards  - create anytime',
+    'Review Page & Showroom  - live now',
+    'Inbox  - start conversations today',
   ],
 };
 
@@ -378,10 +378,10 @@ const MANAGER_COMPLETE: OnboardingSlide = {
   iconColor: '#34C759',
   bgGradient: ['#0F2E1A', '#1A2E1A'],
   benefits: [
-    'All salesperson tools — ready for your team',
-    'Leaderboards & Reports — track performance',
-    'Automated Campaigns — set and forget',
-    'Team Invites — onboard your people',
+    'All salesperson tools  - ready for your team',
+    'Leaderboards & Reports  - track performance',
+    'Automated Campaigns  - set and forget',
+    'Team Invites  - onboard your people',
   ],
 };
 
@@ -395,9 +395,9 @@ const ADMIN_COMPLETE: OnboardingSlide = {
   iconColor: '#34C759',
   bgGradient: ['#0F2E1A', '#1A2E1A'],
   benefits: [
-    'Full admin dashboard — all tools unlocked',
-    'User & store management — at your fingertips',
-    'Leaderboards, reports, campaigns — all live',
+    'Full admin dashboard  - all tools unlocked',
+    'User & store management  - at your fingertips',
+    'Leaderboards, reports, campaigns  - all live',
     'Invite your managers to start deployment',
   ],
 };
@@ -449,7 +449,7 @@ export const STORE_MANAGER_SLIDES: OnboardingSlide[] = [
     skipable: true,
     benefits: [
       "They'll get their own quick-wins walkthrough",
-      'Digital card, congrats cards, and more — ready instantly',
+      'Digital card, congrats cards, and more  - ready instantly',
       "You'll see their activity on your dashboard",
     ],
   },

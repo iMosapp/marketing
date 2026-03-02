@@ -1,5 +1,5 @@
 """
-Link Page Router — Linktree-style public profile pages for users.
+Link Page Router  - Linktree-style public profile pages for users.
 Each user gets a customizable public page at /l/{username}.
 """
 from fastapi import APIRouter, HTTPException
@@ -11,7 +11,7 @@ from routers.database import get_db
 
 router = APIRouter(prefix="/linkpage", tags=["linkpage"])
 
-# All social platforms with URL prefixes — users only enter their username
+# All social platforms with URL prefixes  - users only enter their username
 SOCIAL_PLATFORMS = [
     {"key": "facebook", "label": "Facebook", "icon": "logo-facebook", "color": "#1877F2", "prefix": "https://facebook.com/"},
     {"key": "instagram", "label": "Instagram", "icon": "logo-instagram", "color": "#E4405F", "prefix": "https://instagram.com/"},
@@ -62,7 +62,7 @@ def build_default_social_links(user_social_links: dict) -> dict:
 
 @router.get("/public/{username}")
 async def get_public_link_page(username: str):
-    """Public endpoint — returns the link page data for display."""
+    """Public endpoint  - returns the link page data for display."""
     db = get_db()
     username = username.lower().strip()
 

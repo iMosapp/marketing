@@ -1,5 +1,5 @@
 """
-AI Campaign Engine — Powers intelligent, personalized campaign messaging.
+AI Campaign Engine  - Powers intelligent, personalized campaign messaging.
 - AI Clone Prompt management (global + per-user)
 - AI message generation using contact activity context
 - Campaign AI reply handling (virtual assistant)
@@ -320,7 +320,7 @@ Write ONLY the message text. No quotes, no explanation. Make it sound like it's 
 
 
 # =====================================================
-# AI VIRTUAL ASSISTANT — Reply Handler
+# AI VIRTUAL ASSISTANT  - Reply Handler
 # =====================================================
 
 @router.post("/handle-reply/{user_id}/{contact_id}")
@@ -399,7 +399,7 @@ Reply naturally and briefly as me. Just the reply text, nothing else."""
 
 
 # =====================================================
-# AI PREVIEW — Test AI clone for a user
+# AI PREVIEW  - Test AI clone for a user
 # =====================================================
 
 @router.post("/preview-clone/{user_id}")

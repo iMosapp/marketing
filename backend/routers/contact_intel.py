@@ -1,5 +1,5 @@
 """
-AI Contact Summary — "Relationship Intel"
+AI Contact Summary  - "Relationship Intel"
 Generates an on-demand AI briefing about a contact using all available data.
 """
 import os
@@ -126,7 +126,7 @@ def _build_prompt(ctx: dict) -> str:
             ts = e.get("timestamp", "")
             if isinstance(ts, datetime):
                 ts = ts.strftime("%b %d, %Y")
-            sections.append(f"  [{etype}] {title} — {desc} ({ts})")
+            sections.append(f"  [{etype}] {title}  - {desc} ({ts})")
     
     # Voice notes
     if ctx["voice_notes"]:
@@ -143,7 +143,7 @@ def _build_prompt(ctx: dict) -> str:
     if ctx["tasks"]:
         sections.append("\nTASKS:")
         for t in ctx["tasks"]:
-            sections.append(f"  {t.get('title', '')} — {t.get('status', '')} (due: {t.get('due_date', 'N/A')})")
+            sections.append(f"  {t.get('title', '')}  - {t.get('status', '')} (due: {t.get('due_date', 'N/A')})")
     
     return "\n".join(sections)
 

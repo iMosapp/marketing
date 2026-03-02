@@ -176,7 +176,7 @@ async def submit_review(
 @router.get("/reviews/pending/{user_id}")
 async def get_pending_reviews(user_id: str):
     """
-    Get pending reviews for approval — includes both
+    Get pending reviews for approval  - includes both
     salesperson-level and account-level (store) reviews.
     """
     db = get_db()

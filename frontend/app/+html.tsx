@@ -13,7 +13,7 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover"
         />
         <title>i'M On Social</title>
-        {/* PWA — must be in static HTML for iOS standalone mode */}
+        {/* PWA  - must be in static HTML for iOS standalone mode */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="iMOs" />
@@ -40,7 +40,7 @@ export default function Root({ children }: PropsWithChildren) {
               [role="heading"], [role="heading"] * { overflow: visible !important; display: none !important; }
               /* Prevent iOS Safari from zooming in on input focus (happens when font-size < 16px) */
               input, textarea, select { font-size: 16px !important; }
-              /* iOS safe area — fill the bottom home indicator area with black */
+              /* iOS safe area  - fill the bottom home indicator area with black */
               @supports(padding: env(safe-area-inset-bottom)) {
                 body { padding-bottom: env(safe-area-inset-bottom); }
               }
@@ -59,7 +59,7 @@ export default function Root({ children }: PropsWithChildren) {
         }}
       >
         {children}
-        {/* Register service worker on ALL routes — critical for iOS PWA standalone mode */}
+        {/* Register service worker on ALL routes  - critical for iOS PWA standalone mode */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

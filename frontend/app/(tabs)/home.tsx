@@ -225,7 +225,7 @@ function ContactActionModal({
                 }
               />
             ) : (
-              /* Empty state — show add options */
+              /* Empty state  - show add options */
               <View style={{ flex: 1 }}>
                 <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent, marginTop: 8 }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact-main">
                   <Ionicons name="add-circle" size={20} color="#000" />
@@ -269,7 +269,7 @@ function ContactActionModal({
               {dialNumber.length > 0 && <TouchableOpacity onPress={() => setDialNumber(d => d.slice(0, -1))}><Ionicons name="backspace-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>}
             </View>
 
-            {/* Matching contacts — scrollable, fixed height area above keypad */}
+            {/* Matching contacts  - scrollable, fixed height area above keypad */}
             <View style={{ height: 130, paddingHorizontal: 16 }}>
               {dialNumber.length >= 2 && (() => {
                 const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(dialNumber.replace(/\D/g, '')));
@@ -363,7 +363,7 @@ export default function HomeScreen() {
     try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=5`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
   };
 
-  // Send a Card — contact search helpers
+  // Send a Card  - contact search helpers
   const loadCardContacts = async () => {
     if (!user?._id) return;
     setCardContactsLoading(true);
@@ -534,7 +534,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Universal Share Modal — used by Share My Card, Review Link, Showcase */}
+      {/* Universal Share Modal  - used by Share My Card, Review Link, Showcase */}
       <UniversalShareModal
         visible={shareConfig.visible}
         onClose={() => setShareConfig(c => ({ ...c, visible: false }))}
@@ -552,7 +552,7 @@ export default function HomeScreen() {
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
 
-      {/* Send a Card — Step 1: Template Picker, Step 2: Contact Search */}
+      {/* Send a Card  - Step 1: Template Picker, Step 2: Contact Search */}
       <Modal visible={showSendCard} animationType="slide" transparent={false}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
@@ -611,7 +611,7 @@ export default function HomeScreen() {
                 data-testid="send-card-skip-contact"
               >
                 <Ionicons name="arrow-forward-circle-outline" size={20} color={colors.accent} />
-                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Skip — create without selecting a contact</Text>
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Skip  - create without selecting a contact</Text>
               </TouchableOpacity>
               {cardContactsLoading ? (
                 <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />

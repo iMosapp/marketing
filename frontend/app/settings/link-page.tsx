@@ -10,7 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 
-// Same platforms as My Profile — users only enter their username
+// Same platforms as My Profile  - users only enter their username
 const SOCIAL_PLATFORMS = [
   { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', prefix: 'facebook.com/', placeholder: 'yourprofile' },
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
@@ -219,10 +219,10 @@ export default function EditLinkPage() {
           ))}
         </View>
 
-        {/* Social Links — prefix + username input (like My Profile) */}
+        {/* Social Links  - prefix + username input (like My Profile) */}
         <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>SOCIAL LINKS</Text>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12, opacity: 0.7 }}>
-          Just enter your username — the URL is built automatically.
+          Just enter your username  - the URL is built automatically.
         </Text>
         {SOCIAL_PLATFORMS.map(platform => {
           const entry = socialLinks[platform.key] || { username: '', visible: true };
@@ -256,7 +256,7 @@ export default function EditLinkPage() {
           );
         })}
 
-        {/* Contact Links — toggle visibility */}
+        {/* Contact Links  - toggle visibility */}
         {links.length > 0 && (
           <>
             <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>CONTACT LINKS</Text>

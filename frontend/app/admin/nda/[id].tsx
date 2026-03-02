@@ -84,7 +84,7 @@ export default function NDADetailPage() {
             color={statusColor(nda.status)}
           />
           <Text style={[styles.statusText, { color: statusColor(nda.status) }]}>
-            {nda.status === 'signed' ? 'Signed' : nda.status === 'viewed' ? 'Viewed — Awaiting Signature' : 'Pending — Not Yet Opened'}
+            {nda.status === 'signed' ? 'Signed' : nda.status === 'viewed' ? 'Viewed  - Awaiting Signature' : 'Pending  - Not Yet Opened'}
           </Text>
         </View>
 

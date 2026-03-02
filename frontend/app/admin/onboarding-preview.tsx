@@ -222,7 +222,7 @@ export default function OnboardingPreviewScreen() {
                 {slide.choices.map((c, i) => (
                   <View key={i} style={styles.choiceRow}>
                     <Ionicons name={c.icon as any} size={16} color={slide.iconColor} />
-                    <Text style={styles.choiceText}>{c.label} — {c.description}</Text>
+                    <Text style={styles.choiceText}>{c.label}  - {c.description}</Text>
                   </View>
                 ))}
               </View>

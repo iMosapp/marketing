@@ -51,8 +51,8 @@ export default function BrandAssetsPage() {
 
   // Built-in logo assets from the app
   const builtInAssets: BrandAsset[] = [
-    { id: 'logo-512', label: 'App Logo (512px)', description: 'Full-size app logo with white tile — PNG', url: '/logo512.png', size: '512x512', category: 'logo' },
-    { id: 'logo-192', label: 'App Logo (192px)', description: 'Medium app logo with white tile — PNG', url: '/logo192.png', size: '192x192', category: 'logo' },
+    { id: 'logo-512', label: 'App Logo (512px)', description: 'Full-size app logo with white tile  - PNG', url: '/logo512.png', size: '512x512', category: 'logo' },
+    { id: 'logo-192', label: 'App Logo (192px)', description: 'Medium app logo with white tile  - PNG', url: '/logo192.png', size: '192x192', category: 'logo' },
     { id: 'logo-dark', label: 'Logo (Dark Mode)', description: 'Logo on black background for dark themes', url: '/new-logo-512-dark.png', size: '512x512', category: 'logo' },
     { id: 'logo-light', label: 'Logo (Light Mode)', description: 'Logo on white background for light themes', url: '/new-logo-512-light.png', size: '512x512', category: 'logo' },
     { id: 'logo-transparent', label: 'Transparent Logo', description: 'Logo with transparent background', url: '/imos-logo-transparent.png', size: '512x512', category: 'logo' },

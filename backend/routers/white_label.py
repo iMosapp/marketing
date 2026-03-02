@@ -1,5 +1,5 @@
 """
-White Label Partners router — manages partner branding that cascades 
+White Label Partners router  - manages partner branding that cascades 
 to all their organizations, accounts, and users.
 """
 from fastapi import APIRouter, HTTPException

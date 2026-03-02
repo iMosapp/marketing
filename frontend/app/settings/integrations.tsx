@@ -618,7 +618,7 @@ const { showToast } = useToast();
           <Text style={styles.docSectionTitle}>Code Examples</Text>
 
           <View style={styles.docCard}>
-            <Text style={styles.docCardTitle}>cURL — List Contacts</Text>
+            <Text style={styles.docCardTitle}>cURL  - List Contacts</Text>
             <View style={styles.codeBlockMulti}>
               <Text style={styles.codeText}>curl -X GET \</Text>
               <Text style={styles.codeText}>  "{APP_URL}/api/v1/contacts?limit=10" \</Text>
@@ -627,7 +627,7 @@ const { showToast } = useToast();
           </View>
 
           <View style={styles.docCard}>
-            <Text style={styles.docCardTitle}>cURL — Create Contact</Text>
+            <Text style={styles.docCardTitle}>cURL  - Create Contact</Text>
             <View style={styles.codeBlockMulti}>
               <Text style={styles.codeText}>curl -X POST \</Text>
               <Text style={styles.codeText}>  "{APP_URL}/api/v1/contacts" \</Text>
@@ -703,7 +703,7 @@ const { showToast } = useToast();
               <Text style={styles.stepItem}>3. Copy the webhook URL from Zapier</Text>
               <Text style={styles.stepItem}>4. Go to iMOs Webhooks tab and create a new subscription</Text>
               <Text style={styles.stepItem}>5. Paste the Zapier URL and select your events</Text>
-              <Text style={styles.stepItem}>6. Test the webhook — Zapier will receive sample data</Text>
+              <Text style={styles.stepItem}>6. Test the webhook  - Zapier will receive sample data</Text>
               <Text style={styles.stepItem}>7. Map iMOs fields to your destination app</Text>
             </View>
           </View>

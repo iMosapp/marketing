@@ -473,7 +473,7 @@ async def get_dashboard_data(
     """
     Comprehensive analytics dashboard endpoint.
     Returns KPIs, daily trends, per-user performance, store comparisons,
-    and channel breakdown — all in one call.
+    and channel breakdown  - all in one call.
     Role-aware: admins see org/store, users see personal.
     """
     db = get_db()

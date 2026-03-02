@@ -105,7 +105,7 @@ async def create_api_key(
     }
     
     await db.api_keys.insert_one(doc)
-    return {"api_key": key, "name": data.name, "scope": data.scope, "message": "Store this key securely — it won't be shown again"}
+    return {"api_key": key, "name": data.name, "scope": data.scope, "message": "Store this key securely  - it won't be shown again"}
 
 @router.get("/api-keys")
 async def list_api_keys(x_user_id: str = Header(None, alias="X-User-ID")):

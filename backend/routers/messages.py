@@ -19,7 +19,7 @@ from services.twilio_service import send_sms, get_twilio_status, normalize_phone
 router = APIRouter(prefix="/messages", tags=["Messages"])
 logger = logging.getLogger(__name__)
 
-# Email validation — reject "None", "null", empty strings, and non-email values
+# Email validation  - reject "None", "null", empty strings, and non-email values
 import re
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
@@ -317,7 +317,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "timestamp": datetime.utcnow(),
             })
     elif channel == 'sms_personal':
-        # User sending from their personal phone — just log it, no Twilio needed
+        # User sending from their personal phone  - just log it, no Twilio needed
         message['status'] = 'sent'
         message['channel'] = 'sms_personal'
         
@@ -1015,7 +1015,7 @@ async def send_message_simple(user_id: str, message_data: dict):
             logger.info(f"[EMAIL-FLOW] Logged contact event: {event_type}")
     
     elif channel == 'sms_personal':
-        # Personal SMS — just log it, user sends from their own phone
+        # Personal SMS  - just log it, user sends from their own phone
         message['status'] = 'sent'
         
         # Detect content type

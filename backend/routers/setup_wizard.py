@@ -1,5 +1,5 @@
 """
-Setup Wizard API — Tracks wizard progress and handles bulk setup operations.
+Setup Wizard API  - Tracks wizard progress and handles bulk setup operations.
 Most actual creation (org, store, users) is delegated to existing endpoints.
 """
 from fastapi import APIRouter, HTTPException, Header

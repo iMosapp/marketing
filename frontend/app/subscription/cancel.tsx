@@ -27,7 +27,7 @@ export default function SubscriptionCancelPage() {
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={24} color="#007AFF" />
           <Text style={styles.infoText}>
-            Ready to try again? All our plans come with a 7-day free trial — you won't be charged until the trial ends.
+            Ready to try again? All our plans come with a 7-day free trial  - you won't be charged until the trial ends.
           </Text>
         </View>
         

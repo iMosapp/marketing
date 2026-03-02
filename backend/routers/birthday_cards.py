@@ -393,7 +393,7 @@ async def get_card_image(card_id: str):
 
     y = 80
 
-    # Birthday decorative top — confetti dots
+    # Birthday decorative top  - confetti dots
     import random
     random.seed(card_id)  # deterministic per card
     confetti_colors = [

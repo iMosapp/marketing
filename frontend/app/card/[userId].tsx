@@ -26,7 +26,7 @@ import api from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
-// Web-safe URL opener — Linking.openURL uses window.open('_blank')
+// Web-safe URL opener  - Linking.openURL uses window.open('_blank')
 // which popup blockers intercept for sms: and mailto: protocols.
 // Using an anchor click or location.href is more reliable on web.
 const openProtocolUrl = (url: string) => {

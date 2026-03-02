@@ -1,5 +1,5 @@
 """
-Voice Notes router — record, transcribe, store, and play back voice memos on contacts.
+Voice Notes router  - record, transcribe, store, and play back voice memos on contacts.
 Audio stored in object storage. Transcription via OpenAI Whisper.
 """
 import os
@@ -40,7 +40,7 @@ async def _transcribe_audio(audio_bytes: bytes, filename: str) -> str:
 
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         if not api_key:
-            logger.warning("No EMERGENT_LLM_KEY — skipping transcription")
+            logger.warning("No EMERGENT_LLM_KEY  - skipping transcription")
             return ""
 
         stt = OpenAISpeechToText(api_key=api_key)

@@ -283,7 +283,7 @@ export default function NDASignPage() {
             onPress={() => { setPhase('sign'); setTimeout(initCanvas, 200); }}
             data-testid="nda-proceed-sign"
           >
-            <Text style={styles.submitBtnText}>I've Read the Agreement — Proceed to Sign</Text>
+            <Text style={styles.submitBtnText}>I've Read the Agreement  - Proceed to Sign</Text>
           </TouchableOpacity>
 
           <Text style={styles.footer}>

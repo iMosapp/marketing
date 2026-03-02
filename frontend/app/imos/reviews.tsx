@@ -9,13 +9,13 @@ const REVIEW_FEATURES = [
     icon: 'link',
     color: '#FFD60A',
     title: 'One Link, Every Review Site',
-    desc: 'Send customers a single branded link that shows all your review platforms — Google, Yelp, Facebook, DealerRater, and more. No confusion, no friction.',
+    desc: 'Send customers a single branded link that shows all your review platforms  - Google, Yelp, Facebook, DealerRater, and more. No confusion, no friction.',
   },
   {
     icon: 'analytics',
     color: '#007AFF',
     title: 'Track Every Click',
-    desc: 'Know which salesperson sent the link, which platform customers chose, and how many reviews you\'re generating — all in real time.',
+    desc: 'Know which salesperson sent the link, which platform customers chose, and how many reviews you\'re generating  - all in real time.',
   },
   {
     icon: 'shield-checkmark',

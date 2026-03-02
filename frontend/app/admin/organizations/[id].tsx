@@ -212,7 +212,7 @@ export default function OrganizationDetailScreen() {
     }
   };
 
-  // Link a store to this org — immediate action, no confirm dialog
+  // Link a store to this org  - immediate action, no confirm dialog
   const linkStoreToOrg = async (storeId: string, storeName: string) => {
     try {
       await api.put(`/admin/stores/${storeId}`, { organization_id: id });
@@ -246,7 +246,7 @@ export default function OrganizationDetailScreen() {
     }
   };
 
-  // Link a user to this org — immediate action, no confirm dialog
+  // Link a user to this org  - immediate action, no confirm dialog
   const linkUserToOrg = async (userId: string, userName: string) => {
     try {
       await api.put(`/admin/users/${userId}`, { organization_id: id });

@@ -82,7 +82,7 @@ const CongratsCardDemo = () => {
           On your new 2024 Chevrolet Tahoe!
         </Text>
         <View style={demoStyles.salesmanInfo}>
-          <Text style={demoStyles.salesmanName}>— John Smith</Text>
+          <Text style={demoStyles.salesmanName}> - John Smith</Text>
           <Text style={demoStyles.dealership}>Premier Auto Group</Text>
         </View>
         <View style={demoStyles.shareIcons}>

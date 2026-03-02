@@ -31,7 +31,7 @@ export default function CallScreen() {
         nextState === 'active' &&
         callState === 'calling'
       ) {
-        // User came back from native dialer — call likely ended or ongoing
+        // User came back from native dialer  - call likely ended or ongoing
         // Don't auto-end, let them tap "End Call"
       }
       appStateRef.current = nextState;
@@ -171,7 +171,7 @@ export default function CallScreen() {
                 <Ionicons name="checkmark-circle" size={28} color="#34C759" />
                 <View style={st.loggedInfo}>
                   <Text style={st.loggedTitle}>Call logged successfully</Text>
-                  <Text style={st.loggedDetail}>Duration: {formatTime(seconds)} — Outbound call to {contactName}</Text>
+                  <Text style={st.loggedDetail}>Duration: {formatTime(seconds)}  - Outbound call to {contactName}</Text>
                 </View>
               </View>
               <TouchableOpacity style={st.doneBtn} onPress={goBack} data-testid="call-done">

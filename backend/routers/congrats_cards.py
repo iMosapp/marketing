@@ -302,7 +302,7 @@ async def create_congrats_card(
         "shares": 0,
         "created_at": datetime.now(timezone.utc),
         "contact_photo_updated": contact_updated,
-        # Showroom moderation — requires admin/manager approval before appearing publicly
+        # Showroom moderation  - requires admin/manager approval before appearing publicly
         "showcase_approved": False,
     }
     
@@ -483,7 +483,7 @@ def create_circular_mask(size):
 async def get_card_image(card_id: str):
     """
     Generate a clean, social-media-ready card image.
-    Compact layout — just the card: headline, photo, name, message, sender.
+    Compact layout  - just the card: headline, photo, name, message, sender.
     """
     db = get_db()
     

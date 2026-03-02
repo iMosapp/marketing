@@ -1,5 +1,5 @@
 """
-Notifications Center — Smart activity hub with prioritized alerts.
+Notifications Center  - Smart activity hub with prioritized alerts.
 Aggregates tasks, unread messages, flags, lead alerts, and system events into a unified feed.
 """
 import logging
@@ -191,7 +191,7 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Recent activity: {e}")
 
-    # 7. PENDING CAMPAIGN SENDS (manual mode — high priority action items)
+    # 7. PENDING CAMPAIGN SENDS (manual mode  - high priority action items)
     try:
         pending_sends = list(db.campaign_pending_sends.find({
             "user_id": user_id,

@@ -1,5 +1,5 @@
 """
-Image router — serves stored images and handles uploads.
+Image router  - serves stored images and handles uploads.
 All images served through /api/images/{path} endpoints.
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File

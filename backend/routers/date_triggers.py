@@ -211,7 +211,7 @@ async def process_date_triggers(user_id: str):
                         contacts_to_message.append(contact)
         
         elif trigger_type.startswith("holiday_"):
-            # Holiday trigger — find matching holiday
+            # Holiday trigger  - find matching holiday
             holiday_id = config.get("holiday_id") or trigger_type.replace("holiday_", "")
             holiday = next((h for h in AVAILABLE_HOLIDAYS if h["id"] == holiday_id), None)
             

@@ -454,7 +454,7 @@ export default function PublicLandingPage() {
         </TouchableOpacity>
       </View>
 
-      {/* Quick Links — Showroom, Save Contact */}
+      {/* Quick Links  - Showroom, Save Contact */}
       <View style={styles.quickLinksSection}>
         <TouchableOpacity
           style={styles.quickLinkBtn}

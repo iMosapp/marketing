@@ -1142,7 +1142,7 @@ async def generate_ai_message(
         "follow_up": "Hey! Just wanted to check in and see how everything's going. Let me know if you need anything!",
         "birthday": "Happy birthday! 🎉 Hope you have an amazing day!",
         "check_in": "Hey there! Just thinking about you and wanted to say hi. How have you been?",
-        "missed_call": "Hey, I just missed your call — I'll ring you back shortly. Anything specific you needed?"
+        "missed_call": "Hey, I just missed your call  - I'll ring you back shortly. Anything specific you needed?"
     }
     
     return {

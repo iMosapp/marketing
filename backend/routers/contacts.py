@@ -139,7 +139,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
     else:
         query = active_filter
     
-    # Exclude heavy 'photo' field from list queries — use photo_thumbnail instead
+    # Exclude heavy 'photo' field from list queries  - use photo_thumbnail instead
     contacts = await db.contacts.find(query, {"photo": 0}).sort("first_name", 1).limit(500).to_list(500)
     
     # Auto-backfill: find contacts missing thumbnails but having a photo in DB
@@ -478,7 +478,7 @@ async def _process_photo(photo_data: str) -> tuple:
     if img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
     
-    # Generate thumbnail (256x256 for avatars — crisp on 3x Retina, ~10-15KB)
+    # Generate thumbnail (256x256 for avatars  - crisp on 3x Retina, ~10-15KB)
     thumb = img.copy()
     thumb.thumbnail((256, 256), Image.LANCZOS)
     thumb_buffer = io.BytesIO()

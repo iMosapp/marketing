@@ -1,5 +1,5 @@
 """
-Image storage service — handles uploads to Emergent Object Storage,
+Image storage service  - handles uploads to Emergent Object Storage,
 generates thumbnails/avatars, and serves images via public URLs.
 """
 import os
@@ -99,7 +99,7 @@ async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "ge
         if image_data.startswith("data:") or len(image_data) > 500:
             image_bytes, content_type = decode_base64_image(image_data)
         else:
-            # It's already a URL, not base64 — nothing to upload
+            # It's already a URL, not base64  - nothing to upload
             return None
     elif isinstance(image_data, bytes):
         image_bytes = image_data

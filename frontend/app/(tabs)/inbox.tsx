@@ -162,7 +162,7 @@ export default function InboxScreen() {
   const [messageMode, setMessageMode] = useState<MessageModeType>('sms');
   const [toggleStyle, setToggleStyle] = useState<string>('pill');
   
-  // Get current colors based on mode — in light theme, always use light colors
+  // Get current colors based on mode  - in light theme, always use light colors
   const colors = themeMode === 'light' ? COLORS_LIGHT : (messageMode === 'email' ? COLORS_LIGHT : COLORS_DARK);
   
   // Bulk selection mode state
@@ -539,7 +539,7 @@ export default function InboxScreen() {
       const conversation = conversations.find(c => c._id === conversationId);
       const isArchived = conversation?.status === 'archived';
       
-      // Optimistic UI update — immediately update status in local state
+      // Optimistic UI update  - immediately update status in local state
       setConversations(prev => prev.map(c => 
         c._id === conversationId 
           ? { ...c, status: isArchived ? 'active' : 'archived' }

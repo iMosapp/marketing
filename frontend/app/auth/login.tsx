@@ -31,7 +31,7 @@ import {
 
 // Helper to get the right landing page based on user role
 const getDefaultRoute = (role?: string): string => {
-  return '/(tabs)/home';  // Everyone starts at Home — the daily command center
+  return '/(tabs)/home';  // Everyone starts at Home  - the daily command center
 };
 
 export default function LoginScreen() {

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
 
-# Universal brand footer — change URL here when domain migrates
+# Universal brand footer  - change URL here when domain migrates
 BRAND_URL = "https://app.imosapp.com/imos"
 BRAND_FOOTER_HTML = f'<p style="color: #999; font-size: 12px;"><a href="{BRAND_URL}" style="color: #999; text-decoration: none;">Powered by i\'M On Social</a></p>'
 

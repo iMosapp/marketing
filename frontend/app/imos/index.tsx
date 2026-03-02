@@ -14,7 +14,7 @@ const HERO_FEATURES = [
 ];
 
 const STATS = [
-  { value: 'Own', label: 'your reputation — it moves with you, wherever you go' },
+  { value: 'Own', label: 'your reputation  - it moves with you, wherever you go' },
   { value: 'Build', label: 'personal credibility that outlasts any company' },
   { value: 'Connect', label: 'every customer touchpoint under one social presence' },
 ];
@@ -47,7 +47,7 @@ const HOW_IT_WORKS = [
   {
     tag: 'PERSONAL REVIEWS',
     title: 'Reputation That\'s Portable.',
-    desc: 'Not just public Google reviews — direct feedback that lives on your digital card, builds your personal credibility, and stays with you long-term. Even if you switch stores or industries.',
+    desc: 'Not just public Google reviews  - direct feedback that lives on your digital card, builds your personal credibility, and stays with you long-term. Even if you switch stores or industries.',
     bullets: ['Reviews live on your digital card', 'Personal credibility that travels', 'Strengthens your individual brand'],
     icon: 'star',
     color: '#FFD60A',
@@ -55,7 +55,7 @@ const HOW_IT_WORKS = [
   {
     tag: 'AUTOMATED CAMPAIGNS',
     title: 'Nobody Gets Forgotten. Ever.',
-    desc: 'Birthday messages, anniversary follow-ups, holiday greetings, sold-date sequences — all automated. Customers feel remembered without any manual effort from your team.',
+    desc: 'Birthday messages, anniversary follow-ups, holiday greetings, sold-date sequences  - all automated. Customers feel remembered without any manual effort from your team.',
     bullets: ['Birthdays & anniversaries', 'Tag-triggered workflows', 'Customers feel remembered'],
     icon: 'rocket',
     color: '#FF9500',
@@ -136,7 +136,7 @@ export default function ImosHome() {
               <View style={s.narrativeDivider} />
               <View style={s.narrativeLines}>
                 <Text style={s.narrativeLine}>The customer buys. The salesperson moves on.</Text>
-                <Text style={s.narrativeLine}>Reviews go to the company — not the person.</Text>
+                <Text style={s.narrativeLine}>Reviews go to the company  - not the person.</Text>
                 <Text style={s.narrativeLine}>Social profiles live scattered across platforms.</Text>
                 <Text style={s.narrativeLine}>Follow-up feels generic. The relationship fades.</Text>
               </View>
@@ -166,7 +166,7 @@ export default function ImosHome() {
               </View>
               <View style={s.narrativeColumnsWrap}>
                 {[
-                  { icon: 'business', color: '#007AFF', label: 'Organizations', desc: 'Teams, accounts, reputation data, social presence — structured.' },
+                  { icon: 'business', color: '#007AFF', label: 'Organizations', desc: 'Teams, accounts, reputation data, social presence  - structured.' },
                   { icon: 'people', color: '#34C759', label: 'Teams', desc: 'Shared visibility. Unified brand. Individual ownership.' },
                   { icon: 'person', color: '#C9A962', label: 'Individuals', desc: 'Digital card. Reviews. Social links. Personal rating.' },
                 ].map((col, ci) => (
@@ -196,7 +196,7 @@ export default function ImosHome() {
               <View style={s.narrativeLines}>
                 <Text style={s.narrativeLine}>Direct feedback that lives on your digital business card.</Text>
                 <Text style={s.narrativeLine}>Builds personal credibility. Strengthens your brand.</Text>
-                <Text style={s.narrativeLine}>Stays with you — even if you switch stores or industries.</Text>
+                <Text style={s.narrativeLine}>Stays with you  - even if you switch stores or industries.</Text>
               </View>
               <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(255,214,10,0.08)' }]}>
                 <Text style={[s.narrativeHighlightText, { color: '#FFD60A' }]}>
@@ -219,7 +219,7 @@ export default function ImosHome() {
               </Text>
               <View style={s.narrativeDivider} />
               <View style={s.narrativeLines}>
-                <Text style={s.narrativeLine}>Trust lives with people — not logos.</Text>
+                <Text style={s.narrativeLine}>Trust lives with people  - not logos.</Text>
               </View>
               <View style={s.narrativeGrid}>
                 {[

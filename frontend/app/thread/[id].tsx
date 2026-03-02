@@ -156,12 +156,12 @@ export default function ThreadScreen() {
   useEffect(() => {
     // If mode was passed from navigation, use that
     if (mode === 'email' || mode === 'sms') {
-      // Trust the explicitly requested mode — don't fall back.
+      // Trust the explicitly requested mode  - don't fall back.
       // The email availability check happens at send time (handleSend).
       setMessageMode(mode as 'sms' | 'email');
       AsyncStorage.setItem('message_mode', mode as string);
     } else if (mode === 'review' || mode === 'card' || mode === 'congrats') {
-      // Don't force SMS — load user's preferred mode first
+      // Don't force SMS  - load user's preferred mode first
       AsyncStorage.getItem('message_mode').then((savedMode) => {
         if (savedMode === 'email' && (contact_email || savedContactEmail)) {
           setMessageMode('email');
@@ -190,7 +190,7 @@ export default function ThreadScreen() {
     try {
       const savedMode = await AsyncStorage.getItem('message_mode');
       if (savedMode === 'sms' || savedMode === 'email') {
-        // Trust saved preference — email check happens at send time
+        // Trust saved preference  - email check happens at send time
         setMessageMode(savedMode);
       }
     } catch (error) {
@@ -550,7 +550,7 @@ export default function ThreadScreen() {
         if (contactResponse.data?.photo_thumbnail || contactResponse.data?.photo_url || contactResponse.data?.photo) {
           setContactPhoto(contactResponse.data.photo_thumbnail || contactResponse.data.photo_url || contactResponse.data.photo);
         }
-        // Load email from contact record if available — check both fields
+        // Load email from contact record if available  - check both fields
         const contactEmail = contactResponse.data?.email || contactResponse.data?.email_work;
         if (contactEmail && !savedContactEmail) {
           setSavedContactEmail(contactEmail);
@@ -698,7 +698,7 @@ export default function ThreadScreen() {
         const res = await api.get(`/messages/conversation/${actualConversationId || conversationId}/info`);
         if (res.data?.contact_email) {
           setSavedContactEmail(res.data.contact_email);
-          // Continue with send — don't return
+          // Continue with send  - don't return
         } else {
           setShowEmailPrompt(true);
           return;
@@ -746,7 +746,7 @@ export default function ThreadScreen() {
         messagePayload.template_name = selectedTemplateInfo.template_name;
       }
       
-      // Fire API call with keepalive — this ensures the request completes
+      // Fire API call with keepalive  - this ensures the request completes
       // even when the browser navigates away to the native SMS app
       const apiBase = Platform.OS === 'web' ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
       try {
@@ -765,7 +765,7 @@ export default function ThreadScreen() {
         }
       } catch {}
       
-      // Open native SMS app — this navigates away from the browser
+      // Open native SMS app  - this navigates away from the browser
       const isIOS = /iPad|iPhone|iPod|Macintosh/.test(
         Platform.OS === 'web' ? navigator.userAgent : ''
       );
@@ -785,7 +785,7 @@ export default function ThreadScreen() {
       
       setSelectedTemplateInfo(null);
       setSending(false);
-      return; // Exit early — regular await flow won't work since we navigated away
+      return; // Exit early  - regular await flow won't work since we navigated away
     }
     
     // REGULAR FLOW: Email, Twilio SMS, etc. (no page navigation)
@@ -813,7 +813,7 @@ export default function ThreadScreen() {
           convId = convRes.data._id;
           setActualConversationId(convId);
         } catch {
-          // Fallback — use what we have
+          // Fallback  - use what we have
         }
       }
       
@@ -953,7 +953,7 @@ export default function ThreadScreen() {
   const insertReviewLink = (platformId: string, url: string, platformName: string) => {
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     const reviewMessage = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`;
-    // Pre-fill message in composer — user taps Send to trigger native SMS
+    // Pre-fill message in composer  - user taps Send to trigger native SMS
     setShowReviewLinks(false);
     setShowAttachMenu(false);
     setMessage(reviewMessage);

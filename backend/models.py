@@ -182,8 +182,8 @@ class User(BaseModel):
     status: str = "active"  # active, deactivated, suspended
     deactivated_at: Optional[datetime] = None  # When user was deactivated
     deactivated_by: Optional[str] = None  # Who deactivated them
-    grace_period_end: Optional[datetime] = None  # 6 months — access purge (hide from org)
-    hard_delete_date: Optional[datetime] = None  # 12 months — data retention limit
+    grace_period_end: Optional[datetime] = None  # 6 months  - access purge (hide from org)
+    hard_delete_date: Optional[datetime] = None  # 12 months  - data retention limit
     account_type: str = "org"  # org (part of org) or individual (self-paying)
     
     # 3rd Party CRM / DMS Integration IDs
@@ -268,8 +268,8 @@ class Contact(BaseModel):
     # Data retention
     hidden_at: Optional[datetime] = None  # When contact was hidden (6-month purge from org view)
     hidden_reason: Optional[str] = None  # Why hidden (user_deactivated, manual, etc.)
-    purge_date: Optional[datetime] = None  # 6 months after hide — purge from org
-    hard_delete_date: Optional[datetime] = None  # 12 months — full data retention limit
+    purge_date: Optional[datetime] = None  # 6 months after hide  - purge from org
+    hard_delete_date: Optional[datetime] = None  # 12 months  - full data retention limit
     # Referral tracking
     referred_by: Optional[str] = None  # Contact ID of referrer
     referred_by_name: Optional[str] = None  # Cached name for display
@@ -406,7 +406,7 @@ class Campaign(BaseModel):
     # New fields for AI-powered campaigns
     delivery_mode: str = "manual"  # "automated" (Twilio + AI replies) or "manual" (notify user to send)
     ai_enabled: bool = False  # Master toggle for AI features on this campaign
-    ownership_level: str = "user"  # "user", "store", "org" — who owns this campaign
+    ownership_level: str = "user"  # "user", "store", "org"  - who owns this campaign
 
     class Config:
         populate_by_name = True

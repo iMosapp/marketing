@@ -240,7 +240,7 @@ export default function DocsHubScreen() {
             <Text style={styles.docTitle} numberOfLines={1}>{item.title}</Text>
           </View>
           <Text style={styles.docSummary} numberOfLines={1}>
-            {item.counterparty_company ? `${item.counterparty} — ${item.counterparty_company}` : item.counterparty}
+            {item.counterparty_company ? `${item.counterparty}  - ${item.counterparty_company}` : item.counterparty}
             {item.counterparty_email ? ` (${item.counterparty_email})` : ''}
           </Text>
           <View style={styles.docMeta}>

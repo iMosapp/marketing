@@ -14,7 +14,7 @@ const FEATURE_SECTIONS = [
       { icon: 'camera', title: 'Congrats Cards', desc: 'Send branded cards customers share on social media. Collects reviews and builds your personal reputation.' },
       { icon: 'chatbubbles', title: 'Smart Messaging', desc: 'SMS and email from one inbox. AI-powered suggestions. Every conversation strengthens the relationship.' },
       { icon: 'star', title: 'Personal Reviews', desc: 'Direct feedback that lives on your digital card. Portable credibility that stays with you wherever you go.' },
-      { icon: 'card', title: 'Digital Business Card', desc: 'Your social hub — bio, socials, reviews, contact info. Your reputation in one shareable link.' },
+      { icon: 'card', title: 'Digital Business Card', desc: 'Your social hub  - bio, socials, reviews, contact info. Your reputation in one shareable link.' },
     ],
   },
   {
@@ -25,13 +25,13 @@ const FEATURE_SECTIONS = [
     features: [
       { icon: 'gift', title: 'Birthday & Anniversary', desc: 'Automatic messages on every milestone. Customers feel remembered without any manual effort.' },
       { icon: 'car-sport', title: 'Sold Date Sequences', desc: 'Tag a customer as "Sold" and the follow-up campaign starts automatically. Lifetime engagement.' },
-      { icon: 'snow', title: 'Holiday Campaigns', desc: '14+ pre-built holiday templates. Thanksgiving, Christmas, New Year — all automated.' },
+      { icon: 'snow', title: 'Holiday Campaigns', desc: '14+ pre-built holiday templates. Thanksgiving, Christmas, New Year  - all automated.' },
       { icon: 'pricetags', title: 'Tag-Triggered Workflows', desc: 'Apply a tag, start a campaign. Simple rules that drive complex, multi-step follow-ups.' },
     ],
   },
   {
     title: 'AI-Powered Intelligence',
-    subtitle: "Jessi — your team's AI assistant",
+    subtitle: "Jessi  - your team's AI assistant",
     icon: 'sparkles',
     color: '#AF52DE',
     features: [
@@ -49,7 +49,7 @@ const FEATURE_SECTIONS = [
     features: [
       { icon: 'trophy', title: 'Leaderboards', desc: 'Real-time performance rankings. Motivate your team with friendly competition.' },
       { icon: 'pulse', title: 'Activity Feeds', desc: 'See every customer touchpoint across your entire team. Nothing falls through the cracks.' },
-      { icon: 'megaphone', title: 'Team Broadcast', desc: 'One message to your entire team. Announcements, updates, motivation — instantly.' },
+      { icon: 'megaphone', title: 'Team Broadcast', desc: 'One message to your entire team. Announcements, updates, motivation  - instantly.' },
       { icon: 'stats-chart', title: 'Analytics Dashboard', desc: 'Track deals, response times, campaign performance. Data-driven decisions.' },
     ],
   },
@@ -59,9 +59,9 @@ const FEATURE_SECTIONS = [
     icon: 'business',
     color: '#5AC8FA',
     features: [
-      { icon: 'layers', title: 'Multi-Org Hierarchy', desc: 'Organizations, stores, teams — structured exactly how your business operates.' },
+      { icon: 'layers', title: 'Multi-Org Hierarchy', desc: 'Organizations, stores, teams  - structured exactly how your business operates.' },
       { icon: 'color-palette', title: 'White-Label Ready', desc: "Your brand, your colors, your domain. Powered by i'M On Social under the hood." },
-      { icon: 'people', title: 'Role-Based Onboarding', desc: 'Custom onboarding for every role. Admins, managers, salespeople — each gets what they need.' },
+      { icon: 'people', title: 'Role-Based Onboarding', desc: 'Custom onboarding for every role. Admins, managers, salespeople  - each gets what they need.' },
       { icon: 'shield', title: 'Security & Compliance', desc: 'Enterprise-grade security. Role-based access. Your data stays yours.' },
     ],
   },

@@ -50,21 +50,21 @@ const SLIDES: Slide[] = [
     content: [
       'Every organization. Every team. Every individual.',
       'All under one structured social ecosystem.',
-      "iMOs isn't about marketing — it's about giving people control of their digital presence.",
+      "iMOs isn't about marketing  - it's about giving people control of their digital presence.",
     ],
     icon: 'swap-horizontal',
     iconColor: '#C9A962',
     gradient: ['#0A0A1A', '#16213E'],
     features: [
-      { icon: 'business', text: 'Organizations — structure teams, track reputation' },
-      { icon: 'people', text: 'Teams — shared visibility, unified brand' },
-      { icon: 'person', text: 'Individuals — their own digital brand' },
+      { icon: 'business', text: 'Organizations  - structure teams, track reputation' },
+      { icon: 'people', text: 'Teams  - shared visibility, unified brand' },
+      { icon: 'person', text: 'Individuals  - their own digital brand' },
     ],
   },
   {
     id: 'experience',
     title: 'The Core Experience',
-    subtitle: 'Not "Leave a Review" — it\'s "We Appreciate You"',
+    subtitle: 'Not "Leave a Review"  - it\'s "We Appreciate You"',
     content: [
       '1. A sale happens',
       '2. A Congrats Card is sent',
@@ -82,7 +82,7 @@ const SLIDES: Slide[] = [
     content: [
       'Direct feedback that lives on your digital business card.',
       'Builds personal credibility. Strengthens your brand.',
-      'Stays with you — even if you switch stores or industries.',
+      'Stays with you  - even if you switch stores or industries.',
     ],
     icon: 'star',
     iconColor: '#FFD60A',
@@ -100,7 +100,7 @@ const SLIDES: Slide[] = [
     content: [
       'Birthday messages. Anniversary follow-ups. Holiday greetings.',
       'Sold-date sequences that turn one deal into a lifetime relationship.',
-      'Customers feel remembered — without any manual effort.',
+      'Customers feel remembered  - without any manual effort.',
     ],
     icon: 'rocket',
     iconColor: '#007AFF',
@@ -115,7 +115,7 @@ const SLIDES: Slide[] = [
   {
     id: 'ai',
     title: 'AI That Works For You',
-    subtitle: "Meet Jessi — your team's AI assistant",
+    subtitle: "Meet Jessi  - your team's AI assistant",
     content: [
       'AI-powered response suggestions that sound like your people wrote them.',
       'Voice-to-text for quick notes. Smart tagging and campaign enrollment.',
@@ -134,10 +134,10 @@ const SLIDES: Slide[] = [
     iconColor: '#FFD60A',
     gradient: ['#1A1A0A', '#2E2E0A'],
     features: [
-      { icon: 'eye', text: 'Visibility — be seen by every customer' },
-      { icon: 'shield-checkmark', text: 'Credibility — personal reviews build trust' },
-      { icon: 'key', text: 'Ownership — your reputation is yours' },
-      { icon: 'infinite', text: 'Continuity — it moves with you forever' },
+      { icon: 'eye', text: 'Visibility  - be seen by every customer' },
+      { icon: 'shield-checkmark', text: 'Credibility  - personal reviews build trust' },
+      { icon: 'key', text: 'Ownership  - your reputation is yours' },
+      { icon: 'infinite', text: 'Continuity  - it moves with you forever' },
       { icon: 'heart', text: 'Customers never forget the person' },
       { icon: 'trending-up', text: 'Your brand grows with every interaction' },
     ],
@@ -148,7 +148,7 @@ const SLIDES: Slide[] = [
     subtitle: 'White-label ready for organizations',
     content: [
       'Deploy iMOs under your own brand for your entire organization.',
-      'Custom branding, your logo, your colors — powered by iMOs.',
+      'Custom branding, your logo, your colors  - powered by iMOs.',
       'Every account, every team member, one unified platform.',
     ],
     icon: 'business',

@@ -438,7 +438,7 @@ export default function ClientOnboardingScreen() {
             <Text style={st.resultsTitle}>Accounts Created</Text>
             {inviteResults.filter(r => r.status === 'created').map((r, i) => (
               <View key={i} style={st.resultRow}>
-                <Text style={st.resultName}>{r.name} — {r.email}</Text>
+                <Text style={st.resultName}>{r.name}  - {r.email}</Text>
                 <Text style={st.resultPw}>Password: {r.temp_password}</Text>
               </View>
             ))}
@@ -556,7 +556,7 @@ export default function ClientOnboardingScreen() {
                 </View>
                 <View style={st.clientInfo}>
                   <Text style={st.clientName}>{client.client_name}</Text>
-                  <Text style={st.clientMeta}>{doneCount}/{STEP_DEFS.length} steps{pct === 100 ? ' — Live' : ''}</Text>
+                  <Text style={st.clientMeta}>{doneCount}/{STEP_DEFS.length} steps{pct === 100 ? '  - Live' : ''}</Text>
                 </View>
                 <View style={st.miniBar}><View style={[st.miniBarFill, { width: `${pct}%` as any }]} /></View>
                 <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#555" style={{ marginLeft: 8 }} />

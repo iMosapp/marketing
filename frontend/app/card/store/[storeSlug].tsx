@@ -200,7 +200,7 @@ export default function StoreCardPage() {
                 </View>
                 {t.text ? <Text style={styles.testimonialText}>"{t.text}"</Text> : null}
                 <Text style={styles.testimonialAuthor}>
-                  — {t.customer_name}{t.salesperson_name ? `, helped by ${t.salesperson_name}` : ''}
+                   - {t.customer_name}{t.salesperson_name ? `, helped by ${t.salesperson_name}` : ''}
                 </Text>
               </View>
             ))}

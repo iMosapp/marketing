@@ -523,7 +523,7 @@ def start_scheduler():
         logger.warning("[Scheduler] Already running, skipping start.")
         return
 
-    # Daily at 8 AM UTC — process date triggers (birthdays, anniversaries, holidays)
+    # Daily at 8 AM UTC  - process date triggers (birthdays, anniversaries, holidays)
     scheduler.add_job(
         process_all_date_triggers,
         CronTrigger(hour=8, minute=0),
@@ -532,7 +532,7 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
-    # Daily at 6 AM UTC — lifecycle scan (tenure tags, inactivity detection, milestone messages)
+    # Daily at 6 AM UTC  - lifecycle scan (tenure tags, inactivity detection, milestone messages)
     scheduler.add_job(
         run_daily_lifecycle_scan,
         CronTrigger(hour=6, minute=0),
@@ -541,7 +541,7 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
-    # Daily at 7 AM UTC — send scheduled reports
+    # Daily at 7 AM UTC  - send scheduled reports
     scheduler.add_job(
         send_scheduled_reports,
         CronTrigger(hour=7, minute=0),
@@ -550,7 +550,7 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
-    # Every 15 minutes — process pending campaign step messages
+    # Every 15 minutes  - process pending campaign step messages
     scheduler.add_job(
         process_pending_campaign_steps,
         IntervalTrigger(minutes=15),

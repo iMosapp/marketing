@@ -168,7 +168,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   'campaigns-email': {
     title: 'Email Campaigns',
     subtitle: 'Automated Email',
-    description: 'Beautiful, automated email sequences. From welcome emails to annual check-ins — all running on autopilot.',
+    description: 'Beautiful, automated email sequences. From welcome emails to annual check-ins  - all running on autopilot.',
     icon: 'mail',
     iconColor: '#AF52DE',
     bullets: [
@@ -214,7 +214,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   'date-triggers': {
     title: 'Date Triggers',
     subtitle: 'Automated Milestones',
-    description: 'Never forget a birthday, anniversary, or holiday again. Set up once, and iMOs sends the right message at the right time — forever.',
+    description: 'Never forget a birthday, anniversary, or holiday again. Set up once, and iMOs sends the right message at the right time  - forever.',
     icon: 'calendar',
     iconColor: '#FF9500',
     bullets: [
@@ -308,7 +308,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   'congrats-template': {
     title: 'Congrats Cards',
     subtitle: 'Customer Celebrations',
-    description: 'Snap a photo, create a branded card, and start a lifelong relationship. Customers share these on social media — free marketing.',
+    description: 'Snap a photo, create a branded card, and start a lifelong relationship. Customers share these on social media  - free marketing.',
     icon: 'gift',
     iconColor: '#C9A962',
     bullets: [
@@ -579,7 +579,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { from: 'me', text: 'How do I set up a birthday campaign?', time: '10:30 AM' },
         { from: 'them', text: 'Go to Campaigns > Date Triggers > Birthday. Enable it, write your message, and choose SMS or email. Done!', time: '10:30 AM' },
         { from: 'me', text: 'Can you suggest a birthday message?', time: '10:31 AM' },
-        { from: 'them', text: 'Happy birthday, {name}! Wishing you an amazing year ahead. — Your friends at {company}', time: '10:31 AM' },
+        { from: 'them', text: 'Happy birthday, {name}! Wishing you an amazing year ahead.  - Your friends at {company}', time: '10:31 AM' },
       ],
     },
   },
@@ -703,7 +703,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   admin: {
     title: 'Admin Dashboard',
     subtitle: 'Administration',
-    description: 'Complete oversight of your organization. Manage users, stores, and monitor activity — all from one place.',
+    description: 'Complete oversight of your organization. Manage users, stores, and monitor activity  - all from one place.',
     icon: 'shield-checkmark',
     iconColor: '#34C759',
     bullets: [
@@ -1086,7 +1086,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   showcase: {
     title: 'Showroom',
     subtitle: 'Public Portfolio',
-    description: 'Your public-facing showcase page. Feature congrats cards, customer testimonials, and your best work — all in one shareable link.',
+    description: 'Your public-facing showcase page. Feature congrats cards, customer testimonials, and your best work  - all in one shareable link.',
     icon: 'images',
     iconColor: '#007AFF',
     bullets: [
@@ -1203,7 +1203,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   'reports-personal': {
     title: 'Personal Reports',
     subtitle: 'Your Performance',
-    description: 'Your individual performance stats — messages sent, cards created, reviews collected, and more.',
+    description: 'Your individual performance stats  - messages sent, cards created, reviews collected, and more.',
     icon: 'person',
     iconColor: '#34C759',
     bullets: [

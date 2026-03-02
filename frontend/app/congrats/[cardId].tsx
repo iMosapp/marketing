@@ -239,7 +239,7 @@ export default function CongratsCardPage() {
         )}
       </View>
 
-      {/* Quick Links — under salesman info */}
+      {/* Quick Links  - under salesman info */}
       {cardData.salesman_id && (
         <View style={styles.quickLinksSection}>
           {/* Leave a Review CTA */}

@@ -1,5 +1,5 @@
 """
-Leaderboard v2 — Gamification engine with Store, Org, and Global levels.
+Leaderboard v2  - Gamification engine with Store, Org, and Global levels.
 Aggregates contact_events by user for ranked competition with category breakdowns.
 """
 import logging
@@ -242,7 +242,7 @@ async def global_leaderboard(
     year: Optional[int] = None,
     category: str = "total",
 ):
-    """Global leaderboard — all users across all orgs (anonymized)."""
+    """Global leaderboard  - all users across all orgs (anonymized)."""
     db = get_db()
 
     # Get all active users (limit 500 for performance)
@@ -256,7 +256,7 @@ async def global_leaderboard(
     scores = await _aggregate_user_scores(user_ids, date_filter)
     ranked = _rank_users(users, scores, category)
 
-    # Anonymize — only show initials and store/org
+    # Anonymize  - only show initials and store/org
     for entry in ranked:
         parts = entry["name"].split()
         entry["display_name"] = f"{parts[0][0]}. {parts[-1][0]}." if len(parts) >= 2 else f"User #{entry['rank']}"

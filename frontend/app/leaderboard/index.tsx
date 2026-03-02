@@ -128,7 +128,7 @@ export default function LeaderboardPage() {
             {level === 'org' && entry.members ? <Text style={s.entryRole}>{entry.members} members</Text> : null}
           </View>
 
-          {/* Score — shows category-specific score when filtered */}
+          {/* Score  - shows category-specific score when filtered */}
           <View style={s.scoreCol}>
             <Text style={s.scoreNum}>
               {category === 'total' ? (scores.total ?? entry.sort_score ?? 0) : (scores[category] ?? entry.sort_score ?? 0)}

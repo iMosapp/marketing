@@ -137,7 +137,7 @@ export default function DemoScreen() {
             </TouchableOpacity>
 
             <Text style={s.hint}>
-              Or start a 14-day free trial right now —{' '}
+              Or start a 14-day free trial right now  -{' '}
               <Text style={s.hintLink} onPress={() => router.push('/auth/signup' as any)}>Sign up here</Text>
             </Text>
           </View>
