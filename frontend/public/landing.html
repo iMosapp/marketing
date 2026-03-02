@@ -367,17 +367,16 @@
     <a href="#book-demo" class="hero-cta" onclick="openModal(event)">Book a Demo</a>
     <div class="hero-sub">Free demo &middot; No credit card required</div>
     <div class="video-placeholder" id="video-area" onclick="toggleAudio()">
+      <div class="slideshow" id="slideshow">
+        <div class="slideshow-phone active" id="slide-0"><img src="/slide-home.jpg" alt="Home Dashboard"/></div>
+        <div class="slideshow-phone" id="slide-1"><img src="/slide-linkpage.jpg" alt="Personal Link Page"/></div>
+        <div class="slideshow-phone" id="slide-2"><img src="/slide-contacts.jpg" alt="Contact Management"/></div>
+        <div class="slideshow-phone" id="slide-3"><img src="/slide-menu.jpg" alt="Menu & Settings"/></div>
+      </div>
+      <div class="overlay"></div>
       <div class="play-btn" id="playBtn"><svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg></div>
       <div class="label" id="audioLabel">Listen to our story</div>
-      <div class="audio-wave" id="audioWave" style="display:none;position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:none;">
-        <div style="display:flex;gap:3px;align-items:center;height:24px;">
-          <div class="wave-bar" style="animation-delay:0s"></div>
-          <div class="wave-bar" style="animation-delay:0.15s"></div>
-          <div class="wave-bar" style="animation-delay:0.3s"></div>
-          <div class="wave-bar" style="animation-delay:0.45s"></div>
-          <div class="wave-bar" style="animation-delay:0.6s"></div>
-        </div>
-      </div>
+      <div class="progress-bar" id="progressBar"></div>
       <audio id="voiceoverAudio" src="/voiceover.mp3" preload="auto"></audio>
     </div>
   </div>
