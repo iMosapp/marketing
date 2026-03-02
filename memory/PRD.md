@@ -64,6 +64,20 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Moderation system for reviews and showcase entries (`/settings/showcase-approvals.tsx`)
 - Public showcase pages without auth requirement
 
+### Social-Media-Style Contact Experience (Completed Mar 2, 2026)
+- **Inline Composer**: Replaced the icon-based sticky action bar on contact detail pages with a full inbox-style composer:
+  - SMS/Email mode toggle pills (green/purple) + Call button
+  - Text input ("Type your message...")
+  - Toolbar with: **+** (Send Something picker), **💬** (Log Reply), **✨** (AI Sparkle), **Send** button
+  - Messages sent directly from contact page (auto-creates conversation)
+- **"Send Something" Consolidated Picker**: Single + button opens a bottom-sheet modal with all sendable items:
+  - Digital Card, Congrats Card (photo templates), Review Link, My Showcase, My Link Page
+- **AI Relationship Suggestion**: Sparkle button calls GPT-5.2 via Emergent LLM key to analyze relationship history, recent activity, and upcoming events, and generates a personalized message suggestion. User can Edit or Send Now.
+- **Collapsible Date Groups**: Activity events grouped by date (Today, Yesterday, X days ago) with count badges and tap-to-collapse/expand in both:
+  - Contact page Relationship Feed
+  - Activity tab master feed
+- **Backend**: `POST /api/contact-intel/{user_id}/{contact_id}/suggest-message` endpoint for AI-powered message suggestions.
+
 ### Reporting & Analytics
 - Activity reports with 14+ metrics, date filters, scheduled email delivery
 - Leaderboard system
