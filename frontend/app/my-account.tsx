@@ -1410,6 +1410,14 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     paddingHorizontal: 2,
   },
+  installBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+  },
 });
 
 const actStyles = StyleSheet.create({
