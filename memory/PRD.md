@@ -75,7 +75,10 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Light & Dark mode with persistence — **all pages now theme-aware** (My Account, Contact Detail, Share Modal)
 ### Linktree-Style Public Link Page (Completed Mar 2, 2026)
 - Public URL per user: `/l/{username}` (e.g., `/l/forestward`)
-- Auto-populates links from user's digital card (social links, phone, email, review link)
+- **Social Links**: All 6 major platforms (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube) pre-populated by default. Users only enter their username — the URL prefix is built automatically (matching My Profile pattern).
+- **Data Model**: `social_links` stored as `{platform: {username, visible}}` dict. Backend builds full URLs for public display.
+- Contact links (Call Me, Email Me, Digital Card, Review) with visibility toggles
+- Custom links section for arbitrary URLs
 - Dark/Light theme support with accent color customization
 - Click tracking analytics per link
 - "powered by i'MOnsocial" branded footer
