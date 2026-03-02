@@ -71,7 +71,15 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
   - Toolbar with: **+** (Send Something picker), **💬** (Log Reply), **✨** (AI Sparkle), **Send** button
   - Messages sent directly from contact page (auto-creates conversation)
 - **"Send Something" Consolidated Picker**: Single + button opens a bottom-sheet modal with all sendable items:
-  - Digital Card, Congrats Card (photo templates), Review Link, My Showcase, My Link Page
+  - My Digital Card (pre-fills card URL in composer)
+  - Create a Card (opens 6-template secondary picker: Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday)
+  - Review Link (pre-fills review page URL in composer)
+  - My Showcase (pre-fills showcase URL)
+  - My Link Page (fetches link page URL from API and pre-fills)
+  - Photo (open camera/gallery)
+- **No more inbox redirects**: All send actions stay on the contact page and pre-fill the composer with the appropriate URL/message
+- **Differentiated Toolbar Icons**: Blue + (Send Something), Orange arrow-undo (Log Reply), Purple sparkles (AI) — no longer "three green dots"
+- **Personal SMS Flow**: SMS mode opens native messaging app with message pre-filled (sms: protocol); Email mode sends directly via Resend
 - **AI Relationship Suggestion**: Sparkle button calls GPT-5.2 via Emergent LLM key to analyze relationship history, recent activity, and upcoming events, and generates a personalized message suggestion. User can Edit or Send Now.
 - **Collapsible Date Groups**: Activity events grouped by date (Today, Yesterday, X days ago) with count badges and tap-to-collapse/expand in both:
   - Contact page Relationship Feed
