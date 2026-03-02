@@ -169,7 +169,15 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
   4. Team Members — Bulk add (name, email, phone, role), creates accounts with temp passwords
   5. Summary & Launch — Review config, display credentials, activate
 - Backend: `/api/setup-wizard/*` — progress tracking, bulk-invite, complete
-- Accessible from Menu > Administration (first item)
+
+### Client Onboarding Mission Control (Mar 2, 2026)
+- Unified onboarding checklist at `/admin/client-onboarding` — replaces Setup Wizard as the entry point
+- 6-step guided flow: Send Quote → Get Agreement Signed → Collect Payment → Configure Account → Add Team Members → Account Live
+- Each step: title, description, "Mark Done" toggle, "Do This Now" / "Open" action button linking to existing pages
+- Progress bar at top, timeline with numbered dots, "Quick Reference" tips at bottom
+- Steps link to existing pages: `/admin/create-quote`, `/admin/nda`, `/admin/billing`, `/admin/setup-wizard`, `/admin/manage-team`
+- Progress persisted per org via `/api/setup-wizard/progress/{org_id}` with `completed_step_ids`
+- Accessible from Menu > Administration as "Client Onboarding" (first item)
 
 
 ## Key Files
