@@ -474,16 +474,7 @@ export default function ContactDetailScreen() {
         router.push(`/thread/${id}?${threadParams}&mode=sms`);
         break;
       case 'call':
-        if (Platform.OS === 'web') {
-          const a = document.createElement('a');
-          a.href = `tel:${contact.phone}`;
-          a.target = '_self';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else {
-          Linking.openURL(`tel:${contact.phone}`);
-        }
+        router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
         break;
       case 'email':
         router.push(`/thread/${id}?${threadParams}&mode=email`);
