@@ -399,13 +399,6 @@ export default function MoreScreen() {
       defaultExpanded: true,
       items: [
         {
-          icon: 'call',
-          title: 'Phone / Dialer',
-          subtitle: 'Keypad & call log',
-          onPress: () => router.push('/(tabs)/dialer'),
-          color: '#32ADE6',
-        },
-        {
           icon: 'chatbox-ellipses',
           title: 'Team Chat',
           subtitle: 'Internal team messaging',
@@ -457,18 +450,18 @@ export default function MoreScreen() {
           color: '#AF52DE',
         },
         {
-          icon: 'megaphone',
-          title: 'Broadcast',
-          subtitle: 'Mass messaging',
-          onPress: () => router.push('/broadcast'),
-          color: '#FF9500',
-        },
-        {
           icon: 'speedometer',
           title: 'Campaign Dashboard',
           subtitle: 'View enrollments',
           onPress: () => router.push('/campaigns/dashboard'),
           color: '#5AC8FA',
+        },
+        {
+          icon: 'megaphone',
+          title: 'Broadcast',
+          subtitle: 'Mass messaging',
+          onPress: () => router.push('/broadcast'),
+          color: '#FF9500',
         },
         {
           icon: 'calendar-outline',
@@ -631,20 +624,6 @@ export default function MoreScreen() {
           subtitle: 'Face ID, passwords',
           onPress: () => router.push('/settings/security'),
           color: '#FF3B30',
-        },
-        {
-          icon: 'notifications',
-          title: 'Notifications',
-          subtitle: 'Alerts & escalations',
-          onPress: () => showSimpleAlert('Notifications', 'Feature coming soon'),
-          color: '#FF9500',
-        },
-        {
-          icon: 'swap-horizontal-outline',
-          title: 'SMS / Email Toggle',
-          subtitle: 'Toggle style & default',
-          onPress: () => router.push('/settings/toggle-style'),
-          color: '#5AC8FA',
         },
         {
           icon: 'calendar-outline',
