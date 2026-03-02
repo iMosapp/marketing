@@ -35,6 +35,12 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         # Ensure description exists for collapsed view
         if not e.get("description"):
             e["description"] = (e.get("content_preview") or e.get("content") or e.get("full_content") or "")[:80]
+        # Mark inbound customer replies
+        if e.get("event_type") == "customer_reply":
+            e["direction"] = "inbound"
+            if e.get("photo"):
+                e["has_photo"] = True
+                e.pop("photo", None)  # Don't send base64 in list response
         # Ensure title exists
         if not e.get("title"):
             etype = e.get("event_type", "")
@@ -282,8 +288,219 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     return event
 
 
+@router.post("/{user_id}/{contact_id}/log-reply")
+async def log_customer_reply(user_id: str, contact_id: str, reply_data: dict):
+    """Log a manually pasted customer reply with optional photo attachment."""
+    db = get_db()
 
-@router.post("/{user_id}/find-or-create-and-log")
+    text = (reply_data.get("text") or "").strip()
+    photo_data = reply_data.get("photo")  # base64 or URL
+    reply_timestamp = reply_data.get("timestamp")  # optional — user can set when reply happened
+
+    if not text and not photo_data:
+        raise HTTPException(status_code=400, detail="Reply must have text or a photo")
+
+    ts = datetime.now(timezone.utc)
+    if reply_timestamp:
+        try:
+            ts = datetime.fromisoformat(reply_timestamp.replace("Z", "+00:00"))
+        except Exception:
+            pass
+
+    event = {
+        "contact_id": contact_id,
+        "user_id": user_id,
+        "event_type": "customer_reply",
+        "icon": "chatbubble-ellipses",
+        "color": "#30D158",
+        "title": "Customer Reply",
+        "description": text[:80] if text else "Sent a photo",
+        "full_content": text,
+        "category": "customer_activity",
+        "direction": "inbound",
+        "timestamp": ts,
+    }
+    if photo_data:
+        event["photo"] = photo_data
+
+    await db.contact_events.insert_one(event)
+    event.pop("_id", None)
+    if hasattr(event["timestamp"], "isoformat"):
+        event["timestamp"] = event["timestamp"].isoformat()
+    # Don't return base64 photo in response
+    event.pop("photo", None)
+    event["has_photo"] = bool(photo_data)
+
+    return event
+
+
+@router.get("/{user_id}/{contact_id}/suggested-actions")
+async def get_suggested_actions(user_id: str, contact_id: str):
+    """Generate suggested next actions for a contact based on their data and activity."""
+    db = get_db()
+
+    contact = await db.contacts.find_one(
+        {"_id": ObjectId(contact_id), "user_id": user_id},
+        {"_id": 0, "first_name": 1, "last_name": 1, "birthday": 1, "anniversary": 1,
+         "date_sold": 1, "purchase_date": 1, "tags": 1, "created_at": 1, "phone": 1}
+    )
+    if not contact:
+        return {"actions": []}
+
+    name = contact.get("first_name", "Customer")
+    actions = []
+    now = datetime.now(timezone.utc)
+
+    # Check birthday
+    bday = contact.get("birthday")
+    if bday:
+        if hasattr(bday, "month"):
+            try:
+                bday_this_year = bday.replace(year=now.year, tzinfo=timezone.utc) if not bday.tzinfo else bday.replace(year=now.year)
+                days_until = (bday_this_year - now).days % 365
+            except Exception:
+                days_until = 999
+            if days_until <= 7:
+                actions.append({
+                    "type": "birthday",
+                    "priority": "high",
+                    "icon": "gift",
+                    "color": "#FF9500",
+                    "title": f"Birthday coming up!",
+                    "description": f"{name}'s birthday is {'today' if days_until == 0 else f'in {days_until} day' + ('s' if days_until > 1 else '')}",
+                    "suggested_message": f"Happy Birthday, {name}! Hope you have an amazing day! - Sent with care from your friends at the dealership",
+                    "action": "congrats",
+                })
+
+    # Check anniversary
+    ann = contact.get("anniversary")
+    if ann:
+        if hasattr(ann, "month"):
+            try:
+                ann_this_year = ann.replace(year=now.year, tzinfo=timezone.utc) if not ann.tzinfo else ann.replace(year=now.year)
+                days_until = (ann_this_year - now).days % 365
+            except Exception:
+                days_until = 999
+            if days_until <= 7:
+                actions.append({
+                    "type": "anniversary",
+                    "priority": "high",
+                    "icon": "heart",
+                    "color": "#FF2D55",
+                    "title": f"Anniversary coming up!",
+                    "description": f"{name}'s anniversary is {'today' if days_until == 0 else f'in {days_until} day' + ('s' if days_until > 1 else '')}",
+                    "suggested_message": f"Happy Anniversary, {name}! Wishing you and your family all the best! Hope you're still loving the ride.",
+                    "action": "sms",
+                })
+
+    # Check date sold (30/60/90 day touchpoints)
+    sold = contact.get("date_sold") or contact.get("purchase_date")
+    if sold and hasattr(sold, "date"):
+        sold_aware = sold.replace(tzinfo=timezone.utc) if not getattr(sold, 'tzinfo', None) else sold
+        days_since = (now - sold_aware).days
+        for milestone in [30, 60, 90, 180, 365]:
+            if milestone - 3 <= days_since <= milestone + 3:
+                actions.append({
+                    "type": "follow_up",
+                    "priority": "medium" if milestone <= 90 else "low",
+                    "icon": "car",
+                    "color": "#34C759",
+                    "title": f"{milestone}-day follow-up",
+                    "description": f"It's been {milestone} days since {name}'s purchase",
+                    "suggested_message": f"Hey {name}! It's been {milestone} days since you drove off the lot. How are you loving your ride? Let me know if there's anything I can help with!",
+                    "action": "sms",
+                })
+                break
+
+    # Check last activity — nudge if no touchpoint in 30+ days
+    last_event = await db.contact_events.find_one(
+        {"contact_id": contact_id, "event_type": {"$nin": ["customer_reply", "congrats_card_viewed"]}},
+        {"_id": 0, "timestamp": 1},
+        sort=[("timestamp", -1)]
+    )
+    if last_event and last_event.get("timestamp"):
+        le_ts = last_event["timestamp"]
+        le_ts_aware = le_ts.replace(tzinfo=timezone.utc) if not getattr(le_ts, 'tzinfo', None) else le_ts
+        days_since_contact = (now - le_ts_aware).days
+        if days_since_contact >= 30 and not any(a["type"] in ["birthday", "anniversary", "follow_up"] for a in actions):
+            actions.append({
+                "type": "re_engage",
+                "priority": "medium",
+                "icon": "time",
+                "color": "#FF9F0A",
+                "title": f"Time to reconnect",
+                "description": f"It's been {days_since_contact} days since your last touchpoint with {name}",
+                "suggested_message": f"Hey {name}! Just checking in — haven't connected in a while. Hope everything's going great! Let me know if there's anything you need.",
+                "action": "sms",
+            })
+
+    # Check for recent customer feedback that hasn't been thanked
+    recent_feedback = await db.contact_events.find_one(
+        {"contact_id": contact_id, "event_type": "review_submitted"},
+        {"_id": 0, "timestamp": 1, "description": 1},
+        sort=[("timestamp", -1)]
+    )
+    if recent_feedback:
+        # Check if there's been a thank-you sent after the feedback
+        thank_you = await db.contact_events.find_one(
+            {"contact_id": contact_id, "event_type": {"$in": ["personal_sms", "email_sent"]},
+             "timestamp": {"$gt": recent_feedback["timestamp"]}},
+            {"_id": 0}
+        )
+        if not thank_you:
+            actions.append({
+                "type": "thank_feedback",
+                "priority": "high",
+                "icon": "star",
+                "color": "#FFD60A",
+                "title": "Thank them for their review!",
+                "description": f"{name} left a review — send a thank you",
+                "suggested_message": f"Hey {name}! Thank you so much for leaving that review — it really means a lot! If you know anyone else looking, I'd love to help them out too.",
+                "action": "sms",
+            })
+
+    # Sort by priority
+    prio_order = {"high": 0, "medium": 1, "low": 2}
+    actions.sort(key=lambda a: prio_order.get(a.get("priority", "low"), 2))
+
+    return {"actions": actions}
+
+
+@router.get("/{user_id}/{contact_id}/reply-photo/{event_index}")
+async def get_reply_photo(user_id: str, contact_id: str, event_index: int):
+    """Serve a photo from a customer reply event."""
+    db = get_db()
+    import base64
+    from fastapi.responses import Response
+
+    # Find customer reply events with photos for this contact
+    replies = await db.contact_events.find(
+        {"contact_id": contact_id, "event_type": "customer_reply", "photo": {"$exists": True}},
+        {"photo": 1}
+    ).sort("timestamp", -1).to_list(100)
+
+    if event_index < 0 or event_index >= len(replies):
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    photo_data = replies[event_index].get("photo", "")
+    if not photo_data:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    if photo_data.startswith("data:"):
+        parts = photo_data.split(",", 1)
+        if len(parts) == 2:
+            header = parts[0]
+            b64 = parts[1]
+            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            try:
+                image_bytes = base64.b64decode(b64)
+                return Response(content=image_bytes, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
+            except Exception:
+                raise HTTPException(status_code=500, detail="Failed to decode photo")
+    if photo_data.startswith("http"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=photo_data)
+    raise HTTPException(status_code=404, detail="Photo format not supported")
 async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
     """
     Smart contact matching: find by phone (last 10 digits) or email, create if not found.

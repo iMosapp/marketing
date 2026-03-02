@@ -44,6 +44,12 @@ interface ContactEvent {
   description: string;
   timestamp: string;
   category: string;
+  direction?: string;
+  has_photo?: boolean;
+  full_content?: string;
+  link?: string;
+  channel?: string;
+  subject?: string;
 }
 
 interface ContactStats {
@@ -121,6 +127,12 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   link_click: 'Link Clicked',
   voice_note: 'Voice Note',
   note_updated: 'Note Updated',
+  customer_reply: 'Customer Reply',
+  congrats_card_viewed: 'Viewed Congrats Card',
+  congrats_card_download: 'Downloaded Card',
+  congrats_card_share: 'Shared Card',
+  review_submitted: 'Left a Review',
+  review_link_clicked: 'Clicked Review Link',
 };
 
 function getEventTitle(evt: ContactEvent): string {
@@ -147,6 +159,7 @@ const EVENT_CATEGORY_ICON: Record<string, { icon: string; color: string }> = {
   review: { icon: 'star', color: '#FFD60A' },
   voice_note: { icon: 'mic', color: '#34C759' },
   note: { icon: 'document-text', color: '#FF9F0A' },
+  customer_activity: { icon: 'arrow-down', color: '#30D158' },
   custom: { icon: 'flag', color: '#8E8E93' },
 };
 
@@ -252,6 +265,13 @@ export default function ContactDetailScreen() {
   const [feedSearch, setFeedSearch] = useState('');
   const INITIAL_EVENT_COUNT = 5;
 
+  // Suggested actions & log reply
+  const [suggestedActions, setSuggestedActions] = useState<any[]>([]);
+  const [showLogReply, setShowLogReply] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
+  const [submittingReply, setSubmittingReply] = useState(false);
+
   // Computed: filtered events for search (must come after state declarations)
   const feedQuery = feedSearch.toLowerCase().trim();
   const filteredEvents = feedQuery
@@ -291,6 +311,7 @@ export default function ContactDetailScreen() {
     if (!isNewContact && user) {
       loadContact();
       loadEvents();
+      loadSuggestedActions();
       loadReferrals();
       loadCampaignsAndEnrollments();
       loadTags();
@@ -363,6 +384,75 @@ export default function ContactDetailScreen() {
       console.error('Failed to load events:', e);
     } finally {
       setEventsLoading(false);
+    }
+  };
+
+  const loadSuggestedActions = async () => {
+    if (!user || isNewContact) return;
+    try {
+      const resp = await api.get(`/contacts/${user._id}/${id}/suggested-actions`);
+      setSuggestedActions(resp.data.actions || []);
+    } catch (e) {
+      console.error('Failed to load suggested actions:', e);
+    }
+  };
+
+  const handleLogReply = async () => {
+    if (!user || (!replyText.trim() && !replyPhoto)) return;
+    try {
+      setSubmittingReply(true);
+      await api.post(`/contacts/${user._id}/${id}/log-reply`, {
+        text: replyText.trim(),
+        photo: replyPhoto,
+      });
+      setReplyText('');
+      setReplyPhoto(null);
+      setShowLogReply(false);
+      showToast('Customer reply logged!');
+      loadEvents();
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to log reply');
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  const pickReplyPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.6,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]?.base64) {
+        const mime = result.assets[0].mimeType || 'image/jpeg';
+        setReplyPhoto(`data:${mime};base64,${result.assets[0].base64}`);
+      }
+    } catch (e) {
+      console.error('Photo pick error:', e);
+    }
+  };
+
+  const handleSuggestedAction = (action: any) => {
+    if (!contact.phone && (action.action === 'sms' || action.action === 'call')) {
+      showSimpleAlert('Missing Info', 'No phone number available');
+      return;
+    }
+    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contact.email || '')}`;
+    
+    switch (action.action) {
+      case 'sms':
+        router.push(`/thread/${id}?${threadParams}&mode=sms&prefill=${encodeURIComponent(action.suggested_message || '')}`);
+        break;
+      case 'congrats':
+        router.push(`/thread/${id}?${threadParams}&mode=congrats`);
+        break;
+      case 'email':
+        router.push(`/thread/${id}?${threadParams}&mode=email&prefill=${encodeURIComponent(action.suggested_message || '')}`);
+        break;
+      default:
+        router.push(`/thread/${id}?${threadParams}&mode=sms&prefill=${encodeURIComponent(action.suggested_message || '')}`);
     }
   };
 
@@ -1282,31 +1372,127 @@ export default function ContactDetailScreen() {
             </View>
           )}
 
-          {/* ===== ACTIVITY FEED ===== */}
+          {/* ===== SUGGESTED ACTIONS ===== */}
+          {!isNewContact && !isEditing && suggestedActions.length > 0 && (
+            <View style={s.section} data-testid="suggested-actions">
+              <View style={s.sectionHeaderRow}>
+                <Text style={s.sectionHeader}>Next Actions</Text>
+                <View style={s.actionBadge}><Text style={s.actionBadgeText}>{suggestedActions.length}</Text></View>
+              </View>
+              {suggestedActions.map((action, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={s.suggestedCard}
+                  onPress={() => handleSuggestedAction(action)}
+                  activeOpacity={0.7}
+                  data-testid={`suggested-action-${i}`}
+                >
+                  <View style={[s.suggestedIcon, { backgroundColor: `${action.color}20` }]}>
+                    <Ionicons name={action.icon as any} size={20} color={action.color} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={s.suggestedTitle}>{action.title}</Text>
+                    <Text style={s.suggestedDesc}>{action.description}</Text>
+                    {action.suggested_message && (
+                      <View style={s.suggestedMsgPreview}>
+                        <Text style={s.suggestedMsgText} numberOfLines={2}>"{action.suggested_message}"</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={[s.suggestedArrow, { backgroundColor: `${action.color}15` }]}>
+                    <Ionicons name="arrow-forward" size={16} color={action.color} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* ===== RELATIONSHIP FEED (Activity) ===== */}
           {!isNewContact && (
             <View style={s.section} data-testid="activity-feed">
               <View style={s.sectionHeaderRow}>
-                <Text style={s.sectionHeader}>Activity Feed</Text>
+                <Text style={s.sectionHeader}>Relationship Feed</Text>
                 <Text style={s.sectionHeaderCount}>{events.length} events</Text>
               </View>
 
-              {/* Search bar */}
-              {events.length > 0 && (
-                <View style={s.feedSearchRow}>
-                  <Ionicons name="search" size={16} color="#636366" />
-                  <TextInput
-                    style={s.feedSearchInput}
-                    placeholder="Search activity..."
-                    placeholderTextColor="#636366"
-                    value={feedSearch}
-                    onChangeText={setFeedSearch}
-                    data-testid="feed-search-input"
-                  />
-                  {feedSearch.length > 0 && (
-                    <TouchableOpacity onPress={() => setFeedSearch('')}>
-                      <Ionicons name="close-circle" size={16} color="#636366" />
+              {/* Log Reply + Search Row */}
+              <View style={s.feedActionRow}>
+                <TouchableOpacity
+                  style={s.logReplyBtn}
+                  onPress={() => setShowLogReply(true)}
+                  data-testid="log-reply-btn"
+                >
+                  <Ionicons name="chatbubble-ellipses" size={16} color="#30D158" />
+                  <Text style={s.logReplyBtnText}>Log Customer Reply</Text>
+                </TouchableOpacity>
+                {events.length > 0 && (
+                  <View style={s.feedSearchRowCompact}>
+                    <Ionicons name="search" size={14} color="#636366" />
+                    <TextInput
+                      style={s.feedSearchInputCompact}
+                      placeholder="Search..."
+                      placeholderTextColor="#636366"
+                      value={feedSearch}
+                      onChangeText={setFeedSearch}
+                      data-testid="feed-search-input"
+                    />
+                    {feedSearch.length > 0 && (
+                      <TouchableOpacity onPress={() => setFeedSearch('')}>
+                        <Ionicons name="close-circle" size={14} color="#636366" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* Log Reply Inline Composer */}
+              {showLogReply && (
+                <View style={s.logReplyComposer} data-testid="log-reply-composer">
+                  <View style={s.logReplyHeader}>
+                    <View style={s.logReplyDot} />
+                    <Text style={s.logReplyLabel}>Paste customer's message</Text>
+                    <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }}>
+                      <Ionicons name="close" size={18} color="#8E8E93" />
                     </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    style={s.logReplyInput}
+                    placeholder="What did they say?..."
+                    placeholderTextColor="#636366"
+                    value={replyText}
+                    onChangeText={setReplyText}
+                    multiline
+                    data-testid="log-reply-input"
+                  />
+                  {replyPhoto && (
+                    <View style={s.replyPhotoPreview}>
+                      <Image source={{ uri: replyPhoto }} style={s.replyPhotoThumb} resizeMode="cover" />
+                      <TouchableOpacity style={s.replyPhotoRemove} onPress={() => setReplyPhoto(null)}>
+                        <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
                   )}
+                  <View style={s.logReplyActions}>
+                    <TouchableOpacity style={s.logReplyPhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
+                      <Ionicons name="camera" size={18} color="#8E8E93" />
+                      <Text style={s.logReplyPhotoBtnText}>Photo</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.logReplySendBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.4 }]}
+                      onPress={handleLogReply}
+                      disabled={(!replyText.trim() && !replyPhoto) || submittingReply}
+                      data-testid="log-reply-submit"
+                    >
+                      {submittingReply ? (
+                        <ActivityIndicator size="small" color="#000" />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark" size={16} color="#000" />
+                          <Text style={s.logReplySendText}>Log Reply</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
 
@@ -1325,13 +1511,15 @@ export default function ContactDetailScreen() {
                     const isExpanded = expandedEvents[i] === true;
                     const fullContent = evt.full_content || evt.description || '';
                     const hasLink = !!evt.link;
+                    const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
+                    const isCustomerActivity = evt.category === 'customer_activity';
                     const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'Personal SMS' : evt.channel === 'sms' ? 'SMS' : '';
                     return (
                       <TouchableOpacity
                         key={i}
                         activeOpacity={0.7}
                         onPress={() => setExpandedEvents(prev => ({ ...prev, [i]: !prev[i] }))}
-                        style={s.feedItem}
+                        style={[s.feedItem, isInbound && s.feedItemInbound]}
                         data-testid={`feed-event-${i}`}
                       >
                         {/* Timeline line */}
@@ -1343,11 +1531,25 @@ export default function ContactDetailScreen() {
                         {/* Content */}
                         <View style={s.feedContent}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={s.feedTitle}>{getEventTitle(evt)}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                              <Text style={s.feedTitle}>{getEventTitle(evt)}</Text>
+                              {isInbound && (
+                                <View style={s.inboundBadge}>
+                                  <Text style={s.inboundBadgeText}>INBOUND</Text>
+                                </View>
+                              )}
+                              {isCustomerActivity && !isInbound && (
+                                <View style={s.customerBadge}>
+                                  <Text style={s.customerBadgeText}>CUSTOMER</Text>
+                                </View>
+                              )}
+                            </View>
                             <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#636366" />
                           </View>
                           {!isExpanded && evt.description ? (
-                            <Text style={s.feedDesc} numberOfLines={1}>{evt.description}</Text>
+                            <Text style={[s.feedDesc, isInbound && { color: '#30D158', fontStyle: 'italic' }]} numberOfLines={1}>
+                              {isInbound ? `"${evt.description}"` : evt.description}
+                            </Text>
                           ) : null}
                           {isExpanded && (
                             <View style={s.feedExpandedPreview}>
@@ -1360,9 +1562,17 @@ export default function ContactDetailScreen() {
                               {evt.subject ? (
                                 <Text style={s.feedSubject}>{evt.subject}</Text>
                               ) : null}
-                              <View style={s.feedMessageBubble}>
-                                <Text style={s.feedMessageText}>{fullContent}</Text>
+                              <View style={[s.feedMessageBubble, isInbound && s.feedMessageBubbleInbound]}>
+                                <Text style={[s.feedMessageText, isInbound && { color: '#30D158' }]}>
+                                  {isInbound ? `"${fullContent}"` : fullContent}
+                                </Text>
                               </View>
+                              {evt.has_photo && (
+                                <View style={s.feedPhotoIndicator}>
+                                  <Ionicons name="image" size={14} color="#30D158" />
+                                  <Text style={s.feedPhotoText}>Photo attached</Text>
+                                </View>
+                              )}
                               {hasLink && (
                                 <TouchableOpacity
                                   style={s.feedViewLink}
@@ -1982,6 +2192,9 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10,
     position: 'relative',
   },
+  feedItemInbound: {
+    backgroundColor: '#30D15808', borderRadius: 12, marginVertical: 2, paddingHorizontal: 4,
+  },
   feedLine: {
     position: 'absolute', left: 17, top: 42, bottom: -10,
     width: 2, backgroundColor: '#1C1C1E',
@@ -1999,22 +2212,80 @@ const s = StyleSheet.create({
   feedChannelText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   feedSubject: { fontSize: 14, fontWeight: '600', color: '#E5E5EA' },
   feedMessageBubble: { backgroundColor: '#1C1C1E', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#2C2C2E' },
+  feedMessageBubbleInbound: { backgroundColor: '#30D15812', borderColor: '#30D15830' },
   feedMessageText: { fontSize: 13, color: '#E5E5EA', lineHeight: 18 },
   feedViewLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 4 },
   feedViewLinkText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
   feedTime: { fontSize: 12, color: '#636366' },
+  feedPhotoIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+  feedPhotoText: { fontSize: 12, color: '#30D158', fontWeight: '500' },
+
+  // Inbound / Customer badges
+  inboundBadge: { backgroundColor: '#30D15820', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  inboundBadgeText: { fontSize: 9, fontWeight: '700', color: '#30D158', letterSpacing: 0.5 },
+  customerBadge: { backgroundColor: '#FFD60A20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  customerBadgeText: { fontSize: 9, fontWeight: '700', color: '#FFD60A', letterSpacing: 0.5 },
+
+  // Feed actions row
+  feedActionRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  logReplyBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#30D15815', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
+    borderWidth: 1, borderColor: '#30D15830',
+  },
+  logReplyBtnText: { fontSize: 13, fontWeight: '600', color: '#30D158' },
+  feedSearchRowCompact: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10,
+    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  feedSearchInputCompact: { flex: 1, fontSize: 13, color: '#F2F2F7', padding: 0 },
+
+  // Log Reply Composer
+  logReplyComposer: {
+    backgroundColor: '#1A1A1C', borderRadius: 14, padding: 14, marginBottom: 14,
+    borderWidth: 1, borderColor: '#30D15840',
+  },
+  logReplyHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  logReplyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#30D158' },
+  logReplyLabel: { fontSize: 13, fontWeight: '600', color: '#30D158', flex: 1 },
+  logReplyInput: {
+    backgroundColor: '#0D0D0D', borderRadius: 10, padding: 12,
+    fontSize: 14, color: '#F2F2F7', minHeight: 70, textAlignVertical: 'top',
+    borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  logReplyActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  logReplyPhotoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2C2C2E' },
+  logReplyPhotoBtnText: { fontSize: 13, color: '#8E8E93' },
+  logReplySendBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#30D158', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14,
+  },
+  logReplySendText: { fontSize: 13, fontWeight: '700', color: '#000' },
+  replyPhotoPreview: { position: 'relative', marginTop: 10, width: 80, height: 80, borderRadius: 10, overflow: 'hidden' },
+  replyPhotoThumb: { width: 80, height: 80, borderRadius: 10 },
+  replyPhotoRemove: { position: 'absolute', top: -4, right: -4 },
+
+  // Suggested Actions
+  actionBadge: { backgroundColor: '#FF9500', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  actionBadgeText: { fontSize: 11, fontWeight: '800', color: '#000' },
+  suggestedCard: {
+    flexDirection: 'row', alignItems: 'center', padding: 14,
+    backgroundColor: '#1C1C1E', borderRadius: 14, marginBottom: 8,
+    borderWidth: 1, borderColor: '#2C2C2E',
+  },
+  suggestedIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  suggestedTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  suggestedDesc: { fontSize: 13, color: '#8E8E93' },
+  suggestedMsgPreview: { marginTop: 6, backgroundColor: '#0D0D0D', borderRadius: 8, padding: 8, borderWidth: 1, borderColor: '#2C2C2E' },
+  suggestedMsgText: { fontSize: 12, color: '#FFFFFFAA', fontStyle: 'italic', lineHeight: 16 },
+  suggestedArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   showMoreBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     marginTop: 12, paddingVertical: 10, borderRadius: 10,
     backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
   },
   showMoreText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
-  feedSearchRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 4,
-    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
-  },
-  feedSearchInput: { flex: 1, fontSize: 14, color: '#F2F2F7', padding: 0 },
   // Photo viewer
   photoViewerOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center',
