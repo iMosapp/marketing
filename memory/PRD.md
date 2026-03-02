@@ -131,6 +131,12 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Mocked**: Twilio SMS (personal phone fallback active)
 - **Broken (Production only)**: Email delivery, SMS tallying
 
+### Menu Page & My Account Redesign (Mar 2, 2026)
+- **Quick Actions**: 6 customizable icon tiles at top of Menu page (default: Share Review, Send Card, Ask Jessi, Showcase, Leaderboard, My Activity)
+- **Edit Mode**: Tap "Edit" to see all 18 available actions. Tap to add/remove from Quick Actions (max 6). Selected items show numbered badges. Preferences stored in AsyncStorage.
+- **Profile & AI moved to My Account**: My Digital Card, My Link Page, AI Persona, Voice Training removed from Menu and added as a dedicated section on My Account page
+- **Showcase mobile fix**: Quick links bar uses flexWrap with chip-style buttons — no more horizontal overflow on mobile
+
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component
