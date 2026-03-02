@@ -297,7 +297,8 @@ export default function AppDirectoryScreen() {
   const handlePreview = (page: PageEntry) => {
     // Static files (like .html) need to open via browser, not the React router
     if (page.path.endsWith('.html')) {
-      const url = `${APP_URL}${page.path}`;
+      const origin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : APP_URL;
+      const url = `${origin}${page.path}`;
       if (Platform.OS === 'web') {
         window.open(url, '_blank');
       } else {
