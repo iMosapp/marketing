@@ -13,9 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width } = Dimensions.get('window');
 
 export default function PersonalReportScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
@@ -167,8 +170,8 @@ export default function PersonalReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
@@ -176,25 +179,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  title: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   periodSelector: { flexDirection: 'row', padding: 16, gap: 8 },
   periodButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   periodButtonActive: { backgroundColor: '#007AFF' },
-  periodText: { color: '#8E8E93', fontWeight: '600' },
-  periodTextActive: { color: '#FFF' },
+  periodText: { color: colors.textSecondary, fontWeight: '600' },
+  periodTextActive: { color: colors.text },
   scrollContent: { padding: 16 },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -216,11 +219,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   userRole: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'capitalize',
     marginTop: 2,
   },
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - 42) / 2,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
@@ -241,22 +244,22 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   breakdownCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
@@ -279,15 +282,15 @@ const styles = StyleSheet.create({
   breakdownValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   breakdownLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   chartCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -312,18 +315,18 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 6,
   },
   chartFooter: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     alignItems: 'center',
   },
   chartFooterText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

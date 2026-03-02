@@ -20,7 +20,10 @@ import * as Calendar from 'expo-calendar';
 import { getCalendars, getSelectedCalendarId, setSelectedCalendarId } from '../../src/utils/calendar';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function CalendarSettingsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuthStore();
@@ -212,7 +215,7 @@ const { showToast } = useToast();
               <Ionicons 
                 name="logo-google" 
                 size={24} 
-                color={googleConnected ? '#34C759' : '#8E8E93'} 
+                color={googleConnected ? '#34C759' : colors.textSecondary} 
               />
             </View>
             
@@ -239,7 +242,7 @@ const { showToast } = useToast();
               disabled={connectingGoogle}
             >
               {connectingGoogle ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <Text style={styles.actionButtonText}>
                   {googleConnected ? 'Disconnect' : 'Connect'}
@@ -259,7 +262,7 @@ const { showToast } = useToast();
                 <Ionicons 
                   name="calendar" 
                   size={24} 
-                  color={nativeCalendarPermission === 'granted' ? '#34C759' : '#8E8E93'} 
+                  color={nativeCalendarPermission === 'granted' ? '#34C759' : colors.textSecondary} 
                 />
               </View>
               
@@ -309,7 +312,7 @@ const { showToast } = useToast();
                 <Ionicons 
                   name={showCalendarPicker ? "chevron-up" : "chevron-down"} 
                   size={20} 
-                  color="#8E8E93" 
+                  color={colors.textSecondary} 
                 />
               </TouchableOpacity>
             )}
@@ -358,10 +361,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -370,7 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -381,7 +384,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -393,14 +396,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     paddingLeft: 4,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -419,16 +422,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   cardDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   actionButton: {
@@ -446,11 +449,11 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -458,11 +461,11 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   calendarList: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginTop: 8,
     overflow: 'hidden',
@@ -472,10 +475,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   calendarItemSelected: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   calendarColor: {
     width: 16,
@@ -486,11 +489,11 @@ const styles = StyleSheet.create({
   calendarName: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   primaryBadge: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginRight: 8,
     backgroundColor: '#3C3C3E',
     paddingHorizontal: 6,

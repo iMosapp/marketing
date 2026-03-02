@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Enrollment {
   _id: string;
   campaign_id: string;
@@ -31,6 +32,8 @@ interface Enrollment {
 }
 
 export default function CampaignDashboardScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -144,7 +147,7 @@ export default function CampaignDashboardScreen() {
       case 'completed': return '#34C759';
       case 'cancelled': return '#FF3B30';
       case 'paused': return '#FF9500';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
   
@@ -173,7 +176,7 @@ export default function CampaignDashboardScreen() {
       </View>
       
       <View style={styles.campaignInfo}>
-        <Ionicons name="calendar" size={16} color="#8E8E93" />
+        <Ionicons name="calendar" size={16} color={colors.textSecondary} />
         <Text style={styles.campaignName}>{item.campaign_name}</Text>
       </View>
       
@@ -198,12 +201,12 @@ export default function CampaignDashboardScreen() {
       
       <View style={styles.statsRow}>
         <View style={styles.stat}>
-          <Ionicons name="paper-plane" size={14} color="#8E8E93" />
+          <Ionicons name="paper-plane" size={14} color={colors.textSecondary} />
           <Text style={styles.statText}>{item.messages_sent?.length || 0} sent</Text>
         </View>
         {item.status === 'active' && item.next_send_at && (
           <View style={styles.stat}>
-            <Ionicons name="time" size={14} color="#8E8E93" />
+            <Ionicons name="time" size={14} color={colors.textSecondary} />
             <Text style={styles.statText}>Next: {formatNextSend(item.next_send_at)}</Text>
           </View>
         )}
@@ -240,13 +243,13 @@ export default function CampaignDashboardScreen() {
           disabled={processing || pendingCount === 0}
         >
           {processing ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color={colors.text} />
           ) : (
             <>
               <Ionicons 
                 name="send" 
                 size={24} 
-                color={pendingCount > 0 ? '#FFF' : '#8E8E93'} 
+                color={pendingCount > 0 ? '#FFF' : colors.textSecondary} 
               />
               <Text style={[styles.pendingCount, pendingCount > 0 && styles.pendingCountActive]}>
                 {pendingCount}
@@ -302,7 +305,7 @@ export default function CampaignDashboardScreen() {
           )}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="people-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>No enrollments yet</Text>
               <Text style={styles.emptySubtext}>
                 Enroll contacts in campaigns from their profile page
@@ -321,10 +324,10 @@ export default function CampaignDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -332,7 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -340,7 +343,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   settingsButton: {
     padding: 4,
@@ -350,12 +353,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   pendingCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   pendingCardActive: {
     backgroundColor: '#007AFF',
@@ -364,19 +367,19 @@ const styles = StyleSheet.create({
   pendingCount: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   pendingCountActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   pendingLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   pendingLabelActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   tapToSend: {
     fontSize: 12,
@@ -390,7 +393,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -398,11 +401,11 @@ const styles = StyleSheet.create({
   statCardValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   statCardLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   loadingContainer: {
@@ -416,18 +419,18 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   enrollmentCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   enrollmentHeader: {
     flexDirection: 'row',
@@ -444,23 +447,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   contactName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   contactPhone: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -480,14 +483,14 @@ const styles = StyleSheet.create({
   },
   campaignName: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   progressSection: {
     marginBottom: 12,
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 2,
     marginBottom: 6,
   },
@@ -497,7 +500,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statsRow: {
     flexDirection: 'row',
@@ -510,7 +513,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -519,13 +522,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -538,6 +541,6 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

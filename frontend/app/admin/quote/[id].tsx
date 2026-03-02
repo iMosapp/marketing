@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../../services/alert';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface Quote {
   _id: string;
   quote_number: string;
@@ -44,6 +45,8 @@ interface Quote {
 }
 
 export default function QuoteDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -135,14 +138,14 @@ export default function QuoteDetailScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return '#8E8E93';
+      case 'draft': return colors.textSecondary;
       case 'sent': return '#007AFF';
       case 'viewed': return '#FF9500';
       case 'accepted': return '#34C759';
       case 'expired': return '#FF3B30';
       case 'cancelled': return '#FF3B30';
-      case 'archived': return '#636366';
-      default: return '#8E8E93';
+      case 'archived': return colors.textTertiary;
+      default: return colors.textSecondary;
     }
   };
 
@@ -219,25 +222,25 @@ export default function QuoteDetailScreen() {
           <View style={styles.infoCard}>
             {quote.business_info?.company_name && (
               <View style={styles.infoRow}>
-                <Ionicons name="business" size={18} color="#8E8E93" />
+                <Ionicons name="business" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>{quote.business_info.company_name}</Text>
               </View>
             )}
             {quote.customer?.name && (
               <View style={styles.infoRow}>
-                <Ionicons name="person" size={18} color="#8E8E93" />
+                <Ionicons name="person" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>{quote.customer.name}</Text>
               </View>
             )}
             {quote.customer?.email && (
               <View style={styles.infoRow}>
-                <Ionicons name="mail" size={18} color="#8E8E93" />
+                <Ionicons name="mail" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>{quote.customer.email}</Text>
               </View>
             )}
             {quote.customer?.phone && (
               <View style={styles.infoRow}>
-                <Ionicons name="call" size={18} color="#8E8E93" />
+                <Ionicons name="call" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>{quote.customer.phone}</Text>
               </View>
             )}
@@ -294,10 +297,10 @@ export default function QuoteDetailScreen() {
               disabled={sending}
             >
               {sending ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="send" size={20} color="#FFF" />
+                  <Ionicons name="send" size={20} color={colors.text} />
                   <Text style={styles.resendButtonText}>Resend Quote</Text>
                 </>
               )}
@@ -345,7 +348,7 @@ export default function QuoteDetailScreen() {
               value={editedNotes}
               onChangeText={setEditedNotes}
               placeholder="Add notes about this quote..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={6}
             />
@@ -356,10 +359,10 @@ export default function QuoteDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -373,7 +376,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
   },
   header: {
@@ -382,7 +385,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -390,7 +393,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   editButton: {
     padding: 4,
@@ -401,12 +404,12 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     textTransform: 'uppercase',
   },
@@ -419,7 +422,7 @@ const styles = StyleSheet.create({
   quoteNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -432,15 +435,15 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   validText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   infoCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -451,11 +454,11 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 12,
   },
   pricingCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -466,16 +469,16 @@ const styles = StyleSheet.create({
   },
   pricingLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   pricingValue: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     paddingTop: 12,
     marginTop: 4,
     marginBottom: 0,
@@ -483,7 +486,7 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   totalValue: {
     fontSize: 18,
@@ -491,13 +494,13 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   notesCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
   notesText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 20,
   },
   actionSection: {
@@ -516,13 +519,13 @@ const styles = StyleSheet.create({
   resendButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
     gap: 8,
@@ -538,7 +541,7 @@ const styles = StyleSheet.create({
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -546,7 +549,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   modalCancel: {
     fontSize: 16,
@@ -555,7 +558,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 16,
@@ -568,14 +571,14 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   notesInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     minHeight: 150,
     textAlignVertical: 'top',

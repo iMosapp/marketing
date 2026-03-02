@@ -21,9 +21,10 @@ import { tasksAPI, contactsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 
 export default function TasksScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const colors = useThemeStore(s => s.colors);
   
   const [tasks, setTasks] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -260,7 +261,7 @@ export default function TasksScreen() {
       case 'schedule':
         return { icon: 'calendar', color: '#FF9500' };
       default:
-        return { icon: 'checkmark-circle', color: '#8E8E93' };
+        return { icon: 'checkmark-circle', color: colors.textSecondary };
     }
   };
 
@@ -291,9 +292,9 @@ export default function TasksScreen() {
       case 'medium':
         return '#FF9500';
       case 'low':
-        return '#8E8E93';
+        return colors.textSecondary;
       default:
-        return '#8E8E93';
+        return colors.textSecondary;
     }
   };
   
@@ -305,10 +306,10 @@ export default function TasksScreen() {
   };
   
   const getDueDateColor = (date: Date, completed: boolean) => {
-    if (completed) return '#8E8E93';
+    if (completed) return colors.textSecondary;
     if (isPast(date) && !isToday(date)) return '#FF3B30';
     if (isToday(date)) return '#FF9500';
-    return '#8E8E93';
+    return colors.textSecondary;
   };
   
   const renderTask = ({ item }: { item: typeof tasks[0] }) => {
@@ -497,7 +498,7 @@ export default function TasksScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyState}>
-              <Ionicons name="checkmark-done-circle" size={64} color="#2C2C2E" />
+              <Ionicons name="checkmark-done-circle" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>No tasks found</Text>
               <Text style={styles.emptySubtext}>
                 {filter === 'active'
@@ -512,7 +513,7 @@ export default function TasksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: undefined,
@@ -610,7 +611,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#8E8E93',
+    borderColor: colors.textSecondary,
   },
   taskContent: {
     flex: 1,
@@ -693,7 +694,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     gap: 6,
   },
   actionHintText: {

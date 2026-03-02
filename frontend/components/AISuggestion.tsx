@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useThemeStore } from '../store/themeStore';
 interface AISuggestionProps {
   suggestion: string;
   intent?: string;
@@ -17,6 +18,8 @@ export default function AISuggestion({
   onEdit,
   onDismiss,
 }: AISuggestionProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -25,7 +28,7 @@ export default function AISuggestion({
           <Text style={styles.headerText}>MVP suggests:</Text>
         </View>
         <TouchableOpacity onPress={onDismiss}>
-          <Ionicons name="close" size={20} color="#8E8E93" />
+          <Ionicons name="close" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
       
@@ -53,7 +56,7 @@ export default function AISuggestion({
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.acceptButton} onPress={onAccept}>
-          <Ionicons name="send" size={16} color="#FFF" />
+          <Ionicons name="send" size={16} color={colors.text} />
           <Text style={styles.acceptButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
@@ -61,9 +64,9 @@ export default function AISuggestion({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginHorizontal: 16,
@@ -105,14 +108,14 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   suggestionBox: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
   suggestionText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 21,
   },
   actions: {
@@ -123,13 +126,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
   },
   dismissButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   editButton: {
     flex: 1,
@@ -159,6 +162,6 @@ const styles = StyleSheet.create({
   acceptButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

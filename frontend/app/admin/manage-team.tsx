@@ -19,7 +19,10 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function ManageTeamScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -256,13 +259,13 @@ export default function ManageTeamScreen() {
         {/* Add Team Member CTA */}
         <TouchableOpacity style={styles.addCTA} onPress={() => setShowAddModal(true)}>
           <View style={styles.addCTAIcon}>
-            <Ionicons name="person-add" size={24} color="#000" />
+            <Ionicons name="person-add" size={24} color={colors.text} />
           </View>
           <View style={styles.addCTAContent}>
             <Text style={styles.addCTATitle}>Add Team Member</Text>
             <Text style={styles.addCTASubtitle}>+${costPerSeat}/month per user</Text>
           </View>
-          <Ionicons name="chevron-forward" size={24} color="#8E8E93" />
+          <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
         
         {/* Active Team Members */}
@@ -430,7 +433,7 @@ export default function ManageTeamScreen() {
                     <Ionicons 
                       name="person" 
                       size={20} 
-                      color={newUser.role === 'user' ? '#000' : '#8E8E93'} 
+                      color={newUser.role === 'user' ? '#000' : colors.textSecondary} 
                     />
                     <Text style={[
                       styles.roleOptionText,
@@ -444,7 +447,7 @@ export default function ManageTeamScreen() {
                     <Ionicons 
                       name="shield" 
                       size={20} 
-                      color={newUser.role === 'store_manager' ? '#000' : '#8E8E93'} 
+                      color={newUser.role === 'store_manager' ? '#000' : colors.textSecondary} 
                     />
                     <Text style={[
                       styles.roleOptionText,
@@ -484,10 +487,10 @@ export default function ManageTeamScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -501,7 +504,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -509,7 +512,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -518,7 +521,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   billingSummary: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -531,12 +534,12 @@ const styles = StyleSheet.create({
   },
   billingLabel: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   billingValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   billingTotal: {
     borderTopWidth: 1,
@@ -547,7 +550,7 @@ const styles = StyleSheet.create({
   billingTotalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   billingTotalValue: {
     fontSize: 20,
@@ -557,7 +560,7 @@ const styles = StyleSheet.create({
   addCTA: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -577,11 +580,11 @@ const styles = StyleSheet.create({
   addCTATitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addCTASubtitle: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   section: {
@@ -590,12 +593,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     letterSpacing: 0.5,
   },
   emptyState: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -607,7 +610,7 @@ const styles = StyleSheet.create({
   memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -625,12 +628,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   memberAvatarInactive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   memberInitials: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   memberInfo: {
     flex: 1,
@@ -638,14 +641,14 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   memberNameInactive: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   memberEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   memberMeta: {
@@ -665,7 +668,7 @@ const styles = StyleSheet.create({
   roleBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   pendingBadge: {
     flexDirection: 'row',
@@ -695,7 +698,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -704,7 +707,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   modalCancel: {
     fontSize: 17,
@@ -713,7 +716,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 17,
@@ -748,15 +751,15 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
     borderColor: '#3C3C3E',
   },
@@ -769,7 +772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingVertical: 14,
     gap: 8,
@@ -783,13 +786,13 @@ const styles = StyleSheet.create({
   roleOptionText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   roleOptionTextSelected: {
-    color: '#000',
+    color: colors.text,
   },
   infoBox: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -797,7 +800,7 @@ const styles = StyleSheet.create({
   infoBoxTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 14,
   },
   infoStep: {
@@ -817,11 +820,11 @@ const styles = StyleSheet.create({
   infoStepNumText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#000',
+    color: colors.text,
   },
   infoStepText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

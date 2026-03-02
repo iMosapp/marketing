@@ -16,7 +16,10 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function MyAgreementScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -129,7 +132,7 @@ export default function MyAgreementScreen() {
                   <Ionicons 
                     name={agreement.status === 'active' ? 'checkmark-circle' : 'time'} 
                     size={16} 
-                    color="#FFF" 
+                    color={colors.text} 
                   />
                   <Text style={styles.statusText}>
                     {agreement.status === 'active' ? 'Active' : 'Pending'}
@@ -141,7 +144,7 @@ export default function MyAgreementScreen() {
               
               {agreement.signed_at && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="create-outline" size={18} color="#8E8E93" />
+                  <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoLabel}>Signed:</Text>
                   <Text style={styles.infoValue}>
                     {new Date(agreement.signed_at).toLocaleDateString('en-US', {
@@ -155,7 +158,7 @@ export default function MyAgreementScreen() {
               
               {agreement.effective_date && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoLabel}>Effective:</Text>
                   <Text style={styles.infoValue}>
                     {new Date(agreement.effective_date).toLocaleDateString('en-US', {
@@ -169,7 +172,7 @@ export default function MyAgreementScreen() {
               
               {agreement.expiration_date && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="hourglass-outline" size={18} color="#8E8E93" />
+                  <Ionicons name="hourglass-outline" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoLabel}>Expires:</Text>
                   <Text style={styles.infoValue}>
                     {new Date(agreement.expiration_date).toLocaleDateString('en-US', {
@@ -213,7 +216,7 @@ export default function MyAgreementScreen() {
             {/* Actions */}
             {agreement.pdf_url && (
               <TouchableOpacity style={styles.downloadButton} onPress={openAgreementPDF}>
-                <Ionicons name="document-attach" size={20} color="#000" />
+                <Ionicons name="document-attach" size={20} color={colors.text} />
                 <Text style={styles.downloadButtonText}>View Full Agreement (PDF)</Text>
               </TouchableOpacity>
             )}
@@ -235,10 +238,10 @@ export default function MyAgreementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -260,7 +263,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
@@ -275,12 +278,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 32,
@@ -301,7 +304,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   statusCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -322,12 +325,12 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   agreementTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   infoRow: {
@@ -338,15 +341,15 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   infoValue: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   detailsCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -354,7 +357,7 @@ const styles = StyleSheet.create({
   detailsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   termRow: {
@@ -363,11 +366,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   termLabel: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   termValue: {
     fontSize: 17,
@@ -387,27 +390,27 @@ const styles = StyleSheet.create({
   downloadButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   signerCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   signerLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   signerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   signerEmail: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
 });

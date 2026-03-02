@@ -16,6 +16,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 const CATEGORY_LABELS: Record<string, string> = {
   getting_started: 'Getting Started',
   daily_operations: 'Daily Operations',
@@ -50,6 +51,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function SOPListScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -121,12 +124,12 @@ export default function SOPListScreen() {
       <View style={styles.sopLeft}>
         <View style={[
           styles.sopIcon,
-          { backgroundColor: (CATEGORY_COLORS[item.category] || '#8E8E93') + '20' }
+          { backgroundColor: (CATEGORY_COLORS[item.category] || colors.textSecondary) + '20' }
         ]}>
           <Ionicons
             name={CATEGORY_ICONS[item.category] || 'document'}
             size={20}
-            color={CATEGORY_COLORS[item.category] || '#8E8E93'}
+            color={CATEGORY_COLORS[item.category] || colors.textSecondary}
           />
         </View>
       </View>
@@ -144,12 +147,12 @@ export default function SOPListScreen() {
         <View style={styles.sopMeta}>
           {item.estimated_time && (
             <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={12} color="#8E8E93" />
+              <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
               <Text style={styles.metaText}>{item.estimated_time}</Text>
             </View>
           )}
           <View style={styles.metaItem}>
-            <Ionicons name="list-outline" size={12} color="#8E8E93" />
+            <Ionicons name="list-outline" size={12} color={colors.textSecondary} />
             <Text style={styles.metaText}>{item.steps?.length || 0} steps</Text>
           </View>
           {item.is_completed && (
@@ -161,7 +164,7 @@ export default function SOPListScreen() {
         </View>
       </View>
       
-      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -169,12 +172,12 @@ export default function SOPListScreen() {
     <View style={styles.categoryHeader}>
       <View style={[
         styles.categoryIcon,
-        { backgroundColor: (CATEGORY_COLORS[category] || '#8E8E93') + '20' }
+        { backgroundColor: (CATEGORY_COLORS[category] || colors.textSecondary) + '20' }
       ]}>
         <Ionicons
           name={CATEGORY_ICONS[category] || 'document'}
           size={16}
-          color={CATEGORY_COLORS[category] || '#8E8E93'}
+          color={CATEGORY_COLORS[category] || colors.textSecondary}
         />
       </View>
       <Text style={styles.categoryTitle}>
@@ -275,17 +278,17 @@ export default function SOPListScreen() {
       
       {/* Search */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#8E8E93" />
+        <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search training materials..."
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           value={search}
           onChangeText={setSearch}
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={20} color="#8E8E93" />
+            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -313,7 +316,7 @@ export default function SOPListScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="document-text-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No training materials found</Text>
           </View>
         )}
@@ -322,10 +325,10 @@ export default function SOPListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -339,7 +342,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -348,12 +351,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   requiredCard: {
     margin: 16,
     marginBottom: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -370,16 +373,16 @@ const styles = StyleSheet.create({
   requiredTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   requiredProgress: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 3,
   },
   progressFill: {
@@ -390,7 +393,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     margin: 16,
     marginTop: 8,
     marginBottom: 8,
@@ -402,7 +405,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     height: 42,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 21,
     marginRight: 10,
     minWidth: 70,
@@ -429,11 +432,11 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   filterChipTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -455,7 +458,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginLeft: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -468,7 +471,7 @@ const styles = StyleSheet.create({
   sopCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -494,7 +497,7 @@ const styles = StyleSheet.create({
   sopTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   requiredBadge: {
@@ -512,7 +515,7 @@ const styles = StyleSheet.create({
   },
   sopSummary: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -545,7 +548,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 16,
     marginTop: 16,
   },

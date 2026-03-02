@@ -14,6 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Broadcast {
   id: string;
   name: string;
@@ -39,6 +40,8 @@ interface Stats {
 }
 
 export default function BroadcastListScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -85,12 +88,12 @@ export default function BroadcastListScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return '#8E8E93';
+      case 'draft': return colors.textSecondary;
       case 'scheduled': return '#FF9500';
       case 'sending': return '#007AFF';
       case 'sent': return '#34C759';
       case 'failed': return '#FF3B30';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -133,7 +136,7 @@ export default function BroadcastListScreen() {
           
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <Ionicons name="people" size={14} color="#8E8E93" />
+              <Ionicons name="people" size={14} color={colors.textSecondary} />
               <Text style={styles.statText}>{item.recipient_count} recipients</Text>
             </View>
             {item.status === 'sent' && (
@@ -144,7 +147,7 @@ export default function BroadcastListScreen() {
             )}
             {item.media_urls?.length > 0 && (
               <View style={styles.stat}>
-                <Ionicons name="image" size={14} color="#8E8E93" />
+                <Ionicons name="image" size={14} color={colors.textSecondary} />
                 <Text style={styles.statText}>{item.media_urls.length}</Text>
               </View>
             )}
@@ -210,7 +213,7 @@ export default function BroadcastListScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="megaphone-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="megaphone-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No broadcasts yet</Text>
             <Text style={styles.emptySubtext}>Create your first broadcast message</Text>
           </View>
@@ -220,10 +223,10 @@ export default function BroadcastListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -244,14 +247,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
   },
   statsBanner: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     marginHorizontal: 16,
     marginVertical: 16,
     borderRadius: 12,
@@ -269,13 +272,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   listContent: {
     padding: 16,
@@ -283,7 +286,7 @@ const styles = StyleSheet.create({
   },
   broadcastCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'flex-start',
@@ -308,7 +311,7 @@ const styles = StyleSheet.create({
   broadcastName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   statusBadge: {
@@ -326,7 +329,7 @@ const styles = StyleSheet.create({
   },
   broadcastMessage: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -341,7 +344,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
@@ -352,13 +355,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

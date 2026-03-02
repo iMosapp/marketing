@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface SharedInbox {
@@ -42,6 +43,8 @@ interface User {
 }
 
 export default function SharedInboxesPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -217,7 +220,7 @@ export default function SharedInboxesPage() {
                   onPress={() => handleUnassignUser(inbox.id, assignedUser.id)}
                   data-testid={`remove-user-${assignedUser.id}`}
                 >
-                  <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -261,14 +264,14 @@ export default function SharedInboxesPage() {
           <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
         ) : inboxes.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="mail-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="mail-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No shared inboxes yet</Text>
             <Text style={styles.emptySubtext}>Create one to let multiple users manage the same number</Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => setShowCreateModal(true)}
             >
-              <Ionicons name="add" size={20} color="#FFF" />
+              <Ionicons name="add" size={20} color={colors.text} />
               <Text style={styles.createButtonText}>Create Shared Inbox</Text>
             </TouchableOpacity>
           </View>
@@ -300,11 +303,11 @@ export default function SharedInboxesPage() {
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                     data-testid="close-create-modal"
                   >
-                    <Ionicons name="close" size={24} color="#8E8E93" />
+                    <Ionicons name="close" size={24} color={colors.textSecondary} />
                   </button>
                 ) : (
                   <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                    <Ionicons name="close" size={24} color="#8E8E93" />
+                    <Ionicons name="close" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -316,7 +319,7 @@ export default function SharedInboxesPage() {
                   value={newInbox.name}
                   onChangeText={(text) => setNewInbox({...newInbox, name: text})}
                   placeholder="e.g., Sales Team"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   data-testid="inbox-name-input"
                 />
                 
@@ -326,7 +329,7 @@ export default function SharedInboxesPage() {
                   value={newInbox.phone_number}
                   onChangeText={(text) => setNewInbox({...newInbox, phone_number: text})}
                   placeholder="+1 555 123 4567"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="phone-pad"
                   data-testid="inbox-phone-input"
                 />
@@ -337,7 +340,7 @@ export default function SharedInboxesPage() {
                   value={newInbox.description}
                   onChangeText={(text) => setNewInbox({...newInbox, description: text})}
                   placeholder="What is this inbox for?"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={3}
                   data-testid="inbox-description-input"
@@ -363,12 +366,12 @@ export default function SharedInboxesPage() {
                   }}
                   data-testid="create-inbox-submit"
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                  <Ionicons name="checkmark-circle" size={20} color={colors.text} />
                   <Text style={styles.submitButtonText}>Create Inbox</Text>
                 </button>
               ) : (
                 <TouchableOpacity style={styles.submitButton} onPress={handleCreateInbox}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                  <Ionicons name="checkmark-circle" size={20} color={colors.text} />
                   <Text style={styles.submitButtonText}>Create Inbox</Text>
                 </TouchableOpacity>
               )}
@@ -393,11 +396,11 @@ export default function SharedInboxesPage() {
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                   data-testid="close-assign-modal"
                 >
-                  <Ionicons name="close" size={24} color="#8E8E93" />
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </button>
               ) : (
                 <TouchableOpacity onPress={() => setShowAssignModal(false)}>
-                  <Ionicons name="close" size={24} color="#8E8E93" />
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -424,7 +427,7 @@ export default function SharedInboxesPage() {
                         background: 'none',
                         border: 'none',
                         borderBottomWidth: 1,
-                        borderBottomColor: '#2C2C2E',
+                        borderBottomColor: colors.surface,
                         width: '100%',
                         cursor: 'pointer',
                       }}
@@ -473,10 +476,10 @@ export default function SharedInboxesPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -485,7 +488,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -493,12 +496,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     padding: 12,
     marginHorizontal: 16,
     marginTop: 12,
@@ -508,14 +511,14 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   content: {
     flex: 1,
     padding: 16,
   },
   inboxCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -540,7 +543,7 @@ const styles = StyleSheet.create({
   inboxName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   inboxPhone: {
     fontSize: 14,
@@ -549,7 +552,7 @@ const styles = StyleSheet.create({
   },
   inboxDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   deleteButton: {
@@ -557,7 +560,7 @@ const styles = StyleSheet.create({
   },
   assignedSection: {
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     paddingTop: 12,
   },
   assignedHeader: {
@@ -569,7 +572,7 @@ const styles = StyleSheet.create({
   assignedTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   addUserButton: {
     flexDirection: 'row',
@@ -582,7 +585,7 @@ const styles = StyleSheet.create({
   },
   noUsers: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   userChips: {
@@ -593,7 +596,7 @@ const styles = StyleSheet.create({
   userChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -601,7 +604,7 @@ const styles = StyleSheet.create({
   },
   userChipText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   emptyState: {
     alignItems: 'center',
@@ -610,12 +613,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
@@ -633,7 +636,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalOverlay: {
     flex: 1,
@@ -641,7 +644,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -652,28 +655,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalBody: {
     padding: 16,
   },
   inputLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   textArea: {
     minHeight: 80,
@@ -692,14 +695,14 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userSelectItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   userAvatar: {
     width: 40,
@@ -721,10 +724,10 @@ const styles = StyleSheet.create({
   userSelectName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   userSelectEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

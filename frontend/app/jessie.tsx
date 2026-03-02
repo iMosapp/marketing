@@ -35,9 +35,10 @@ const WEB_AUTO_STOP_DURATION = 10000; // On web, auto-stop after 10 seconds sinc
 const IS_WEB = Platform.OS === 'web';
 
 export default function JessiScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const colors = useThemeStore(s => s.colors);
   const [textInput, setTextInput] = useState('');
   
   const [state, setState] = useState<ConversationState>('idle');
@@ -564,7 +565,7 @@ export default function JessiScreen() {
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton} data-testid="jessi-back-btn">
-            <Ionicons name="chevron-back" size={28} color="#FFF" />
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
           </TouchableOpacity>
           
           <Text style={[styles.headerTitle, { color: colors.text }]}>Jessi</Text>
@@ -657,9 +658,9 @@ export default function JessiScreen() {
                   }}
                 >
                   {state === 'processing' ? (
-                    <ActivityIndicator size="large" color="#000" />
+                    <ActivityIndicator size="large" color={colors.text} />
                   ) : (
-                    <Ionicons name={getStateIcon()} size={50} color="#000" />
+                    <Ionicons name={getStateIcon()} size={50} color={colors.text} />
                   )}
                 </button>
               ) : (
@@ -674,9 +675,9 @@ export default function JessiScreen() {
                   data-testid="jessi-voice-btn"
                 >
                   {state === 'processing' ? (
-                    <ActivityIndicator size="large" color="#000" />
+                    <ActivityIndicator size="large" color={colors.text} />
                   ) : (
-                    <Ionicons name={getStateIcon()} size={50} color="#000" />
+                    <Ionicons name={getStateIcon()} size={50} color={colors.text} />
                   )}
                 </TouchableOpacity>
               )}
@@ -707,7 +708,7 @@ export default function JessiScreen() {
               onPress={sendTextMessage}
               disabled={!textInput.trim() || state !== 'idle'}
             >
-              <Ionicons name="send" size={20} color={textInput.trim() && state === 'idle' ? '#C9A962' : '#3A3A3C'} />
+              <Ionicons name="send" size={20} color={textInput.trim() && state === 'idle' ? '#C9A962' : colors.borderLight} />
             </TouchableOpacity>
           </View>
         </View>
@@ -716,7 +717,7 @@ export default function JessiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -788,7 +789,7 @@ const styles = StyleSheet.create({
   },
   transcriptText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 12,
     textAlign: 'center',

@@ -49,9 +49,10 @@ type Section = {
 };
 
 export default function MoreScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, logout, isImpersonating, stopImpersonation, originalUser, partnerBranding } = useAuthStore();
-  const colors = useThemeStore((s) => s.colors);
   const themeMode = useThemeStore((s) => s.mode);
   const toggleTheme = useThemeStore((s) => s.toggle);
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
@@ -609,7 +610,7 @@ export default function MoreScreen() {
       id: 'settings',
       title: 'Settings',
       icon: 'settings',
-      color: '#8E8E93',
+      color: colors.textSecondary,
       items: [
         {
           icon: 'storefront-outline',
@@ -871,13 +872,13 @@ export default function MoreScreen() {
             data-testid="impersonation-banner"
           >
             <View style={styles.impersonationContent}>
-              <Ionicons name="person-circle" size={24} color="#FFF" />
+              <Ionicons name="person-circle" size={24} color={colors.text} />
               <View style={styles.impersonationTextContainer}>
                 <Text style={styles.impersonationTitle}>Impersonating {user?.name}</Text>
                 <Text style={styles.impersonationSubtitle}>Tap to return to {originalUser?.name}</Text>
               </View>
             </View>
-            <Ionicons name="close-circle" size={28} color="#FFF" />
+            <Ionicons name="close-circle" size={28} color={colors.text} />
           </TouchableOpacity>
         )}
         
@@ -1006,7 +1007,7 @@ export default function MoreScreen() {
         <View style={shareStyles.modal}>
           <View style={shareStyles.header}>
             <TouchableOpacity onPress={() => setShowShareModal(false)} data-testid="share-modal-close">
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
             <Text style={shareStyles.headerTitle}>Share Review Link</Text>
             <View style={{ width: 24 }} />
@@ -1089,9 +1090,9 @@ export default function MoreScreen() {
             onPress={() => { setShowShareModal(false); router.push('/settings/review-links' as any); }}
             data-testid="share-manage-links-btn"
           >
-            <Ionicons name="settings-outline" size={16} color="#8E8E93" />
+            <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
             <Text style={shareStyles.manageLinkText}>Manage Review Platform Links</Text>
-            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <Text style={shareStyles.hint}>
@@ -1105,7 +1106,7 @@ export default function MoreScreen() {
         <View style={shareStyles.modal}>
           <View style={shareStyles.header}>
             <TouchableOpacity onPress={() => setShowShowroomShare(false)} data-testid="showroom-share-close">
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
             <Text style={shareStyles.headerTitle}>Share My Showcase</Text>
             <View style={{ width: 24 }} />
@@ -1149,9 +1150,9 @@ export default function MoreScreen() {
           </View>
 
           <TouchableOpacity style={shareStyles.manageLink} onPress={() => { setShowShowroomShare(false); router.push('/showroom-manage' as any); }} data-testid="showroom-manage-btn">
-            <Ionicons name="settings-outline" size={16} color="#8E8E93" />
+            <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
             <Text style={shareStyles.manageLinkText}>Manage Showcase Entries</Text>
-            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <Text style={shareStyles.hint}>Share your Showcase link to showcase your happy customers and reviews.</Text>
@@ -1163,7 +1164,7 @@ export default function MoreScreen() {
         <View style={shareStyles.modal}>
           <View style={shareStyles.header}>
             <TouchableOpacity onPress={() => setShowBirthdayShare(false)} data-testid="birthday-share-close">
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
             <Text style={shareStyles.headerTitle}>Send Birthday Wishes</Text>
             <View style={{ width: 24 }} />
@@ -1201,41 +1202,41 @@ export default function MoreScreen() {
       {/* Contact Match Modal */}
       {matchModalVisible && matchInfo && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-          <View style={{ backgroundColor: '#1C1C1E', borderRadius: 16, padding: 24, width: '90%', maxWidth: 380 }} data-testid="review-match-modal">
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 24, width: '90%', maxWidth: 380 }} data-testid="review-match-modal">
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF950015', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="person-circle" size={44} color="#FF9500" />
               </View>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 8 }}>Contact Already Exists</Text>
-            <Text style={{ fontSize: 14, color: '#8E8E93', textAlign: 'center', marginBottom: 16 }}>A contact with this info already exists:</Text>
-            <View style={{ backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 }}>Contact Already Exists</Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }}>A contact with this info already exists:</Text>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center' }}>
               <Text style={{ fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>{matchInfo.existing_name}</Text>
-              {matchInfo.phone ? <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{matchInfo.phone}</Text> : null}
+              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{matchInfo.existing_name}</Text>
+              {matchInfo.phone ? <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.surface }} />
               <Text style={{ fontSize: 12, color: '#6E6E73', marginHorizontal: 12 }}>You entered</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.surface }} />
             </View>
-            <View style={{ backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
             </View>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('use_existing')}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('use_existing')}>
               <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-              <Text style={{ fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 }}>Use Existing Contact</Text>
+              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Use Existing Contact</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('update_name')}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('update_name')}>
               <Ionicons name="create" size={20} color="#007AFF" />
-              <Text style={{ fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
+              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('create_new')}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('create_new')}>
               <Ionicons name="person-add" size={20} color="#FF9500" />
-              <Text style={{ fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 }}>Create New Contact</Text>
+              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Create New Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text>
+              <Text style={{ fontSize: 15, color: colors.textSecondary }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1244,10 +1245,10 @@ export default function MoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   partnerBanner: {
     marginHorizontal: 16,
@@ -1255,10 +1256,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: colors.bg,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1C1C1E',
+    borderColor: colors.card,
     borderBottomWidth: 2,
   },
   partnerBannerInner: {
@@ -1288,7 +1289,7 @@ const styles = StyleSheet.create({
   },
   partnerPowered: {
     fontSize: 11,
-    color: '#636366',
+    color: colors.textTertiary,
     marginTop: 1,
   },
   bellContainer: {
@@ -1306,7 +1307,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 34,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   impersonationBanner: {
     flexDirection: 'row',
@@ -1330,7 +1331,7 @@ const styles = StyleSheet.create({
   impersonationTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   impersonationSubtitle: {
     fontSize: 13,
@@ -1365,7 +1366,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1389,7 +1390,7 @@ const styles = StyleSheet.create({
     borderColor: '#C9A962',
   },
   profileAvatarText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 22,
     fontWeight: '600',
   },
@@ -1402,7 +1403,7 @@ const styles = StyleSheet.create({
   },
   quickSettingsBtn: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1418,7 +1419,7 @@ const styles = StyleSheet.create({
   quickSettingsLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   profileInfo: {
@@ -1427,7 +1428,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
     letterSpacing: 0.2,
   },
@@ -1510,7 +1511,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notificationBadgeText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -1535,7 +1536,7 @@ const styles = StyleSheet.create({
   },
   legalDivider: {
     fontSize: 13,
-    color: '#3A3A3C',
+    color: colors.borderLight,
   },
   versionContainer: {
     flexDirection: 'row',
@@ -1663,7 +1664,7 @@ const styles = StyleSheet.create({
   editActionBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#000',
+    color: colors.text,
   },
   editActionLabel: {
     fontSize: 10,
@@ -1676,7 +1677,7 @@ const styles = StyleSheet.create({
 const shareStyles = StyleSheet.create({
   modal: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
     paddingTop: 8,
   },
   header: {
@@ -1778,7 +1779,7 @@ const shareStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#FFF',
+    color: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#3A3A3C',
     minWidth: 0,

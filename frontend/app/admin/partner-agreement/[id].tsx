@@ -17,6 +17,7 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../../services/alert';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface Agreement {
   id: string;
   template_name: string;
@@ -42,6 +43,8 @@ interface Agreement {
 }
 
 export default function PartnerAgreementDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [agreement, setAgreement] = useState<Agreement | null>(null);
@@ -163,9 +166,9 @@ export default function PartnerAgreementDetailScreen() {
       case 'signed': return '#34C759';
       case 'pending_payment': return '#FF9500';
       case 'viewed': return '#007AFF';
-      case 'sent': return '#8E8E93';
+      case 'sent': return colors.textSecondary;
       case 'draft': return '#6E6E73';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -252,19 +255,19 @@ export default function PartnerAgreementDetailScreen() {
                 </View>
                 {agreement.signed_partner.email && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="mail" size={18} color="#8E8E93" />
+                    <Ionicons name="mail" size={18} color={colors.textSecondary} />
                     <Text style={styles.infoText}>{agreement.signed_partner.email}</Text>
                   </View>
                 )}
                 {agreement.signed_partner.company && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="business" size={18} color="#8E8E93" />
+                    <Ionicons name="business" size={18} color={colors.textSecondary} />
                     <Text style={styles.infoText}>{agreement.signed_partner.company}</Text>
                   </View>
                 )}
                 {agreement.signed_partner.phone && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="call" size={18} color="#8E8E93" />
+                    <Ionicons name="call" size={18} color={colors.textSecondary} />
                     <Text style={styles.infoText}>{agreement.signed_partner.phone}</Text>
                   </View>
                 )}
@@ -273,13 +276,13 @@ export default function PartnerAgreementDetailScreen() {
               <>
                 {agreement.partner_name ? (
                   <View style={styles.infoRow}>
-                    <Ionicons name="person" size={18} color="#8E8E93" />
+                    <Ionicons name="person" size={18} color={colors.textSecondary} />
                     <Text style={styles.infoText}>{agreement.partner_name}</Text>
                   </View>
                 ) : null}
                 {agreement.partner_email ? (
                   <View style={styles.infoRow}>
-                    <Ionicons name="mail" size={18} color="#8E8E93" />
+                    <Ionicons name="mail" size={18} color={colors.textSecondary} />
                     <Text style={styles.infoText}>{agreement.partner_email}</Text>
                   </View>
                 ) : null}
@@ -363,10 +366,10 @@ export default function PartnerAgreementDetailScreen() {
               data-testid="resend-button"
             >
               {sending ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="send" size={20} color="#FFF" />
+                  <Ionicons name="send" size={20} color={colors.text} />
                   <Text style={styles.resendButtonText}>Send to Partner</Text>
                 </>
               )}
@@ -416,7 +419,7 @@ export default function PartnerAgreementDetailScreen() {
               value={editedPartnerName}
               onChangeText={setEditedPartnerName}
               placeholder="Enter partner name"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             
             <Text style={styles.inputLabel}>Partner Email</Text>
@@ -425,7 +428,7 @@ export default function PartnerAgreementDetailScreen() {
               value={editedPartnerEmail}
               onChangeText={setEditedPartnerEmail}
               placeholder="Enter partner email"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -436,10 +439,10 @@ export default function PartnerAgreementDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
   },
   header: {
@@ -462,7 +465,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -470,7 +473,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   editButton: {
     padding: 4,
@@ -481,12 +484,12 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     textTransform: 'uppercase',
   },
@@ -499,7 +502,7 @@ const styles = StyleSheet.create({
   agreementType: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -512,10 +515,10 @@ const styles = StyleSheet.create({
   },
   typeText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   infoCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -526,7 +529,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 12,
     flex: 1,
   },
@@ -546,11 +549,11 @@ const styles = StyleSheet.create({
   },
   notSignedText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   commissionCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -562,7 +565,7 @@ const styles = StyleSheet.create({
   commissionTier: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   commissionPercentage: {
     fontSize: 28,
@@ -571,11 +574,11 @@ const styles = StyleSheet.create({
   },
   commissionLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   paymentCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -586,7 +589,7 @@ const styles = StyleSheet.create({
   },
   paymentLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   paymentAmount: {
     fontSize: 20,
@@ -595,11 +598,11 @@ const styles = StyleSheet.create({
   },
   paymentNote: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   timelineCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -610,11 +613,11 @@ const styles = StyleSheet.create({
   },
   timelineLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   timelineValue: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   actionSection: {
     padding: 16,
@@ -624,7 +627,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
     gap: 8,
@@ -648,13 +651,13 @@ const styles = StyleSheet.create({
   resendButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
     gap: 8,
@@ -669,7 +672,7 @@ const styles = StyleSheet.create({
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -677,7 +680,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   modalCancel: {
     fontSize: 16,
@@ -686,7 +689,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 16,
@@ -699,15 +702,15 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
   textInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
   },
 });

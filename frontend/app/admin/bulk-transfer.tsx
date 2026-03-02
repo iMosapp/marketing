@@ -16,6 +16,7 @@ import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 interface User {
   id: string;
   name: string;
@@ -53,6 +54,8 @@ interface TransferHistory {
 }
 
 export default function BulkTransferPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -202,7 +205,7 @@ export default function BulkTransferPage() {
             <Text style={styles.userName}>{selected.name}</Text>
             <Text style={styles.userEmail}>{selected.email}</Text>
           </View>
-          <Ionicons name="close-circle" size={24} color="#8E8E93" />
+          <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
       ) : (
         <ScrollView style={styles.userList} nestedScrollEnabled>
@@ -222,7 +225,7 @@ export default function BulkTransferPage() {
                 <Text style={styles.userName}>{u.name}</Text>
                 <Text style={styles.userEmail}>{u.email}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -245,7 +248,7 @@ export default function BulkTransferPage() {
         <Text style={styles.optionCount}>{count} items</Text>
       </View>
       <View style={[styles.checkbox, enabled && styles.checkboxEnabled]}>
-        {enabled && <Ionicons name="checkmark" size={16} color="#FFF" />}
+        {enabled && <Ionicons name="checkmark" size={16} color={colors.text} />}
       </View>
     </TouchableOpacity>
   );
@@ -255,7 +258,7 @@ export default function BulkTransferPage() {
       <View style={styles.historyHeader}>
         <View style={styles.historyFlow}>
           <Text style={styles.historyUser}>{item.from_user}</Text>
-          <Ionicons name="arrow-forward" size={16} color="#8E8E93" />
+          <Ionicons name="arrow-forward" size={16} color={colors.textSecondary} />
           <Text style={styles.historyUser}>{item.to_user}</Text>
         </View>
         <View style={[
@@ -325,7 +328,7 @@ export default function BulkTransferPage() {
               onPress={() => setShowTransferModal(true)}
               data-testid="start-transfer-btn"
             >
-              <Ionicons name="swap-horizontal-outline" size={24} color="#FFF" />
+              <Ionicons name="swap-horizontal-outline" size={24} color={colors.text} />
               <Text style={styles.startButtonText}>Start New Transfer</Text>
             </TouchableOpacity>
 
@@ -335,7 +338,7 @@ export default function BulkTransferPage() {
               
               {transferHistory.length === 0 ? (
                 <View style={styles.emptyHistory}>
-                  <Ionicons name="time-outline" size={48} color="#2C2C2E" />
+                  <Ionicons name="time-outline" size={48} color={colors.surface} />
                   <Text style={styles.emptyText}>No transfers yet</Text>
                 </View>
               ) : (
@@ -358,7 +361,7 @@ export default function BulkTransferPage() {
                 setShowTransferModal(false);
                 resetTransferState();
               }}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -433,10 +436,10 @@ export default function BulkTransferPage() {
                 data-testid="execute-transfer-btn"
               >
                 {transferring ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={colors.text} />
                 ) : (
                   <>
-                    <Ionicons name="swap-horizontal" size={20} color="#FFF" />
+                    <Ionicons name="swap-horizontal" size={20} color={colors.text} />
                     <Text style={styles.executeButtonText}>Execute Transfer</Text>
                   </>
                 )}
@@ -449,10 +452,10 @@ export default function BulkTransferPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -461,7 +464,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -469,7 +472,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -477,7 +480,7 @@ const styles = StyleSheet.create({
   },
   infoBanner: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -489,12 +492,12 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   infoText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   startButton: {
@@ -510,7 +513,7 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   historySection: {
     marginTop: 8,
@@ -518,7 +521,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   emptyHistory: {
@@ -527,11 +530,11 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   historyItem: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -550,13 +553,13 @@ const styles = StyleSheet.create({
   historyUser: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   statusCompleted: {
     backgroundColor: '#34C75920',
@@ -567,7 +570,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   historyStats: {
     flexDirection: 'row',
@@ -577,8 +580,8 @@ const styles = StyleSheet.create({
   },
   historyStatItem: {
     fontSize: 13,
-    color: '#8E8E93',
-    backgroundColor: '#2C2C2E',
+    color: colors.textSecondary,
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -589,11 +592,11 @@ const styles = StyleSheet.create({
   },
   historyDate: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   historyInitiator: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
@@ -601,7 +604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -612,12 +615,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalBody: {
     padding: 16,
@@ -629,7 +632,7 @@ const styles = StyleSheet.create({
   selectorLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   selectedUser: {
@@ -647,7 +650,7 @@ const styles = StyleSheet.create({
   userOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
@@ -672,14 +675,14 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   userEmail: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   previewCard: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -687,7 +690,7 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   optionRow: {
@@ -702,11 +705,11 @@ const styles = StyleSheet.create({
   optionInfo: {},
   optionLabel: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   optionCount: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   checkbox: {
@@ -714,7 +717,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#8E8E93',
+    borderColor: colors.textSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -734,7 +737,7 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   totalValue: {
     fontSize: 18,
@@ -757,6 +760,6 @@ const styles = StyleSheet.create({
   executeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

@@ -20,6 +20,7 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -252,6 +253,8 @@ const PAGE_CATALOG: Category[] = [
 ];
 
 export default function AppDirectoryScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -373,7 +376,7 @@ export default function AppDirectoryScreen() {
       {/* Search */}
       <View style={styles.searchWrap}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#8E8E93" />
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search pages, features, audience..."
@@ -409,7 +412,7 @@ export default function AppDirectoryScreen() {
                 <View style={[styles.catBadge, { backgroundColor: `${cat.color}20` }]}>
                   <Text style={[styles.catBadgeText, { color: cat.color }]}>{cat.pages.length}</Text>
                 </View>
-                <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
+                <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
               </TouchableOpacity>
 
               {/* Page Cards */}
@@ -474,7 +477,7 @@ export default function AppDirectoryScreen() {
 
         {filteredCatalog.length === 0 && (
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={48} color="#3A3A3C" />
+            <Ionicons name="search-outline" size={48} color={colors.borderLight} />
             <Text style={styles.emptyText}>No pages found</Text>
             <Text style={styles.emptySubtext}>Try a different search term</Text>
           </View>
@@ -520,7 +523,7 @@ export default function AppDirectoryScreen() {
                 onPress={() => setShareChannel('email')}
                 data-testid="channel-email"
               >
-                <Ionicons name="mail-outline" size={18} color={shareChannel === 'email' ? '#C9A962' : '#8E8E93'} />
+                <Ionicons name="mail-outline" size={18} color={shareChannel === 'email' ? '#C9A962' : colors.textSecondary} />
                 <Text style={[styles.channelText, shareChannel === 'email' && styles.channelTextActive]}>Email</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -528,7 +531,7 @@ export default function AppDirectoryScreen() {
                 onPress={() => setShareChannel('sms')}
                 data-testid="channel-sms"
               >
-                <Ionicons name="chatbubble-outline" size={18} color={shareChannel === 'sms' ? '#C9A962' : '#8E8E93'} />
+                <Ionicons name="chatbubble-outline" size={18} color={shareChannel === 'sms' ? '#C9A962' : colors.textSecondary} />
                 <Text style={[styles.channelText, shareChannel === 'sms' && styles.channelTextActive]}>SMS</Text>
               </TouchableOpacity>
             </View>
@@ -604,44 +607,44 @@ export default function AppDirectoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backBtn: { padding: 4 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  title: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  title: { fontSize: 17, fontWeight: '600', color: colors.text },
   subtitle: { fontSize: 12, color: '#6E6E73', marginTop: 2 },
   searchWrap: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 15, color: '#FFF' },
+  searchInput: { flex: 1, fontSize: 15, color: colors.text },
   scrollContent: { paddingBottom: 32 },
   // Category
   catWrapper: { marginHorizontal: 16, marginBottom: 8 },
   catHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
   },
   catIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  catTitle: { fontSize: 16, fontWeight: '600', color: '#FFF', flex: 1 },
+  catTitle: { fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 },
   catBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 8 },
   catBadgeText: { fontSize: 14, fontWeight: '600' },
   // Page card
@@ -652,13 +655,13 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   pageTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   pageIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   pageInfo: { flex: 1 },
-  pageName: { fontSize: 15, fontWeight: '600', color: '#FFF' },
-  pageDesc: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
+  pageName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  pageDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   publicBadge: {
     backgroundColor: '#34C75920',
     paddingHorizontal: 8,
@@ -683,18 +686,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingVertical: 8,
     borderRadius: 8,
   },
   shareBtn: { backgroundColor: '#C9A96215' },
-  actionText: { fontSize: 12, fontWeight: '500', color: '#FFF' },
+  actionText: { fontSize: 12, fontWeight: '500', color: colors.text },
   // Empty state
   emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { color: '#8E8E93', fontSize: 16, marginTop: 12 },
+  emptyText: { color: colors.textSecondary, fontSize: 16, marginTop: 12 },
   emptySubtext: { color: '#6E6E73', fontSize: 13, marginTop: 4 },
   // Modal
-  modalContainer: { flex: 1, backgroundColor: '#000' },
+  modalContainer: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -702,33 +705,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: { fontSize: 16, color: '#007AFF' },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   modalSend: { fontSize: 16, fontWeight: '600', color: '#C9A962' },
   modalBody: { padding: 16 },
   sharePageInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
     gap: 12,
   },
   sharePageIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  sharePageName: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  sharePageName: { fontSize: 16, fontWeight: '600', color: colors.text },
   sharePagePath: { fontSize: 12, color: '#6E6E73', marginTop: 4 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8, marginTop: 16, marginLeft: 4 },
+  inputLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, marginTop: 16, marginLeft: 4 },
   modalInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   channelToggle: { flexDirection: 'row', gap: 10 },
   channelBtn: {
@@ -739,12 +742,12 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   channelBtnActive: { backgroundColor: '#C9A96215', borderColor: '#C9A962' },
-  channelText: { fontSize: 15, fontWeight: '500', color: '#8E8E93' },
+  channelText: { fontSize: 15, fontWeight: '500', color: colors.textSecondary },
   channelTextActive: { color: '#C9A962' },
   publicNote: {
     flexDirection: 'row',

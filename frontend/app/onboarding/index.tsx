@@ -20,6 +20,7 @@ import api from '../../services/api';
 import { getOnboardingSlidesForRole } from './slideLibraries';
 import { OnboardingSlide } from './types';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width } = Dimensions.get('window');
 
 // ============================================
@@ -102,7 +103,7 @@ const DigitalCardDemo = () => {
       <View style={demoStyles.businessCard}>
         <View style={demoStyles.cardHeader}>
           <View style={demoStyles.profileCircle}>
-            <Ionicons name="person" size={28} color="#FFF" />
+            <Ionicons name="person" size={28} color={'#FFFFFF'} />
           </View>
           <View>
             <Text style={demoStyles.cardName}>John Smith</Text>
@@ -111,7 +112,7 @@ const DigitalCardDemo = () => {
         </View>
         <View style={demoStyles.qrContainer}>
           <View style={demoStyles.qrCode}>
-            <Ionicons name="qr-code" size={60} color="#000" />
+            <Ionicons name="qr-code" size={60} color={'#FFFFFF'} />
           </View>
           <Text style={demoStyles.qrLabel}>Scan to save contact</Text>
         </View>
@@ -151,7 +152,7 @@ const VoiceToTextDemo = () => {
     <View style={demoStyles.phoneFrame}>
       <View style={demoStyles.voiceContainer}>
         <Animated.View style={[demoStyles.micButton, { transform: [{ scale: pulseAnim }] }]}>
-          <Ionicons name="mic" size={32} color="#FFF" />
+          <Ionicons name="mic" size={32} color={'#FFFFFF'} />
         </Animated.View>
         <Text style={demoStyles.voiceStatus}>Listening...</Text>
         <View style={demoStyles.transcriptBox}>
@@ -310,7 +311,7 @@ const BirthdayCardDemo = () => (
       <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,107,138,0.2)', borderWidth: 2, borderColor: '#FF6B8A', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
         <Ionicons name="person" size={28} color="#FF6B8A" />
       </View>
-      <Text style={{ color: '#FFF', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>Sarah Johnson</Text>
+      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>Sarah Johnson</Text>
       <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>Wishing you a wonderful birthday!</Text>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Ionicons name="chatbubble" size={16} color="#34C759" />
@@ -341,7 +342,7 @@ const ReviewPageDemo = () => (
         ].map(r => (
           <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 10, gap: 10 }}>
             <Ionicons name={r.icon} size={18} color={r.color} />
-            <Text style={{ color: '#FFF', fontSize: 13, flex: 1 }}>Leave a {r.name} Review</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 13, flex: 1 }}>Leave a {r.name} Review</Text>
             <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
           </View>
         ))}
@@ -361,7 +362,7 @@ const ShowroomDemo = () => (
             <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${card.color}30`, justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
               <Ionicons name="images" size={16} color={card.color} />
             </View>
-            <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '600' }}>{card.label}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '600' }}>{card.label}</Text>
           </View>
         ))}
       </View>
@@ -400,7 +401,7 @@ const QuickActionsDemo = () => (
             <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${a.color}20`, justifyContent: 'center', alignItems: 'center' }}>
               <Ionicons name={a.icon} size={14} color={a.color} />
             </View>
-            <Text style={{ color: '#FFF', fontSize: 13, flex: 1 }}>{a.label}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 13, flex: 1 }}>{a.label}</Text>
             <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
           </View>
         ))}
@@ -414,6 +415,8 @@ const QuickActionsDemo = () => (
 // ============================================
 
 export default function OnboardingScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -594,7 +597,7 @@ export default function OnboardingScreen() {
         }}
         data-testid={`onboarding-try-${currentSlide.id}`}
       >
-        <Ionicons name="play-circle" size={18} color="#FFF" />
+        <Ionicons name="play-circle" size={18} color={colors.text} />
         <Text style={styles.tryItButtonText}>{currentSlide.tryItLabel || 'Try It Now'}</Text>
       </TouchableOpacity>
     );
@@ -619,7 +622,7 @@ export default function OnboardingScreen() {
               <Text style={styles.checklistDescription}>{item.description}</Text>
             </View>
             <View style={styles.checklistArrow}>
-              <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </View>
           </TouchableOpacity>
         ))}
@@ -835,7 +838,7 @@ export default function OnboardingScreen() {
           style={styles.actionButton}
           onPress={() => router.push(currentSlide.actionButton!.route as any)}
         >
-          <Ionicons name="cloud-upload" size={20} color="#FFF" />
+          <Ionicons name="cloud-upload" size={20} color={colors.text} />
           <Text style={styles.actionButtonText}>{currentSlide.actionButton.label}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleNext} style={styles.skipLink}>
@@ -957,7 +960,7 @@ export default function OnboardingScreen() {
         <View style={styles.navButtons}>
           {currentIndex > 0 ? (
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Ionicons name="chevron-back" size={24} color="#FFF" />
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
           ) : (
@@ -975,14 +978,14 @@ export default function OnboardingScreen() {
             disabled={!canProceed() || completing || sendingInvites}
           >
             {completing || sendingInvites ? (
-              <ActivityIndicator size="small" color="#000" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
                 <Text style={[styles.nextButtonText, isLastSlide && styles.completeButtonText]}>
                   {isLastSlide ? "Let's Go!" : currentSlide.type === 'team_invite' ? 'Send Invites & Continue' : 'Continue'}
                 </Text>
-                {!isLastSlide && currentSlide.type !== 'team_invite' && <Ionicons name="chevron-forward" size={20} color="#000" />}
-                {currentSlide.type === 'team_invite' && <Ionicons name="paper-plane" size={18} color="#000" style={{ marginLeft: 6 }} />}
+                {!isLastSlide && currentSlide.type !== 'team_invite' && <Ionicons name="chevron-forward" size={20} color={colors.text} />}
+                {currentSlide.type === 'team_invite' && <Ionicons name="paper-plane" size={18} color={colors.text} style={{ marginLeft: 6 }} />}
               </>
             )}
           </TouchableOpacity>
@@ -1033,7 +1036,7 @@ const demoStyles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   customerText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1046,7 +1049,7 @@ const demoStyles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   aiText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1093,7 +1096,7 @@ const demoStyles = StyleSheet.create({
     fontWeight: '600',
   },
   aiSuggestionText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 10,
@@ -1109,7 +1112,7 @@ const demoStyles = StyleSheet.create({
     borderRadius: 14,
   },
   sendButtonText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1120,7 +1123,7 @@ const demoStyles = StyleSheet.create({
     borderRadius: 14,
   },
   editButtonText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 13,
   },
   // Congrats Card
@@ -1148,7 +1151,7 @@ const demoStyles = StyleSheet.create({
     marginBottom: 10,
   },
   customerName: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
@@ -1197,7 +1200,7 @@ const demoStyles = StyleSheet.create({
     alignItems: 'center',
   },
   cardName: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1212,7 +1215,7 @@ const demoStyles = StyleSheet.create({
   qrCode: {
     width: 80,
     height: 80,
-    backgroundColor: '#FFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1261,7 +1264,7 @@ const demoStyles = StyleSheet.create({
     marginBottom: 12,
   },
   transcriptText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 13,
     lineHeight: 19,
     fontStyle: 'italic',
@@ -1282,7 +1285,7 @@ const demoStyles = StyleSheet.create({
     padding: 4,
   },
   campaignTitle: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
@@ -1310,7 +1313,7 @@ const demoStyles = StyleSheet.create({
     fontWeight: '600',
   },
   timelineText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 12,
   },
   timelineLine: {
@@ -1324,7 +1327,7 @@ const demoStyles = StyleSheet.create({
     padding: 4,
   },
   analyticsTitle: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
@@ -1343,7 +1346,7 @@ const demoStyles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 20,
     fontWeight: '700',
     marginTop: 4,
@@ -1373,10 +1376,10 @@ const demoStyles = StyleSheet.create({
 // MAIN STYLES
 // ============================================
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   safeArea: {
     zIndex: 10,
@@ -1440,7 +1443,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 6,
   },
@@ -1492,7 +1495,7 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   choicesContainer: {
@@ -1528,7 +1531,7 @@ const styles = StyleSheet.create({
   choiceLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   choiceDescription: {
@@ -1546,7 +1549,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   textInput: {
@@ -1554,7 +1557,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
@@ -1588,7 +1591,7 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   actionButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '600',
   },
@@ -1618,7 +1621,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   backButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     marginLeft: 4,
   },
@@ -1636,7 +1639,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   nextButtonText: {
-    color: '#000',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1645,7 +1648,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   completeButtonText: {
-    color: '#FFF',
+    color: colors.text,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -1702,7 +1705,7 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   tryItButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1732,7 +1735,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   checklistLabel: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 2,
@@ -1751,7 +1754,7 @@ const styles = StyleSheet.create({
   teamInviteTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   teamInviteSubtitle: {
@@ -1784,7 +1787,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',

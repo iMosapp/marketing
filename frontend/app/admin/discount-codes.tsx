@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 const DISCOUNT_TIERS = [5, 10, 15, 20, 25];
 
 interface DiscountCode {
@@ -31,6 +32,8 @@ interface DiscountCode {
 }
 
 export default function DiscountCodesPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [codes, setCodes] = useState<DiscountCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +162,7 @@ export default function DiscountCodesPage() {
             <TextInput
               style={styles.input}
               placeholder="Custom code (optional - leave blank for auto)"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={customCode}
               onChangeText={setCustomCode}
               autoCapitalize="characters"
@@ -187,7 +190,7 @@ export default function DiscountCodesPage() {
                 <TextInput
                   style={styles.input}
                   placeholder="Unlimited"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={maxUses}
                   onChangeText={setMaxUses}
                   keyboardType="number-pad"
@@ -198,7 +201,7 @@ export default function DiscountCodesPage() {
                 <TextInput
                   style={styles.input}
                   placeholder="90"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={expiresDays}
                   onChangeText={setExpiresDays}
                   keyboardType="number-pad"
@@ -209,7 +212,7 @@ export default function DiscountCodesPage() {
             <TextInput
               style={styles.input}
               placeholder="Description (optional)"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={description}
               onChangeText={setDescription}
             />
@@ -220,7 +223,7 @@ export default function DiscountCodesPage() {
               <Switch
                 value={forIndividual}
                 onValueChange={setForIndividual}
-                trackColor={{ false: '#2C2C2E', true: '#007AFF' }}
+                trackColor={{ false: colors.surface, true: '#007AFF' }}
               />
             </View>
             <View style={styles.switchRow}>
@@ -228,7 +231,7 @@ export default function DiscountCodesPage() {
               <Switch
                 value={forStore}
                 onValueChange={setForStore}
-                trackColor={{ false: '#2C2C2E', true: '#007AFF' }}
+                trackColor={{ false: colors.surface, true: '#007AFF' }}
               />
             </View>
             
@@ -238,10 +241,10 @@ export default function DiscountCodesPage() {
               disabled={creating}
             >
               {creating ? (
-                <ActivityIndicator color="#FFF" />
+                <ActivityIndicator color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="ticket" size={20} color="#FFF" />
+                  <Ionicons name="ticket" size={20} color={colors.text} />
                   <Text style={styles.createButtonText}>Generate Code</Text>
                 </>
               )}
@@ -257,7 +260,7 @@ export default function DiscountCodesPage() {
             <ActivityIndicator color="#007AFF" style={{ marginTop: 20 }} />
           ) : codes.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="ticket-outline" size={48} color="#2C2C2E" />
+              <Ionicons name="ticket-outline" size={48} color={colors.surface} />
               <Text style={styles.emptyText}>No discount codes yet</Text>
               <Text style={styles.emptySubtext}>Create your first code above</Text>
             </View>
@@ -268,7 +271,7 @@ export default function DiscountCodesPage() {
                   <TouchableOpacity onPress={() => copyToClipboard(code.code)}>
                     <View style={styles.codeRow}>
                       <Text style={styles.codeText}>{code.code}</Text>
-                      <Ionicons name="copy-outline" size={16} color="#8E8E93" />
+                      <Ionicons name="copy-outline" size={16} color={colors.textSecondary} />
                     </View>
                   </TouchableOpacity>
                   <View style={[styles.discountBadge, { backgroundColor: `${getDiscountColor(code.discount_percent)}20` }]}>
@@ -284,13 +287,13 @@ export default function DiscountCodesPage() {
                 
                 <View style={styles.codeDetails}>
                   <View style={styles.codeDetail}>
-                    <Ionicons name="repeat" size={14} color="#8E8E93" />
+                    <Ionicons name="repeat" size={14} color={colors.textSecondary} />
                     <Text style={styles.codeDetailText}>
                       {code.times_used} / {code.max_uses || '∞'} uses
                     </Text>
                   </View>
                   <View style={styles.codeDetail}>
-                    <Ionicons name="calendar" size={14} color="#8E8E93" />
+                    <Ionicons name="calendar" size={14} color={colors.textSecondary} />
                     <Text style={styles.codeDetailText}>
                       Expires {formatDate(code.expires_at)}
                     </Text>
@@ -300,7 +303,7 @@ export default function DiscountCodesPage() {
                 <View style={styles.codePlanTypes}>
                   {code.plan_types.map((type) => (
                     <View key={type} style={styles.planTypeBadge}>
-                      <Ionicons name={type === 'individual' ? 'person' : 'storefront'} size={12} color="#8E8E93" />
+                      <Ionicons name={type === 'individual' ? 'person' : 'storefront'} size={12} color={colors.textSecondary} />
                       <Text style={styles.planTypeText}>{type}</Text>
                     </View>
                   ))}
@@ -333,13 +336,13 @@ function getDiscountColor(percent: number): string {
   if (percent >= 20) return '#34C759';
   if (percent >= 15) return '#30B0C7';
   if (percent >= 10) return '#007AFF';
-  return '#8E8E93';
+  return colors.textSecondary;
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -348,7 +351,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -356,14 +359,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
   },
   createForm: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginTop: 16,
@@ -371,20 +374,20 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   inputLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   inputRow: {
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
   },
   discountOption: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -411,24 +414,24 @@ const styles = StyleSheet.create({
   },
   discountOptionText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   discountOptionTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
   },
   switchLabel: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   createButton: {
     flexDirection: 'row',
@@ -446,7 +449,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   section: {
     marginTop: 24,
@@ -455,7 +458,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   emptyState: {
@@ -464,16 +467,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   codeCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -495,7 +498,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     fontFamily: 'monospace',
   },
   discountBadge: {
@@ -509,7 +512,7 @@ const styles = StyleSheet.create({
   },
   codeDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   codeDetails: {
@@ -524,7 +527,7 @@ const styles = StyleSheet.create({
   },
   codeDetailText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   codePlanTypes: {
     flexDirection: 'row',
@@ -534,14 +537,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   planTypeText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'capitalize',
   },
   deactivateButton: {
@@ -560,7 +563,7 @@ const styles = StyleSheet.create({
   },
   inactiveBadgeText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
 });

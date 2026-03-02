@@ -23,6 +23,7 @@ import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const DEFAULT_HOURS = {
@@ -36,6 +37,8 @@ const DEFAULT_HOURS = {
 };
 
 export default function StoreProfileScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
 const { showToast } = useToast();
@@ -260,7 +263,7 @@ const { showToast } = useToast();
               onChangeText={(text) => updateField('name', text)}
               editable={isAdmin}
               placeholder="Account Name"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             
             <Text style={styles.label}>Phone</Text>
@@ -270,7 +273,7 @@ const { showToast } = useToast();
               onChangeText={(text) => updateField('phone', text)}
               editable={isAdmin}
               placeholder="(555) 123-4567"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
             />
             
@@ -281,7 +284,7 @@ const { showToast } = useToast();
               onChangeText={(text) => updateField('website', text)}
               editable={isAdmin}
               placeholder="https://yourstore.com"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
             />
             
@@ -292,7 +295,7 @@ const { showToast } = useToast();
               onChangeText={(text) => updateField('address', text)}
               editable={isAdmin}
               placeholder="123 Main St"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             
             <View style={styles.row}>
@@ -304,7 +307,7 @@ const { showToast } = useToast();
                   onChangeText={(text) => updateField('city', text)}
                   editable={isAdmin}
                   placeholder="City"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
@@ -315,7 +318,7 @@ const { showToast } = useToast();
                   onChangeText={(text) => updateField('state', text)}
                   editable={isAdmin}
                   placeholder="CO"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   maxLength={2}
                   autoCapitalize="characters"
                 />
@@ -333,7 +336,7 @@ const { showToast } = useToast();
               onChangeText={(text) => updateField('logo_url', text)}
               editable={isAdmin}
               placeholder="https://yourstore.com/logo.png"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
             />
             
@@ -344,7 +347,7 @@ const { showToast } = useToast();
               onChangeText={(text) => updateField('primary_color', text)}
               editable={isAdmin}
               placeholder="#007AFF"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -379,7 +382,7 @@ const { showToast } = useToast();
                         onChangeText={(text) => updateHours(day, 'open', text)}
                         editable={isAdmin}
                         placeholder="09:00"
-                        placeholderTextColor="#8E8E93"
+                        placeholderTextColor={colors.textSecondary}
                       />
                       <Text style={styles.timeSeparator}>-</Text>
                       <TextInput
@@ -388,7 +391,7 @@ const { showToast } = useToast();
                         onChangeText={(text) => updateHours(day, 'close', text)}
                         editable={isAdmin}
                         placeholder="18:00"
-                        placeholderTextColor="#8E8E93"
+                        placeholderTextColor={colors.textSecondary}
                       />
                     </View>
                   ) : (
@@ -408,7 +411,7 @@ const { showToast } = useToast();
               { key: 'instagram', icon: 'logo-instagram', color: '#E4405F', name: 'Instagram' },
               { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2', name: 'Twitter/X' },
               { key: 'youtube', icon: 'logo-youtube', color: '#FF0000', name: 'YouTube' },
-              { key: 'tiktok', icon: 'logo-tiktok', color: '#000000', name: 'TikTok' },
+              { key: 'tiktok', icon: 'logo-tiktok', color: colors.text, name: 'TikTok' },
               { key: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2', name: 'LinkedIn' },
             ].map((social) => (
               <View key={social.key} style={styles.socialRow}>
@@ -421,7 +424,7 @@ const { showToast } = useToast();
                   onChangeText={(text) => updateSocial(social.key, text)}
                   editable={isAdmin}
                   placeholder={`${social.name} URL`}
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   autoCapitalize="none"
                 />
               </View>
@@ -471,7 +474,7 @@ const { showToast } = useToast();
                 router.push(`/review/${store.slug || store._id}`);
               }}
             >
-              <Ionicons name="eye-outline" size={18} color="#FFF" />
+              <Ionicons name="eye-outline" size={18} color={colors.text} />
               <Text style={styles.previewButtonText}>Preview Review Page</Text>
             </TouchableOpacity>
           </View>
@@ -507,18 +510,18 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingText: {
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginTop: 100,
   },
   noStoreText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 100,
     fontSize: 16,
@@ -530,7 +533,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 60,
@@ -538,7 +541,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     width: 60,
@@ -556,18 +559,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
     letterSpacing: 0.5,
   },
   sectionDesc: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   card: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -580,9 +583,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 16,
-    backgroundColor: '#111',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -603,7 +606,7 @@ const styles = StyleSheet.create({
   logoUploadTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   logoUploadHint: {
@@ -634,7 +637,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   avatarPreview: {
     width: 36,
@@ -647,16 +650,16 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   row: {
     flexDirection: 'row',
@@ -666,11 +669,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   dayName: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     width: 100,
   },
   closedToggle: {
@@ -702,16 +705,16 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   timeInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 8,
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     width: 65,
     textAlign: 'center',
   },
   timeSeparator: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginHorizontal: 8,
   },
   socialRow: {
@@ -729,25 +732,25 @@ const styles = StyleSheet.create({
   },
   socialInput: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   reviewLinkLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   slugRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   slugPrefix: {
     fontSize: 12,
@@ -756,7 +759,7 @@ const styles = StyleSheet.create({
   slugInput: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
     paddingVertical: 12,
     paddingHorizontal: 4,
@@ -770,7 +773,7 @@ const styles = StyleSheet.create({
   reviewLinkBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
   },
@@ -792,7 +795,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   previewButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
     marginLeft: 8,
@@ -804,12 +807,12 @@ const styles = StyleSheet.create({
   gmbTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   gmbDesc: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 20,

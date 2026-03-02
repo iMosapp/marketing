@@ -16,7 +16,10 @@ import { WebSafeButton } from '../../components/WebSafeButton';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function ChangePasswordScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
   
@@ -116,7 +119,7 @@ export default function ChangePasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder={isFirstTimeChange ? 'Enter temporary password' : 'Enter current password'}
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 secureTextEntry={!showCurrentPassword}
@@ -131,7 +134,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={showCurrentPassword ? 'eye-off' : 'eye'} 
                   size={22} 
-                  color="#8E8E93" 
+                  color={colors.textSecondary} 
                 />
               </WebSafeButton>
             </View>
@@ -142,7 +145,7 @@ export default function ChangePasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter new password (min 6 characters)"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry={!showNewPassword}
@@ -157,7 +160,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={showNewPassword ? 'eye-off' : 'eye'} 
                   size={22} 
-                  color="#8E8E93" 
+                  color={colors.textSecondary} 
                 />
               </WebSafeButton>
             </View>
@@ -168,7 +171,7 @@ export default function ChangePasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Re-enter new password"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -183,7 +186,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={showConfirmPassword ? 'eye-off' : 'eye'} 
                   size={22} 
-                  color="#8E8E93" 
+                  color={colors.textSecondary} 
                 />
               </WebSafeButton>
             </View>
@@ -217,7 +220,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={newPassword.length >= 6 ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={16} 
-                  color={newPassword.length >= 6 ? '#34C759' : '#8E8E93'} 
+                  color={newPassword.length >= 6 ? '#34C759' : colors.textSecondary} 
                 />
                 <Text style={[
                   styles.requirementText,
@@ -230,7 +233,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={newPassword && newPassword !== currentPassword ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={16} 
-                  color={newPassword && newPassword !== currentPassword ? '#34C759' : '#8E8E93'} 
+                  color={newPassword && newPassword !== currentPassword ? '#34C759' : colors.textSecondary} 
                 />
                 <Text style={[
                   styles.requirementText,
@@ -243,7 +246,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={confirmPassword && newPassword === confirmPassword ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={16} 
-                  color={confirmPassword && newPassword === confirmPassword ? '#34C759' : '#8E8E93'} 
+                  color={confirmPassword && newPassword === confirmPassword ? '#34C759' : colors.textSecondary} 
                 />
                 <Text style={[
                   styles.requirementText,
@@ -260,10 +263,10 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -285,13 +288,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
@@ -304,23 +307,23 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   input: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   eyeButton: {
     padding: 12,
@@ -346,18 +349,18 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   requirementsContainer: {
     marginTop: 24,
     padding: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
   },
   requirementsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   requirementRow: {
@@ -368,7 +371,7 @@ const styles = StyleSheet.create({
   },
   requirementText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   requirementMet: {
     color: '#34C759',

@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface Referral {
   _id: string;
   referrer_name?: string;
@@ -25,6 +26,8 @@ interface Referral {
 }
 
 export default function ReferralsDataScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +59,7 @@ export default function ReferralsDataScreen() {
       case 'completed': return '#34C759';
       case 'pending': return '#FF9500';
       case 'contacted': return '#007AFF';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -113,7 +116,7 @@ export default function ReferralsDataScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="git-network-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="git-network-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No referrals yet</Text>
           </View>
         )}
@@ -122,10 +125,10 @@ export default function ReferralsDataScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     backgroundColor: '#5856D620',
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
   },
   referralItem: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
   refereeName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   statusBadge: {
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
   },
   storeName: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   date: {
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
 });

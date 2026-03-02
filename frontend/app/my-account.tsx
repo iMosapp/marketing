@@ -25,9 +25,10 @@ import api from '../services/api';
 const PROD_BASE = 'https://app.imosapp.com';
 
 export default function MyAccountScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, setUser } = useAuthStore();
-  const colors = useThemeStore((s) => s.colors);
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(user?.photo_url || null);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -501,7 +502,7 @@ export default function MyAccountScreen() {
               </View>
             )}
             <View style={[styles.cameraButton, { borderColor: colors.bg }]}>
-              <Ionicons name="camera" size={16} color="#FFF" />
+              <Ionicons name="camera" size={16} color={colors.text} />
             </View>
           </TouchableOpacity>
           
@@ -680,7 +681,7 @@ export default function MyAccountScreen() {
             data-testid="activity-toggle"
           >
             <Text style={styles.sectionTitle}>My Activity</Text>
-            <Ionicons name={activityExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+            <Ionicons name={activityExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
 
           {activityExpanded && (
@@ -1072,7 +1073,7 @@ export default function MyAccountScreen() {
         <View style={shareStyles.modal}>
           <View style={shareStyles.header}>
             <TouchableOpacity onPress={() => setShowShareModal(false)}>
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
             <Text style={shareStyles.headerTitle}>Share Review Link</Text>
             <View style={{ width: 24 }} />
@@ -1135,7 +1136,7 @@ export default function MyAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: undefined,
@@ -1146,7 +1147,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -1163,7 +1164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   photoContainer: {
     position: 'relative',
@@ -1202,7 +1203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#000',
+    borderColor: colors.border,
   },
   userName: {
     fontSize: 24,
@@ -1402,7 +1403,7 @@ const styles = StyleSheet.create({
   editBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#000',
+    color: colors.text,
   },
   editLabel: {
     fontSize: 10,

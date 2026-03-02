@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface Broadcast {
@@ -44,6 +45,8 @@ interface Broadcast {
 }
 
 export default function BroadcastDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
@@ -142,12 +145,12 @@ const { showToast } = useToast();
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return '#8E8E93';
+      case 'draft': return colors.textSecondary;
       case 'scheduled': return '#FF9500';
       case 'sending': return '#007AFF';
       case 'sent': return '#34C759';
       case 'failed': return '#FF3B30';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -193,7 +196,7 @@ const { showToast } = useToast();
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Broadcast Details</Text>
         <Pressable onPress={handleDuplicate} style={styles.duplicateButton} testID="duplicate-btn">
@@ -337,10 +340,10 @@ const { showToast } = useToast();
               testID="send-btn"
             >
               {sending ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="send" size={20} color="#FFF" />
+                  <Ionicons name="send" size={20} color={colors.text} />
                   <Text style={styles.sendButtonText}>Send Now</Text>
                 </>
               )}
@@ -372,10 +375,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -390,7 +393,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   backButtonLarge: {
@@ -400,7 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   backButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   header: {
@@ -410,7 +413,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -418,7 +421,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   duplicateButton: {
     padding: 4,
@@ -444,11 +447,11 @@ const styles = StyleSheet.create({
   },
   statusSubtext: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   card: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -456,7 +459,7 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -464,11 +467,11 @@ const styles = StyleSheet.create({
   broadcastName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   messageText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 24,
   },
   mediaGrid: {
@@ -483,7 +486,7 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
@@ -499,12 +502,12 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     marginHorizontal: 16,
   },
   filtersContainer: {
@@ -517,17 +520,17 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   noFiltersText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   dateText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -547,7 +550,7 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   deleteButton: {
     flexDirection: 'row',

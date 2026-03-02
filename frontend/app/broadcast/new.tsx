@@ -22,6 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface Tag {
@@ -56,6 +57,8 @@ const PRESET_FILTERS = [
 ];
 
 export default function NewBroadcastScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   
@@ -282,7 +285,7 @@ const { showToast } = useToast();
       <Ionicons
         name={expandedSections[section] ? 'chevron-up' : 'chevron-down'}
         size={20}
-        color="#8E8E93"
+        color={colors.textSecondary}
       />
     </Pressable>
   );
@@ -291,7 +294,7 @@ const { showToast } = useToast();
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>New Broadcast</Text>
         <View style={{ width: 40 }} />
@@ -508,7 +511,7 @@ const { showToast } = useToast();
                   <Ionicons
                     name={scheduleType === 'now' ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
-                    color={scheduleType === 'now' ? '#007AFF' : '#8E8E93'}
+                    color={scheduleType === 'now' ? '#007AFF' : colors.textSecondary}
                   />
                   <Text style={[styles.scheduleOptionText, scheduleType === 'now' && styles.scheduleOptionTextActive]}>
                     Save as draft (send manually)
@@ -523,7 +526,7 @@ const { showToast } = useToast();
                   <Ionicons
                     name={scheduleType === 'later' ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
-                    color={scheduleType === 'later' ? '#007AFF' : '#8E8E93'}
+                    color={scheduleType === 'later' ? '#007AFF' : colors.textSecondary}
                   />
                   <Text style={[styles.scheduleOptionText, scheduleType === 'later' && styles.scheduleOptionTextActive]}>
                     Schedule for later
@@ -627,10 +630,10 @@ const { showToast } = useToast();
             testID="send-now-btn"
           >
             {submitting ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="send" size={20} color="#FFF" />
+                <Ionicons name="send" size={20} color={colors.text} />
                 <Text style={styles.sendButtonText}>Send Now</Text>
               </>
             )}
@@ -643,10 +646,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -655,7 +658,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -663,7 +666,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -675,17 +678,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   messageInput: {
     height: 120,
@@ -722,9 +725,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderWidth: 2,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
@@ -735,7 +738,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   section: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 16,
     overflow: 'hidden',
@@ -754,7 +757,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   sectionContent: {
     padding: 16,
@@ -762,7 +765,7 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 10,
   },
   tagsContainer: {
@@ -774,7 +777,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   tagChipSelected: {
     backgroundColor: '#007AFF',
@@ -784,7 +787,7 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   tagChipTextSelected: {
     fontWeight: '600',
@@ -803,17 +806,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   presetButtonActive: {
     backgroundColor: '#007AFF',
   },
   presetText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   presetTextActive: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   monthYearContainer: {
@@ -823,7 +826,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     marginRight: 8,
   },
   monthButtonActive: {
@@ -831,10 +834,10 @@ const styles = StyleSheet.create({
   },
   monthText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   monthTextActive: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   yearInputContainer: {
@@ -845,11 +848,11 @@ const styles = StyleSheet.create({
   },
   yearInput: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   scheduleOptions: {
     gap: 12,
@@ -860,17 +863,17 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   scheduleOptionActive: {
     backgroundColor: 'rgba(0, 122, 255, 0.15)',
   },
   scheduleOptionText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   scheduleOptionTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   dateTimeContainer: {
     flexDirection: 'row',
@@ -884,15 +887,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 14,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
   },
   dateTimeText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   previewCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -906,11 +909,11 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   previewCount: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -946,11 +949,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   sendButtonDisabled: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
   },
   sendButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

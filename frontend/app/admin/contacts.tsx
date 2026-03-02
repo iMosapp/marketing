@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Contact {
   _id: string;
   first_name?: string;
@@ -28,6 +29,8 @@ interface Contact {
 }
 
 export default function AdminContactsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +91,7 @@ export default function AdminContactsScreen() {
             }]}>
               <Text style={[styles.statusText, { 
                 color: item.status === 'sold' ? '#34C759' : 
-                       item.status === 'active' ? '#007AFF' : '#8E8E93' 
+                       item.status === 'active' ? '#007AFF' : colors.textSecondary 
               }]}>{item.status}</Text>
             </View>
           )}
@@ -100,7 +103,7 @@ export default function AdminContactsScreen() {
           {item.store_name && <Text style={styles.storeName}> • {item.store_name}</Text>}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -128,11 +131,11 @@ export default function AdminContactsScreen() {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#8E8E93" />
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search contacts..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -140,7 +143,7 @@ export default function AdminContactsScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#8E8E93" />
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -156,7 +159,7 @@ export default function AdminContactsScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="people-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>
               {searchQuery ? 'No contacts found' : 'No contacts yet'}
             </Text>
@@ -167,10 +170,10 @@ export default function AdminContactsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -192,7 +195,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     backgroundColor: '#FF950020',
@@ -209,12 +212,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   listContent: {
     padding: 16,
@@ -231,7 +234,7 @@ const styles = StyleSheet.create({
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -261,7 +264,7 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   statusBadge: {
@@ -281,7 +284,7 @@ const styles = StyleSheet.create({
   },
   contactEmail: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 1,
   },
   contactFooter: {
@@ -304,7 +307,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
 });

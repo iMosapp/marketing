@@ -17,7 +17,10 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function MyInvoicesScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -69,8 +72,8 @@ export default function MyInvoicesScreen() {
       case 'paid': return '#34C759';
       case 'pending': return '#FF9500';
       case 'overdue': return '#FF3B30';
-      case 'cancelled': return '#8E8E93';
-      default: return '#8E8E93';
+      case 'cancelled': return colors.textSecondary;
+      default: return colors.textSecondary;
     }
   };
   
@@ -152,10 +155,10 @@ export default function MyInvoicesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -169,7 +172,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -177,7 +180,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
@@ -192,12 +195,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   invoiceCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -231,7 +234,7 @@ const styles = StyleSheet.create({
   invoiceNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -241,17 +244,17 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     textTransform: 'capitalize',
   },
   invoiceAmount: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   invoiceDate: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

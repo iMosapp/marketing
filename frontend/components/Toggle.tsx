@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet, ViewStyle } from 'react-native';
 
+import { useThemeStore } from '../store/themeStore';
 interface ToggleProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
@@ -26,6 +27,8 @@ export default function Toggle({
   style,
   testID,
 }: ToggleProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const dimensions = {
     small: { width: 40, height: 24, knobSize: 20 },
     medium: { width: 50, height: 30, knobSize: 26 },
@@ -72,13 +75,13 @@ export default function Toggle({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   track: {
     justifyContent: 'center',
     padding: 2,
   },
   knob: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     elevation: 2,
   },
 });

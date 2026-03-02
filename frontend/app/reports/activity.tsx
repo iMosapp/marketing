@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
+import { useThemeStore } from '../../store/themeStore';
 type DatePreset = 'today' | 'this_week' | 'this_month' | 'last_month' | 'last_7' | 'last_30' | 'custom';
 
 function getDateRange(preset: DatePreset): { start: string; end: string } {
@@ -84,6 +85,8 @@ interface UserStats extends Totals {
 }
 
 export default function ActivityReportScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -181,7 +184,7 @@ export default function ActivityReportScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Activity Report</Text>
         <TouchableOpacity onPress={() => setShowSchedule(!showSchedule)} data-testid="report-schedule-btn">
-          <Ionicons name="timer-outline" size={24} color={schedFreq !== 'none' ? '#34C759' : '#8E8E93'} />
+          <Ionicons name="timer-outline" size={24} color={schedFreq !== 'none' ? '#34C759' : colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -331,10 +334,10 @@ export default function ActivityReportScreen() {
               data-testid="email-report-btn"
             >
               {sendingEmail ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="mail-outline" size={18} color="#FFF" />
+                  <Ionicons name="mail-outline" size={18} color={colors.text} />
                   <Text style={styles.emailBtnText}>Email This Report</Text>
                 </>
               )}
@@ -342,7 +345,7 @@ export default function ActivityReportScreen() {
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="bar-chart-outline" size={48} color="#8E8E93" />
+            <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
             <Text style={styles.emptyText}>No data for this period</Text>
           </View>
         )}
@@ -351,98 +354,98 @@ export default function ActivityReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   presetRow: { marginTop: 12 },
   presetRowContent: { paddingHorizontal: 16, gap: 8 },
   presetBtn: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: '#1C1C1E', marginRight: 8,
+    backgroundColor: colors.card, marginRight: 8,
   },
   presetBtnActive: { backgroundColor: '#FFD60A' },
-  presetText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
-  presetTextActive: { color: '#000' },
+  presetText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  presetTextActive: { color: colors.text },
   teamToggle: {
     flexDirection: 'row', marginHorizontal: 16, marginTop: 12,
-    backgroundColor: '#1C1C1E', borderRadius: 10, padding: 3,
+    backgroundColor: colors.card, borderRadius: 10, padding: 3,
   },
   toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: '#2C2C2E' },
+  toggleBtnActive: { backgroundColor: colors.surface },
   toggleText: { fontSize: 14, fontWeight: '600', color: '#6E6E73' },
-  toggleTextActive: { color: '#FFF' },
+  toggleTextActive: { color: colors.text },
   schedulePanel: {
-    marginHorizontal: 16, marginTop: 12, backgroundColor: '#1C1C1E',
+    marginHorizontal: 16, marginTop: 12, backgroundColor: colors.card,
     borderRadius: 12, padding: 16,
   },
-  schedulePanelTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginBottom: 12 },
+  schedulePanelTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 12 },
   schedFreqRow: { flexDirection: 'row', gap: 8 },
   schedFreqBtn: {
-    flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#2C2C2E', alignItems: 'center',
+    flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.surface, alignItems: 'center',
   },
   schedFreqBtnActive: { backgroundColor: '#34C759' },
-  schedFreqText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
-  schedFreqTextActive: { color: '#FFF' },
+  schedFreqText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  schedFreqTextActive: { color: colors.text },
   schedEmailInput: {
-    marginTop: 12, backgroundColor: '#2C2C2E', borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 10, color: '#FFF', fontSize: 14,
+    marginTop: 12, backgroundColor: colors.surface, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 14,
   },
   schedSaveBtn: {
     marginTop: 12, backgroundColor: '#34C759', borderRadius: 8,
     paddingVertical: 10, alignItems: 'center',
   },
-  schedSaveBtnText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  schedSaveBtnText: { fontSize: 14, fontWeight: '700', color: colors.text },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
   topStats: { alignItems: 'center', marginTop: 24 },
   heroStat: { alignItems: 'center' },
   heroValue: { fontSize: 48, fontWeight: '800', color: '#34C759' },
-  heroLabel: { fontSize: 14, fontWeight: '600', color: '#8E8E93', marginTop: 4 },
+  heroLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginTop: 4 },
   statGrid: {
     flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center',
     gap: 10, marginTop: 20, paddingHorizontal: 16,
   },
   statCard: {
-    width: '22%', minWidth: 80, backgroundColor: '#1C1C1E', borderRadius: 12,
+    width: '22%', minWidth: 80, backgroundColor: colors.card, borderRadius: 12,
     padding: 12, alignItems: 'center',
   },
   statIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   statValue: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 10, fontWeight: '600', color: '#8E8E93', marginTop: 2, textAlign: 'center' },
+  statLabel: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
   chartSection: { marginTop: 28, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: 2, justifyContent: 'space-between' },
   chartBar: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
   chartBarFill: { width: '80%', borderRadius: 3, minHeight: 3 },
-  chartBarValue: { fontSize: 9, color: '#8E8E93', marginBottom: 2 },
+  chartBarValue: { fontSize: 9, color: colors.textSecondary, marginBottom: 2 },
   chartBarLabel: { fontSize: 9, color: '#6E6E73', marginTop: 4 },
   teamSection: { marginTop: 28, paddingHorizontal: 16 },
   teamRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 12, padding: 14, marginBottom: 8,
   },
   teamRank: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: '#2C2C2E',
+    width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   teamRankText: { fontSize: 13, fontWeight: '700', color: '#FFD60A' },
   teamInfo: { flex: 1 },
-  teamName: { fontSize: 15, fontWeight: '600', color: '#FFF' },
-  teamDetails: { fontSize: 11, color: '#8E8E93', marginTop: 3 },
+  teamName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  teamDetails: { fontSize: 11, color: colors.textSecondary, marginTop: 3 },
   teamScore: { alignItems: 'center' },
   teamScoreValue: { fontSize: 20, fontWeight: '800', color: '#34C759' },
-  teamScoreLabel: { fontSize: 10, color: '#8E8E93' },
+  teamScoreLabel: { fontSize: 10, color: colors.textSecondary },
   emailBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     marginHorizontal: 16, marginTop: 28, backgroundColor: '#007AFF',
     borderRadius: 12, paddingVertical: 14,
   },
-  emailBtnText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  emailBtnText: { fontSize: 15, fontWeight: '600', color: colors.text },
   emptyState: { alignItems: 'center', paddingTop: 80 },
-  emptyText: { fontSize: 16, color: '#8E8E93', marginTop: 12 },
+  emptyText: { fontSize: 16, color: colors.textSecondary, marginTop: 12 },
 });

@@ -16,9 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { authAPI } from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 type Step = 'email' | 'code' | 'password';
 
 export default function ForgotPasswordScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   
   const [step, setStep] = useState<Step>('email');
@@ -117,7 +120,7 @@ export default function ForgotPasswordScreen() {
       <TextInput
         style={styles.input}
         placeholder="Email"
-        placeholderTextColor="#8E8E93"
+        placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -132,7 +135,7 @@ export default function ForgotPasswordScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#FFF" />
+          <ActivityIndicator color={colors.text} />
         ) : (
           <Text style={styles.buttonText}>Send Reset Code</Text>
         )}
@@ -157,7 +160,7 @@ export default function ForgotPasswordScreen() {
       <TextInput
         style={[styles.input, styles.codeInput]}
         placeholder="000000"
-        placeholderTextColor="#8E8E93"
+        placeholderTextColor={colors.textSecondary}
         value={code}
         onChangeText={setCode}
         keyboardType="number-pad"
@@ -171,7 +174,7 @@ export default function ForgotPasswordScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#FFF" />
+          <ActivityIndicator color={colors.text} />
         ) : (
           <Text style={styles.buttonText}>Verify Code</Text>
         )}
@@ -198,7 +201,7 @@ export default function ForgotPasswordScreen() {
         <TextInput
           style={styles.passwordInput}
           placeholder="New Password"
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           value={newPassword}
           onChangeText={setNewPassword}
           secureTextEntry={!showPassword}
@@ -212,7 +215,7 @@ export default function ForgotPasswordScreen() {
           <Ionicons
             name={showPassword ? 'eye-off' : 'eye'}
             size={22}
-            color="#8E8E93"
+            color={colors.textSecondary}
           />
         </TouchableOpacity>
       </View>
@@ -220,7 +223,7 @@ export default function ForgotPasswordScreen() {
       <TextInput
         style={styles.input}
         placeholder="Confirm New Password"
-        placeholderTextColor="#8E8E93"
+        placeholderTextColor={colors.textSecondary}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry={!showPassword}
@@ -233,7 +236,7 @@ export default function ForgotPasswordScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#FFF" />
+          <ActivityIndicator color={colors.text} />
         ) : (
           <Text style={styles.buttonText}>Reset Password</Text>
         )}
@@ -300,10 +303,10 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   keyboardView: {
     flex: 1,
@@ -329,7 +332,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   progressDotActive: {
     backgroundColor: '#007AFF',
@@ -345,23 +348,23 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   stepDescription: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 24,
     lineHeight: 22,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   codeInput: {
     textAlign: 'center',
@@ -372,16 +375,16 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   eyeButton: {
     padding: 16,
@@ -397,7 +400,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '600',
   },
@@ -414,11 +417,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 15,
   },
   devCodeBox: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -434,7 +437,7 @@ const styles = StyleSheet.create({
   devCodeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: 4,
   },

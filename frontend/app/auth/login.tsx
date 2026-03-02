@@ -21,6 +21,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
 import { WebSafeButton } from '../../components/WebSafeButton';
+import { useThemeStore } from '../../store/themeStore';
 import {
   checkBiometricSupport,
   authenticateWithBiometric,
@@ -35,6 +36,8 @@ const getDefaultRoute = (role?: string): string => {
 };
 
 export default function LoginScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
@@ -55,11 +58,11 @@ export default function LoginScreen() {
   // Theme colors based on system preference
   const theme = {
     bg: isDark ? '#000000' : '#FFFFFF',
-    surface: isDark ? '#1C1C1E' : '#F2F2F7',
-    border: isDark ? '#2C2C2E' : '#D1D1D6',
+    surface: isDark ? colors.card : colors.bg,
+    border: isDark ? colors.surface : colors.border,
     text: isDark ? '#FFFFFF' : '#000000',
-    textSecondary: isDark ? '#8E8E93' : '#6C6C70',
-    modalBg: isDark ? '#1C1C1E' : '#FFFFFF',
+    textSecondary: isDark ? colors.textSecondary : colors.textSecondary,
+    modalBg: isDark ? colors.card : '#FFFFFF',
     modalOverlay: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.4)',
     errorBg: isDark ? '#FF3B3010' : '#FF3B3015',
   };
@@ -337,7 +340,7 @@ export default function LoginScreen() {
                 >
                   <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                     {rememberMe && (
-                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                      <Ionicons name="checkmark" size={14} color={colors.text} />
                     )}
                   </View>
                   <Text style={[styles.rememberMeText, { color: theme.textSecondary }]}>Remember me</Text>
@@ -468,10 +471,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   innerContainer: {
     flex: 1,
@@ -507,7 +510,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     letterSpacing: 2,
     textTransform: 'uppercase',
     textAlign: 'center',
@@ -517,27 +520,27 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   eyeButton: {
     padding: 16,
@@ -558,7 +561,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#48484A',
+    borderColor: colors.surface,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -568,7 +571,7 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   rememberMeText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   forgotButton: {},
@@ -583,7 +586,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 10,
@@ -600,7 +603,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signupText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 15,
     marginBottom: 8,
   },
@@ -613,7 +616,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   refreshButtonText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -640,7 +643,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -659,13 +662,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   modalDescription: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -677,13 +680,13 @@ const styles = StyleSheet.create({
   },
   modalButtonSecondary: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
   },
   modalButtonSecondaryText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -695,7 +698,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonPrimaryText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },

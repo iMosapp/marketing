@@ -16,6 +16,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 type TriggerType = 'birthday' | 'anniversary' | 'sold_date';
 
 const DATE_TRIGGERS: { type: TriggerType; label: string; icon: string; defaultMsg: string }[] = [
@@ -46,6 +47,8 @@ const DELIVERY_OPTIONS = [
 ];
 
 export default function DateTriggersScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
 
@@ -248,8 +251,8 @@ export default function DateTriggersScreen() {
                     <Switch
                       value={isEnabled}
                       onValueChange={(val) => toggleTrigger(trigger.type, val)}
-                      trackColor={{ false: '#3A3A3C', true: '#34C75966' }}
-                      thumbColor={isEnabled ? '#34C759' : '#8E8E93'}
+                      trackColor={{ false: colors.borderLight, true: '#34C75966' }}
+                      thumbColor={isEnabled ? '#34C759' : colors.textSecondary}
                     />
                   </View>
 
@@ -270,8 +273,8 @@ export default function DateTriggersScreen() {
                           <Switch
                             value={config.include_birthday_card ?? true}
                             onValueChange={(val) => updateTriggerField(trigger.type, 'include_birthday_card', val)}
-                            trackColor={{ false: '#3A3A3C', true: '#FF6B8A66' }}
-                            thumbColor={(config.include_birthday_card ?? true) ? '#FF6B8A' : '#8E8E93'}
+                            trackColor={{ false: colors.borderLight, true: '#FF6B8A66' }}
+                            thumbColor={(config.include_birthday_card ?? true) ? '#FF6B8A' : colors.textSecondary}
                           />
                         </View>
                       )}
@@ -382,7 +385,7 @@ export default function DateTriggersScreen() {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#000" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <Text style={styles.saveBtnText}>Save Holiday Settings</Text>
               )}
@@ -396,65 +399,65 @@ export default function DateTriggersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
+    borderBottomWidth: 1, borderBottomColor: colors.card,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   tabs: {
     flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, gap: 8,
   },
   tab: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
-    borderRadius: 10, backgroundColor: '#1C1C1E',
+    borderRadius: 10, backgroundColor: colors.card,
   },
   tabActive: { backgroundColor: '#C9A962' },
-  tabText: { fontSize: 15, fontWeight: '600', color: '#8E8E93' },
-  tabTextActive: { color: '#000' },
+  tabText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+  tabTextActive: { color: colors.text },
   content: { padding: 16 },
   sectionDescription: {
-    fontSize: 14, color: '#8E8E93', marginBottom: 16, lineHeight: 20,
+    fontSize: 14, color: colors.textSecondary, marginBottom: 16, lineHeight: 20,
   },
   triggerCard: {
-    backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, marginBottom: 12,
+    backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 12,
   },
   triggerHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   triggerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  triggerTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  triggerTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   triggerBody: { marginTop: 16 },
   birthdayCardToggle: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, marginBottom: 16, gap: 12,
+    backgroundColor: colors.surface, borderRadius: 10, padding: 14, marginBottom: 16, gap: 12,
   },
-  fieldLabel: { fontSize: 14, fontWeight: '500', color: '#FFF', marginBottom: 8 },
+  fieldLabel: { fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: 8 },
   fieldHint: { fontSize: 12, color: '#6E6E73', marginBottom: 8 },
   deliveryRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   deliveryOption: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
-    borderRadius: 8, backgroundColor: '#2C2C2E',
+    borderRadius: 8, backgroundColor: colors.surface,
   },
   deliveryActive: { backgroundColor: '#C9A962' },
-  deliveryText: { fontSize: 14, fontWeight: '500', color: '#8E8E93' },
-  deliveryTextActive: { color: '#000' },
+  deliveryText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  deliveryTextActive: { color: colors.text },
   templateInput: {
-    backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14,
-    color: '#FFF', fontSize: 15, minHeight: 80, textAlignVertical: 'top',
+    backgroundColor: colors.surface, borderRadius: 10, padding: 14,
+    color: colors.text, fontSize: 15, minHeight: 80, textAlignVertical: 'top',
   },
   saveBtn: {
     backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 20,
     alignItems: 'center', marginTop: 16,
   },
-  saveBtnText: { color: '#000', fontSize: 15, fontWeight: '600' },
+  saveBtnText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   holidayRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#2C2C2E',
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface,
   },
-  holidayName: { flex: 1, fontSize: 15, color: '#FFF' },
-  holidayDate: { fontSize: 13, color: '#8E8E93' },
+  holidayName: { flex: 1, fontSize: 15, color: colors.text },
+  holidayDate: { fontSize: 13, color: colors.textSecondary },
 });

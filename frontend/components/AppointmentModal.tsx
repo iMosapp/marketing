@@ -16,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { createCalendarEvent, hasCalendarPermission, requestCalendarPermission } from '../src/utils/calendar';
 import api from '../services/api';
 
+import { useThemeStore } from '../store/themeStore';
 interface AppointmentModalProps {
   visible: boolean;
   onClose: () => void;
@@ -35,6 +36,8 @@ export default function AppointmentModal({
   contactPhone,
   userId,
 }: AppointmentModalProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const [title, setTitle] = useState(`Appointment with ${contactName}`);
   const [date, setDate] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000)); // Tomorrow
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -198,7 +201,7 @@ export default function AppointmentModal({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={28} color="#FFF" />
+            <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Schedule Appointment</Text>
           <TouchableOpacity
@@ -231,7 +234,7 @@ export default function AppointmentModal({
               value={title}
               onChangeText={setTitle}
               placeholder="Appointment title"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -290,7 +293,7 @@ export default function AppointmentModal({
               value={location}
               onChangeText={setLocation}
               placeholder="Add location"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -302,7 +305,7 @@ export default function AppointmentModal({
               value={notes}
               onChangeText={setNotes}
               placeholder="Add notes"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
             />
@@ -318,7 +321,7 @@ export default function AppointmentModal({
                 <Ionicons
                   name="calendar"
                   size={22}
-                  color={addToCalendar ? '#34C759' : '#8E8E93'}
+                  color={addToCalendar ? '#34C759' : colors.textSecondary}
                 />
                 <View>
                   <Text style={styles.calendarToggleText}>
@@ -347,7 +350,7 @@ export default function AppointmentModal({
 
           {/* Contact Info */}
           <View style={styles.contactInfo}>
-            <Ionicons name="person-circle-outline" size={40} color="#8E8E93" />
+            <Ionicons name="person-circle-outline" size={40} color={colors.textSecondary} />
             <View style={styles.contactDetails}>
               <Text style={styles.contactName}>{contactName}</Text>
               <Text style={styles.contactPhone}>{contactPhone}</Text>
@@ -376,7 +379,7 @@ export default function AppointmentModal({
                   display="spinner"
                   onChange={handleDateChange}
                   minimumDate={new Date()}
-                  style={{ backgroundColor: '#1C1C1E' }}
+                  style={{ backgroundColor: colors.card }}
                   textColor="#FFF"
                 />
               </View>
@@ -410,7 +413,7 @@ export default function AppointmentModal({
                   mode="time"
                   display="spinner"
                   onChange={handleTimeChange}
-                  style={{ backgroundColor: '#1C1C1E' }}
+                  style={{ backgroundColor: colors.card }}
                   textColor="#FFF"
                 />
               </View>
@@ -461,8 +464,8 @@ export default function AppointmentModal({
                     padding: 12,
                     borderRadius: 8,
                     border: '1px solid #3C3C3E',
-                    backgroundColor: '#2C2C2E',
-                    color: '#FFF',
+                    backgroundColor: colors.surface,
+                    color: colors.text,
                     marginBottom: 16,
                   }}
                 />
@@ -484,10 +487,10 @@ export default function AppointmentModal({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -496,7 +499,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   closeButton: {
     width: 40,
@@ -504,7 +507,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     width: 50,
@@ -540,16 +543,16 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     paddingLeft: 4,
   },
   textInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   notesInput: {
     minHeight: 80,
@@ -563,7 +566,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     gap: 10,
@@ -571,14 +574,14 @@ const styles = StyleSheet.create({
   timeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     gap: 10,
   },
   dateButtonText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   durationRow: {
     flexDirection: 'row',
@@ -586,7 +589,7 @@ const styles = StyleSheet.create({
   },
   durationButton: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -597,16 +600,16 @@ const styles = StyleSheet.create({
   durationButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   durationButtonTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   calendarToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
@@ -619,12 +622,12 @@ const styles = StyleSheet.create({
   },
   calendarToggleText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   calendarToggleSubtext: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   toggleSwitch: {
@@ -642,7 +645,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
   },
   toggleKnobActive: {
     alignSelf: 'flex-end',
@@ -650,7 +653,7 @@ const styles = StyleSheet.create({
   contactInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
@@ -662,11 +665,11 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   contactPhone: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   skipButton: {
@@ -676,7 +679,7 @@ const styles = StyleSheet.create({
   },
   skipButtonText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   pickerModal: {
     flex: 1,
@@ -684,7 +687,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   pickerContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -693,7 +696,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   pickerDone: {
     fontSize: 17,
@@ -707,7 +710,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   webPickerContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -716,7 +719,7 @@ const styles = StyleSheet.create({
   webPickerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 20,
   },
   webPickerButton: {
@@ -728,6 +731,6 @@ const styles = StyleSheet.create({
   webPickerButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

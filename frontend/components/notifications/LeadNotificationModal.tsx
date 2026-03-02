@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import * as Haptics from 'expo-haptics';
 
+import { useThemeStore } from '../../store/themeStore';
 const API_URL = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
 
 interface LeadNotification {
@@ -56,6 +57,7 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
 }) => {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors } = useThemeStore();
   const [loading, setLoading] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const scaleAnim = useState(new Animated.Value(0))[0];
@@ -167,7 +169,7 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
               <Ionicons 
                 name={isJumpBall ? "flash" : "person-add"} 
                 size={28} 
-                color="#FFF" 
+                color={'#FFFFFF'} 
               />
             </View>
             <Text style={styles.title}>{notification.title}</Text>
@@ -226,10 +228,10 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
                 disabled={loading}
               >
                 {loading && selectedAction === 'call' ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={'#FFFFFF'} size="small" />
                 ) : (
                   <>
-                    <Ionicons name="call" size={22} color="#FFF" />
+                    <Ionicons name="call" size={22} color={'#FFFFFF'} />
                     <Text style={styles.actionButtonText}>Call</Text>
                   </>
                 )}
@@ -243,10 +245,10 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
                 disabled={loading}
               >
                 {loading && selectedAction === 'text' ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={'#FFFFFF'} size="small" />
                 ) : (
                   <>
-                    <Ionicons name="chatbubble" size={22} color="#FFF" />
+                    <Ionicons name="chatbubble" size={22} color={'#FFFFFF'} />
                     <Text style={styles.actionButtonText}>Text</Text>
                   </>
                 )}
@@ -260,10 +262,10 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
                 disabled={loading}
               >
                 {loading && selectedAction === 'email' ? (
-                  <ActivityIndicator color="#FFF" size="small" />
+                  <ActivityIndicator color={'#FFFFFF'} size="small" />
                 ) : (
                   <>
-                    <Ionicons name="mail" size={22} color="#FFF" />
+                    <Ionicons name="mail" size={22} color={'#FFFFFF'} />
                     <Text style={styles.actionButtonText}>Email</Text>
                   </>
                 )}
@@ -320,7 +322,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   closeButton: {
     padding: 4,
@@ -332,7 +334,7 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -388,7 +390,7 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#FFF',
+    color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   actions: {
@@ -417,7 +419,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   dismissButton: {
     padding: 16,

@@ -11,7 +11,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function SubscriptionSuccessPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { session_id } = useLocalSearchParams();
   const [status, setStatus] = useState<'checking' | 'success' | 'pending' | 'error'>('checking');
@@ -163,10 +166,10 @@ export default function SubscriptionSuccessPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   content: {
     flex: 1,
@@ -180,19 +183,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
   },
   benefitsContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     width: '100%',
@@ -201,7 +204,7 @@ const styles = StyleSheet.create({
   benefitsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   benefitRow: {
@@ -212,7 +215,7 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   primaryButton: {
     backgroundColor: '#007AFF',
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   secondaryButton: {
     paddingVertical: 16,

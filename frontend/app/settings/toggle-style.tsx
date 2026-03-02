@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { emailAPI } from '../../services/api';
 import MessageModeToggle, { ToggleStyle, MessageMode } from '../../components/MessageModeToggle';
 
+import { useThemeStore } from '../../store/themeStore';
 const TOGGLE_STYLES: { id: ToggleStyle; name: string; description: string }[] = [
   { 
     id: 'pill', 
@@ -39,6 +40,8 @@ const TOGGLE_STYLES: { id: ToggleStyle; name: string; description: string }[] = 
 ];
 
 export default function ToggleStyleSettings() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [selectedStyle, setSelectedStyle] = useState<ToggleStyle>('pill');
@@ -205,7 +208,7 @@ export default function ToggleStyleSettings() {
               <Ionicons 
                 name="paper-plane" 
                 size={24} 
-                color={defaultMode === 'sms' ? '#007AFF' : '#8E8E93'} 
+                color={defaultMode === 'sms' ? '#007AFF' : colors.textSecondary} 
               />
               <Text style={[
                 styles.defaultModeText,
@@ -229,7 +232,7 @@ export default function ToggleStyleSettings() {
               <Ionicons 
                 name="mail" 
                 size={24} 
-                color={defaultMode === 'email' ? '#007AFF' : '#8E8E93'} 
+                color={defaultMode === 'email' ? '#007AFF' : colors.textSecondary} 
               />
               <Text style={[
                 styles.defaultModeText,
@@ -246,7 +249,7 @@ export default function ToggleStyleSettings() {
 
         {/* Info Section */}
         <View style={styles.infoSection}>
-          <Ionicons name="information-circle" size={20} color="#8E8E93" />
+          <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
             When in Email mode, the inbox switches to light mode so you can easily tell 
             which mode you're in. SMS sends text messages, Email sends branded HTML emails.
@@ -257,10 +260,10 @@ export default function ToggleStyleSettings() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -274,7 +277,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -282,7 +285,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   headerRight: {
     width: 40,
@@ -298,43 +301,43 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 16,
     lineHeight: 20,
   },
   
   // Preview Section
   previewContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
   },
   previewContainerEmail: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: colors.bg,
   },
   previewLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 20,
   },
   previewLabelEmail: {
-    color: '#000',
+    color: colors.text,
   },
   previewToggle: {
     marginBottom: 16,
   },
   previewHint: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   previewHintEmail: {
     color: '#6E6E73',
@@ -342,7 +345,7 @@ const styles = StyleSheet.create({
 
   // Style Options
   styleOption: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -363,11 +366,11 @@ const styles = StyleSheet.create({
   styleOptionName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   styleOptionDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   miniPreview: {
@@ -381,7 +384,7 @@ const styles = StyleSheet.create({
   defaultModeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
   defaultModeText: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   defaultModeTextSelected: {
     fontWeight: '600',
@@ -404,7 +407,7 @@ const styles = StyleSheet.create({
   // Info Section
   infoSection: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 });

@@ -2,6 +2,7 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useThemeStore } from '../store/themeStore';
 interface SwipeAction {
   key: string;
   icon: string;
@@ -22,6 +23,8 @@ export default function WebSwipeableItem({
   leftActions = [],
   rightActions = [],
 }: WebSwipeableItemProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
@@ -197,7 +200,7 @@ export default function WebSwipeableItem({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     position: 'relative',
     overflow: 'hidden',

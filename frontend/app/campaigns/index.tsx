@@ -16,7 +16,10 @@ import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import Toggle from '../../components/Toggle';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function CampaignsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -133,11 +136,11 @@ export default function CampaignsScreen() {
           
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <Ionicons name="paper-plane" size={14} color="#8E8E93" />
+              <Ionicons name="paper-plane" size={14} color={colors.textSecondary} />
               <Text style={styles.statText}>{item.messagesSent || item.messages_sent || 0} sent</Text>
             </View>
             <View style={styles.stat}>
-              <Ionicons name="time" size={14} color="#8E8E93" />
+              <Ionicons name="time" size={14} color={colors.textSecondary} />
               <Text style={styles.statText}>{formatDate(item.lastSent || item.last_sent || null)}</Text>
             </View>
           </View>
@@ -212,7 +215,7 @@ export default function CampaignsScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="calendar-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>No campaigns yet</Text>
               <Text style={styles.emptySubtext}>Create your first nurture campaign</Text>
             </View>
@@ -223,10 +226,10 @@ export default function CampaignsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -234,7 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -242,7 +245,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -257,7 +260,7 @@ const styles = StyleSheet.create({
   },
   statsBanner: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     marginHorizontal: 16,
     marginVertical: 16,
     borderRadius: 12,
@@ -275,13 +278,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   listContent: {
     padding: 16,
@@ -289,7 +292,7 @@ const styles = StyleSheet.create({
   },
   campaignCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'flex-start',
@@ -314,7 +317,7 @@ const styles = StyleSheet.create({
   campaignName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   tagRow: {
@@ -324,14 +327,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   miniTag: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   miniTagText: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   statsRow: {
@@ -345,7 +348,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   loadingContainer: {
     flex: 1,
@@ -361,13 +364,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

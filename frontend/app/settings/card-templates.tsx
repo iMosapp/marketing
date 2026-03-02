@@ -9,6 +9,7 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 const ICONS: Record<string, string> = {
   congrats: 'gift', birthday: 'balloon', anniversary: 'heart',
   thankyou: 'thumbs-up', welcome: 'hand-left', holiday: 'snow',
@@ -26,6 +27,7 @@ interface Template {
 }
 
 export default function ManageCardTemplatesPage() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -71,25 +73,25 @@ export default function ManageCardTemplatesPage() {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => setEditing(null)} data-testid="template-edit-back"><Ionicons name="chevron-back" size={24} color="#FFF" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setEditing(null)} data-testid="template-edit-back"><Ionicons name="chevron-back" size={24} color={colors.text} /></TouchableOpacity>
           <Text style={s.headerTitle}>Edit {editing.card_type.charAt(0).toUpperCase() + editing.card_type.slice(1)} Template</Text>
           <View style={{ width: 24 }} />
         </View>
         <ScrollView style={s.content}>
           <Text style={s.label}>HEADLINE</Text>
-          <TextInput style={s.input} value={editing.headline} onChangeText={v => setEditing({ ...editing, headline: v })} placeholderTextColor="#8E8E93" data-testid="template-headline" />
+          <TextInput style={s.input} value={editing.headline} onChangeText={v => setEditing({ ...editing, headline: v })} placeholderTextColor={colors.textSecondary} data-testid="template-headline" />
           <Text style={s.label}>MESSAGE</Text>
           <Text style={s.hint}>Use {'{customer_name}'} or {'{name}'} as placeholders</Text>
-          <TextInput style={[s.input, { height: 100, textAlignVertical: 'top' }]} value={editing.message} onChangeText={v => setEditing({ ...editing, message: v })} multiline placeholderTextColor="#8E8E93" data-testid="template-message" />
+          <TextInput style={[s.input, { height: 100, textAlignVertical: 'top' }]} value={editing.message} onChangeText={v => setEditing({ ...editing, message: v })} multiline placeholderTextColor={colors.textSecondary} data-testid="template-message" />
           <Text style={s.label}>ACCENT COLOR</Text>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
             {['#C9A962', '#FF2D55', '#FF6B6B', '#34C759', '#007AFF', '#5AC8FA', '#AF52DE', '#FF9500'].map(c => (
               <TouchableOpacity key={c} onPress={() => setEditing({ ...editing, accent_color: c })}
-                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c, borderWidth: editing.accent_color === c ? 3 : 0, borderColor: '#FFF' }} />
+                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c, borderWidth: editing.accent_color === c ? 3 : 0, borderColor: colors.border }} />
             ))}
           </View>
           <Text style={s.label}>FOOTER TEXT (OPTIONAL)</Text>
-          <TextInput style={s.input} value={editing.footer_text} onChangeText={v => setEditing({ ...editing, footer_text: v })} placeholder="e.g. Your satisfaction is our priority" placeholderTextColor="#8E8E93" />
+          <TextInput style={s.input} value={editing.footer_text} onChangeText={v => setEditing({ ...editing, footer_text: v })} placeholder="e.g. Your satisfaction is our priority" placeholderTextColor={colors.textSecondary} />
 
           {/* Preview */}
           <View style={[s.previewBox, { borderColor: editing.accent_color }]}>
@@ -99,7 +101,7 @@ export default function ManageCardTemplatesPage() {
           </View>
 
           <TouchableOpacity style={[s.saveBtn, { backgroundColor: editing.accent_color }, saving && { opacity: 0.5 }]} onPress={saveTemplate} disabled={saving} data-testid="template-save">
-            {saving ? <ActivityIndicator size="small" color="#FFF" /> : <><Ionicons name="checkmark" size={20} color="#FFF" /><Text style={s.saveBtnText}>Save Template</Text></>}
+            {saving ? <ActivityIndicator size="small" color={colors.text} /> : <><Ionicons name="checkmark" size={20} color={colors.text} /><Text style={s.saveBtnText}>Save Template</Text></>}
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -109,7 +111,7 @@ export default function ManageCardTemplatesPage() {
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="template-list-back"><Ionicons name="chevron-back" size={24} color="#FFF" /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} data-testid="template-list-back"><Ionicons name="chevron-back" size={24} color={colors.text} /></TouchableOpacity>
         <Text style={s.headerTitle}>Card Templates</Text>
         <TouchableOpacity onPress={() => {
           // Create a new template by pre-filling with defaults and opening the editor
@@ -120,7 +122,7 @@ export default function ManageCardTemplatesPage() {
             message: 'Hey {customer_name}, just wanted to reach out!',
             accent_color: '#C9A962',
             background_color: '#1A1A1A',
-            text_color: '#FFFFFF',
+            text_color: colors.text,
             footer_text: '',
           });
         }} data-testid="create-card-template-btn">
@@ -138,7 +140,7 @@ export default function ManageCardTemplatesPage() {
               <Text style={s.cardTitle}>{t.headline}</Text>
               <Text style={s.cardSub}>{t.card_type.charAt(0).toUpperCase() + t.card_type.slice(1)} Card{t.customized ? ' (Customized)' : ''}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -147,23 +149,23 @@ export default function ManageCardTemplatesPage() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  loading: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#000000' },
+  loading: { flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
   content: { flex: 1, padding: 16 },
   sectionNote: { fontSize: 13, color: '#8E8E93', marginBottom: 20, lineHeight: 18 },
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, marginBottom: 12, gap: 14 },
   cardIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  cardTitle: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
   cardSub: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
   label: { fontSize: 10, fontWeight: '700', color: '#6E6E73', marginTop: 16, marginBottom: 6, letterSpacing: 1 },
   hint: { fontSize: 11, color: '#8E8E93', marginBottom: 6 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
+  input: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFFFFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
   previewBox: { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 24, marginTop: 20, borderWidth: 1, alignItems: 'center' },
   previewHL: { fontSize: 24, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
   previewMsg: { fontSize: 14, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 20 },
   previewFooter: { fontSize: 11, color: '#8E8E93', marginTop: 12 },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12, marginTop: 24, marginBottom: 40 },
-  saveBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  saveBtnText: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
 });

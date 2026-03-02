@@ -20,7 +20,10 @@ import api, { adminAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function OrganizationsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -173,15 +176,15 @@ export default function OrganizationsScreen() {
       
       <View style={styles.orgStats}>
         <View style={styles.statItem}>
-          <Ionicons name="storefront-outline" size={16} color="#8E8E93" />
+          <Ionicons name="storefront-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.statText}>{item.store_count || 0} accounts</Text>
         </View>
         <View style={styles.statItem}>
-          <Ionicons name="people-outline" size={16} color="#8E8E93" />
+          <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.statText}>{item.user_count || 0} users</Text>
         </View>
         <View style={styles.statItem}>
-          <Ionicons name="location-outline" size={16} color="#8E8E93" />
+          <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.statText}>{item.city || 'N/A'}, {item.state || 'N/A'}</Text>
         </View>
       </View>
@@ -196,7 +199,7 @@ export default function OrganizationsScreen() {
           </Text>
         </TouchableOpacity>
         <View style={[styles.statusBadge, { backgroundColor: '#8E8E9320' }]}>
-          <Text style={[styles.statusText, { color: '#8E8E93' }]}>
+          <Text style={[styles.statusText, { color: colors.textSecondary }]}>
             10DLC: {item.ten_dlc_status || 'Pending'}
           </Text>
         </View>
@@ -226,11 +229,11 @@ export default function OrganizationsScreen() {
       {showSearch && (
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#8E8E93" />
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search by name, email, city..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -239,7 +242,7 @@ export default function OrganizationsScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -267,7 +270,7 @@ export default function OrganizationsScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="business-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="business-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>
                 {searchQuery ? 'No organizations found' : 'No organizations yet'}
               </Text>
@@ -328,8 +331,8 @@ export default function OrganizationsScreen() {
                   style={{ flex: 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="business" size={20} color="#FFF" />
-                    <Text style={{ color: '#FFF', fontWeight: '600' }}>Organization</Text>
+                    <Ionicons name="business" size={20} color={colors.text} />
+                    <Text style={{ color: colors.text, fontWeight: '600' }}>Organization</Text>
                   </View>
                 </WebSafeButton>
                 <WebSafeButton
@@ -339,8 +342,8 @@ export default function OrganizationsScreen() {
                   style={{ flex: 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="person" size={20} color="#FFF" />
-                    <Text style={{ color: '#FFF', fontWeight: '600' }}>Independent</Text>
+                    <Ionicons name="person" size={20} color={colors.text} />
+                    <Text style={{ color: colors.text, fontWeight: '600' }}>Independent</Text>
                   </View>
                 </WebSafeButton>
               </View>
@@ -349,7 +352,7 @@ export default function OrganizationsScreen() {
               <TextInput
                 style={styles.input}
                 placeholder={newOrg.account_type === 'independent' ? "e.g., John Smith" : "e.g., Ken Garff Auto Group"}
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={newOrg.name}
                 onChangeText={(text) => setNewOrg({ ...newOrg, name: text })}
               />
@@ -358,7 +361,7 @@ export default function OrganizationsScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="admin@company.com"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={newOrg.admin_email}
                 onChangeText={(text) => setNewOrg({ ...newOrg, admin_email: text })}
                 keyboardType="email-address"
@@ -369,7 +372,7 @@ export default function OrganizationsScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="+1 (555) 123-4567"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={newOrg.admin_phone}
                 onChangeText={(text) => setNewOrg({ ...newOrg, admin_phone: text })}
                 keyboardType="phone-pad"
@@ -381,7 +384,7 @@ export default function OrganizationsScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Salt Lake City"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     value={newOrg.city}
                     onChangeText={(text) => setNewOrg({ ...newOrg, city: text })}
                   />
@@ -391,7 +394,7 @@ export default function OrganizationsScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="UT"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     value={newOrg.state}
                     onChangeText={(text) => setNewOrg({ ...newOrg, state: text })}
                     maxLength={2}
@@ -408,10 +411,10 @@ export default function OrganizationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -424,7 +427,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -449,12 +452,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -463,11 +466,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   searchResultCount: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     marginLeft: 4,
   },
@@ -480,12 +483,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   orgCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   orgHeader: {
     flexDirection: 'row',
@@ -506,11 +509,11 @@ const styles = StyleSheet.create({
   orgName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   orgType: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   deleteButton: {
@@ -528,7 +531,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   orgFooter: {
     flexDirection: 'row',
@@ -549,7 +552,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
     marginBottom: 24,
   },
@@ -562,12 +565,12 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: {
     fontSize: 17,
@@ -584,7 +587,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 17,
@@ -597,18 +600,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   typeSelector: {
     flexDirection: 'row',
@@ -620,11 +623,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   typeButtonActive: {
     backgroundColor: '#007AFF',
@@ -633,10 +636,10 @@ const styles = StyleSheet.create({
   typeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   typeTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   row: {
     flexDirection: 'row',

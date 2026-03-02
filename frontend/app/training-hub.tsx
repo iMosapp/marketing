@@ -335,6 +335,8 @@ const TRAINING_TOPICS: TrainingTopic[] = [
 
 // Video embed component for web
 const VideoEmbed = ({ url }: { url: string }) => {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   // Empty URL - show "coming soon" placeholder
   if (!url) {
     return (
@@ -354,7 +356,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
         onPress={() => Linking.openURL(url.replace('/embed/', '/watch?v='))}
       >
         <View style={styles.playButton}>
-          <Ionicons name="play" size={32} color="#FFF" />
+          <Ionicons name="play" size={32} color={'#FFFFFF'} />
         </View>
         <Text style={styles.videoPlaceholderText}>Tap to watch video</Text>
       </TouchableOpacity>
@@ -374,9 +376,10 @@ const VideoEmbed = ({ url }: { url: string }) => {
 };
 
 export default function TrainingHubScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
-  const colors = useThemeStore(s => s.colors);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -518,7 +521,7 @@ export default function TrainingHubScreen() {
                 disabled={processing}
                 data-testid="training-voice-btn"
               >
-                <Ionicons name={isRecording ? 'stop' : 'mic'} size={24} color="#FFF" />
+                <Ionicons name={isRecording ? 'stop' : 'mic'} size={24} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.askButton, !voiceQuestion.trim() && styles.askButtonDisabled]}
@@ -527,9 +530,9 @@ export default function TrainingHubScreen() {
                 data-testid="training-ask-submit"
               >
                 {processing ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                  <ActivityIndicator size="small" color={colors.text} />
                 ) : (
-                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                  <Ionicons name="arrow-forward" size={20} color={colors.text} />
                 )}
               </TouchableOpacity>
             </View>
@@ -546,7 +549,7 @@ export default function TrainingHubScreen() {
                 style={styles.clearButton}
                 onPress={() => { setAiResponse(''); setVoiceQuestion(''); }}
               >
-                <Ionicons name="close-circle" size={16} color="#8E8E93" />
+                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
                 <Text style={styles.clearButtonText}>Clear</Text>
               </TouchableOpacity>
             </View>
@@ -555,7 +558,7 @@ export default function TrainingHubScreen() {
 
         {/* Search */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#8E8E93" />
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search training topics..."
@@ -566,7 +569,7 @@ export default function TrainingHubScreen() {
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -622,7 +625,7 @@ export default function TrainingHubScreen() {
                         </View>
                       ) : null}
                       {topic.duration ? <Text style={styles.topicDuration}>{topic.duration}</Text> : null}
-                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
                     </View>
                   </TouchableOpacity>
                   
@@ -675,7 +678,7 @@ export default function TrainingHubScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: undefined,
@@ -765,7 +768,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   askButtonDisabled: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
   },
   aiResponseContainer: {
     marginTop: 16,
@@ -910,7 +913,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     marginBottom: 10,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   expandedText: {
     fontSize: 14,

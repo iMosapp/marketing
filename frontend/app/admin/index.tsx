@@ -18,6 +18,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -146,7 +147,7 @@ const tickerStyles = StyleSheet.create({
     minWidth: 280,
   },
   tickerText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 13,
     flex: 1,
   },
@@ -168,6 +169,8 @@ const tickerStyles = StyleSheet.create({
 });
 
 export default function AdminDashboard() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -640,7 +643,7 @@ export default function AdminDashboard() {
           <Ionicons 
             name={isExpanded ? 'chevron-up' : 'chevron-down'} 
             size={20} 
-            color="#8E8E93" 
+            color={colors.textSecondary} 
           />
         </TouchableOpacity>
         
@@ -851,7 +854,7 @@ export default function AdminDashboard() {
         {/* Empty state for regular users */}
         {isRegularUser && sections.length === 0 && (
           <View style={styles.emptyState}>
-            <Ionicons name="person-circle" size={64} color="#8E8E93" />
+            <Ionicons name="person-circle" size={64} color={colors.textSecondary} />
             <Text style={styles.emptyTitle}>Welcome, {user?.name}!</Text>
             <Text style={styles.emptyText}>
               Your personal dashboard shows your performance and settings.
@@ -865,10 +868,10 @@ export default function AdminDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -877,7 +880,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   header: {
@@ -887,7 +890,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -898,7 +901,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   roleBadge: {
     flexDirection: 'row',
@@ -927,7 +930,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   timeFilterContainer: {
     flexDirection: 'row',
@@ -937,7 +940,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   timeFilterPillActive: {
     backgroundColor: '#007AFF',
@@ -945,10 +948,10 @@ const styles = StyleSheet.create({
   timeFilterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   timeFilterTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   // Quick Stats Styles
   quickStatsContainer: {
@@ -957,7 +960,7 @@ const styles = StyleSheet.create({
   quickStatsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -969,7 +972,7 @@ const styles = StyleSheet.create({
   },
   quickStatCard: {
     width: '31%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -985,23 +988,23 @@ const styles = StyleSheet.create({
   quickStatValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   quickStatLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   quickStatSubtext: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   // Collapsible Section Styles
   collapsibleSection: {
     marginBottom: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -1024,7 +1027,7 @@ const styles = StyleSheet.create({
   sectionTitleText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   sectionCount: {
     fontSize: 12,
@@ -1033,7 +1036,7 @@ const styles = StyleSheet.create({
   },
   sectionContent: {
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   menuItem: {
     flexDirection: 'row',
@@ -1041,7 +1044,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   menuIcon: {
     width: 36,
@@ -1058,12 +1061,12 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 1,
   },
   menuSubtitle: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   menuValue: {
     fontSize: 15,
@@ -1081,10 +1084,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#1C1C1E',
+    borderColor: colors.card,
   },
   badgeText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -1096,13 +1099,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },

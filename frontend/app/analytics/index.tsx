@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
+import { useThemeStore } from '../../store/themeStore';
 const PERIODS = [
   { key: 7, label: '7D' },
   { key: 14, label: '14D' },
@@ -48,6 +49,8 @@ const CHANNEL_CONFIG: Record<string, { label: string; color: string; icon: strin
 };
 
 export default function AnalyticsDashboard() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [period, setPeriod] = useState(30);
@@ -117,7 +120,7 @@ export default function AnalyticsDashboard() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="analytics-back-btn">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Analytics</Text>
@@ -192,7 +195,7 @@ export default function AnalyticsDashboard() {
                         {shareH > 0 && <View style={[styles.barSegment, { height: shareH, backgroundColor: '#5856D6' }]} />}
                         {emailH > 0 && <View style={[styles.barSegment, { height: emailH, backgroundColor: '#AF52DE' }]} />}
                         {smsH > 0 && <View style={[styles.barSegment, { height: smsH, backgroundColor: '#007AFF' }]} />}
-                        {day.total === 0 && <View style={[styles.barSegment, { height: 2, backgroundColor: '#2C2C2E' }]} />}
+                        {day.total === 0 && <View style={[styles.barSegment, { height: 2, backgroundColor: colors.surface }]} />}
                       </View>
                       {showLabel && <Text style={styles.barLabel}>{label}</Text>}
                     </View>
@@ -321,7 +324,7 @@ export default function AnalyticsDashboard() {
                   <Ionicons name={link.icon as any} size={22} color={link.color} />
                 </View>
                 <Text style={styles.linkTitle}>{link.title}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
+                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
               </TouchableOpacity>
             ))}
           </View>
@@ -333,45 +336,45 @@ export default function AnalyticsDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { color: '#8E8E93', fontSize: 14 },
+  loadingText: { color: colors.textSecondary, fontSize: 14 },
   header: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
     paddingVertical: 12, gap: 12,
   },
   backBtn: {
-    width: 36, height: 36, borderRadius: 10, backgroundColor: '#1C1C1E',
+    width: 36, height: 36, borderRadius: 10, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#FFF' },
-  headerSub: { fontSize: 12, color: '#8E8E93', marginTop: 1 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
   periodBar: {
     flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 12, gap: 8,
   },
   periodChip: {
     paddingHorizontal: 16, paddingVertical: 7, borderRadius: 18,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   periodChipActive: { backgroundColor: '#007AFF' },
-  periodText: { fontSize: 13, color: '#8E8E93', fontWeight: '600' },
-  periodTextActive: { color: '#FFF' },
+  periodText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  periodTextActive: { color: colors.text },
   content: { flex: 1 },
 
   // Hero Card
   heroCard: {
     marginHorizontal: 16, marginBottom: 16, padding: 20, borderRadius: 16,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface,
   },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroLabel: { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
+  heroLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
   trendBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
   },
   trendText: { fontSize: 12, fontWeight: '700' },
-  heroValue: { fontSize: 42, fontWeight: '800', color: '#FFF', marginTop: 4 },
+  heroValue: { fontSize: 42, fontWeight: '800', color: colors.text, marginTop: 4 },
   heroSub: { fontSize: 12, color: '#6E6E73', marginTop: 2 },
 
   // KPI Grid
@@ -380,25 +383,25 @@ const styles = StyleSheet.create({
     marginBottom: 8, gap: 8,
   },
   kpiCard: {
-    width: '18%', minWidth: 100, backgroundColor: '#1C1C1E', borderRadius: 12,
-    padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E',
+    width: '18%', minWidth: 100, backgroundColor: colors.card, borderRadius: 12,
+    padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.surface,
     flexGrow: 1,
   },
   kpiIconWrap: {
     width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
     marginBottom: 6,
   },
-  kpiValue: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-  kpiLabel: { fontSize: 10, color: '#8E8E93', marginTop: 2, textAlign: 'center' },
+  kpiValue: { fontSize: 18, fontWeight: '700', color: colors.text },
+  kpiLabel: { fontSize: 10, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
 
   // Section
   section: { marginTop: 16, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 10 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10 },
 
   // Chart
   chartCard: {
-    backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: colors.card, borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: colors.surface,
   },
   barChart: { flexDirection: 'row', alignItems: 'flex-end', height: 140, gap: 2, paddingBottom: 20 },
   barGroup: { alignItems: 'center', width: 18 },
@@ -408,35 +411,35 @@ const styles = StyleSheet.create({
   chartLegend: { flexDirection: 'row', gap: 16, marginTop: 12, justifyContent: 'center' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 11, color: '#8E8E93' },
+  legendText: { fontSize: 11, color: colors.textSecondary },
 
   // Channel Breakdown
   channelCard: {
-    backgroundColor: '#1C1C1E', borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: '#2C2C2E', gap: 10,
+    backgroundColor: colors.card, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: colors.surface, gap: 10,
   },
   channelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   channelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, width: 120 },
   channelIcon: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  channelLabel: { fontSize: 12, color: '#D1D1D6', fontWeight: '500' },
-  channelBarWrap: { flex: 1, height: 18, backgroundColor: '#2C2C2E', borderRadius: 9, overflow: 'hidden' },
+  channelLabel: { fontSize: 12, color: colors.border, fontWeight: '500' },
+  channelBarWrap: { flex: 1, height: 18, backgroundColor: colors.surface, borderRadius: 9, overflow: 'hidden' },
   channelBar: { height: '100%', borderRadius: 9 },
-  channelValue: { fontSize: 13, fontWeight: '700', color: '#FFF', width: 40, textAlign: 'right' },
+  channelValue: { fontSize: 13, fontWeight: '700', color: colors.text, width: 40, textAlign: 'right' },
 
   // Tables
   tableCard: {
-    backgroundColor: '#1C1C1E', borderRadius: 14, overflow: 'hidden',
-    borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden',
+    borderWidth: 1, borderColor: colors.surface,
   },
   tableHeader: {
-    flexDirection: 'row', backgroundColor: '#2C2C2E', paddingHorizontal: 12,
+    flexDirection: 'row', backgroundColor: colors.surface, paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  tableHeaderCell: { flex: 1, fontSize: 10, fontWeight: '700', color: '#8E8E93', textAlign: 'center' },
+  tableHeaderCell: { flex: 1, fontSize: 10, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
   tableRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10 },
   tableRowAlt: { backgroundColor: '#1A1A1C' },
   tableCell: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tableCellText: { fontSize: 12, color: '#D1D1D6', textAlign: 'center' },
+  tableCellText: { fontSize: 12, color: colors.border, textAlign: 'center' },
   rankBadge: {
     width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
@@ -446,9 +449,9 @@ const styles = StyleSheet.create({
   linkGrid: { gap: 8 },
   linkCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: colors.card, borderRadius: 12, padding: 14,
+    borderWidth: 1, borderColor: colors.surface,
   },
   linkIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  linkTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#FFF' },
+  linkTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text },
 });

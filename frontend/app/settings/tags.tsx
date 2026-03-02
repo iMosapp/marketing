@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { tagsAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Tag {
   _id: string;
   name: string;
@@ -26,7 +27,7 @@ interface Tag {
 
 const TAG_COLORS = [
   "#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#007AFF",
-  "#5856D6", "#AF52DE", "#FF2D55", "#00C7BE", "#8E8E93",
+  "#5856D6", "#AF52DE", "#FF2D55", "#00C7BE", '#8E8E93',
 ];
 
 const TAG_ICONS = [
@@ -45,6 +46,8 @@ const TAG_ICONS = [
 ];
 
 export default function TagsSettings() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [tags, setTags] = useState<Tag[]>([]);
@@ -253,13 +256,13 @@ export default function TagsSettings() {
                   style={styles.approveButton}
                   onPress={() => handleApprove(tag._id)}
                 >
-                  <Ionicons name="checkmark" size={20} color="#FFF" />
+                  <Ionicons name="checkmark" size={20} color={colors.text} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.rejectButton}
                   onPress={() => handleReject(tag)}
                 >
-                  <Ionicons name="close" size={20} color="#FFF" />
+                  <Ionicons name="close" size={20} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -346,7 +349,7 @@ export default function TagsSettings() {
               value={formName}
               onChangeText={setFormName}
               placeholder="e.g., Premium Customer"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               maxLength={30}
             />
 
@@ -364,7 +367,7 @@ export default function TagsSettings() {
                   onPress={() => setFormColor(color)}
                 >
                   {formColor === color && (
-                    <Ionicons name="checkmark" size={18} color="#FFF" />
+                    <Ionicons name="checkmark" size={18} color={colors.text} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -385,7 +388,7 @@ export default function TagsSettings() {
                   <Ionicons
                     name={icon.id as any}
                     size={24}
-                    color={formIcon === icon.id ? '#007AFF' : '#8E8E93'}
+                    color={formIcon === icon.id ? '#007AFF' : colors.textSecondary}
                   />
                   <Text
                     style={[
@@ -405,16 +408,16 @@ export default function TagsSettings() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -423,9 +426,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -433,7 +436,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     width: 40,
@@ -442,7 +445,7 @@ const styles = StyleSheet.create({
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     marginHorizontal: 16,
     marginTop: 16,
     padding: 12,
@@ -452,7 +455,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   pendingSection: {
     marginHorizontal: 16,
@@ -472,7 +475,7 @@ const styles = StyleSheet.create({
   pendingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
   tagCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -535,11 +538,11 @@ const styles = StyleSheet.create({
   tagName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   tagCount: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   colorDot: {
@@ -552,13 +555,13 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   createCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     borderStyle: 'dashed',
     marginTop: 4,
   },
@@ -570,7 +573,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -580,12 +583,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   cancelButton: {
     fontSize: 17,
@@ -604,7 +607,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
     marginBottom: 16,
   },
   previewTag: {
@@ -621,16 +624,16 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -646,7 +649,7 @@ const styles = StyleSheet.create({
   },
   colorOptionSelected: {
     borderWidth: 3,
-    borderColor: '#FFF',
+    borderColor: colors.border,
   },
   iconGrid: {
     flexDirection: 'row',
@@ -656,7 +659,7 @@ const styles = StyleSheet.create({
   iconOption: {
     width: 70,
     height: 70,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -669,7 +672,7 @@ const styles = StyleSheet.create({
   },
   iconLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   iconLabelSelected: {

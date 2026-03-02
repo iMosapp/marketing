@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 interface ReviewLinks {
   google: string | null;
   yelp: string | null;
@@ -35,6 +36,8 @@ const REVIEW_PLATFORMS = [
 ];
 
 export default function ReviewLinksScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
@@ -178,7 +181,7 @@ const { showToast } = useToast();
                     value={links[platform.key as keyof ReviewLinks] as string || ''}
                     onChangeText={(text) => updateLink(platform.key, text)}
                     placeholder="Paste review link here..."
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
@@ -247,19 +250,19 @@ const { showToast } = useToast();
                 value={newCustomName}
                 onChangeText={setNewCustomName}
                 placeholder="Site name (e.g., Edmunds)"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               <TextInput
                 style={styles.addInput}
                 value={newCustomUrl}
                 onChangeText={setNewCustomUrl}
                 placeholder="Review page URL"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
               <TouchableOpacity style={styles.addButton} onPress={addCustomLink}>
-                <Ionicons name="add" size={20} color="#FFF" />
+                <Ionicons name="add" size={20} color={colors.text} />
                 <Text style={styles.addButtonText}>Add Review Site</Text>
               </TouchableOpacity>
             </View>
@@ -272,13 +275,13 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingText: {
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginTop: 100,
   },
@@ -289,7 +292,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 60,
@@ -297,7 +300,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     width: 60,
@@ -323,20 +326,20 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     letterSpacing: 0.5,
   },
   linkCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -355,20 +358,20 @@ const styles = StyleSheet.create({
   platformName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   linkInput: {
     fontSize: 14,
-    color: '#FFF',
-    backgroundColor: '#2C2C2E',
+    color: colors.text,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 10,
     marginTop: 4,
   },
   linkUrl: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   linkActions: {
     flexDirection: 'row',
@@ -378,12 +381,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addCustomSection: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -391,15 +394,15 @@ const styles = StyleSheet.create({
   addCustomLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   addInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   addButton: {
@@ -414,6 +417,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

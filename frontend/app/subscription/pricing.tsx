@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Plan {
   id: string;
   name: string;
@@ -33,6 +34,8 @@ interface Plan {
 }
 
 export default function PricingPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [individualPlans, setIndividualPlans] = useState<Plan[]>([]);
   const [storePlans, setStorePlans] = useState<Plan[]>([]);
@@ -199,7 +202,7 @@ export default function PricingPage() {
             disabled={!!processingPlan}
           >
             {processingPlan === plan.id ? (
-              <ActivityIndicator color="#FFF" />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <Text style={styles.selectButtonText}>
                 Start Free Trial
@@ -221,7 +224,7 @@ export default function PricingPage() {
             style={styles.userCountButton}
             onPress={() => setUserCount(Math.max(5, userCount - 1))}
           >
-            <Ionicons name="remove" size={24} color="#FFF" />
+            <Ionicons name="remove" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.userCountDisplay}>
             <Text style={styles.userCountNumber}>{userCount}</Text>
@@ -231,7 +234,7 @@ export default function PricingPage() {
             style={styles.userCountButton}
             onPress={() => setUserCount(userCount + 1)}
           >
-            <Ionicons name="add" size={24} color="#FFF" />
+            <Ionicons name="add" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
         {userCount < 5 && (
@@ -328,7 +331,7 @@ export default function PricingPage() {
           disabled={!!processingPlan || userCount < 5}
         >
           {processingPlan ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color={colors.text} />
           ) : (
             <Text style={styles.selectButtonText}>
               Start Free Trial
@@ -371,7 +374,7 @@ export default function PricingPage() {
           <Ionicons 
             name="person" 
             size={18} 
-            color={activeTab === 'individual' ? '#FFF' : '#8E8E93'} 
+            color={activeTab === 'individual' ? '#FFF' : colors.textSecondary} 
           />
           <Text style={[styles.tabText, activeTab === 'individual' && styles.tabTextActive]}>
             Individual
@@ -384,7 +387,7 @@ export default function PricingPage() {
           <Ionicons 
             name="storefront" 
             size={18} 
-            color={activeTab === 'store' ? '#FFF' : '#8E8E93'} 
+            color={activeTab === 'store' ? '#FFF' : colors.textSecondary} 
           />
           <Text style={[styles.tabText, activeTab === 'store' && styles.tabTextActive]}>
             Account / Team
@@ -410,19 +413,19 @@ export default function PricingPage() {
         <View style={styles.termsSection}>
           <Text style={styles.termsTitle}>Subscription Terms</Text>
           <View style={styles.termItem}>
-            <Ionicons name="shield-checkmark" size={20} color="#8E8E93" />
+            <Ionicons name="shield-checkmark" size={20} color={colors.textSecondary} />
             <Text style={styles.termText}>
               Cancel anytime with 30 days notice through the app
             </Text>
           </View>
           <View style={styles.termItem}>
-            <Ionicons name="refresh" size={20} color="#8E8E93" />
+            <Ionicons name="refresh" size={20} color={colors.textSecondary} />
             <Text style={styles.termText}>
               Subscriptions auto-renew unless cancelled
             </Text>
           </View>
           <View style={styles.termItem}>
-            <Ionicons name="card" size={20} color="#8E8E93" />
+            <Ionicons name="card" size={20} color={colors.textSecondary} />
             <Text style={styles.termText}>
               Secure payment processing by Stripe
             </Text>
@@ -444,16 +447,16 @@ export default function PricingPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -462,7 +465,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -470,7 +473,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -483,22 +486,22 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   heroSubtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     maxWidth: 300,
   },
   planCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   planCardHighlighted: {
     borderColor: '#007AFF',
@@ -519,7 +522,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF9500',
   },
   badgeText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -529,19 +532,19 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   planDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   priceContainer: {
     marginBottom: 16,
   },
   originalPrice: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textDecorationLine: 'line-through',
     marginBottom: 4,
   },
@@ -552,11 +555,11 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   interval: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginLeft: 4,
   },
   discountLabel: {
@@ -592,12 +595,12 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   planTerms: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 16,
   },
@@ -616,18 +619,18 @@ const styles = StyleSheet.create({
   selectButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   termsSection: {
     paddingVertical: 24,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     marginTop: 8,
   },
   termsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   termItem: {
@@ -638,7 +641,7 @@ const styles = StyleSheet.create({
   },
   termText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     flex: 1,
   },
   footerLinks: {
@@ -653,14 +656,14 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   footerDivider: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   // Tab styles
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 4,
   },
@@ -679,17 +682,17 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   // Store plan styles
   storePlanContainer: {
     marginTop: 8,
   },
   userCountSection: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -698,7 +701,7 @@ const styles = StyleSheet.create({
   userCountLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   userCountRow: {
@@ -721,11 +724,11 @@ const styles = StyleSheet.create({
   userCountNumber: {
     fontSize: 48,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   userCountText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: -4,
   },
   minUsersWarning: {
@@ -734,7 +737,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   totalSection: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -742,7 +745,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   totalAmount: {
@@ -752,7 +755,7 @@ const styles = StyleSheet.create({
   },
   volumeInfoCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -765,12 +768,12 @@ const styles = StyleSheet.create({
   volumeInfoTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 6,
   },
   volumeInfoText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 });

@@ -13,9 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width } = Dimensions.get('window');
 
 export default function MessagingReportScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
@@ -156,8 +159,8 @@ export default function MessagingReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
@@ -165,57 +168,57 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  title: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   periodSelector: { flexDirection: 'row', padding: 16, gap: 8 },
   periodButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   periodButtonActive: { backgroundColor: '#007AFF' },
-  periodText: { color: '#8E8E93', fontWeight: '600' },
-  periodTextActive: { color: '#FFF' },
+  periodText: { color: colors.textSecondary, fontWeight: '600' },
+  periodTextActive: { color: colors.text },
   scrollContent: { padding: 16 },
   totalsRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   totalCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
     alignItems: 'center',
   },
-  totalValue: { fontSize: 24, fontWeight: '700', color: '#FFF' },
-  totalLabel: { fontSize: 12, color: '#8E8E93', marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 12 },
-  chartContainer: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, marginBottom: 24 },
+  totalValue: { fontSize: 24, fontWeight: '700', color: colors.text },
+  totalLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  chartContainer: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 24 },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: 8 },
   chartBar: { alignItems: 'center', width: 24 },
   barContainer: { height: 100, justifyContent: 'flex-end' },
   bar: { width: 20, borderRadius: 4, marginBottom: 2 },
   barSms: { backgroundColor: '#34C759' },
   barEmail: { backgroundColor: '#007AFF' },
-  barLabel: { fontSize: 10, color: '#8E8E93', marginTop: 4 },
+  barLabel: { fontSize: 10, color: colors.textSecondary, marginTop: 4 },
   chartLegend: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { fontSize: 12, color: '#8E8E93' },
-  tableContainer: { backgroundColor: '#1C1C1E', borderRadius: 12, overflow: 'hidden' },
+  legendText: { fontSize: 12, color: colors.textSecondary },
+  tableContainer: { backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden' },
   tableHeader: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
-  tableHeaderText: { fontSize: 12, fontWeight: '600', color: '#8E8E93', textAlign: 'center' },
+  tableHeaderText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
   tableRow: {
     flexDirection: 'row',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
-  tableCell: { fontSize: 14, color: '#FFF', textAlign: 'center' },
+  tableCell: { fontSize: 14, color: colors.text, textAlign: 'center' },
 });

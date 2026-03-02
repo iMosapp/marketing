@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface NDAItem {
   id: string;
   recipient_name: string;
@@ -19,6 +20,8 @@ interface NDAItem {
 }
 
 export default function NDAListPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [ndas, setNdas] = useState<NDAItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +46,7 @@ export default function NDAListPage() {
       case 'signed': return '#34C759';
       case 'viewed': return '#FF9500';
       case 'pending': return '#007AFF';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -69,11 +72,11 @@ export default function NDAListPage() {
           <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
         ) : ndas.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="document-lock-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="document-lock-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyTitle}>No NDAs yet</Text>
             <Text style={styles.emptySub}>Create your first NDA to send for signature</Text>
             <TouchableOpacity style={styles.createBtn} onPress={() => router.push('/admin/nda/create')}>
-              <Ionicons name="add" size={20} color="#FFF" />
+              <Ionicons name="add" size={20} color={colors.text} />
               <Text style={styles.createBtnText}>Create NDA</Text>
             </TouchableOpacity>
           </View>
@@ -108,22 +111,22 @@ export default function NDAListPage() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#FFF', marginTop: 16 },
-  emptySub: { fontSize: 14, color: '#8E8E93', marginTop: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 16 },
+  emptySub: { fontSize: 14, color: colors.textSecondary, marginTop: 8 },
   createBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#007AFF', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginTop: 24 },
-  createBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  card: { backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, marginBottom: 12 },
+  createBtnText: { fontSize: 16, fontWeight: '600', color: colors.text },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  recipientName: { fontSize: 17, fontWeight: '600', color: '#FFF' },
-  recipientEmail: { fontSize: 14, color: '#8E8E93', marginTop: 2 },
+  recipientName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  recipientEmail: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   badgeText: { fontSize: 11, fontWeight: '700' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#2C2C2E' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.surface },
   meta: { fontSize: 13, color: '#666' },
 });

@@ -73,9 +73,10 @@ interface Member {
 }
 
 export default function TeamChatScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
-  const colors = useThemeStore((s) => s.colors);
   
   // State
   const { showToast } = useToast();
@@ -468,7 +469,7 @@ export default function TeamChatScreen() {
         ]}>
           {item.is_broadcast && (
             <View style={styles.broadcastBadge}>
-              <Ionicons name="megaphone" size={12} color="#FFF" />
+              <Ionicons name="megaphone" size={12} color={colors.text} />
               <Text style={styles.broadcastLabel}>Broadcast</Text>
             </View>
           )}
@@ -585,7 +586,7 @@ export default function TeamChatScreen() {
                 position: 'fixed' as any,
                 top: menuPosition.top,
                 right: menuPosition.right,
-                backgroundColor: '#2C2C2E',
+                backgroundColor: colors.surface,
                 borderRadius: 12,
                 overflow: 'hidden' as any,
                 minWidth: 200,
@@ -602,7 +603,7 @@ export default function TeamChatScreen() {
                   if (ch) { setSelectedChannel(ch); loadMembers(); }
                 }}
               >
-                <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
+                <Ionicons name="chatbubble-outline" size={16} color={colors.text} />
                 <Text style={styles.channelDropdownText}>Open Chat</Text>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -719,7 +720,7 @@ export default function TeamChatScreen() {
                             onPress={() => setSelectedMembers(prev => prev.filter(id => id !== memberId))}
                           >
                             <Text style={styles.selectedMemberName}>{member.name}</Text>
-                            <Ionicons name="close" size={14} color="#FFF" />
+                            <Ionicons name="close" size={14} color={colors.text} />
                           </TouchableOpacity>
                         ) : null;
                       })}
@@ -825,7 +826,7 @@ export default function TeamChatScreen() {
               position: 'fixed' as any,
               top: 56,
               right: 8,
-              backgroundColor: '#2C2C2E',
+              backgroundColor: colors.surface,
               borderRadius: 12,
               overflow: 'hidden' as any,
               minWidth: 180,
@@ -909,9 +910,9 @@ export default function TeamChatScreen() {
             disabled={!messageText.trim() || sending}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
-              <Ionicons name="send" size={20} color="#FFF" />
+              <Ionicons name="send" size={20} color={colors.text} />
             )}
           </TouchableOpacity>
         </View>
@@ -920,7 +921,7 @@ export default function TeamChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -1022,7 +1023,7 @@ const styles = StyleSheet.create({
   unreadText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   
   // Empty State
@@ -1074,7 +1075,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   emptyButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   
@@ -1136,7 +1137,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   typeButtonTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   
   // Member Selection
@@ -1156,7 +1157,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   selectedMemberName: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
   },
   memberList: {
@@ -1303,11 +1304,11 @@ const styles = StyleSheet.create({
   broadcastLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   messageText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 22,
   },
   messageTime: {
@@ -1387,7 +1388,7 @@ const styles = StyleSheet.create({
   },
   channelDropdownText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   // Create channel panel (replaces Modal)

@@ -18,6 +18,7 @@ import { templatesAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import VoiceInput from '../../components/VoiceInput';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Template {
   _id: string;
   name: string;
@@ -37,6 +38,8 @@ const CATEGORIES = [
 ];
 
 export default function TemplatesSettings() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -288,7 +291,7 @@ export default function TemplatesSettings() {
               value={formName}
               onChangeText={setFormName}
               placeholder="e.g., Quick Follow Up"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
 
             {/* Category Selector */}
@@ -327,7 +330,7 @@ export default function TemplatesSettings() {
               <VoiceInput
                 onTranscription={(text) => setFormContent((prev) => prev + ' ' + text)}
                 size="small"
-                color="#8E8E93"
+                color={colors.textSecondary}
               />
             </View>
             <TextInput
@@ -335,7 +338,7 @@ export default function TemplatesSettings() {
               value={formContent}
               onChangeText={setFormContent}
               placeholder="Hi {name}! I wanted to reach out..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               multiline
               textAlignVertical="top"
             />
@@ -358,16 +361,16 @@ export default function TemplatesSettings() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -376,9 +379,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -386,7 +389,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     width: 40,
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     marginHorizontal: 16,
     marginTop: 16,
     padding: 12,
@@ -405,7 +408,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   content: {
     flex: 1,
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   templateCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -427,7 +430,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -438,11 +441,11 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   templateCategory: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   templateActions: {
@@ -451,14 +454,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   defaultBadge: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   defaultBadgeText: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   deleteButton: {
@@ -466,7 +469,7 @@ const styles = StyleSheet.create({
   },
   templateContent: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   usageCount: {
@@ -475,13 +478,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   createCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     borderStyle: 'dashed',
   },
   createText: {
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -502,12 +505,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   cancelButton: {
     fontSize: 17,
@@ -524,7 +527,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
@@ -536,11 +539,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   contentInput: {
     height: 150,
@@ -558,7 +561,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     gap: 6,
   },
   categoryChipActive: {
@@ -567,10 +570,10 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   categoryChipTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   variableHelper: {
     flexDirection: 'row',
@@ -580,10 +583,10 @@ const styles = StyleSheet.create({
   },
   variableLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   variableChip: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,

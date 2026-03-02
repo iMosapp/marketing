@@ -16,6 +16,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 interface PendingEntry {
   card_id: string;
   customer_name: string;
@@ -27,6 +28,8 @@ interface PendingEntry {
 }
 
 export default function ShowroomApprovalsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [entries, setEntries] = useState<PendingEntry[]>([]);
@@ -113,7 +116,7 @@ export default function ShowroomApprovalsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="showroom-approvals-back">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Showcase Approvals</Text>
         <View style={{ width: 32 }} />
@@ -173,10 +176,10 @@ export default function ShowroomApprovalsScreen() {
                     data-testid={`approve-entry-${entry.card_id}`}
                   >
                     {processing === entry.card_id ? (
-                      <ActivityIndicator size="small" color="#FFF" />
+                      <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                       <>
-                        <Ionicons name="checkmark" size={20} color="#FFF" />
+                        <Ionicons name="checkmark" size={20} color={colors.text} />
                         <Text style={styles.approveButtonText}>Approve</Text>
                       </>
                     )}
@@ -192,26 +195,26 @@ export default function ShowroomApprovalsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  loadingContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  loadingContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   content: { flex: 1, padding: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 },
+  sectionTitle: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#FFF', marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: '#8E8E93', textAlign: 'center', marginTop: 8, paddingHorizontal: 40 },
-  entryCard: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, marginBottom: 16 },
-  entryPhoto: { width: '100%', height: 180, borderRadius: 10, marginBottom: 12, backgroundColor: '#2C2C2E' },
+  emptyTitle: { fontSize: 20, fontWeight: '600', color: colors.text, marginTop: 16 },
+  emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 8, paddingHorizontal: 40 },
+  entryCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16 },
+  entryPhoto: { width: '100%', height: 180, borderRadius: 10, marginBottom: 12, backgroundColor: colors.surface },
   entryInfo: { marginBottom: 12 },
-  customerName: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  customerName: { fontSize: 17, fontWeight: '600', color: colors.text },
   salesmanName: { fontSize: 13, color: '#C9A962', marginTop: 2 },
-  dateText: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
+  dateText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   actionButtons: { flexDirection: 'row', gap: 12 },
   rejectButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -222,5 +225,5 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#34C759', paddingVertical: 12, borderRadius: 10, gap: 6,
   },
-  approveButtonText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  approveButtonText: { fontSize: 15, fontWeight: '600', color: colors.text },
 });

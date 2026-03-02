@@ -19,6 +19,7 @@ import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 interface EmailTemplate {
   _id: string;
   name: string;
@@ -39,6 +40,8 @@ const CATEGORIES = [
 ];
 
 export default function EmailTemplatesSettings() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -200,7 +203,7 @@ export default function EmailTemplatesSettings() {
         {/* Templates List */}
         {templates.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="mail-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="mail-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No email templates yet</Text>
             <Text style={styles.emptySubtext}>
               Create templates to quickly send professional emails
@@ -233,7 +236,7 @@ export default function EmailTemplatesSettings() {
                     <Text style={styles.defaultBadgeText}>Default</Text>
                   </View>
                 )}
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             );
           })
@@ -269,7 +272,7 @@ export default function EmailTemplatesSettings() {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., Welcome Email"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formName}
                   onChangeText={setFormName}
                 />
@@ -280,7 +283,7 @@ export default function EmailTemplatesSettings() {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., Welcome to {company_name}!"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formSubject}
                   onChangeText={setFormSubject}
                 />
@@ -303,7 +306,7 @@ export default function EmailTemplatesSettings() {
                         <Ionicons
                           name={cat.icon as any}
                           size={16}
-                          color={formCategory === cat.id ? cat.color : '#8E8E93'}
+                          color={formCategory === cat.id ? cat.color : colors.textSecondary}
                         />
                         <Text
                           style={[
@@ -324,7 +327,7 @@ export default function EmailTemplatesSettings() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Enter your email HTML content here..."
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formContent}
                   onChangeText={setFormContent}
                   multiline
@@ -350,10 +353,10 @@ export default function EmailTemplatesSettings() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -367,7 +370,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -375,7 +378,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -406,19 +409,19 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
   templateCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -437,12 +440,12 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   templateSubject: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   templatePreview: {
@@ -465,7 +468,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -474,16 +477,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 16,
@@ -500,17 +503,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   textArea: {
     height: 200,
@@ -524,7 +527,7 @@ const styles = StyleSheet.create({
   categoryOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -533,14 +536,14 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   categoryOptionSelected: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   categoryOptionText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   placeholdersInfo: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -548,12 +551,12 @@ const styles = StyleSheet.create({
   placeholdersTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   placeholder: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 6,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },

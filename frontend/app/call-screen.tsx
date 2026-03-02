@@ -8,7 +8,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
+import { useThemeStore } from '../store/themeStore';
 export default function CallScreen() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -147,7 +149,7 @@ export default function CallScreen() {
           {callState === 'ready' && (
             <>
               <TouchableOpacity style={st.callBtn} onPress={startCall} data-testid="start-call">
-                <Ionicons name="call" size={32} color="#FFF" />
+                <Ionicons name="call" size={32} color={colors.text} />
               </TouchableOpacity>
               <Text style={st.callBtnLabel}>Tap to call</Text>
               <TouchableOpacity style={st.cancelBtn} onPress={goBack} data-testid="cancel-call">
@@ -159,7 +161,7 @@ export default function CallScreen() {
           {callState === 'calling' && (
             <>
               <TouchableOpacity style={st.endBtn} onPress={endCall} data-testid="end-call">
-                <Ionicons name="call" size={32} color="#FFF" style={{ transform: [{ rotate: '135deg' }] }} />
+                <Ionicons name="call" size={32} color={colors.text} style={{ transform: [{ rotate: '135deg' }] }} />
               </TouchableOpacity>
               <Text style={st.endLabel}>End Call & Log</Text>
             </>
@@ -186,7 +188,7 @@ export default function CallScreen() {
 }
 
 const st = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
+  safe: { flex: 1, backgroundColor: '#000000' },
   container: { flex: 1, justifyContent: 'space-between' },
 
   topSection: { alignItems: 'center', paddingTop: 60, flex: 1, justifyContent: 'center' },
@@ -195,9 +197,9 @@ const st = StyleSheet.create({
   statusText: { fontSize: 13, fontWeight: '700', color: '#FF3B30' },
   avatarCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 3, borderColor: '#2C2C2E' },
   avatarLetter: { fontSize: 36, fontWeight: '800', color: '#C9A962' },
-  contactName: { fontSize: 26, fontWeight: '800', color: '#FFF', marginBottom: 4 },
+  contactName: { fontSize: 26, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
   contactPhone: { fontSize: 16, color: '#8E8E93', marginBottom: 16 },
-  timer: { fontSize: 48, fontWeight: '300', color: '#FFF', fontVariant: ['tabular-nums'], letterSpacing: 2 },
+  timer: { fontSize: 48, fontWeight: '300', color: '#FFFFFF', fontVariant: ['tabular-nums'], letterSpacing: 2 },
   readyHint: { fontSize: 14, color: '#555', marginTop: 8 },
 
   bottomSection: { alignItems: 'center', paddingBottom: 50, paddingHorizontal: 20 },
@@ -218,5 +220,5 @@ const st = StyleSheet.create({
   loggedTitle: { fontSize: 15, fontWeight: '700', color: '#34C759', marginBottom: 2 },
   loggedDetail: { fontSize: 12, color: '#8E8E93' },
   doneBtn: { backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 50, width: '100%' as any, alignItems: 'center' },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: '#000' },
+  doneBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
 });

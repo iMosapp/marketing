@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import VoiceInput from './VoiceInput';
 
+import { useThemeStore } from '../store/themeStore';
 interface VoiceTextInputProps extends TextInputProps {
   value: string;
   onChangeText: (text: string) => void;
@@ -39,6 +40,8 @@ export default function VoiceTextInput({
   style,
   ...props
 }: VoiceTextInputProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const handleTranscription = (text: string) => {
     if (voiceAppend && value) {
       onChangeText(value + ' ' + text);
@@ -60,7 +63,7 @@ export default function VoiceTextInput({
           ]}
           value={value}
           onChangeText={onChangeText}
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           {...props}
         />
         {showVoice && (
@@ -68,7 +71,7 @@ export default function VoiceTextInput({
             <VoiceInput
               onTranscription={handleTranscription}
               size="small"
-              color="#8E8E93"
+              color={colors.textSecondary}
             />
           </View>
         )}
@@ -78,14 +81,14 @@ export default function VoiceTextInput({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     marginBottom: 16,
   },
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     textTransform: 'uppercase',
   },
@@ -93,12 +96,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     paddingRight: 50,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   inputWithVoice: {
     paddingRight: 50,
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
 });

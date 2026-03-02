@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useThemeStore } from '../store/themeStore';
 type MatchData = {
   contact_id: string;
   existing_name: string;
@@ -27,6 +28,7 @@ export const ContactMatchModal: React.FC<Props> = ({
   onCreateNew,
   onCancel,
 }) => {
+  const { colors } = useThemeStore();
   if (!visible || !matchData) return null;
 
   const WebModal = Platform.OS === 'web'
@@ -36,72 +38,72 @@ export const ContactMatchModal: React.FC<Props> = ({
   return (
     <WebModal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.modal} data-testid="contact-match-modal">
+        <View style={[styles.modal, { backgroundColor: '#1C1C1E' }]} data-testid="contact-match-modal">
           <View style={styles.iconRow}>
             <View style={styles.iconCircle}>
               <Ionicons name="person-circle" size={44} color="#FF9500" />
             </View>
           </View>
 
-          <Text style={styles.title}>Contact Already Exists</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: '#FFFFFF' }]}>Contact Already Exists</Text>
+          <Text style={[styles.subtitle, { color: '#8E8E93' }]}>
             A contact with this {matchData.phone ? 'phone number' : 'email'} already exists:
           </Text>
 
-          <View style={styles.matchCard}>
+          <View style={[styles.matchCard, { backgroundColor: '#2C2C2E' }]}>
             <Text style={styles.matchLabel}>EXISTING CONTACT</Text>
-            <Text style={styles.matchName}>{matchData.existing_name}</Text>
+            <Text style={[styles.matchName, { color: '#FFFFFF' }]}>{matchData.existing_name}</Text>
             {matchData.phone ? (
-              <Text style={styles.matchDetail}>{matchData.phone}</Text>
+              <Text style={[styles.matchDetail, { color: '#8E8E93' }]}>{matchData.phone}</Text>
             ) : null}
             {matchData.email ? (
-              <Text style={styles.matchDetail}>{matchData.email}</Text>
+              <Text style={[styles.matchDetail, { color: '#8E8E93' }]}>{matchData.email}</Text>
             ) : null}
           </View>
 
           <View style={styles.vsRow}>
-            <View style={styles.vsDivider} />
+            <View style={[styles.vsDivider, { backgroundColor: '#2C2C2E' }]} />
             <Text style={styles.vsText}>You entered</Text>
-            <View style={styles.vsDivider} />
+            <View style={[styles.vsDivider, { backgroundColor: '#2C2C2E' }]} />
           </View>
 
-          <View style={styles.providedCard}>
+          <View style={[styles.providedCard, { backgroundColor: '#2C2C2E' }]}>
             <Text style={styles.providedName}>{matchData.provided_name}</Text>
           </View>
 
           <View style={styles.actions}>
             <TouchableOpacity
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { backgroundColor: '#2C2C2E' }]}
               onPress={onUseExisting}
               data-testid="match-use-existing"
             >
               <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-              <Text style={styles.actionText}>Use Existing Contact</Text>
+              <Text style={[styles.actionText, { color: '#FFFFFF' }]}>Use Existing Contact</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { backgroundColor: '#2C2C2E' }]}
               onPress={onUpdateName}
               data-testid="match-update-name"
             >
               <Ionicons name="create" size={20} color="#007AFF" />
-              <Text style={styles.actionText}>
+              <Text style={[styles.actionText, { color: '#FFFFFF' }]}>
                 Update to "{matchData.provided_name}"
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnLast]}
+              style={[styles.actionBtn, styles.actionBtnLast, { backgroundColor: '#2C2C2E' }]}
               onPress={onCreateNew}
               data-testid="match-create-new"
             >
               <Ionicons name="person-add" size={20} color="#FF9500" />
-              <Text style={styles.actionText}>Create New Contact</Text>
+              <Text style={[styles.actionText, { color: '#FFFFFF' }]}>Create New Contact</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity onPress={onCancel} style={styles.cancelBtn} data-testid="match-cancel">
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={[styles.cancelText, { color: '#8E8E93' }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -161,7 +163,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 6,
   },
-  matchName: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  matchName: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
   matchDetail: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
   vsRow: {
     flexDirection: 'row',
@@ -188,7 +190,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   actionBtnLast: {},
-  actionText: { fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 },
+  actionText: { fontSize: 15, color: '#FFFFFF', fontWeight: '500', flex: 1 },
   cancelBtn: {
     marginTop: 12,
     padding: 12,

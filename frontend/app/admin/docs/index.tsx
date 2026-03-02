@@ -16,6 +16,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 const CATEGORY_COLORS: Record<string, string> = {
   operations: '#00C7BE',
   signed: '#34C759',
@@ -57,6 +58,8 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 };
 
 export default function DocsHubScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
 
@@ -139,7 +142,7 @@ export default function DocsHubScreen() {
   }, {});
 
   const renderDoc = ({ item }: { item: any }) => {
-    const color = CATEGORY_COLORS[item.category] || '#8E8E93';
+    const color = CATEGORY_COLORS[item.category] || colors.textSecondary;
     const isRestricted = !!item.required_role;
     return (
       <TouchableOpacity
@@ -175,13 +178,13 @@ export default function DocsHubScreen() {
             </Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
       </TouchableOpacity>
     );
   };
 
   const renderCategoryHeader = (category: string) => {
-    const color = CATEGORY_COLORS[category] || '#8E8E93';
+    const color = CATEGORY_COLORS[category] || colors.textSecondary;
     const count = groupedDocs[category]?.length || 0;
     return (
       <View style={styles.categoryCard} data-testid={`category-header-${category}`}>
@@ -255,7 +258,7 @@ export default function DocsHubScreen() {
             )}
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
       </TouchableOpacity>
     );
   };
@@ -283,18 +286,18 @@ export default function DocsHubScreen() {
 
       {/* Search */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#8E8E93" />
+        <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search documents..."
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           value={search}
           onChangeText={setSearch}
           data-testid="docs-search-input"
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={20} color="#8E8E93" />
+            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -333,7 +336,7 @@ export default function DocsHubScreen() {
               <Ionicons
                 name={cat.icon as any}
                 size={14}
-                color={isActive ? '#FFF' : CATEGORY_COLORS[cat.id] || '#8E8E93'}
+                color={isActive ? '#FFF' : CATEGORY_COLORS[cat.id] || colors.textSecondary}
               />
               <Text style={[
                 styles.filterChipText,
@@ -354,7 +357,7 @@ export default function DocsHubScreen() {
         >
           {signedDocs.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="checkmark-done-circle-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>No signed documents yet</Text>
               <Text style={styles.emptySubtext}>Signed NDAs, agreements, and quotes will appear here</Text>
             </View>
@@ -373,11 +376,11 @@ export default function DocsHubScreen() {
         </ScrollView>
       ) : docs.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="folder-open-outline" size={64} color="#2C2C2E" />
+          <Ionicons name="folder-open-outline" size={64} color={colors.surface} />
           <Text style={styles.emptyText}>No documents found</Text>
           <Text style={styles.emptySubtext}>Seed initial documents to get started</Text>
           <TouchableOpacity style={styles.seedButton} onPress={seedDocs} data-testid="docs-seed-btn">
-            <Ionicons name="add-circle" size={20} color="#000" />
+            <Ionicons name="add-circle" size={20} color={colors.text} />
             <Text style={styles.seedButtonText}>Load Documents</Text>
           </TouchableOpacity>
         </View>
@@ -405,8 +408,8 @@ export default function DocsHubScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
@@ -415,14 +418,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: { padding: 4, width: 40 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#FFF' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     margin: 16,
     marginBottom: 8,
     paddingHorizontal: 12,
@@ -433,7 +436,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   filterScrollContainer: {
     marginBottom: 8,
@@ -451,19 +454,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     gap: 6,
     marginRight: 8,
   },
   filterChipActive: {},
-  filterChipText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
-  filterChipTextActive: { color: '#FFF' },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  filterChipTextActive: { color: colors.text },
   listContent: { paddingHorizontal: 16, paddingBottom: 32 },
   // Modern category card header
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 16,
     marginTop: 12,
@@ -485,13 +488,13 @@ const styles = StyleSheet.create({
   categoryCardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 3,
     letterSpacing: 0.1,
   },
   categoryCardDescription: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 16,
   },
   categoryCardBadge: {
@@ -523,7 +526,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginLeft: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -532,7 +535,7 @@ const styles = StyleSheet.create({
   docCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -546,8 +549,8 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   docContent: { flex: 1 },
-  docTitle: { fontSize: 16, fontWeight: '600', color: '#FFF', marginBottom: 4 },
-  docSummary: { fontSize: 13, color: '#8E8E93', lineHeight: 18, marginBottom: 8 },
+  docTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 },
+  docSummary: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 8 },
   docMeta: { flexDirection: 'row', alignItems: 'center' },
   versionBadge: {
     backgroundColor: '#007AFF20',
@@ -559,7 +562,7 @@ const styles = StyleSheet.create({
   versionText: { fontSize: 10, fontWeight: '600', color: '#007AFF' },
   metaText: { fontSize: 12, color: '#6E6E73' },
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 60 },
-  emptyText: { color: '#8E8E93', fontSize: 18, fontWeight: '600', marginTop: 16 },
+  emptyText: { color: colors.textSecondary, fontSize: 18, fontWeight: '600', marginTop: 16 },
   emptySubtext: { color: '#6E6E73', fontSize: 14, marginTop: 6 },
   seedButton: {
     flexDirection: 'row',
@@ -571,5 +574,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 8,
   },
-  seedButtonText: { color: '#000', fontSize: 16, fontWeight: '600' },
+  seedButtonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
 });

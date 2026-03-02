@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
+import { useThemeStore } from '../store/themeStore';
 interface ShowroomEntry {
   card_id: string;
   customer_name: string;
@@ -18,6 +19,7 @@ interface ShowroomEntry {
 }
 
 export default function ManageShowroom() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [entries, setEntries] = useState<ShowroomEntry[]>([]);
@@ -64,7 +66,7 @@ export default function ManageShowroom() {
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="manage-showroom-back">
-          <Ionicons name="chevron-back" size={24} color="#F2F2F7" />
+          <Ionicons name="chevron-back" size={24} color={colors.bg} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Edit Showcase</Text>
         <View style={{ width: 32 }} />
@@ -75,11 +77,11 @@ export default function ManageShowroom() {
           <Text style={s.statNum}>{visibleCount}</Text>
           <Text style={s.statLabel}>Visible</Text>
         </View>
-        <View style={[s.stat, { borderLeftWidth: 1, borderLeftColor: '#2C2C2E' }]}>
-          <Text style={[s.statNum, { color: '#636366' }]}>{hiddenCount}</Text>
+        <View style={[s.stat, { borderLeftWidth: 1, borderLeftColor: colors.surface }]}>
+          <Text style={[s.statNum, { color: colors.textTertiary }]}>{hiddenCount}</Text>
           <Text style={s.statLabel}>Hidden</Text>
         </View>
-        <View style={[s.stat, { borderLeftWidth: 1, borderLeftColor: '#2C2C2E' }]}>
+        <View style={[s.stat, { borderLeftWidth: 1, borderLeftColor: colors.surface }]}>
           <Text style={s.statNum}>{entries.length}</Text>
           <Text style={s.statLabel}>Total</Text>
         </View>
@@ -91,7 +93,7 @@ export default function ManageShowroom() {
         <View style={s.center}><ActivityIndicator size="large" color="#C9A962" /></View>
       ) : entries.length === 0 ? (
         <View style={s.center}>
-          <Ionicons name="images-outline" size={48} color="#636366" />
+          <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
           <Text style={s.emptyText}>No Showcase entries yet</Text>
           <Text style={s.emptySubtext}>Create a Congrats Card to add your first entry</Text>
         </View>
@@ -115,7 +117,7 @@ export default function ManageShowroom() {
                     value={!entry.hidden}
                     onValueChange={() => toggleVisibility(entry.card_id, entry.hidden)}
                     trackColor={{ false: '#39393D', true: '#34C759' }}
-                    thumbColor="#F2F2F7"
+                    thumbColor={colors.bg}
                     data-testid={`toggle-${entry.card_id}`}
                   />
                 )}
@@ -129,10 +131,10 @@ export default function ManageShowroom() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
+  safe: { flex: 1, backgroundColor: '#000000' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#F2F2F7', letterSpacing: 0.5 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#000000', letterSpacing: 0.5 },
   statsRow: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: '#1C1C1E', borderRadius: 14, marginBottom: 12, overflow: 'hidden' },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 14 },
   statNum: { fontSize: 22, fontWeight: '800', color: '#C9A962' },
@@ -147,7 +149,7 @@ const s = StyleSheet.create({
   cardHidden: { opacity: 0.5 },
   thumb: { width: 56, height: 56, borderRadius: 10, backgroundColor: '#2C2C2E' },
   info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '600', color: '#F2F2F7' },
+  name: { fontSize: 15, fontWeight: '600', color: '#000000' },
   nameHidden: { color: '#636366' },
   meta: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
   toggleWrap: { width: 52, alignItems: 'center' },

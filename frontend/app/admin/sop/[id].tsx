@@ -16,7 +16,10 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 export default function SOPDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
@@ -252,9 +255,9 @@ export default function SOPDetailScreen() {
                 style={styles.relatedCard}
                 onPress={() => router.push(`/admin/sop/${related._id}`)}
               >
-                <Ionicons name="document-text" size={20} color="#8E8E93" />
+                <Ionicons name="document-text" size={20} color={colors.textSecondary} />
                 <Text style={styles.relatedText}>{related.title}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -279,7 +282,7 @@ export default function SOPDetailScreen() {
           onPress={handlePrevStep}
           disabled={currentStep === 0}
         >
-          <Ionicons name="chevron-back" size={20} color={currentStep === 0 ? '#3A3A3C' : '#FFF'} />
+          <Ionicons name="chevron-back" size={20} color={currentStep === 0 ? colors.borderLight : '#FFF'} />
           <Text style={[styles.navButtonText, currentStep === 0 && styles.navButtonTextDisabled]}>
             Previous
           </Text>
@@ -303,7 +306,7 @@ export default function SOPDetailScreen() {
                   : 'checkmark-circle') 
               : 'chevron-forward'}
             size={20}
-            color="#000"
+            color={colors.text}
           />
         </TouchableOpacity>
       </View>
@@ -311,10 +314,10 @@ export default function SOPDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -329,7 +332,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
     marginBottom: 24,
   },
@@ -340,7 +343,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   backButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -351,7 +354,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -364,16 +367,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   progressContainer: {
     height: 3,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   progressBar: {
     height: 3,
@@ -403,12 +406,12 @@ const styles = StyleSheet.create({
   stepNumberText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   stepTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   stepDescription: {
@@ -469,12 +472,12 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingTop: 24,
     borderTopWidth: 1,
-    borderTopColor: '#1C1C1E',
+    borderTopColor: colors.card,
   },
   relatedTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -482,14 +485,14 @@ const styles = StyleSheet.create({
   relatedCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 10,
     marginBottom: 8,
   },
   relatedText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
     marginLeft: 12,
   },
@@ -498,7 +501,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingTop: 32,
     borderTopWidth: 1,
-    borderTopColor: '#1C1C1E',
+    borderTopColor: colors.card,
   },
   completionTitle: {
     fontSize: 22,
@@ -508,7 +511,7 @@ const styles = StyleSheet.create({
   },
   completionText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   navigation: {
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#1C1C1E',
+    borderTopColor: colors.card,
   },
   navButton: {
     flex: 1,
@@ -531,7 +534,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   navButtonSecondary: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   navButtonDisabled: {
     opacity: 0.5,
@@ -539,14 +542,14 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   navButtonTextPrimary: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   navButtonTextDisabled: {
-    color: '#3A3A3C',
+    color: colors.borderLight,
   },
 });

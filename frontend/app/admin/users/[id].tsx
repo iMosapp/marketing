@@ -19,6 +19,7 @@ import { showSimpleAlert, showConfirm } from '../../../services/alert';
 import { useToast } from '../../../components/common/Toast';
 import { useAuthStore } from '../../../store/authStore';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface UserDetail {
   _id: string;
   name: string;
@@ -87,6 +88,8 @@ const AVAILABLE_ROLES = [
 ];
 
 export default function UserDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
   
@@ -319,7 +322,7 @@ export default function UserDetailScreen() {
       <Ionicons 
         name={completed ? "checkmark-circle" : "ellipse-outline"} 
         size={20} 
-        color={completed ? "#34C759" : "#8E8E93"} 
+        color={completed ? "#34C759" : colors.textSecondary} 
       />
       <Text style={[styles.completenessLabel, !completed && styles.incompleteLabelText]}>
         {label}
@@ -448,10 +451,10 @@ export default function UserDetailScreen() {
                 data-testid="reactivate-user-btn"
               >
                 {actionLoading ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                  <ActivityIndicator size="small" color={colors.text} />
                 ) : (
                   <>
-                    <Ionicons name="refresh" size={18} color="#FFF" />
+                    <Ionicons name="refresh" size={18} color={colors.text} />
                     <Text style={styles.reactivateButtonText}>Reactivate User</Text>
                   </>
                 )}
@@ -474,10 +477,10 @@ export default function UserDetailScreen() {
             disabled={impersonating}
           >
             {impersonating ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="person-circle-outline" size={20} color="#FFF" />
+                <Ionicons name="person-circle-outline" size={20} color={colors.text} />
                 <Text style={styles.impersonateButtonText}>Impersonate User</Text>
               </>
             )}
@@ -530,12 +533,12 @@ export default function UserDetailScreen() {
           
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+              <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <Text style={styles.infoText}>{user.email}</Text>
             </View>
             {(user.phone || user.twilio_phone_number) && (
               <View style={styles.infoRow}>
-                <Ionicons name="call-outline" size={18} color="#8E8E93" />
+                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>{user.phone || user.twilio_phone_number}</Text>
                 {user.twilio_phone_number && (
                   <View style={styles.twilioTag}>
@@ -546,7 +549,7 @@ export default function UserDetailScreen() {
             )}
             {user.created_at && (
               <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>
                   Joined {new Date(user.created_at).toLocaleDateString()}
                 </Text>
@@ -579,11 +582,11 @@ export default function UserDetailScreen() {
                 <Ionicons name="business" size={24} color="#FF9500" />
               </View>
               <Text style={styles.orgName}>{organization.name}</Text>
-              <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="business-outline" size={40} color="#8E8E93" />
+              <Ionicons name="business-outline" size={40} color={colors.textSecondary} />
               <Text style={styles.emptyText}>No organization assigned</Text>
               <TouchableOpacity 
                 style={styles.assignButton}
@@ -610,7 +613,7 @@ export default function UserDetailScreen() {
           
           {stores.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="storefront-outline" size={40} color="#8E8E93" />
+              <Ionicons name="storefront-outline" size={40} color={colors.textSecondary} />
               <Text style={styles.emptyText}>Not assigned to any store</Text>
               <TouchableOpacity 
                 style={styles.assignButton}
@@ -656,7 +659,7 @@ export default function UserDetailScreen() {
           >
             <Ionicons name="card-outline" size={20} color="#007AFF" />
             <Text style={styles.actionText}>View Digital Business Card</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -665,7 +668,7 @@ export default function UserDetailScreen() {
           >
             <Ionicons name="chatbubbles-outline" size={20} color="#007AFF" />
             <Text style={styles.actionText}>View Conversations</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
         
@@ -711,7 +714,7 @@ export default function UserDetailScreen() {
           
           {availableStores.length === 0 ? (
             <View style={styles.emptyModalState}>
-              <Ionicons name="storefront-outline" size={48} color="#8E8E93" />
+              <Ionicons name="storefront-outline" size={48} color={colors.textSecondary} />
               <Text style={styles.emptyModalText}>No available accounts</Text>
               <Text style={styles.emptyModalSubtext}>
                 User is already assigned to all stores in their organization
@@ -797,7 +800,7 @@ export default function UserDetailScreen() {
                 ) : actionLoading ? (
                   <ActivityIndicator size="small" color="#007AFF" />
                 ) : (
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 )}
               </TouchableOpacity>
             )}
@@ -824,7 +827,7 @@ export default function UserDetailScreen() {
           
           {allOrganizations.length === 0 ? (
             <View style={styles.emptyModalState}>
-              <Ionicons name="business-outline" size={48} color="#8E8E93" />
+              <Ionicons name="business-outline" size={48} color={colors.textSecondary} />
               <Text style={styles.emptyModalText}>No organizations available</Text>
             </View>
           ) : (
@@ -856,7 +859,7 @@ export default function UserDetailScreen() {
                     ) : actionLoading ? (
                       <ActivityIndicator size="small" color="#007AFF" />
                     ) : (
-                      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                     )}
                   </TouchableOpacity>
                 );
@@ -870,10 +873,10 @@ export default function UserDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -886,7 +889,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     marginTop: 12,
   },
@@ -897,7 +900,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -905,7 +908,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -915,7 +918,7 @@ const styles = StyleSheet.create({
   },
   // Profile Card
   profileCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -948,11 +951,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   userTitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   roleBadgeContainer: {
@@ -979,11 +982,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   statusLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1050,7 +1053,7 @@ const styles = StyleSheet.create({
   },
   deletionDate: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   reactivateButton: {
@@ -1063,7 +1066,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   reactivateButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1078,13 +1081,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   impersonateButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
   // Sections
   section: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -1097,7 +1100,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 8,
     flex: 1,
   },
@@ -1116,7 +1119,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 3,
     marginBottom: 16,
     overflow: 'hidden',
@@ -1133,16 +1136,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   completenessLabel: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 10,
     flex: 1,
   },
   incompleteLabelText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   missingBadge: {
     backgroundColor: '#FF3B3020',
@@ -1165,7 +1168,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 10,
     flex: 1,
   },
@@ -1184,7 +1187,7 @@ const styles = StyleSheet.create({
   orgCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
   },
@@ -1200,7 +1203,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 12,
   },
   // Stores
@@ -1209,7 +1212,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   emptyText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
     marginTop: 8,
   },
@@ -1221,14 +1224,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   assignButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
   storeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -1248,11 +1251,11 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   storeLocation: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   removeButton: {
@@ -1264,18 +1267,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   actionText: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 12,
   },
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1284,7 +1287,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   cancelText: {
     fontSize: 16,
@@ -1293,7 +1296,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   storeList: {
     padding: 16,
@@ -1301,7 +1304,7 @@ const styles = StyleSheet.create({
   storeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -1313,13 +1316,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyModalText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '600',
     marginTop: 16,
   },
   emptyModalSubtext: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     marginTop: 8,
@@ -1331,13 +1334,13 @@ const styles = StyleSheet.create({
   roleOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
   },
   roleOptionSelected: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#34C759',
   },
@@ -1355,11 +1358,11 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   roleDescription: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   // Change Org Button
@@ -1384,13 +1387,13 @@ const styles = StyleSheet.create({
   orgOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
   },
   orgOptionSelected: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#34C759',
   },
@@ -1401,7 +1404,7 @@ const styles = StyleSheet.create({
   orgOptionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   currentOrgLabel: {
     fontSize: 12,
@@ -1429,7 +1432,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dangerWarning: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 12,
     textAlign: 'center',
     marginTop: 12,

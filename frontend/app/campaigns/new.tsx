@@ -25,6 +25,7 @@ import { format, addDays, addMonths } from 'date-fns';
 import { WebModal } from '../../components/WebModal';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 interface SequenceStep {
   id: string;
   message: string;
@@ -37,6 +38,8 @@ interface SequenceStep {
 }
 
 export default function CampaignBuilderScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -123,7 +126,7 @@ const { showToast } = useToast();
     { id: 'birthday', name: 'Birthday', icon: 'gift', color: '#FF9500', description: 'Wish them happy birthday' },
     { id: 'anniversary', name: 'Anniversary', icon: 'heart', color: '#FF3B30', description: 'Celebrate purchase anniversary' },
     { id: 'check_in', name: 'Check-in', icon: 'chatbubble', color: '#007AFF', description: 'Regular touchpoints' },
-    { id: 'custom', name: 'Custom', icon: 'create', color: '#8E8E93', description: 'Build your own' },
+    { id: 'custom', name: 'Custom', icon: 'create', color: colors.textSecondary, description: 'Build your own' },
   ];
   
   const soldFollowupTemplates: SequenceStep[] = [
@@ -376,10 +379,10 @@ const { showToast } = useToast();
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 16 }}>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFF', marginBottom: 4 }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 }}>
             Start with a Template
           </Text>
-          <Text style={{ fontSize: 14, color: '#8E8E93', marginBottom: 20, lineHeight: 20 }}>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 20, lineHeight: 20 }}>
             Choose a proven campaign sequence or build your own from scratch. Templates come pre-loaded with timing, AI-powered personalization, and messages that sound like a real conversation.
           </Text>
 
@@ -402,11 +405,11 @@ const { showToast } = useToast();
                     <Text style={styles.templateDesc}>{tpl.description}</Text>
                     <View style={styles.templateMeta}>
                       <View style={styles.templateMetaChip}>
-                        <Ionicons name="layers" size={12} color="#8E8E93" />
+                        <Ionicons name="layers" size={12} color={colors.textSecondary} />
                         <Text style={styles.templateMetaText}>{tpl.step_count} steps</Text>
                       </View>
                       <View style={styles.templateMetaChip}>
-                        <Ionicons name="time" size={12} color="#8E8E93" />
+                        <Ionicons name="time" size={12} color={colors.textSecondary} />
                         <Text style={styles.templateMetaText}>{tpl.total_duration}</Text>
                       </View>
                       <View style={[styles.templateMetaChip, { backgroundColor: tpl.color + '15' }]}>
@@ -421,7 +424,7 @@ const { showToast } = useToast();
                       )}
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#3A3A3C" style={{ marginTop: 4 }} />
+                  <Ionicons name="chevron-forward" size={20} color={colors.borderLight} style={{ marginTop: 4 }} />
                 </View>
               </TouchableOpacity>
             ))
@@ -429,19 +432,19 @@ const { showToast } = useToast();
 
           {/* Build Custom option */}
           <TouchableOpacity
-            style={[styles.templateCard, { borderStyle: 'dashed', borderColor: '#3A3A3C' }]}
+            style={[styles.templateCard, { borderStyle: 'dashed', borderColor: colors.borderLight }]}
             onPress={() => setShowTemplates(false)}
             data-testid="build-custom-btn"
           >
             <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-              <View style={[styles.templateIcon, { backgroundColor: '#2C2C2E' }]}>
-                <Ionicons name="add" size={24} color="#8E8E93" />
+              <View style={[styles.templateIcon, { backgroundColor: colors.surface }]}>
+                <Ionicons name="add" size={24} color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.templateName}>Build From Scratch</Text>
                 <Text style={styles.templateDesc}>Create a fully custom campaign with your own timing, messages, and triggers.</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#3A3A3C" />
+              <Ionicons name="chevron-forward" size={20} color={colors.borderLight} />
             </View>
           </TouchableOpacity>
         </ScrollView>
@@ -476,7 +479,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.input}
             placeholder="e.g., Sold Customer Follow-up"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={campaign.name}
             onChangeText={(text) => setCampaign({ ...campaign, name: text })}
           />
@@ -555,7 +558,7 @@ const { showToast } = useToast();
               onPress={() => setCampaign({ ...campaign, deliveryMode: 'automated' })}
               data-testid="delivery-mode-automated"
             >
-              <Ionicons name="flash" size={24} color={campaign.deliveryMode === 'automated' ? '#34C759' : '#8E8E93'} />
+              <Ionicons name="flash" size={24} color={campaign.deliveryMode === 'automated' ? '#34C759' : colors.textSecondary} />
               <Text style={[styles.modeTitle, campaign.deliveryMode === 'automated' && { color: '#34C759' }]}>Automated</Text>
               <Text style={styles.modeDesc}>AI assistant sends & replies for you. Randomized between 10am-12pm.</Text>
             </TouchableOpacity>
@@ -564,7 +567,7 @@ const { showToast } = useToast();
               onPress={() => setCampaign({ ...campaign, deliveryMode: 'manual' })}
               data-testid="delivery-mode-manual"
             >
-              <Ionicons name="hand-left" size={24} color={campaign.deliveryMode === 'manual' ? '#007AFF' : '#8E8E93'} />
+              <Ionicons name="hand-left" size={24} color={campaign.deliveryMode === 'manual' ? '#007AFF' : colors.textSecondary} />
               <Text style={[styles.modeTitle, campaign.deliveryMode === 'manual' && { color: '#007AFF' }]}>Manual</Text>
               <Text style={styles.modeDesc}>Get notified when it's time. Review, personalize, then hit send.</Text>
             </TouchableOpacity>
@@ -614,8 +617,8 @@ const { showToast } = useToast();
                   onPress={() => setCampaign({ ...campaign, ownershipLevel: level.key as any })}
                   data-testid={`level-${level.key}`}
                 >
-                  <Ionicons name={level.icon as any} size={16} color={campaign.ownershipLevel === level.key ? '#FFF' : '#8E8E93'} />
-                  <Text style={[styles.levelChipText, campaign.ownershipLevel === level.key && { color: '#FFF' }]}>{level.label}</Text>
+                  <Ionicons name={level.icon as any} size={16} color={campaign.ownershipLevel === level.key ? '#FFF' : colors.textSecondary} />
+                  <Text style={[styles.levelChipText, campaign.ownershipLevel === level.key && { color: colors.text }]}>{level.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -663,14 +666,14 @@ const { showToast } = useToast();
                         style={styles.delayButton}
                         onPress={() => updateSequenceStep(step.id, 'delayMonths', Math.max(0, step.delayMonths - 1))}
                       >
-                        <Ionicons name="remove" size={18} color="#FFF" />
+                        <Ionicons name="remove" size={18} color={colors.text} />
                       </TouchableOpacity>
                       <Text style={styles.delayValue}>{step.delayMonths}</Text>
                       <TouchableOpacity 
                         style={styles.delayButton}
                         onPress={() => updateSequenceStep(step.id, 'delayMonths', step.delayMonths + 1)}
                       >
-                        <Ionicons name="add" size={18} color="#FFF" />
+                        <Ionicons name="add" size={18} color={colors.text} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -682,14 +685,14 @@ const { showToast } = useToast();
                         style={styles.delayButton}
                         onPress={() => updateSequenceStep(step.id, 'delayDays', Math.max(0, step.delayDays - 1))}
                       >
-                        <Ionicons name="remove" size={18} color="#FFF" />
+                        <Ionicons name="remove" size={18} color={colors.text} />
                       </TouchableOpacity>
                       <Text style={styles.delayValue}>{step.delayDays}</Text>
                       <TouchableOpacity 
                         style={styles.delayButton}
                         onPress={() => updateSequenceStep(step.id, 'delayDays', step.delayDays + 1)}
                       >
-                        <Ionicons name="add" size={18} color="#FFF" />
+                        <Ionicons name="add" size={18} color={colors.text} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -703,13 +706,13 @@ const { showToast } = useToast();
                   <TouchableOpacity
                     key={ch}
                     style={[
-                      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#2C2C2E' },
+                      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surface },
                       step.channel === ch && { backgroundColor: '#007AFF' },
                     ]}
                     onPress={() => updateSequenceStep(step.id, 'channel', ch)}
                   >
-                    <Ionicons name={ch === 'sms' ? 'chatbubble' : 'mail'} size={14} color={step.channel === ch ? '#FFF' : '#8E8E93'} />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.channel === ch ? '#FFF' : '#8E8E93' }}>
+                    <Ionicons name={ch === 'sms' ? 'chatbubble' : 'mail'} size={14} color={step.channel === ch ? '#FFF' : colors.textSecondary} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.channel === ch ? '#FFF' : colors.textSecondary }}>
                       {ch === 'sms' ? 'SMS' : 'Email'}
                     </Text>
                   </TouchableOpacity>
@@ -718,13 +721,13 @@ const { showToast } = useToast();
                 {campaign.aiEnabled && (
                   <TouchableOpacity
                     style={[
-                      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#2C2C2E', marginLeft: 'auto' },
+                      { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surface, marginLeft: 'auto' },
                       step.ai_generated && { backgroundColor: '#FFD60A20', borderWidth: 1, borderColor: '#FFD60A50' },
                     ]}
                     onPress={() => updateSequenceStep(step.id, 'ai_generated', !step.ai_generated)}
                   >
-                    <Ionicons name="sparkles" size={14} color={step.ai_generated ? '#FFD60A' : '#8E8E93'} />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.ai_generated ? '#FFD60A' : '#8E8E93' }}>
+                    <Ionicons name="sparkles" size={14} color={step.ai_generated ? '#FFD60A' : colors.textSecondary} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.ai_generated ? '#FFD60A' : colors.textSecondary }}>
                       {step.ai_generated ? 'AI On' : 'AI Off'}
                     </Text>
                   </TouchableOpacity>
@@ -745,7 +748,7 @@ const { showToast } = useToast();
               <TextInput
                 style={styles.messageInput}
                 placeholder="Enter your message..."
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={step.message}
                 onChangeText={(text) => updateSequenceStep(step.id, 'message', text)}
                 multiline
@@ -791,7 +794,7 @@ const { showToast } = useToast();
           ))}
           
           <View style={styles.variableHint}>
-            <Ionicons name="information-circle" size={16} color="#8E8E93" />
+            <Ionicons name="information-circle" size={16} color={colors.textSecondary} />
             <Text style={styles.variableHintText}>
               Use {'{name}'} and {'{vehicle}'} for personalization
             </Text>
@@ -807,7 +810,7 @@ const { showToast } = useToast();
           >
             <Ionicons name="time-outline" size={24} color="#007AFF" />
             <Text style={styles.timeText}>{format(campaign.sendTime, 'h:mm a')}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.timeHint}>Messages will be sent at this time in the contact's timezone</Text>
         </View>
@@ -859,7 +862,7 @@ const { showToast } = useToast();
             <Switch
               value={campaign.active}
               onValueChange={(value) => setCampaign({ ...campaign, active: value })}
-              trackColor={{ false: '#3A3A3C', true: '#34C759' }}
+              trackColor={{ false: colors.borderLight, true: '#34C759' }}
               thumbColor="#FFF"
             />
           </View>
@@ -910,10 +913,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -921,7 +924,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -929,7 +932,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     padding: 4,
@@ -954,24 +957,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   typeScroll: {
     marginHorizontal: -16,
@@ -979,12 +982,12 @@ const styles = StyleSheet.create({
   },
   typeCard: {
     width: 140,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginRight: 12,
     borderWidth: 2,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   typeIconContainer: {
     width: 48,
@@ -997,12 +1000,12 @@ const styles = StyleSheet.create({
   typeName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   typeDesc: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 16,
   },
   tagGrid: {
@@ -1013,13 +1016,13 @@ const styles = StyleSheet.create({
   tagButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 16,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   tagButtonActive: {
     backgroundColor: '#007AFF20',
@@ -1027,7 +1030,7 @@ const styles = StyleSheet.create({
   },
   tagButtonText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   tagButtonTextActive: {
@@ -1044,12 +1047,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sequenceCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   sequenceHeader: {
     flexDirection: 'row',
@@ -1068,12 +1071,12 @@ const styles = StyleSheet.create({
   stepNumber: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   stepDelay: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   removeStepButton: {
@@ -1089,7 +1092,7 @@ const styles = StyleSheet.create({
   },
   delayLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 6,
     textAlign: 'center',
   },
@@ -1097,7 +1100,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 4,
   },
@@ -1105,28 +1108,28 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   delayValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     width: 40,
     textAlign: 'center',
   },
   messageInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     minHeight: 80,
   },
   charCount: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'right',
     marginTop: 4,
   },
@@ -1138,27 +1141,27 @@ const styles = StyleSheet.create({
   },
   variableHintText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   timePickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   timeText: {
     flex: 1,
     fontSize: 17,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   timeHint: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   pickerModal: {
@@ -1167,7 +1170,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   pickerContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34,
@@ -1178,16 +1181,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   pickerCancel: {
     fontSize: 17,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   pickerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   pickerDone: {
     fontSize: 17,
@@ -1201,7 +1204,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -1212,12 +1215,12 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   previewSection: {
     marginBottom: 24,
@@ -1225,7 +1228,7 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1250,7 +1253,7 @@ const styles = StyleSheet.create({
     top: 16,
     width: 2,
     height: '100%',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   timelineContent: {
     flex: 1,
@@ -1265,7 +1268,7 @@ const styles = StyleSheet.create({
   },
   timelineMessage: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   complianceNotice: {
@@ -1287,11 +1290,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   mediaLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     fontWeight: '600',
   },
@@ -1315,16 +1318,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     borderRadius: 11,
   },
   addMediaButton: {
     width: 72,
     height: 72,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1338,13 +1341,13 @@ const styles = StyleSheet.create({
   // Delivery mode cards
   modeCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',
     gap: 6,
     borderWidth: 1.5,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   modeCardActive: {
     borderColor: '#007AFF50',
@@ -1353,11 +1356,11 @@ const styles = StyleSheet.create({
   modeTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   modeDesc: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 15,
   },
@@ -1366,7 +1369,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
     justifyContent: 'center',
     paddingHorizontal: 2,
   },
@@ -1377,7 +1380,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
   },
   toggleKnobActive: {
     alignSelf: 'flex-end',
@@ -1396,7 +1399,7 @@ const styles = StyleSheet.create({
   },
   aiInfoText: {
     fontSize: 12,
-    color: '#D1D1D6',
+    color: colors.border,
     flex: 1,
     lineHeight: 17,
   },
@@ -1408,9 +1411,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 18,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   levelChipActive: {
     backgroundColor: '#007AFF',
@@ -1419,16 +1422,16 @@ const styles = StyleSheet.create({
   levelChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   // Template picker styles
   templateCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   templateIcon: {
     width: 48,
@@ -1440,11 +1443,11 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   templateDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
     marginTop: 3,
   },
@@ -1461,11 +1464,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   templateMetaText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

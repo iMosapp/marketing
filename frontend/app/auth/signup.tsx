@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -37,6 +38,8 @@ interface Organization {
 const INDEPENDENT_ORG = { _id: 'independent', name: 'I work independently' };
 
 export default function SignupScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const signup = useAuthStore((state) => state.signup);
   
@@ -233,7 +236,7 @@ export default function SignupScreen() {
             <TextInput
               style={styles.input}
               placeholder="Full Name *"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -243,7 +246,7 @@ export default function SignupScreen() {
             <TextInput
               style={styles.input}
               placeholder="Email *"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -255,7 +258,7 @@ export default function SignupScreen() {
             <TextInput
               style={styles.input}
               placeholder="Phone Number *"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
@@ -273,14 +276,14 @@ export default function SignupScreen() {
                   ? (isIndependent ? 'Independent Professional' : selectedOrg.name) 
                   : 'How do you work? *'}
               </Text>
-              <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
             
             {/* Role/Title Input */}
             <TextInput
               style={styles.input}
               placeholder="Your Role/Title (e.g. Sales Rep, Manager) *"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={role}
               onChangeText={setRole}
               autoCapitalize="words"
@@ -291,7 +294,7 @@ export default function SignupScreen() {
               <TextInput
                 style={styles.passwordInput}
                 placeholder="Password *"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -305,7 +308,7 @@ export default function SignupScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off' : 'eye'}
                   size={22}
-                  color="#8E8E93"
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -324,7 +327,7 @@ export default function SignupScreen() {
               <Ionicons 
                 name={showOptionalFields ? "chevron-up" : "chevron-down"} 
                 size={18} 
-                color="#8E8E93" 
+                color={colors.textSecondary} 
               />
             </TouchableOpacity>
             
@@ -339,7 +342,7 @@ export default function SignupScreen() {
                     <Image source={{ uri: photo }} style={styles.photoPreview} />
                   ) : (
                     <View style={styles.photoPlaceholder}>
-                      <Ionicons name="camera" size={28} color="#8E8E93" />
+                      <Ionicons name="camera" size={28} color={colors.textSecondary} />
                     </View>
                   )}
                   <View style={styles.photoTextContainer}>
@@ -354,7 +357,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Brief bio about yourself..."
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={bio}
                   onChangeText={setBio}
                   multiline
@@ -431,7 +434,7 @@ export default function SignupScreen() {
                   <Ionicons
                     name={acceptedTerms ? 'checkbox' : 'square-outline'}
                     size={24}
-                    color={acceptedTerms ? '#007AFF' : '#8E8E93'}
+                    color={acceptedTerms ? '#007AFF' : colors.textSecondary}
                   />
                 </button>
               ) : (
@@ -443,7 +446,7 @@ export default function SignupScreen() {
                   <Ionicons
                     name={acceptedTerms ? 'checkbox' : 'square-outline'}
                     size={24}
-                    color={acceptedTerms ? '#007AFF' : '#8E8E93'}
+                    color={acceptedTerms ? '#007AFF' : colors.textSecondary}
                   />
                 </TouchableOpacity>
               )}
@@ -471,7 +474,7 @@ export default function SignupScreen() {
                 style={{
                   width: '100%',
                   padding: '16px',
-                  backgroundColor: (loading || !acceptedTerms) ? '#333' : '#007AFF',
+                  backgroundColor: (loading || !acceptedTerms) ? colors.surface : '#007AFF',
                   border: 'none',
                   borderRadius: '12px',
                   cursor: (loading || !acceptedTerms) ? 'not-allowed' : 'pointer',
@@ -484,7 +487,7 @@ export default function SignupScreen() {
                 disabled={loading || !acceptedTerms}
                 data-testid="signup-submit-button"
               >
-                <span style={{ color: '#FFF', fontSize: '18px', fontWeight: '600' }}>
+                <span style={{ color: colors.text, fontSize: '18px', fontWeight: '600' }}>
                   {loading ? 'Creating Account...' : 'Sign Up'}
                 </span>
               </button>
@@ -524,7 +527,7 @@ export default function SignupScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>How do you work?</Text>
               <TouchableOpacity onPress={() => setShowOrgPicker(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -602,10 +605,10 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   keyboardView: {
     flex: 1,
@@ -621,12 +624,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   subtitleContainer: {
     flexDirection: 'row',
@@ -641,44 +644,44 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   pickerButton: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   pickerText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   pickerPlaceholder: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   eyeButton: {
     padding: 16,
@@ -700,7 +703,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   button: {
@@ -714,7 +717,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '600',
   },
@@ -723,7 +726,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 15,
   },
   linkTextBold: {
@@ -743,7 +746,7 @@ const styles = StyleSheet.create({
   termsText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 22,
   },
   termsLink: {
@@ -757,7 +760,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -768,12 +771,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   loadingContainer: {
     padding: 40,
@@ -785,12 +788,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#636366',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   orgList: {
@@ -803,7 +806,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     marginVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     gap: 12,
   },
   independentOption: {
@@ -816,7 +819,7 @@ const styles = StyleSheet.create({
   },
   independentDesc: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   orgOptionSelected: {
@@ -835,7 +838,7 @@ const styles = StyleSheet.create({
   orgName: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   divider: {
@@ -851,7 +854,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3C3C3E',
   },
   dividerText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 12,
   },
   // Optional Fields Styles
@@ -859,7 +862,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
@@ -881,7 +884,7 @@ const styles = StyleSheet.create({
   photoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     gap: 14,
@@ -895,7 +898,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -905,11 +908,11 @@ const styles = StyleSheet.create({
   photoLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   photoHint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   textArea: {
@@ -919,14 +922,14 @@ const styles = StyleSheet.create({
   },
   socialLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     marginBottom: 4,
   },
   socialInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -935,7 +938,7 @@ const styles = StyleSheet.create({
   socialInput: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   optionalHint: {
     fontSize: 12,

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 // ─── Step definitions ───
 const STEP_DEFS = [
   { id: 'quote', title: 'Send Quote', icon: 'document-text-outline', color: '#007AFF' },
@@ -46,6 +47,7 @@ interface Client {
 }
 
 export default function ClientOnboardingScreen() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
@@ -256,7 +258,7 @@ export default function ClientOnboardingScreen() {
         <Text style={st.label}>Notes</Text>
         <TextInput style={[st.input, { height: 60, textAlignVertical: 'top' }]} value={d.notes || ''} onChangeText={v => updateField('quote', 'notes', v)} placeholder="Special terms, discount codes, etc." placeholderTextColor="#555" multiline data-testid="quote-notes" />
         <TouchableOpacity style={st.saveBtn} onPress={() => saveStepAndMarkDone(client._id, 'quote')} disabled={saving} data-testid="save-quote">
-          {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
+          {saving ? <ActivityIndicator color={colors.text} /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
         </TouchableOpacity>
       </View>
     );
@@ -291,7 +293,7 @@ export default function ClientOnboardingScreen() {
         <Text style={st.label}>Notes</Text>
         <TextInput style={[st.input, { height: 60, textAlignVertical: 'top' }]} value={d.notes || ''} onChangeText={v => updateField('agreement', 'notes', v)} placeholder="Custom terms, expiration, etc." placeholderTextColor="#555" multiline data-testid="agreement-notes" />
         <TouchableOpacity style={st.saveBtn} onPress={() => saveStepAndMarkDone(client._id, 'agreement')} disabled={saving} data-testid="save-agreement">
-          {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
+          {saving ? <ActivityIndicator color={colors.text} /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
         </TouchableOpacity>
       </View>
     );
@@ -328,7 +330,7 @@ export default function ClientOnboardingScreen() {
         <Text style={st.label}>Notes</Text>
         <TextInput style={[st.input, { height: 60, textAlignVertical: 'top' }]} value={d.notes || ''} onChangeText={v => updateField('payment', 'notes', v)} placeholder="Billing cycle, next due date, etc." placeholderTextColor="#555" multiline data-testid="payment-notes" />
         <TouchableOpacity style={st.saveBtn} onPress={() => saveStepAndMarkDone(client._id, 'payment')} disabled={saving} data-testid="save-payment">
-          {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
+          {saving ? <ActivityIndicator color={colors.text} /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
         </TouchableOpacity>
       </View>
     );
@@ -387,7 +389,7 @@ export default function ClientOnboardingScreen() {
         <TextInput style={st.input} value={d.yelp_review || ''} onChangeText={v => updateField('configure', 'yelp_review', v)} placeholder="https://yelp.com/biz/your-business" placeholderTextColor="#555" data-testid="config-yelp" />
 
         <TouchableOpacity style={st.saveBtn} onPress={() => saveStepAndMarkDone(client._id, 'configure')} disabled={saving} data-testid="save-config">
-          {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
+          {saving ? <ActivityIndicator color={colors.text} /> : <Text style={st.saveBtnText}>Save & Mark Complete</Text>}
         </TouchableOpacity>
       </View>
     );
@@ -448,7 +450,7 @@ export default function ClientOnboardingScreen() {
         <View style={st.btnRow}>
           {teamRows.length > 0 && (
             <TouchableOpacity style={[st.saveBtn, { flex: 1, backgroundColor: '#FF9500' }]} onPress={() => sendTeamInvites(client._id)} disabled={saving} data-testid="create-accounts">
-              {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Create Accounts</Text>}
+              {saving ? <ActivityIndicator color={colors.text} /> : <Text style={st.saveBtnText}>Create Accounts</Text>}
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[st.saveBtn, { flex: 1 }]} onPress={() => saveStepAndMarkDone(client._id, 'team')} disabled={saving} data-testid="save-team">
@@ -475,7 +477,7 @@ export default function ClientOnboardingScreen() {
             <Text style={st.liveTitle}>Ready to Go Live!</Text>
             <Text style={st.liveDesc}>{client.client_name} is fully configured. Hit the button to activate this account.</Text>
             <TouchableOpacity style={[st.saveBtn, { backgroundColor: '#34C759' }]} onPress={() => saveStepAndMarkDone(client._id, 'live')} disabled={saving} data-testid="go-live">
-              {saving ? <ActivityIndicator color="#000" /> : <Text style={st.saveBtnText}>Activate Account</Text>}
+              {saving ? <ActivityIndicator color={colors.text} /> : <Text style={st.saveBtnText}>Activate Account</Text>}
             </TouchableOpacity>
           </View>
         ) : (
@@ -510,7 +512,7 @@ export default function ClientOnboardingScreen() {
     <SafeAreaView style={st.safe}>
       <View style={st.header}>
         <TouchableOpacity onPress={() => router.back()} style={st.headerBtn} data-testid="onboarding-back">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={st.headerTitle}>Client Onboarding</Text>
         <TouchableOpacity onPress={() => setShowNewForm(true)} style={st.headerBtn} data-testid="onboarding-add">
@@ -527,19 +529,19 @@ export default function ClientOnboardingScreen() {
           </TouchableOpacity>
         ) : (
           <View style={st.newForm}>
-            <View style={st.newFormHead}><Text style={st.newFormTitle}>New Client</Text><TouchableOpacity onPress={() => setShowNewForm(false)}><Ionicons name="close" size={20} color="#8E8E93" /></TouchableOpacity></View>
+            <View style={st.newFormHead}><Text style={st.newFormTitle}>New Client</Text><TouchableOpacity onPress={() => setShowNewForm(false)}><Ionicons name="close" size={20} color={colors.textSecondary} /></TouchableOpacity></View>
             <TextInput style={st.input} value={newName} onChangeText={setNewName} placeholder="Client / Company Name *" placeholderTextColor="#555" data-testid="new-name" />
             <TextInput style={st.input} value={newEmail} onChangeText={setNewEmail} placeholder="Contact Email" placeholderTextColor="#555" keyboardType="email-address" autoCapitalize="none" data-testid="new-email" />
             <TextInput style={st.input} value={newPhone} onChangeText={setNewPhone} placeholder="Contact Phone" placeholderTextColor="#555" keyboardType="phone-pad" data-testid="new-phone" />
             <TouchableOpacity style={st.createBtn} onPress={createClient} disabled={saving || !newName.trim()} data-testid="create-client">
-              {saving ? <ActivityIndicator color="#000" /> : <><Ionicons name="add-circle" size={18} color="#000" /><Text style={st.createBtnText}>Start Onboarding</Text></>}
+              {saving ? <ActivityIndicator color={colors.text} /> : <><Ionicons name="add-circle" size={18} color={colors.text} /><Text style={st.createBtnText}>Start Onboarding</Text></>}
             </TouchableOpacity>
           </View>
         )}
 
         {/* Empty */}
         {activeClients.length === 0 && !showNewForm && (
-          <View style={st.empty}><Ionicons name="people-outline" size={48} color="#2C2C2E" /><Text style={st.emptyText}>No clients yet</Text></View>
+          <View style={st.empty}><Ionicons name="people-outline" size={48} color={colors.surface} /><Text style={st.emptyText}>No clients yet</Text></View>
         )}
 
         {/* Client cards */}
@@ -552,7 +554,7 @@ export default function ClientOnboardingScreen() {
             <View key={client._id} style={st.clientCard}>
               <TouchableOpacity style={st.clientHead} onPress={() => expandClient(client)} data-testid={`client-${client._id}`}>
                 <View style={[st.avatar, pct === 100 && st.avatarDone]}>
-                  {pct === 100 ? <Ionicons name="checkmark" size={16} color="#000" /> : <Text style={st.avatarText}>{client.client_name.charAt(0).toUpperCase()}</Text>}
+                  {pct === 100 ? <Ionicons name="checkmark" size={16} color={colors.text} /> : <Text style={st.avatarText}>{client.client_name.charAt(0).toUpperCase()}</Text>}
                 </View>
                 <View style={st.clientInfo}>
                   <Text style={st.clientName}>{client.client_name}</Text>
@@ -571,7 +573,7 @@ export default function ClientOnboardingScreen() {
                       <View key={step.id}>
                         <TouchableOpacity style={st.stepRow} onPress={() => toggleStep(step.id)} data-testid={`step-${client._id}-${step.id}`}>
                           <TouchableOpacity onPress={() => isDone ? unmarkStep(client._id, step.id) : null} data-testid={`check-${client._id}-${step.id}`}>
-                            <Ionicons name={isDone ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={isDone ? '#34C759' : '#2C2C2E'} />
+                            <Ionicons name={isDone ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={isDone ? '#34C759' : colors.surface} />
                           </TouchableOpacity>
                           <View style={[st.stepIconBox, { backgroundColor: step.color + '20' }]}>
                             <Ionicons name={step.icon as any} size={18} color={step.color} />
@@ -606,11 +608,11 @@ export default function ClientOnboardingScreen() {
 }
 
 const st = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
+  safe: { flex: 1, backgroundColor: '#000000' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
   headerBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 50 },
 
@@ -618,9 +620,9 @@ const st = StyleSheet.create({
   newBtnText: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
   newForm: { backgroundColor: '#0D0D0D', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#C9A96240' },
   newFormHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  newFormTitle: { fontSize: 17, fontWeight: '800', color: '#FFF' },
+  newFormTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
   createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 50, marginTop: 4 },
-  createBtnText: { fontSize: 15, fontWeight: '800', color: '#000' },
+  createBtnText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 16, color: '#3A3A3C' },
 
@@ -631,7 +633,7 @@ const st = StyleSheet.create({
   avatarDone: { backgroundColor: '#34C759' },
   avatarText: { fontSize: 15, fontWeight: '800', color: '#C9A962' },
   clientInfo: { flex: 1 },
-  clientName: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  clientName: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   clientMeta: { fontSize: 11, color: '#8E8E93', marginTop: 1 },
   miniBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#1C1C1E', overflow: 'hidden' },
   miniBarFill: { height: '100%' as any, backgroundColor: '#C9A962', borderRadius: 2 },
@@ -640,7 +642,7 @@ const st = StyleSheet.create({
   stepsWrap: { borderTopWidth: 1, borderTopColor: '#1C1C1E' },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
   stepIconBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  stepTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#FFF' },
+  stepTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   stepTitleDone: { textDecorationLine: 'line-through', color: '#8E8E93' },
 
   // Forms
@@ -648,10 +650,10 @@ const st = StyleSheet.create({
   formDesc: { fontSize: 13, color: '#8E8E93', marginBottom: 14, lineHeight: 18 },
   label: { fontSize: 11, fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 },
   sectionHead: { fontSize: 13, fontWeight: '700', color: '#C9A962', marginTop: 18, marginBottom: 8 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 10, padding: 12, fontSize: 14, color: '#FFF', borderWidth: 1, borderColor: '#2C2C2E', marginBottom: 6 },
+  input: { backgroundColor: '#1C1C1E', borderRadius: 10, padding: 12, fontSize: 14, color: '#FFFFFF', borderWidth: 1, borderColor: '#2C2C2E', marginBottom: 6 },
   row: { flexDirection: 'row', marginBottom: 6 },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 50, marginTop: 16 },
-  saveBtnText: { fontSize: 15, fontWeight: '800', color: '#000' },
+  saveBtnText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
   btnRow: { flexDirection: 'row', gap: 8 },
 
   // What You Need box
@@ -664,15 +666,15 @@ const st = StyleSheet.create({
   // Action links
   actionLink: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#C9A96233' },
   actionLinkIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' },
-  actionLinkText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#FFF' },
+  actionLinkText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 
   // Plans
   planGrid: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   planCard: { flex: 1, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 2, borderColor: '#2C2C2E' },
   planCardActive: { borderColor: '#C9A962', backgroundColor: '#C9A96215' },
-  planPrice: { fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 2 },
+  planPrice: { fontSize: 22, fontWeight: '900', color: '#FFFFFF', marginBottom: 2 },
   planPriceActive: { color: '#C9A962' },
-  planName: { fontSize: 13, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  planName: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
   planNameActive: { color: '#C9A962' },
   planUsers: { fontSize: 10, color: '#555' },
 
@@ -681,45 +683,45 @@ const st = StyleSheet.create({
   statusChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
   statusChipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   statusChipText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
-  statusChipTextActive: { color: '#000' },
+  statusChipTextActive: { color: '#FFFFFF' },
 
   // Industry chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
   chipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   chipText: { fontSize: 12, color: '#AAA' },
-  chipTextActive: { color: '#000', fontWeight: '700' },
+  chipTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
   // Colors
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorDot: { width: 32, height: 32, borderRadius: 16, borderWidth: 3, borderColor: 'transparent' },
-  colorDotActive: { borderColor: '#FFF' },
+  colorDotActive: { borderColor: '#2C2C2E' },
 
   // Review links
   reviewRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   reviewBadge: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  reviewBadgeText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
+  reviewBadgeText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
 
   // Team
-  teamCard: { backgroundColor: '#111', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#1C1C1E' },
+  teamCard: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#1C1C1E' },
   teamCardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   teamNum: { fontSize: 12, fontWeight: '700', color: '#C9A962' },
   roleWrap: { flexDirection: 'row', gap: 6, marginTop: 4 },
   roleBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#1C1C1E', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E' },
   roleBtnActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   roleBtnText: { fontSize: 12, fontWeight: '600', color: '#8E8E93' },
-  roleBtnTextActive: { color: '#000' },
+  roleBtnTextActive: { color: '#FFFFFF' },
   addRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' as any, marginBottom: 8 },
   addRowText: { fontSize: 13, fontWeight: '600', color: '#C9A962' },
   resultsCard: { backgroundColor: '#1A1500', borderRadius: 12, padding: 12, marginTop: 10, borderWidth: 1, borderColor: '#C9A96233' },
   resultsTitle: { fontSize: 13, fontWeight: '700', color: '#C9A962', marginBottom: 8 },
   resultRow: { backgroundColor: '#0D0D0D', borderRadius: 8, padding: 10, marginBottom: 6 },
-  resultName: { fontSize: 13, fontWeight: '600', color: '#FFF' },
+  resultName: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
   resultPw: { fontSize: 12, color: '#C9A962', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, marginTop: 2 },
 
   // Go Live
   liveReady: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  liveTitle: { fontSize: 20, fontWeight: '900', color: '#FFF' },
+  liveTitle: { fontSize: 20, fontWeight: '900', color: '#FFFFFF' },
   liveDesc: { fontSize: 13, color: '#8E8E93', textAlign: 'center', lineHeight: 18, marginBottom: 8 },
 
   // Archive

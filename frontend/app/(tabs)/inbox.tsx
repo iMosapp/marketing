@@ -86,16 +86,16 @@ const COLORS_DARK = {
   gold: '#D4AF37',
   textPrimary: '#FFFFFF',
   textSecondary: '#8E8E93',
-  textTertiary: '#48484A',
+  textTertiary: '#2C2C2E',
   border: 'rgba(255, 255, 255, 0.08)',
   borderFocus: 'rgba(46, 92, 255, 0.5)',
 };
 
 // Light Mode Colors (Email)
 const COLORS_LIGHT = {
-  background: '#F2F2F7',
+  background: '#000000',
   surface: '#FFFFFF',
-  elevated: '#E5E5EA',
+  elevated: '#3A3A3C',
   accent: '#007AFF',
   success: '#34C759',
   warning: '#FF9500',
@@ -743,7 +743,7 @@ export default function InboxScreen() {
           <View style={styles.checkboxContainer}>
             <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
               {isSelected && (
-                <Ionicons name="checkmark" size={14} color="#FFF" />
+                <Ionicons name="checkmark" size={14} color={colors.text} />
               )}
             </View>
           </View>
@@ -778,12 +778,12 @@ export default function InboxScreen() {
           )}
           {item.status === 'closed' && (
             <View style={styles.closedBadge}>
-              <Ionicons name="checkmark" size={10} color="#FFF" />
+              <Ionicons name="checkmark" size={10} color={colors.text} />
             </View>
           )}
           {hasAiOutcome && !isAcknowledged && (
             <View style={[styles.aiOutcomeBadge, { backgroundColor: aiOutcome.color }]}>
-              <Ionicons name={aiOutcome.icon as any} size={10} color="#FFF" />
+              <Ionicons name={aiOutcome.icon as any} size={10} color={colors.text} />
             </View>
           )}
           {hasAiOutcome && isAcknowledged && (
@@ -924,7 +924,7 @@ export default function InboxScreen() {
               key: 'archive',
               icon: isArchived ? 'arrow-undo' : 'archive-outline',
               label: isArchived ? 'Restore' : 'Archive',
-              color: '#8E8E93',
+              color: colors.textSecondary,
               bgColor: '#8E8E9320',
               onPress: () => handleArchive(item._id),
             },
@@ -1017,7 +1017,7 @@ export default function InboxScreen() {
           )}
           {isNew && !isClaimed && (
             <View style={styles.newLeadBadge}>
-              <Ionicons name="flash" size={10} color="#FFF" />
+              <Ionicons name="flash" size={10} color={colors.text} />
             </View>
           )}
         </View>
@@ -1042,7 +1042,7 @@ export default function InboxScreen() {
           <View style={styles.teamConversationMeta}>
             {item.team_name && (
               <View style={styles.teamBadge}>
-                <Ionicons name="people" size={10} color="#8E8E93" />
+                <Ionicons name="people" size={10} color={colors.textSecondary} />
                 <Text style={styles.teamBadgeText}>{item.team_name}</Text>
               </View>
             )}
@@ -1104,7 +1104,7 @@ export default function InboxScreen() {
             <Ionicons 
               name={messageMode === 'sms' ? 'chatbubbles' : 'mail'} 
               size={12} 
-              color={messageMode === 'email' ? '#007AFF' : '#8E8E93'} 
+              color={messageMode === 'email' ? '#007AFF' : colors.textSecondary} 
             />
           </View>
         </View>
@@ -1331,7 +1331,7 @@ export default function InboxScreen() {
               <Text style={styles.emptyTitle}>No conversations yet</Text>
               <Text style={styles.emptySubtext}>Start connecting with your contacts</Text>
               <TouchableOpacity style={styles.emptyButton} onPress={openNewMessage} activeOpacity={0.8}>
-                <Ionicons name="add" size={20} color="#FFF" />
+                <Ionicons name="add" size={20} color={colors.text} />
                 <Text style={styles.emptyButtonText}>New Message</Text>
               </TouchableOpacity>
             </View>
@@ -1458,7 +1458,7 @@ export default function InboxScreen() {
       {selectionMode && selectedIds.size > 0 && (
         <View style={styles.bulkActionBar}>
           {bulkActionLoading ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={colors.text} />
           ) : (
             <>
               <TouchableOpacity 
@@ -1468,7 +1468,7 @@ export default function InboxScreen() {
                 data-testid="bulk-archive-btn"
               >
                 <View style={styles.bulkActionIcon}>
-                  <Ionicons name="archive" size={20} color="#FFF" />
+                  <Ionicons name="archive" size={20} color={colors.text} />
                 </View>
                 <Text style={styles.bulkActionText}>Archive</Text>
               </TouchableOpacity>
@@ -1479,7 +1479,7 @@ export default function InboxScreen() {
                 data-testid="bulk-read-btn"
               >
                 <View style={styles.bulkActionIcon}>
-                  <Ionicons name="mail-open" size={20} color="#FFF" />
+                  <Ionicons name="mail-open" size={20} color={colors.text} />
                 </View>
                 <Text style={styles.bulkActionText}>Read</Text>
               </TouchableOpacity>
@@ -1490,7 +1490,7 @@ export default function InboxScreen() {
                 data-testid="bulk-unread-btn"
               >
                 <View style={styles.bulkActionIcon}>
-                  <Ionicons name="mail-unread" size={20} color="#FFF" />
+                  <Ionicons name="mail-unread" size={20} color={colors.text} />
                 </View>
                 <Text style={styles.bulkActionText}>Unread</Text>
               </TouchableOpacity>
@@ -1547,11 +1547,11 @@ export default function InboxScreen() {
                 activeOpacity={0.7}
                 data-testid={`swipe-tag-${tag.name}`}
               >
-                <View style={[styles.swipeTagIcon, { backgroundColor: `${tag.color || '#8E8E93'}20` }]}>
-                  <Ionicons name={(tag.icon || 'pricetag') as any} size={18} color={tag.color || '#8E8E93'} />
+                <View style={[styles.swipeTagIcon, { backgroundColor: `${tag.color || colors.textSecondary}20` }]}>
+                  <Ionicons name={(tag.icon || 'pricetag') as any} size={18} color={tag.color || colors.textSecondary} />
                 </View>
                 <Text style={styles.swipeTagName}>{tag.name}</Text>
-                <Ionicons name="add-circle" size={22} color={tag.color || '#8E8E93'} />
+                <Ionicons name="add-circle" size={22} color={tag.color || colors.textSecondary} />
               </TouchableOpacity>
             )) : (
               <View style={styles.emptyContainer}>
@@ -1731,7 +1731,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   filterTextActive: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   imosLogoFilter: {
     width: 52,
@@ -1839,7 +1839,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   avatarText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -1874,7 +1874,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.background,
   },
   unreadBubbleText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
   },
@@ -2085,7 +2085,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
     letterSpacing: -0.1,
   },
   
@@ -2303,7 +2303,7 @@ const styles = StyleSheet.create({
     color: COLORS_DARK.textSecondary,
   },
   inboxToggleTextActive: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   
   // Team Conversation Styles
@@ -2397,6 +2397,6 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   swipeTagName: {
-    flex: 1, fontSize: 16, fontWeight: '500', color: '#F2F2F7',
+    flex: 1, fontSize: 16, fontWeight: '500', color: '#000000',
   },
 });

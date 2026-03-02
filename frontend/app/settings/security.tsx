@@ -18,6 +18,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useThemeStore } from '../../store/themeStore';
 import {
   checkBiometricSupport,
   enableBiometricLogin,
@@ -27,6 +28,8 @@ import {
 } from '../../utils/biometrics';
 
 export default function SecuritySettingsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -224,7 +227,7 @@ const { showToast } = useToast();
             <TextInput
               style={styles.passwordInput}
               placeholder="Enter current password"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={currentPassword}
               onChangeText={setCurrentPassword}
               secureTextEntry={!showCurrentPassword}
@@ -237,7 +240,7 @@ const { showToast } = useToast();
               <Ionicons
                 name={showCurrentPassword ? 'eye-off' : 'eye'}
                 size={22}
-                color="#8E8E93"
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -247,7 +250,7 @@ const { showToast } = useToast();
             <TextInput
               style={styles.passwordInput}
               placeholder="Enter new password"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry={!showNewPassword}
@@ -260,7 +263,7 @@ const { showToast } = useToast();
               <Ionicons
                 name={showNewPassword ? 'eye-off' : 'eye'}
                 size={22}
-                color="#8E8E93"
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -268,7 +271,7 @@ const { showToast } = useToast();
           <TextInput
             style={[styles.textInput, { marginTop: 12 }]}
             placeholder="Confirm new password"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showNewPassword}
@@ -335,14 +338,14 @@ const { showToast } = useToast();
               <Switch
                 value={biometricStatus.isEnabled}
                 onValueChange={handleToggleBiometric}
-                trackColor={{ false: '#3A3A3C', true: '#34C759' }}
+                trackColor={{ false: colors.borderLight, true: '#34C759' }}
                 thumbColor="#FFF"
                 disabled={toggling}
               />
             </View>
           ) : (
             <View style={styles.unavailableContainer}>
-              <Ionicons name="lock-closed-outline" size={32} color="#8E8E93" />
+              <Ionicons name="lock-closed-outline" size={32} color={colors.textSecondary} />
               <Text style={styles.unavailableText}>
                 {biometricStatus?.biometricLabel || 'Biometric login is not available on this device'}
               </Text>
@@ -373,7 +376,7 @@ const { showToast } = useToast();
               <Text style={styles.settingTitle}>Change Password</Text>
               <Text style={styles.settingDescription}>Update your account password</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -387,7 +390,7 @@ const { showToast } = useToast();
               <Text style={styles.settingTitle}>Reset Password</Text>
               <Text style={styles.settingDescription}>Forgot your password? Reset via email</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -397,10 +400,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -421,7 +424,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
@@ -432,14 +435,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     marginLeft: 4,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -447,7 +450,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -458,15 +461,15 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   unavailableContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -474,13 +477,13 @@ const styles = StyleSheet.create({
   },
   unavailableText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   infoSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 32,
@@ -489,13 +492,13 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -503,7 +506,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: {
     fontSize: 17,
@@ -512,7 +515,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 17,
@@ -525,39 +528,39 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginLeft: 4,
   },
   passwordInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   eyeButton: {
     padding: 16,
   },
   textInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   passwordHint: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
     marginLeft: 4,
   },

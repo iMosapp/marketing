@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Quote {
   _id: string;
   quote_number: string;
@@ -38,6 +39,8 @@ interface Quote {
 }
 
 export default function QuotesListPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,14 +100,14 @@ export default function QuotesListPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return '#8E8E93';
+      case 'draft': return colors.textSecondary;
       case 'sent': return '#007AFF';
       case 'viewed': return '#FF9500';
       case 'accepted': return '#34C759';
       case 'expired': return '#FF3B30';
       case 'cancelled': return '#FF3B30';
-      case 'archived': return '#636366';
-      default: return '#8E8E93';
+      case 'archived': return colors.textTertiary;
+      default: return colors.textSecondary;
     }
   };
 
@@ -162,14 +165,14 @@ export default function QuotesListPage() {
           <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
         ) : quotes.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="document-text-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No quotes found</Text>
             <Text style={styles.emptySubtext}>Create your first quote to get started</Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => router.push('/admin/create-quote')}
             >
-              <Ionicons name="add" size={20} color="#FFF" />
+              <Ionicons name="add" size={20} color={colors.text} />
               <Text style={styles.createButtonText}>Create Quote</Text>
             </TouchableOpacity>
           </View>
@@ -194,7 +197,7 @@ export default function QuotesListPage() {
               </View>
 
               <View style={styles.customerInfo}>
-                <Ionicons name={quote.plan_type === 'store' ? 'storefront' : 'person'} size={16} color="#8E8E93" />
+                <Ionicons name={quote.plan_type === 'store' ? 'storefront' : 'person'} size={16} color={colors.textSecondary} />
                 <Text style={styles.customerName}>
                   {quote.business_info?.company_name || quote.customer?.name || quote.customer?.email || 'N/A'}
                 </Text>
@@ -253,10 +256,10 @@ export default function QuotesListPage() {
                       }}
                       data-testid={`archive-quote-${quote.quote_number}`}
                     >
-                      <Ionicons name="archive-outline" size={18} color="#8E8E93" />
+                      <Ionicons name="archive-outline" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
                   )}
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </View>
               </View>
             </TouchableOpacity>
@@ -269,10 +272,10 @@ export default function QuotesListPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -281,7 +284,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -289,12 +292,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   filterContainer: {
     maxHeight: 50,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   filterContent: {
     paddingHorizontal: 16,
@@ -306,7 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     marginRight: 8,
   },
   filterPillActive: {
@@ -315,10 +318,10 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   filterTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -332,12 +335,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   createButton: {
@@ -353,10 +356,10 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   quoteCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -370,12 +373,12 @@ const styles = StyleSheet.create({
   quoteNumber: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     fontFamily: 'monospace',
   },
   quoteDate: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statusBadge: {
@@ -394,11 +397,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   customerName: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   quoteDetails: {
@@ -410,12 +413,12 @@ const styles = StyleSheet.create({
   detailItem: {},
   detailLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   detailValue: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   userCountBadge: {
@@ -440,7 +443,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -455,7 +458,7 @@ const styles = StyleSheet.create({
   },
   validUntil: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   validUntilExpired: {
     color: '#FF3B30',

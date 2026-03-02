@@ -60,8 +60,8 @@ const groupByDate = (items: any[]) => {
 };
 
 export default function ActivityTab() {
+  const { colors } = useThemeStore();
   const { user } = useAuthStore();
-  const colors = useThemeStore((state) => state.colors);
   const router = useRouter();
   const userId = user?._id;
 
@@ -155,7 +155,7 @@ export default function ActivityTab() {
                     </View>
                   )}
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
+                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
               </TouchableOpacity>
             ))}
           </View>
@@ -199,7 +199,7 @@ export default function ActivityTab() {
         {/* Feed grouped by date */}
         {Object.keys(grouped).length === 0 ? (
           <View style={s.empty}>
-            <Ionicons name="pulse-outline" size={48} color="#2C2C2E" />
+            <Ionicons name="pulse-outline" size={48} color={colors.surface} />
             <Text style={[s.emptyText, { color: colors.textSecondary }]}>No activity yet</Text>
             <Text style={[s.emptySubtext, { color: colors.textTertiary }]}>Send a message or card to get started</Text>
           </View>
@@ -241,7 +241,7 @@ export default function ActivityTab() {
                         </View>
                       )}
                       <View style={[s.eventIconBadge, { backgroundColor: item.color || '#007AFF', borderColor: colors.card }]}>
-                        <Ionicons name={(item.icon || 'flag') as any} size={10} color="#FFF" />
+                        <Ionicons name={(item.icon || 'flag') as any} size={10} color={colors.text} />
                       </View>
                     </View>
                     <View style={s.eventContent}>
@@ -285,7 +285,7 @@ const s = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
   sectionTitle: { fontSize: 15, fontWeight: '700', flex: 1 },
   badge: { backgroundColor: '#FF9500', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  badgeText: { fontSize: 11, fontWeight: '800', color: '#000' },
+  badgeText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF' },
 
   // Action cards
   actionCard: {

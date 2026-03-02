@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -41,6 +42,8 @@ interface BrandAsset {
 }
 
 export default function BrandAssetsPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -340,7 +343,7 @@ export default function BrandAssetsPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
@@ -379,7 +382,7 @@ const styles = StyleSheet.create({
   },
   assetPreview: {
     width: 56, height: 56, borderRadius: 12,
-    backgroundColor: '#2C2C2E', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
   },
   assetImage: { width: 48, height: 48 },
@@ -390,7 +393,7 @@ const styles = StyleSheet.create({
   assetActions: { flexDirection: 'row', gap: 4 },
   assetBtn: {
     width: 36, height: 36, borderRadius: 10,
-    backgroundColor: '#2C2C2E', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center',
   },
 
   // Quick links

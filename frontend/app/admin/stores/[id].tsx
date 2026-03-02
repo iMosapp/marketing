@@ -19,6 +19,7 @@ import api from '../../../services/api';
 import { showSimpleAlert, showConfirm } from '../../../services/alert';
 import { WebModal } from '../../../components/WebModal';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface UserInfo {
   _id: string;
   name: string;
@@ -64,6 +65,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function StoreDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
   
@@ -90,7 +93,7 @@ export default function StoreDetailScreen() {
     message: 'Thank you for choosing us, {customer_name}! We truly appreciate your business.',
     background_color: '#1A1A1A',
     accent_color: '#C9A962',
-    text_color: '#FFFFFF',
+    text_color: colors.text,
   });
   const [savingTemplate, setSavingTemplate] = useState(false);
   
@@ -329,7 +332,7 @@ export default function StoreDetailScreen() {
               >
                 <Ionicons name="business" size={14} color="#007AFF" />
                 <Text style={styles.orgBadgeText}>{data.organization.name}</Text>
-                <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
             
@@ -427,7 +430,7 @@ export default function StoreDetailScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#8E8E93" style={{ marginLeft: 4 }} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
               ))
             )}
@@ -492,7 +495,7 @@ export default function StoreDetailScreen() {
                   value={congratsTemplate.headline}
                   onChangeText={(text) => setCongratsTemplate({ ...congratsTemplate, headline: text })}
                   placeholder="Thank You!"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   maxLength={30}
                 />
                 
@@ -504,7 +507,7 @@ export default function StoreDetailScreen() {
                   value={congratsTemplate.message}
                   onChangeText={(text) => setCongratsTemplate({ ...congratsTemplate, message: text })}
                   placeholder="Thank you for choosing us!"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={3}
                   maxLength={200}
@@ -517,10 +520,10 @@ export default function StoreDetailScreen() {
                   disabled={savingTemplate}
                 >
                   {savingTemplate ? (
-                    <ActivityIndicator size="small" color="#000" />
+                    <ActivityIndicator size="small" color={colors.text} />
                   ) : (
                     <>
-                      <Ionicons name="checkmark" size={20} color="#000" />
+                      <Ionicons name="checkmark" size={20} color={colors.text} />
                       <Text style={styles.congratsSaveButtonText}>Save Template</Text>
                     </>
                   )}
@@ -555,7 +558,7 @@ export default function StoreDetailScreen() {
                 <Ionicons 
                   name={campaignSettings.managers_can_edit ? "checkmark" : "close"} 
                   size={18} 
-                  color={campaignSettings.managers_can_edit ? "#FFF" : "#8E8E93"} 
+                  color={campaignSettings.managers_can_edit ? "#FFF" : colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -579,7 +582,7 @@ export default function StoreDetailScreen() {
                 <Ionicons 
                   name={campaignSettings.sales_can_edit ? "checkmark" : "close"} 
                   size={18} 
-                  color={campaignSettings.sales_can_edit ? "#FFF" : "#8E8E93"} 
+                  color={campaignSettings.sales_can_edit ? "#FFF" : colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -590,10 +593,10 @@ export default function StoreDetailScreen() {
               disabled={savingCampaignSettings}
             >
               {savingCampaignSettings ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="save-outline" size={18} color="#FFF" />
+                  <Ionicons name="save-outline" size={18} color={colors.text} />
                   <Text style={styles.saveCampaignSettingsButtonText}>Save Permissions</Text>
                 </>
               )}
@@ -611,7 +614,7 @@ export default function StoreDetailScreen() {
                 value={editedStore.name}
                 onChangeText={(text) => setEditedStore({ ...editedStore, name: text })}
                 placeholder="Account name"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               
               <Text style={styles.inputLabel}>Phone</Text>
@@ -620,7 +623,7 @@ export default function StoreDetailScreen() {
                 value={editedStore.phone}
                 onChangeText={(text) => setEditedStore({ ...editedStore, phone: text })}
                 placeholder="+1 (555) 123-4567"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
               />
               
@@ -630,7 +633,7 @@ export default function StoreDetailScreen() {
                 value={editedStore.address}
                 onChangeText={(text) => setEditedStore({ ...editedStore, address: text })}
                 placeholder="Street address"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               
               <View style={styles.row}>
@@ -641,7 +644,7 @@ export default function StoreDetailScreen() {
                     value={editedStore.city}
                     onChangeText={(text) => setEditedStore({ ...editedStore, city: text })}
                     placeholder="City"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
                 <View style={styles.halfField}>
@@ -651,7 +654,7 @@ export default function StoreDetailScreen() {
                     value={editedStore.state}
                     onChangeText={(text) => setEditedStore({ ...editedStore, state: text })}
                     placeholder="State"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     maxLength={2}
                     autoCapitalize="characters"
                   />
@@ -677,21 +680,21 @@ export default function StoreDetailScreen() {
               
               {store.phone && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="call" size={18} color="#8E8E93" />
+                  <Ionicons name="call" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoText}>{store.phone}</Text>
                 </View>
               )}
               
               {store.address && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="location" size={18} color="#8E8E93" />
+                  <Ionicons name="location" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoText}>{store.address}</Text>
                 </View>
               )}
               
               {(store.city || store.state) && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="map" size={18} color="#8E8E93" />
+                  <Ionicons name="map" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoText}>
                     {[store.city, store.state].filter(Boolean).join(', ')}
                   </Text>
@@ -715,7 +718,7 @@ export default function StoreDetailScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add User to Store</Text>
               <TouchableOpacity onPress={() => setShowAddUserModal(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -742,7 +745,7 @@ export default function StoreDetailScreen() {
                 ))
               ) : (
                 <View style={styles.emptyModal}>
-                  <Ionicons name="people-outline" size={48} color="#8E8E93" />
+                  <Ionicons name="people-outline" size={48} color={colors.textSecondary} />
                   <Text style={styles.emptyModalText}>No available users in this organization</Text>
                   <Text style={styles.emptyModalSubtext}>
                     All users are already assigned to this store
@@ -757,10 +760,10 @@ export default function StoreDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -769,7 +772,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -778,7 +781,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
   },
   saveButton: {
@@ -802,7 +805,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   content: {
@@ -810,7 +813,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statusCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -839,7 +842,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -868,7 +871,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   statItem: {
     alignItems: 'center',
@@ -877,14 +880,14 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   section: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -899,7 +902,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     marginLeft: 'auto',
@@ -909,7 +912,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   emptyText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
     marginBottom: 12,
   },
@@ -920,7 +923,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   createButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -928,7 +931,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
@@ -950,11 +953,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userEmail: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   userActions: {
@@ -990,26 +993,26 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   infoText: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   row: {
     flexDirection: 'row',
@@ -1034,7 +1037,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -1045,12 +1048,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalBody: {
     padding: 16,
@@ -1060,7 +1063,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
@@ -1070,13 +1073,13 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyModalText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 15,
     marginTop: 12,
     textAlign: 'center',
   },
   emptyModalSubtext: {
-    color: '#636366',
+    color: colors.textTertiary,
     fontSize: 13,
     marginTop: 4,
     textAlign: 'center',
@@ -1110,27 +1113,27 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   congratsEditorLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
     marginTop: 12,
   },
   congratsEditorHint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: -4,
     marginBottom: 8,
   },
   congratsEditorInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   congratsEditorTextArea: {
     minHeight: 80,
@@ -1173,14 +1176,14 @@ const styles = StyleSheet.create({
   congratsSaveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   // Campaign Permissions Styles
   permissionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -1192,11 +1195,11 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   permissionDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   toggleButton: {
@@ -1223,6 +1226,6 @@ const styles = StyleSheet.create({
   saveCampaignSettingsButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

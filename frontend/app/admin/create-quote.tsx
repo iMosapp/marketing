@@ -18,6 +18,7 @@ import api from '../../services/api';
 import { Picker } from '@react-native-picker/picker';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 const DISCOUNT_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 const BUSINESS_TYPES = ['LLC', 'Corporation', 'Partnership', 'Sole Proprietor', 'Non-Profit', 'Other'];
 const INDUSTRY_VERTICALS = [
@@ -32,6 +33,8 @@ const INDUSTRY_VERTICALS = [
 ];
 
 export default function CreateQuotePage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   
@@ -250,14 +253,14 @@ export default function CreateQuotePage() {
               style={[styles.tab, planType === 'individual' && styles.tabActive]}
               onPress={() => setPlanType('individual')}
             >
-              <Ionicons name="person" size={20} color={planType === 'individual' ? '#FFF' : '#8E8E93'} />
+              <Ionicons name="person" size={20} color={planType === 'individual' ? '#FFF' : colors.textSecondary} />
               <Text style={[styles.tabText, planType === 'individual' && styles.tabTextActive]}>Individual</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, planType === 'store' && styles.tabActive]}
               onPress={() => setPlanType('store')}
             >
-              <Ionicons name="storefront" size={20} color={planType === 'store' ? '#FFF' : '#8E8E93'} />
+              <Ionicons name="storefront" size={20} color={planType === 'store' ? '#FFF' : colors.textSecondary} />
               <Text style={[styles.tabText, planType === 'store' && styles.tabTextActive]}>Account / Team</Text>
             </TouchableOpacity>
           </View>
@@ -299,7 +302,7 @@ export default function CreateQuotePage() {
                 style={styles.userCountButton}
                 onPress={() => setNumUsers(Math.max(5, numUsers - 1))}
               >
-                <Ionicons name="remove" size={24} color="#FFF" />
+                <Ionicons name="remove" size={24} color={colors.text} />
               </TouchableOpacity>
               <View style={styles.userCountDisplay}>
                 <Text style={styles.userCountNumber}>{numUsers}</Text>
@@ -309,7 +312,7 @@ export default function CreateQuotePage() {
                 style={styles.userCountButton}
                 onPress={() => setNumUsers(numUsers + 1)}
               >
-                <Ionicons name="add" size={24} color="#FFF" />
+                <Ionicons name="add" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.userPriceNote}>
@@ -347,7 +350,7 @@ export default function CreateQuotePage() {
             <TextInput
               style={styles.discountCodeInput}
               placeholder="Or enter discount code"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={discountCode}
               onChangeText={setDiscountCode}
               autoCapitalize="characters"
@@ -364,7 +367,7 @@ export default function CreateQuotePage() {
                 Code applied: {validatedDiscount}% off
               </Text>
               <TouchableOpacity onPress={() => { setValidatedDiscount(null); setDiscountCode(''); }}>
-                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           )}
@@ -385,14 +388,14 @@ export default function CreateQuotePage() {
           <TextInput
             style={styles.input}
             placeholder="Contact Name *"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={customerName}
             onChangeText={setCustomerName}
           />
           <TextInput
             style={styles.input}
             placeholder="Email *"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={customerEmail}
             onChangeText={setCustomerEmail}
             keyboardType="email-address"
@@ -401,7 +404,7 @@ export default function CreateQuotePage() {
           <TextInput
             style={styles.input}
             placeholder="Phone"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={customerPhone}
             onChangeText={setCustomerPhone}
             keyboardType="phone-pad"
@@ -409,7 +412,7 @@ export default function CreateQuotePage() {
           <TextInput
             style={styles.input}
             placeholder="Title/Position"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={customerTitle}
             onChangeText={setCustomerTitle}
           />
@@ -425,14 +428,14 @@ export default function CreateQuotePage() {
               <TextInput
                 style={styles.input}
                 placeholder="Company Name *"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={companyName}
                 onChangeText={setCompanyName}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Website URL"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={website}
                 onChangeText={setWebsite}
                 keyboardType="url"
@@ -441,7 +444,7 @@ export default function CreateQuotePage() {
               <TextInput
                 style={styles.input}
                 placeholder="Street Address"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={streetAddress}
                 onChangeText={setStreetAddress}
               />
@@ -449,14 +452,14 @@ export default function CreateQuotePage() {
                 <TextInput
                   style={[styles.input, styles.inputHalf]}
                   placeholder="City"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={city}
                   onChangeText={setCity}
                 />
                 <TextInput
                   style={[styles.input, styles.inputQuarter]}
                   placeholder="State"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={state}
                   onChangeText={setState}
                   maxLength={2}
@@ -465,7 +468,7 @@ export default function CreateQuotePage() {
                 <TextInput
                   style={[styles.input, styles.inputQuarter]}
                   placeholder="ZIP"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={zipCode}
                   onChangeText={setZipCode}
                   keyboardType="number-pad"
@@ -475,7 +478,7 @@ export default function CreateQuotePage() {
               <TextInput
                 style={styles.input}
                 placeholder="EIN (Tax ID)"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={ein}
                 onChangeText={setEin}
               />
@@ -486,7 +489,7 @@ export default function CreateQuotePage() {
                   selectedValue={businessType}
                   onValueChange={setBusinessType}
                   style={styles.picker}
-                  dropdownIconColor="#8E8E93"
+                  dropdownIconColor={colors.textSecondary}
                 >
                   <Picker.Item label="Select business type..." value="" />
                   {BUSINESS_TYPES.map((type) => (
@@ -501,7 +504,7 @@ export default function CreateQuotePage() {
                   selectedValue={vertical}
                   onValueChange={setVertical}
                   style={styles.picker}
-                  dropdownIconColor="#8E8E93"
+                  dropdownIconColor={colors.textSecondary}
                 >
                   <Picker.Item label="Select industry..." value="" />
                   {INDUSTRY_VERTICALS.map((v) => (
@@ -515,7 +518,7 @@ export default function CreateQuotePage() {
                 <Switch
                   value={w9Required}
                   onValueChange={setW9Required}
-                  trackColor={{ false: '#2C2C2E', true: '#007AFF' }}
+                  trackColor={{ false: colors.surface, true: '#007AFF' }}
                 />
               </View>
             </View>
@@ -528,21 +531,21 @@ export default function CreateQuotePage() {
               <TextInput
                 style={styles.input}
                 placeholder="Signer Name (if different)"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={signerName}
                 onChangeText={setSignerName}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Signer Title"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={signerTitle}
                 onChangeText={setSignerTitle}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Signer Email"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={signerEmail}
                 onChangeText={setSignerEmail}
                 keyboardType="email-address"
@@ -551,7 +554,7 @@ export default function CreateQuotePage() {
               <TextInput
                 style={styles.input}
                 placeholder="Signer Phone"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={signerPhone}
                 onChangeText={setSignerPhone}
                 keyboardType="phone-pad"
@@ -566,14 +569,14 @@ export default function CreateQuotePage() {
           <TextInput
             style={styles.input}
             placeholder="Your Name"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={preparedByName}
             onChangeText={setPreparedByName}
           />
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Notes or special terms..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -589,10 +592,10 @@ export default function CreateQuotePage() {
           data-testid="create-quote-button"
         >
           {loading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color={colors.text} />
           ) : (
             <>
-              <Ionicons name="document-text" size={24} color="#FFF" />
+              <Ionicons name="document-text" size={24} color={colors.text} />
               <Text style={styles.createButtonText}>Create Quote</Text>
             </>
           )}
@@ -635,7 +638,7 @@ export default function CreateQuotePage() {
                   router.push('/admin/quotes');
                 }}
               >
-                <Ionicons name="list" size={20} color="#FFF" />
+                <Ionicons name="list" size={20} color={colors.text} />
                 <Text style={styles.successButtonPrimaryText}>View Quotes</Text>
               </TouchableOpacity>
             </View>
@@ -646,10 +649,10 @@ export default function CreateQuotePage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -658,7 +661,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -666,7 +669,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -678,18 +681,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   sectionNote: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: -8,
     marginBottom: 12,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 4,
   },
@@ -708,10 +711,10 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   planOptions: {
     gap: 8,
@@ -720,11 +723,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   planOptionActive: {
     borderColor: '#007AFF',
@@ -733,14 +736,14 @@ const styles = StyleSheet.create({
   planOptionName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   planOptionNameActive: {
     color: '#007AFF',
   },
   planOptionPrice: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   planOptionPriceActive: {
     color: '#007AFF',
@@ -766,11 +769,11 @@ const styles = StyleSheet.create({
   userCountNumber: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   userCountLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   userPriceNote: {
     textAlign: 'center',
@@ -780,7 +783,7 @@ const styles = StyleSheet.create({
   },
   discountSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   discountSlider: {
@@ -795,12 +798,12 @@ const styles = StyleSheet.create({
     minWidth: 72,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   discountTileActive: {
     borderColor: '#007AFF',
@@ -808,7 +811,7 @@ const styles = StyleSheet.create({
   },
   discountTileText: {
     fontSize: 22,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '700',
   },
   discountTileTextActive: {
@@ -816,7 +819,7 @@ const styles = StyleSheet.create({
   },
   discountTileLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
     marginTop: 2,
   },
@@ -829,13 +832,13 @@ const styles = StyleSheet.create({
   },
   discountCodeInput: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   applyButton: {
     backgroundColor: '#007AFF',
@@ -844,7 +847,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   applyButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -867,14 +870,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginTop: 24,
   },
   priceSummaryLabel: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginRight: 8,
   },
   priceSummaryAmount: {
@@ -884,18 +887,18 @@ const styles = StyleSheet.create({
   },
   priceSummaryInterval: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginLeft: 4,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   inputRow: {
     flexDirection: 'row',
@@ -909,32 +912,32 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 4,
   },
   selectContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   picker: {
-    color: '#FFF',
+    color: colors.text,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
   },
   switchLabel: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   textArea: {
     minHeight: 100,
@@ -956,7 +959,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   // Success Modal Styles
   modalOverlay: {
@@ -967,7 +970,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   successModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -980,12 +983,12 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   successMessage: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -1012,7 +1015,7 @@ const styles = StyleSheet.create({
   successButtonPrimaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   successButtonSecondary: {
     flex: 1,
@@ -1020,7 +1023,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingVertical: 14,
   },

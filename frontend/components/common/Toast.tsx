@@ -62,11 +62,11 @@ export const Toast: React.FC<ToastProps> = ({
     <Animated.View
       style={[
         styles.container,
-        { opacity: fadeAnim, backgroundColor: colors.bg },
+        { opacity: fadeAnim, backgroundColor: '#000000' },
       ]}
     >
       <Pressable style={styles.content} onPress={onHide}>
-        <Ionicons name={colors.icon} size={24} color="#FFF" />
+        <Ionicons name={colors.icon} size={24} color={'#FFFFFF'} />
         <Text style={styles.message}>{message}</Text>
         <Ionicons name="close" size={20} color="rgba(255,255,255,0.7)" />
       </Pressable>
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '500',
   },

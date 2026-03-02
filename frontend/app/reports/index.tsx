@@ -15,9 +15,12 @@ import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width } = Dimensions.get('window');
 
 export default function ReportsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -73,7 +76,7 @@ export default function ReportsScreen() {
         <Text style={styles.reportTitle}>{title}</Text>
         <Text style={styles.reportDescription}>{description}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -155,8 +158,8 @@ export default function ReportsScreen() {
                 <Ionicons name="bar-chart" size={22} color="#007AFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFF' }}>Comprehensive Analytics</Text>
-                <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>KPIs, trends, charts, team & store breakdown</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Comprehensive Analytics</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>KPIs, trends, charts, team & store breakdown</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#007AFF" />
             </TouchableOpacity>
@@ -305,10 +308,10 @@ export default function ReportsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -321,7 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -329,12 +332,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   periodSelector: {
@@ -346,17 +349,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   periodButtonActive: {
     backgroundColor: '#007AFF',
   },
   periodText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   periodTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   scrollContent: {
     padding: 16,
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
     marginTop: 8,
   },
@@ -375,7 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     width: (width - 44) / 2,
@@ -397,20 +400,20 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statSubValue: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   breakdownCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -426,21 +429,21 @@ const styles = StyleSheet.create({
   breakdownDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   breakdownValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 8,
   },
   breakdownLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   reportCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
@@ -461,11 +464,11 @@ const styles = StyleSheet.create({
   reportTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   reportDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   errorContainer: {
@@ -473,7 +476,7 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   errorText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 16,
     marginTop: 16,
   },
@@ -485,7 +488,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryText: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
 });

@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { adminAPI } from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 const METRICS = [
   { value: 'contacts_added', label: 'Contacts', icon: 'person-add' },
   { value: 'messages_sent', label: 'Messages', icon: 'chatbubbles' },
@@ -25,6 +26,8 @@ const METRICS = [
 ];
 
 export default function LeaderboardScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -100,7 +103,7 @@ export default function LeaderboardScreen() {
       case 1: return { bg: '#FFD60A20', color: '#FFD60A', icon: 'trophy' };
       case 2: return { bg: '#C0C0C020', color: '#C0C0C0', icon: 'medal' };
       case 3: return { bg: '#CD7F3220', color: '#CD7F32', icon: 'medal' };
-      default: return { bg: '#2C2C2E', color: '#8E8E93', icon: null };
+      default: return { bg: colors.surface, color: colors.textSecondary, icon: null };
     }
   };
   
@@ -181,7 +184,7 @@ export default function LeaderboardScreen() {
               <Ionicons 
                 name={metric.icon as any} 
                 size={18} 
-                color={selectedMetric === metric.value ? '#FFF' : '#8E8E93'} 
+                color={selectedMetric === metric.value ? '#FFF' : colors.textSecondary} 
               />
               <Text style={[styles.metricText, selectedMetric === metric.value && styles.metricTextActive]}>
                 {metric.label}
@@ -259,7 +262,7 @@ export default function LeaderboardScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="trophy-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="trophy-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>No rankings yet</Text>
               <Text style={styles.emptySubtext}>
                 Start adding contacts, sending messages, and closing deals to climb the leaderboard!
@@ -272,10 +275,10 @@ export default function LeaderboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -296,12 +299,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   metricSelector: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   metricScroll: {
     paddingHorizontal: 16,
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -322,22 +325,22 @@ const styles = StyleSheet.create({
   metricText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   metricTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   filters: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   filterScroll: {
     paddingHorizontal: 16,
     paddingVertical: 4,
   },
   filterChip: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
@@ -352,10 +355,10 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   filterTextActive: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   yourRankBanner: {
@@ -381,7 +384,7 @@ const styles = StyleSheet.create({
   leaderboardItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -411,7 +414,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -425,7 +428,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userDetails: {
     flex: 1,
@@ -433,7 +436,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   youBadge: {
     color: '#007AFF',
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
   },
   userStore: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   scoreContainer: {
@@ -450,11 +453,11 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   scoreLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -463,13 +466,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 32,
   },

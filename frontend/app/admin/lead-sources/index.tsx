@@ -17,6 +17,7 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface LeadSource {
   id: string;
   name: string;
@@ -31,6 +32,8 @@ interface LeadSource {
 }
 
 export default function LeadSourcesScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
@@ -83,7 +86,7 @@ const { showToast } = useToast();
       case 'jump_ball': return '#FF9500';
       case 'round_robin': return '#007AFF';
       case 'weighted_round_robin': return '#34C759';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -126,7 +129,7 @@ const { showToast } = useToast();
 
       <View style={styles.sourceStats}>
         <View style={styles.statItem}>
-          <Ionicons name="people" size={16} color="#8E8E93" />
+          <Ionicons name="people" size={16} color={colors.textSecondary} />
           <Text style={styles.statText}>{item.lead_count} leads</Text>
         </View>
         <View style={[styles.methodBadge, { backgroundColor: getAssignmentColor(item.assignment_method) + '20' }]}>
@@ -184,14 +187,14 @@ const { showToast } = useToast();
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="git-branch-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="git-branch-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No lead sources yet</Text>
             <Text style={styles.emptySubtext}>Create a lead source to receive leads from external systems</Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => router.push('/admin/lead-sources/new')}
             >
-              <Ionicons name="add" size={20} color="#FFF" />
+              <Ionicons name="add" size={20} color={colors.text} />
               <Text style={styles.createButtonText}>Create Lead Source</Text>
             </TouchableOpacity>
           </View>
@@ -201,10 +204,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -225,7 +228,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sourceCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -265,12 +268,12 @@ const styles = StyleSheet.create({
   sourceName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   sourceDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -294,7 +297,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   methodBadge: {
     paddingHorizontal: 10,
@@ -306,13 +309,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   webhookSection: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 10,
   },
   webhookLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
@@ -336,13 +339,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 32,
@@ -357,7 +360,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },

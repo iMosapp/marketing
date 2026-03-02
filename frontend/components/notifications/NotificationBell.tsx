@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useNotifications } from '../../hooks/useNotifications';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 function getNotifIcon(type: string): string {
@@ -50,7 +51,7 @@ function getNotifColor(type: string): string {
     case 'sms_sent': return '#34C759';
     case 'badge_earned': return '#FFD60A';
     case 'campaign_send': return '#FF9500';
-    default: return '#8E8E93';
+    default: return colors.textSecondary;
   }
 }
 
@@ -92,6 +93,8 @@ function formatTime(isoString: string) {
 }
 
 export function NotificationBell() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const {
     notifications,
@@ -127,7 +130,7 @@ export function NotificationBell() {
         onPress={handlePress}
         data-testid="notification-bell-btn"
       >
-        <Ionicons name="notifications-outline" size={22} color="#FFF" />
+        <Ionicons name="notifications-outline" size={22} color={colors.text} />
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
@@ -151,7 +154,7 @@ export function NotificationBell() {
                   onPress={() => { setOpen(false); router.push('/notifications' as any); }}
                   data-testid="view-all-notifications-btn"
                 >
-                  <Text style={[styles.markAll, { color: '#8E8E93' }]}>View All</Text>
+                  <Text style={[styles.markAll, { color: colors.textSecondary }]}>View All</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -173,7 +176,7 @@ export function NotificationBell() {
                     <Ionicons
                       name={getCategoryIcon(cat) as any}
                       size={13}
-                      color={isActive ? '#FFF' : '#8E8E93'}
+                      color={isActive ? '#FFF' : colors.textSecondary}
                     />
                     <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
                       {getCategoryLabel(cat)}{count > 0 ? ` (${count})` : ''}
@@ -187,7 +190,7 @@ export function NotificationBell() {
             <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 8 }}>
               {notifications.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="checkmark-circle" size={32} color="#3A3A3C" />
+                  <Ionicons name="checkmark-circle" size={32} color={colors.borderLight} />
                   <Text style={styles.empty}>All caught up!</Text>
                 </View>
               ) : (
@@ -224,7 +227,7 @@ export function NotificationBell() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   wrapper: {
     position: 'relative',
     zIndex: 9999,
@@ -234,11 +237,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   badge: {
     position: 'absolute',
@@ -252,12 +255,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: colors.border,
   },
   badgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   overlay: {
     ...(IS_WEB ? {
@@ -281,10 +284,10 @@ const styles = StyleSheet.create({
     right: IS_WEB ? 16 : 0,
     width: 380,
     maxHeight: 520,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     overflow: 'hidden',
     zIndex: 99999,
     ...(IS_WEB ? {
@@ -304,12 +307,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   dropdownTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   markAll: {
     fontSize: 13,
@@ -320,7 +323,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
     maxHeight: 44,
   },
   categoryChip: {
@@ -330,7 +333,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     marginRight: 6,
   },
   categoryChipActive: {
@@ -338,11 +341,11 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   categoryChipTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   list: {
     maxHeight: 400,
@@ -363,7 +366,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
     gap: 10,
   },
   itemUnread: {
@@ -389,12 +392,12 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   itemBody: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
     marginTop: 1,
   },

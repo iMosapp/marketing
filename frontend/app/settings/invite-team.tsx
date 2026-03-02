@@ -17,7 +17,10 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function InviteTeamScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -179,7 +182,7 @@ export default function InviteTeamScreen() {
       case 'org_admin': return '#007AFF';
       case 'store_manager': return '#34C759';
       case 'individual': return '#AF52DE';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -273,7 +276,7 @@ export default function InviteTeamScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.inputLabel}>Full Name *</Text>
             <View style={styles.inputRow}>
-              <Ionicons name="person-outline" size={18} color="#8E8E93" />
+              <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
               <TextInput
                 style={styles.textInput}
                 value={name}
@@ -288,7 +291,7 @@ export default function InviteTeamScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.inputLabel}>Email Address *</Text>
             <View style={styles.inputRow}>
-              <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+              <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <TextInput
                 style={styles.textInput}
                 value={email}
@@ -316,8 +319,8 @@ export default function InviteTeamScreen() {
                     ]}
                     onPress={() => setRole(opt.value)}
                   >
-                    <View style={[styles.roleIconWrap, { backgroundColor: (isActive ? opt.color : '#3A3A3C') + '25' }]}>
-                      <Ionicons name={opt.icon as any} size={18} color={isActive ? opt.color : '#8E8E93'} />
+                    <View style={[styles.roleIconWrap, { backgroundColor: (isActive ? opt.color : colors.borderLight) + '25' }]}>
+                      <Ionicons name={opt.icon as any} size={18} color={isActive ? opt.color : colors.textSecondary} />
                     </View>
                     <View style={styles.roleTextWrap}>
                       <Text style={[styles.roleOptionText, isActive && styles.roleOptionTextActive]}>{opt.label}</Text>
@@ -338,10 +341,10 @@ export default function InviteTeamScreen() {
             disabled={sending}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#000" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="send" size={18} color="#000" />
+                <Ionicons name="send" size={18} color={colors.text} />
                 <Text style={styles.sendButtonText}>Create & Copy Invite</Text>
               </>
             )}
@@ -396,10 +399,10 @@ export default function InviteTeamScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -416,13 +419,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
   },
   section: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -436,11 +439,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   sectionDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   successBanner: {
@@ -464,13 +467,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 14,
     gap: 10,
@@ -478,7 +481,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     paddingVertical: 14,
   },
   roleSelector: {
@@ -491,7 +494,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: 'transparent',
     gap: 12,
@@ -512,10 +515,10 @@ const styles = StyleSheet.create({
   roleOptionText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   roleOptionTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   roleDesc: {
     fontSize: 12,
@@ -527,7 +530,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -550,7 +553,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sendButtonText: {
-    color: '#000',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -565,19 +568,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
     gap: 12,
   },
   memberAvatar: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   memberAvatarText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -585,12 +588,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberName: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '500',
   },
   memberEmail: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 13,
     marginTop: 2,
   },
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
     color: '#34C759',
   },
   inviteCredentials: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -636,16 +639,16 @@ const styles = StyleSheet.create({
   },
   credLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   credValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   credDivider: {
     height: 1,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
     marginHorizontal: 16,
   },
   copyButton: {
@@ -658,12 +661,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   copyButtonCopied: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: '#34C759',
   },
   copyButtonText: {
-    color: '#000',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },

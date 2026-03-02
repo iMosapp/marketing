@@ -20,12 +20,15 @@ import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 const DEFAULT_COLORS = [
   '#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', 
   '#AF52DE', '#FF2D55', '#00C7BE', '#FFD60A', '#1C1C1E'
 ];
 
 export default function BrandKitSettings() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
@@ -138,7 +141,7 @@ const { showToast } = useToast();
               }}
             >
               {value === color && (
-                <Ionicons name="checkmark" size={16} color="#FFF" />
+                <Ionicons name="checkmark" size={16} color={colors.text} />
               )}
             </TouchableOpacity>
           ))}
@@ -149,7 +152,7 @@ const { showToast } = useToast();
               value={value}
               onChangeText={onSelect}
               placeholder="#000000"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               maxLength={7}
             />
           </View>
@@ -192,7 +195,7 @@ const { showToast } = useToast();
               <Image source={{ uri: logoUrl }} style={styles.previewLogo} />
             ) : (
               <View style={styles.previewLogoPlaceholder}>
-                <Ionicons name="business" size={24} color="#FFF" />
+                <Ionicons name="business" size={24} color={colors.text} />
               </View>
             )}
             <Text style={styles.previewCompany}>{companyName || 'Your Company'}</Text>
@@ -212,7 +215,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.input}
             placeholder="https://example.com/logo.png"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={logoUrl}
             onChangeText={setLogoUrl}
             autoCapitalize="none"
@@ -226,7 +229,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.input}
             placeholder="Your Company Name"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={companyName}
             onChangeText={setCompanyName}
           />
@@ -238,7 +241,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.input}
             placeholder="Your company tagline"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={tagline}
             onChangeText={setTagline}
           />
@@ -255,7 +258,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.input}
             placeholder="Powered by i'M On Social"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={footerText}
             onChangeText={setFooterText}
           />
@@ -271,7 +274,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.socialInput}
             placeholder="Website URL"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={socialLinks.website}
             onChangeText={(text) => setSocialLinks({ ...socialLinks, website: text })}
             autoCapitalize="none"
@@ -286,7 +289,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.socialInput}
             placeholder="Facebook URL"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={socialLinks.facebook}
             onChangeText={(text) => setSocialLinks({ ...socialLinks, facebook: text })}
             autoCapitalize="none"
@@ -301,7 +304,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.socialInput}
             placeholder="Instagram URL"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={socialLinks.instagram}
             onChangeText={(text) => setSocialLinks({ ...socialLinks, instagram: text })}
             autoCapitalize="none"
@@ -316,7 +319,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.socialInput}
             placeholder="Twitter/X URL"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={socialLinks.twitter}
             onChangeText={(text) => setSocialLinks({ ...socialLinks, twitter: text })}
             autoCapitalize="none"
@@ -331,7 +334,7 @@ const { showToast } = useToast();
           <TextInput
             style={styles.socialInput}
             placeholder="LinkedIn URL"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={socialLinks.linkedin}
             onChangeText={(text) => setSocialLinks({ ...socialLinks, linkedin: text })}
             autoCapitalize="none"
@@ -341,7 +344,7 @@ const { showToast } = useToast();
 
         {/* Info */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#8E8E93" />
+          <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
             Your brand kit will be applied to all emails sent from iMos. 
             The preview above shows how your email header and footer will look.
@@ -352,10 +355,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -369,7 +372,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -377,7 +380,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     padding: 4,
@@ -421,7 +424,7 @@ const styles = StyleSheet.create({
   previewCompany: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   previewTagline: {
     fontSize: 14,
@@ -430,7 +433,7 @@ const styles = StyleSheet.create({
   },
   previewBody: {
     padding: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
   },
   previewBodyText: {
     fontSize: 14,
@@ -454,17 +457,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   
   // Color Picker
@@ -474,7 +477,7 @@ const styles = StyleSheet.create({
   colorPickerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   colorOptions: {
@@ -492,18 +495,18 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   colorOptionSelected: {
-    borderColor: '#FFF',
+    borderColor: colors.border,
   },
   customColorContainer: {
     marginLeft: 8,
   },
   customColorInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 2,
     width: 90,
   },
@@ -512,7 +515,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 16,
@@ -530,25 +533,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   socialInput: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
 
   // Info Card
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -558,7 +561,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 });

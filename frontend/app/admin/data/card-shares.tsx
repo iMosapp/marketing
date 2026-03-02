@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface CardShare {
   _id: string;
   user_name?: string;
@@ -24,6 +25,8 @@ interface CardShare {
 }
 
 export default function CardSharesDataScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [shares, setShares] = useState<CardShare[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +73,7 @@ export default function CardSharesDataScreen() {
             </View>
           )}
           <View style={styles.viewCount}>
-            <Ionicons name="eye" size={12} color="#8E8E93" />
+            <Ionicons name="eye" size={12} color={colors.textSecondary} />
             <Text style={styles.viewText}>{item.view_count || 0} views</Text>
           </View>
         </View>
@@ -110,7 +113,7 @@ export default function CardSharesDataScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="card-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="card-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No card shares yet</Text>
           </View>
         )}
@@ -119,10 +122,10 @@ export default function CardSharesDataScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -136,7 +139,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -144,7 +147,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     backgroundColor: '#FF2D5520',
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
   },
   shareItem: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -187,11 +190,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   date: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   contactName: {
     fontSize: 13,
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
   },
   viewText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
@@ -233,7 +236,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
 });

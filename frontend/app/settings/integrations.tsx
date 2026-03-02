@@ -20,6 +20,7 @@ import api from '../../services/api';
 import { WebModal } from '../../components/WebModal';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 type TabType = 'api-keys' | 'webhooks' | 'crm' | 'dms' | 'docs';
 
 interface Provider {
@@ -32,6 +33,8 @@ interface Provider {
 }
 
 export default function IntegrationsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
@@ -287,13 +290,13 @@ const { showToast } = useToast();
           style={styles.addButton}
           onPress={() => setShowNewKeyModal(true)}
         >
-          <Ionicons name="add" size={24} color="#FFF" />
+          <Ionicons name="add" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
       
       {apiKeys.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="key-outline" size={48} color="#8E8E93" />
+          <Ionicons name="key-outline" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyText}>No API keys yet</Text>
           <Text style={styles.emptySubtext}>Create a key to integrate with external systems</Text>
         </View>
@@ -338,13 +341,13 @@ const { showToast } = useToast();
           style={styles.addButton}
           onPress={() => setShowNewWebhookModal(true)}
         >
-          <Ionicons name="add" size={24} color="#FFF" />
+          <Ionicons name="add" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
       
       {webhooks.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="git-branch-outline" size={48} color="#8E8E93" />
+          <Ionicons name="git-branch-outline" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyText}>No webhooks configured</Text>
           <Text style={styles.emptySubtext}>Set up webhooks to sync data with Zapier, Make, or your own systems</Text>
         </View>
@@ -434,7 +437,7 @@ const { showToast } = useToast();
                 <Text style={styles.providerName}>{provider.name}</Text>
                 <Text style={styles.providerDesc}>{provider.description}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           ))}
         </View>
@@ -481,7 +484,7 @@ const { showToast } = useToast();
             <Text style={styles.docCardTitle}>Base URL</Text>
             <TouchableOpacity style={styles.codeBlock} onPress={() => copyToClipboard(`${APP_URL}/api/v1`)}>
               <Text style={styles.codeText}>{APP_URL}/api/v1</Text>
-              <Ionicons name="copy-outline" size={16} color="#8E8E93" />
+              <Ionicons name="copy-outline" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -602,7 +605,7 @@ const { showToast } = useToast();
           {WEBHOOK_EVENTS.map((evt, i) => (
             <View key={i} style={styles.webhookEventRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={[styles.eventDot, { backgroundColor: evt.event.startsWith('contact') ? '#007AFF' : evt.event.startsWith('message') ? '#34C759' : evt.event.startsWith('campaign') ? '#FF9500' : evt.event.startsWith('review') ? '#FFD60A' : evt.event.startsWith('user') ? '#5856D6' : '#8E8E93' }]} />
+                <View style={[styles.eventDot, { backgroundColor: evt.event.startsWith('contact') ? '#007AFF' : evt.event.startsWith('message') ? '#34C759' : evt.event.startsWith('campaign') ? '#FF9500' : evt.event.startsWith('review') ? '#FFD60A' : evt.event.startsWith('user') ? '#5856D6' : colors.textSecondary }]} />
                 <Text style={styles.webhookEventName}>{evt.event}</Text>
               </View>
               <Text style={styles.webhookEventDesc}>{evt.desc}</Text>
@@ -770,7 +773,7 @@ const { showToast } = useToast();
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Integrations</Text>
         <View style={{ width: 40 }} />
@@ -793,7 +796,7 @@ const { showToast } = useToast();
             <Ionicons 
               name={tab.icon as any} 
               size={18} 
-              color={activeTab === tab.key ? '#007AFF' : '#8E8E93'} 
+              color={activeTab === tab.key ? '#007AFF' : colors.textSecondary} 
             />
             <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
               {tab.label}
@@ -849,7 +852,7 @@ const { showToast } = useToast();
                   value={newKeyName}
                   onChangeText={setNewKeyName}
                   placeholder="e.g., Zapier Integration"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                 />
                 
                 <View style={styles.modalActions}>
@@ -865,7 +868,7 @@ const { showToast } = useToast();
                     disabled={!newKeyName.trim() || creatingKey}
                   >
                     {creatingKey ? (
-                      <ActivityIndicator size="small" color="#FFF" />
+                      <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                       <Text style={styles.modalButtonText}>Create Key</Text>
                     )}
@@ -889,7 +892,7 @@ const { showToast } = useToast();
               value={newWebhook.name}
               onChangeText={(text) => setNewWebhook(prev => ({ ...prev, name: text }))}
               placeholder="e.g., Zapier - New Contacts"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             
             <Text style={styles.modalLabel}>Endpoint URL</Text>
@@ -898,7 +901,7 @@ const { showToast } = useToast();
               value={newWebhook.url}
               onChangeText={(text) => setNewWebhook(prev => ({ ...prev, url: text }))}
               placeholder="https://hooks.zapier.com/..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
               keyboardType="url"
             />
@@ -956,14 +959,14 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -974,7 +977,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -982,12 +985,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   tabBar: {
     flexGrow: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   tab: {
     flexDirection: 'row',
@@ -1002,7 +1005,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   activeTabText: {
     color: '#007AFF',
@@ -1023,11 +1026,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   addButton: {
@@ -1044,17 +1047,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   keyCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -1067,7 +1070,7 @@ const styles = StyleSheet.create({
   keyName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -1088,7 +1091,7 @@ const styles = StyleSheet.create({
   keyPrefix: {
     fontSize: 13,
     fontFamily: 'monospace',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   keyMeta: {
@@ -1104,7 +1107,7 @@ const styles = StyleSheet.create({
   },
   keyRequests: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   revokeButton: {
     fontSize: 14,
@@ -1112,7 +1115,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   webhookCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -1125,12 +1128,12 @@ const styles = StyleSheet.create({
   webhookName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   webhookUrl: {
     fontSize: 13,
     fontFamily: 'monospace',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   webhookEvents: {
@@ -1140,18 +1143,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   eventChip: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   eventChipText: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   moreEvents: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     alignSelf: 'center',
   },
   webhookActions: {
@@ -1178,11 +1181,11 @@ const styles = StyleSheet.create({
   subsectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   connectionCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -1195,7 +1198,7 @@ const styles = StyleSheet.create({
   connectionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   syncBadge: {
     paddingHorizontal: 8,
@@ -1214,7 +1217,7 @@ const styles = StyleSheet.create({
   syncText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   lastSync: {
     fontSize: 12,
@@ -1224,7 +1227,7 @@ const styles = StyleSheet.create({
   providerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -1235,15 +1238,15 @@ const styles = StyleSheet.create({
   providerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   providerDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   docCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -1251,24 +1254,24 @@ const styles = StyleSheet.create({
   docCardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   docCardText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   codeInline: {
     fontFamily: 'monospace',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     color: '#FF9500',
   },
   codeBlock: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
   },
@@ -1280,12 +1283,12 @@ const styles = StyleSheet.create({
   endpointsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 12,
   },
   endpointCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -1298,7 +1301,7 @@ const styles = StyleSheet.create({
   endpointName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   methodBadges: {
     flexDirection: 'row',
@@ -1308,7 +1311,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   methodGET: {
     backgroundColor: '#34C75930',
@@ -1325,12 +1328,12 @@ const styles = StyleSheet.create({
   methodText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   endpointPath: {
     fontSize: 13,
     fontFamily: 'monospace',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   endpointDesc: {
@@ -1342,7 +1345,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
@@ -1358,7 +1361,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: '#2A2A2A',
   },
@@ -1369,20 +1372,20 @@ const styles = StyleSheet.create({
   docNavText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   docNavTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   docSectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   docParagraph: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -1429,11 +1432,11 @@ const styles = StyleSheet.create({
   endpointPathText: {
     fontSize: 13,
     fontFamily: 'monospace',
-    color: '#E5E5EA',
+    color: colors.borderLight,
   },
   endpointDescText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   endpointParams: {
@@ -1449,7 +1452,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   webhookEventRow: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
@@ -1462,12 +1465,12 @@ const styles = StyleSheet.create({
   webhookEventName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     fontFamily: 'monospace',
   },
   webhookEventDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
     marginLeft: 16,
   },
@@ -1493,7 +1496,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -1502,21 +1505,21 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 20,
     textAlign: 'center',
   },
   modalLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   modalInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   modalActions: {
@@ -1528,12 +1531,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
   },
   modalCancelText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   modalButton: {
@@ -1548,7 +1551,7 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   keyCreatedBox: {
@@ -1558,7 +1561,7 @@ const styles = StyleSheet.create({
   keyCreatedTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   keyCreatedWarning: {
@@ -1570,7 +1573,7 @@ const styles = StyleSheet.create({
   keyDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     marginTop: 16,
@@ -1589,7 +1592,7 @@ const styles = StyleSheet.create({
   eventOption: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
@@ -1614,11 +1617,11 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   eventDesc: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
 });

@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
+import { useThemeStore } from '../store/themeStore';
 export type MessageMode = 'sms' | 'email';
 export type ToggleStyle = 'pill' | 'fab' | 'tabs' | 'segmented';
 
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   pillContainerEmail: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#3A3A3C',
   },
   pillOption: {
     flexDirection: 'row',
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   pillOptionActiveEmail: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#1C1C1E',
   },
   pillText: {
     fontSize: 14,
@@ -216,10 +217,10 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   pillTextActive: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   pillTextActiveEmail: {
-    color: '#000',
+    color: '#FFFFFF',
   },
 
   // ============= FAB STYLES =============
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabButtonEmail: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#1C1C1E',
     borderWidth: 2,
     borderColor: '#007AFF',
   },
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tabsContainerEmail: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#000000',
   },
   tabOption: {
     flex: 1,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   segmentedContainerEmail: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#3A3A3C',
   },
   segmentedOption: {
     flex: 1,
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   segmentedOptionActiveEmail: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#1C1C1E',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -325,9 +326,9 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   segmentedTextActive: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   segmentedTextActiveEmail: {
-    color: '#000',
+    color: '#FFFFFF',
   },
 });

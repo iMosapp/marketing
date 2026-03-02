@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Template {
   id: string;
   name: string;
@@ -41,6 +42,8 @@ interface Agreement {
 }
 
 export default function PartnerAgreementsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -135,7 +138,7 @@ export default function PartnerAgreementsScreen() {
       case 'signed': return '#34C759';
       case 'pending_payment': return '#FF9500';
       case 'viewed': return '#007AFF';
-      case 'sent': return '#8E8E93';
+      case 'sent': return colors.textSecondary;
       default: return '#6E6E73';
     }
   };
@@ -154,13 +157,13 @@ export default function PartnerAgreementsScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#FFF" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Partner Agreements</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.accessDenied}>
-          <Ionicons name="lock-closed" size={64} color="#8E8E93" />
+          <Ionicons name="lock-closed" size={64} color={colors.textSecondary} />
           <Text style={styles.accessDeniedText}>Super Admin Access Required</Text>
           <Text style={styles.accessDeniedSubtext}>This feature is only available to super administrators</Text>
         </View>
@@ -172,7 +175,7 @@ export default function PartnerAgreementsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Partner Agreements</Text>
         <TouchableOpacity
@@ -209,7 +212,7 @@ export default function PartnerAgreementsScreen() {
         
         {agreements.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={48} color="#8E8E93" />
+            <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
             <Text style={styles.emptyText}>No agreements yet</Text>
             <Text style={styles.emptySubtext}>Create your first partner agreement</Text>
           </View>
@@ -264,7 +267,7 @@ export default function PartnerAgreementsScreen() {
                 {createdLink ? 'Agreement Created!' : 'New Partner Agreement'}
               </Text>
               <TouchableOpacity onPress={resetModal}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -310,7 +313,7 @@ export default function PartnerAgreementsScreen() {
                       <Ionicons 
                         name={template.type === 'reseller' ? 'storefront' : 'people'} 
                         size={24} 
-                        color={selectedTemplate?.id === template.id ? '#007AFF' : '#8E8E93'} 
+                        color={selectedTemplate?.id === template.id ? '#007AFF' : colors.textSecondary} 
                       />
                       <Text style={[
                         styles.templateOptionText,
@@ -364,14 +367,14 @@ export default function PartnerAgreementsScreen() {
                   value={partnerName}
                   onChangeText={setPartnerName}
                   placeholder="Partner name"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                 />
                 <TextInput
                   style={styles.input}
                   value={partnerEmail}
                   onChangeText={setPartnerEmail}
                   placeholder="Partner email"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -382,7 +385,7 @@ export default function PartnerAgreementsScreen() {
                   onPress={() => setPaymentRequired(!paymentRequired)}
                 >
                   <View style={[styles.checkbox, paymentRequired && styles.checkboxChecked]}>
-                    {paymentRequired && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                    {paymentRequired && <Ionicons name="checkmark" size={16} color={colors.text} />}
                   </View>
                   <Text style={styles.paymentToggleText}>Require one-time payment</Text>
                 </TouchableOpacity>
@@ -395,7 +398,7 @@ export default function PartnerAgreementsScreen() {
                       value={paymentAmount}
                       onChangeText={setPaymentAmount}
                       placeholder="0.00"
-                      placeholderTextColor="#8E8E93"
+                      placeholderTextColor={colors.textSecondary}
                       keyboardType="decimal-pad"
                     />
                   </View>
@@ -408,10 +411,10 @@ export default function PartnerAgreementsScreen() {
                   disabled={!selectedTemplate || !selectedTier || creating}
                 >
                   {creating ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={colors.text} />
                   ) : (
                     <>
-                      <Ionicons name="document-text" size={20} color="#FFF" />
+                      <Ionicons name="document-text" size={20} color={colors.text} />
                       <Text style={styles.createButtonText}>Create Agreement Link</Text>
                     </>
                   )}
@@ -425,14 +428,14 @@ export default function PartnerAgreementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -443,7 +446,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -451,7 +454,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -469,12 +472,12 @@ const styles = StyleSheet.create({
   accessDeniedText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   accessDeniedSubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -484,7 +487,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginRight: 8,
@@ -493,17 +496,17 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   emptyState: {
@@ -512,16 +515,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   agreementCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -534,11 +537,11 @@ const styles = StyleSheet.create({
   agreementType: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   agreementPartner: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   statusBadge: {
@@ -563,7 +566,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   agreementDate: {
     fontSize: 12,
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -586,12 +589,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalScroll: {
     padding: 20,
@@ -600,7 +603,7 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     marginTop: 16,
   },
@@ -610,7 +613,7 @@ const styles = StyleSheet.create({
   },
   templateOption: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
   },
   templateOptionText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -635,7 +638,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tierOption: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginRight: 12,
@@ -650,7 +653,7 @@ const styles = StyleSheet.create({
   tierName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   tierNameSelected: {
     color: '#34C759',
@@ -658,7 +661,7 @@ const styles = StyleSheet.create({
   tierPercentage: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   tierPercentageSelected: {
@@ -670,11 +673,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   paymentToggle: {
@@ -687,7 +690,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#8E8E93',
+    borderColor: colors.textSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -698,7 +701,7 @@ const styles = StyleSheet.create({
   },
   paymentToggleText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   paymentAmountRow: {
     flexDirection: 'row',
@@ -707,7 +710,7 @@ const styles = StyleSheet.create({
   },
   currencySymbol: {
     fontSize: 20,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginRight: 8,
   },
   paymentInput: {
@@ -731,7 +734,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   successContent: {
     alignItems: 'center',
@@ -740,18 +743,18 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   successSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   linkBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 16,
     marginTop: 20,
@@ -774,6 +777,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

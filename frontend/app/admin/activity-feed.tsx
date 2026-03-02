@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { adminAPI } from '../../services/api';
 import { format, formatDistanceToNow } from 'date-fns';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Activity {
   type: string;
   icon: string;
@@ -26,6 +27,8 @@ interface Activity {
 }
 
 export default function ActivityFeedScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -132,7 +135,7 @@ export default function ActivityFeedScreen() {
         <Ionicons 
           name={userRole === 'super_admin' ? 'globe' : userRole === 'org_admin' ? 'business' : userRole === 'store_manager' ? 'storefront' : 'person'} 
           size={16} 
-          color="#8E8E93" 
+          color={colors.textSecondary} 
         />
         <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
       </View>
@@ -153,7 +156,7 @@ export default function ActivityFeedScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="pulse-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="pulse-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>No recent activity</Text>
               <Text style={styles.emptySubtext}>
                 {userRole === 'user' 
@@ -168,10 +171,10 @@ export default function ActivityFeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   roleBadge: {
     flexDirection: 'row',
@@ -203,13 +206,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   roleBadgeText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   listContent: {
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -236,12 +239,12 @@ const styles = StyleSheet.create({
   },
   activityMessage: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 20,
   },
   activityTime: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   emptyContainer: {
@@ -251,13 +254,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 32,
     lineHeight: 20,

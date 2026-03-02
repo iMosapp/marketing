@@ -31,6 +31,7 @@ function ContactActionModal({
 }: {
   visible: boolean; onClose: () => void; colors: any; userId: string; initialMode: 'search' | 'keypad';
 }) {
+  const styles = getStyles(colors);
   const router = useRouter();
   const [mode, setMode] = useState<'search' | 'keypad'>(initialMode);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -187,8 +188,8 @@ function ContactActionModal({
             {search.trim().length > 0 && filtered.length === 0 && (
               <View style={{ gap: 8, marginBottom: 8 }}>
                 <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact">
-                  <Ionicons name="person-add" size={18} color="#000" />
-                  <Text style={{ color: '#000', fontSize: 14, fontWeight: '700' }}>Create New Contact</Text>
+                  <Ionicons name="person-add" size={18} color={colors.text} />
+                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }}>Create New Contact</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={handleVcfUpload} data-testid="import-vcf">
                   <Ionicons name="document-outline" size={18} color={colors.accent} />
@@ -228,8 +229,8 @@ function ContactActionModal({
               /* Empty state  - show add options */
               <View style={{ flex: 1 }}>
                 <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent, marginTop: 8 }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact-main">
-                  <Ionicons name="add-circle" size={20} color="#000" />
-                  <Text style={{ color: '#000', fontSize: 15, fontWeight: '700' }}>New Contact</Text>
+                  <Ionicons name="add-circle" size={20} color={colors.text} />
+                  <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>New Contact</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border, marginTop: 8 }]} onPress={handleVcfUpload} data-testid="import-vcf-main">
                   <Ionicons name="document-outline" size={18} color={colors.accent} />
@@ -308,7 +309,7 @@ function ContactActionModal({
               ))}
             </View>
             <TouchableOpacity style={[styles.dialBtn, { backgroundColor: '#34C759' }]} onPress={() => logAndDial(dialNumber)}>
-              <Ionicons name="call" size={22} color="#FFF" />
+              <Ionicons name="call" size={22} color={colors.text} />
             </TouchableOpacity>
             <View style={{ height: 20 }} />
           </View>
@@ -320,9 +321,10 @@ function ContactActionModal({
 
 // ─── Main Home Screen ─────────────────────────────────────────────
 export default function HomeScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
-  const colors = useThemeStore((s) => s.colors);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
@@ -469,7 +471,7 @@ export default function HomeScreen() {
       congrats_card: { icon: 'gift', color: '#C9A962' },
       showroom_shared: { icon: 'storefront', color: '#34C759' },
     };
-    return map[type] || { icon: 'ellipse', color: '#8E8E93' };
+    return map[type] || { icon: 'ellipse', color: colors.textSecondary };
   };
 
   const TILES = [
@@ -655,7 +657,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   userName: { fontSize: 18, fontWeight: '700' },

@@ -10,7 +10,10 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../../services/api';
 import { showSimpleAlert } from '../../../services/alert';
 
+import { useThemeStore } from '../../../store/themeStore';
 export default function NDADetailPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [nda, setNda] = useState<any>(null);
@@ -63,7 +66,7 @@ export default function NDADetailPage() {
   const statusColor = (s: string) => s === 'signed' ? '#34C759' : s === 'viewed' ? '#FF9500' : '#007AFF';
 
   if (loading) return <View style={styles.container}><ActivityIndicator color="#007AFF" style={{ marginTop: 80 }} /></View>;
-  if (!nda) return <View style={styles.container}><Text style={{ color: '#FFF', textAlign: 'center', marginTop: 80 }}>NDA not found</Text></View>;
+  if (!nda) return <View style={styles.container}><Text style={{ color: colors.text, textAlign: 'center', marginTop: 80 }}>NDA not found</Text></View>;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -152,15 +155,15 @@ export default function NDADetailPage() {
         {nda.status !== 'signed' && (
           <View style={{ gap: 12, marginTop: 12 }}>
             <TouchableOpacity style={styles.actionBtn} onPress={handleResend} data-testid="nda-resend">
-              {sending ? <ActivityIndicator color="#FFF" /> : (
+              {sending ? <ActivityIndicator color={colors.text} /> : (
                 <>
-                  <Ionicons name="mail" size={20} color="#FFF" />
+                  <Ionicons name="mail" size={20} color={colors.text} />
                   <Text style={styles.actionText}>Resend Email</Text>
                 </>
               )}
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#5856D6' }]} onPress={handleCopyLink}>
-              <Ionicons name="copy" size={20} color="#FFF" />
+              <Ionicons name="copy" size={20} color={colors.text} />
               <Text style={styles.actionText}>Copy Link</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FF3B3020', borderWidth: 1, borderColor: '#FF3B30' }]} onPress={handleDelete}>
@@ -178,36 +181,36 @@ function TimelineItem({ label, date, icon, done }: { label: string; date?: strin
   const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: done ? '#34C75920' : '#2C2C2E', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: done ? '#34C75920' : colors.surface, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name={icon as any} size={16} color={done ? '#34C759' : '#666'} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 15, color: done ? '#FFF' : '#666', fontWeight: '500' }}>{label}</Text>
-        {date && <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{fmt(date)}</Text>}
+        {date && <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{fmt(date)}</Text>}
       </View>
       {done && <Ionicons name="checkmark" size={16} color="#34C759" />}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   content: { flex: 1, paddingHorizontal: 20 },
   statusBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, borderRadius: 12, marginTop: 16 },
   statusText: { fontSize: 15, fontWeight: '600' },
-  section: { marginTop: 24, backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 12 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
-  infoLabel: { fontSize: 14, color: '#8E8E93' },
-  infoValue: { fontSize: 14, color: '#FFF', fontWeight: '500' },
-  sigBox: { marginTop: 12, padding: 12, backgroundColor: '#0D0D0D', borderRadius: 12, borderWidth: 1, borderColor: '#333' },
-  sigLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 8 },
+  section: { marginTop: 24, backgroundColor: colors.card, borderRadius: 16, padding: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.surface },
+  infoLabel: { fontSize: 14, color: colors.textSecondary },
+  infoValue: { fontSize: 14, color: colors.text, fontWeight: '500' },
+  sigBox: { marginTop: 12, padding: 12, backgroundColor: '#0D0D0D', borderRadius: 12, borderWidth: 1, borderColor: colors.surface },
+  sigLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 8 },
   sigImage: { width: '100%', height: 80 },
   sigDate: { fontSize: 11, color: '#666', marginTop: 8, textAlign: 'right' },
   pendingText: { fontSize: 14, color: '#FF9500', fontStyle: 'italic', marginTop: 12 },
   timeline: { marginTop: 4 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12 },
-  actionText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  actionText: { fontSize: 16, fontWeight: '600', color: colors.text },
 });

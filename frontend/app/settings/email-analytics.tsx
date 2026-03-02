@@ -17,6 +17,7 @@ import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface EmailLog {
@@ -52,6 +53,8 @@ const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string
 };
 
 export default function EmailAnalyticsPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -242,7 +245,7 @@ export default function EmailAnalyticsPage() {
           
           {analytics.logs.length === 0 ? (
             <View style={styles.emptyActivity}>
-              <Ionicons name="mail-outline" size={48} color="#2C2C2E" />
+              <Ionicons name="mail-outline" size={48} color={colors.surface} />
               <Text style={styles.emptyActivityText}>No emails sent yet</Text>
               <Text style={styles.emptyActivitySubtext}>
                 Start sending emails to see analytics here
@@ -313,10 +316,10 @@ export default function EmailAnalyticsPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -330,7 +333,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   refreshButton: {
     padding: 4,
@@ -362,7 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   timeRangeButtonActive: {
     backgroundColor: '#007AFF',
@@ -370,10 +373,10 @@ const styles = StyleSheet.create({
   timeRangeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   timeRangeTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
 
   // Stats Grid
@@ -386,7 +389,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: (SCREEN_WIDTH - 44) / 2,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     borderLeftWidth: 4,
@@ -407,11 +410,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   percentageBadge: {
@@ -431,13 +434,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   rateCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -445,12 +448,12 @@ const styles = StyleSheet.create({
   rateTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   rateBarContainer: {
     height: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
@@ -470,7 +473,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyActivity: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 40,
     alignItems: 'center',
@@ -478,19 +481,19 @@ const styles = StyleSheet.create({
   emptyActivityText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptyActivitySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -509,11 +512,11 @@ const styles = StyleSheet.create({
   activityRecipient: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   activitySubject: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   activityMeta: {
@@ -535,7 +538,7 @@ const styles = StyleSheet.create({
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -545,7 +548,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -555,12 +558,12 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   tipText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
 });

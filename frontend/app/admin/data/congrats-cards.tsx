@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface CongratsCard {
   _id: string;
   customer_name: string;
@@ -31,6 +32,8 @@ interface CongratsCard {
 }
 
 export default function CongratsCardsDataScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [cards, setCards] = useState<CongratsCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,16 +90,16 @@ export default function CongratsCardsDataScreen() {
         
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Ionicons name="eye" size={14} color="#8E8E93" />
+            <Ionicons name="eye" size={14} color={colors.textSecondary} />
             <Text style={styles.statText}>{item.view_count || 0}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="share" size={14} color="#8E8E93" />
+            <Ionicons name="share" size={14} color={colors.textSecondary} />
             <Text style={styles.statText}>{item.share_count || 0}</Text>
           </View>
         </View>
         
-        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
       </View>
     </TouchableOpacity>
   );
@@ -159,7 +162,7 @@ export default function CongratsCardsDataScreen() {
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="gift-outline" size={64} color="#3A3A3C" />
+            <Ionicons name="gift-outline" size={64} color={colors.borderLight} />
             <Text style={styles.emptyText}>No congrats cards yet</Text>
             <Text style={styles.emptySubtext}>
               Cards created by your team will appear here
@@ -179,10 +182,10 @@ export default function CongratsCardsDataScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     width: 44,
@@ -199,7 +202,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   loadingContainer: {
     flex: 1,
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
   },
   headerStatCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -224,16 +227,16 @@ const styles = StyleSheet.create({
   headerStatValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 8,
   },
   headerStatLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   cardItem: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 10,
     overflow: 'hidden',
@@ -264,7 +267,7 @@ const styles = StyleSheet.create({
   customerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   salesmanName: {
@@ -274,7 +277,7 @@ const styles = StyleSheet.create({
   },
   storeName: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   date: {
     fontSize: 11,
@@ -293,7 +296,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -302,12 +305,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },

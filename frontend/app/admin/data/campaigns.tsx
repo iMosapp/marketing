@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface Campaign {
   _id: string;
   name: string;
@@ -27,6 +28,8 @@ interface Campaign {
 }
 
 export default function CampaignsDataScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,9 +60,9 @@ export default function CampaignsDataScreen() {
     switch (status?.toLowerCase()) {
       case 'active': return '#34C759';
       case 'completed': return '#007AFF';
-      case 'draft': return '#8E8E93';
+      case 'draft': return colors.textSecondary;
       case 'paused': return '#FF9500';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -79,15 +82,15 @@ export default function CampaignsDataScreen() {
         {item.store_name && <Text style={styles.storeName}>{item.store_name}</Text>}
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Ionicons name="paper-plane" size={12} color="#8E8E93" />
+            <Ionicons name="paper-plane" size={12} color={colors.textSecondary} />
             <Text style={styles.statText}>{item.sent_count || 0}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="mail-open" size={12} color="#8E8E93" />
+            <Ionicons name="mail-open" size={12} color={colors.textSecondary} />
             <Text style={styles.statText}>{item.open_count || 0}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="hand-left" size={12} color="#8E8E93" />
+            <Ionicons name="hand-left" size={12} color={colors.textSecondary} />
             <Text style={styles.statText}>{item.click_count || 0}</Text>
           </View>
           <Text style={styles.date}>{format(new Date(item.created_at), 'MMM d')}</Text>
@@ -128,7 +131,7 @@ export default function CampaignsDataScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="rocket-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="rocket-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No campaigns yet</Text>
           </View>
         )}
@@ -137,10 +140,10 @@ export default function CampaignsDataScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -154,7 +157,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     backgroundColor: '#FF3B3020',
@@ -180,7 +183,7 @@ const styles = StyleSheet.create({
   },
   campaignItem: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
   campaignName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
     marginRight: 8,
   },
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
   },
   storeName: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statsRow: {
@@ -242,7 +245,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   date: {
     fontSize: 12,
@@ -257,7 +260,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
 });

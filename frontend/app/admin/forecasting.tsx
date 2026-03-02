@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { useThemeStore } from '../../store/themeStore';
 interface MonthlyData {
   month: number;
   year: number;
@@ -96,7 +97,7 @@ const inputStyles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -108,6 +109,8 @@ const inputStyles = StyleSheet.create({
 });
 
 export default function ForecastingScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   
   // Input parameters
@@ -434,7 +437,7 @@ export default function ForecastingScreen() {
                   </View>
                   <View style={styles.yearStatItem}>
                     <Text style={styles.yearStatLabel}>Customers</Text>
-                    <Text style={[styles.yearStatValue, { color: '#FFF' }]}>
+                    <Text style={[styles.yearStatValue, { color: colors.text }]}>
                       {yearData.endingCustomers}
                     </Text>
                   </View>
@@ -599,10 +602,10 @@ export default function ForecastingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -619,7 +622,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
@@ -630,7 +633,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 12,
   },
@@ -648,13 +651,13 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
   },
   statLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   statValue: {
@@ -663,11 +666,11 @@ const styles = StyleSheet.create({
   },
   statSubtext: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   yearEndBox: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -676,7 +679,7 @@ const styles = StyleSheet.create({
   },
   yearEndLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   yearEndValue: {
     fontSize: 32,
@@ -686,12 +689,12 @@ const styles = StyleSheet.create({
   },
   yearEndSubtext: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 4,
     marginBottom: 16,
@@ -703,28 +706,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   tableHeader: {
     flexDirection: 'row',
     paddingVertical: 10,
     paddingHorizontal: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 8,
     marginBottom: 4,
   },
   tableHeaderCell: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   tableRow: {
@@ -732,11 +735,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   tableCell: {
     fontSize: 13,
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
   },
   greenText: {
@@ -758,14 +761,14 @@ const styles = StyleSheet.create({
   },
   repSummaryItem: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
   },
   repSummaryLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   repSummaryValue: {
@@ -774,7 +777,7 @@ const styles = StyleSheet.create({
     color: '#34C759',
   },
   bonusSummary: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -784,13 +787,13 @@ const styles = StyleSheet.create({
   },
   bonusSummaryText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 12,
   },
   bonusTotalLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   bonusTotalValue: {
     fontSize: 28,
@@ -800,13 +803,13 @@ const styles = StyleSheet.create({
   },
   bonusPerRep: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   // Period selector styles
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 4,
     marginBottom: 16,
@@ -823,14 +826,14 @@ const styles = StyleSheet.create({
   periodButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   periodButtonTextActive: {
-    color: '#000',
+    color: colors.text,
   },
   // Year breakdown card styles
   yearBreakdownCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -844,7 +847,7 @@ const styles = StyleSheet.create({
   yearBreakdownTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   yearMRRBadge: {
@@ -869,7 +872,7 @@ const styles = StyleSheet.create({
   },
   yearStatLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   yearStatValue: {

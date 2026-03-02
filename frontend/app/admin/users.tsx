@@ -23,6 +23,7 @@ import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
+import { useThemeStore } from '../../store/themeStore';
 const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30',
   org_admin: '#FF9500',
@@ -40,6 +41,8 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_ORDER = ['super_admin', 'org_admin', 'store_manager', 'user'];
 
 export default function UsersScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -233,7 +236,7 @@ export default function UsersScreen() {
       .map(role => ({
         title: ROLE_LABELS[role] || role,
         role: role,
-        color: ROLE_COLORS[role] || '#8E8E93',
+        color: ROLE_COLORS[role] || colors.textSecondary,
         data: collapsedSections[role] ? [] : grouped[role],
         count: grouped[role].length,
         isInactive: false,
@@ -244,7 +247,7 @@ export default function UsersScreen() {
       activeSections.push({
         title: 'Inactive Users',
         role: 'inactive',
-        color: '#8E8E93',
+        color: colors.textSecondary,
         data: collapsedSections['inactive'] ? [] : inactiveUsers,
         count: inactiveUsers.length,
         isInactive: true,
@@ -262,8 +265,8 @@ export default function UsersScreen() {
       {item.photo_url ? (
         <Image source={{ uri: item.photo_url }} style={styles.userAvatarPhoto} />
       ) : (
-        <View style={[styles.userAvatar, { backgroundColor: (ROLE_COLORS[item.role] || '#8E8E93') + '30' }]}>
-          <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] || '#8E8E93' }]}>
+        <View style={[styles.userAvatar, { backgroundColor: (ROLE_COLORS[item.role] || colors.textSecondary) + '30' }]}>
+          <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] || colors.textSecondary }]}>
             {item.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '?'}
           </Text>
         </View>
@@ -276,7 +279,7 @@ export default function UsersScreen() {
         )}
       </View>
       <View style={[styles.statusDot, { backgroundColor: item.is_active !== false ? '#34C759' : '#FF3B30' }]} />
-      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -305,7 +308,7 @@ export default function UsersScreen() {
       <Ionicons 
         name={collapsedSections[section.role] ? 'chevron-down' : 'chevron-up'} 
         size={20} 
-        color="#8E8E93" 
+        color={colors.textSecondary} 
       />
     </TouchableOpacity>
   );
@@ -345,11 +348,11 @@ export default function UsersScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#8E8E93" />
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by name or email..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -357,7 +360,7 @@ export default function UsersScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -380,7 +383,7 @@ export default function UsersScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="people-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>
                 {searchQuery ? 'No users found' : 'No users yet'}
               </Text>
@@ -421,7 +424,7 @@ export default function UsersScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Full name"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newUserName}
               onChangeText={setNewUserName}
               autoCapitalize="words"
@@ -431,7 +434,7 @@ export default function UsersScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="email@example.com"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newUserEmail}
               onChangeText={setNewUserEmail}
               keyboardType="email-address"
@@ -442,7 +445,7 @@ export default function UsersScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="+1 555 123 4567"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newUserPhone}
               onChangeText={setNewUserPhone}
               keyboardType="phone-pad"
@@ -532,7 +535,7 @@ export default function UsersScreen() {
               onPress={() => setSendInvite(!sendInvite)}
             >
               <View style={[styles.checkbox, sendInvite && styles.checkboxChecked]}>
-                {sendInvite && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                {sendInvite && <Ionicons name="checkmark" size={16} color={colors.text} />}
               </View>
               <View style={styles.inviteToggleText}>
                 <Text style={styles.inviteToggleTitle}>Send login invitation email</Text>
@@ -590,8 +593,8 @@ export default function UsersScreen() {
                   style={{ flex: 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="copy-outline" size={18} color="#FFF" />
-                    <Text style={{ color: '#FFF', fontWeight: '600' }}>Copy Password</Text>
+                    <Ionicons name="copy-outline" size={18} color={colors.text} />
+                    <Text style={{ color: colors.text, fontWeight: '600' }}>Copy Password</Text>
                   </View>
                 </WebSafeButton>
                 
@@ -602,8 +605,8 @@ export default function UsersScreen() {
                   style={{ flex: 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="clipboard-outline" size={18} color="#FFF" />
-                    <Text style={{ color: '#FFF', fontWeight: '600' }}>Copy All</Text>
+                    <Ionicons name="clipboard-outline" size={18} color={colors.text} />
+                    <Text style={{ color: colors.text, fontWeight: '600' }}>Copy All</Text>
                   </View>
                 </WebSafeButton>
               </View>
@@ -658,8 +661,8 @@ export default function UsersScreen() {
                     style={{ flex: 1 }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="copy-outline" size={18} color="#FFF" />
-                      <Text style={{ color: '#FFF', fontWeight: '600' }}>Copy Password</Text>
+                      <Ionicons name="copy-outline" size={18} color={colors.text} />
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>Copy Password</Text>
                     </View>
                   </WebSafeButton>
                   
@@ -670,8 +673,8 @@ export default function UsersScreen() {
                     style={{ flex: 1 }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="clipboard-outline" size={18} color="#FFF" />
-                      <Text style={{ color: '#FFF', fontWeight: '600' }}>Copy All</Text>
+                      <Ionicons name="clipboard-outline" size={18} color={colors.text} />
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>Copy All</Text>
                     </View>
                   </WebSafeButton>
                 </View>
@@ -693,10 +696,10 @@ export default function UsersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -705,7 +708,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -713,18 +716,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -733,7 +736,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   loadingContainer: {
     flex: 1,
@@ -746,7 +749,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -763,7 +766,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   countBadge: {
@@ -779,7 +782,7 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 6,
@@ -808,11 +811,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   userEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statusDot: {
@@ -826,7 +829,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 16,
     marginTop: 16,
   },
@@ -840,7 +843,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
   },
   inactiveText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   deletionSource: {
     fontSize: 11,
@@ -851,7 +854,7 @@ const styles = StyleSheet.create({
   inactiveSectionHeader: {
     marginTop: 24,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     paddingTop: 24,
   },
   addButton: {
@@ -860,7 +863,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -868,7 +871,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: {
     fontSize: 17,
@@ -877,7 +880,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 17,
@@ -890,19 +893,19 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
     marginLeft: 4,
   },
   modalInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   roleSelector: {
     flexDirection: 'row',
@@ -913,21 +916,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   roleOptionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   inviteToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 24,
     padding: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     gap: 12,
   },
@@ -936,7 +939,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -950,11 +953,11 @@ const styles = StyleSheet.create({
   inviteToggleTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   inviteToggleSubtitle: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   warningBox: {
@@ -982,9 +985,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
   },
   pickerOptionSelected: {
     backgroundColor: '#007AFF20',
@@ -992,7 +995,7 @@ const styles = StyleSheet.create({
   },
   pickerOptionText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   pickerOptionTextSelected: {
     color: '#007AFF',
@@ -1007,7 +1010,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   successModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -1020,17 +1023,17 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   successSubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
   },
   credentialsBox: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     width: '100%',
@@ -1042,12 +1045,12 @@ const styles = StyleSheet.create({
   },
   credentialLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     width: 80,
   },
   credentialValue: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
     flex: 1,
   },

@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { contactsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 interface PhoneContact {
   id: string;
   name: string;
@@ -28,6 +29,8 @@ interface PhoneContact {
 }
 
 export default function ImportContactsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -241,7 +244,7 @@ export default function ImportContactsScreen() {
       onPress={() => toggleContact(item.id)}
     >
       <View style={[styles.checkbox, item.selected && styles.checkboxSelected]}>
-        {item.selected && <Ionicons name="checkmark" size={16} color="#FFF" />}
+        {item.selected && <Ionicons name="checkmark" size={16} color={colors.text} />}
       </View>
       
       <View style={styles.contactInfo}>
@@ -275,7 +278,7 @@ export default function ImportContactsScreen() {
               <Text style={styles.optionTitle}>From Phone</Text>
               <Text style={styles.optionDesc}>Import contacts from your device's address book{'\n'}(Requires App Store version  - not available on web)</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.optionCard} onPress={pickCSVFile}>
@@ -286,11 +289,11 @@ export default function ImportContactsScreen() {
               <Text style={styles.optionTitle}>From CSV File</Text>
               <Text style={styles.optionDesc}>Import from a spreadsheet or RMS export</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           
           <View style={styles.csvHint}>
-            <Ionicons name="information-circle" size={20} color="#8E8E93" />
+            <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
             <Text style={styles.csvHintText}>
               CSV should have columns: first_name, last_name, phone, email (at minimum phone is required)
             </Text>
@@ -332,7 +335,7 @@ export default function ImportContactsScreen() {
       <View style={styles.selectionBar}>
         <TouchableOpacity style={styles.selectAllButton} onPress={toggleSelectAll}>
           <View style={[styles.checkbox, selectAll && styles.checkboxSelected]}>
-            {selectAll && <Ionicons name="checkmark" size={16} color="#FFF" />}
+            {selectAll && <Ionicons name="checkmark" size={16} color={colors.text} />}
           </View>
           <Text style={styles.selectAllText}>Select All</Text>
         </TouchableOpacity>
@@ -349,7 +352,7 @@ export default function ImportContactsScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="people-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No contacts found</Text>
           </View>
         )}
@@ -364,10 +367,10 @@ export default function ImportContactsScreen() {
             disabled={importing}
           >
             {importing ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="download" size={20} color="#FFF" />
+                <Ionicons name="download" size={20} color={colors.text} />
                 <Text style={styles.importActionText}>
                   Import {selectedCount} Contact{selectedCount !== 1 ? 's' : ''}
                 </Text>
@@ -380,10 +383,10 @@ export default function ImportContactsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -391,7 +394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -399,7 +402,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   importButton: {
     padding: 4,
@@ -410,21 +413,21 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   importButtonDisabled: {
-    color: '#3A3A3C',
+    color: colors.borderLight,
   },
   optionsContainer: {
     padding: 20,
   },
   optionsTitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 20,
     textAlign: 'center',
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -443,26 +446,26 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   optionDesc: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   csvHint: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginTop: 20,
     padding: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     gap: 12,
   },
   csvHintText: {
     flex: 1,
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   loadingOverlay: {
@@ -474,7 +477,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   selectionBar: {
     flexDirection: 'row',
@@ -482,9 +485,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   selectAllButton: {
     flexDirection: 'row',
@@ -493,19 +496,19 @@ const styles = StyleSheet.create({
   },
   selectAllText: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   selectedCount: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -519,7 +522,7 @@ const styles = StyleSheet.create({
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -536,16 +539,16 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   contactPhone: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   contactEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   emptyContainer: {
@@ -556,14 +559,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
   },
   bottomBar: {
     padding: 16,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   importActionButton: {
     flexDirection: 'row',
@@ -577,6 +580,6 @@ const styles = StyleSheet.create({
   importActionText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

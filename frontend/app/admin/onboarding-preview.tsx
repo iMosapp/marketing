@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getOnboardingSlidesForRole, ORG_ADMIN_SLIDES, STORE_MANAGER_SLIDES, SALESPERSON_SLIDES } from '../onboarding/slideLibraries';
 import { OnboardingSlide } from '../onboarding/types';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width } = Dimensions.get('window');
 
 const ROLE_OPTIONS = [
@@ -27,6 +28,8 @@ const ROLE_OPTIONS = [
 ];
 
 export default function OnboardingPreviewScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -123,7 +126,7 @@ export default function OnboardingPreviewScreen() {
         {/* Preview Banner */}
         <View style={styles.previewBanner}>
           <TouchableOpacity onPress={exitPreview} style={styles.exitBtn} data-testid="exit-preview">
-            <Ionicons name="close" size={20} color="#FFF" />
+            <Ionicons name="close" size={20} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.previewBannerCenter}>
             <View style={[styles.previewBadge, { backgroundColor: `${currentRoleOption?.color}30` }]}>
@@ -234,7 +237,7 @@ export default function OnboardingPreviewScreen() {
                 <Text style={styles.choicesLabel}>Fields presented:</Text>
                 {slide.inputFields.map((f, i) => (
                   <View key={i} style={styles.fieldRow}>
-                    <Ionicons name="create-outline" size={16} color="#8E8E93" />
+                    <Ionicons name="create-outline" size={16} color={colors.textSecondary} />
                     <Text style={styles.fieldText}>{f.label}: <Text style={styles.fieldPlaceholder}>{f.placeholder}</Text></Text>
                   </View>
                 ))}
@@ -253,7 +256,7 @@ export default function OnboardingPreviewScreen() {
             disabled={currentSlide === 0}
             data-testid="prev-slide"
           >
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
             <Text style={styles.navBtnText}>Back</Text>
           </TouchableOpacity>
 
@@ -268,7 +271,7 @@ export default function OnboardingPreviewScreen() {
             <Ionicons
               name={currentSlide === slides.length - 1 ? 'checkmark' : 'chevron-forward'}
               size={18}
-              color="#000"
+              color={colors.text}
             />
           </TouchableOpacity>
         </View>
@@ -290,19 +293,19 @@ export default function OnboardingPreviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backBtn: { padding: 4 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   headerSubtitle: { fontSize: 12, color: '#6E6E73', marginTop: 2 },
   roleScrollContent: { padding: 16, paddingBottom: 40 },
   infoCard: {
@@ -317,21 +320,21 @@ const styles = StyleSheet.create({
     borderColor: '#C9A96230',
   },
   infoTitle: { fontSize: 15, fontWeight: '600', color: '#C9A962', marginBottom: 4 },
-  infoDesc: { fontSize: 13, color: '#8E8E93', lineHeight: 19 },
+  infoDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   roleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   roleIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   roleInfo: { flex: 1 },
-  roleName: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  roleDesc: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+  roleName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  roleDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   roleSlideCount: { fontSize: 12, color: '#6E6E73', marginTop: 4 },
   playBtn: {
     width: 36,
@@ -396,7 +399,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 18,
   },
-  slideTitle: { fontSize: 22, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 4 },
+  slideTitle: { fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 4 },
   slideSubtitle: { fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 10 },
   slideDesc: { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 21, maxWidth: 340, marginBottom: 16 },
   typeBadge: {
@@ -409,7 +412,7 @@ const styles = StyleSheet.create({
   typeBadgeText: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   benefitsList: { width: '100%', maxWidth: 340, gap: 8 },
   benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  benefitText: { fontSize: 14, color: '#FFF', fontWeight: '500', flex: 1 },
+  benefitText: { fontSize: 14, color: colors.text, fontWeight: '500', flex: 1 },
   interactiveNote: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -435,7 +438,7 @@ const styles = StyleSheet.create({
   },
   demoNoteText: { fontSize: 13, color: '#007AFF', flex: 1 },
   choicesPreview: { width: '100%', maxWidth: 340, marginTop: 16 },
-  choicesLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8 },
+  choicesLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 },
   choiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   choiceText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', flex: 1 },
   fieldsPreview: { width: '100%', maxWidth: 340, marginTop: 16 },
@@ -446,7 +449,7 @@ const styles = StyleSheet.create({
   navBar: { paddingHorizontal: 20, paddingBottom: 8, backgroundColor: 'rgba(0,0,0,0.3)' },
   navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   navBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, minWidth: 80 },
-  navBtnText: { color: '#FFF', fontSize: 16, marginLeft: 4 },
+  navBtnText: { color: colors.text, fontSize: 16, marginLeft: 4 },
   navBtnPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -457,7 +460,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     gap: 4,
   },
-  navBtnPrimaryText: { color: '#000', fontSize: 16, fontWeight: '600' },
+  navBtnPrimaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
   dotActive: { backgroundColor: '#C9A962', width: 16 },

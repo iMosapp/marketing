@@ -11,6 +11,7 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 const BASE_URL = IS_WEB ? (typeof window !== 'undefined' ? window.location.origin : '') : 'https://app.imosapp.com';
 
@@ -25,6 +26,7 @@ const TYPE_META: Record<string, { label: string; icon: string; accent: string; h
 };
 
 export default function CreateCardPage() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const { type, prefillName, prefillPhone, prefillEmail, returnToThread } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string }>();
   const { user } = useAuthStore();
@@ -330,7 +332,7 @@ export default function CreateCardPage() {
               {[{ action: 'use_existing', icon: 'checkmark-circle', color: '#34C759', text: 'Use Existing Contact' }, { action: 'update_name', icon: 'create', color: '#007AFF', text: `Update to "${matchInfo.provided_name}"` }, { action: 'create_new', icon: 'person-add', color: '#FF9500', text: 'Create New Contact' }].map(opt => (
                 <TouchableOpacity key={opt.action} style={s.modalAction} onPress={() => resolveMatch(opt.action)}><Ionicons name={opt.icon as any} size={20} color={opt.color} /><Text style={s.modalActionText}>{opt.text}</Text></TouchableOpacity>
               ))}
-              <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 15, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
             </View>
           </View>
         )}
@@ -370,7 +372,7 @@ export default function CreateCardPage() {
               <Ionicons name="create-outline" size={20} color={accent} /><Text style={[s.previewEditText, { color: accent }]}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.previewSendBtn, { backgroundColor: accent }, creating && { opacity: 0.5 }]} onPress={createCard} disabled={creating} data-testid="card-preview-send">
-              {creating ? <ActivityIndicator size="small" color="#FFF" /> : <><Ionicons name="send" size={18} color="#FFF" /><Text style={s.previewSendText}>Create & Send</Text></>}
+              {creating ? <ActivityIndicator size="small" color={colors.text} /> : <><Ionicons name="send" size={18} color={colors.text} /><Text style={s.previewSendText}>Create & Send</Text></>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -390,18 +392,18 @@ export default function CreateCardPage() {
         <Text style={s.fieldLabel}>RECIPIENT PHOTO *</Text>
         <TouchableOpacity style={s.photoPicker} onPress={pickPhoto} data-testid="card-pick-photo">
           {photo ? <Image source={{ uri: photo.uri }} style={[s.photoPreview, { borderColor: accent }]} /> : (
-            <View style={s.photoPlaceholder}><Ionicons name="camera" size={36} color="#8E8E93" /><Text style={s.photoPlaceholderText}>Tap to add photo</Text></View>
+            <View style={s.photoPlaceholder}><Ionicons name="camera" size={36} color={colors.textSecondary} /><Text style={s.photoPlaceholderText}>Tap to add photo</Text></View>
           )}
         </TouchableOpacity>
         <Text style={s.fieldLabel}>RECIPIENT NAME *</Text>
-        <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor="#8E8E93" data-testid="card-recipient-name" />
+        <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
         <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
-        <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor="#8E8E93" keyboardType="phone-pad" />
-        <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor="#8E8E93" keyboardType="email-address" autoCapitalize="none" />
+        <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+        <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={colors.textSecondary} keyboardType="email-address" autoCapitalize="none" />
         <Text style={[s.fieldLabel, { marginTop: 16 }]}>PERSONAL MESSAGE (OPTIONAL)</Text>
-        <TextInput style={[s.input, { height: 100, textAlignVertical: 'top' }]} value={customMessage} onChangeText={setCustomMessage} placeholder="Add a personal message..." placeholderTextColor="#8E8E93" multiline />
+        <TextInput style={[s.input, { height: 100, textAlignVertical: 'top' }]} value={customMessage} onChangeText={setCustomMessage} placeholder="Add a personal message..." placeholderTextColor={colors.textSecondary} multiline />
         <TouchableOpacity style={[s.createBtn, { backgroundColor: accent }, (!customerName.trim() || !photo) && { opacity: 0.5 }]} onPress={handlePreview} disabled={!customerName.trim() || !photo} data-testid="card-preview-btn">
-          <Ionicons name="eye-outline" size={20} color="#FFF" /><Text style={s.createBtnText}>Preview Card</Text>
+          <Ionicons name="eye-outline" size={20} color={colors.text} /><Text style={s.createBtnText}>Preview Card</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -418,7 +420,7 @@ export default function CreateCardPage() {
             {[{ action: 'use_existing', icon: 'checkmark-circle', color: '#34C759', text: 'Use Existing Contact' }, { action: 'update_name', icon: 'create', color: '#007AFF', text: `Update to "${matchInfo.provided_name}"` }, { action: 'create_new', icon: 'person-add', color: '#FF9500', text: 'Create New Contact' }].map(opt => (
               <TouchableOpacity key={opt.action} style={s.modalAction} onPress={() => resolveMatch(opt.action)}><Ionicons name={opt.icon as any} size={20} color={opt.color} /><Text style={s.modalActionText}>{opt.text}</Text></TouchableOpacity>
             ))}
-            <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 15, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -427,30 +429,30 @@ export default function CreateCardPage() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#000000' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
   scroll: { flex: 1, paddingHorizontal: 20 },
   fieldLabel: { fontSize: 10, fontWeight: '700', color: '#6E6E73', marginTop: 16, marginBottom: 6, letterSpacing: 1 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
+  input: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFFFFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
   photoPicker: { alignItems: 'center', marginBottom: 8 },
   photoPreview: { width: 160, height: 160, borderRadius: 32, borderWidth: 3 },
   photoPlaceholder: { width: 160, height: 160, borderRadius: 32, backgroundColor: '#1C1C1E', borderWidth: 2, borderColor: '#2C2C2E', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   photoPlaceholderText: { fontSize: 13, color: '#8E8E93', marginTop: 8 },
   createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, marginTop: 30, gap: 8 },
-  createBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  createBtnText: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
   // Share screen (matches UniversalShareModal)
   shareModalInner: { flex: 1, backgroundColor: '#1C1C1E', padding: 24, paddingBottom: 40 },
   shareHandle: { width: 40, height: 4, backgroundColor: '#3A3A3C', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  shareTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 4 },
+  shareTitle: { fontSize: 20, fontWeight: '700', color: '#FFFFFF', textAlign: 'center', marginBottom: 4 },
   shareSubtitle: { fontSize: 14, color: '#8E8E93', textAlign: 'center', marginBottom: 24 },
   recipientSection: { marginBottom: 16, gap: 8 },
   recipientLabel: { fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1 },
-  recipientInput: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
+  recipientInput: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#FFFFFF', borderWidth: 1.5, borderColor: '#3A3A3C' },
   shareOptionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
   shareOption: { width: '30%', alignItems: 'center' },
   shareOptionIcon: { width: 60, height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  shareOptionText: { fontSize: 12, fontWeight: '500', color: '#FFF', textAlign: 'center' },
+  shareOptionText: { fontSize: 12, fontWeight: '500', color: '#FFFFFF', textAlign: 'center' },
   createAnotherBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, paddingVertical: 14 },
   createAnotherText: { fontSize: 15, fontWeight: '600' },
   cancelBtn: { marginTop: 8, paddingVertical: 16, backgroundColor: '#2C2C2E', borderRadius: 12 },
@@ -460,30 +462,30 @@ const s = StyleSheet.create({
   previewHeadline: { fontSize: 32, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
   previewPhotoRing: { borderWidth: 4, borderRadius: 80, padding: 4, marginBottom: 16 },
   previewPhoto: { width: 140, height: 140, borderRadius: 70 },
-  previewName: { fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 12, textAlign: 'center' },
+  previewName: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 12, textAlign: 'center' },
   previewMessage: { fontSize: 15, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 22, marginBottom: 12 },
   previewCustomBox: { borderLeftWidth: 3, paddingLeft: 14, paddingVertical: 6, width: '100%', marginBottom: 16 },
   previewCustomMsg: { fontSize: 14, fontStyle: 'italic', color: '#FFFFFFBB', lineHeight: 20 },
   previewDivider: { width: 50, height: 3, borderRadius: 2, marginVertical: 16 },
-  previewSalesName: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  previewSalesName: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
   previewSalesTitle: { fontSize: 13, fontWeight: '500' },
   previewActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%', maxWidth: 380 },
   previewEditBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12, borderWidth: 1.5 },
   previewEditText: { fontSize: 16, fontWeight: '600' },
   previewSendBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12 },
-  previewSendText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+  previewSendText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   // Match modal
   modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
   modalCard: { backgroundColor: '#1C1C1E', borderRadius: 16, padding: 24, width: '90%', maxWidth: 380 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 8 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF', textAlign: 'center', marginBottom: 8 },
   modalSub: { fontSize: 14, color: '#8E8E93', textAlign: 'center', marginBottom: 16 },
   modalBox: { backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, alignItems: 'center' },
   modalBoxLabel: { fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 },
-  modalBoxName: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  modalBoxName: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
   modalBoxPhone: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
   modalDivRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   modalDivLine: { flex: 1, height: 1, backgroundColor: '#2C2C2E' },
   modalDivText: { fontSize: 12, color: '#6E6E73', marginHorizontal: 12 },
   modalAction: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 },
-  modalActionText: { fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 },
+  modalActionText: { fontSize: 15, color: '#FFFFFF', fontWeight: '500', flex: 1 },
 });

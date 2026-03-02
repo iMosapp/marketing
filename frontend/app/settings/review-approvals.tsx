@@ -18,6 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 interface PendingReview {
   id: string;
   customer_name: string;
@@ -30,6 +31,8 @@ interface PendingReview {
 }
 
 export default function ReviewApprovalsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
@@ -133,7 +136,7 @@ const { showToast } = useToast();
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Review Approvals</Text>
         <View style={styles.placeholder} />
@@ -193,13 +196,13 @@ const { showToast } = useToast();
                   <View style={styles.contactInfo}>
                     {review.customer_phone && (
                       <View style={styles.contactRow}>
-                        <Ionicons name="call-outline" size={14} color="#8E8E93" />
+                        <Ionicons name="call-outline" size={14} color={colors.textSecondary} />
                         <Text style={styles.contactText}>{review.customer_phone}</Text>
                       </View>
                     )}
                     {review.customer_email && (
                       <View style={styles.contactRow}>
-                        <Ionicons name="mail-outline" size={14} color="#8E8E93" />
+                        <Ionicons name="mail-outline" size={14} color={colors.textSecondary} />
                         <Text style={styles.contactText}>{review.customer_email}</Text>
                       </View>
                     )}
@@ -228,10 +231,10 @@ const { showToast } = useToast();
                     disabled={processing === review.id}
                   >
                     {processing === review.id ? (
-                      <ActivityIndicator size="small" color="#FFF" />
+                      <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                       <>
-                        <Ionicons name="checkmark" size={20} color="#FFF" />
+                        <Ionicons name="checkmark" size={20} color={colors.text} />
                         <Text style={styles.approveButtonText}>Approve</Text>
                       </>
                     )}
@@ -248,14 +251,14 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -266,7 +269,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -274,7 +277,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   placeholder: {
     width: 32,
@@ -286,7 +289,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 16,
@@ -299,18 +302,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 40,
   },
   reviewCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -324,11 +327,11 @@ const styles = StyleSheet.create({
   customerName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   dateText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   starsContainer: {
@@ -349,7 +352,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   contactInfo: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -362,7 +365,7 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -396,6 +399,6 @@ const styles = StyleSheet.create({
   approveButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

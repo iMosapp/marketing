@@ -99,9 +99,10 @@ const mockCallLogs = [
 ];
 
 export default function DialerScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const colors = useThemeStore((s) => s.colors);
   const inputRef = useRef<TextInput>(null);
   
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -416,7 +417,7 @@ export default function DialerScreen() {
                 onPress={() => handleCall()}
                 disabled={!phoneNumber}
               >
-                <Ionicons name="call" size={32} color="#FFF" />
+                <Ionicons name="call" size={32} color={colors.text} />
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -427,7 +428,7 @@ export default function DialerScreen() {
                 <Ionicons 
                   name="backspace-outline" 
                   size={28} 
-                  color={phoneNumber ? '#FFF' : '#3A3A3C'} 
+                  color={phoneNumber ? '#FFF' : colors.borderLight} 
                 />
               </TouchableOpacity>
             </View>
@@ -438,17 +439,17 @@ export default function DialerScreen() {
           {/* Search bar for call history */}
           <View style={styles.callLogSearchContainer}>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#8E8E93" />
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search call history"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={callLogSearch}
                 onChangeText={setCallLogSearch}
               />
               {callLogSearch.length > 0 && (
                 <TouchableOpacity onPress={() => setCallLogSearch('')}>
-                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -462,7 +463,7 @@ export default function DialerScreen() {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
-                <Ionicons name="call-outline" size={48} color="#2C2C2E" />
+                <Ionicons name="call-outline" size={48} color={colors.surface} />
                 <Text style={styles.emptyText}>No calls found</Text>
               </View>
             )}
@@ -494,11 +495,11 @@ export default function DialerScreen() {
           
           <View style={styles.modalSearchContainer}>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#8E8E93" />
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by name or number"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
@@ -507,7 +508,7 @@ export default function DialerScreen() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -521,7 +522,7 @@ export default function DialerScreen() {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
-                <Ionicons name="people-outline" size={48} color="#2C2C2E" />
+                <Ionicons name="people-outline" size={48} color={colors.surface} />
                 <Text style={styles.emptyText}>No contacts found</Text>
               </View>
             )}
@@ -533,41 +534,41 @@ export default function DialerScreen() {
       {/* Contact Match Modal */}
       {matchModalVisible && matchInfo && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-          <View style={{ backgroundColor: '#1C1C1E', borderRadius: 16, padding: 24, width: '90%', maxWidth: 380 }} data-testid="dialer-match-modal">
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 24, width: '90%', maxWidth: 380 }} data-testid="dialer-match-modal">
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF950015', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="person-circle" size={44} color="#FF9500" />
               </View>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 8 }}>Contact Already Exists</Text>
-            <Text style={{ fontSize: 14, color: '#8E8E93', textAlign: 'center', marginBottom: 16 }}>A contact with this number already exists:</Text>
-            <View style={{ backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 }}>Contact Already Exists</Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }}>A contact with this number already exists:</Text>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center' }}>
               <Text style={{ fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>{matchInfo.existing_name}</Text>
-              {matchInfo.phone ? <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{matchInfo.phone}</Text> : null}
+              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{matchInfo.existing_name}</Text>
+              {matchInfo.phone ? <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.surface }} />
               <Text style={{ fontSize: 12, color: '#6E6E73', marginHorizontal: 12 }}>You entered</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.surface }} />
             </View>
-            <View style={{ backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
             </View>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveDialerMatch('use_existing')}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveDialerMatch('use_existing')}>
               <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-              <Text style={{ fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 }}>Use Existing Contact</Text>
+              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Use Existing Contact</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveDialerMatch('update_name')}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveDialerMatch('update_name')}>
               <Ionicons name="create" size={20} color="#007AFF" />
-              <Text style={{ fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
+              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveDialerMatch('create_new')}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveDialerMatch('create_new')}>
               <Ionicons name="person-add" size={20} color="#FF9500" />
-              <Text style={{ fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 }}>Create New Contact</Text>
+              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Create New Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text>
+              <Text style={{ fontSize: 15, color: colors.textSecondary }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -576,10 +577,10 @@ export default function DialerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   headerIcons: {
     flexDirection: 'row',
@@ -609,7 +610,7 @@ const styles = StyleSheet.create({
   numberText: {
     fontSize: 36,
     fontWeight: '300',
-    color: '#FFF',
+    color: colors.text,
     letterSpacing: 2,
   },
   dialPadWrapper: {
@@ -627,13 +628,13 @@ const styles = StyleSheet.create({
     width: 75,
     height: 75,
     borderRadius: 38,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dialButtonText: {
     fontSize: 28,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '400',
   },
   bottomRow: {
@@ -675,7 +676,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingHorizontal: 12,
     gap: 8,
@@ -684,7 +685,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   callLogContent: {
     paddingBottom: 16,
@@ -698,7 +699,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -709,12 +710,12 @@ const styles = StyleSheet.create({
   callName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   callPhone: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   callMeta: {
     alignItems: 'flex-end',
@@ -722,19 +723,19 @@ const styles = StyleSheet.create({
   },
   callTime: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   callDuration: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   callButton: {
     padding: 8,
   },
   separator: {
     height: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     marginLeft: 60,
   },
   emptyContainer: {
@@ -745,13 +746,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -760,7 +761,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCloseButton: {
     padding: 4,
@@ -768,7 +769,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSearchContainer: {
     padding: 16,
@@ -785,7 +786,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -793,7 +794,7 @@ const styles = StyleSheet.create({
   contactAvatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   contactInfo: {
     flex: 1,
@@ -801,11 +802,11 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   contactPhone: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   contactCallButton: {
@@ -836,12 +837,12 @@ const styles = StyleSheet.create({
   restrictedTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   restrictedText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,

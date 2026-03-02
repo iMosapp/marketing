@@ -12,7 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function TeamReportScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
@@ -162,8 +165,8 @@ export default function TeamReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
@@ -171,34 +174,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  title: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   periodSelector: { flexDirection: 'row', padding: 16, gap: 8 },
   periodButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   periodButtonActive: { backgroundColor: '#007AFF' },
-  periodText: { color: '#8E8E93', fontWeight: '600' },
-  periodTextActive: { color: '#FFF' },
+  periodText: { color: colors.textSecondary, fontWeight: '600' },
+  periodTextActive: { color: colors.text },
   scrollContent: { padding: 16 },
   totalsRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   totalCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
   },
-  totalValue: { fontSize: 22, fontWeight: '700', color: '#FFF', marginTop: 8 },
-  totalLabel: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 12 },
+  totalValue: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 8 },
+  totalLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
   memberCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -212,7 +215,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   memberAvatar: {
     width: 44,
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   memberMeta: {
     flexDirection: 'row',
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
   },
   lastActive: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   memberStats: {
     flexDirection: 'row',
@@ -263,10 +266,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

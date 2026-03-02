@@ -12,7 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function CampaignsReportScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
@@ -38,7 +41,7 @@ export default function CampaignsReportScreen() {
     switch (status) {
       case 'sent': return '#34C759';
       case 'scheduled': return '#FF9500';
-      case 'draft': return '#8E8E93';
+      case 'draft': return colors.textSecondary;
       default: return '#007AFF';
     }
   };
@@ -103,7 +106,7 @@ export default function CampaignsReportScreen() {
           
           {data?.campaigns?.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="megaphone-outline" size={48} color="#2C2C2E" />
+              <Ionicons name="megaphone-outline" size={48} color={colors.surface} />
               <Text style={styles.emptyText}>No campaigns in this period</Text>
             </View>
           ) : (
@@ -154,8 +157,8 @@ export default function CampaignsReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
@@ -163,20 +166,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  title: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   periodSelector: { flexDirection: 'row', padding: 16, gap: 8 },
   periodButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   periodButtonActive: { backgroundColor: '#007AFF' },
-  periodText: { color: '#8E8E93', fontWeight: '600' },
-  periodTextActive: { color: '#FFF' },
+  periodText: { color: colors.textSecondary, fontWeight: '600' },
+  periodTextActive: { color: colors.text },
   scrollContent: { padding: 16 },
   totalsGrid: {
     flexDirection: 'row',
@@ -186,18 +189,18 @@ const styles = StyleSheet.create({
   },
   totalCard: {
     width: '48%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
-  totalValue: { fontSize: 28, fontWeight: '700', color: '#FFF' },
-  totalLabel: { fontSize: 12, color: '#8E8E93', marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', marginBottom: 12 },
+  totalValue: { fontSize: 28, fontWeight: '700', color: colors.text },
+  totalLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
   emptyState: { alignItems: 'center', paddingVertical: 48 },
-  emptyText: { color: '#8E8E93', marginTop: 12 },
+  emptyText: { color: colors.textSecondary, marginTop: 12 },
   campaignCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
@@ -209,8 +212,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   campaignInfo: { flex: 1 },
-  campaignName: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  campaignDate: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
+  campaignName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  campaignDate: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -219,6 +222,6 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '600' },
   campaignStats: { flexDirection: 'row', justifyContent: 'space-between' },
   statItem: { alignItems: 'center' },
-  statValue: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-  statLabel: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: '700', color: colors.text },
+  statLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
 });

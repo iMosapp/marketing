@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 const STEPS = [
   { num: 1, title: 'Company Info', icon: 'business-outline' },
   { num: 2, title: 'Branding', icon: 'color-palette-outline' },
@@ -29,6 +30,7 @@ const COLORS = [
 ];
 
 export default function SetupWizardScreen() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -323,7 +325,7 @@ export default function SetupWizardScreen() {
               isActive && s.dotActive,
             ]}>
               {isDone ? (
-                <Ionicons name="checkmark" size={14} color="#000" />
+                <Ionicons name="checkmark" size={14} color={colors.text} />
               ) : (
                 <Text style={[s.dotText, isActive && s.dotTextActive]}>{step.num}</Text>
               )}
@@ -410,10 +412,10 @@ export default function SetupWizardScreen() {
       {renderInput('Admin Email', adminEmail, setAdminEmail, { placeholder: 'admin@company.com', keyboardType: 'email-address' })}
 
       <TouchableOpacity style={s.nextBtn} onPress={saveCompanyInfo} disabled={saving} data-testid="wizard-next-step1">
-        {saving ? <ActivityIndicator color="#000" /> : (
+        {saving ? <ActivityIndicator color={colors.text} /> : (
           <>
             <Text style={s.nextBtnText}>Save & Continue</Text>
-            <Ionicons name="arrow-forward" size={20} color="#000" />
+            <Ionicons name="arrow-forward" size={20} color={colors.text} />
           </>
         )}
       </TouchableOpacity>
@@ -461,14 +463,14 @@ export default function SetupWizardScreen() {
 
       <View style={s.btnRow}>
         <TouchableOpacity style={s.backBtn} onPress={() => animateStepChange(1)} data-testid="wizard-back-step2">
-          <Ionicons name="arrow-back" size={18} color="#FFF" />
+          <Ionicons name="arrow-back" size={18} color={colors.text} />
           <Text style={s.backBtnText}>Back</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.nextBtn, { flex: 1 }]} onPress={saveBranding} disabled={saving} data-testid="wizard-next-step2">
-          {saving ? <ActivityIndicator color="#000" /> : (
+          {saving ? <ActivityIndicator color={colors.text} /> : (
             <>
               <Text style={s.nextBtnText}>Save & Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color="#000" />
+              <Ionicons name="arrow-forward" size={20} color={colors.text} />
             </>
           )}
         </TouchableOpacity>
@@ -536,14 +538,14 @@ export default function SetupWizardScreen() {
 
       <View style={s.btnRow}>
         <TouchableOpacity style={s.backBtn} onPress={() => animateStepChange(2)} data-testid="wizard-back-step3">
-          <Ionicons name="arrow-back" size={18} color="#FFF" />
+          <Ionicons name="arrow-back" size={18} color={colors.text} />
           <Text style={s.backBtnText}>Back</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.nextBtn, { flex: 1 }]} onPress={saveReviewLinks} disabled={saving} data-testid="wizard-next-step3">
-          {saving ? <ActivityIndicator color="#000" /> : (
+          {saving ? <ActivityIndicator color={colors.text} /> : (
             <>
               <Text style={s.nextBtnText}>Save & Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color="#000" />
+              <Ionicons name="arrow-forward" size={20} color={colors.text} />
             </>
           )}
         </TouchableOpacity>
@@ -593,14 +595,14 @@ export default function SetupWizardScreen() {
 
       <View style={s.btnRow}>
         <TouchableOpacity style={s.backBtn} onPress={() => animateStepChange(3)} data-testid="wizard-back-step4">
-          <Ionicons name="arrow-back" size={18} color="#FFF" />
+          <Ionicons name="arrow-back" size={18} color={colors.text} />
           <Text style={s.backBtnText}>Back</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.nextBtn, { flex: 1 }]} onPress={sendInvites} disabled={saving} data-testid="wizard-next-step4">
-          {saving ? <ActivityIndicator color="#000" /> : (
+          {saving ? <ActivityIndicator color={colors.text} /> : (
             <>
               <Text style={s.nextBtnText}>{teamMembers.length > 0 ? 'Create Accounts & Continue' : 'Skip & Continue'}</Text>
-              <Ionicons name="arrow-forward" size={20} color="#000" />
+              <Ionicons name="arrow-forward" size={20} color={colors.text} />
             </>
           )}
         </TouchableOpacity>
@@ -697,13 +699,13 @@ export default function SetupWizardScreen() {
 
           <View style={s.btnRow}>
             <TouchableOpacity style={s.backBtn} onPress={() => animateStepChange(4)} data-testid="wizard-back-step5">
-              <Ionicons name="arrow-back" size={18} color="#FFF" />
+              <Ionicons name="arrow-back" size={18} color={colors.text} />
               <Text style={s.backBtnText}>Back</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.nextBtn, s.launchBtn, { flex: 1 }]} onPress={completeWizard} disabled={saving} data-testid="wizard-complete">
-              {saving ? <ActivityIndicator color="#000" /> : (
+              {saving ? <ActivityIndicator color={colors.text} /> : (
                 <>
-                  <Ionicons name="rocket-outline" size={20} color="#000" />
+                  <Ionicons name="rocket-outline" size={20} color={colors.text} />
                   <Text style={s.nextBtnText}>Activate & Launch</Text>
                 </>
               )}
@@ -721,12 +723,12 @@ export default function SetupWizardScreen() {
           </Text>
 
           <TouchableOpacity style={s.doneBtn} onPress={() => router.push('/admin/manage-team' as any)} data-testid="wizard-goto-team">
-            <Ionicons name="people-outline" size={20} color="#000" />
+            <Ionicons name="people-outline" size={20} color={colors.text} />
             <Text style={s.doneBtnText}>Manage Team</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[s.doneBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#333' }]} onPress={() => router.back()} data-testid="wizard-goto-menu">
-            <Text style={[s.doneBtnText, { color: '#FFF' }]}>Back to Menu</Text>
+          <TouchableOpacity style={[s.doneBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.surface }]} onPress={() => router.back()} data-testid="wizard-goto-menu">
+            <Text style={[s.doneBtnText, { color: colors.text }]}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -747,7 +749,7 @@ export default function SetupWizardScreen() {
         {/* Header */}
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.headerBack} data-testid="wizard-back-nav">
-            <Ionicons name="chevron-back" size={24} color="#FFF" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Setup Wizard</Text>
           <View style={{ width: 32 }} />
@@ -770,12 +772,12 @@ export default function SetupWizardScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
+  safe: { flex: 1, backgroundColor: '#000000' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
   headerBack: { width: 32, height: 32, justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
 
   // Step indicator
   stepBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 0 },
@@ -793,20 +795,20 @@ const s = StyleSheet.create({
   // Body
   body: { flex: 1 },
   bodyContent: { padding: 20, paddingBottom: 40 },
-  stepTitle: { fontSize: 24, fontWeight: '800', color: '#FFF', marginBottom: 8 },
+  stepTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginBottom: 8 },
   stepDesc: { fontSize: 14, color: '#8E8E93', lineHeight: 20, marginBottom: 24 },
 
   // Form fields
   fieldWrap: { marginBottom: 18 },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, fontSize: 16, color: '#FFF', borderWidth: 1, borderColor: '#2C2C2E' },
+  input: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, fontSize: 16, color: '#FFFFFF', borderWidth: 1, borderColor: '#2C2C2E' },
   row: { flexDirection: 'row' },
 
   // Existing org/store selection
   existingSection: { marginBottom: 24 },
   existingLabel: { fontSize: 13, color: '#8E8E93', marginBottom: 10 },
   existingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', padding: 14, borderRadius: 12, marginBottom: 8, gap: 12, borderWidth: 1, borderColor: '#2C2C2E' },
-  existingName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#FFF' },
+  existingName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   newCard: { borderColor: '#34C759', borderStyle: 'dashed' as any },
 
   // Industry chips
@@ -814,12 +816,12 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
   chipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   chipText: { fontSize: 13, color: '#AAA' },
-  chipTextActive: { color: '#000', fontWeight: '700' },
+  chipTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
   // Colors
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
   colorSwatch: { width: 40, height: 40, borderRadius: 20, borderWidth: 3, borderColor: 'transparent' },
-  colorSwatchActive: { borderColor: '#FFF' },
+  colorSwatchActive: { borderColor: '#2C2C2E' },
   colorPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   colorPreviewDot: { width: 16, height: 16, borderRadius: 8 },
   colorPreviewText: { fontSize: 13, color: '#8E8E93', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
@@ -836,8 +838,8 @@ const s = StyleSheet.create({
   reviewCard: { backgroundColor: '#0D0D0D', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#1C1C1E' },
   reviewIconRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   reviewIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  reviewIconText: { fontSize: 16, fontWeight: '800', color: '#FFF' },
-  reviewLinkLabel: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  reviewIconText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  reviewLinkLabel: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   skipHint: { fontSize: 12, color: '#555', textAlign: 'center', marginTop: 8, marginBottom: 16 },
 
   // Team members
@@ -848,16 +850,16 @@ const s = StyleSheet.create({
   roleChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#1C1C1E', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E' },
   roleChipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
   roleChipText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
-  roleChipTextActive: { color: '#000' },
+  roleChipTextActive: { color: '#FFFFFF' },
   addMemberBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' as any, marginBottom: 8 },
   addMemberText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
 
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   nextBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 16, borderRadius: 50, marginTop: 16 },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: '#000' },
+  nextBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 50, backgroundColor: '#1C1C1E', marginTop: 16 },
-  backBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  backBtnText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   launchBtn: { backgroundColor: '#34C759' },
 
   // Summary
@@ -865,7 +867,7 @@ const s = StyleSheet.create({
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   summaryInfo: { flex: 1 },
   summaryLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 2 },
-  summaryValue: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  summaryValue: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   summaryColorDot: { width: 20, height: 20, borderRadius: 10 },
 
   // Credentials
@@ -873,15 +875,15 @@ const s = StyleSheet.create({
   credentialsTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962', marginBottom: 4 },
   credentialsHint: { fontSize: 12, color: '#8E8E93', marginBottom: 12 },
   credentialRow: { backgroundColor: '#0D0D0D', borderRadius: 10, padding: 12, marginBottom: 8 },
-  credentialName: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  credentialName: { fontSize: 14, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
   credentialDetail: { fontSize: 12, color: '#8E8E93', marginBottom: 4 },
   credentialPassword: { fontSize: 13, color: '#C9A962', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
 
   // Done
   doneContainer: { alignItems: 'center', paddingTop: 40 },
   doneIconWrap: { marginBottom: 20 },
-  doneTitle: { fontSize: 28, fontWeight: '900', color: '#FFF', marginBottom: 12 },
+  doneTitle: { fontSize: 28, fontWeight: '900', color: '#FFFFFF', marginBottom: 12 },
   doneDesc: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, marginBottom: 32, paddingHorizontal: 10 },
   doneBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 50, marginBottom: 12, width: '100%' as any },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: '#000' },
+  doneBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
 });

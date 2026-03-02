@@ -133,7 +133,7 @@ export default function ThreadScreen() {
     accent: '#007AFF',
     textPrimary: themeColors.text,
     textSecondary: themeColors.textSecondary,
-    textTertiary: themeColors.textTertiary || '#636366',
+    textTertiary: themeColors.textTertiary || colors.textTertiary,
     border: themeColors.border,
   } : COLORS;
   
@@ -1536,7 +1536,7 @@ export default function ThreadScreen() {
       case 'assisted':
         return '#007AFF';
       case 'draft_only':
-        return '#8E8E93';
+        return colors.textSecondary;
       case 'off':
         return '#FF3B30';
     }
@@ -1618,8 +1618,8 @@ export default function ThreadScreen() {
           {/* Show image icon if media exists but no text content */}
           {hasMedia && !item.content && (
             <View style={styles.mediaOnlyIndicator}>
-              <Ionicons name="image" size={14} color={isUser ? "#fff" : "#8E8E93"} />
-              <Text style={[styles.mediaOnlyText, isUser && { color: '#fff' }]}>Photo</Text>
+              <Ionicons name="image" size={14} color={isUser ? "#fff" : colors.textSecondary} />
+              <Text style={[styles.mediaOnlyText, isUser && { color: colors.text }]}>Photo</Text>
             </View>
           )}
           
@@ -1639,7 +1639,7 @@ export default function ThreadScreen() {
           
           {item.channel === 'sms_personal' && isUser && (
             <View style={styles.personalSmsBadge}>
-              <Ionicons name="phone-portrait-outline" size={10} color="#8E8E93" />
+              <Ionicons name="phone-portrait-outline" size={10} color={colors.textSecondary} />
               <Text style={styles.personalSmsText}>Sent from your phone</Text>
             </View>
           )}
@@ -1731,7 +1731,7 @@ export default function ThreadScreen() {
           <Ionicons 
             name={messageMode === 'sms' ? 'mail-outline' : 'chatbubble-outline'} 
             size={14} 
-            color="#8E8E93" 
+            color={colors.textSecondary} 
           />
         </TouchableOpacity>
       </View>
@@ -1743,7 +1743,7 @@ export default function ThreadScreen() {
           <TextInput
             style={styles.emailPromptInput}
             placeholder="Enter customer's email address"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textSecondary}
             value={promptEmail}
             onChangeText={setPromptEmail}
             keyboardType="email-address"
@@ -1779,7 +1779,7 @@ export default function ThreadScreen() {
             <Text style={styles.emailPromptSaveText}>Save</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#2C2C2E', borderRadius: 8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surface, borderRadius: 8 }}
             onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); setMessageMode('sms'); AsyncStorage.setItem('message_mode', 'sms'); }} 
             data-testid="email-prompt-close"
           >
@@ -1809,7 +1809,7 @@ export default function ThreadScreen() {
             <Text style={styles.intelBarMeta}> · Updated {new Date(intelData.generated_at).toLocaleDateString()}</Text>
           )}
         </View>
-        <Ionicons name={showIntel ? 'chevron-up' : 'chevron-down'} size={16} color="#636366" />
+        <Ionicons name={showIntel ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textTertiary} />
       </Pressable>
 
       {showIntel && (
@@ -1852,7 +1852,7 @@ export default function ThreadScreen() {
               onPress={() => setShowQuickContactPanel(false)}
               style={styles.quickContactClose}
             >
-              <Ionicons name="chevron-up" size={20} color="#8E8E93" />
+              <Ionicons name="chevron-up" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
           
@@ -1867,11 +1867,11 @@ export default function ThreadScreen() {
                 <Image source={{ uri: newContactPhoto }} style={styles.quickContactPhoto} />
               ) : (
                 <View style={styles.quickContactPhotoPlaceholder}>
-                  <Ionicons name="camera" size={24} color="#8E8E93" />
+                  <Ionicons name="camera" size={24} color={colors.textSecondary} />
                 </View>
               )}
               <View style={styles.quickContactPhotoBadge}>
-                <Ionicons name="add" size={14} color="#FFF" />
+                <Ionicons name="add" size={14} color={colors.text} />
               </View>
             </TouchableOpacity>
             
@@ -1909,7 +1909,7 @@ export default function ThreadScreen() {
                     onPress={() => setNewContactTags(prev => prev.filter(t => t !== tagName))}
                   >
                     <Text style={styles.quickContactTagText}>{tagName}</Text>
-                    <Ionicons name="close" size={12} color="#FFF" />
+                    <Ionicons name="close" size={12} color={colors.text} />
                   </TouchableOpacity>
                 );
               })}
@@ -1933,20 +1933,20 @@ export default function ThreadScreen() {
               >
                 <View style={styles.createUserToggleLeft}>
                   <View style={[styles.createUserCheckbox, createUserAccount && styles.createUserCheckboxActive]}>
-                    {createUserAccount && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                    {createUserAccount && <Ionicons name="checkmark" size={14} color={colors.text} />}
                   </View>
                   <View>
                     <Text style={styles.createUserToggleText}>Also create user account</Text>
                     <Text style={styles.createUserToggleHint}>They'll receive login credentials via SMS</Text>
                   </View>
                 </View>
-                <Ionicons name={createUserAccount ? "chevron-up" : "chevron-down"} size={18} color="#8E8E93" />
+                <Ionicons name={createUserAccount ? "chevron-up" : "chevron-down"} size={18} color={colors.textSecondary} />
               </TouchableOpacity>
               
               {createUserAccount && (
                 <View style={styles.createUserFields}>
                   <View style={styles.createUserInputContainer}>
-                    <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+                    <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
                     <TextInput
                       style={styles.createUserInput}
                       placeholder="Email (for login)"
@@ -2010,8 +2010,8 @@ export default function ThreadScreen() {
               }}
               data-testid="quick-contact-save-btn"
             >
-              <Ionicons name="checkmark" size={18} color="#FFF" />
-              <Text style={[styles.quickContactActionText, { color: '#FFF' }]}>Save Contact</Text>
+              <Ionicons name="checkmark" size={18} color={colors.text} />
+              <Text style={[styles.quickContactActionText, { color: colors.text }]}>Save Contact</Text>
             </TouchableOpacity>
           </View>
           
@@ -2029,7 +2029,7 @@ export default function ThreadScreen() {
         >
           <Ionicons name="person-add" size={16} color="#007AFF" />
           <Text style={styles.quickContactCollapsedText}>Add contact details</Text>
-          <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+          <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
         </TouchableOpacity>
       )}
       
@@ -2045,7 +2045,7 @@ export default function ThreadScreen() {
             <View style={styles.tagPickerHeader}>
               <Text style={styles.tagPickerTitle}>Select Tags</Text>
               <TouchableOpacity onPress={() => setShowTagPicker(false)}>
-                <Ionicons name="close" size={24} color="#FFF" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.tagPickerList}>
@@ -2259,7 +2259,7 @@ export default function ThreadScreen() {
                       ? (messageMode === 'sms' 
                           ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
                           : '#34C759') 
-                      : '#3A3A3C',
+                      : colors.borderLight,
                     border: 'none',
                     cursor: (!message.trim() && !selectedMedia) || sending || sendingMedia ? 'not-allowed' : 'pointer',
                     display: 'flex',
@@ -2268,7 +2268,7 @@ export default function ThreadScreen() {
                   }}
                 >
                   {sending || sendingMedia ? (
-                    <ActivityIndicator size="small" color="#FFF" />
+                    <ActivityIndicator size="small" color={colors.text} />
                   ) : (
                     <Ionicons
                       name={messageMode === 'sms' 
@@ -2292,7 +2292,7 @@ export default function ThreadScreen() {
                   disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
                 >
                   {sending || sendingMedia ? (
-                    <ActivityIndicator size="small" color="#FFF" />
+                    <ActivityIndicator size="small" color={colors.text} />
                   ) : (
                     <Ionicons
                       name={messageMode === 'sms' 
@@ -2361,7 +2361,7 @@ export default function ThreadScreen() {
                   facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
                   yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
                   trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
-                  custom: { name: customLinkName || 'Custom Link', icon: 'link', color: '#8E8E93' },
+                  custom: { name: customLinkName || 'Custom Link', icon: 'link', color: colors.textSecondary },
                 };
                 const platform = platformNames[platformId] || platformNames.custom;
                 
@@ -2386,7 +2386,7 @@ export default function ThreadScreen() {
               {/* Empty state only if no links at all */}
               {!storeSlug && Object.keys(reviewLinks).length === 0 && (
                 <View style={styles.emptyReviews}>
-                  <Ionicons name="star-outline" size={48} color="#8E8E93" />
+                  <Ionicons name="star-outline" size={48} color={colors.textSecondary} />
                   <Text style={styles.emptyReviewsText}>No review links configured</Text>
                   <TouchableOpacity
                     style={styles.setupReviewsButton}
@@ -2409,8 +2409,8 @@ export default function ThreadScreen() {
                     router.push('/settings/review-links' as any);
                   }}
                 >
-                  <Ionicons name="settings-outline" size={14} color="#8E8E93" />
-                  <Text style={{ fontSize: 13, color: '#8E8E93' }}>Manage Review Platform Links</Text>
+                  <Ionicons name="settings-outline" size={14} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>Manage Review Platform Links</Text>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -2465,12 +2465,12 @@ export default function ThreadScreen() {
                       {template.content}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
               ListEmptyComponent={() => (
                 <View style={styles.emptyTemplates}>
-                  <Ionicons name="document-text-outline" size={48} color="#8E8E93" />
+                  <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
                   <Text style={styles.emptyTemplatesText}>No templates yet</Text>
                 </View>
               )}
@@ -2531,7 +2531,7 @@ export default function ThreadScreen() {
                       Send a direct link to save your contact info to their phone
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -2548,7 +2548,7 @@ export default function ThreadScreen() {
                       Send your full digital card with socials, bio & more
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
               
@@ -2614,7 +2614,7 @@ export default function ThreadScreen() {
                     onPress={sendBusinessCardLink}
                     data-testid="send-card-btn"
                   >
-                    <Ionicons name="paper-plane" size={20} color="#FFF" />
+                    <Ionicons name="paper-plane" size={20} color={colors.text} />
                     <Text style={styles.sendCardButtonText}>
                       {selectedCampaign ? 'Send Card + Start Campaign' : 'Send Landing Page'}
                     </Text>
@@ -2780,7 +2780,7 @@ export default function ThreadScreen() {
                     <Image source={{ uri: congratsPhoto.uri }} style={styles.congratsPhotoPreview} />
                   ) : (
                     <View style={styles.congratsPhotoPlaceholder}>
-                      <Ionicons name="camera" size={40} color="#8E8E93" />
+                      <Ionicons name="camera" size={40} color={colors.textSecondary} />
                       <Text style={styles.congratsPhotoText}>Tap to add customer photo</Text>
                     </View>
                   )}
@@ -2885,10 +2885,10 @@ export default function ThreadScreen() {
                   data-testid="congrats-create-btn"
                 >
                   {creatingCongratsCard ? (
-                    <ActivityIndicator size="small" color="#000" />
+                    <ActivityIndicator size="small" color={colors.text} />
                   ) : (
                     <>
-                      <Ionicons name="sparkles" size={20} color="#000" />
+                      <Ionicons name="sparkles" size={20} color={colors.text} />
                       <Text style={styles.congratsCreateButtonText}>Create Card & Send Link</Text>
                     </>
                   )}
@@ -2962,14 +2962,14 @@ export default function ThreadScreen() {
               onPress={() => setAiMode('draft_only')}
             >
               <View style={[styles.modeIcon, { backgroundColor: '#8E8E9320' }]}>
-                <Ionicons name="document-text" size={20} color="#8E8E93" />
+                <Ionicons name="document-text" size={20} color={colors.textSecondary} />
               </View>
               <View style={styles.modeInfo}>
                 <Text style={styles.modeName}>Drafts Only</Text>
                 <Text style={styles.modeDesc}>AI creates drafts but doesn't send</Text>
               </View>
               {aiMode === 'draft_only' && (
-                <Ionicons name="checkmark-circle" size={24} color="#8E8E93" />
+                <Ionicons name="checkmark-circle" size={24} color={colors.textSecondary} />
               )}
             </TouchableOpacity>
             
@@ -3003,7 +3003,7 @@ export default function ThreadScreen() {
                 <Ionicons 
                   name={conversationStatus === 'closed' ? 'refresh' : 'checkmark-done'} 
                   size={20} 
-                  color={conversationStatus === 'closed' ? '#34C759' : '#8E8E93'} 
+                  color={conversationStatus === 'closed' ? '#34C759' : colors.textSecondary} 
                 />
               </View>
               <View style={styles.modeInfo}>
@@ -3032,14 +3032,14 @@ export default function ThreadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 0,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
   },
   backButton: {
     padding: 4,
@@ -3061,7 +3061,7 @@ const styles = StyleSheet.create({
   headerAvatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   headerInfo: {
     flex: 1,
@@ -3070,7 +3070,7 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   headerPhone: {
     fontSize: 13,
@@ -3158,7 +3158,7 @@ const styles = StyleSheet.create({
   },
   intelSummaryText: {
     fontSize: 13,
-    color: '#E5E5EA',
+    color: '#3A3A3C',
     lineHeight: 20,
     marginBottom: 8,
   },
@@ -3198,14 +3198,14 @@ const styles = StyleSheet.create({
   },
   emailPromptInput: {
     flex: 1,
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 15,
-    backgroundColor: '#111',
+    backgroundColor: '#1C1C1E',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#2C2C2E',
   },
   emailPromptSave: {
     backgroundColor: '#C9A962',
@@ -3214,7 +3214,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emailPromptSaveText: {
-    color: '#000',
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 14,
   },
@@ -3237,7 +3237,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
     marginTop: 16,
   },
   emptySubtext: {
@@ -3328,11 +3328,11 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    color: '#E5E5EA',
+    color: '#3A3A3C',
     lineHeight: 21,
   },
   userMessageText: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   intentBadge: {
     flexDirection: 'row',
@@ -3382,7 +3382,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userMessageTime: {
-    color: '#FFF',
+    color: '#FFFFFF',
     opacity: 0.7,
   },
   contactMessageTime: {
@@ -3456,7 +3456,7 @@ const styles = StyleSheet.create({
   inputField: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: '#FFFFFF',
     maxHeight: 100,
     paddingTop: 0,
     paddingBottom: 0,
@@ -3495,7 +3495,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#FFF',
+    color: '#FFFFFF',
     maxHeight: 100,
   },
   sendButton: {
@@ -3526,7 +3526,7 @@ const styles = StyleSheet.create({
   },
   mediaPreview: {
     padding: 12,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#000000',
     borderBottomWidth: 1,
     borderBottomColor: '#2C2C2E',
     alignItems: 'center',
@@ -3584,7 +3584,7 @@ const styles = StyleSheet.create({
   },
   composerInput: {
     fontSize: 16,
-    color: '#FFF',
+    color: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
@@ -3660,7 +3660,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   templatesList: {
@@ -3728,7 +3728,7 @@ const styles = StyleSheet.create({
   modeName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   modeDesc: {
     fontSize: 13,
@@ -3752,7 +3752,7 @@ const styles = StyleSheet.create({
   closeModalText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   // Settings Modal specific
   modalContent: {
@@ -3785,7 +3785,7 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   templatePreview: {
     fontSize: 13,
@@ -3811,7 +3811,7 @@ const styles = StyleSheet.create({
   setupReviewsButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   // Business Card Modal Styles
   cardModalContent: {
@@ -3827,7 +3827,7 @@ const styles = StyleSheet.create({
   cardPreviewTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
     marginTop: 12,
   },
   cardPreviewDesc: {
@@ -3840,7 +3840,7 @@ const styles = StyleSheet.create({
   campaignPickerLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   campaignScroller: {
@@ -3896,7 +3896,7 @@ const styles = StyleSheet.create({
   sendCardButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   // Share Options Styles
   shareOptionsContainer: {
@@ -3925,7 +3925,7 @@ const styles = StyleSheet.create({
   shareOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   shareOptionDesc: {
@@ -3948,7 +3948,7 @@ const styles = StyleSheet.create({
   landingPageOptionsTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   // Photo Options Modal Styles (for Web)
   photoOptionsOverlay: {
@@ -3967,7 +3967,7 @@ const styles = StyleSheet.create({
   photoOptionsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -3982,7 +3982,7 @@ const styles = StyleSheet.create({
   },
   photoOptionText: {
     fontSize: 16,
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   photoOptionCancel: {
     backgroundColor: 'transparent',
@@ -4057,7 +4057,7 @@ const styles = StyleSheet.create({
   congratsLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
     marginBottom: 8,
     marginTop: 8,
   },
@@ -4066,7 +4066,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   congratsTextArea: {
@@ -4104,7 +4104,7 @@ const styles = StyleSheet.create({
   congratsCreateButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#FFFFFF',
   },
   // Congrats Tag Picker Styles
   congratsTagSection: {
@@ -4176,7 +4176,7 @@ const styles = StyleSheet.create({
   quickContactTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   quickContactClose: {
     padding: 4,
@@ -4225,7 +4225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   quickContactTagsSection: {
     flexDirection: 'row',
@@ -4252,7 +4252,7 @@ const styles = StyleSheet.create({
   quickContactTagText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   quickContactAddTag: {
     flexDirection: 'row',
@@ -4289,7 +4289,7 @@ const styles = StyleSheet.create({
   quickContactActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   quickContactHint: {
     fontSize: 11,
@@ -4337,7 +4337,7 @@ const styles = StyleSheet.create({
   tagPickerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   tagPickerList: {
     padding: 8,
@@ -4361,7 +4361,7 @@ const styles = StyleSheet.create({
   tagPickerItemText: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   tagPickerEmpty: {
     fontSize: 14,
@@ -4379,7 +4379,7 @@ const styles = StyleSheet.create({
   tagPickerDoneText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   // Create User Section Styles (Admin Only)
   createUserSection: {
@@ -4414,7 +4414,7 @@ const styles = StyleSheet.create({
   createUserToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   createUserToggleHint: {
     fontSize: 11,
@@ -4437,7 +4437,7 @@ const styles = StyleSheet.create({
   createUserInput: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   createUserRoleContainer: {
     flexDirection: 'row',
@@ -4470,6 +4470,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   createUserRoleBtnTextActive: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
 });

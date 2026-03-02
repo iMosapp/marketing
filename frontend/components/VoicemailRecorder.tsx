@@ -13,6 +13,7 @@ import { Audio, AVPlaybackStatus } from 'expo-av';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 
+import { useThemeStore } from '../store/themeStore';
 /**
  * Voicemail Recorder Component
  * 
@@ -23,6 +24,8 @@ import { useAuthStore } from '../store/authStore';
  * - Delete existing greeting
  */
 export default function VoicemailRecorder() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const { user } = useAuthStore();
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -294,10 +297,10 @@ export default function VoicemailRecorder() {
             disabled={isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="cloud-upload" size={20} color="#FFF" />
+                <Ionicons name="cloud-upload" size={20} color={colors.text} />
                 <Text style={styles.saveButtonText}>Save</Text>
               </>
             )}
@@ -328,9 +331,9 @@ export default function VoicemailRecorder() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   saveButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -428,7 +431,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

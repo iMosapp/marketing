@@ -17,6 +17,7 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 
+import { useThemeStore } from '../../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface Team {
@@ -25,6 +26,8 @@ interface Team {
 }
 
 export default function NewLeadSourceScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const { showToast } = useToast();
@@ -261,7 +264,7 @@ export default function NewLeadSourceScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: 12,
-                      backgroundColor: formData.team_id === team.id ? '#007AFF10' : '#1C1C1E',
+                      backgroundColor: formData.team_id === team.id ? '#007AFF10' : colors.card,
                       borderRadius: 10,
                       padding: 14,
                       border: formData.team_id === team.id ? '1px solid #007AFF' : '1px solid #2C2C2E',
@@ -274,7 +277,7 @@ export default function NewLeadSourceScreen() {
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={formData.team_id === team.id ? '#007AFF' : '#8E8E93'}
+                      color={formData.team_id === team.id ? '#007AFF' : colors.textSecondary}
                     />
                     <Text style={[
                       styles.teamOptionText,
@@ -295,7 +298,7 @@ export default function NewLeadSourceScreen() {
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={formData.team_id === team.id ? '#007AFF' : '#8E8E93'}
+                      color={formData.team_id === team.id ? '#007AFF' : colors.textSecondary}
                     />
                     <Text style={[
                       styles.teamOptionText,
@@ -325,7 +328,7 @@ export default function NewLeadSourceScreen() {
                     display: 'flex',
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: '#1C1C1E',
+                    backgroundColor: colors.card,
                     borderRadius: 12,
                     padding: 16,
                     border: formData.assignment_method === method.id 
@@ -348,7 +351,7 @@ export default function NewLeadSourceScreen() {
                   <Ionicons
                     name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
                     size={24}
-                    color={formData.assignment_method === method.id ? method.color : '#3A3A3C'}
+                    color={formData.assignment_method === method.id ? method.color : colors.borderLight}
                   />
                 </button>
               ) : (
@@ -371,7 +374,7 @@ export default function NewLeadSourceScreen() {
                   <Ionicons
                     name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
                     size={24}
-                    color={formData.assignment_method === method.id ? method.color : '#3A3A3C'}
+                    color={formData.assignment_method === method.id ? method.color : colors.borderLight}
                   />
                 </TouchableOpacity>
               )
@@ -392,10 +395,10 @@ export default function NewLeadSourceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -403,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -411,7 +414,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     padding: 4,
@@ -433,7 +436,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
@@ -443,13 +446,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   textArea: {
     height: 80,
@@ -461,12 +464,12 @@ const styles = StyleSheet.create({
   teamOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   teamOptionSelected: {
     borderColor: '#007AFF',
@@ -474,20 +477,20 @@ const styles = StyleSheet.create({
   },
   teamOptionText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   teamOptionTextSelected: {
     color: '#007AFF',
   },
   noTeamsContainer: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
   },
   noTeamsText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   createTeamLink: {
@@ -501,14 +504,14 @@ const styles = StyleSheet.create({
   methodCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   methodCardSelected: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   methodIcon: {
     width: 48,
@@ -524,12 +527,12 @@ const styles = StyleSheet.create({
   methodName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   methodDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   infoBox: {
     flexDirection: 'row',

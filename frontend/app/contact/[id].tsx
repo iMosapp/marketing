@@ -200,7 +200,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
 
     if (isHeader) {
       elements.push(
-        <Text key={i} style={{ color: '#FFF', fontSize: 14, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
+        <Text key={i} style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
           {trimmed.replace(/:$/, '')}
         </Text>
       );
@@ -225,8 +225,9 @@ const IntelRenderer = ({ text }: { text: string }) => {
 };
 
 export default function ContactDetailScreen() {
+  const { colors } = useThemeStore();
   const router = useRouter();
-  const colors = useThemeStore((s) => s.colors);  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -1261,7 +1262,7 @@ export default function ContactDetailScreen() {
                   )}
                   {isEditing && (
                     <View style={s.heroCameraBadge}>
-                      <Ionicons name="camera" size={12} color="#FFF" />
+                      <Ionicons name="camera" size={12} color={colors.text} />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -1288,13 +1289,13 @@ export default function ContactDetailScreen() {
                 <View style={s.heroMetaRow}>
                   {(contact.address_city || contact.address_state) ? (
                     <View style={s.heroMetaItem}>
-                      <Ionicons name="location-outline" size={11} color="#636366" />
+                      <Ionicons name="location-outline" size={11} color={colors.textTertiary} />
                       <Text style={s.heroMetaText}>{[contact.address_city, contact.address_state].filter(Boolean).join(', ')}</Text>
                     </View>
                   ) : null}
                   {!isNewContact && (
                     <View style={s.heroMetaItem}>
-                      <Ionicons name="time-outline" size={11} color="#636366" />
+                      <Ionicons name="time-outline" size={11} color={colors.textTertiary} />
                       <Text style={s.heroMetaText}>{timeValue} {timeLabel} relationship</Text>
                     </View>
                   )}
@@ -1341,7 +1342,7 @@ export default function ContactDetailScreen() {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                     {contact.tags.map((tag, i) => {
                       const info = availableTags.find(t => t.name === tag);
-                      const chipColor = info?.color || '#8E8E93';
+                      const chipColor = info?.color || colors.textSecondary;
                       return (
                         <View key={i} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]}>
                           <Ionicons name={(info?.icon || 'pricetag') as any} size={13} color={chipColor} />
@@ -1441,27 +1442,27 @@ export default function ContactDetailScreen() {
                 <Text style={s.sectionHeader}>Basic Info</Text>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>First Name *</Text>
-                  <TextInput style={s.input} placeholder="First name" placeholderTextColor="#636366"
+                  <TextInput style={s.input} placeholder="First name" placeholderTextColor={colors.textTertiary}
                     value={contact.first_name} onChangeText={t => setContact({ ...contact, first_name: t })} data-testid="input-first-name" />
                 </View>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>Last Name</Text>
-                  <TextInput style={s.input} placeholder="Last name" placeholderTextColor="#636366"
+                  <TextInput style={s.input} placeholder="Last name" placeholderTextColor={colors.textTertiary}
                     value={contact.last_name} onChangeText={t => setContact({ ...contact, last_name: t })} data-testid="input-last-name" />
                 </View>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>Phone *</Text>
-                  <TextInput style={s.input} placeholder="+1 (555) 123-4567" placeholderTextColor="#636366"
+                  <TextInput style={s.input} placeholder="+1 (555) 123-4567" placeholderTextColor={colors.textTertiary}
                     value={contact.phone} onChangeText={t => setContact({ ...contact, phone: t })} keyboardType="phone-pad" data-testid="input-phone" />
                 </View>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>Email</Text>
-                  <TextInput style={s.input} placeholder="email@example.com" placeholderTextColor="#636366"
+                  <TextInput style={s.input} placeholder="email@example.com" placeholderTextColor={colors.textTertiary}
                     value={contact.email} onChangeText={t => setContact({ ...contact, email: t })} keyboardType="email-address" autoCapitalize="none" data-testid="input-email" />
                 </View>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>Vehicle</Text>
-                  <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor="#636366"
+                  <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor={colors.textTertiary}
                     value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
                 </View>
               </View>
@@ -1471,30 +1472,30 @@ export default function ContactDetailScreen() {
                 <Text style={s.sectionHeader}>Address</Text>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>Street</Text>
-                  <TextInput style={s.input} placeholder="123 Main St" placeholderTextColor="#636366"
+                  <TextInput style={s.input} placeholder="123 Main St" placeholderTextColor={colors.textTertiary}
                     value={contact.address_street} onChangeText={t => setContact({ ...contact, address_street: t })} data-testid="input-address-street" />
                 </View>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <View style={[s.inputGroup, { flex: 1 }]}>
                     <Text style={s.inputLabel}>City</Text>
-                    <TextInput style={s.input} placeholder="City" placeholderTextColor="#636366"
+                    <TextInput style={s.input} placeholder="City" placeholderTextColor={colors.textTertiary}
                       value={contact.address_city} onChangeText={t => setContact({ ...contact, address_city: t })} data-testid="input-address-city" />
                   </View>
                   <View style={[s.inputGroup, { flex: 0.5 }]}>
                     <Text style={s.inputLabel}>State</Text>
-                    <TextInput style={s.input} placeholder="ST" placeholderTextColor="#636366"
+                    <TextInput style={s.input} placeholder="ST" placeholderTextColor={colors.textTertiary}
                       value={contact.address_state} onChangeText={t => setContact({ ...contact, address_state: t })} autoCapitalize="characters" data-testid="input-address-state" />
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <View style={[s.inputGroup, { flex: 1 }]}>
                     <Text style={s.inputLabel}>ZIP Code</Text>
-                    <TextInput style={s.input} placeholder="12345" placeholderTextColor="#636366"
+                    <TextInput style={s.input} placeholder="12345" placeholderTextColor={colors.textTertiary}
                       value={contact.address_zip} onChangeText={t => setContact({ ...contact, address_zip: t })} keyboardType="number-pad" data-testid="input-address-zip" />
                   </View>
                   <View style={[s.inputGroup, { flex: 1 }]}>
                     <Text style={s.inputLabel}>Country</Text>
-                    <TextInput style={s.input} placeholder="US" placeholderTextColor="#636366"
+                    <TextInput style={s.input} placeholder="US" placeholderTextColor={colors.textTertiary}
                       value={contact.address_country} onChangeText={t => setContact({ ...contact, address_country: t })} data-testid="input-address-country" />
                   </View>
                 </View>
@@ -1508,10 +1509,10 @@ export default function ContactDetailScreen() {
                     const info = availableTags.find(t => t.name === tag);
                     return (
                       <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
-                        {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || '#8E8E93'} />}
+                        {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || colors.textSecondary} />}
                         <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
                         <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={15} color="#8E8E93" />
+                          <Ionicons name="close-circle" size={15} color={colors.textSecondary} />
                         </TouchableOpacity>
                       </View>
                     );
@@ -1537,16 +1538,16 @@ export default function ContactDetailScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={s.dateRowLabel}>{d.label}</Text>
-                      <Text style={[s.dateRowValue, !(contact as any)[d.field] && { color: '#636366' }]}>
+                      <Text style={[s.dateRowValue, !(contact as any)[d.field] && { color: colors.textTertiary }]}>
                         {formatDateDisplay((contact as any)[d.field])}
                       </Text>
                     </View>
                     {(contact as any)[d.field] && (
                       <TouchableOpacity onPress={() => clearDate(d.field)} style={{ padding: 4, marginRight: 8 }}>
-                        <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                        <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                       </TouchableOpacity>
                     )}
-                    <Ionicons name="calendar" size={20} color="#8E8E93" />
+                    <Ionicons name="calendar" size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
                 ))}
                 {contact.custom_dates.map((cd, i) => (
@@ -1556,7 +1557,7 @@ export default function ContactDetailScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={s.dateRowLabel}>{cd.name}</Text>
-                      <Text style={[s.dateRowValue, !cd.date && { color: '#636366' }]}>{formatDateDisplay(cd.date)}</Text>
+                      <Text style={[s.dateRowValue, !cd.date && { color: colors.textTertiary }]}>{formatDateDisplay(cd.date)}</Text>
                     </View>
                     <TouchableOpacity onPress={() => removeCustomDateField(i)} style={{ padding: 4 }}>
                       <Ionicons name="trash-outline" size={18} color="#FF3B30" />
@@ -1592,11 +1593,11 @@ export default function ContactDetailScreen() {
                     activeOpacity={a.done ? 1 : 0.7}
                     data-testid={`progress-${a.key}`}
                   >
-                    <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : '#1C1C1E' }]}>
+                    <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : colors.card }]}>
                       {a.done ? (
                         <Ionicons name="checkmark-circle" size={18} color={a.color} />
                       ) : (
-                        <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color="#3A3A3C" />
+                        <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color={colors.borderLight} />
                       )}
                     </View>
                     <Text style={[s.progressText, a.done && { color: a.color }]} numberOfLines={1}>{a.label}</Text>
@@ -1632,7 +1633,7 @@ export default function ContactDetailScreen() {
                     )}
                   </View>
                 </View>
-                <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color="#636366" />
+                <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {showIntel && (
@@ -1681,7 +1682,7 @@ export default function ContactDetailScreen() {
                   <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
                   <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(MAX_RECORDING_SECONDS)}</Text>
                   <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
-                    <Ionicons name="stop" size={18} color="#FFF" />
+                    <Ionicons name="stop" size={18} color={colors.text} />
                     <Text style={s.vnStopText}>Stop</Text>
                   </TouchableOpacity>
                 </View>
@@ -1719,7 +1720,7 @@ export default function ContactDetailScreen() {
                             <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
                           </View>
                           <TouchableOpacity onPress={() => deleteVoiceNote(note.id)} style={{ padding: 4 }} data-testid={`delete-voice-note-${i}`}>
-                            <Ionicons name="trash-outline" size={16} color="#636366" />
+                            <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
                           </TouchableOpacity>
                         </View>
                         {note.transcript ? (
@@ -1727,7 +1728,7 @@ export default function ContactDetailScreen() {
                             {note.transcript}
                           </Text>
                         ) : (
-                          <Text style={[s.vnTranscript, { fontStyle: 'italic', color: '#636366' }]}>Transcribing...</Text>
+                          <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
                         )}
                         {note.transcript && note.transcript.length > 120 && (
                           <TouchableOpacity onPress={() => setExpandedEvents(prev => ({ ...prev, [1000 + i]: !prev[1000 + i] }))}>
@@ -1811,18 +1812,18 @@ export default function ContactDetailScreen() {
                 </TouchableOpacity>
                 {events.length > 0 && (
                   <View style={s.feedSearchRowCompact}>
-                    <Ionicons name="search" size={14} color="#636366" />
+                    <Ionicons name="search" size={14} color={colors.textTertiary} />
                     <TextInput
                       style={s.feedSearchInputCompact}
                       placeholder="Search..."
-                      placeholderTextColor="#636366"
+                      placeholderTextColor={colors.textTertiary}
                       value={feedSearch}
                       onChangeText={setFeedSearch}
                       data-testid="feed-search-input"
                     />
                     {feedSearch.length > 0 && (
                       <TouchableOpacity onPress={() => setFeedSearch('')}>
-                        <Ionicons name="close-circle" size={14} color="#636366" />
+                        <Ionicons name="close-circle" size={14} color={colors.textTertiary} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -1838,14 +1839,14 @@ export default function ContactDetailScreen() {
                     <Ionicons name="arrow-down-circle" size={18} color="#30D158" />
                     <Text style={s.bubbleHeaderText}>Customer said...</Text>
                     <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }} style={s.bubbleClose}>
-                      <Ionicons name="close-circle" size={22} color="#636366" />
+                      <Ionicons name="close-circle" size={22} color={colors.textTertiary} />
                     </TouchableOpacity>
                   </View>
                   <View style={s.bubbleInputWrap}>
                     <TextInput
                       style={s.bubbleInput}
                       placeholder="Paste what they said..."
-                      placeholderTextColor="#636366"
+                      placeholderTextColor={colors.textTertiary}
                       value={replyText}
                       onChangeText={setReplyText}
                       multiline
@@ -1862,7 +1863,7 @@ export default function ContactDetailScreen() {
                   )}
                   <View style={s.bubbleFooter}>
                     <TouchableOpacity style={s.bubblePhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
-                      <Ionicons name="image" size={20} color="#636366" />
+                      <Ionicons name="image" size={20} color={colors.textTertiary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[s.bubbleSaveBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.35 }]}
@@ -1871,11 +1872,11 @@ export default function ContactDetailScreen() {
                       data-testid="log-reply-submit"
                     >
                       {submittingReply ? (
-                        <ActivityIndicator size="small" color="#FFF" />
+                        <ActivityIndicator size="small" color={colors.text} />
                       ) : (
                         <>
                           <Text style={s.bubbleSaveText}>Save Reply</Text>
-                          <Ionicons name="arrow-up-circle" size={22} color="#FFF" />
+                          <Ionicons name="arrow-up-circle" size={22} color={colors.text} />
                         </>
                       )}
                     </TouchableOpacity>
@@ -1887,7 +1888,7 @@ export default function ContactDetailScreen() {
                 <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
               ) : filteredEvents.length === 0 ? (
                 <View style={s.emptyFeed}>
-                  <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color="#2C2C2E" />
+                  <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color={colors.surface} />
                   <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : 'No activity yet'}</Text>
                   <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
                 </View>
@@ -1909,7 +1910,7 @@ export default function ContactDetailScreen() {
                           <View style={s.feedDateLine} />
                           <Text style={s.feedDateText}>{group.label}</Text>
                           <Text style={s.feedDateCount}>{group.events.length}</Text>
-                          <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color="#636366" />
+                          <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color={colors.textTertiary} />
                           <View style={s.feedDateLine} />
                         </TouchableOpacity>
 
@@ -1950,7 +1951,7 @@ export default function ContactDetailScreen() {
                                 </View>
                               )}
                             </View>
-                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#636366" />
+                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textTertiary} />
                           </View>
                           {!isExpanded && evt.description ? (
                             <Text style={[s.feedDesc, isInbound && { color: '#30D158', fontStyle: 'italic' }]} numberOfLines={1}>
@@ -2040,7 +2041,7 @@ export default function ContactDetailScreen() {
                 <Text style={s.conversationLinkTitle}>View Conversation</Text>
                 <Text style={s.conversationLinkSub}>Open full message thread</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
 
@@ -2056,22 +2057,22 @@ export default function ContactDetailScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.dateRowLabel}>Referred By</Text>
-                    <Text style={[s.dateRowValue, !contact.referred_by_name && { color: '#636366' }]}>
+                    <Text style={[s.dateRowValue, !contact.referred_by_name && { color: colors.textTertiary }]}>
                       {contact.referred_by_name || 'Select referrer'}
                     </Text>
                   </View>
                   {contact.referred_by ? (
                     <TouchableOpacity onPress={clearReferrer} style={{ padding: 4 }}>
-                      <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                      <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                   ) : (
-                    <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                   )}
                 </TouchableOpacity>
                 {contact.referred_by && (
                   <View style={s.inputGroup}>
                     <Text style={s.inputLabel}>Referral Notes</Text>
-                    <TextInput style={s.input} placeholder="How did they refer?" placeholderTextColor="#636366"
+                    <TextInput style={s.input} placeholder="How did they refer?" placeholderTextColor={colors.textTertiary}
                       value={contact.referral_notes} onChangeText={t => setContact({ ...contact, referral_notes: t })} />
                   </View>
                 )}
@@ -2083,11 +2084,11 @@ export default function ContactDetailScreen() {
                   <Text style={[s.sectionHeader, { marginBottom: 0 }]}>Notes</Text>
                   <VoiceInput
                     onTranscription={(text: string) => setContact({ ...contact, notes: contact.notes + ' ' + text })}
-                    size="small" color="#8E8E93"
+                    size="small" color={colors.textSecondary}
                   />
                 </View>
                 <TextInput style={[s.input, { minHeight: 100, textAlignVertical: 'top', marginTop: 8 }]}
-                  placeholder="Add notes..." placeholderTextColor="#636366" value={contact.notes}
+                  placeholder="Add notes..." placeholderTextColor={colors.textTertiary} value={contact.notes}
                   onChangeText={t => setContact({ ...contact, notes: t })} multiline data-testid="input-notes" />
               </View>
 
@@ -2169,7 +2170,7 @@ export default function ContactDetailScreen() {
                     <TouchableOpacity key={r._id} style={s.referralItem} onPress={() => router.push(`/contact/${r._id}`)}>
                       <View style={s.referralAvatar}><Text style={s.referralAvatarText}>{r.first_name?.[0]}{r.last_name?.[0]}</Text></View>
                       <Text style={s.referralName}>{r.first_name} {r.last_name || ''}</Text>
-                      <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+                      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -2211,7 +2212,7 @@ export default function ContactDetailScreen() {
                 onPress={() => setComposerMode('sms')}
                 data-testid="composer-mode-sms"
               >
-                <Ionicons name="chatbubble" size={14} color={composerMode === 'sms' ? '#34C759' : '#636366'} />
+                <Ionicons name="chatbubble" size={14} color={composerMode === 'sms' ? '#34C759' : colors.textTertiary} />
                 <Text style={[s.composerModeBtnText, composerMode === 'sms' && { color: '#34C759' }]}>SMS</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2219,7 +2220,7 @@ export default function ContactDetailScreen() {
                 onPress={() => setComposerMode('email')}
                 data-testid="composer-mode-email"
               >
-                <Ionicons name="mail" size={14} color={composerMode === 'email' ? '#AF52DE' : '#636366'} />
+                <Ionicons name="mail" size={14} color={composerMode === 'email' ? '#AF52DE' : colors.textTertiary} />
                 <Text style={[s.composerModeBtnText, composerMode === 'email' && { color: '#AF52DE' }]}>Email</Text>
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
@@ -2239,7 +2240,7 @@ export default function ContactDetailScreen() {
                   <Ionicons name="sparkles" size={14} color="#34C759" />
                   <Text style={s.aiSuggestionLabel}>AI Suggestion</Text>
                   <TouchableOpacity onPress={() => { setShowAISuggestion(false); setAiSuggestion(''); }}>
-                    <Ionicons name="close-circle" size={16} color="#636366" />
+                    <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
                 <Text style={s.aiSuggestionText}>{aiSuggestion}</Text>
@@ -2257,8 +2258,8 @@ export default function ContactDetailScreen() {
                     onPress={() => { handleComposerSend(aiSuggestion); setShowAISuggestion(false); setAiSuggestion(''); }}
                     data-testid="ai-send-btn"
                   >
-                    <Ionicons name="send" size={14} color="#FFF" />
-                    <Text style={[s.aiActionBtnText, { color: '#FFF' }]}>Send Now</Text>
+                    <Ionicons name="send" size={14} color={colors.text} />
+                    <Text style={[s.aiActionBtnText, { color: colors.text }]}>Send Now</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -2269,7 +2270,7 @@ export default function ContactDetailScreen() {
               <TextInput
                 style={[s.composerInput, { color: colors.text }]}
                 placeholder="Type your message..."
-                placeholderTextColor="#636366"
+                placeholderTextColor={colors.textTertiary}
                 value={composerMessage}
                 onChangeText={setComposerMessage}
                 multiline
@@ -2319,14 +2320,14 @@ export default function ContactDetailScreen() {
                       width: 36, height: 36, borderRadius: 18,
                       backgroundColor: composerMessage.trim() && !composerSending
                         ? (composerMode === 'sms' ? '#34C759' : '#AF52DE')
-                        : '#3A3A3C',
+                        : colors.borderLight,
                       border: 'none',
                       cursor: !composerMessage.trim() || composerSending ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
                     {composerSending ? (
-                      <ActivityIndicator size="small" color="#FFF" />
+                      <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                       <Ionicons
                         name={composerMode === 'sms' ? 'send' : 'mail'}
@@ -2338,13 +2339,13 @@ export default function ContactDetailScreen() {
                 ) : (
                   <TouchableOpacity
                     style={[s.composerSendBtn, { backgroundColor: composerMode === 'sms' ? '#34C759' : '#AF52DE' },
-                      (!composerMessage.trim() || composerSending) && { backgroundColor: '#3A3A3C' }]}
+                      (!composerMessage.trim() || composerSending) && { backgroundColor: colors.borderLight }]}
                     onPress={() => handleComposerSend()}
                     disabled={!composerMessage.trim() || composerSending}
                     data-testid="composer-send-btn"
                   >
                     {composerSending ? (
-                      <ActivityIndicator size="small" color="#FFF" />
+                      <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                       <Ionicons name={composerMode === 'sms' ? 'send' : 'mail'} size={18} color={composerMessage.trim() ? '#FFF' : '#6E6E73'} />
                     )}
@@ -2387,7 +2388,7 @@ export default function ContactDetailScreen() {
                   <Text style={s.sendPickerLabel}>{item.label}</Text>
                   <Text style={s.sendPickerSub}>{item.sub}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
+                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
               </TouchableOpacity>
             ))}
           </View>
@@ -2422,7 +2423,7 @@ export default function ContactDetailScreen() {
                   <Text style={s.sendPickerLabel}>{item.label}</Text>
                   <Text style={s.sendPickerSub}>{item.sub}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#3A3A3C" />
+                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
               </TouchableOpacity>
             ))}
           </View>
@@ -2440,8 +2441,8 @@ export default function ContactDetailScreen() {
             <View style={{ width: 60 }} />
           </View>
           <View style={s.modalSearch}>
-            <Ionicons name="search" size={18} color="#8E8E93" />
-            <TextInput style={s.modalSearchInput} placeholder="Search contacts" placeholderTextColor="#8E8E93"
+            <Ionicons name="search" size={18} color={colors.textSecondary} />
+            <TextInput style={s.modalSearchInput} placeholder="Search contacts" placeholderTextColor={colors.textSecondary}
               value={contactSearch} onChangeText={setContactSearch} />
           </View>
           <FlatList data={filteredContacts} keyExtractor={i => i._id} renderItem={({ item }) => (
@@ -2466,8 +2467,8 @@ export default function ContactDetailScreen() {
             </TouchableOpacity>
           </View>
           <View style={s.modalSearch}>
-            <Ionicons name="search" size={18} color="#8E8E93" />
-            <TextInput style={s.modalSearchInput} placeholder="Search tags..." placeholderTextColor="#8E8E93"
+            <Ionicons name="search" size={18} color={colors.textSecondary} />
+            <TextInput style={s.modalSearchInput} placeholder="Search tags..." placeholderTextColor={colors.textSecondary}
               value={tagSearch} onChangeText={setTagSearch} autoCapitalize="none" />
           </View>
           <ScrollView style={{ flex: 1 }}>
@@ -2530,7 +2531,7 @@ export default function ContactDetailScreen() {
                   }}
                   style={{
                     width: '100%', padding: 12, borderRadius: 10,
-                    backgroundColor: '#2C2C2E', color: '#FFF', border: '1px solid #3A3A3C',
+                    backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C',
                     fontSize: 16, marginBottom: 12, marginTop: 8,
                   }}
                   data-testid="automation-date-input"
@@ -2548,7 +2549,7 @@ export default function ContactDetailScreen() {
               )}
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
                 <TouchableOpacity
-                  style={[s.labelBtn, { backgroundColor: '#2C2C2E' }]}
+                  style={[s.labelBtn, { backgroundColor: colors.surface }]}
                   onPress={() => handleClearAutomation(editingAutomation.field)}
                   data-testid="automation-clear-btn"
                 >
@@ -2559,7 +2560,7 @@ export default function ContactDetailScreen() {
                   onPress={() => handleUpdateAutomationDate(editingAutomation.field, automationPickerDate)}
                   data-testid="automation-save-btn"
                 >
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFF' }}>Save Date</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Save Date</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -2577,7 +2578,7 @@ export default function ContactDetailScreen() {
                 <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                   <Text style={{ fontSize: 17, color: '#FF3B30' }}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>{activeDateLabel}</Text>
+                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{activeDateLabel}</Text>
                 <TouchableOpacity onPress={confirmDateSelection}>
                   <Text style={{ fontSize: 17, fontWeight: '600', color: '#007AFF' }}>Done</Text>
                 </TouchableOpacity>
@@ -2629,7 +2630,7 @@ export default function ContactDetailScreen() {
               {(Platform.OS === 'ios' || IS_WEB) && (
                 <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
                   <TouchableOpacity style={s.dateConfirmBtn} onPress={confirmDateSelection}>
-                    <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>
                       Select {IS_WEB ? format(new Date(webYear, webMonth, webDay), 'MMM d, yyyy') : format(tempDate, 'MMM d, yyyy')}
                     </Text>
                   </TouchableOpacity>
@@ -2646,14 +2647,14 @@ export default function ContactDetailScreen() {
           <TouchableOpacity activeOpacity={1} style={s.labelModal} onPress={() => {}}>
             <Text style={s.labelTitle}>Name This Date</Text>
             <Text style={s.labelSub}>{pendingCustomDate ? format(pendingCustomDate, 'MMM d, yyyy') : ''}</Text>
-            <TextInput style={s.labelInput} placeholder='e.g., "Lease Expiration"' placeholderTextColor="#8E8E93"
+            <TextInput style={s.labelInput} placeholder='e.g., "Lease Expiration"' placeholderTextColor={colors.textSecondary}
               value={newCustomDateName} onChangeText={setNewCustomDateName} returnKeyType="done" onSubmitEditing={confirmCustomDateWithLabel} />
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity style={[s.labelBtn, { backgroundColor: '#2C2C2E' }]} onPress={() => setShowCustomDateLabel(false)}>
+              <TouchableOpacity style={[s.labelBtn, { backgroundColor: colors.surface }]} onPress={() => setShowCustomDateLabel(false)}>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[s.labelBtn, { backgroundColor: '#007AFF' }]} onPress={confirmCustomDateWithLabel}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFF' }}>Save</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Save</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -2670,7 +2671,7 @@ export default function ContactDetailScreen() {
               data-testid="close-photo-viewer"
               style={{ position: 'absolute', top: 16, right: 16, zIndex: 100, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: 20, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
-              <Ionicons name="close" size={28} color="#FFF" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </button>
           ) : (
             <TouchableOpacity
@@ -2678,7 +2679,7 @@ export default function ContactDetailScreen() {
               onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
               data-testid="close-photo-viewer"
             >
-              <Ionicons name="close" size={28} color="#FFF" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
           )}
 
@@ -2710,9 +2711,9 @@ export default function ContactDetailScreen() {
                       data-testid="photo-nav-prev"
                       style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', cursor: selectedPhotoIndex === 0 ? 'not-allowed' : 'pointer', opacity: selectedPhotoIndex === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      <Ionicons name="chevron-back" size={28} color="#FFF" />
+                      <Ionicons name="chevron-back" size={28} color={colors.text} />
                     </button>
-                    <span style={{ color: '#8E8E93', fontSize: 14 }}>{selectedPhotoIndex + 1} / {allPhotos.length}</span>
+                    <span style={{ color: colors.textSecondary, fontSize: 14 }}>{selectedPhotoIndex + 1} / {allPhotos.length}</span>
                     <button
                       type="button"
                       disabled={selectedPhotoIndex === allPhotos.length - 1}
@@ -2720,17 +2721,17 @@ export default function ContactDetailScreen() {
                       data-testid="photo-nav-next"
                       style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', cursor: selectedPhotoIndex === allPhotos.length - 1 ? 'not-allowed' : 'pointer', opacity: selectedPhotoIndex === allPhotos.length - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      <Ionicons name="chevron-forward" size={28} color="#FFF" />
+                      <Ionicons name="chevron-forward" size={28} color={colors.text} />
                     </button>
                   </div>
                 ) : (
                   <View style={s.photoNavRow}>
                     <TouchableOpacity style={[s.photoNavBtn, selectedPhotoIndex === 0 && { opacity: 0.3 }]} disabled={selectedPhotoIndex === 0} onPress={() => { const prev = selectedPhotoIndex - 1; setSelectedPhotoIndex(prev); setFullPhoto(allPhotos[prev].url); }}>
-                      <Ionicons name="chevron-back" size={28} color="#FFF" />
+                      <Ionicons name="chevron-back" size={28} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={s.photoNavCount}>{selectedPhotoIndex + 1} / {allPhotos.length}</Text>
                     <TouchableOpacity style={[s.photoNavBtn, selectedPhotoIndex === allPhotos.length - 1 && { opacity: 0.3 }]} disabled={selectedPhotoIndex === allPhotos.length - 1} onPress={() => { const next = selectedPhotoIndex + 1; setSelectedPhotoIndex(next); setFullPhoto(allPhotos[next].url); }}>
-                      <Ionicons name="chevron-forward" size={28} color="#FFF" />
+                      <Ionicons name="chevron-forward" size={28} color={colors.text} />
                     </TouchableOpacity>
                   </View>
                 )
@@ -2743,14 +2744,14 @@ export default function ContactDetailScreen() {
                     type="button"
                     onClick={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
                     data-testid="back-to-gallery-grid"
-                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '8px 14px', marginTop: 8, cursor: 'pointer', color: '#FFF', fontSize: 14 }}
+                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '8px 14px', marginTop: 8, cursor: 'pointer', color: colors.text, fontSize: 14 }}
                   >
-                    <Ionicons name="grid-outline" size={18} color="#FFF" />
+                    <Ionicons name="grid-outline" size={18} color={colors.text} />
                     All Photos
                   </button>
                 ) : (
                   <TouchableOpacity style={s.backToGridBtn} onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }} data-testid="back-to-gallery-grid">
-                    <Ionicons name="grid-outline" size={18} color="#FFF" />
+                    <Ionicons name="grid-outline" size={18} color={colors.text} />
                     <Text style={s.backToGridText}>All Photos</Text>
                   </TouchableOpacity>
                 )
@@ -2775,10 +2776,10 @@ export default function ContactDetailScreen() {
                       display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6,
                       backgroundColor: '#C9A962', borderRadius: 10, border: 'none',
                       padding: '10px 16px', marginTop: 8, cursor: 'pointer',
-                      fontSize: 14, fontWeight: 700, color: '#000',
+                      fontSize: 14, fontWeight: 700, color: colors.text,
                     }}
                   >
-                    <Ionicons name="person-circle" size={18} color="#000" />
+                    <Ionicons name="person-circle" size={18} color={colors.text} />
                     Set as Profile Photo
                   </button>
                 ) : (
@@ -2795,7 +2796,7 @@ export default function ContactDetailScreen() {
                     }}
                     data-testid="set-as-profile-btn"
                   >
-                    <Ionicons name="person-circle" size={18} color="#000" />
+                    <Ionicons name="person-circle" size={18} color={colors.text} />
                     <Text style={s.setProfileBtnText}>Set as Profile Photo</Text>
                   </TouchableOpacity>
                 )
@@ -2828,7 +2829,7 @@ export default function ContactDetailScreen() {
               </View>
             </View>
           ) : (
-            <Text style={{ color: '#8E8E93', fontSize: 16 }}>No photos available</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 16 }}>No photos available</Text>
           )}
         </View>
       </Modal>
@@ -2871,15 +2872,15 @@ const s = StyleSheet.create({
     position: 'absolute', bottom: -2, right: -2,
     width: 24, height: 24, borderRadius: 12,
     backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#000',
+    borderWidth: 2, borderColor: '#2C2C2E',
   },
   touchpointBadge: {
     position: 'absolute', top: -4, right: -4,
     backgroundColor: '#C9A962', borderRadius: 10,
     minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 5, borderWidth: 2, borderColor: '#000',
+    paddingHorizontal: 5, borderWidth: 2, borderColor: '#2C2C2E',
   },
-  touchpointBadgeText: { fontSize: 10, fontWeight: '800', color: '#000' },
+  touchpointBadgeText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
   heroInfo: { flex: 1, paddingTop: 2 },
   heroName: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
   heroTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
@@ -3050,7 +3051,7 @@ const s = StyleSheet.create({
     fontSize: 12, fontWeight: '700', color: '#34C759', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   aiSuggestionText: {
-    fontSize: 14, color: '#E5E5EA', lineHeight: 20, marginBottom: 10,
+    fontSize: 14, color: '#3A3A3C', lineHeight: 20, marginBottom: 10,
   },
   aiSuggestionActions: {
     flexDirection: 'row', gap: 8, justifyContent: 'flex-end',
@@ -3187,7 +3188,7 @@ const s = StyleSheet.create({
   feedExpandedPreview: { marginTop: 8, marginBottom: 4, gap: 6 },
   feedChannelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   feedChannelText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  feedSubject: { fontSize: 14, fontWeight: '600', color: '#E5E5EA' },
+  feedSubject: { fontSize: 14, fontWeight: '600', color: '#3A3A3C' },
   feedMessageBubble: { borderRadius: 10, padding: 12, borderWidth: 1 },
   feedMessageBubbleInbound: { backgroundColor: '#30D15812', borderColor: '#30D15830' },
   feedMessageText: { fontSize: 13, lineHeight: 18 },
@@ -3240,7 +3241,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   bubbleInput: {
-    fontSize: 15, color: '#E5E5EA', padding: 14, minHeight: 80, textAlignVertical: 'top',
+    fontSize: 15, color: '#3A3A3C', padding: 14, minHeight: 80, textAlignVertical: 'top',
     lineHeight: 22,
   },
   bubblePhotoPreview: {
@@ -3260,11 +3261,11 @@ const s = StyleSheet.create({
     backgroundColor: '#30D158', borderRadius: 24,
     paddingVertical: 12, paddingHorizontal: 20,
   },
-  bubbleSaveText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
+  bubbleSaveText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
 
   // Suggested Actions
   actionBadge: { backgroundColor: '#FF9500', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  actionBadgeText: { fontSize: 11, fontWeight: '800', color: '#000' },
+  actionBadgeText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF' },
   suggestedCard: {
     flexDirection: 'row', alignItems: 'center', padding: 14,
     borderRadius: 14, marginBottom: 8,
@@ -3297,7 +3298,7 @@ const s = StyleSheet.create({
     width: '100%', height: '100%', borderRadius: 12, maxHeight: 500,
   },
   photoViewerName: {
-    color: '#F2F2F7', fontSize: 16, fontWeight: '600', marginTop: 12, textAlign: 'center' as const,
+    color: '#000000', fontSize: 16, fontWeight: '600', marginTop: 12, textAlign: 'center' as const,
   },
   photoViewerDate: {
     color: '#8E8E93', fontSize: 13, marginTop: 4,
@@ -3317,20 +3318,20 @@ const s = StyleSheet.create({
     paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)',
   },
   backToGridText: {
-    color: '#FFF', fontSize: 14, fontWeight: '500' as const,
+    color: '#FFFFFF', fontSize: 14, fontWeight: '500' as const,
   },
   setProfileBtn: {
     flexDirection: 'row' as const, alignItems: 'center', gap: 6,
     backgroundColor: '#C9A962', borderRadius: 10,
     paddingVertical: 10, paddingHorizontal: 16, marginTop: 8,
   },
-  setProfileBtnText: { color: '#000', fontSize: 14, fontWeight: '700' as const },
+  setProfileBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' as const },
   // Gallery grid
   galleryGridContainer: {
     width: '90%', maxHeight: '80%', alignItems: 'center',
   },
   galleryGridTitle: {
-    color: '#FFF', fontSize: 22, fontWeight: '700', marginBottom: 4,
+    color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginBottom: 4,
   },
   galleryGridCount: {
     color: '#8E8E93', fontSize: 14, marginBottom: 20,
@@ -3349,7 +3350,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 4,
   },
   galleryTileBadgeText: {
-    color: '#FFF', fontSize: 10, fontWeight: '600', textAlign: 'center' as const, textTransform: 'uppercase' as const,
+    color: '#FFFFFF', fontSize: 10, fontWeight: '600', textAlign: 'center' as const, textTransform: 'uppercase' as const,
   },
   // Voice notes
   vnRecordBtn: {
@@ -3372,7 +3373,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto',
     paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#FF3B30',
   },
-  vnStopText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  vnStopText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   vnCard: {
     borderRadius: 12, padding: 12, marginBottom: 8,
     borderWidth: 1,
@@ -3408,7 +3409,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   intelLoadingText: { fontSize: 14, color: '#C9A962', fontStyle: 'italic' },
-  intelSummary: { fontSize: 13.5, color: '#E5E5EA', lineHeight: 20 },
+  intelSummary: { fontSize: 13.5, color: '#3A3A3C', lineHeight: 20 },
   intelMeta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#2C2C2E',
@@ -3424,7 +3425,7 @@ const s = StyleSheet.create({
     backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14,
     borderWidth: 1, borderColor: '#2C2C2E',
   },
-  conversationLinkTitle: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  conversationLinkTitle: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   conversationLinkSub: { fontSize: 12, color: '#8E8E93', marginTop: 1 },
 
   // Input group
@@ -3432,7 +3433,7 @@ const s = StyleSheet.create({
   inputLabel: { fontSize: 12, fontWeight: '500', color: '#8E8E93', marginBottom: 4, marginLeft: 2 },
   input: {
     backgroundColor: '#1C1C1E', borderRadius: 10, padding: 14,
-    fontSize: 16, color: '#FFF', borderWidth: 1, borderColor: '#2C2C2E',
+    fontSize: 16, color: '#FFFFFF', borderWidth: 1, borderColor: '#2C2C2E',
   },
 
   // Date row
@@ -3443,7 +3444,7 @@ const s = StyleSheet.create({
   },
   dateRowIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   dateRowLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 1 },
-  dateRowValue: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  dateRowValue: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
 
   // Add button
   addBtn: {
@@ -3462,13 +3463,13 @@ const s = StyleSheet.create({
   deleteBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
 
   // View-only rows
-  viewText: { fontSize: 15, color: '#D1D1D6', lineHeight: 22 },
+  viewText: { fontSize: 15, color: '#2C2C2E', lineHeight: 22 },
   viewRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
   },
   viewRowLabel: { fontSize: 14, color: '#8E8E93', flex: 1 },
-  viewRowValue: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  viewRowValue: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
 
   // Referral items
   referralItem: {
@@ -3479,8 +3480,8 @@ const s = StyleSheet.create({
     width: 32, height: 32, borderRadius: 16, backgroundColor: '#2C2C2E',
     alignItems: 'center', justifyContent: 'center',
   },
-  referralAvatarText: { fontSize: 12, fontWeight: '600', color: '#FFF' },
-  referralName: { flex: 1, fontSize: 14, fontWeight: '500', color: '#FFF' },
+  referralAvatarText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  referralName: { flex: 1, fontSize: 14, fontWeight: '500', color: '#FFFFFF' },
 
   // Campaign cards
   campaignCard: {
@@ -3488,23 +3489,23 @@ const s = StyleSheet.create({
     backgroundColor: '#1C1C1E', borderRadius: 10, padding: 12, marginBottom: 8,
     borderWidth: 1, borderColor: '#2C2C2E',
   },
-  campaignName: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  campaignName: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   campaignSub: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
 
   // Modals
-  modalContainer: { flex: 1, backgroundColor: '#000' },
+  modalContainer: { flex: 1, backgroundColor: '#000000' },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, borderBottomWidth: 1, borderBottomColor: '#2C2C2E',
   },
   modalCancel: { fontSize: 17, color: '#007AFF' },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  modalTitle: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
   modalAction: { fontSize: 17, color: '#007AFF' },
   modalSearch: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#1C1C1E', borderRadius: 10, margin: 16, paddingHorizontal: 12, gap: 8,
   },
-  modalSearchInput: { flex: 1, padding: 12, fontSize: 16, color: '#FFF' },
+  modalSearchInput: { flex: 1, padding: 12, fontSize: 16, color: '#FFFFFF' },
   pickerItem: {
     flexDirection: 'row', alignItems: 'center', padding: 14,
     borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
@@ -3513,8 +3514,8 @@ const s = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20, backgroundColor: '#2C2C2E',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  pickerAvatarText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
-  pickerName: { fontSize: 16, fontWeight: '500', color: '#FFF' },
+  pickerAvatarText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
+  pickerName: { fontSize: 16, fontWeight: '500', color: '#FFFFFF' },
   pickerSub: { fontSize: 14, color: '#8E8E93', marginTop: 1 },
   emptyPicker: { padding: 32, alignItems: 'center' },
   emptyPickerText: { fontSize: 16, color: '#8E8E93' },
@@ -3534,13 +3535,13 @@ const s = StyleSheet.create({
   webPickerItem: { paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
   webPickerItemSel: { backgroundColor: '#007AFF', borderRadius: 6, marginHorizontal: 4 },
   webPickerText: { fontSize: 16, color: '#8E8E93' },
-  webPickerTextSel: { color: '#FFF', fontWeight: '600' },
+  webPickerTextSel: { color: '#FFFFFF', fontWeight: '600' },
 
   // Label modal
   labelOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-start', paddingTop: 150 },
   labelModal: { backgroundColor: '#1C1C1E', borderRadius: 16, marginHorizontal: 20, padding: 24 },
-  labelTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 8 },
+  labelTitle: { fontSize: 20, fontWeight: '700', color: '#FFFFFF', textAlign: 'center', marginBottom: 8 },
   labelSub: { fontSize: 15, color: '#007AFF', textAlign: 'center', marginBottom: 20, fontWeight: '600' },
-  labelInput: { backgroundColor: '#2C2C2E', borderRadius: 12, padding: 16, fontSize: 16, color: '#FFF', marginBottom: 24 },
+  labelInput: { backgroundColor: '#2C2C2E', borderRadius: 12, padding: 16, fontSize: 16, color: '#FFFFFF', marginBottom: 24 },
   labelBtn: { flex: 1, borderRadius: 12, padding: 16, alignItems: 'center' },
 });

@@ -16,7 +16,10 @@ import { useAuthStore } from '../../store/authStore';
 import { tasksAPI } from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function NewTaskScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -36,7 +39,7 @@ export default function NewTaskScreen() {
     { id: 'callback', name: 'Call Back', icon: 'call', color: '#007AFF' },
     { id: 'follow_up', name: 'Follow Up', icon: 'chatbubble', color: '#34C759' },
     { id: 'appointment', name: 'Appointment', icon: 'calendar', color: '#FF9500' },
-    { id: 'other', name: 'Other', icon: 'checkmark-circle', color: '#8E8E93' },
+    { id: 'other', name: 'Other', icon: 'checkmark-circle', color: colors.textSecondary },
   ];
   
   const handleSave = async () => {
@@ -118,7 +121,7 @@ export default function NewTaskScreen() {
                 <Ionicons
                   name={type.icon as any}
                   size={28}
-                  color={task.type === type.id ? type.color : '#8E8E93'}
+                  color={task.type === type.id ? type.color : colors.textSecondary}
                 />
                 <Text
                   style={[
@@ -139,7 +142,7 @@ export default function NewTaskScreen() {
           <TextInput
             style={styles.input}
             placeholder="e.g., Call John about test drive"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={task.title}
             onChangeText={(text) => setTask({ ...task, title: text })}
           />
@@ -151,7 +154,7 @@ export default function NewTaskScreen() {
           <TextInput
             style={styles.textArea}
             placeholder="Add details..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={task.description}
             onChangeText={(text) => setTask({ ...task, description: text })}
             multiline
@@ -171,7 +174,7 @@ export default function NewTaskScreen() {
             <Text style={styles.selectButtonText}>
               {task.contact ? task.contact.name : 'Select contact'}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
         
@@ -193,7 +196,7 @@ export default function NewTaskScreen() {
             <TextInput
               style={[styles.input, styles.timeInput]}
               placeholder="10:00"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={task.dueTime}
               onChangeText={(text) => setTask({ ...task, dueTime: text })}
             />
@@ -222,7 +225,7 @@ export default function NewTaskScreen() {
                           ? '#FF3B30'
                           : priority === 'medium'
                           ? '#FF9500'
-                          : '#8E8E93',
+                          : colors.textSecondary,
                     },
                   ]}
                 />
@@ -243,10 +246,10 @@ export default function NewTaskScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -262,7 +265,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     padding: 4,
@@ -281,7 +284,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -294,12 +297,12 @@ const styles = StyleSheet.create({
   typeCard: {
     flex: 1,
     minWidth: 140,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   typeCardActive: {
     borderWidth: 2,
@@ -307,42 +310,42 @@ const styles = StyleSheet.create({
   typeName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   textArea: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     height: 100,
   },
   selectButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     gap: 12,
   },
   selectButtonText: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   dateTimeRow: {
     flexDirection: 'row',
@@ -356,7 +359,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   timeInput: {
     flex: 1,
@@ -371,15 +374,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   priorityButtonActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderColor: '#007AFF',
   },
   priorityDot: {
@@ -390,9 +393,9 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   priorityTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
 });

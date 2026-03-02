@@ -10,6 +10,7 @@ import {
 import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useThemeStore } from '../store/themeStore';
 interface SwipeableConversationItemProps {
   children: React.ReactNode;
   conversationId: string;
@@ -31,6 +32,8 @@ export default function SwipeableConversationItem({
   onCall,
   onDelete,
 }: SwipeableConversationItemProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const swipeableRef = useRef<Swipeable>(null);
 
   const closeSwipeable = () => {
@@ -87,7 +90,7 @@ export default function SwipeableConversationItem({
             <Ionicons
               name={isRead ? 'mail-unread' : 'mail-open'}
               size={22}
-              color="#FFF"
+              color={colors.text}
             />
             <Text style={styles.actionText}>{isRead ? 'Unread' : 'Read'}</Text>
           </Animated.View>
@@ -96,7 +99,7 @@ export default function SwipeableConversationItem({
         {/* Quick Call */}
         <RectButton style={[styles.actionButton, styles.callButton]} onPress={handleCall}>
           <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
-            <Ionicons name="call" size={22} color="#FFF" />
+            <Ionicons name="call" size={22} color={colors.text} />
             <Text style={styles.actionText}>Call</Text>
           </Animated.View>
         </RectButton>
@@ -123,7 +126,7 @@ export default function SwipeableConversationItem({
             <Ionicons
               name={isArchived ? 'arrow-undo' : 'archive'}
               size={22}
-              color="#FFF"
+              color={colors.text}
             />
             <Text style={styles.actionText}>{isArchived ? 'Restore' : 'Archive'}</Text>
           </Animated.View>
@@ -133,7 +136,7 @@ export default function SwipeableConversationItem({
         {onDelete && (
           <RectButton style={[styles.actionButton, styles.deleteButton]} onPress={handleDelete}>
             <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
-              <Ionicons name="trash" size={22} color="#FFF" />
+              <Ionicons name="trash" size={22} color={colors.text} />
               <Text style={styles.actionText}>Delete</Text>
             </Animated.View>
           </RectButton>
@@ -158,7 +161,7 @@ export default function SwipeableConversationItem({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   leftActionsContainer: {
     flexDirection: 'row',
   },
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#34C759',
   },
   archiveButton: {
-    backgroundColor: '#8E8E93',
+    backgroundColor: colors.textSecondary,
   },
   deleteButton: {
     backgroundColor: '#FF3B30',

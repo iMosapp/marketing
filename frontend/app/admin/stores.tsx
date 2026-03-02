@@ -20,7 +20,10 @@ import api, { adminAPI } from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function StoresScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -160,7 +163,7 @@ export default function StoresScreen() {
     >
       <View style={styles.storeCardContent}>
         <View style={[styles.storeIcon, { backgroundColor: item.active !== false ? '#34C75920' : '#8E8E9320' }]}>
-          <Ionicons name="storefront" size={24} color={item.active !== false ? "#34C759" : "#8E8E93"} />
+          <Ionicons name="storefront" size={24} color={item.active !== false ? "#34C759" : colors.textSecondary} />
         </View>
         <View style={styles.storeInfo}>
           <View style={styles.storeNameRow}>
@@ -182,7 +185,7 @@ export default function StoresScreen() {
               handleToggleStoreActive(item);
             }}
           >
-            <Ionicons name={item.active !== false ? "pause-circle-outline" : "play-circle-outline"} size={22} color="#8E8E93" />
+            <Ionicons name={item.active !== false ? "pause-circle-outline" : "play-circle-outline"} size={22} color={colors.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionButton}
@@ -230,11 +233,11 @@ export default function StoresScreen() {
       {showSearch && (
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#8E8E93" />
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search by name, city, organization..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -243,7 +246,7 @@ export default function StoresScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -287,7 +290,7 @@ export default function StoresScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="storefront-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="storefront-outline" size={64} color={colors.surface} />
               <Text style={styles.emptyText}>
                 {searchQuery ? 'No accounts found' : 'No accounts yet'}
               </Text>
@@ -338,7 +341,7 @@ export default function StoresScreen() {
             <TextInput
               style={styles.input}
               placeholder="e.g., Ken Garff Honda Downtown"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newStore.name}
               onChangeText={(text) => setNewStore({ ...newStore, name: text })}
             />
@@ -347,7 +350,7 @@ export default function StoresScreen() {
             <TextInput
               style={styles.input}
               placeholder="+1 (555) 123-4567"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newStore.phone}
               onChangeText={(text) => setNewStore({ ...newStore, phone: text })}
               keyboardType="phone-pad"
@@ -357,7 +360,7 @@ export default function StoresScreen() {
             <TextInput
               style={styles.input}
               placeholder="123 Main St"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={newStore.address}
               onChangeText={(text) => setNewStore({ ...newStore, address: text })}
             />
@@ -368,7 +371,7 @@ export default function StoresScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Salt Lake City"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={newStore.city}
                   onChangeText={(text) => setNewStore({ ...newStore, city: text })}
                 />
@@ -378,7 +381,7 @@ export default function StoresScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="UT"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={newStore.state}
                   onChangeText={(text) => setNewStore({ ...newStore, state: text })}
                   maxLength={2}
@@ -393,10 +396,10 @@ export default function StoresScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -409,7 +412,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -417,7 +420,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -434,12 +437,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -448,11 +451,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   searchResultCount: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     marginLeft: 4,
   },
@@ -464,7 +467,7 @@ const styles = StyleSheet.create({
   orgSelector: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   orgScroll: {
     paddingHorizontal: 16,
@@ -473,7 +476,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -484,17 +487,17 @@ const styles = StyleSheet.create({
   },
   orgText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   orgTextActive: {
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   listContent: {
     padding: 16,
   },
   storeCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -527,7 +530,7 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   statusDot: {
     width: 8,
@@ -536,7 +539,7 @@ const styles = StyleSheet.create({
   },
   storeLocation: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   orgNameLabel: {
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
     marginBottom: 24,
   },
@@ -588,12 +591,12 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -601,7 +604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: {
     fontSize: 17,
@@ -610,7 +613,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 17,
@@ -623,18 +626,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   row: {
     flexDirection: 'row',
@@ -654,18 +657,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     marginVertical: 24,
     marginHorizontal: 16,
   },
@@ -674,6 +677,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
   },
   inactiveText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

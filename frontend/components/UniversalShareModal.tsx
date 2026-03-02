@@ -74,7 +74,8 @@ export function UniversalShareModal({
   userId,
   eventType,
 }: UniversalShareModalProps) {
-  const colors = useThemeStore((s) => s.colors);
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
@@ -305,9 +306,9 @@ export function UniversalShareModal({
               <View style={styles.qrContainer}>
                 {/* Simple QR code display using a table-based approach for web */}
                 <View style={styles.qrPlaceholder}>
-                  <Ionicons name="qr-code" size={160} color="#FFF" />
+                  <Ionicons name="qr-code" size={160} color={colors.text} />
                 </View>
-                <Text style={[styles.qrUrl, { color: '#8E8E93' }]} numberOfLines={2}>{shareUrl}</Text>
+                <Text style={[styles.qrUrl, { color: colors.textSecondary }]} numberOfLines={2}>{shareUrl}</Text>
               </View>
               <TouchableOpacity style={styles.shareModalCancel} onPress={() => setShowQRView(false)}>
                 <Text style={styles.shareModalCancelText}>Back</Text>
@@ -445,14 +446,14 @@ export function UniversalShareModal({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   shareModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
   shareModalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 20,
@@ -469,13 +470,13 @@ const styles = StyleSheet.create({
   shareModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 4,
   },
   shareModalSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -491,28 +492,28 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   recipientInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1.5,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
   },
   suggestionsDropdown: {
     position: 'absolute',
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     marginTop: 4,
     maxHeight: 200,
     zIndex: 100,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
   },
   suggestionRow: {
     flexDirection: 'row',
@@ -521,7 +522,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 10,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#3A3A3C',
+    borderBottomColor: colors.borderLight,
   },
   suggestionAvatar: {
     width: 32,
@@ -539,11 +540,11 @@ const styles = StyleSheet.create({
   suggestionName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   suggestionDetail: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   shareOptionsGrid: {
     flexDirection: 'row',
@@ -566,13 +567,13 @@ const styles = StyleSheet.create({
   shareOptionText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
   },
   shareModalCancel: {
     marginTop: 24,
     paddingVertical: 16,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
   },
   shareModalCancelText: {
@@ -589,7 +590,7 @@ const styles = StyleSheet.create({
   qrPlaceholder: {
     width: 200,
     height: 200,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',

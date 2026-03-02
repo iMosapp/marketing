@@ -17,6 +17,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import api from '../../../services/api';
 import { showSimpleAlert, showConfirm } from '../../../services/alert';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface Organization {
   _id: string;
   name: string;
@@ -75,6 +76,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function OrganizationDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
   
@@ -282,7 +285,7 @@ export default function OrganizationDetailScreen() {
           handleToggleUserActive(user);
         }}
       />
-      <Ionicons name="chevron-forward" size={16} color="#8E8E93" style={{ marginLeft: 4 }} />
+      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} style={{ marginLeft: 4 }} />
     </TouchableOpacity>
   );
   
@@ -409,7 +412,7 @@ export default function OrganizationDetailScreen() {
                 <TextInput
                   style={styles.linkSearchInput}
                   placeholder="Search accounts to link..."
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={linkSearch}
                   onChangeText={setLinkSearch}
                 />
@@ -470,7 +473,7 @@ export default function OrganizationDetailScreen() {
                   </View>
                   <View style={styles.storeStats}>
                     <View style={styles.userCountBadge}>
-                      <Ionicons name="people" size={14} color="#8E8E93" />
+                      <Ionicons name="people" size={14} color={colors.textSecondary} />
                       <Text style={styles.userCountText}>{store.user_count}</Text>
                     </View>
                     <View style={[styles.storeStatusBadge, { backgroundColor: store.active ? '#34C75920' : '#FF3B3020' }]}>
@@ -479,7 +482,7 @@ export default function OrganizationDetailScreen() {
                       </Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               ))
             )}
@@ -561,7 +564,7 @@ export default function OrganizationDetailScreen() {
                 <TextInput
                   style={styles.linkSearchInput}
                   placeholder="Search users to link..."
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={linkSearch}
                   onChangeText={setLinkSearch}
                 />
@@ -604,7 +607,7 @@ export default function OrganizationDetailScreen() {
                 value={editedOrg.name}
                 onChangeText={(text) => setEditedOrg({ ...editedOrg, name: text })}
                 placeholder="Organization name"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               
               <Text style={styles.inputLabel}>Admin Email</Text>
@@ -613,7 +616,7 @@ export default function OrganizationDetailScreen() {
                 value={editedOrg.admin_email}
                 onChangeText={(text) => setEditedOrg({ ...editedOrg, admin_email: text })}
                 placeholder="admin@company.com"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -624,7 +627,7 @@ export default function OrganizationDetailScreen() {
                 value={editedOrg.admin_phone}
                 onChangeText={(text) => setEditedOrg({ ...editedOrg, admin_phone: text })}
                 placeholder="+1 (555) 123-4567"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
               />
               
@@ -636,7 +639,7 @@ export default function OrganizationDetailScreen() {
                     value={editedOrg.city}
                     onChangeText={(text) => setEditedOrg({ ...editedOrg, city: text })}
                     placeholder="City"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
                 <View style={styles.halfField}>
@@ -646,7 +649,7 @@ export default function OrganizationDetailScreen() {
                     value={editedOrg.state}
                     onChangeText={(text) => setEditedOrg({ ...editedOrg, state: text })}
                     placeholder="State"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     maxLength={2}
                     autoCapitalize="characters"
                   />
@@ -676,7 +679,7 @@ export default function OrganizationDetailScreen() {
               >
                 <Ionicons name="storefront" size={20} color="#007AFF" />
                 <Text style={styles.actionText}>Manage All Stores</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -685,7 +688,7 @@ export default function OrganizationDetailScreen() {
               >
                 <Ionicons name="people" size={20} color="#007AFF" />
                 <Text style={styles.actionText}>Manage All Users</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           )}
@@ -697,10 +700,10 @@ export default function OrganizationDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -715,7 +718,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -724,7 +727,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     width: 40,
@@ -732,7 +735,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -750,7 +753,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statusCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -763,7 +766,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -793,14 +796,14 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   section: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -808,26 +811,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   fieldValue: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     paddingVertical: 8,
   },
   row: {
@@ -842,13 +845,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
     gap: 12,
   },
   actionText: {
     flex: 1,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   cancelButton: {
     alignItems: 'center',
@@ -876,7 +879,7 @@ const styles = StyleSheet.create({
   userBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 10,
     gap: 10,
@@ -902,11 +905,11 @@ const styles = StyleSheet.create({
   userBadgeName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userBadgeRole: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 1,
   },
   userStatusDot: {
@@ -916,7 +919,7 @@ const styles = StyleSheet.create({
   },
   // Store Card
   storeCard: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
@@ -941,11 +944,11 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   storeLocation: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   storeStats: {
@@ -959,7 +962,7 @@ const styles = StyleSheet.create({
   },
   userCountText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   storeStatusBadge: {
@@ -977,7 +980,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   noUsersText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 13,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -1002,7 +1005,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   emptyText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 14,
     marginBottom: 12,
   },
@@ -1013,13 +1016,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   createButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
   hintText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 8,
     textAlign: 'center',
@@ -1042,7 +1045,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkPanel: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     marginTop: 8,
     overflow: 'hidden',
@@ -1050,13 +1053,13 @@ const styles = StyleSheet.create({
   linkSearchInput: {
     padding: 12,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   linkEmptyText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     padding: 20,
   },
@@ -1065,16 +1068,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   linkItemName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   linkItemSub: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
 });

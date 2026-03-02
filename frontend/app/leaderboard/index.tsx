@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { leaderboardAPI } from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const LEVELS = [
   { key: 'store', label: 'My Store', icon: 'storefront' },
@@ -25,6 +26,7 @@ const ALL_CATEGORIES = [
 ];
 
 export default function LeaderboardPage() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [level, setLevel] = useState('store');
@@ -106,7 +108,7 @@ export default function LeaderboardPage() {
           </View>
 
           {/* Avatar */}
-          <View style={[s.avatar, { backgroundColor: badgeColor ? `${badgeColor}30` : '#2C2C2E' }]}>
+          <View style={[s.avatar, { backgroundColor: badgeColor ? `${badgeColor}30` : colors.surface }]}>
             {entry.photo ? (
               <Image source={{ uri: entry.photo }} style={s.avatarImg} />
             ) : (
@@ -138,7 +140,7 @@ export default function LeaderboardPage() {
             </Text>
           </View>
 
-          <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#636366" />
+          <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textTertiary} />
         </TouchableOpacity>
 
         {/* Expanded stats */}
@@ -164,7 +166,7 @@ export default function LeaderboardPage() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="lb-back-btn">
-          <Ionicons name="chevron-back" size={24} color="#F2F2F7" />
+          <Ionicons name="chevron-back" size={24} color={colors.bg} />
         </TouchableOpacity>
         <View style={s.headerCenter}>
           <Ionicons name="trophy" size={20} color="#FFD700" />
@@ -184,7 +186,7 @@ export default function LeaderboardPage() {
             onPress={() => { setLevel(lv.key); setExpanded({}); }}
             data-testid={`lb-level-${lv.key}`}
           >
-            <Ionicons name={lv.icon as any} size={14} color={level === lv.key ? '#C9A962' : '#636366'} />
+            <Ionicons name={lv.icon as any} size={14} color={level === lv.key ? '#C9A962' : colors.textTertiary} />
             <Text style={[s.levelText, level === lv.key && s.levelTextActive]}>{lv.label}</Text>
           </TouchableOpacity>
         ))}
@@ -193,11 +195,11 @@ export default function LeaderboardPage() {
       {/* Month Selector */}
       <View style={s.monthRow}>
         <TouchableOpacity onPress={prevMonth} style={s.monthArrow}>
-          <Ionicons name="chevron-back" size={18} color="#8E8E93" />
+          <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
         <Text style={s.monthText}>{MONTHS[month - 1]} {year}</Text>
         <TouchableOpacity onPress={nextMonth} style={s.monthArrow}>
-          <Ionicons name="chevron-forward" size={18} color="#8E8E93" />
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -222,7 +224,7 @@ export default function LeaderboardPage() {
           <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 60 }} />
         ) : leaderboard.length === 0 ? (
           <View style={s.empty}>
-            <Ionicons name="trophy-outline" size={48} color="#2C2C2E" />
+            <Ionicons name="trophy-outline" size={48} color={colors.surface} />
             <Text style={s.emptyTitle}>No activity yet</Text>
             <Text style={s.emptySub}>Start sending cards and reviews to climb the leaderboard!</Text>
           </View>
@@ -255,13 +257,13 @@ export default function LeaderboardPage() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
+  safe: { flex: 1, backgroundColor: '#000000' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { padding: 4 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#F2F2F7', letterSpacing: 1.5 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#000000', letterSpacing: 1.5 },
   membersBadge: { backgroundColor: '#007AFF', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
-  membersText: { fontSize: 12, fontWeight: '700', color: '#FFF' },
+  membersText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   // Level tabs
   levelRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 12 },
   levelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10, backgroundColor: '#1C1C1E' },
@@ -271,14 +273,14 @@ const s = StyleSheet.create({
   // Month
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 10 },
   monthArrow: { padding: 4 },
-  monthText: { fontSize: 15, fontWeight: '700', color: '#F2F2F7' },
+  monthText: { fontSize: 15, fontWeight: '700', color: '#000000' },
   // Category pills
   catScroll: { maxHeight: 44, marginBottom: 8 },
   catRow: { paddingHorizontal: 16, gap: 8 },
   catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#1C1C1E' },
   catPillActive: { backgroundColor: '#C9A962' },
   catText: { fontSize: 12, fontWeight: '600', color: '#AEAEB2' },
-  catTextActive: { color: '#000' },
+  catTextActive: { color: '#FFFFFF' },
   // List
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 20 },
@@ -288,14 +290,14 @@ const s = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, gap: 10 },
   rankCol: { width: 28, alignItems: 'center' },
   badge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  badgeText: { fontSize: 12, fontWeight: '800', color: '#000' },
+  badgeText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
   rankText: { fontSize: 14, fontWeight: '700', color: '#636366' },
   avatar: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarImg: { width: 40, height: 40, borderRadius: 10 },
-  avatarText: { fontSize: 16, fontWeight: '700', color: '#F2F2F7' },
-  crownWrap: { position: 'absolute', top: -2, right: -2, backgroundColor: '#000', borderRadius: 8, padding: 1 },
+  avatarText: { fontSize: 16, fontWeight: '700', color: '#000000' },
+  crownWrap: { position: 'absolute', top: -2, right: -2, backgroundColor: '#000000', borderRadius: 8, padding: 1 },
   nameCol: { flex: 1 },
-  entryName: { fontSize: 14, fontWeight: '700', color: '#F2F2F7' },
+  entryName: { fontSize: 14, fontWeight: '700', color: '#000000' },
   entryRole: { fontSize: 11, color: '#636366' },
   scoreCol: { alignItems: 'flex-end', marginRight: 4 },
   scoreNum: { fontSize: 20, fontWeight: '800', color: '#34C759' },
@@ -303,7 +305,7 @@ const s = StyleSheet.create({
   // Expanded stats
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, paddingBottom: 12, gap: 6 },
   statBox: { backgroundColor: '#2C2C2E', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignItems: 'center', minWidth: 56 },
-  statNum: { fontSize: 16, fontWeight: '800', color: '#F2F2F7' },
+  statNum: { fontSize: 16, fontWeight: '800', color: '#000000' },
   statLabel: { fontSize: 9, color: '#8E8E93', marginTop: 2 },
   // Empty
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },

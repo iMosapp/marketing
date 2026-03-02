@@ -21,6 +21,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 // Pre-built themes - just tap to select!
 const THEMES = [
   { id: 'gold', name: 'Luxury Gold', bg: '#1A1A1A', accent: '#C9A962', text: '#FFFFFF' },
@@ -41,6 +42,8 @@ const HEADLINES = [
 ];
 
 export default function CongratsTemplateScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
@@ -108,12 +111,12 @@ const { showToast } = useToast();
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Congrats Card Style</Text>
         <TouchableOpacity onPress={saveTemplate} disabled={saving} style={styles.saveButton}>
           {saving ? (
-            <ActivityIndicator size="small" color="#000" />
+            <ActivityIndicator size="small" color={colors.text} />
           ) : (
             <Text style={styles.saveButtonText}>Save</Text>
           )}
@@ -223,14 +226,14 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     backgroundColor: '#C9A962',
@@ -262,7 +265,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -286,7 +289,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     marginBottom: 12,
   },
   previewName: {
@@ -303,13 +306,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
     marginTop: 8,
   },
   sectionHint: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
     marginTop: -8,
   },
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
   headlineOption: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -364,18 +367,18 @@ const styles = StyleSheet.create({
   },
   headlineText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   headlineTextSelected: {
     color: '#C9A962',
   },
   customInput: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 16,
   },
   messageInput: {

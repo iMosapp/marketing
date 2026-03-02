@@ -22,6 +22,7 @@ import axios from 'axios';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 const API_URL = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
 
 interface User {
@@ -42,6 +43,8 @@ interface SharedInbox {
 }
 
 export default function PhoneAssignmentsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const currentUser = useAuthStore((state) => state.user);
   
@@ -192,7 +195,7 @@ export default function PhoneAssignmentsScreen() {
             <Ionicons 
               name={hasPhone ? "call" : "person"} 
               size={24} 
-              color={hasPhone ? "#34C759" : "#8E8E93"} 
+              color={hasPhone ? "#34C759" : colors.textSecondary} 
             />
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{item.name}</Text>
@@ -210,7 +213,7 @@ export default function PhoneAssignmentsScreen() {
             </View>
           ) : (
             <View style={styles.phoneUnassigned}>
-              <Ionicons name="add-circle-outline" size={16} color="#8E8E93" />
+              <Ionicons name="add-circle-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.noPhone}>No phone assigned</Text>
             </View>
           )}
@@ -240,7 +243,7 @@ export default function PhoneAssignmentsScreen() {
             <Ionicons 
               name={hasPhone ? "chatbubbles" : "chatbubbles-outline"} 
               size={24} 
-              color={hasPhone ? "#007AFF" : "#8E8E93"} 
+              color={hasPhone ? "#007AFF" : colors.textSecondary} 
             />
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{item.name}</Text>
@@ -258,7 +261,7 @@ export default function PhoneAssignmentsScreen() {
             </View>
           ) : (
             <View style={styles.phoneUnassigned}>
-              <Ionicons name="add-circle-outline" size={16} color="#8E8E93" />
+              <Ionicons name="add-circle-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.noPhone}>No phone assigned</Text>
             </View>
           )}
@@ -305,7 +308,7 @@ export default function PhoneAssignmentsScreen() {
           <Ionicons 
             name="person" 
             size={18} 
-            color={activeTab === 'users' ? '#007AFF' : '#8E8E93'} 
+            color={activeTab === 'users' ? '#007AFF' : colors.textSecondary} 
           />
           <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>
             Users ({assignedUsersCount}/{users.length})
@@ -320,7 +323,7 @@ export default function PhoneAssignmentsScreen() {
           <Ionicons 
             name="chatbubbles" 
             size={18} 
-            color={activeTab === 'shared' ? '#007AFF' : '#8E8E93'} 
+            color={activeTab === 'shared' ? '#007AFF' : colors.textSecondary} 
           />
           <Text style={[styles.tabText, activeTab === 'shared' && styles.tabTextActive]}>
             Shared Inboxes ({assignedInboxesCount}/{sharedInboxes.length})
@@ -368,7 +371,7 @@ export default function PhoneAssignmentsScreen() {
                     {editingType === 'user' ? 'Assign Phone Number' : 'Shared Inbox Phone'}
                   </Text>
                   <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                    <Ionicons name="close" size={24} color="#8E8E93" />
+                    <Ionicons name="close" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 
@@ -425,7 +428,7 @@ export default function PhoneAssignmentsScreen() {
                     data-testid="save-phone-button"
                   >
                     {saving ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <ActivityIndicator size="small" color={colors.text} />
                     ) : (
                       <Text style={styles.saveButtonText}>Save</Text>
                     )}
@@ -440,10 +443,10 @@ export default function PhoneAssignmentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -451,9 +454,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: colors.borderLight,
   },
   backButton: {
     padding: 8,
@@ -461,7 +464,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   infoCard: {
     flexDirection: 'row',
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 4,
   },
@@ -500,7 +503,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   tabTextActive: {
@@ -511,7 +514,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -542,18 +545,18 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   userEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   phoneSection: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    borderTopColor: colors.borderLight,
   },
   phoneAssigned: {
     flexDirection: 'row',
@@ -573,7 +576,7 @@ const styles = StyleSheet.create({
   },
   noPhone: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   roleTag: {
@@ -588,7 +591,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   loadingContainer: {
     flex: 1,
@@ -597,7 +600,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -606,7 +609,7 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   // Modal styles
   modalOverlay: {
@@ -615,7 +618,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34,
@@ -626,12 +629,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: colors.borderLight,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   modalBody: {
     paddingHorizontal: 16,
@@ -642,27 +645,27 @@ const styles = StyleSheet.create({
   editingName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: colors.text,
     marginBottom: 20,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     textTransform: 'uppercase',
   },
   phoneInput: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: colors.bg,
     borderRadius: 10,
     padding: 14,
     fontSize: 18,
     fontFamily: 'monospace',
-    color: '#000',
+    color: colors.text,
   },
   inputHint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   routingInfo: {
@@ -708,7 +711,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },

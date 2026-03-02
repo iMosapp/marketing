@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 // Color palette for branding
 const COLOR_OPTIONS = [
   { name: 'Gold', value: '#C9A962' },
@@ -32,6 +33,8 @@ const COLOR_OPTIONS = [
 ];
 
 export default function OnboardingSettingsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -177,7 +180,7 @@ const { showToast } = useToast();
           disabled={!hasChanges || saving}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={colors.text} />
           ) : (
             <Text style={[styles.saveButtonText, !hasChanges && styles.saveButtonTextDisabled]}>
               {hasChanges ? 'Save' : 'Saved'}
@@ -221,7 +224,7 @@ const { showToast } = useToast();
             <View style={styles.inputLabelRow}>
               <Text style={styles.inputLabel}>Welcome SMS</Text>
               <TouchableOpacity onPress={() => previewMessage('welcome_sms')}>
-                <Ionicons name="eye-outline" size={20} color="#8E8E93" />
+                <Ionicons name="eye-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <TextInput
@@ -243,7 +246,7 @@ const { showToast } = useToast();
             <View style={styles.inputLabelRow}>
               <Text style={styles.inputLabel}>Training Complete SMS</Text>
               <TouchableOpacity onPress={() => previewMessage('training_complete_sms')}>
-                <Ionicons name="eye-outline" size={20} color="#8E8E93" />
+                <Ionicons name="eye-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <TextInput
@@ -262,7 +265,7 @@ const { showToast } = useToast();
             <View style={styles.inputLabelRow}>
               <Text style={styles.inputLabel}>Team Invite SMS</Text>
               <TouchableOpacity onPress={() => previewMessage('team_invite_sms')}>
-                <Ionicons name="eye-outline" size={20} color="#8E8E93" />
+                <Ionicons name="eye-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <TextInput
@@ -281,7 +284,7 @@ const { showToast } = useToast();
             <View style={styles.inputLabelRow}>
               <Text style={styles.inputLabel}>Team Member Welcome SMS</Text>
               <TouchableOpacity onPress={() => previewMessage('team_welcome_sms')}>
-                <Ionicons name="eye-outline" size={20} color="#8E8E93" />
+                <Ionicons name="eye-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <TextInput
@@ -394,7 +397,7 @@ const { showToast } = useToast();
                   onPress={() => updateBranding('primary_color', color.value)}
                 >
                   {settings?.branding?.primary_color === color.value && (
-                    <Ionicons name="checkmark" size={16} color="#FFF" />
+                    <Ionicons name="checkmark" size={16} color={colors.text} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -415,7 +418,7 @@ const { showToast } = useToast();
                   onPress={() => updateBranding('accent_color', color.value)}
                 >
                   {settings?.branding?.accent_color === color.value && (
-                    <Ionicons name="checkmark" size={16} color="#FFF" />
+                    <Ionicons name="checkmark" size={16} color={colors.text} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -521,7 +524,7 @@ const { showToast } = useToast();
             <View style={styles.previewHeader}>
               <Text style={styles.previewTitle}>Message Preview</Text>
               <TouchableOpacity onPress={() => setShowPreview(false)}>
-                <Ionicons name="close-circle" size={28} color="#8E8E93" />
+                <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <View style={styles.previewPhone}>
@@ -539,10 +542,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -556,7 +559,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -564,7 +567,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     backgroundColor: '#34C759',
@@ -575,15 +578,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   saveButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
   saveButtonTextDisabled: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   content: {
     padding: 16,
@@ -602,7 +605,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   section: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -616,11 +619,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   sectionDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   inputGroup: {
@@ -635,24 +638,24 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
     borderColor: '#3C3C3E',
   },
   textArea: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
     borderColor: '#3C3C3E',
     minHeight: 80,
@@ -660,7 +663,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'right',
     marginTop: 4,
   },
@@ -687,7 +690,7 @@ const styles = StyleSheet.create({
   placeholderKey: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     backgroundColor: '#3C3C3E',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -696,7 +699,7 @@ const styles = StyleSheet.create({
   },
   placeholderDesc: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     flex: 1,
   },
   colorPicker: {
@@ -713,7 +716,7 @@ const styles = StyleSheet.create({
   },
   colorOptionSelected: {
     borderWidth: 3,
-    borderColor: '#FFF',
+    borderColor: colors.border,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -721,7 +724,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   toggleInfo: {
     flex: 1,
@@ -730,12 +733,12 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   toggleDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   toggle: {
     width: 51,
@@ -752,7 +755,7 @@ const styles = StyleSheet.create({
     width: 27,
     height: 27,
     borderRadius: 14,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
   },
   toggleThumbActive: {
     alignSelf: 'flex-end',
@@ -769,7 +772,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   previewModal: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     width: '100%',
@@ -784,10 +787,10 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   previewPhone: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
     marginBottom: 12,
@@ -801,13 +804,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   previewText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     lineHeight: 21,
   },
   previewNote: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

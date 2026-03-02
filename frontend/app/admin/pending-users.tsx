@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 interface PendingUser {
   _id: string;
   name: string;
@@ -46,6 +47,8 @@ const ROLES = [
 ];
 
 export default function PendingUsersScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -182,19 +185,19 @@ export default function PendingUsersScreen() {
       
       <View style={styles.userDetails}>
         <View style={styles.detailRow}>
-          <Ionicons name="briefcase" size={16} color="#8E8E93" />
+          <Ionicons name="briefcase" size={16} color={colors.textSecondary} />
           <Text style={styles.detailLabel}>Requested Role:</Text>
           <Text style={styles.detailValue}>{item.requested_role || 'Not specified'}</Text>
         </View>
         
         <View style={styles.detailRow}>
-          <Ionicons name="business" size={16} color="#8E8E93" />
+          <Ionicons name="business" size={16} color={colors.textSecondary} />
           <Text style={styles.detailLabel}>Organization:</Text>
           <Text style={styles.detailValue}>{item.organization_name || 'Not assigned'}</Text>
         </View>
         
         <View style={styles.detailRow}>
-          <Ionicons name="time" size={16} color="#8E8E93" />
+          <Ionicons name="time" size={16} color={colors.textSecondary} />
           <Text style={styles.detailLabel}>Applied:</Text>
           <Text style={styles.detailValue}>{formatDate(item.created_at)}</Text>
         </View>
@@ -215,7 +218,7 @@ export default function PendingUsersScreen() {
           onPress={() => openApprovalModal(item)}
           data-testid={`approve-btn-${item._id}`}
         >
-          <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+          <Ionicons name="checkmark-circle" size={20} color={colors.text} />
           <Text style={styles.approveButtonText}>Configure & Approve</Text>
         </TouchableOpacity>
       </View>
@@ -266,7 +269,7 @@ export default function PendingUsersScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Configure & Approve</Text>
               <TouchableOpacity onPress={() => setShowApprovalModal(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -380,7 +383,7 @@ export default function PendingUsersScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="+1 (555) 123-4567"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     value={approvalData.mvpline_number}
                     onChangeText={(text) => setApprovalData({ ...approvalData, mvpline_number: text })}
                     keyboardType="phone-pad"
@@ -405,10 +408,10 @@ export default function PendingUsersScreen() {
                 disabled={actionLoading}
               >
                 {actionLoading ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={colors.text} />
                 ) : (
                   <>
-                    <Ionicons name="checkmark" size={20} color="#FFF" />
+                    <Ionicons name="checkmark" size={20} color={colors.text} />
                     <Text style={styles.approveModalButtonText}>Approve User</Text>
                   </>
                 )}
@@ -421,10 +424,10 @@ export default function PendingUsersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
     gap: 12,
   },
   backButton: {
@@ -442,7 +445,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     backgroundColor: '#FF3B30',
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   countText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -467,7 +470,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   userCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -497,16 +500,16 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   userPhone: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   pendingBadge: {
     backgroundColor: '#FF950030',
@@ -520,7 +523,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   userDetails: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     gap: 8,
@@ -532,12 +535,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailLabel: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 13,
   },
   detailValue: {
     flex: 1,
-    color: '#FFF',
+    color: colors.text,
     fontSize: 13,
     fontWeight: '500',
     textAlign: 'right',
@@ -572,7 +575,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   approveButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -583,12 +586,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptyText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 6,
   },
   // Modal styles
@@ -598,7 +601,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
@@ -609,19 +612,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalBody: {
     padding: 16,
     maxHeight: 450,
   },
   userSummary: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
@@ -630,11 +633,11 @@ const styles = StyleSheet.create({
   userSummaryName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userSummaryEmail: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   userSummaryRole: {
@@ -646,7 +649,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 10,
     marginTop: 16,
@@ -667,7 +670,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF20',
   },
   roleOptionText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -680,7 +683,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   orgOptionSelected: {
     backgroundColor: '#007AFF20',
@@ -688,7 +691,7 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   orgOptionText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
   },
   orgOptionTextSelected: {
@@ -696,15 +699,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   hint: {
     fontSize: 12,
-    color: '#636366',
+    color: colors.textTertiary,
     marginTop: 6,
   },
   modalFooter: {
@@ -712,17 +715,17 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   cancelModalButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
   },
   cancelModalButtonText: {
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -737,7 +740,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   approveModalButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },

@@ -18,6 +18,7 @@ import { useAuthStore } from '../store/authStore';
 import { adminAPI } from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 
+import { useThemeStore } from '../store/themeStore';
 const METRICS = [
   { value: 'contacts_added', label: 'Contacts', icon: 'person-add' },
   { value: 'messages_sent', label: 'Messages', icon: 'chatbubbles' },
@@ -32,6 +33,8 @@ const SCOPES = [
 ];
 
 export default function MyRankingsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   
@@ -144,7 +147,7 @@ export default function MyRankingsScreen() {
       case 1: return { bg: '#FFD60A20', color: '#FFD60A', icon: 'trophy' };
       case 2: return { bg: '#C0C0C020', color: '#C0C0C0', icon: 'medal' };
       case 3: return { bg: '#CD7F3220', color: '#CD7F32', icon: 'medal' };
-      default: return { bg: '#2C2C2E', color: '#8E8E93', icon: null };
+      default: return { bg: colors.surface, color: colors.textSecondary, icon: null };
     }
   };
   
@@ -238,7 +241,7 @@ export default function MyRankingsScreen() {
                 data-testid="leaderboard-visibility-toggle"
                 value={settings.leaderboard_visible === true}
                 onValueChange={(value) => toggleVisibility(value)}
-                trackColor={{ false: '#3A3A3C', true: '#34C759' }}
+                trackColor={{ false: colors.borderLight, true: '#34C759' }}
                 thumbColor="#FFF"
                 disabled={savingSettings}
               />
@@ -261,7 +264,7 @@ export default function MyRankingsScreen() {
                     <Ionicons 
                       name={scope.icon as any} 
                       size={20} 
-                      color={selectedScope === scope.value ? '#FFF' : '#8E8E93'} 
+                      color={selectedScope === scope.value ? '#FFF' : colors.textSecondary} 
                     />
                     <Text style={[styles.scopeText, selectedScope === scope.value && styles.scopeTextActive]}>
                       {scope.label}
@@ -284,7 +287,7 @@ export default function MyRankingsScreen() {
                     <Ionicons 
                       name={metric.icon as any} 
                       size={18} 
-                      color={selectedMetric === metric.value ? '#FFF' : '#8E8E93'} 
+                      color={selectedMetric === metric.value ? '#FFF' : colors.textSecondary} 
                     />
                     <Text style={[styles.metricText, selectedMetric === metric.value && styles.metricTextActive]}>
                       {metric.label}
@@ -320,7 +323,7 @@ export default function MyRankingsScreen() {
                 ))
               ) : (
                 <View style={styles.emptyLeaderboard}>
-                  <Ionicons name="people-outline" size={48} color="#2C2C2E" />
+                  <Ionicons name="people-outline" size={48} color={colors.surface} />
                   <Text style={styles.emptyText}>No users in your {selectedScope} yet</Text>
                   <Text style={styles.emptySubtext}>
                     Be the first to join the leaderboard in your area!
@@ -333,7 +336,7 @@ export default function MyRankingsScreen() {
         
         {!settings.leaderboard_visible && (
           <View style={styles.optInPrompt}>
-            <Ionicons name="trophy-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="trophy-outline" size={64} color={colors.surface} />
             <Text style={styles.optInTitle}>See How You Stack Up</Text>
             <Text style={styles.optInDescription}>
               Turn on rankings to compare your performance against other sales professionals in your state, region, or nationwide.
@@ -345,10 +348,10 @@ export default function MyRankingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -361,7 +364,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -369,13 +372,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
   },
   settingCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -400,11 +403,11 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   settingDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   section: {
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -428,7 +431,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     paddingVertical: 14,
     borderRadius: 12,
   },
@@ -438,16 +441,16 @@ const styles = StyleSheet.create({
   scopeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   scopeTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   metricChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -459,10 +462,10 @@ const styles = StyleSheet.create({
   metricText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   metricTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   yourRankCard: {
     flexDirection: 'row',
@@ -494,16 +497,16 @@ const styles = StyleSheet.create({
   yourRankNumber: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   yourRankTotal: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   leaderboardItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     marginBottom: 6,
@@ -528,7 +531,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -542,7 +545,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userInfo: {
     flex: 1,
@@ -550,33 +553,33 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   userState: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   scoreValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
   },
   emptyLeaderboard: {
     alignItems: 'center',
     paddingVertical: 32,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
     paddingHorizontal: 24,
@@ -588,13 +591,13 @@ const styles = StyleSheet.create({
   optInTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   optInDescription: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,
     lineHeight: 22,

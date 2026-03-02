@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import api from '../services/api';
 
+import { useThemeStore } from '../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface VoiceInputProps {
@@ -41,6 +42,8 @@ export default function VoiceInput({
   style,
   disabled = false,
 }: VoiceInputProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -210,7 +213,7 @@ export default function VoiceInput({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',

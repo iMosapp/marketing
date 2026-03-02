@@ -8,6 +8,7 @@ import api from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
 
 export default function TabLayout() {
+  const { colors } = useThemeStore();
   const { user, isAuthenticated, isLoading, partnerBranding } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -65,7 +66,6 @@ export default function TabLayout() {
   }, [mounted, isLoading, isAuthenticated, user?.onboarding_complete]);
 
   const isPending = user?.status === 'pending';
-  const colors = useThemeStore((state) => state.colors);
 
   const BadgeIcon = ({ name, color, size, count }: { name: string; color: string; size: number; count: number }) => (
     <View>
@@ -77,7 +77,7 @@ export default function TabLayout() {
           minWidth: 18, height: 18,
           justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
         }}>
-          <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFF' }}>
+          <Text style={{ fontSize: 10, fontWeight: '700', color: colors.text }}>
             {count > 99 ? '99+' : count}
           </Text>
         </View>

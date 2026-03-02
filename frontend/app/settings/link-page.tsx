@@ -16,7 +16,7 @@ const SOCIAL_PLATFORMS = [
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
   { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', prefix: 'linkedin.com/in/', placeholder: 'yourprofile' },
   { key: 'twitter', label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2', prefix: 'x.com/', placeholder: 'yourhandle' },
-  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#000000', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
+  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#FFFFFF', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
   { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#FF0000', prefix: 'youtube.com/@', placeholder: 'yourchannel' },
 ];
 
@@ -33,9 +33,9 @@ interface LinkItem { id: string; label: string; url: string; icon: string; color
 interface SocialEntry { username: string; visible: boolean; }
 
 export default function EditLinkPage() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore(s => s.user);
-  const colors = useThemeStore(s => s.colors);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [username, setUsername] = useState('');
@@ -111,7 +111,7 @@ export default function EditLinkPage() {
   };
 
   const addCustomLink = () => {
-    setCustomLinks(prev => [...prev, { id: `custom_${Date.now()}`, label: '', url: '', icon: 'globe', color: '#8E8E93', visible: true }]);
+    setCustomLinks(prev => [...prev, { id: `custom_${Date.now()}`, label: '', url: '', icon: 'globe', color: colors.textSecondary, visible: true }]);
   };
   const updateCustomLink = (id: string, field: string, value: string) => {
     setCustomLinks(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
@@ -202,9 +202,9 @@ export default function EditLinkPage() {
         <View style={s.themeRow}>
           {(['dark', 'light'] as const).map(t => (
             <TouchableOpacity key={t} style={[s.themeBtn, theme === t && { borderColor: colors.accent, borderWidth: 2 }]} onPress={() => setTheme(t)} data-testid={`linkpage-theme-${t}`}>
-              <View style={[s.themePreview, t === 'dark' ? { backgroundColor: '#000' } : { backgroundColor: '#F2F2F7' }]}>
-                <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? '#1C1C1E' : '#fff' }]} />
-                <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? '#1C1C1E' : '#fff', width: '70%' }]} />
+              <View style={[s.themePreview, t === 'dark' ? { backgroundColor: colors.bg } : { backgroundColor: colors.bg }]}>
+                <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? colors.card : '#fff' }]} />
+                <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? colors.card : '#fff', width: '70%' }]} />
               </View>
               <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginTop: 4 }}>{t === 'dark' ? 'Dark' : 'Light'}</Text>
             </TouchableOpacity>
@@ -234,8 +234,8 @@ export default function EditLinkPage() {
                 <Switch
                   value={entry.visible}
                   onValueChange={() => toggleSocialVisibility(platform.key)}
-                  trackColor={{ false: '#3A3A3C', true: `${colors.accent}60` }}
-                  thumbColor={entry.visible ? colors.accent : '#8E8E93'}
+                  trackColor={{ false: colors.borderLight, true: `${colors.accent}60` }}
+                  thumbColor={entry.visible ? colors.accent : colors.textSecondary}
                 />
               </View>
               <View style={s.socialInputRow}>
@@ -271,8 +271,8 @@ export default function EditLinkPage() {
                   <Switch
                     value={link.visible}
                     onValueChange={() => toggleContactLink(link.id)}
-                    trackColor={{ false: '#3A3A3C', true: `${colors.accent}60` }}
-                    thumbColor={link.visible ? colors.accent : '#8E8E93'}
+                    trackColor={{ false: colors.borderLight, true: `${colors.accent}60` }}
+                    thumbColor={link.visible ? colors.accent : colors.textSecondary}
                   />
                 </View>
               );

@@ -9,14 +9,17 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function SubscriptionCancelPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="close-circle" size={80} color="#8E8E93" />
+          <Ionicons name="close-circle" size={80} color={colors.textSecondary} />
         </View>
         
         <Text style={styles.title}>Checkout Cancelled</Text>
@@ -49,10 +52,10 @@ export default function SubscriptionCancelPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   content: {
     flex: 1,
@@ -66,20 +69,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 32,
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   primaryButton: {
@@ -104,7 +107,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   secondaryButton: {
     paddingVertical: 16,
@@ -115,6 +118,6 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 17,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

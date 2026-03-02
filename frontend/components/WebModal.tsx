@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Platform, Pressable } from 'react-native';
 
+import { useThemeStore } from '../store/themeStore';
 interface WebModalProps {
   visible: boolean;
   onRequestClose?: () => void;
@@ -11,12 +12,13 @@ interface WebModalProps {
 }
 
 export const WebModal: React.FC<WebModalProps> = ({ visible, onRequestClose, transparent, children }) => {
+  const { colors } = useThemeStore();
   if (!visible) return null;
 
   return (
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onRequestClose} />
-      <View style={[styles.content, transparent && styles.transparentContent]}>
+      <View style={[styles.content, { backgroundColor: '#1C1C1E' }, transparent && styles.transparentContent]}>
         {children}
       </View>
     </View>

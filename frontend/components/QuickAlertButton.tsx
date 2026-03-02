@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/authStore';
 import { useRouter } from 'expo-router';
 import api from '../services/api';
 
+import { useThemeStore } from '../store/themeStore';
 const COLORS = {
   background: '#000',
   card: '#1C1C1E',
@@ -53,6 +54,8 @@ interface QuickAlertButtonProps {
 }
 
 export default function QuickAlertButton({ visible = true }: QuickAlertButtonProps) {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const { user } = useAuthStore();
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
@@ -338,7 +341,7 @@ export default function QuickAlertButton({ visible = true }: QuickAlertButtonPro
                           disabled={sending}
                         >
                           <View style={[styles.presetIcon, { backgroundColor: alert.color }]}>
-                            <Ionicons name={alert.icon as any} size={18} color="#FFF" />
+                            <Ionicons name={alert.icon as any} size={18} color={colors.text} />
                           </View>
                           <Text style={styles.presetText} numberOfLines={2}>{alert.text}</Text>
                         </TouchableOpacity>
@@ -362,9 +365,9 @@ export default function QuickAlertButton({ visible = true }: QuickAlertButtonPro
                           disabled={!customMessage.trim() || sending}
                         >
                           {sending ? (
-                            <ActivityIndicator size="small" color="#FFF" />
+                            <ActivityIndicator size="small" color={colors.text} />
                           ) : (
-                            <Ionicons name="send" size={16} color="#FFF" />
+                            <Ionicons name="send" size={16} color={colors.text} />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -380,7 +383,7 @@ export default function QuickAlertButton({ visible = true }: QuickAlertButtonPro
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   badgeContainer: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 50 : 10,
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   countBadge: {
     position: 'absolute',
@@ -418,7 +421,7 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   
   modalOverlay: {
@@ -443,7 +446,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
@@ -454,7 +457,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   tab: {
     flex: 1,
@@ -505,7 +508,7 @@ const styles = StyleSheet.create({
   messageItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   broadcastItem: {
     backgroundColor: 'rgba(255, 59, 48, 0.1)',
@@ -525,7 +528,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -562,7 +565,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     gap: 6,
   },
   openChatText: {
@@ -590,7 +593,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     gap: 8,
   },
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   customLabel: {
     fontSize: 12,
@@ -626,7 +629,7 @@ const styles = StyleSheet.create({
   },
   customInput: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,

@@ -15,6 +15,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 const TIME_FILTERS = [
   { label: '7D', value: '7d' },
   { label: '30D', value: '30d' },
@@ -24,6 +25,8 @@ const TIME_FILTERS = [
 ];
 
 export default function BillingScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -275,7 +278,7 @@ export default function BillingScreen() {
               ))
             ) : (
               <View style={styles.emptyContainer}>
-                <Ionicons name="receipt-outline" size={48} color="#8E8E93" />
+                <Ionicons name="receipt-outline" size={48} color={colors.textSecondary} />
                 <Text style={styles.emptyText}>No transactions yet</Text>
                 <Text style={styles.emptySubtext}>Payments will appear here</Text>
               </View>
@@ -289,10 +292,10 @@ export default function BillingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -306,7 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -314,7 +317,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -326,7 +329,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   filterPillActive: {
     backgroundColor: '#34C759',
@@ -334,15 +337,15 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   filterTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 4,
   },
@@ -353,21 +356,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     padding: 16,
   },
   mrrBox: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -377,7 +380,7 @@ const styles = StyleSheet.create({
   },
   mrrLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   mrrValue: {
     fontSize: 40,
@@ -395,18 +398,18 @@ const styles = StyleSheet.create({
   },
   mrrDetailLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   mrrDetailValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 2,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 12,
     marginTop: 8,
@@ -420,7 +423,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
   },
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statValue: {
     fontSize: 20,
@@ -440,13 +443,13 @@ const styles = StyleSheet.create({
   },
   statSubtext: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   retainedBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -458,11 +461,11 @@ const styles = StyleSheet.create({
   retainedLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   retainedSubtext: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   retainedValue: {
@@ -471,7 +474,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   planList: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 20,
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   planInfo: {
     flex: 1,
@@ -490,11 +493,11 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   planCount: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   planRevenue: {
@@ -506,7 +509,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     height: 120,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     gap: 4,
@@ -526,13 +529,13 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     fontSize: 9,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   transactionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -543,11 +546,11 @@ const styles = StyleSheet.create({
   transactionName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   transactionEmail: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   transactionPlan: {
@@ -565,7 +568,7 @@ const styles = StyleSheet.create({
   },
   transactionDate: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   emptyContainer: {
@@ -575,12 +578,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
 });

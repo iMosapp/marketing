@@ -39,9 +39,10 @@ interface SearchResults {
 }
 
 export default function SearchScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
-  const colors = useThemeStore(s => s.colors);  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -241,7 +242,7 @@ export default function SearchScreen() {
               style={styles.recentItem}
               onPress={() => handleRecentSearch(search)}
             >
-              <Ionicons name="time-outline" size={18} color="#8E8E93" />
+              <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
               <Text style={styles.recentText}>{search}</Text>
             </TouchableOpacity>
           ))}
@@ -297,11 +298,11 @@ export default function SearchScreen() {
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#8E8E93" />
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search contacts, messages, campaigns..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -310,7 +311,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')} data-testid="search-clear-btn">
-              <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -331,7 +332,7 @@ export default function SearchScreen() {
           ListEmptyComponent={
             query ? (
               <View style={styles.emptyContainer}>
-                <Ionicons name="search-outline" size={48} color="#8E8E93" />
+                <Ionicons name="search-outline" size={48} color={colors.textSecondary} />
                 <Text style={styles.emptyText}>No results found</Text>
                 <Text style={styles.emptySubtext}>
                   Try a different search term or filter
@@ -355,7 +356,7 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: undefined,
@@ -366,7 +367,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     marginRight: 8,
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
   filterCount: {
     fontSize: 11,
     color: '#6E6E73',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 8,
@@ -462,7 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#007AFF',
     borderWidth: 2,
-    borderColor: '#1C1C1E',
+    borderColor: colors.card,
   },
   resultContent: {
     flex: 1,
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tagChip: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -520,7 +521,7 @@ const styles = StyleSheet.create({
   resultType: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 6,
   },
   resultTypeText: {

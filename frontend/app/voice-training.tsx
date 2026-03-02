@@ -18,6 +18,7 @@ import { useAuthStore } from '../store/authStore';
 import { showSimpleAlert } from '../services/alert';
 import api from '../services/api';
 
+import { useThemeStore } from '../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface ExtractedInfo {
@@ -64,6 +65,8 @@ const PROMPTS = [
 ];
 
 export default function VoiceTrainingScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   
@@ -381,10 +384,10 @@ export default function VoiceTrainingScreen() {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <>
-                <Ionicons name="checkmark" size={24} color="#000" />
+                <Ionicons name="checkmark" size={24} color={colors.text} />
                 <Text style={styles.saveButtonText}>Save to My AI Profile</Text>
               </>
             )}
@@ -472,7 +475,7 @@ export default function VoiceTrainingScreen() {
                   <Ionicons 
                     name={isRecording ? 'stop' : 'mic'} 
                     size={40} 
-                    color="#FFF" 
+                    color={colors.text} 
                   />
                 </TouchableOpacity>
               </Animated.View>
@@ -490,7 +493,7 @@ export default function VoiceTrainingScreen() {
               <Text style={styles.nextButtonText}>
                 {currentPromptIndex < PROMPTS.length - 1 ? 'Next Question' : 'See Results'}
               </Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              <Ionicons name="arrow-forward" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
         )}
@@ -505,10 +508,10 @@ export default function VoiceTrainingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -524,7 +527,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -536,7 +539,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
   },
   progressDotActive: {
     backgroundColor: '#007AFF',
@@ -550,7 +553,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   promptCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -566,13 +569,13 @@ const styles = StyleSheet.create({
   promptTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   promptText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -589,7 +592,7 @@ const styles = StyleSheet.create({
   },
   exampleText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 4,
   },
@@ -605,7 +608,7 @@ const styles = StyleSheet.create({
   transcriptText: {
     flex: 1,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 22,
   },
   recordingContainer: {
@@ -631,7 +634,7 @@ const styles = StyleSheet.create({
   },
   recordHint: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
   },
   processingContainer: {
@@ -658,7 +661,7 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   skipLink: {
     alignItems: 'center',
@@ -666,7 +669,7 @@ const styles = StyleSheet.create({
   },
   skipLinkText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   // Results Screen
   resultsScroll: {
@@ -683,18 +686,18 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   successSubtitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
   resultCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -708,12 +711,12 @@ const styles = StyleSheet.create({
   resultLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
   },
   resultValue: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 22,
   },
   tagsContainer: {
@@ -722,18 +725,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   tagText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   funFact: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 22,
     marginBottom: 4,
   },
@@ -750,7 +753,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   skipButton: {
     alignItems: 'center',
@@ -759,6 +762,6 @@ const styles = StyleSheet.create({
   },
   skipButtonText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 });

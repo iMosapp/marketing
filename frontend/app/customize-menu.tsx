@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showSimpleAlert } from '../services/alert';
 
+import { useThemeStore } from '../store/themeStore';
 const STORAGE_KEY = 'hidden_menu_items';
 
 // All available menu items that can be hidden/shown
@@ -54,6 +55,8 @@ const groupByCategory = (items: typeof ALL_MENU_ITEMS) => {
 };
 
 export default function CustomizeMenuScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [hiddenItems, setHiddenItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -166,9 +169,9 @@ export default function CustomizeMenuScreen() {
                   <Switch
                     value={!hiddenItems.has(item.id)}
                     onValueChange={() => toggleItem(item.id)}
-                    trackColor={{ false: '#3A3A3C', true: '#34C75980' }}
-                    thumbColor={!hiddenItems.has(item.id) ? '#34C759' : '#8E8E93'}
-                    ios_backgroundColor="#3A3A3C"
+                    trackColor={{ false: colors.borderLight, true: '#34C75980' }}
+                    thumbColor={!hiddenItems.has(item.id) ? '#34C759' : colors.textSecondary}
+                    ios_backgroundColor={colors.borderLight}
                   />
                 </View>
               ))}
@@ -182,10 +185,10 @@ export default function CustomizeMenuScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -201,7 +204,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   infoBanner: {
     flexDirection: 'row',
@@ -215,7 +218,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     lineHeight: 20,
   },
   quickActions: {
@@ -230,14 +233,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     padding: 12,
     borderRadius: 10,
   },
   quickButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   statsContainer: {
     paddingHorizontal: 16,
@@ -245,7 +248,7 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   content: {
@@ -260,13 +263,13 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   categoryItems: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -276,7 +279,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   itemLeft: {
     flexDirection: 'row',
@@ -294,7 +297,7 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   itemTitleHidden: {
     color: '#6E6E73',

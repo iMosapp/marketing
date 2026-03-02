@@ -32,9 +32,10 @@ interface Tag {
 }
 
 export default function ContactsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const colors = useThemeStore((s) => s.colors);
   
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
@@ -306,7 +307,7 @@ export default function ContactsScreen() {
   const renderContact = useCallback(({ item }: { item: any }) => {
     const contactTags = item.tags?.map((tagName: string) => ({
       name: tagName,
-      color: tagMap[tagName] || '#8E8E93',
+      color: tagMap[tagName] || colors.textSecondary,
     })) || [];
     const isSelected = selectedIds.has(item._id);
 
@@ -330,7 +331,7 @@ export default function ContactsScreen() {
       {/* Checkbox in select mode */}
       {selectMode && (
         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-          {isSelected && <Ionicons name="checkmark" size={16} color="#FFF" />}
+          {isSelected && <Ionicons name="checkmark" size={16} color={colors.text} />}
         </View>
       )}
       {(item.photo_thumbnail || item.photo_url) ? (
@@ -588,7 +589,7 @@ export default function ContactsScreen() {
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={64} color="#2C2C2E" />
+              <Ionicons name="people-outline" size={64} color={colors.surface} />
               <Text style={[styles.emptyText, { color: colors.text }]}>No contacts yet</Text>
               <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Tap + to add or import contacts</Text>
               <TouchableOpacity 
@@ -652,7 +653,7 @@ export default function ContactsScreen() {
               </View>
 
               <View style={styles.addContactInputContainer}>
-                <Ionicons name="call-outline" size={18} color="#8E8E93" />
+                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
                 <TextInput
                   style={styles.addContactInput}
                   placeholder="Phone number"
@@ -665,7 +666,7 @@ export default function ContactsScreen() {
               </View>
 
               <View style={styles.addContactInputContainer}>
-                <Ionicons name="mail-outline" size={18} color="#8E8E93" />
+                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
                 <TextInput
                   style={styles.addContactInput}
                   placeholder="Email (optional)"
@@ -697,11 +698,11 @@ export default function ContactsScreen() {
                 data-testid="new-contact-save-btn"
               >
                 {savingContact ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                  <ActivityIndicator size="small" color={colors.text} />
                 ) : (
                   <>
                     <Text style={styles.addContactContinueText}>Save & Message</Text>
-                    <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
+                    <Ionicons name="chatbubble-outline" size={16} color={colors.text} />
                   </>
                 )}
               </TouchableOpacity>
@@ -713,7 +714,7 @@ export default function ContactsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -739,7 +740,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#8E8E93',
+    borderColor: colors.textSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -763,7 +764,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginHorizontal: 24,
     paddingHorizontal: 12,
@@ -802,7 +803,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   avatarText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -902,11 +903,11 @@ const styles = StyleSheet.create({
   },
   tagFilterText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   tagFilterTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   tagFilterCount: {
     fontSize: 11,
@@ -916,7 +917,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tagFilterCountActive: {
-    color: '#FFF',
+    color: colors.text,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   
@@ -1027,7 +1028,7 @@ const styles = StyleSheet.create({
   addContactCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   addContactContinueBtn: {
     flex: 1,
@@ -1045,13 +1046,13 @@ const styles = StyleSheet.create({
   addContactContinueText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 
   // View toggle
   viewToggle: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 8,
     padding: 2,
   },
@@ -1071,45 +1072,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 16, paddingVertical: 10,
   },
-  feedSectionTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', flex: 1 },
-  feedSectionCount: { fontSize: 12, color: '#636366' },
+  feedSectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
+  feedSectionCount: { fontSize: 12, color: colors.textTertiary },
   feedBadge: {
     backgroundColor: '#FF9500', borderRadius: 10,
     minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  feedBadgeText: { fontSize: 11, fontWeight: '800', color: '#000' },
+  feedBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text },
 
   // Suggested action cards
   feedSuggestedCard: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 6,
-    backgroundColor: '#1C1C1E', borderRadius: 14, padding: 12,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: colors.card, borderRadius: 14, padding: 12,
+    borderWidth: 1, borderColor: colors.surface,
   },
   feedSuggestedIcon: {
     width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center', marginRight: 10,
   },
-  feedSuggestedTitle: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-  feedSuggestedDesc: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
-  feedSuggestedMsg: { fontSize: 11, color: '#636366', fontStyle: 'italic', marginTop: 4 },
+  feedSuggestedTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  feedSuggestedDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  feedSuggestedMsg: { fontSize: 11, color: colors.textTertiary, fontStyle: 'italic', marginTop: 4 },
 
   // Mini avatars
-  feedMiniAvatar: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: '#2C2C2E' },
+  feedMiniAvatar: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: colors.surface },
   feedMiniAvatarPlaceholder: {
     width: 22, height: 22, borderRadius: 6,
-    backgroundColor: '#2C2C2E', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  feedMiniAvatarText: { fontSize: 10, fontWeight: '700', color: '#636366' },
+  feedMiniAvatarText: { fontSize: 10, fontWeight: '700', color: colors.textTertiary },
 
   // Upcoming campaign cards
   feedUpcomingCard: {
     marginHorizontal: 12, marginBottom: 6,
-    backgroundColor: '#1C1C1E', borderRadius: 14, padding: 12,
+    backgroundColor: colors.card, borderRadius: 14, padding: 12,
     borderWidth: 1, borderColor: '#AF52DE30',
   },
-  feedUpcomingTitle: { fontSize: 14, fontWeight: '600', color: '#FFF' },
-  feedUpcomingDesc: { fontSize: 12, color: '#8E8E93', marginTop: 1 },
+  feedUpcomingTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
+  feedUpcomingDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
   feedCampaignBadge: {
     backgroundColor: '#AF52DE20', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
   },
@@ -1118,33 +1119,33 @@ const styles = StyleSheet.create({
   // Event cards
   feedEventCard: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 4,
-    backgroundColor: '#1C1C1E', borderRadius: 14, padding: 12,
+    backgroundColor: colors.card, borderRadius: 14, padding: 12,
   },
   feedEventAvatarGroup: { position: 'relative', marginRight: 10 },
-  feedEventAvatar: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: '#2C2C2E' },
+  feedEventAvatar: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.surface },
   feedEventAvatarPlaceholder: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: '#2C2C2E', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  feedEventAvatarText: { fontSize: 16, fontWeight: '700', color: '#636366' },
+  feedEventAvatarText: { fontSize: 16, fontWeight: '700', color: colors.textTertiary },
   feedEventIconBadge: {
     position: 'absolute', bottom: -3, right: -3,
     width: 20, height: 20, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#1C1C1E',
+    borderWidth: 2, borderColor: colors.card,
   },
   feedEventContent: { flex: 1 },
-  feedEventName: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-  feedEventTitle: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
-  feedEventDesc: { fontSize: 12, color: '#636366', marginTop: 1 },
-  feedEventTime: { fontSize: 11, color: '#3A3A3C', fontWeight: '500', marginLeft: 6 },
+  feedEventName: { fontSize: 14, fontWeight: '700', color: colors.text },
+  feedEventTitle: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
+  feedEventDesc: { fontSize: 12, color: colors.textTertiary, marginTop: 1 },
+  feedEventTime: { fontSize: 11, color: colors.borderLight, fontWeight: '500', marginLeft: 6 },
   feedInboundBadge: { backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   feedInboundBadgeText: { fontSize: 8, fontWeight: '700', color: '#30D158' },
-  feedMiniTag: { backgroundColor: '#2C2C2E', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
-  feedMiniTagText: { fontSize: 8, fontWeight: '600', color: '#636366' },
+  feedMiniTag: { backgroundColor: colors.surface, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
+  feedMiniTagText: { fontSize: 8, fontWeight: '600', color: colors.textTertiary },
 
   // Feed empty state
   feedEmpty: { alignItems: 'center', paddingVertical: 40 },
-  feedEmptyText: { fontSize: 16, color: '#8E8E93', marginTop: 8 },
-  feedEmptySubtext: { fontSize: 13, color: '#636366', marginTop: 4 },
+  feedEmptyText: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
+  feedEmptySubtext: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
 });

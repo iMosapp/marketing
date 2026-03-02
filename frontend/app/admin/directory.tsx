@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 type TabType = 'directory' | 'leaderboard' | 'efficiency' | 'resellers';
 
 interface TeamMember {
@@ -96,6 +97,8 @@ const ROLE_ICONS: Record<string, string> = {
 };
 
 export default function DirectoryPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('directory');
   const [loading, setLoading] = useState(true);
@@ -494,18 +497,18 @@ export default function DirectoryPage() {
       
       {/* Search */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#8E8E93" />
+        <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name, email, company..."
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => { setSearchQuery(''); loadData(); }}>
-            <Ionicons name="close-circle" size={20} color="#8E8E93" />
+            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -517,7 +520,7 @@ export default function DirectoryPage() {
       
       {members.length === 0 && !loading && (
         <View style={styles.emptyState}>
-          <Ionicons name="people-outline" size={64} color="#2C2C2E" />
+          <Ionicons name="people-outline" size={64} color={colors.surface} />
           <Text style={styles.emptyText}>No team members found</Text>
         </View>
       )}
@@ -539,7 +542,7 @@ export default function DirectoryPage() {
     <View style={styles.tabContent}>
       {efficiencyLeaderboard.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="time-outline" size={64} color="#2C2C2E" />
+          <Ionicons name="time-outline" size={64} color={colors.surface} />
           <Text style={styles.emptyText}>No KPIs submitted this week</Text>
           <Text style={styles.emptySubtext}>Team members need to log their hours</Text>
         </View>
@@ -561,7 +564,7 @@ export default function DirectoryPage() {
                 {/* Top Performer Badge for #1 */}
                 {index === 0 ? (
                   <View style={styles.mvpBadge}>
-                    <Ionicons name="star" size={14} color="#000" />
+                    <Ionicons name="star" size={14} color={colors.text} />
                     <Text style={styles.mvpBadgeText}>#1</Text>
                   </View>
                 ) : (
@@ -639,7 +642,7 @@ export default function DirectoryPage() {
               <Ionicons 
                 name={tab.icon as any} 
                 size={18} 
-                color={activeTab === tab.key ? '#007AFF' : '#8E8E93'} 
+                color={activeTab === tab.key ? '#007AFF' : colors.textSecondary} 
               />
               <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
                 {tab.label}
@@ -676,7 +679,7 @@ export default function DirectoryPage() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Log Weekly KPIs</Text>
               <TouchableOpacity onPress={() => setShowKPIModal(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -700,7 +703,7 @@ export default function DirectoryPage() {
                   value={kpiHours}
                   onChangeText={setKpiHours}
                   placeholder="40"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
                 />
                 
@@ -710,12 +713,12 @@ export default function DirectoryPage() {
                   value={kpiDemos}
                   onChangeText={setKpiDemos}
                   placeholder="5"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="number-pad"
                 />
                 
                 <TouchableOpacity style={styles.submitButton} onPress={handleSubmitKPI}>
-                  <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.text} />
                   <Text style={styles.submitButtonText}>Submit KPIs</Text>
                 </TouchableOpacity>
               </View>
@@ -731,7 +734,7 @@ export default function DirectoryPage() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Team Member</Text>
               <TouchableOpacity onPress={() => setShowAddMember(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -742,7 +745,7 @@ export default function DirectoryPage() {
                 value={newMember.first_name}
                 onChangeText={(text) => setNewMember({...newMember, first_name: text})}
                 placeholder="John"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               
               <Text style={styles.inputLabel}>Last Name</Text>
@@ -751,7 +754,7 @@ export default function DirectoryPage() {
                 value={newMember.last_name}
                 onChangeText={(text) => setNewMember({...newMember, last_name: text})}
                 placeholder="Doe"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               
               <Text style={styles.inputLabel}>Email *</Text>
@@ -760,7 +763,7 @@ export default function DirectoryPage() {
                 value={newMember.email}
                 onChangeText={(text) => setNewMember({...newMember, email: text})}
                 placeholder="john@company.com"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -771,7 +774,7 @@ export default function DirectoryPage() {
                 value={newMember.phone}
                 onChangeText={(text) => setNewMember({...newMember, phone: text})}
                 placeholder="+1 555 123 4567"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
               />
               
@@ -788,7 +791,7 @@ export default function DirectoryPage() {
                   >
                     <Text style={[
                       styles.roleSelectorText,
-                      newMember.role === role && { color: '#FFF' }
+                      newMember.role === role && { color: colors.text }
                     ]}>
                       {role.toUpperCase()}
                     </Text>
@@ -802,7 +805,7 @@ export default function DirectoryPage() {
                 value={newMember.title}
                 onChangeText={(text) => setNewMember({...newMember, title: text})}
                 placeholder="Sales Manager"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
               />
               
               {(newMember.role === 'partner' || newMember.role === 'reseller') && (
@@ -813,7 +816,7 @@ export default function DirectoryPage() {
                     value={newMember.company_name}
                     onChangeText={(text) => setNewMember({...newMember, company_name: text})}
                     placeholder="Partner Company LLC"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                   />
                   
                   <Text style={styles.inputLabel}>Commission %</Text>
@@ -822,7 +825,7 @@ export default function DirectoryPage() {
                     value={newMember.commission_percent.toString()}
                     onChangeText={(text) => setNewMember({...newMember, commission_percent: parseFloat(text) || 0})}
                     placeholder="10"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={colors.textSecondary}
                     keyboardType="decimal-pad"
                   />
                 </>
@@ -830,7 +833,7 @@ export default function DirectoryPage() {
             </ScrollView>
             
             <TouchableOpacity style={styles.submitButton} onPress={handleAddMember}>
-              <Ionicons name="person-add" size={20} color="#FFF" />
+              <Ionicons name="person-add" size={20} color={colors.text} />
               <Text style={styles.submitButtonText}>Add Member</Text>
             </TouchableOpacity>
           </View>
@@ -844,7 +847,7 @@ export default function DirectoryPage() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Member Profile</Text>
               <TouchableOpacity onPress={() => setShowMemberDetail(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -866,12 +869,12 @@ export default function DirectoryPage() {
                 <View style={styles.profileSection}>
                   <Text style={styles.profileSectionTitle}>Contact</Text>
                   <View style={styles.profileRow}>
-                    <Ionicons name="mail" size={18} color="#8E8E93" />
+                    <Ionicons name="mail" size={18} color={colors.textSecondary} />
                     <Text style={styles.profileRowText}>{selectedMember.email}</Text>
                   </View>
                   {selectedMember.phone && (
                     <View style={styles.profileRow}>
-                      <Ionicons name="call" size={18} color="#8E8E93" />
+                      <Ionicons name="call" size={18} color={colors.textSecondary} />
                       <Text style={styles.profileRowText}>{selectedMember.phone}</Text>
                     </View>
                   )}
@@ -933,10 +936,10 @@ export default function DirectoryPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -945,7 +948,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 40,
@@ -953,12 +956,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   tab: {
     flexDirection: 'row',
@@ -974,7 +977,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   activeTabText: {
     color: '#007AFF',
@@ -997,7 +1000,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -1005,17 +1008,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 12,
     marginBottom: 12,
@@ -1025,7 +1028,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   roleFilterContainer: {
     marginBottom: 16,
@@ -1042,7 +1045,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     gap: 6,
     marginRight: 8,
   },
@@ -1052,13 +1055,13 @@ const styles = StyleSheet.create({
   roleChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   roleChipTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   memberCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -1086,15 +1089,15 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   memberTitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   memberCompany: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   memberBadges: {
@@ -1122,10 +1125,10 @@ const styles = StyleSheet.create({
   mvpBadgeText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#000',
+    color: colors.text,
   },
   rankBadgeLarge: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1139,7 +1142,7 @@ const styles = StyleSheet.create({
   rankBadgeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   earningsHighlight: {
     fontSize: 20,
@@ -1158,13 +1161,13 @@ const styles = StyleSheet.create({
   memberMetrics: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     paddingTop: 12,
   },
   memberFooter: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     paddingTop: 12,
     marginTop: 12,
   },
@@ -1192,11 +1195,11 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   metricLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   sectionHeader: {
@@ -1205,16 +1208,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   metricToggle: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 4,
     marginBottom: 16,
@@ -1231,15 +1234,15 @@ const styles = StyleSheet.create({
   metricButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   metricButtonTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -1248,7 +1251,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1265,7 +1268,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#000',
+    color: colors.text,
   },
   leaderInfo: {
     flex: 1,
@@ -1274,11 +1277,11 @@ const styles = StyleSheet.create({
   leaderName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   leaderRole: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   leaderValue: {
     alignItems: 'flex-end',
@@ -1294,7 +1297,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 16,
   },
   modalOverlay: {
@@ -1303,7 +1306,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -1314,28 +1317,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalBody: {
     padding: 16,
   },
   inputLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   roleSelector: {
     flexDirection: 'row',
@@ -1346,13 +1349,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
     marginRight: 8,
   },
   roleSelectorText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   submitButton: {
     flexDirection: 'row',
@@ -1367,13 +1370,13 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   profileHeader: {
     alignItems: 'center',
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   profileAvatar: {
     width: 80,
@@ -1390,27 +1393,27 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   profileTitle: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   profileCompany: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   profileSection: {
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   profileSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   profileRow: {
@@ -1421,7 +1424,7 @@ const styles = StyleSheet.create({
   },
   profileRowText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   profileMetricsGrid: {
     flexDirection: 'row',
@@ -1430,7 +1433,7 @@ const styles = StyleSheet.create({
   },
   profileMetric: {
     width: '30%',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
@@ -1438,18 +1441,18 @@ const styles = StyleSheet.create({
   profileMetricValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   profileMetricLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   commissionCard: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
   },
@@ -1461,14 +1464,14 @@ const styles = StyleSheet.create({
   },
   commissionLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
   },
   // Efficiency Tab Styles
   tabBarScroll: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
     maxHeight: 50,
     flexGrow: 0,
     flexShrink: 0,
@@ -1476,7 +1479,7 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     height: 50,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   tabBarContent: {
     flexDirection: 'row',
@@ -1491,18 +1494,18 @@ const styles = StyleSheet.create({
   efficiencyTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 12,
   },
   efficiencySubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   efficiencyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
@@ -1516,14 +1519,14 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rankNumber: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   efficiencyInfo: {
     flex: 1,
@@ -1532,7 +1535,7 @@ const styles = StyleSheet.create({
   efficiencyName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   efficiencyStats: {
     flexDirection: 'row',
@@ -1541,11 +1544,11 @@ const styles = StyleSheet.create({
   },
   efficiencyStat: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   efficiencyDot: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginHorizontal: 6,
   },
   earningsContainer: {
@@ -1558,7 +1561,7 @@ const styles = StyleSheet.create({
   },
   earningsLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   inputKPIButton: {
     flexDirection: 'row',
@@ -1573,11 +1576,11 @@ const styles = StyleSheet.create({
   inputKPIButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   // KPI Modal Styles
@@ -1587,17 +1590,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   kpiMemberName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginLeft: 12,
   },
   kpiMemberRole: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginLeft: 12,
   },
 });

@@ -15,6 +15,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 interface Individual {
   _id: string;
   name: string;
@@ -28,6 +29,8 @@ interface Individual {
 }
 
 export default function IndividualsScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -116,7 +119,7 @@ export default function IndividualsScreen() {
         )}
       </View>
       
-      <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -143,17 +146,17 @@ export default function IndividualsScreen() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#8E8E93" />
+        <Ionicons name="search" size={18} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name, email, or phone..."
-          placeholderTextColor="#8E8E93"
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color="#8E8E93" />
+            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -187,7 +190,7 @@ export default function IndividualsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="person-outline" size={48} color="#8E8E93" />
+            <Ionicons name="person-outline" size={48} color={colors.textSecondary} />
             <Text style={styles.emptyText}>No individuals found</Text>
             <Text style={styles.emptySubtext}>
               Individual/sole proprietor accounts will appear here
@@ -199,10 +202,10 @@ export default function IndividualsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -224,12 +227,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     marginHorizontal: 16,
     marginTop: 12,
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
   },
   filterContainer: {
@@ -253,7 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   filterPillActive: {
     backgroundColor: '#AF52DE',
@@ -261,14 +264,14 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   filterTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     marginLeft: 'auto',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
@@ -284,7 +287,7 @@ const styles = StyleSheet.create({
   individualCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -300,7 +303,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   individualInfo: {
     flex: 1,
@@ -309,11 +312,11 @@ const styles = StyleSheet.create({
   individualName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   individualEmail: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   individualTitle: {
@@ -348,7 +351,7 @@ const styles = StyleSheet.create({
   },
   subscriptionText: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   emptyContainer: {
@@ -358,12 +361,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },

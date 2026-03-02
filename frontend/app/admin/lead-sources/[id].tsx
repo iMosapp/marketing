@@ -19,6 +19,7 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 
+import { useThemeStore } from '../../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 interface LeadSource {
@@ -83,6 +84,8 @@ const WebButton: React.FC<{
 };
 
 export default function LeadSourceDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
@@ -258,7 +261,7 @@ export default function LeadSourceDetailScreen() {
       case 'jump_ball': return '#FF9500';
       case 'round_robin': return '#007AFF';
       case 'weighted_round_robin': return '#34C759';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
 
@@ -375,7 +378,7 @@ export default function LeadSourceDetailScreen() {
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={formData.team_id === team.id ? '#007AFF' : '#8E8E93'}
+                      color={formData.team_id === team.id ? '#007AFF' : colors.textSecondary}
                     />
                     <Text style={[styles.teamOptionText, formData.team_id === team.id && styles.teamOptionTextSelected]}>
                       {team.name}
@@ -399,7 +402,7 @@ export default function LeadSourceDetailScreen() {
                     onPress={() => setFormData({ ...formData, assignment_method: method.id as any })}
                   >
                     <Ionicons name={method.icon as any} size={20} color={method.color} />
-                    <Text style={[styles.methodOptionText, { color: formData.assignment_method === method.id ? method.color : '#8E8E93' }]}>
+                    <Text style={[styles.methodOptionText, { color: formData.assignment_method === method.id ? method.color : colors.textSecondary }]}>
                       {method.name}
                     </Text>
                   </TouchableOpacity>
@@ -481,7 +484,7 @@ export default function LeadSourceDetailScreen() {
                   style={styles.eyeButton}
                   onPress={() => setShowApiKey(!showApiKey)}
                 >
-                  <Ionicons name={showApiKey ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                  <Ionicons name={showApiKey ? 'eye-off' : 'eye'} size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
               <Text style={styles.credentialHint}>Include as X-API-Key header</Text>
@@ -560,7 +563,7 @@ export default function LeadSourceDetailScreen() {
                       disabled={deleting}
                       style={{
                         flex: 1,
-                        backgroundColor: '#2C2C2E',
+                        backgroundColor: colors.surface,
                         borderRadius: 10,
                         padding: 14,
                         border: 'none',
@@ -586,7 +589,7 @@ export default function LeadSourceDetailScreen() {
                       }}
                     >
                       {deleting ? (
-                        <ActivityIndicator size="small" color="#FFF" />
+                        <ActivityIndicator size="small" color={colors.text} />
                       ) : (
                         <Text style={styles.modalDeleteText}>Delete</Text>
                       )}
@@ -607,7 +610,7 @@ export default function LeadSourceDetailScreen() {
                       disabled={deleting}
                     >
                       {deleting ? (
-                        <ActivityIndicator size="small" color="#FFF" />
+                        <ActivityIndicator size="small" color={colors.text} />
                       ) : (
                         <Text style={styles.modalDeleteText}>Delete</Text>
                       )}
@@ -623,10 +626,10 @@ export default function LeadSourceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -641,7 +644,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 24,
   },
@@ -659,7 +662,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -671,7 +674,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginHorizontal: 8,
   },
@@ -736,7 +739,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -745,11 +748,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   credentialSection: {
@@ -764,13 +767,13 @@ const styles = StyleSheet.create({
   credentialTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   credentialBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     gap: 12,
@@ -778,7 +781,7 @@ const styles = StyleSheet.create({
   credentialValue: {
     flex: 1,
     fontSize: 13,
-    color: '#FFF',
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   credentialHint: {
@@ -792,7 +795,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   eyeButton: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     justifyContent: 'center',
@@ -803,11 +806,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   codeBlock: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
   },
@@ -835,7 +838,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     lineHeight: 22,
   },
   deleteButton: {
@@ -860,18 +863,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   textArea: {
     height: 80,
@@ -883,12 +886,12 @@ const styles = StyleSheet.create({
   teamOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   teamOptionSelected: {
     borderColor: '#007AFF',
@@ -896,7 +899,7 @@ const styles = StyleSheet.create({
   },
   teamOptionText: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   teamOptionTextSelected: {
     color: '#007AFF',
@@ -908,15 +911,15 @@ const styles = StyleSheet.create({
   methodOption: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     gap: 6,
     borderWidth: 2,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   methodOptionSelected: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   methodOptionText: {
     fontSize: 11,
@@ -926,19 +929,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
   },
   toggleLabel: {
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   toggle: {
     width: 51,
     height: 31,
     borderRadius: 16,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
     padding: 2,
   },
   toggleActive: {
@@ -948,7 +951,7 @@ const styles = StyleSheet.create({
     width: 27,
     height: 27,
     borderRadius: 14,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
   },
   toggleKnobActive: {
     transform: [{ translateX: 20 }],
@@ -960,7 +963,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   // Modal styles
@@ -972,7 +975,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
     width: '100%',
@@ -985,13 +988,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   modalMessage: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -1003,7 +1006,7 @@ const styles = StyleSheet.create({
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     alignItems: 'center',
@@ -1011,7 +1014,7 @@ const styles = StyleSheet.create({
   modalCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalDeleteButton: {
     flex: 1,
@@ -1023,6 +1026,6 @@ const styles = StyleSheet.create({
   modalDeleteText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

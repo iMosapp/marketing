@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { useThemeStore } from '../../store/themeStore';
 const { width } = Dimensions.get('window');
 
 type SlideType = 'welcome' | 'feature' | 'ai_setup' | 'interactive' | 'action' | 'complete';
@@ -183,6 +184,8 @@ const SLIDES: OnboardingSlide[] = [
 ];
 
 export default function TrainingPreviewScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -237,7 +240,7 @@ export default function TrainingPreviewScreen() {
     if (!currentSlide.previewNote) return null;
     return (
       <View style={styles.previewNoteContainer}>
-        <Ionicons name="information-circle" size={18} color="#8E8E93" />
+        <Ionicons name="information-circle" size={18} color={colors.textSecondary} />
         <Text style={styles.previewNoteText}>{currentSlide.previewNote}</Text>
       </View>
     );
@@ -264,11 +267,11 @@ export default function TrainingPreviewScreen() {
       {/* Preview Mode Banner */}
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.previewBanner}>
-          <Ionicons name="eye" size={16} color="#FFF" />
+          <Ionicons name="eye" size={16} color={colors.text} />
           <Text style={styles.previewBannerText}>ADMIN PREVIEW</Text>
           <TouchableOpacity style={styles.exitButton} onPress={() => router.back()}>
             <Text style={styles.exitButtonText}>Exit</Text>
-            <Ionicons name="close" size={18} color="#FFF" />
+            <Ionicons name="close" size={18} color={colors.text} />
           </TouchableOpacity>
         </View>
         
@@ -335,7 +338,7 @@ export default function TrainingPreviewScreen() {
               <Ionicons 
                 name={slide.icon as any} 
                 size={16} 
-                color={index === currentIndex ? slide.iconColor : '#8E8E93'} 
+                color={index === currentIndex ? slide.iconColor : colors.textSecondary} 
               />
             </TouchableOpacity>
           ))}
@@ -350,7 +353,7 @@ export default function TrainingPreviewScreen() {
             onPress={handleBack}
             disabled={isFirstSlide}
           >
-            <Ionicons name="chevron-back" size={24} color={isFirstSlide ? '#3A3A3C' : '#FFF'} />
+            <Ionicons name="chevron-back" size={24} color={isFirstSlide ? colors.borderLight : '#FFF'} />
             <Text style={[styles.navButtonText, isFirstSlide && styles.navButtonTextDisabled]}>Back</Text>
           </TouchableOpacity>
 
@@ -360,7 +363,7 @@ export default function TrainingPreviewScreen() {
             disabled={isLastSlide}
           >
             <Text style={[styles.navButtonText, isLastSlide && styles.navButtonTextDisabled]}>Next</Text>
-            <Ionicons name="chevron-forward" size={24} color={isLastSlide ? '#3A3A3C' : '#FFF'} />
+            <Ionicons name="chevron-forward" size={24} color={isLastSlide ? colors.borderLight : '#FFF'} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -368,10 +371,10 @@ export default function TrainingPreviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   safeArea: {
     zIndex: 10,
@@ -386,7 +389,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   previewBannerText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 1,
@@ -402,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   exitButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -460,7 +463,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 6,
   },
@@ -490,7 +493,7 @@ const styles = StyleSheet.create({
   },
   previewNoteText: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     flex: 1,
     fontStyle: 'italic',
   },
@@ -506,7 +509,7 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   thumbnailsWrapper: {
@@ -557,11 +560,11 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   navButtonText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '500',
   },
   navButtonTextDisabled: {
-    color: '#3A3A3C',
+    color: colors.borderLight,
   },
 });

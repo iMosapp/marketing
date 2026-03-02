@@ -5,7 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 
+import { useThemeStore } from '../../store/themeStore';
 export default function WhiteLabelPartnersScreen() {
+  const { colors } = useThemeStore();
   const router = useRouter();
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export default function WhiteLabelPartnersScreen() {
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>White Label Partners</Text>
         <TouchableOpacity onPress={() => { setEditing(null); setShowForm(!showForm); }} style={s.headerBtn}>
@@ -85,7 +87,7 @@ export default function WhiteLabelPartnersScreen() {
             ].map(f => (
               <View key={f.key} style={s.inputGroup}>
                 <Text style={s.inputLabel}>{f.label}</Text>
-                <TextInput style={s.input} placeholder={f.placeholder} placeholderTextColor="#636366"
+                <TextInput style={s.input} placeholder={f.placeholder} placeholderTextColor={colors.textTertiary}
                   value={(form as any)[f.key]} onChangeText={t => setForm({ ...form, [f.key]: t })} />
               </View>
             ))}
@@ -99,15 +101,15 @@ export default function WhiteLabelPartnersScreen() {
                 <View key={c.key} style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <View style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: (form as any)[c.key] }} />
-                    <Text style={{ fontSize: 11, color: '#8E8E93' }}>{c.label}</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>{c.label}</Text>
                   </View>
-                  <TextInput style={[s.input, { fontSize: 13, padding: 10 }]} placeholder="#000000" placeholderTextColor="#636366"
+                  <TextInput style={[s.input, { fontSize: 13, padding: 10 }]} placeholder="#000000" placeholderTextColor={colors.textTertiary}
                     value={(form as any)[c.key]} onChangeText={t => setForm({ ...form, [c.key]: t })} />
                 </View>
               ))}
             </View>
             <TouchableOpacity style={s.saveBtn} onPress={handleSave} disabled={saving}>
-              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={s.saveBtnText}>{editing ? 'Update Partner' : 'Create Partner'}</Text>}
+              {saving ? <ActivityIndicator color={colors.text} /> : <Text style={s.saveBtnText}>{editing ? 'Update Partner' : 'Create Partner'}</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -116,7 +118,7 @@ export default function WhiteLabelPartnersScreen() {
           <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 40 }} />
         ) : partners.length === 0 ? (
           <View style={s.empty}>
-            <Ionicons name="business-outline" size={48} color="#2C2C2E" />
+            <Ionicons name="business-outline" size={48} color={colors.surface} />
             <Text style={s.emptyText}>No white-label partners yet</Text>
             <Text style={s.emptySub}>Create your first partner to start white-labeling</Text>
           </View>
@@ -160,25 +162,25 @@ export default function WhiteLabelPartnersScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#000000' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
   headerBtn: { padding: 4, minWidth: 50 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF', flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFFFFF', flex: 1, textAlign: 'center' },
   scroll: { padding: 16 },
   formCard: { backgroundColor: '#1C1C1E', borderRadius: 14, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#2C2C2E' },
-  formTitle: { fontSize: 18, fontWeight: '700', color: '#FFF', marginBottom: 16 },
+  formTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 16 },
   inputGroup: { marginBottom: 12 },
   inputLabel: { fontSize: 12, fontWeight: '500', color: '#8E8E93', marginBottom: 4, marginLeft: 2 },
-  input: { backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, fontSize: 16, color: '#FFF', borderWidth: 1, borderColor: '#3A3A3C' },
+  input: { backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, fontSize: 16, color: '#FFFFFF', borderWidth: 1, borderColor: '#3A3A3C' },
   saveBtn: { backgroundColor: '#C9A962', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { fontSize: 16, fontWeight: '700', color: '#000' },
+  saveBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 18, color: '#8E8E93', marginTop: 12 },
   emptySub: { fontSize: 14, color: '#636366', marginTop: 4 },
   partnerCard: { backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#2C2C2E' },
   partnerIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   partnerIconText: { fontSize: 16, fontWeight: '800' },
-  partnerName: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  partnerName: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
   partnerSlug: { fontSize: 13, color: '#636366', marginTop: 1 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: '#2C2C2E' },
   statusActive: { backgroundColor: '#34C75920' },

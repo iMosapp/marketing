@@ -11,7 +11,10 @@ import api from '../../../services/api';
 import { useAuthStore } from '../../../store/authStore';
 import { showSimpleAlert } from '../../../services/alert';
 
+import { useThemeStore } from '../../../store/themeStore';
 export default function PrepareNDA() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -172,7 +175,7 @@ export default function PrepareNDA() {
               value={senderName}
               onChangeText={setSenderName}
               placeholder="Forest Ward"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textSecondary}
               data-testid="nda-sender-name"
             />
 
@@ -182,7 +185,7 @@ export default function PrepareNDA() {
               value={senderTitle}
               onChangeText={setSenderTitle}
               placeholder="Founder & CEO"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textSecondary}
               data-testid="nda-sender-title"
             />
 
@@ -198,7 +201,7 @@ export default function PrepareNDA() {
                   style={{
                     width: '100%',
                     height: 150,
-                    backgroundColor: '#1C1C1E',
+                    backgroundColor: colors.card,
                     borderRadius: 12,
                     border: '1px solid #333',
                     touchAction: 'none',
@@ -226,7 +229,7 @@ export default function PrepareNDA() {
               data-testid="nda-next-btn"
             >
               <Text style={styles.primaryBtnText}>Next: Recipient Info</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              <Ionicons name="arrow-forward" size={20} color={colors.text} />
             </TouchableOpacity>
           </>
         )}
@@ -242,7 +245,7 @@ export default function PrepareNDA() {
               value={recipientName}
               onChangeText={setRecipientName}
               placeholder="John Smith"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textSecondary}
               data-testid="nda-recipient-name"
             />
 
@@ -252,7 +255,7 @@ export default function PrepareNDA() {
               value={recipientEmail}
               onChangeText={setRecipientEmail}
               placeholder="john@example.com"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               data-testid="nda-recipient-email"
@@ -264,7 +267,7 @@ export default function PrepareNDA() {
               value={recipientPhone}
               onChangeText={setRecipientPhone}
               placeholder="(801) 555-1234"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
               data-testid="nda-recipient-phone"
             />
@@ -280,9 +283,9 @@ export default function PrepareNDA() {
                 disabled={sending}
                 data-testid="nda-create-btn"
               >
-                {sending ? <ActivityIndicator color="#FFF" /> : (
+                {sending ? <ActivityIndicator color={colors.text} /> : (
                   <>
-                    <Ionicons name="document-text" size={20} color="#FFF" />
+                    <Ionicons name="document-text" size={20} color={colors.text} />
                     <Text style={styles.primaryBtnText}>Create NDA</Text>
                   </>
                 )}
@@ -304,30 +307,30 @@ export default function PrepareNDA() {
             </View>
 
             <TouchableOpacity style={styles.actionBtn} onPress={handleSendEmail} data-testid="nda-send-email">
-              {sending ? <ActivityIndicator color="#FFF" /> : (
+              {sending ? <ActivityIndicator color={colors.text} /> : (
                 <>
-                  <Ionicons name="mail" size={20} color="#FFF" />
+                  <Ionicons name="mail" size={20} color={colors.text} />
                   <Text style={styles.actionBtnText}>Send via Email</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34C759' }]} onPress={handleTextLink} data-testid="nda-send-sms">
-              <Ionicons name="chatbubble" size={20} color="#FFF" />
+              <Ionicons name="chatbubble" size={20} color={colors.text} />
               <Text style={styles.actionBtnText}>Send via Text</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#5856D6' }]} onPress={handleCopyLink} data-testid="nda-copy-link">
-              <Ionicons name="copy" size={20} color="#FFF" />
+              <Ionicons name="copy" size={20} color={colors.text} />
               <Text style={styles.actionBtnText}>Copy Link</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#333' }]}
+              style={[styles.actionBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface }]}
               onPress={() => router.push('/admin/nda')}
               data-testid="nda-view-all"
             >
-              <Ionicons name="list" size={20} color="#FFF" />
+              <Ionicons name="list" size={20} color={colors.text} />
               <Text style={styles.actionBtnText}>View All NDAs</Text>
             </TouchableOpacity>
           </>
@@ -337,29 +340,29 @@ export default function PrepareNDA() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1C1C1E' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   backBtn: { width: 40 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 24 },
   label: { fontSize: 14, fontWeight: '600', color: '#AAA', marginTop: 20, marginBottom: 6 },
   hint: { fontSize: 13, color: '#666', marginBottom: 12 },
-  input: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, fontSize: 16, color: '#FFF', borderWidth: 1, borderColor: '#333' },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 4 },
+  input: { backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.surface },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 4 },
   canvasWrap: { marginTop: 4 },
   clearBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 8, padding: 8 },
   clearText: { fontSize: 13, color: '#FF3B30' },
   primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, marginTop: 28 },
-  primaryBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  primaryBtnText: { fontSize: 16, fontWeight: '600', color: colors.text },
   disabledBtn: { opacity: 0.4 },
-  secondaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#1C1C1E', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, borderWidth: 1, borderColor: '#333' },
+  secondaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.card, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, borderWidth: 1, borderColor: colors.surface },
   secondaryBtnText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
   successIcon: { alignItems: 'center', marginTop: 20, marginBottom: 12 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#FFF', textAlign: 'center' },
-  successSub: { fontSize: 15, color: '#8E8E93', textAlign: 'center', marginTop: 4, marginBottom: 24 },
-  linkBox: { backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#333', marginBottom: 20 },
+  successTitle: { fontSize: 24, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  successSub: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: 24 },
+  linkBox: { backgroundColor: colors.card, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.surface, marginBottom: 20 },
   linkText: { fontSize: 14, color: '#007AFF', fontFamily: 'monospace' },
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, marginBottom: 12 },
-  actionBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  actionBtnText: { fontSize: 16, fontWeight: '600', color: colors.text },
 });

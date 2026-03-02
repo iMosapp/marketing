@@ -24,6 +24,7 @@ import VoiceInput from '../../components/VoiceInput';
 import VoicemailRecorder from '../../components/VoicemailRecorder';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
 
 const SOCIAL_PLATFORMS = [
@@ -32,11 +33,13 @@ const SOCIAL_PLATFORMS = [
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
   { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', prefix: 'linkedin.com/in/', placeholder: 'yourprofile' },
   { key: 'twitter', label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2', prefix: 'x.com/', placeholder: 'yourhandle' },
-  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#000000', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
+  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#FFFFFF', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
   { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#FF0000', prefix: 'youtube.com/@', placeholder: 'yourchannel' },
 ];
 
 export default function MyProfileScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
 const { showToast } = useToast();
@@ -277,7 +280,7 @@ const { showToast } = useToast();
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>My Profile</Text>
@@ -293,7 +296,7 @@ const { showToast } = useToast();
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={colors.text} />
           ) : (
             <Text style={[styles.saveButtonText, hasUnsavedChanges && styles.saveButtonTextActive]}>
               {hasUnsavedChanges ? 'Save' : 'Saved'}
@@ -343,11 +346,11 @@ const { showToast } = useToast();
               <Image source={{ uri: profile.photo_url }} style={styles.photo} />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <Ionicons name="person" size={48} color="#8E8E93" />
+                <Ionicons name="person" size={48} color={colors.textSecondary} />
               </View>
             )}
             <View style={styles.photoEditBadge}>
-              <Ionicons name="camera" size={16} color="#FFF" />
+              <Ionicons name="camera" size={16} color={colors.text} />
             </View>
           </TouchableOpacity>
           <Text style={styles.photoHint}>Tap to update photo</Text>
@@ -364,7 +367,7 @@ const { showToast } = useToast();
               value={profile.name}
               onChangeText={(text) => setProfile(prev => ({ ...prev, name: text }))}
               placeholder="Your name"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
           
@@ -375,7 +378,7 @@ const { showToast } = useToast();
               value={profile.phone}
               onChangeText={(text) => setProfile(prev => ({ ...prev, phone: text }))}
               placeholder="(555) 123-4567"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
             />
           </View>
@@ -387,7 +390,7 @@ const { showToast } = useToast();
               value={profile.title}
               onChangeText={(text) => setProfile(prev => ({ ...prev, title: text }))}
               placeholder="Sales Professional"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
           
@@ -398,7 +401,7 @@ const { showToast } = useToast();
               value={profile.years_experience}
               onChangeText={(text) => setProfile(prev => ({ ...prev, years_experience: text }))}
               placeholder="e.g., 5 years"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
         </View>
@@ -417,7 +420,7 @@ const { showToast } = useToast();
               value={profile.hometown}
               onChangeText={(text) => setProfile(prev => ({ ...prev, hometown: text }))}
               placeholder="Where are you from?"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
           
@@ -428,7 +431,7 @@ const { showToast } = useToast();
               value={profile.family_info}
               onChangeText={(text) => setProfile(prev => ({ ...prev, family_info: text }))}
               placeholder="e.g., Married with two kids"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
           
@@ -439,7 +442,7 @@ const { showToast } = useToast();
               value={profile.personal_motto}
               onChangeText={(text) => setProfile(prev => ({ ...prev, personal_motto: text }))}
               placeholder="What do you live by?"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
@@ -452,7 +455,7 @@ const { showToast } = useToast();
                 value={newHobby}
                 onChangeText={setNewHobby}
                 placeholder="Add a hobby"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 onSubmitEditing={addHobby}
               />
               <TouchableOpacity style={styles.addButton} onPress={addHobby}>
@@ -464,7 +467,7 @@ const { showToast } = useToast();
                 <View key={index} style={styles.tag}>
                   <Text style={styles.tagText}>{hobby}</Text>
                   <TouchableOpacity onPress={() => removeHobby(index)}>
-                    <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                    <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -480,7 +483,7 @@ const { showToast } = useToast();
                 value={newFunFact}
                 onChangeText={setNewFunFact}
                 placeholder="Add a fun fact"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textSecondary}
                 onSubmitEditing={addFunFact}
               />
               <TouchableOpacity style={styles.addButton} onPress={addFunFact}>
@@ -492,7 +495,7 @@ const { showToast } = useToast();
                 <View key={index} style={styles.tag}>
                   <Text style={styles.tagText}>{fact}</Text>
                   <TouchableOpacity onPress={() => removeFunFact(index)}>
-                    <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                    <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -514,12 +517,12 @@ const { showToast } = useToast();
           >
             {generatingBio ? (
               <>
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.text} />
                 <Text style={styles.generateButtonText}>Generating...</Text>
               </>
             ) : (
               <>
-                <Ionicons name="sparkles" size={20} color="#FFF" />
+                <Ionicons name="sparkles" size={20} color={colors.text} />
                 <Text style={styles.generateButtonText}>Generate My Bio with AI</Text>
               </>
             )}
@@ -531,7 +534,7 @@ const { showToast } = useToast();
               value={profile.bio}
               onChangeText={(text) => setProfile(prev => ({ ...prev, bio: text }))}
               placeholder="Your professional bio will appear here..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={5}
               textAlignVertical="top"
@@ -559,7 +562,7 @@ const { showToast } = useToast();
             <Ionicons 
               name={showSocialLinks ? 'chevron-up' : 'chevron-down'} 
               size={24} 
-              color="#8E8E93" 
+              color={colors.textSecondary} 
             />
           </TouchableOpacity>
           
@@ -586,7 +589,7 @@ const { showToast } = useToast();
                         }));
                       }}
                       placeholder={platform.placeholder}
-                      placeholderTextColor="#8E8E93"
+                      placeholderTextColor={colors.textSecondary}
                       autoCapitalize="none"
                     />
                   </View>
@@ -610,7 +613,7 @@ const { showToast } = useToast();
           style={styles.previewButton}
           onPress={() => router.push(`/card/${user?._id}`)}
         >
-          <Ionicons name="eye" size={20} color="#FFF" />
+          <Ionicons name="eye" size={20} color={colors.text} />
           <Text style={styles.previewButtonText}>Preview My Digital Card</Text>
         </TouchableOpacity>
 
@@ -621,10 +624,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   voiceInputRow: {
     flexDirection: 'row',
@@ -633,7 +636,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -644,7 +647,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -657,7 +660,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   unsavedBadge: {
     backgroundColor: '#FF9500',
@@ -668,7 +671,7 @@ const styles = StyleSheet.create({
   unsavedBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     paddingHorizontal: 16,
@@ -680,11 +683,11 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 17,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   saveButtonTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -708,7 +711,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 28,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -725,11 +728,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#000',
+    borderColor: colors.border,
   },
   photoHint: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   section: {
@@ -743,7 +746,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 4,
   },
@@ -757,15 +760,15 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   bioInput: {
     height: 120,
@@ -778,7 +781,7 @@ const styles = StyleSheet.create({
   addButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -791,7 +794,7 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -801,7 +804,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   generateButton: {
     flexDirection: 'row',
@@ -816,7 +819,7 @@ const styles = StyleSheet.create({
   generateButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   socialLinksContainer: {
     marginTop: 16,
@@ -832,14 +835,14 @@ const styles = StyleSheet.create({
   },
   socialLabelText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   socialInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   socialPrefix: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 10,
     borderBottomLeftRadius: 10,
     paddingHorizontal: 12,
@@ -848,7 +851,7 @@ const styles = StyleSheet.create({
   },
   socialPrefixText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   socialInput: {
     flex: 1,
@@ -868,6 +871,6 @@ const styles = StyleSheet.create({
   previewButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

@@ -79,8 +79,8 @@ interface ChatMsg {
 }
 
 export default function HelpPage() {
+  const { colors } = useThemeStore();
   const router = useRouter();
-  const colors = useThemeStore(s => s.colors);
   const [query, setQuery] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [loading, setLoading] = useState(false);
@@ -147,7 +147,7 @@ export default function HelpPage() {
         <TextInput
           style={[s.searchInput, { color: colors.text }]}
           placeholder={showAI ? "Ask a question..." : "Search help articles..."}
-          placeholderTextColor="#636366"
+          placeholderTextColor={colors.textTertiary}
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={showAI ? askAI : undefined}
@@ -156,11 +156,11 @@ export default function HelpPage() {
         />
         {showAI && query.trim() ? (
           <TouchableOpacity onPress={askAI} style={s.sendBtn} data-testid="help-send-btn">
-            <Ionicons name="send" size={16} color="#FFF" />
+            <Ionicons name="send" size={16} color={colors.text} />
           </TouchableOpacity>
         ) : query ? (
           <TouchableOpacity onPress={() => setQuery('')} data-testid="help-clear-btn">
-            <Ionicons name="close-circle" size={18} color="#636366" />
+            <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -191,7 +191,7 @@ export default function HelpPage() {
         <ScrollView style={s.list} contentContainerStyle={s.listContent}>
           {filtered.length === 0 && (
             <View style={s.emptyState}>
-              <Ionicons name="search-outline" size={40} color="#636366" />
+              <Ionicons name="search-outline" size={40} color={colors.textTertiary} />
               <Text style={s.emptyText}>No articles match "{query}"</Text>
               <TouchableOpacity style={s.askAIBtn} onPress={() => { setShowAI(true); setChatMessages([{ role: 'assistant', text: "Hi! I'm your iMOs assistant. Ask me anything about the app and I'll help you out." }]); askAI(); }}>
                 <Ionicons name="sparkles" size={16} color="#C9A962" />
@@ -262,7 +262,7 @@ const s = StyleSheet.create({
   chatBot: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
   botIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#C9A96220', justifyContent: 'center', alignItems: 'center', marginTop: 1 },
   chatText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  chatTextUser: { color: '#FFF' },
+  chatTextUser: { color: '#FFFFFF' },
   // Articles
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },

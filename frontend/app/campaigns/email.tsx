@@ -20,6 +20,7 @@ import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { WebModal } from '../../components/WebModal';
 
+import { useThemeStore } from '../../store/themeStore';
 interface EmailCampaign {
   _id: string;
   name: string;
@@ -42,6 +43,8 @@ const TRIGGER_TYPES = [
 ];
 
 export default function EmailCampaignsPage() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
@@ -204,14 +207,14 @@ export default function EmailCampaignsPage() {
       {campaigns.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="mail-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="mail-outline" size={64} color={colors.surface} />
           </View>
           <Text style={styles.emptyTitle}>No Email Campaigns</Text>
           <Text style={styles.emptySubtitle}>
             Create automated email campaigns to nurture your contacts
           </Text>
           <TouchableOpacity style={styles.createButton} onPress={openCreateModal}>
-            <Ionicons name="add" size={20} color="#FFF" />
+            <Ionicons name="add" size={20} color={colors.text} />
             <Text style={styles.createButtonText}>Create Campaign</Text>
           </TouchableOpacity>
         </View>
@@ -233,7 +236,7 @@ export default function EmailCampaignsPage() {
                     <Ionicons 
                       name={trigger.icon as any} 
                       size={16} 
-                      color={item.active ? '#34C759' : '#8E8E93'} 
+                      color={item.active ? '#34C759' : colors.textSecondary} 
                     />
                   </View>
                   <View style={styles.campaignInfo}>
@@ -260,17 +263,17 @@ export default function EmailCampaignsPage() {
                 
                 <View style={styles.campaignStats}>
                   <View style={styles.statItem}>
-                    <Ionicons name="paper-plane" size={14} color="#8E8E93" />
+                    <Ionicons name="paper-plane" size={14} color={colors.textSecondary} />
                     <Text style={styles.statValue}>{item.sent_count}</Text>
                     <Text style={styles.statLabel}>Sent</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Ionicons name="eye" size={14} color="#8E8E93" />
+                    <Ionicons name="eye" size={14} color={colors.textSecondary} />
                     <Text style={styles.statValue}>{item.open_count}</Text>
                     <Text style={styles.statLabel}>Opens</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Ionicons name="finger-print" size={14} color="#8E8E93" />
+                    <Ionicons name="finger-print" size={14} color={colors.textSecondary} />
                     <Text style={styles.statValue}>{item.click_count}</Text>
                     <Text style={styles.statLabel}>Clicks</Text>
                   </View>
@@ -310,7 +313,7 @@ export default function EmailCampaignsPage() {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., Birthday Greetings"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formName}
                   onChangeText={setFormName}
                 />
@@ -321,7 +324,7 @@ export default function EmailCampaignsPage() {
                 <TextInput
                   style={styles.input}
                   placeholder="Brief description of this campaign"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formDescription}
                   onChangeText={setFormDescription}
                 />
@@ -342,7 +345,7 @@ export default function EmailCampaignsPage() {
                       <Ionicons
                         name={trigger.icon as any}
                         size={20}
-                        color={formTriggerType === trigger.id ? '#007AFF' : '#8E8E93'}
+                        color={formTriggerType === trigger.id ? '#007AFF' : colors.textSecondary}
                       />
                       <Text style={[
                         styles.triggerOptionName,
@@ -361,7 +364,7 @@ export default function EmailCampaignsPage() {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., Happy Birthday, {name}!"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formSubject}
                   onChangeText={setFormSubject}
                 />
@@ -372,7 +375,7 @@ export default function EmailCampaignsPage() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Enter your email HTML content..."
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textSecondary}
                   value={formContent}
                   onChangeText={setFormContent}
                   multiline
@@ -395,10 +398,10 @@ export default function EmailCampaignsPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -412,7 +415,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -420,7 +423,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -446,12 +449,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,
@@ -468,10 +471,10 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   campaignCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -494,15 +497,15 @@ const styles = StyleSheet.create({
   campaignName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 2,
   },
   campaignSubject: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusToggle: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -513,14 +516,14 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusTextActive: {
     color: '#34C759',
   },
   campaignDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
     lineHeight: 20,
   },
@@ -529,7 +532,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
     gap: 24,
   },
   statItem: {
@@ -540,17 +543,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
 
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -559,16 +562,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   modalCancel: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   modalSave: {
     fontSize: 16,
@@ -585,17 +588,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   textArea: {
     height: 150,
@@ -605,7 +608,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   triggerOption: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
@@ -618,7 +621,7 @@ const styles = StyleSheet.create({
   triggerOptionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 8,
   },
   triggerOptionNameSelected: {
@@ -626,11 +629,11 @@ const styles = StyleSheet.create({
   },
   triggerOptionDesc: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   placeholdersInfo: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -639,12 +642,12 @@ const styles = StyleSheet.create({
   placeholdersTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 12,
   },
   placeholder: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 6,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 const CATEGORY_COLORS: Record<string, string> = {
   security: '#FF3B30',
   company_policy: '#5856D6',
@@ -24,6 +25,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function DocViewerScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
@@ -244,8 +247,8 @@ export default function DocViewerScreen() {
                     onPress={() => router.push('/admin/nda/create')}
                     data-testid="nda-prepare-send-btn"
                   >
-                    <Ionicons name="send" size={18} color="#FFF" />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFF' }}>Prepare & Send NDA</Text>
+                    <Ionicons name="send" size={18} color={colors.text} />
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Prepare & Send NDA</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -262,7 +265,7 @@ export default function DocViewerScreen() {
           disabled={currentSlide === 0}
           data-testid="doc-prev-btn"
         >
-          <Ionicons name="chevron-back" size={20} color={currentSlide === 0 ? '#3A3A3C' : '#FFF'} />
+          <Ionicons name="chevron-back" size={20} color={currentSlide === 0 ? colors.borderLight : '#FFF'} />
           <Text style={[styles.navButtonText, currentSlide === 0 && styles.navButtonTextDisabled]}>
             Previous
           </Text>
@@ -279,7 +282,7 @@ export default function DocViewerScreen() {
           <Ionicons
             name={isLastSlide ? 'checkmark' : 'chevron-forward'}
             size={20}
-            color="#000"
+            color={colors.text}
           />
         </TouchableOpacity>
       </View>
@@ -287,13 +290,13 @@ export default function DocViewerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
-  errorText: { fontSize: 18, color: '#8E8E93', marginTop: 16, marginBottom: 24 },
+  errorText: { fontSize: 18, color: colors.textSecondary, marginTop: 16, marginBottom: 24 },
   errorButton: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#007AFF', borderRadius: 8 },
-  errorButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  errorButtonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,13 +304,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: { padding: 4, width: 40 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  headerSubtitle: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
-  progressContainer: { height: 3, backgroundColor: '#1C1C1E' },
+  headerTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  headerSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  progressContainer: { height: 3, backgroundColor: colors.card },
   progressBar: { height: 3 },
   dotsContainer: {
     flexDirection: 'row',
@@ -320,7 +323,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   content: { flex: 1 },
   contentContainer: { padding: 20, paddingBottom: 40 },
@@ -333,12 +336,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  slideNumberText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
-  slideTitle: { fontSize: 22, fontWeight: '700', color: '#FFF', flex: 1 },
+  slideNumberText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  slideTitle: { fontSize: 22, fontWeight: '700', color: colors.text, flex: 1 },
   slideDescriptionContainer: { marginBottom: 20 },
   slideDescription: { fontSize: 16, color: '#E5E5E7', lineHeight: 26 },
-  boldText: { fontWeight: '700', color: '#FFF' },
-  codeText: { fontFamily: 'monospace', backgroundColor: '#1C1C1E', color: '#FF9500', fontSize: 13, paddingHorizontal: 4 },
+  boldText: { fontWeight: '700', color: colors.text },
+  codeText: { fontFamily: 'monospace', backgroundColor: colors.card, color: '#FF9500', fontSize: 13, paddingHorizontal: 4 },
   tipBox: {
     flexDirection: 'row',
     backgroundColor: '#FFD60A15',
@@ -375,16 +378,16 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingTop: 32,
     borderTopWidth: 1,
-    borderTopColor: '#1C1C1E',
+    borderTopColor: colors.card,
   },
-  endTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginTop: 12 },
-  endMeta: { fontSize: 13, color: '#8E8E93', marginTop: 4 },
+  endTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 12 },
+  endMeta: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
   navigation: {
     flexDirection: 'row',
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#1C1C1E',
+    borderTopColor: colors.card,
   },
   navButton: {
     flex: 1,
@@ -395,9 +398,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-  navButtonSecondary: { backgroundColor: '#1C1C1E' },
+  navButtonSecondary: { backgroundColor: colors.card },
   navButtonDisabled: { opacity: 0.5 },
-  navButtonText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  navButtonTextPrimary: { fontSize: 16, fontWeight: '600', color: '#000' },
-  navButtonTextDisabled: { color: '#3A3A3C' },
+  navButtonText: { fontSize: 16, fontWeight: '600', color: colors.text },
+  navButtonTextPrimary: { fontSize: 16, fontWeight: '600', color: colors.text },
+  navButtonTextDisabled: { color: colors.borderLight },
 });

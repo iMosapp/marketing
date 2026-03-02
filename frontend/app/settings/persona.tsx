@@ -19,6 +19,7 @@ import Toggle from '../../components/Toggle';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 interface PersonaSettings {
   tone: 'professional' | 'friendly' | 'casual' | 'formal';
   emoji_usage: 'never' | 'minimal' | 'moderate' | 'frequent';
@@ -69,6 +70,8 @@ const LENGTH_OPTIONS = [
 const DEFAULT_ESCALATION_KEYWORDS = ['urgent', 'emergency', 'complaint', 'refund', 'cancel', 'manager', 'supervisor'];
 
 export default function PersonaSettings() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
 const { showToast } = useToast();
@@ -241,7 +244,7 @@ const { showToast } = useToast();
                 <Ionicons
                   name={option.icon as any}
                   size={24}
-                  color={settings.tone === option.id ? '#007AFF' : '#8E8E93'}
+                  color={settings.tone === option.id ? '#007AFF' : colors.textSecondary}
                 />
                 <Text style={[styles.toneLabel, settings.tone === option.id && styles.toneLabelSelected]}>
                   {option.label}
@@ -326,7 +329,7 @@ const { showToast } = useToast();
               value={settings.greeting_style}
               onChangeText={(text) => setSettings(prev => ({ ...prev, greeting_style: text }))}
               placeholder="Hi {name}!"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             <Text style={styles.inputHint}>Use {'{name}'} to insert contact's name</Text>
           </View>
@@ -337,7 +340,7 @@ const { showToast } = useToast();
               value={settings.signature}
               onChangeText={(text) => setSettings(prev => ({ ...prev, signature: text }))}
               placeholder="- Your Name, Title"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
           <View style={styles.switchRow}>
@@ -364,7 +367,7 @@ const { showToast } = useToast();
               <View key={keyword} style={styles.chip}>
                 <Text style={styles.chipText}>{keyword}</Text>
                 <TouchableOpacity onPress={() => removeKeyword(keyword)}>
-                  <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -375,7 +378,7 @@ const { showToast } = useToast();
               value={newKeyword}
               onChangeText={setNewKeyword}
               placeholder="Add keyword..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               onSubmitEditing={addKeyword}
             />
             <TouchableOpacity style={styles.addButton} onPress={addKeyword}>
@@ -395,7 +398,7 @@ const { showToast } = useToast();
               <View key={specialty} style={[styles.chip, styles.chipGreen]}>
                 <Text style={styles.chipText}>{specialty}</Text>
                 <TouchableOpacity onPress={() => removeSpecialty(specialty)}>
-                  <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -406,7 +409,7 @@ const { showToast } = useToast();
               value={newSpecialty}
               onChangeText={setNewSpecialty}
               placeholder="e.g., Trucks, Financing, Trade-ins..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               onSubmitEditing={addSpecialty}
             />
             <TouchableOpacity style={styles.addButton} onPress={addSpecialty}>
@@ -430,7 +433,7 @@ const { showToast } = useToast();
               value={settings.bio}
               onChangeText={(text) => setSettings(prev => ({ ...prev, bio: text }))}
               placeholder="Tell us about yourself... e.g., I've been in auto sales for 15 years, started as a lot porter..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               multiline
             />
             <VoiceInput
@@ -447,7 +450,7 @@ const { showToast } = useToast();
             value={settings.years_experience}
             onChangeText={(text) => setSettings(prev => ({ ...prev, years_experience: text }))}
             placeholder="e.g., 15 years"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
           />
           
           {/* Hometown */}
@@ -458,7 +461,7 @@ const { showToast } = useToast();
               value={settings.hometown}
               onChangeText={(text) => setSettings(prev => ({ ...prev, hometown: text }))}
               placeholder="e.g., Born and raised in Dallas, TX"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             <VoiceInput
               onTranscription={(text) => setSettings(prev => ({ ...prev, hometown: prev.hometown ? prev.hometown + ' ' + text : text }))}
@@ -474,7 +477,7 @@ const { showToast } = useToast();
               value={settings.family_info}
               onChangeText={(text) => setSettings(prev => ({ ...prev, family_info: text }))}
               placeholder="e.g., Married with 2 kids, dog named Max"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             <VoiceInput
               onTranscription={(text) => setSettings(prev => ({ ...prev, family_info: prev.family_info ? prev.family_info + ' ' + text : text }))}
@@ -490,7 +493,7 @@ const { showToast } = useToast();
               value={settings.personal_motto}
               onChangeText={(text) => setSettings(prev => ({ ...prev, personal_motto: text }))}
               placeholder='e.g., "Treat every customer like family"'
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
             />
             <VoiceInput
               onTranscription={(text) => setSettings(prev => ({ ...prev, personal_motto: prev.personal_motto ? prev.personal_motto + ' ' + text : text }))}
@@ -511,7 +514,7 @@ const { showToast } = useToast();
                   ...prev, 
                   hobbies: prev.hobbies.filter(h => h !== hobby) 
                 }))}>
-                  <Ionicons name="close-circle" size={18} color="#FFF" />
+                  <Ionicons name="close-circle" size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -522,7 +525,7 @@ const { showToast } = useToast();
               value={newHobby}
               onChangeText={setNewHobby}
               placeholder="e.g., Golf, Fishing, Cowboys fan..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               onSubmitEditing={() => {
                 if (newHobby.trim()) {
                   setSettings(prev => ({ ...prev, hobbies: [...(prev.hobbies || []), newHobby.trim()] }));
@@ -553,7 +556,7 @@ const { showToast } = useToast();
                   ...prev, 
                   fun_facts: prev.fun_facts.filter((_, i) => i !== index) 
                 }))}>
-                  <Ionicons name="close-circle" size={18} color="#FFF" />
+                  <Ionicons name="close-circle" size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -564,7 +567,7 @@ const { showToast } = useToast();
               value={newFunFact}
               onChangeText={setNewFunFact}
               placeholder="e.g., I once sold 50 cars in one month..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               onSubmitEditing={() => {
                 if (newFunFact.trim()) {
                   setSettings(prev => ({ ...prev, fun_facts: [...(prev.fun_facts || []), newFunFact.trim()] }));
@@ -588,7 +591,7 @@ const { showToast } = useToast();
           style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 16 }]}
           onPress={handleSave}
         >
-          <Ionicons name="refresh" size={20} color="#FFF" style={{ marginRight: 8 }} />
+          <Ionicons name="refresh" size={20} color={colors.text} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonLargeText}>Retrain My AI</Text>
         </TouchableOpacity>
 
@@ -598,16 +601,16 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -616,9 +619,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     width: 60,
@@ -626,7 +629,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   saveButton: {
     width: 60,
@@ -642,14 +645,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   previewCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
   },
   previewLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   previewBubble: {
@@ -659,7 +662,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   previewText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -669,7 +672,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   sectionDesc: {
@@ -684,7 +687,7 @@ const styles = StyleSheet.create({
   },
   toneOption: {
     width: '48%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     borderWidth: 2,
@@ -697,7 +700,7 @@ const styles = StyleSheet.create({
   toneLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     marginTop: 8,
   },
   toneLabelSelected: {
@@ -705,7 +708,7 @@ const styles = StyleSheet.create({
   },
   toneDesc: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   optionRow: {
@@ -714,7 +717,7 @@ const styles = StyleSheet.create({
   },
   emojiOption: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
@@ -727,7 +730,7 @@ const styles = StyleSheet.create({
   },
   emojiLabel: {
     fontSize: 13,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   emojiLabelSelected: {
@@ -735,7 +738,7 @@ const styles = StyleSheet.create({
   },
   humorOption: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
@@ -748,7 +751,7 @@ const styles = StyleSheet.create({
   },
   humorLabel: {
     fontSize: 13,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '600',
   },
   humorLabelSelected: {
@@ -756,13 +759,13 @@ const styles = StyleSheet.create({
   },
   humorDesc: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   lengthOption: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
@@ -775,7 +778,7 @@ const styles = StyleSheet.create({
   },
   lengthLabel: {
     fontSize: 13,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
   },
   lengthLabelSelected: {
@@ -786,15 +789,15 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#FFF',
+    color: colors.text,
   },
   inputHint: {
     fontSize: 12,
@@ -805,20 +808,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     minHeight: 70,
   },
   switchLabel: {
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     fontWeight: '500',
     flex: 1,
   },
   switchHint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
     paddingRight: 60,
   },
@@ -831,7 +834,7 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -842,7 +845,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 14,
-    color: '#FFF',
+    color: colors.text,
   },
   addRow: {
     flexDirection: 'row',
@@ -856,16 +859,16 @@ const styles = StyleSheet.create({
   },
   addInput: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -881,6 +884,6 @@ const styles = StyleSheet.create({
   saveButtonLargeText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
 });

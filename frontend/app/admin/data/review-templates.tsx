@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../../services/api';
 
+import { useThemeStore } from '../../../store/themeStore';
 interface TemplateSent {
   _id: string;
   template_name?: string;
@@ -25,6 +26,8 @@ interface TemplateSent {
 }
 
 export default function ReviewTemplatesDataScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const [templates, setTemplates] = useState<TemplateSent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +109,7 @@ export default function ReviewTemplatesDataScreen() {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="star-outline" size={64} color="#2C2C2E" />
+            <Ionicons name="star-outline" size={64} color={colors.surface} />
             <Text style={styles.emptyText}>No review templates sent yet</Text>
           </View>
         )}
@@ -115,10 +118,10 @@ export default function ReviewTemplatesDataScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -132,7 +135,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
+    borderBottomColor: colors.card,
   },
   backButton: {
     padding: 4,
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   countBadge: {
     backgroundColor: '#FFD60A20',
@@ -158,7 +161,7 @@ const styles = StyleSheet.create({
   },
   templateItem: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -183,15 +186,15 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   date: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   userName: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   templateName: {
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 12,
   },
 });

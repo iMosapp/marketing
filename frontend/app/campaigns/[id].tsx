@@ -25,6 +25,7 @@ import api from '../../services/api';
 import { format, parse } from 'date-fns';
 import { useToast } from '../../components/common/Toast';
 
+import { useThemeStore } from '../../store/themeStore';
 interface SequenceStep {
   id: string;
   step: number;
@@ -50,6 +51,8 @@ interface Enrollment {
 }
 
 export default function CampaignDetailScreen() {
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
@@ -139,7 +142,7 @@ const { showToast } = useToast();
       case 'anniversary': return { icon: 'heart', color: '#FF3B30', label: 'Anniversary' };
       case 'sold_followup': return { icon: 'car', color: '#34C759', label: 'Sold Follow-up' };
       case 'check_in': return { icon: 'chatbubble', color: '#007AFF', label: 'Check-in' };
-      default: return { icon: 'create', color: '#8E8E93', label: 'Custom' };
+      default: return { icon: 'create', color: colors.textSecondary, label: 'Custom' };
     }
   };
   
@@ -345,7 +348,7 @@ const { showToast } = useToast();
       case 'active': return '#007AFF';
       case 'completed': return '#34C759';
       case 'cancelled': return '#FF3B30';
-      default: return '#8E8E93';
+      default: return colors.textSecondary;
     }
   };
   
@@ -432,8 +435,8 @@ const { showToast } = useToast();
           <Switch
             value={active}
             onValueChange={(value) => { setActive(value); setHasChanges(true); }}
-            trackColor={{ false: '#3A3A3C', true: '#34C75980' }}
-            thumbColor={active ? '#34C759' : '#8E8E93'}
+            trackColor={{ false: colors.borderLight, true: '#34C75980' }}
+            thumbColor={active ? '#34C759' : colors.textSecondary}
           />
         </View>
         
@@ -446,7 +449,7 @@ const { showToast } = useToast();
           >
             <Ionicons name="time-outline" size={20} color="#007AFF" />
             <Text style={styles.timeText}>{format(sendTime, 'h:mm a')}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
         
@@ -494,7 +497,7 @@ const { showToast } = useToast();
                   onPress={() => { updateSequenceStep(step.id, 'actionType', 'message'); }}
                   data-testid={`step-${index}-type-message`}
                 >
-                  <Ionicons name="chatbubble-outline" size={16} color={step.actionType === 'message' ? '#FFF' : '#8E8E93'} />
+                  <Ionicons name="chatbubble-outline" size={16} color={step.actionType === 'message' ? '#FFF' : colors.textSecondary} />
                   <Text style={[styles.actionTypeBtnText, step.actionType === 'message' && styles.actionTypeBtnTextActive]}>Send Message</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -502,7 +505,7 @@ const { showToast } = useToast();
                   onPress={() => { updateSequenceStep(step.id, 'actionType', 'send_card'); }}
                   data-testid={`step-${index}-type-card`}
                 >
-                  <Ionicons name="gift-outline" size={16} color={step.actionType === 'send_card' ? '#FFF' : '#8E8E93'} />
+                  <Ionicons name="gift-outline" size={16} color={step.actionType === 'send_card' ? '#FFF' : colors.textSecondary} />
                   <Text style={[styles.actionTypeBtnText, step.actionType === 'send_card' && styles.actionTypeBtnTextActive]}>Send Card</Text>
                 </TouchableOpacity>
               </View>
@@ -517,14 +520,14 @@ const { showToast } = useToast();
                         style={styles.stepperButton}
                         onPress={() => updateSequenceStep(step.id, 'delayDays', Math.max(0, step.delayDays - 1))}
                       >
-                        <Ionicons name="remove" size={20} color="#FFF" />
+                        <Ionicons name="remove" size={20} color={colors.text} />
                       </TouchableOpacity>
                       <Text style={styles.stepperValue}>{step.delayDays}</Text>
                       <TouchableOpacity 
                         style={styles.stepperButton}
                         onPress={() => updateSequenceStep(step.id, 'delayDays', step.delayDays + 1)}
                       >
-                        <Ionicons name="add" size={20} color="#FFF" />
+                        <Ionicons name="add" size={20} color={colors.text} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -536,14 +539,14 @@ const { showToast } = useToast();
                         style={styles.stepperButton}
                         onPress={() => updateSequenceStep(step.id, 'delayMonths', Math.max(0, step.delayMonths - 1))}
                       >
-                        <Ionicons name="remove" size={20} color="#FFF" />
+                        <Ionicons name="remove" size={20} color={colors.text} />
                       </TouchableOpacity>
                       <Text style={styles.stepperValue}>{step.delayMonths}</Text>
                       <TouchableOpacity 
                         style={styles.stepperButton}
                         onPress={() => updateSequenceStep(step.id, 'delayMonths', step.delayMonths + 1)}
                       >
-                        <Ionicons name="add" size={20} color="#FFF" />
+                        <Ionicons name="add" size={20} color={colors.text} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -652,7 +655,7 @@ const { showToast } = useToast();
           
           {enrollments.length === 0 ? (
             <View style={styles.emptyEnrollments}>
-              <Ionicons name="people-outline" size={32} color="#3A3A3C" />
+              <Ionicons name="people-outline" size={32} color={colors.borderLight} />
               <Text style={styles.emptyText}>No contacts enrolled yet</Text>
             </View>
           ) : (
@@ -707,7 +710,7 @@ const { showToast } = useToast();
         <View style={styles.previewOverlay}>
           <View style={styles.previewContainer}>
             <TouchableOpacity style={styles.previewClose} onPress={() => setPreviewCardType(null)} data-testid="preview-card-close">
-              <Ionicons name="close-circle" size={28} color="#FFF" />
+              <Ionicons name="close-circle" size={28} color={colors.text} />
             </TouchableOpacity>
             {(() => {
               const cards: Record<string, { label: string; icon: string; color: string; message: string; image: string }> = {
@@ -722,7 +725,7 @@ const { showToast } = useToast();
               return (
                 <View style={[styles.previewCard, { borderColor: card.color }]}>
                   <View style={[styles.previewCardHeader, { backgroundColor: card.color }]}>
-                    <Ionicons name={card.icon as any} size={40} color="#FFF" />
+                    <Ionicons name={card.icon as any} size={40} color={colors.text} />
                     <Text style={styles.previewCardTitle}>{card.label}</Text>
                   </View>
                   <View style={styles.previewCardBody}>
@@ -742,10 +745,10 @@ const { showToast } = useToast();
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -753,7 +756,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 4,
@@ -761,7 +764,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
     textAlign: 'center',
     marginHorizontal: 8,
@@ -777,7 +780,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   saveTextDisabled: {
-    color: '#3A3A3C',
+    color: colors.borderLight,
   },
   loadingContainer: {
     flex: 1,
@@ -792,7 +795,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#FFF',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 24,
   },
@@ -835,25 +838,25 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 17,
-    color: '#FFF',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   toggleSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -864,17 +867,17 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 17,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
     marginBottom: 4,
   },
   toggleSubtext: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   timeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -882,18 +885,18 @@ const styles = StyleSheet.create({
   timeText: {
     flex: 1,
     fontSize: 17,
-    color: '#FFF',
+    color: colors.text,
   },
   addButton: {
     padding: 4,
   },
   sequenceCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.surface,
   },
   sequenceHeader: {
     flexDirection: 'row',
@@ -912,12 +915,12 @@ const styles = StyleSheet.create({
   stepNumber: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text,
   },
   delayLabel: {
     flex: 1,
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   removeButton: {
@@ -933,33 +936,33 @@ const styles = StyleSheet.create({
   },
   delayInputLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     overflow: 'hidden',
   },
   stepperButton: {
     padding: 10,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: colors.borderLight,
   },
   stepperValue: {
     flex: 1,
     textAlign: 'center',
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
   },
   messageInput: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
     fontSize: 15,
-    color: '#FFF',
+    color: colors.text,
     minHeight: 100,
     textAlignVertical: 'top',
   },
@@ -972,12 +975,12 @@ const styles = StyleSheet.create({
   emptyEnrollments: {
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 12,
   },
   emptyText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   enrollmentsList: {
@@ -986,7 +989,7 @@ const styles = StyleSheet.create({
   enrollmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
   },
@@ -996,11 +999,11 @@ const styles = StyleSheet.create({
   enrollmentName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFF',
+    color: colors.text,
   },
   enrollmentPhone: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   statusDot: {
     width: 10,
@@ -1010,7 +1013,7 @@ const styles = StyleSheet.create({
   viewAllButton: {
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
     borderRadius: 10,
   },
   viewAllText: {
@@ -1042,11 +1045,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: colors.surface,
   },
   mediaLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 8,
     fontWeight: '600',
   },
@@ -1070,16 +1073,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     borderRadius: 11,
   },
   addMediaButton: {
     width: 72,
     height: 72,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1104,7 +1107,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
   },
   actionTypeBtnActive: {
     backgroundColor: '#007AFF',
@@ -1112,10 +1115,10 @@ const styles = StyleSheet.create({
   actionTypeBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   actionTypeBtnTextActive: {
-    color: '#FFF',
+    color: colors.text,
   },
   // Card picker
   cardPickerSection: {
@@ -1123,7 +1126,7 @@ const styles = StyleSheet.create({
   },
   cardPickerLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     marginBottom: 10,
     fontWeight: '600',
   },
@@ -1137,12 +1140,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1.5,
-    borderColor: '#3A3A3C',
+    borderColor: colors.borderLight,
   },
   cardPickerIcon: {
     width: 34,
@@ -1154,7 +1157,7 @@ const styles = StyleSheet.create({
   cardPickerItemText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text,
     flex: 1,
   },
   previewCardBtn: {
@@ -1192,7 +1195,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 2,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.card,
   },
   previewCardHeader: {
     alignItems: 'center',
@@ -1202,7 +1205,7 @@ const styles = StyleSheet.create({
   previewCardTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#FFF',
+    color: colors.text,
   },
   previewCardBody: {
     padding: 20,
@@ -1216,13 +1219,13 @@ const styles = StyleSheet.create({
   },
   previewCardPlaceholder: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   previewCardFooter: {
     borderTopWidth: 0.5,
-    borderTopColor: '#3A3A3C',
+    borderTopColor: colors.borderLight,
     paddingVertical: 10,
     alignItems: 'center',
   },
