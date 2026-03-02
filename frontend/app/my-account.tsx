@@ -534,85 +534,90 @@ export default function MyAccountScreen() {
           )}
         </View>
 
-        {/* Quick Actions - Tile Rows */}
+        {/* Quick Actions - Dynamic & Rearrangeable */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Quick Actions</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={[styles.sectionTitle, { color: colors.textTertiary, marginBottom: 0 }]}>Quick Actions</Text>
+            <TouchableOpacity onPress={() => setEditingQuickActions(!editingQuickActions)} data-testid="edit-quick-actions">
+              <Text style={{ color: '#C9A962', fontSize: 13, fontWeight: '600' }}>
+                {editingQuickActions ? 'Done' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.tileRow}>
-            <TouchableOpacity
-              style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/settings/store-profile' as any)}
-              data-testid="quick-action-account-setup"
-            >
-              <View style={[styles.tileIcon, { backgroundColor: '#34C75920' }]}>
-                <Ionicons name="storefront" size={20} color="#34C759" />
-              </View>
-              <Text style={[styles.tileLabel, { color: colors.textSecondary }]}>Account Setup</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/settings/brand-kit' as any)}
-              data-testid="quick-action-brand-kit"
-            >
-              <View style={[styles.tileIcon, { backgroundColor: '#C9A96220' }]}>
-                <Ionicons name="color-palette" size={20} color="#C9A962" />
-              </View>
-              <Text style={[styles.tileLabel, { color: colors.textSecondary }]}>Brand Kit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/settings/review-links' as any)}
-              data-testid="quick-action-review-links"
-            >
-              <View style={[styles.tileIcon, { backgroundColor: '#FFD60A20' }]}>
-                <Ionicons name="star" size={20} color="#FFD60A" />
-              </View>
-              <Text style={[styles.tileLabel, { color: colors.textSecondary }]}>Review Links</Text>
-            </TouchableOpacity>
+            {quickActionIds.slice(0, 3).map(id => {
+              const action = ALL_ACTIONS.find(a => a.id === id);
+              if (!action) return null;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
+                  onPress={() => router.push(action.route as any)}
+                  data-testid={`quick-action-${id}`}
+                >
+                  <View style={[styles.tileIcon, { backgroundColor: `${action.color}20` }]}>
+                    <Ionicons name={action.icon as any} size={20} color={action.color} />
+                  </View>
+                  <Text style={[styles.tileLabel, { color: colors.textSecondary }]} numberOfLines={1}>{action.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <View style={[styles.tileRow, { marginTop: 8 }]}>
-            <TouchableOpacity
-              style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/admin/brand-assets' as any)}
-              data-testid="quick-action-brand-assets"
-            >
-              <View style={[styles.tileIcon, { backgroundColor: '#AF52DE20' }]}>
-                <Ionicons name="images" size={20} color="#AF52DE" />
-              </View>
-              <Text style={[styles.tileLabel, { color: colors.textSecondary }]}>Brand Assets</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/settings/review-approvals' as any)}
-              data-testid="quick-action-review-approvals"
-            >
-              <View style={[styles.tileIcon, { backgroundColor: '#AF52DE20' }]}>
-                <Ionicons name="chatbubbles" size={20} color="#FF9500" />
-              </View>
-              <Text style={[styles.tileLabel, { color: colors.textSecondary }]}>Approvals</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.tileBtnThird}
-              onPress={() => router.push('/settings/my-profile' as any)}
-              data-testid="quick-action-edit-digital-card"
-            >
-              <View style={[styles.tileIcon, { backgroundColor: '#007AFF20' }]}>
-                <Ionicons name="create" size={20} color="#007AFF" />
-              </View>
-              <Text style={styles.tileLabel}>Edit Card</Text>
-            </TouchableOpacity>
+            {quickActionIds.slice(3, 6).map(id => {
+              const action = ALL_ACTIONS.find(a => a.id === id);
+              if (!action) return null;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  style={[styles.tileBtnThird, { backgroundColor: colors.card }]}
+                  onPress={() => router.push(action.route as any)}
+                  data-testid={`quick-action-${id}`}
+                >
+                  <View style={[styles.tileIcon, { backgroundColor: `${action.color}20` }]}>
+                    <Ionicons name={action.icon as any} size={20} color={action.color} />
+                  </View>
+                  <Text style={[styles.tileLabel, { color: colors.textSecondary }]} numberOfLines={1}>{action.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-
-          {/* Leaderboard Quick Action */}
-          <TouchableOpacity
-            style={[styles.shareReviewBtn, { borderColor: '#FFD70030' }]}
-            onPress={() => router.push('/leaderboard')}
-            data-testid="quick-action-leaderboard"
-          >
-            <Ionicons name="trophy" size={18} color="#FFD700" />
-            <Text style={[styles.shareReviewBtnText, { color: '#FFD700' }]}>Leaderboard</Text>
-            <Ionicons name="arrow-forward" size={16} color="#FFD700" />
-          </TouchableOpacity>
         </View>
+
+        {/* Edit Quick Actions Panel */}
+        {editingQuickActions && (
+          <View style={[styles.editPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12, textAlign: 'center' }}>
+              Tap to add or remove. Max 6 Quick Actions.
+            </Text>
+            <View style={styles.editGrid}>
+              {ALL_ACTIONS.map(action => {
+                const isSelected = quickActionIds.includes(action.id);
+                const position = quickActionIds.indexOf(action.id);
+                return (
+                  <TouchableOpacity
+                    key={action.id}
+                    style={[styles.editItem, isSelected && { borderColor: action.color, borderWidth: 1.5 }]}
+                    onPress={() => toggleQuickAction(action.id)}
+                    data-testid={`edit-action-${action.id}`}
+                  >
+                    <View style={[styles.editIconBox, { backgroundColor: `${action.color}18` }]}>
+                      <Ionicons name={action.icon as any} size={18} color={action.color} />
+                      {isSelected && (
+                        <View style={[styles.editBadge, { backgroundColor: action.color }]}>
+                          <Text style={styles.editBadgeText}>{position + 1}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.editLabel, { color: isSelected ? colors.text : colors.textSecondary }]} numberOfLines={1}>
+                      {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Profile & AI Section */}
         <View style={styles.section}>
