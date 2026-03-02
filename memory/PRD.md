@@ -109,12 +109,13 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - ~~Intel refresh scroll-to-top~~ — **FIXED** (Feb 2026)
 
 ## Upcoming Tasks
-1. (P0) **Onboarding/Setup Wizard — Phase 2** — First-login user welcome flow (auto-profile, card preview, quick tour, first action)
-2. (P0) **Onboarding/Setup Wizard — Phase 3** — Home checklist widget driving 14-day trial adoption
-3. (P1) **Gamification & Leaderboards** — Based on activity tracking data
-4. (P1) **AI-Powered Outreach** — sold tag → follow-up suggestions
-5. (P1) **Auth refactor** — bcrypt password hashing
-6. (P1) **Clean production database for launch**
+1. (P0) **SMS/MMS Provider Integration** — User researching Telnyx vs Twilio vs Plivo for real two-way SMS/MMS with inbound webhook replies. Decision pending.
+2. (P0) **Onboarding/Setup Wizard — Phase 2** — First-login user welcome flow (auto-profile, card preview, quick tour, first action)
+3. (P0) **Onboarding/Setup Wizard — Phase 3** — Home checklist widget driving 14-day trial adoption
+4. (P1) **Gamification & Leaderboards** — Based on activity tracking data
+5. (P1) **AI-Powered Outreach** — sold tag → follow-up suggestions
+6. (P1) **Auth refactor** — bcrypt password hashing
+7. (P1) **Clean production database for launch**
 
 ## Future/Backlog
 - **Full LMS (Learning Management System)** — Course builder, video lessons (YouTube embed), modules with "Next" progression, quizzes, completion certificates/badges, admin dashboard for tracking. Supports both internal team training and external customer-facing courses. YouTube (unlisted) recommended for video hosting.
@@ -185,6 +186,19 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Phone taps on contact detail now route through in-app call screen
 - `useFocusEffect` on contact detail page auto-refreshes activity log on return from any action
 - Future-proof: same screen works with Twilio VoIP when activated
+
+
+### Showcase + Activity Feed Enhancement (Mar 2, 2026)
+- **Showcase now pairs congrats card photos with customer feedback/reviews**, including feedback photos uploaded by the customer
+- New `GET /api/showcase/feedback-photo/{feedbackId}` endpoint serves customer-uploaded feedback images
+- **"Customer Feedback" header** with label, date, star rating, review text, and photo all visible per matched entry
+- **Activity logging for all customer interactions** — logged to `contact_events` with category `customer_activity`:
+  - `congrats_card_viewed` — when a customer opens their congrats card
+  - `congrats_card_download` / `congrats_card_share` — when a customer downloads or shares their card
+  - `review_submitted` — when a customer submits a review from the landing page or review page
+  - `review_link_clicked` — when a customer clicks a review link
+- New utility: `/backend/utils/contact_activity.py` — reusable module for finding contacts by phone/name and logging customer-initiated events
+- All events appear in the contact's activity feed on the contact detail page
 
 
 ## Key Files
