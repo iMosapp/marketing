@@ -11,11 +11,53 @@ from routers.database import get_db
 
 router = APIRouter(prefix="/linkpage", tags=["linkpage"])
 
+# All social platforms with URL prefixes — users only enter their username
+SOCIAL_PLATFORMS = [
+    {"key": "facebook", "label": "Facebook", "icon": "logo-facebook", "color": "#1877F2", "prefix": "https://facebook.com/"},
+    {"key": "instagram", "label": "Instagram", "icon": "logo-instagram", "color": "#E4405F", "prefix": "https://instagram.com/"},
+    {"key": "linkedin", "label": "LinkedIn", "icon": "logo-linkedin", "color": "#0A66C2", "prefix": "https://linkedin.com/in/"},
+    {"key": "twitter", "label": "X / Twitter", "icon": "logo-twitter", "color": "#1DA1F2", "prefix": "https://x.com/"},
+    {"key": "tiktok", "label": "TikTok", "icon": "logo-tiktok", "color": "#000000", "prefix": "https://tiktok.com/@"},
+    {"key": "youtube", "label": "YouTube", "icon": "logo-youtube", "color": "#FF0000", "prefix": "https://youtube.com/@"},
+]
+
 
 def sanitize_username(name: str) -> str:
     """Convert a name to a URL-safe username."""
     slug = re.sub(r'[^a-z0-9]', '', name.lower().strip())
     return slug
+
+
+def extract_username_from_url(url: str, prefix_patterns: list[str]) -> str:
+    """Extract just the username from a full social media URL."""
+    if not url:
+        return ""
+    url = url.strip().rstrip("/")
+    for pattern in prefix_patterns:
+        if pattern in url.lower():
+            parts = url.lower().split(pattern)
+            if len(parts) > 1:
+                return parts[-1].strip("/").split("?")[0].split("/")[0]
+    # If it's already just a username (no URL structure), return as-is
+    if "/" not in url and "." not in url:
+        return url.lstrip("@")
+    return url
+
+
+def build_default_social_links(user_social_links: dict) -> dict:
+    """Build the social_links dict with all platforms, pulling usernames from user profile."""
+    result = {}
+    for platform in SOCIAL_PLATFORMS:
+        key = platform["key"]
+        raw_value = user_social_links.get(key, "")
+        # Extract username from whatever is stored (could be full URL or just username)
+        username = extract_username_from_url(raw_value, [
+            "facebook.com/", "instagram.com/", "linkedin.com/in/",
+            "x.com/", "twitter.com/", "tiktok.com/@", "tiktok.com/",
+            "youtube.com/@", "youtube.com/",
+        ])
+        result[key] = {"username": username, "visible": bool(username)}
+    return result
 
 
 @router.get("/public/{username}")
@@ -26,7 +68,6 @@ async def get_public_link_page(username: str):
 
     page = await db.link_pages.find_one({"username": username}, {"_id": 0})
     if not page:
-        # Try to find by user_id fallback
         page = await db.link_pages.find_one({"user_id": username}, {"_id": 0})
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
@@ -37,6 +78,29 @@ async def get_public_link_page(username: str):
         {"$inc": {"views": 1}}
     )
 
+    # Build full social link URLs for public display
+    social_links_raw = page.get("social_links", {})
+    built_social_links = []
+    for platform in SOCIAL_PLATFORMS:
+        key = platform["key"]
+        entry = social_links_raw.get(key, {})
+        uname = entry.get("username", "") if isinstance(entry, dict) else ""
+        visible = entry.get("visible", True) if isinstance(entry, dict) else True
+        if uname and visible:
+            built_social_links.append({
+                "id": key,
+                "label": platform["label"],
+                "url": platform["prefix"] + uname,
+                "icon": platform["icon"],
+                "color": platform["color"],
+                "visible": True,
+            })
+
+    # Contact links (phone, email, card, review)
+    contact_links = [l for l in page.get("links", []) if l.get("visible", True)]
+
+    page["built_social_links"] = built_social_links
+    page["contact_links"] = contact_links
     return page
 
 
@@ -47,6 +111,19 @@ async def get_user_link_page(user_id: str):
 
     page = await db.link_pages.find_one({"user_id": user_id}, {"_id": 0})
     if page:
+        # Ensure all platforms exist in social_links (migration for old data)
+        social_links = page.get("social_links", {})
+        updated = False
+        for platform in SOCIAL_PLATFORMS:
+            if platform["key"] not in social_links:
+                social_links[platform["key"]] = {"username": "", "visible": False}
+                updated = True
+        if updated or "social_links" not in page:
+            page["social_links"] = social_links
+            await db.link_pages.update_one(
+                {"user_id": user_id},
+                {"$set": {"social_links": social_links}}
+            )
         return page
 
     # Auto-create from digital card data
@@ -71,43 +148,19 @@ async def get_user_link_page(user_id: str):
         existing = await db.link_pages.find_one({"username": username})
         counter += 1
 
-    # Build links from digital card data
+    # Build social links from user/store profile data
+    user_social = user.get("social_links", {})
+    if not user_social and store:
+        user_social = store.get("social_links", {})
+    social_links = build_default_social_links(user_social)
+
+    # Build contact links
     links = []
-    social_links = user.get("social_links", {})
-    if not social_links and store:
-        social_links = store.get("social_links", {})
-
-    # Add social links
-    social_map = {
-        "instagram": {"label": "Instagram", "icon": "logo-instagram", "color": "#E4405F"},
-        "facebook": {"label": "Facebook", "icon": "logo-facebook", "color": "#1877F2"},
-        "tiktok": {"label": "TikTok", "icon": "logo-tiktok", "color": "#000000"},
-        "linkedin": {"label": "LinkedIn", "icon": "logo-linkedin", "color": "#0A66C2"},
-        "youtube": {"label": "YouTube", "icon": "logo-youtube", "color": "#FF0000"},
-        "twitter": {"label": "X / Twitter", "icon": "logo-twitter", "color": "#000000"},
-    }
-    for key, meta in social_map.items():
-        url = social_links.get(key)
-        if url:
-            links.append({
-                "id": key,
-                "label": meta["label"],
-                "url": url,
-                "icon": meta["icon"],
-                "color": meta["color"],
-                "visible": True,
-            })
-
-    # Add contact links
     if user.get("phone"):
         links.append({"id": "phone", "label": "Call Me", "url": f"tel:{user['phone']}", "icon": "call", "color": "#34C759", "visible": True})
     if user.get("email"):
         links.append({"id": "email", "label": "Email Me", "url": f"mailto:{user['email']}", "icon": "mail", "color": "#007AFF", "visible": True})
-
-    # Add digital card link
     links.append({"id": "digital_card", "label": "My Digital Card", "url": f"/card/{user_id}", "icon": "card", "color": "#C9A962", "visible": True})
-
-    # Add review links from store
     if store:
         review_links = store.get("review_links", {})
         if review_links.get("google"):
@@ -120,6 +173,7 @@ async def get_user_link_page(user_id: str):
         "bio": user.get("persona", {}).get("bio", "") or user.get("title", ""),
         "photo_url": user.get("photo_url", ""),
         "company": store.get("name", "") if store else "",
+        "social_links": social_links,
         "links": links,
         "custom_links": [],
         "theme": "dark",
@@ -138,7 +192,8 @@ async def update_link_page(user_id: str, data: dict):
     """Update link page settings."""
     db = get_db()
 
-    allowed = {"display_name", "bio", "photo_url", "links", "custom_links", "theme", "accent_color", "username"}
+    allowed = {"display_name", "bio", "photo_url", "links", "custom_links",
+               "theme", "accent_color", "username", "social_links"}
     update = {k: v for k, v in data.items() if k in allowed}
 
     if "username" in update:
