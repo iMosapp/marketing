@@ -251,7 +251,7 @@ async def create_onboarding_client(data: ClientCreate, x_user_id: str = Header(N
 async def update_onboarding_client(client_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
     """Update a client onboarding record (step progress, status, etc.)"""
     db = get_db()
-    allowed = {"completed_step_ids", "status", "client_name", "contact_email", "contact_phone", "industry", "notes"}
+    allowed = {"completed_step_ids", "status", "client_name", "contact_email", "contact_phone", "industry", "notes", "step_data"}
     update = {k: v for k, v in data.items() if k in allowed}
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
 
