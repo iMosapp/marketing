@@ -116,6 +116,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 5. (P1) **Clean production database for launch**
 
 ## Future/Backlog
+- **Full LMS (Learning Management System)** — Course builder, video lessons (YouTube embed), modules with "Next" progression, quizzes, completion certificates/badges, admin dashboard for tracking. Supports both internal team training and external customer-facing courses. YouTube (unlisted) recommended for video hosting.
 - Custom Card Templates (user-created)
 - Full Twilio live integration
 - WhatsApp Integration
@@ -123,6 +124,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Code cleanup (~80 files)
 - Lead Notification System Phase 2 (push notifications)
 - Voice Help Assistant Backend
+- Calendly-like Booking System for demos
 
 ## Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
@@ -142,9 +144,21 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Sections: Hero, How It Works (3 steps), Platform Features (6 cards), Stats bar, Who We Help (6 industries), 4-Step Process, Testimonials (3 placeholder), FAQ (5 items), Final CTA, Footer
 - **Demo Booking System**: Modal form captures name, email, phone, business type, company. Saves to `demo_requests` collection with `lead_source: "landing_page"` for tracking. Backend at `POST /api/demo-requests`.
 - Dark theme with gold (#C9A962) accent, Playfair Display + Inter fonts
-- Fully responsive (desktop, tablet, mobile)
+- Fully responsive (desktop, tablet, mobile) — fixed mobile overflow issues
 - Scroll animations (fade-up on section entry)
 - Target audiences: Car dealers, small businesses, bartenders/hospitality, real estate, sales teams, event professionals
+
+### Sponsored Ad Pages (Mar 2, 2026)
+- 4 public standalone ad pages for Facebook/Instagram campaigns, all in `/public/`:
+  - `/ad-digital-card.html` — Digital business card feature (voice: Onyx)
+  - `/ad-showcase.html` — Customer showcase/social proof (voice: Nova)
+  - `/ad-reviews.html` — One-tap review requests (voice: Echo)
+  - `/ad-autopilot.html` — Automated campaigns & AI messaging (voice: Shimmer)
+- Each ad: phone-frame mockup slideshow, AI voiceover (OpenAI TTS HD), animated captions, branded end card
+- All CTAs point to **imonsocial.com**
+- Brand: i'M On Social logo + tagline
+- Listed in App Directory under "Marketing & Sales" with Preview/Copy Link/Share
+- App Directory Preview handler updated: static `.html` files open in browser tab (not React router)
 
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
