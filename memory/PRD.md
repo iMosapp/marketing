@@ -161,6 +161,17 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - Listed in App Directory under "Marketing & Sales" with Preview/Copy Link/Share
 - App Directory Preview handler updated: static `.html` files open in browser tab (not React router)
 
+### Admin Setup Wizard — Phase 1 (Mar 2, 2026)
+- Multi-step wizard at `/admin/setup-wizard` with 5 steps:
+  1. Company Info — Name, industry, phone, address, city, state, website, admin email
+  2. Branding — Logo upload, primary color picker (10 presets)
+  3. Review Links — Google, Facebook, Yelp URLs
+  4. Team Members — Bulk add (name, email, phone, role), creates accounts with temp passwords
+  5. Summary & Launch — Review config, display credentials, activate
+- Backend: `/api/setup-wizard/*` — progress tracking, bulk-invite, complete
+- Accessible from Menu > Administration (first item)
+
+
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component
