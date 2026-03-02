@@ -225,6 +225,12 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Next Actions elevated** — Above the feed with pre-written suggested messages and one-tap action buttons
 - Old standalone Tags section and Quick Actions grid removed (replaced by hero tags and sticky bar)
 
+### Action Progress Tracker + Master Feed (Mar 2, 2026)
+- **Per-contact Action Progress Tracker** — Visual checkmarks below the hero showing which key CRM actions have been completed (Contact Card, Congrats, Review Link, Link Page, Email, Text, Call). Gold progress bar (e.g., "6/7 ACTIONS"). Tapping an uncompleted action triggers that action.
+- **Master Relationship Feed (Contacts tab)** — Social-media-style feed aggregating activity across ALL contacts. Newest events on top. Shows contact photo, name, tags, event type, description, relative timestamps. INBOUND badges on customer replies. Includes "Action Items" section for suggested next steps and "Upcoming" section for campaign events.
+- **Feed/List View Toggle** — Toggle between social feed view and classic contacts list on the Contacts tab.
+- Backend: `GET /api/contacts/{userId}/master-feed` (aggregates events + suggestions), `GET /api/contacts/{userId}/{contactId}/action-progress` (returns completion status for 7 key actions)
+
 
 ## Key Files
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
