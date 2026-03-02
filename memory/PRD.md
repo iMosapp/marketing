@@ -76,6 +76,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 ### Linktree-Style Public Link Page (Completed Mar 2, 2026)
 - Public URL per user: `/l/{username}` (e.g., `/l/forestward`)
 - **Social Links**: All 6 major platforms (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube) pre-populated by default. Users only enter their username — the URL prefix is built automatically (matching My Profile pattern).
+- **Auto-Sync from Profile**: If the link page has all-empty social usernames and the user has social links in their My Profile, the link page auto-populates from the profile on load. Users can then customize independently.
 - **Data Model**: `social_links` stored as `{platform: {username, visible}}` dict. Backend builds full URLs for public display.
 - Contact links (Call Me, Email Me, Digital Card, Review) with visibility toggles
 - Custom links section for arbitrary URLs
