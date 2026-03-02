@@ -86,6 +86,12 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
   - Activity tab master feed
 - **Backend**: `POST /api/contact-intel/{user_id}/{contact_id}/suggest-message` endpoint for AI-powered message suggestions.
 
+- **Automations Strip in Hero** (Mar 2, 2026): Shows date-triggered automations (Birthday, Anniversary, Sold Date) as colored chips with dates in the contact hero section. Only displays for contacts that have dates set. Includes a + button to enroll in campaigns.
+- **"Send Something" Picker — 7 options** (Mar 2, 2026): Added "Enroll in Campaign" and "Photo" options. All items pre-fill the composer with URLs instead of redirecting to inbox. "Create a Card" shows a 6-template secondary picker.
+- **Profile Photo Button Fix** (Mar 2, 2026): "Set as Profile Photo" in the gallery now uses a native HTML `<button>` on web for reliable click handling.
+- **Toolbar Icons Differentiated** (Mar 2, 2026): Blue + (Send Something), Orange ↩ (Log Reply), Purple ✨ (AI) — no longer "three green dots"
+- **SMS Personal Flow** (Mar 2, 2026): SMS mode opens native messaging app with pre-filled text via `sms:` protocol.
+
 ### Reporting & Analytics
 - Activity reports with 14+ metrics, date filters, scheduled email delivery
 - Leaderboard system
