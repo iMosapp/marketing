@@ -297,6 +297,15 @@ export default function ContactDetailScreen() {
     }
   }, [id, user]);
 
+  // Auto-refresh events when returning from call screen, inbox, etc.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isNewContact && user) {
+        loadEvents();
+      }
+    }, [id, user])
+  );
+
   const loadContact = async () => {
     if (!user) return;
     try {
