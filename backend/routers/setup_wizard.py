@@ -219,7 +219,7 @@ class ClientCreate(BaseModel):
 async def list_onboarding_clients(x_user_id: str = Header(None, alias="X-User-ID")):
     """List all onboarding client records"""
     db = get_db()
-    cursor = db.onboarding_clients.find({}, {"_id": 1, "client_name": 1, "contact_email": 1, "contact_phone": 1, "industry": 1, "notes": 1, "completed_step_ids": 1, "status": 1, "created_at": 1})
+    cursor = db.onboarding_clients.find({}, {"_id": 1, "client_name": 1, "contact_email": 1, "contact_phone": 1, "industry": 1, "notes": 1, "completed_step_ids": 1, "step_data": 1, "status": 1, "created_at": 1})
     results = []
     async for doc in cursor.sort("created_at", -1):
         doc["_id"] = str(doc["_id"])
