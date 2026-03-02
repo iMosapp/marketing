@@ -1,5 +1,13 @@
 # CHANGELOG — iMOs App
 
+## Mar 2, 2026 — Light Mode Deep Cleanup (COMPLETED)
+- **Fixed Contact Detail page light mode visibility:** Stats bar (touches, msgs, campaigns, referrals), feed titles, descriptions, date headers, tags, voice note timestamps, and 15+ additional styles now use theme-aware colors
+- **Fixed IntelRenderer component:** Was using hardcoded `#FFFFFF` white text; now uses `colors.text`/`colors.textSecondary` from themeStore
+- **Fixed Leaderboard page:** User names, roles, scores, stat labels, and footer labels all use theme-aware colors (8 style fixes)
+- **Fixed across 15+ files:** thread/[id].tsx, admin/data/* (6 files), showroom-manage.tsx, admin/contacts.tsx, admin/white-label.tsx
+- **Reverted unsafe changes:** Static StyleSheets (help.tsx, forecasting.tsx, admin/index.tsx tickerStyles, more.tsx shareStyles, onboarding demoStyles) kept with safe neutral colors since they don't have access to dynamic `colors` parameter
+- **Testing:** 100% pass rate — all pages verified in both light and dark mode (iteration_98.json)
+
 ## Mar 2, 2026 — Light Mode Theme Audit (COMPLETED)
 - **Full app-wide refactor of 250+ .tsx files** to support light mode
 - Automated + manual transformation: hardcoded hex colors → dynamic `useThemeStore` + `getStyles(colors)` pattern
