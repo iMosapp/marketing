@@ -1733,6 +1733,103 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 1,
   },
+  // Quick Actions
+  quickActionsSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  quickActionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  quickActionsTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickActionTile: {
+    width: '31%',
+    flexGrow: 1,
+    flexBasis: '30%',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  // Edit panel
+  editActionsPanel: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  editActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  editActionItem: {
+    width: '23%',
+    flexGrow: 1,
+    flexBasis: '22%',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  editActionIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  editActionBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editActionBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#000',
+  },
+  editActionLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 2,
+  },
 });
 
 const shareStyles = StyleSheet.create({
