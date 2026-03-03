@@ -17,7 +17,11 @@ const FEED_EVENT_LABELS: Record<string, string> = {
   digital_card_sent: 'Shared Contact Card',
   review_request_sent: 'Review Invite Sent',
   congrats_card_sent: 'Congrats Card Sent',
+  birthday_card_sent: 'Birthday Card Sent',
+  thank_you_card_sent: 'Thank You Card Sent',
   vcard_sent: 'Shared vCard',
+  showcase_shared: 'Showcase Shared',
+  link_page_shared: 'Link Page Shared',
   call_placed: 'Call Placed',
   customer_reply: 'Customer Reply',
   congrats_card_viewed: 'Viewed Congrats Card',
@@ -25,7 +29,6 @@ const FEED_EVENT_LABELS: Record<string, string> = {
   congrats_card_share: 'Shared Card',
   review_submitted: 'Left a Review',
   review_link_clicked: 'Clicked Review Link',
-  link_page_shared: 'Link Page Shared',
 };
 
 const formatFeedTime = (ts: string) => {

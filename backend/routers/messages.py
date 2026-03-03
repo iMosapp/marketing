@@ -324,7 +324,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
         # Detect content type for activity tracking
         content_lower = message_data.content.lower()
         event_type = 'personal_sms'
-        if '/card/' in message_data.content:
+        if '/card/' in message_data.content and '/vcard/' not in message_data.content:
             event_type = 'digital_card_sent'
         elif '/review/' in message_data.content:
             event_type = 'review_request_sent'
@@ -332,6 +332,14 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             event_type = 'congrats_card_sent'
         elif '/vcard/' in message_data.content:
             event_type = 'vcard_sent'
+        elif '/showcase/' in message_data.content:
+            event_type = 'showcase_shared'
+        elif '/l/' in message_data.content:
+            event_type = 'link_page_shared'
+        elif 'birthday' in content_lower:
+            event_type = 'birthday_card_sent'
+        elif 'thank' in content_lower and ('card' in content_lower or '/api/s/' in message_data.content):
+            event_type = 'thank_you_card_sent'
         
         logger.info(f"Personal SMS logged ({event_type}) for {to_phone}: {message_data.content[:50]}...")
         
@@ -1021,7 +1029,7 @@ async def send_message_simple(user_id: str, message_data: dict):
         # Detect content type
         content_lower = content.lower()
         event_type = 'personal_sms'
-        if '/card/' in content:
+        if '/card/' in content and '/vcard/' not in content:
             event_type = 'digital_card_sent'
         elif '/review/' in content:
             event_type = 'review_request_sent'
@@ -1029,6 +1037,14 @@ async def send_message_simple(user_id: str, message_data: dict):
             event_type = 'congrats_card_sent'
         elif '/vcard/' in content:
             event_type = 'vcard_sent'
+        elif '/showcase/' in content:
+            event_type = 'showcase_shared'
+        elif '/l/' in content:
+            event_type = 'link_page_shared'
+        elif 'birthday' in content_lower:
+            event_type = 'birthday_card_sent'
+        elif 'thank' in content_lower and 'card' in content_lower:
+            event_type = 'thank_you_card_sent'
         
         logger.info(f"[PERSONAL SMS] Logged ({event_type}) for {to_phone}: {content[:50]}...")
         
