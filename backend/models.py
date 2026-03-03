@@ -275,6 +275,10 @@ class Contact(BaseModel):
     referred_by_name: Optional[str] = None  # Cached name for display
     referral_count: int = 0  # Number of people this contact has referred
     referral_notes: Optional[str] = None  # Notes about the referral
+    
+    # Automation control
+    disabled_automations: List[str] = []  # List of disabled automation types: birthday, anniversary, sold_date
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

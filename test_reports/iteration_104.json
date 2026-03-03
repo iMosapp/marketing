@@ -1,0 +1,69 @@
+{
+  "summary": "Visual verification testing for paused automation indicators and font size regression. FIXED critical bug - disabled_automations field was missing from Contact model causing paused visual indicators not to display. Also fixed API undefined error in toggleAutomation function.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "bugs_fixed_by_testing_agent": [
+    {
+      "file": "/app/backend/models.py",
+      "issue": "Contact model missing disabled_automations field - API was not returning the field causing frontend paused visual indicators not to display",
+      "fix": "Added 'disabled_automations: List[str] = []' to Contact model"
+    },
+    {
+      "file": "/app/frontend/app/contact/[id].tsx",
+      "issue": "toggleAutomation function used undefined 'API' variable causing 'ReferenceError: API is not defined' when clicking Pause/Resume Auto-Card",
+      "fix": "Changed from fetch with '${API}' to use 'api.patch()' from the imported axios instance"
+    }
+  ],
+  "test_results": {
+    "paused_automation_visual_indicators": {
+      "status": "PASS",
+      "details": "After fix, paused automation chips (May 10 sold_date) correctly display: orange pause-circle icon, grey text (#999), strikethrough text, orange-tinted border"
+    },
+    "toggle_automation_feature": {
+      "status": "PASS",
+      "details": "Clicking automation chip shows action sheet with Edit Date/Pause Auto-Card options. Toggle correctly changes visual state from active (red/pink) to paused (grey/strikethrough) and back"
+    },
+    "font_size_regression_contact_page": {
+      "status": "PASS",
+      "details": "Contact page Feed and Details tabs display readable text with no overflow issues"
+    },
+    "font_size_regression_inbox": {
+      "status": "PASS",
+      "details": "Inbox page renders properly - header 28px, conversation items 16px, timestamps 13px. No overflow detected"
+    },
+    "font_size_regression_activity": {
+      "status": "PASS",
+      "details": "Activity page renders properly - header 28px, contact names 14px, timestamps 11px. No overflow detected"
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/models.py",
+    "/app/frontend/app/contact/[id].tsx"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!",
+    "contact_tested": "Forest Ward (69a0c06f7626f14d125f8c34)"
+  },
+  "seed_data_state": {
+    "sold_date_automation": "paused (disabled_automations contains 'sold_date')",
+    "anniversary_automation": "active (resumed after testing)",
+    "birthday_automation": "active"
+  },
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Paused automation visual indicators now working correctly after adding disabled_automations to Contact model. May 10 (sold_date) is currently paused for Forest Ward contact. The toggleAutomation function now uses the correct api axios instance."
+}

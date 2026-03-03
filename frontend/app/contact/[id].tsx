@@ -1280,13 +1280,8 @@ export default function ContactDetailScreen() {
   const toggleAutomation = async (field: string) => {
     if (!user) return;
     try {
-      const res = await fetch(`${API}/contacts/${user._id}/${id}/toggle-automation`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
-        body: JSON.stringify({ field }),
-      });
-      const data = await res.json();
-      setContact(prev => ({ ...prev, disabled_automations: data.disabled_automations || [] }));
+      const res = await api.patch(`/contacts/${user._id}/${id}/toggle-automation`, { field });
+      setContact(prev => ({ ...prev, disabled_automations: res.data.disabled_automations || [] }));
     } catch (e) {
       console.error('Failed to toggle automation:', e);
     }
@@ -1588,57 +1583,63 @@ export default function ContactDetailScreen() {
                       </View>
                     );
                   })}
-                  {contact.birthday && (
+                  {contact.birthday && (() => {
+                    const isPaused = contact.disabled_automations.includes('birthday');
+                    return (
                     <TouchableOpacity
                       style={[s.heroTagChip, {
-                        borderColor: contact.disabled_automations.includes('birthday') ? '#ffffff20' : '#FF2D5540',
-                        backgroundColor: contact.disabled_automations.includes('birthday') ? '#ffffff08' : '#FF2D5510',
+                        borderColor: isPaused ? '#FF950040' : '#FF2D5540',
+                        backgroundColor: isPaused ? '#FF950008' : '#FF2D5510',
                         borderStyle: 'dashed',
-                        opacity: contact.disabled_automations.includes('birthday') ? 0.5 : 1,
                       }]}
                       onPress={() => handleAutomationChipPress('birthday', 'Birthday', '#FF2D55', contact.birthday)}
                       activeOpacity={0.7}
                       data-testid="auto-birthday"
                     >
-                      {contact.disabled_automations.includes('birthday') && <Ionicons name="pause-circle" size={11} color="#666" style={{ marginRight: -2 }} />}
-                      <Ionicons name="gift" size={13} color={contact.disabled_automations.includes('birthday') ? '#666' : '#FF2D55'} />
-                      <Text style={[s.heroTagChipText, { color: contact.disabled_automations.includes('birthday') ? '#666' : '#FF2D55' }]} numberOfLines={1}>{formatDateUTC(contact.birthday)}</Text>
+                      {isPaused && <Ionicons name="pause-circle" size={14} color="#FF9500" style={{ marginRight: 1 }} />}
+                      <Ionicons name="gift" size={13} color={isPaused ? '#999' : '#FF2D55'} />
+                      <Text style={[s.heroTagChipText, { color: isPaused ? '#999' : '#FF2D55', textDecorationLine: isPaused ? 'line-through' : 'none' }]} numberOfLines={1}>{formatDateUTC(contact.birthday)}</Text>
                     </TouchableOpacity>
-                  )}
-                  {contact.anniversary && (
+                    );
+                  })()}
+                  {contact.anniversary && (() => {
+                    const isPaused = contact.disabled_automations.includes('anniversary');
+                    return (
                     <TouchableOpacity
                       style={[s.heroTagChip, {
-                        borderColor: contact.disabled_automations.includes('anniversary') ? '#ffffff20' : '#FF6B6B40',
-                        backgroundColor: contact.disabled_automations.includes('anniversary') ? '#ffffff08' : '#FF6B6B10',
+                        borderColor: isPaused ? '#FF950040' : '#FF6B6B40',
+                        backgroundColor: isPaused ? '#FF950008' : '#FF6B6B10',
                         borderStyle: 'dashed',
-                        opacity: contact.disabled_automations.includes('anniversary') ? 0.5 : 1,
                       }]}
                       onPress={() => handleAutomationChipPress('anniversary', 'Anniversary', '#FF6B6B', contact.anniversary)}
                       activeOpacity={0.7}
                       data-testid="auto-anniversary"
                     >
-                      {contact.disabled_automations.includes('anniversary') && <Ionicons name="pause-circle" size={11} color="#666" style={{ marginRight: -2 }} />}
-                      <Ionicons name="heart" size={13} color={contact.disabled_automations.includes('anniversary') ? '#666' : '#FF6B6B'} />
-                      <Text style={[s.heroTagChipText, { color: contact.disabled_automations.includes('anniversary') ? '#666' : '#FF6B6B' }]} numberOfLines={1}>{formatDateUTC(contact.anniversary)}</Text>
+                      {isPaused && <Ionicons name="pause-circle" size={14} color="#FF9500" style={{ marginRight: 1 }} />}
+                      <Ionicons name="heart" size={13} color={isPaused ? '#999' : '#FF6B6B'} />
+                      <Text style={[s.heroTagChipText, { color: isPaused ? '#999' : '#FF6B6B', textDecorationLine: isPaused ? 'line-through' : 'none' }]} numberOfLines={1}>{formatDateUTC(contact.anniversary)}</Text>
                     </TouchableOpacity>
-                  )}
-                  {contact.date_sold && (
+                    );
+                  })()}
+                  {contact.date_sold && (() => {
+                    const isPaused = contact.disabled_automations.includes('sold_date');
+                    return (
                     <TouchableOpacity
                       style={[s.heroTagChip, {
-                        borderColor: contact.disabled_automations.includes('sold_date') ? '#ffffff20' : '#34C75940',
-                        backgroundColor: contact.disabled_automations.includes('sold_date') ? '#ffffff08' : '#34C75910',
+                        borderColor: isPaused ? '#FF950040' : '#34C75940',
+                        backgroundColor: isPaused ? '#FF950008' : '#34C75910',
                         borderStyle: 'dashed',
-                        opacity: contact.disabled_automations.includes('sold_date') ? 0.5 : 1,
                       }]}
                       onPress={() => handleAutomationChipPress('sold_date', 'Sold Date', '#34C759', contact.date_sold)}
                       activeOpacity={0.7}
                       data-testid="auto-sold"
                     >
-                      {contact.disabled_automations.includes('sold_date') && <Ionicons name="pause-circle" size={11} color="#666" style={{ marginRight: -2 }} />}
-                      <Ionicons name="car-sport" size={13} color={contact.disabled_automations.includes('sold_date') ? '#666' : '#34C759'} />
-                      <Text style={[s.heroTagChipText, { color: contact.disabled_automations.includes('sold_date') ? '#666' : '#34C759' }]} numberOfLines={1}>{formatDateUTC(contact.date_sold)}</Text>
+                      {isPaused && <Ionicons name="pause-circle" size={14} color="#FF9500" style={{ marginRight: 1 }} />}
+                      <Ionicons name="car-sport" size={13} color={isPaused ? '#999' : '#34C759'} />
+                      <Text style={[s.heroTagChipText, { color: isPaused ? '#999' : '#34C759', textDecorationLine: isPaused ? 'line-through' : 'none' }]} numberOfLines={1}>{formatDateUTC(contact.date_sold)}</Text>
                     </TouchableOpacity>
-                  )}
+                    );
+                  })()}
                   {contactEnrollments.map((e, i) => {
                     const chipColor = e.status === 'completed' ? '#34C759' : '#007AFF';
                     return (
