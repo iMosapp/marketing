@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>i'M On Social — Build Relationships That Drive Revenue</title>
+  <meta name="description" content="The relationship management platform that helps sales teams, dealers, and small businesses build authentic connections at scale. Digital cards, AI messaging, automated follow-ups."/>
+  <meta property="og:title" content="i'M On Social — Build Relationships That Drive Revenue"/>
+  <meta property="og:description" content="Turn every interaction into a lasting relationship. AI-powered CRM built for people who sell face-to-face."/>
+  <meta property="og:image" content="/logo512.png"/>
+  <meta property="og:type" content="website"/>
+  <link rel="icon" href="/favicon.ico"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #007AFF;
+      --gold-light: #4DA3FF;
+      --bg: #FFFFFF;
+      --card: #F8F9FB;
+      --card-border: #E5E5EA;
+      --text: #1D1D1F;
+      --text-secondary: #6E6E73;
+      --blue: #007AFF;
+      --green: #34C759;
+      --red: #FF3B30;
+      --purple: #AF52DE;
+      --orange: #FF9500;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      padding: 14px 0;
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { height: 36px; border-radius: 8px; }
+    .nav-logo span { font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: -0.3px; }
+    .nav-cta {
+      background: var(--gold); color: #FFF; font-weight: 700; font-size: 14px;
+      padding: 10px 24px; border-radius: 50px; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,122,255,0.4); }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 140px 0 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,122,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,122,255,0.1); border: 1px solid rgba(0,122,255,0.25);
+      padding: 6px 16px; border-radius: 50px; font-size: 13px; color: var(--gold);
+      font-weight: 600; margin-bottom: 28px;
+    }
+    .hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif; font-size: clamp(38px, 6vw, 68px);
+      font-weight: 700; line-height: 1.08; letter-spacing: -1.5px; margin-bottom: 24px;
+      max-width: 800px; margin-left: auto; margin-right: auto;
+    }
+    .hero h1 em { font-style: italic; color: var(--gold); }
+    .hero p {
+      font-size: clamp(16px, 2vw, 20px); color: var(--text-secondary);
+      max-width: 580px; margin: 0 auto 40px; line-height: 1.7;
+    }
+    .hero-cta {
+      display: inline-block; background: var(--gold); color: #FFF; font-weight: 800;
+      font-size: 17px; padding: 16px 40px; border-radius: 50px; text-decoration: none;
+      transition: all 0.3s; box-shadow: 0 0 40px rgba(0,122,255,0.25);
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(0,122,255,0.4); }
+    .hero-sub { font-size: 13px; color: var(--text-secondary); margin-top: 14px; opacity: 0.6; }
+
+    .hero-image {
+      margin-top: 60px; max-width: 700px; margin-left: auto; margin-right: auto;
+      border-radius: 20px; overflow: hidden; border: 1px solid var(--card-border);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+    }
+    .hero-image img { width: 100%; display: block; }
+
+    /* Video placeholder */
+    .video-placeholder {
+      margin-top: 60px; max-width: 700px; margin-left: auto; margin-right: auto;
+      aspect-ratio: 16/9; background: var(--card); border-radius: 20px;
+      border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+    }
+    .video-placeholder .slideshow {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; justify-content: center; align-items: center; gap: 16px;
+      padding: 20px;
+    }
+    .slideshow-phone {
+      width: 160px; height: 320px; border-radius: 24px; overflow: hidden;
+      border: 2px solid #2C2C2E; background: #000; flex-shrink: 0;
+      opacity: 0; transition: opacity 0.8s ease; position: absolute;
+    }
+    .slideshow-phone.active { opacity: 1; }
+    .slideshow-phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+    .video-placeholder .overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 1; transition: background 0.4s;
+    }
+    .video-placeholder.playing .overlay { background: rgba(0,0,0,0.25); }
+    .video-placeholder .play-btn {
+      width: 72px; height: 72px; background: rgba(0,122,255,0.9); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; z-index: 2;
+      transition: transform 0.3s;
+    }
+    .video-placeholder:hover .play-btn { transform: scale(1.1); }
+    .play-btn svg { width: 28px; height: 28px; margin-left: 4px; }
+    .video-placeholder .label { position: absolute; bottom: 20px; font-size: 13px; color: var(--text-secondary); z-index: 2; }
+    .video-placeholder .progress-bar {
+      position: absolute; bottom: 0; left: 0; height: 3px; background: var(--gold);
+      z-index: 3; width: 0%; transition: width 0.3s linear;
+    }
+
+    /* ===== SECTION COMMON ===== */
+    section { padding: 100px 0; }
+    .section-label {
+      font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 16px; text-align: center;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif; font-size: clamp(30px, 4vw, 48px);
+      font-weight: 700; text-align: center; line-height: 1.15; letter-spacing: -1px;
+      margin-bottom: 20px; max-width: 700px; margin-left: auto; margin-right: auto;
+    }
+    .section-subtitle {
+      font-size: clamp(15px, 1.8vw, 18px); color: var(--text-secondary);
+      text-align: center; max-width: 600px; margin: 0 auto 60px; line-height: 1.7;
+    }
+
+    /* ===== 3 STEPS ===== */
+    .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .step-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 20px;
+      padding: 36px 28px; text-align: center; transition: border-color 0.3s, transform 0.3s;
+    }
+    .step-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+    .step-num {
+      width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; margin: 0 auto 20px;
+    }
+    .step-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .step-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== FEATURES ===== */
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 16px;
+      padding: 32px 24px; transition: border-color 0.3s, transform 0.3s;
+    }
+    .feature-card:hover { border-color: rgba(0,122,255,0.4); transform: translateY(-3px); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex;
+      align-items: center; justify-content: center; margin-bottom: 18px; font-size: 22px;
+    }
+    .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== WHO WE HELP ===== */
+    .who-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 700px; margin: 0 auto; }
+    .who-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 14px;
+      padding: 24px; display: flex; align-items: center; gap: 16px;
+      transition: border-color 0.3s;
+    }
+    .who-card:hover { border-color: var(--gold); }
+    .who-icon {
+      width: 44px; height: 44px; min-width: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .who-card h4 { font-size: 15px; font-weight: 700; }
+    .who-card p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ===== STATS BAR ===== */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+      padding: 48px 0; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: clamp(32px, 4vw, 48px); font-weight: 900; color: var(--gold); line-height: 1; }
+    .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+
+    /* ===== PROCESS ===== */
+    .process-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .process-step {
+      text-align: center; padding: 32px 16px; border-radius: 16px;
+      background: var(--card); border: 1px solid var(--card-border);
+    }
+    .process-num {
+      font-size: 40px; font-weight: 900; color: var(--gold); opacity: 0.3; margin-bottom: 12px;
+    }
+    .process-step h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .process-step p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== TESTIMONIALS ===== */
+    .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .testimonial-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 16px;
+      padding: 32px 24px; position: relative;
+    }
+    .testimonial-stars { color: var(--gold); font-size: 16px; margin-bottom: 14px; letter-spacing: 2px; }
+    .testimonial-card blockquote { font-size: 14px; line-height: 1.8; color: #CCC; margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--gold);
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #000;
+    }
+    .testimonial-name { font-size: 14px; font-weight: 700; }
+    .testimonial-role { font-size: 12px; color: var(--text-secondary); }
+
+    /* ===== CTA SECTION ===== */
+    .cta-section {
+      text-align: center; padding: 100px 0; position: relative;
+      background: linear-gradient(180deg, transparent, rgba(0,122,255,0.04));
+    }
+    .cta-section h2 {
+      font-family: 'Playfair Display', serif; font-size: clamp(30px, 4vw, 46px);
+      font-weight: 700; line-height: 1.15; margin-bottom: 20px; max-width: 600px;
+      margin-left: auto; margin-right: auto;
+    }
+    .cta-section p { font-size: 16px; color: var(--text-secondary); margin-bottom: 36px; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+    /* ===== FAQ ===== */
+    .faq-list { max-width: 700px; margin: 0 auto; }
+    .faq-item {
+      border-bottom: 1px solid var(--card-border); padding: 24px 0; cursor: pointer;
+    }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 16px; font-weight: 600; gap: 20px;
+    }
+    .faq-q .toggle { font-size: 22px; color: var(--gold); transition: transform 0.3s; min-width: 24px; text-align: center; }
+    .faq-a { font-size: 14px; color: var(--text-secondary); line-height: 1.8; max-height: 0; overflow: hidden; transition: max-height 0.4s, padding 0.4s; }
+    .faq-item.open .faq-a { max-height: 300px; padding-top: 12px; }
+    .faq-item.open .toggle { transform: rotate(45deg); }
+
+    /* ===== DEMO MODAL ===== */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200;
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #F5F5F7; border: 1px solid var(--card-border); border-radius: 24px;
+      padding: 40px; max-width: 480px; width: 100%; position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+      border-radius: 50%; background: rgba(255,255,255,0.08); border: none; color: #fff;
+      font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .modal h2 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .modal .modal-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 28px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border); border-radius: 10px; color: var(--text);
+      font-size: 15px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+    .form-group select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' fill='none' stroke-width='2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+    .form-group select option { background: #F5F5F7; }
+    .form-submit {
+      width: 100%; padding: 14px; background: var(--gold); color: #FFF;
+      font-size: 16px; font-weight: 800; border: none; border-radius: 50px;
+      cursor: pointer; margin-top: 8px; transition: all 0.3s;
+    }
+    .form-submit:hover { box-shadow: 0 4px 20px rgba(0,122,255,0.4); }
+    .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .form-success { text-align: center; padding: 20px 0; }
+    .form-success .checkmark { font-size: 48px; margin-bottom: 12px; }
+    .form-success h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .form-success p { font-size: 14px; color: var(--text-secondary); }
+
+    /* ===== FOOTER ===== */
+    footer {
+      padding: 48px 0 32px; border-top: 1px solid var(--card-border); text-align: center;
+    }
+    footer .brand { font-size: 20px; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+    footer p { font-size: 12px; color: var(--text-secondary); }
+    footer a { color: var(--gold); text-decoration: none; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .container { padding: 0 16px; }
+      .steps-grid, .features-grid, .testimonials-grid { grid-template-columns: 1fr; }
+      .who-grid { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+      .process-grid { grid-template-columns: repeat(2, 1fr); }
+      section { padding: 60px 0; }
+      .hero { padding: 110px 0 50px; }
+      .hero h1 { font-size: 32px; letter-spacing: -0.5px; word-wrap: break-word; overflow-wrap: break-word; }
+      .hero h1 em { display: inline; }
+      .hero p { font-size: 15px; margin-bottom: 28px; }
+      .hero-cta { font-size: 15px; padding: 14px 32px; }
+      .hero-badge { font-size: 12px; padding: 5px 12px; }
+      .nav-logo span { font-size: 15px; }
+      .nav-cta { font-size: 12px; padding: 8px 18px; }
+      .video-placeholder { aspect-ratio: 9/16; max-width: 300px; border-radius: 16px; margin-top: 40px; }
+      .slideshow-phone { width: 100%; height: 100%; border-radius: 16px; border: none; }
+      .play-btn { width: 56px; height: 56px; }
+      .play-btn svg { width: 22px; height: 22px; }
+      .video-placeholder .label { font-size: 11px; bottom: 14px; }
+      .section-title { font-size: 26px; }
+      .section-subtitle { font-size: 14px; margin-bottom: 36px; }
+      .section-label { font-size: 11px; }
+      .step-card { padding: 28px 20px; }
+      .feature-card { padding: 24px 18px; }
+      .who-card { padding: 18px; }
+      .process-step { padding: 24px 14px; }
+      .process-step h3 { font-size: 16px; }
+      .testimonial-card { padding: 24px 18px; }
+      .testimonial-card blockquote { font-size: 13px; }
+      .cta-section h2 { font-size: 26px; }
+      .cta-section p { font-size: 14px; }
+      .faq-q { font-size: 14px; }
+      .faq-a { font-size: 13px; }
+      .modal { padding: 28px 20px; border-radius: 20px; }
+      .modal h2 { font-size: 20px; }
+    }
+    @media (max-width: 480px) {
+      .process-grid { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+      .stat-num { font-size: 28px; }
+      .stat-label { font-size: 11px; }
+    }
+
+    /* ===== ANIMATIONS ===== */
+    .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s, transform 0.6s; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo">
+      <img src="/logo192.png" alt="i'M On Social"/>
+      <span>i'M On Social</span>
+    </a>
+    <a href="#book-demo" class="nav-cta" onclick="openModal(event)">Book a Demo</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">Now Available</div>
+    <h1>The Rules For Building <em>Customer Relationships</em> Have Been Rewritten</h1>
+    <p>Stop losing customers to competitors who stay in touch. i'M On Social gives your team the tools to build real, lasting relationships that drive repeat business and referrals.</p>
+    <a href="#book-demo" class="hero-cta" onclick="openModal(event)">Book a Demo</a>
+    <div class="hero-sub">Free demo &middot; No credit card required</div>
+    <div class="video-placeholder" id="video-area" onclick="toggleAudio()">
+      <div class="slideshow" id="slideshow">
+        <div class="slideshow-phone active" id="slide-0"><img src="/slide-dashboard.png" alt="Dashboard"/></div>
+        <div class="slideshow-phone" id="slide-1"><img src="/slide-card.png" alt="Digital Card"/></div>
+        <div class="slideshow-phone" id="slide-2"><img src="/slide-inbox.png" alt="Messaging"/></div>
+        <div class="slideshow-phone" id="slide-3"><img src="/slide-analytics.png" alt="Analytics"/></div>
+      </div>
+      <div class="overlay"></div>
+      <div class="play-btn" id="playBtn"><svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg></div>
+      <div class="label" id="audioLabel">Listen to our story</div>
+      <div class="progress-bar" id="progressBar"></div>
+      <audio id="voiceoverAudio" src="/voiceover.mp3" preload="auto"></audio>
+    </div>
+  </div>
+</section>
+
+<!-- 3 STEPS -->
+<section class="fade-up">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Three Steps to Relationships That Drive Revenue</h2>
+    <p class="section-subtitle">No tech skills needed. No massive ad budget. Just a smarter way to stay connected with every customer.</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num" style="background: rgba(0,122,255,0.12); color: var(--blue);">1</div>
+        <h3>Share Your Digital Card</h3>
+        <p>Instantly share your digital business card via text, email, QR code, or NFC tap. Every card is tracked so you know who opened it.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background: rgba(0,122,255,0.12); color: var(--gold);">2</div>
+        <h3>Stay Connected Automatically</h3>
+        <p>Automated campaigns, birthday messages, and follow-ups keep you top-of-mind without lifting a finger. AI crafts the perfect message every time.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background: rgba(52,199,89,0.12); color: var(--green);">3</div>
+        <h3>Track & Grow</h3>
+        <p>See every interaction, click, and response in real-time. Know exactly who your best connectors are with leaderboards and activity reports.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="fade-up" style="background: rgba(255,255,255,0.015);">
+  <div class="container">
+    <div class="section-label">Platform Features</div>
+    <h2 class="section-title">Everything Your Team Needs to Dominate Relationships</h2>
+    <p class="section-subtitle">One platform. Every tool. Built for teams that sell face-to-face.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(0,122,255,0.12);">&#x1F4C7;</div>
+        <h3>Digital Business Cards</h3>
+        <p>Beautiful, trackable cards with your photo, socials, and contact info. Know exactly when someone views or shares your card.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(175,82,222,0.12);">&#x2728;</div>
+        <h3>AI-Powered Messaging</h3>
+        <p>Jessi, your AI assistant, drafts personalized messages based on your style and relationship history. Send in one tap.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(52,199,89,0.12);">&#x1F4E2;</div>
+        <h3>Automated Campaigns</h3>
+        <p>SMS and email campaigns that run on autopilot. Birthday messages, follow-ups, and promotions — all scheduled and tracked.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(255,149,0,0.12);">&#x1F517;</div>
+        <h3>Linktree-Style Pages</h3>
+        <p>Every team member gets a shareable link page with all their socials, bio, and contact options. Perfect for Instagram and TikTok bios.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(255,59,48,0.12);">&#x1F3C6;</div>
+        <h3>Leaderboards & Gamification</h3>
+        <p>Motivate your team with real-time leaderboards tracking cards shared, messages sent, reviews collected, and more.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(0,122,255,0.12);">&#x1F4CA;</div>
+        <h3>Activity Reports</h3>
+        <p>Comprehensive dashboards showing every touchpoint, click-through rate, and engagement metric across your entire team.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="fade-up">
+  <div class="container">
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num">10x</div><div class="stat-label">More Follow-Ups</div></div>
+      <div class="stat"><div class="stat-num">67%</div><div class="stat-label">Better Retention</div></div>
+      <div class="stat"><div class="stat-num">3x</div><div class="stat-label">More Referrals</div></div>
+      <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Always On</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO WE HELP -->
+<section class="fade-up">
+  <div class="container">
+    <div class="section-label">Who We Help</div>
+    <h2 class="section-title">Built For People Who Build Relationships</h2>
+    <p class="section-subtitle">If your business grows through personal connections, i'M On Social was built for you.</p>
+    <div class="who-grid">
+      <div class="who-card">
+        <div class="who-icon" style="background: rgba(0,122,255,0.12);">&#x1F697;</div>
+        <div><h4>Car Dealerships</h4><p>Keep every buyer connected long after they drive off the lot.</p></div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon" style="background: rgba(52,199,89,0.12);">&#x1F3EA;</div>
+        <div><h4>Small Business Owners</h4><p>Turn one-time visitors into loyal regulars who refer friends.</p></div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon" style="background: rgba(175,82,222,0.12);">&#x1F378;</div>
+        <div><h4>Bartenders & Hospitality</h4><p>Keep regulars in the loop on events, specials, and your socials.</p></div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon" style="background: rgba(255,149,0,0.12);">&#x1F3E0;</div>
+        <div><h4>Real Estate Agents</h4><p>Nurture leads for months or years until they're ready to buy.</p></div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon" style="background: rgba(255,59,48,0.12);">&#x1F4BC;</div>
+        <div><h4>Sales Teams</h4><p>Give every rep the tools to be a relationship-building machine.</p></div>
+      </div>
+      <div class="who-card">
+        <div class="who-icon" style="background: rgba(0,122,255,0.12);">&#x1F3A4;</div>
+        <div><h4>Event Professionals</h4><p>Capture contacts at events and follow up automatically.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="fade-up" style="background: rgba(255,255,255,0.015);">
+  <div class="container">
+    <div class="section-label">Our Process</div>
+    <h2 class="section-title">From Setup to Scale in Four Steps</h2>
+    <p class="section-subtitle">We don't just hand you software. We partner with you to make it work.</p>
+    <div class="process-grid">
+      <div class="process-step">
+        <div class="process-num">01</div>
+        <h3>Setup</h3>
+        <p>We configure your account, brand your cards, and import your contacts in under an hour.</p>
+      </div>
+      <div class="process-step">
+        <div class="process-num">02</div>
+        <h3>Connect</h3>
+        <p>Start sharing digital cards and collecting contacts from day one.</p>
+      </div>
+      <div class="process-step">
+        <div class="process-num">03</div>
+        <h3>Engage</h3>
+        <p>Launch automated campaigns, AI follow-ups, and review requests that run 24/7.</p>
+      </div>
+      <div class="process-step">
+        <div class="process-num">04</div>
+        <h3>Scale</h3>
+        <p>Track results, optimize with data, and roll out to your entire team.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="fade-up">
+  <div class="container">
+    <div class="section-label">What People Are Saying</div>
+    <h2 class="section-title">Real Results From Real Businesses</h2>
+    <div class="testimonials-grid" style="margin-top: 48px;">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <blockquote>"Our sales team went from forgetting to follow up to having a system that does it for them. We've seen a 40% increase in repeat customers since switching to i'M On Social."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">MR</div>
+          <div><div class="testimonial-name">Marcus Rivera</div><div class="testimonial-role">GM, Rivera Auto Group</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <blockquote>"I share my digital card at every event. People actually save it. And the automated birthday texts? My regulars love it. It feels personal even though it's automated."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">JT</div>
+          <div><div class="testimonial-name">Jordan Taylor</div><div class="testimonial-role">Head Bartender, Elixir Lounge</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <blockquote>"The leaderboard alone changed everything. My agents compete to share the most cards and collect reviews. Our Google reviews tripled in 3 months."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">SN</div>
+          <div><div class="testimonial-name">Sarah Nguyen</div><div class="testimonial-role">Broker, Nguyen Realty</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="cta-section fade-up">
+  <div class="container">
+    <div class="section-label">Ready?</div>
+    <h2>Stop Losing Customers.<br/>Start Building <em style="color:var(--gold); font-style: italic;">Relationships.</em></h2>
+    <p>Book a free demo and see how i'M On Social can transform the way your team connects with customers.</p>
+    <a href="#book-demo" class="hero-cta" onclick="openModal(event)">Book Your Free Demo</a>
+    <div class="hero-sub" style="margin-top: 14px;">Takes 30 seconds. We'll show you everything.</div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="fade-up">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Frequently Asked Questions</h2>
+    <div class="faq-list" style="margin-top: 48px;">
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q"><span>What exactly is i'M On Social?</span><span class="toggle">+</span></div>
+        <div class="faq-a">It's a relationship management platform built for sales teams and businesses that grow through personal connections. Think of it as a CRM that actually helps you stay in touch — with digital business cards, AI-powered messaging, automated campaigns, and team leaderboards.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q"><span>How is this different from a regular CRM?</span><span class="toggle">+</span></div>
+        <div class="faq-a">Most CRMs are built for data entry. i'M On Social is built for action. Every feature — from digital cards to AI follow-ups — is designed to help you DO something, not just log information. Plus, it works as a mobile app your team will actually use.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q"><span>How fast can we get started?</span><span class="toggle">+</span></div>
+        <div class="faq-a">Most teams are up and running in under an hour. We'll help you set up your brand, import contacts, and configure your first campaign during onboarding.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q"><span>Does my team need to be tech-savvy?</span><span class="toggle">+</span></div>
+        <div class="faq-a">Not at all. The app is designed to feel like using Instagram or iMessage. If your team can send a text, they can use i'M On Social. We also provide training and support.</div>
+      </div>
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q"><span>What does a demo include?</span><span class="toggle">+</span></div>
+        <div class="faq-a">We'll walk you through the platform, show you how it works for your specific business, answer all your questions, and help you understand the ROI. No pressure, no sales tricks — just a conversation about whether it's a fit.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="brand">i'M On Social</div>
+    <p>&copy; 2026 i'M On Social. All Rights Reserved. <br/><a href="/terms">Terms</a> &middot; <a href="/privacy">Privacy Policy</a></p>
+  </div>
+</footer>
+
+<!-- DEMO MODAL -->
+<div class="modal-overlay" id="demoModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div id="demoForm">
+      <h2>Book a Demo</h2>
+      <p class="modal-sub">See how i'M On Social can transform your business.</p>
+      <form onsubmit="submitDemo(event)">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="demo-name" placeholder="John Smith" required/>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="demo-email" placeholder="john@company.com" required/>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="demo-phone" placeholder="(555) 123-4567"/>
+        </div>
+        <div class="form-group">
+          <label>Business Type</label>
+          <select id="demo-type">
+            <option value="">Select your industry...</option>
+            <option value="car_dealer">Car Dealership</option>
+            <option value="real_estate">Real Estate</option>
+            <option value="small_business">Small Business / Retail</option>
+            <option value="hospitality">Hospitality / Food & Beverage</option>
+            <option value="sales_team">Sales Team</option>
+            <option value="events">Events & Entertainment</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" id="demo-company" placeholder="Your business name"/>
+        </div>
+        <button type="submit" class="form-submit" id="submitBtn">Book My Demo</button>
+      </form>
+    </div>
+    <div id="demoSuccess" style="display:none;">
+      <div class="form-success">
+        <div class="checkmark">&#10003;</div>
+        <h3>You're In!</h3>
+        <p>We'll reach out within 24 hours to schedule your personalized demo. Keep an eye on your inbox.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Intersection Observer for fade-up animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Audio player + slideshow
+  const audio = document.getElementById('voiceoverAudio');
+  const videoArea = document.getElementById('video-area');
+  const playBtn = document.getElementById('playBtn');
+  const audioLabel = document.getElementById('audioLabel');
+  const progressBar = document.getElementById('progressBar');
+  let isPlaying = false;
+  let slideInterval = null;
+  let currentSlide = 0;
+  const totalSlides = 4;
+
+  function showSlide(index) {
+    for (let i = 0; i < totalSlides; i++) {
+      document.getElementById('slide-' + i).classList.remove('active');
+    }
+    document.getElementById('slide-' + index).classList.add('active');
+  }
+
+  function startSlideshow() {
+    slideInterval = setInterval(function() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      showSlide(currentSlide);
+    }, 4000);
+  }
+
+  function stopSlideshow() {
+    if (slideInterval) { clearInterval(slideInterval); slideInterval = null; }
+  }
+
+  function toggleAudio() {
+    if (isPlaying) {
+      audio.pause();
+      videoArea.classList.remove('playing');
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';
+      audioLabel.textContent = 'Resume';
+      stopSlideshow();
+      isPlaying = false;
+    } else {
+      audio.play();
+      videoArea.classList.add('playing');
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+      audioLabel.textContent = 'Now playing...';
+      startSlideshow();
+      isPlaying = true;
+    }
+  }
+
+  audio.addEventListener('timeupdate', function() {
+    if (audio.duration) {
+      progressBar.style.width = (audio.currentTime / audio.duration * 100) + '%';
+    }
+  });
+
+  audio.addEventListener('ended', function() {
+    videoArea.classList.remove('playing');
+    playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';
+    audioLabel.textContent = 'Listen again';
+    progressBar.style.width = '0%';
+    stopSlideshow();
+    currentSlide = 0;
+    showSlide(0);
+    isPlaying = false;
+  });
+
+  // Modal
+  function openModal(e) { e && e.preventDefault(); document.getElementById('demoModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeModal() { document.getElementById('demoModal').classList.remove('active'); document.body.style.overflow = ''; }
+  document.getElementById('demoModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+  // Form submission
+  async function submitDemo(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    try {
+      const res = await fetch('/api/demo-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('demo-name').value,
+          email: document.getElementById('demo-email').value,
+          phone: document.getElementById('demo-phone').value,
+          business_type: document.getElementById('demo-type').value,
+          company: document.getElementById('demo-company').value,
+          lead_source: 'landing_page',
+        }),
+      });
+      if (res.ok) {
+        document.getElementById('demoForm').style.display = 'none';
+        document.getElementById('demoSuccess').style.display = 'block';
+      } else { throw new Error(); }
+    } catch { btn.disabled = false; btn.textContent = 'Book My Demo'; alert('Something went wrong. Please try again.'); }
+  }
+</script>
+
+</body>
+</html>
