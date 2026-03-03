@@ -20,6 +20,18 @@ export default function DemoScreen() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // Detect source from URL params
+  const [source, setSource] = useState('imos_demo_page');
+  React.useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlSource = params.get('source');
+      if (urlSource) setSource(urlSource);
+    }
+  }, []);
+
+  const sourceLabel = source === 'sales_presentation' ? 'Sales Presentation' : source === 'marketing_site' ? 'Marketing Site' : '';
+
   const handleSubmit = async () => {
     if (!name.trim() || !email.trim()) return;
     setSending(true);
@@ -31,7 +43,7 @@ export default function DemoScreen() {
         phone: phone.trim(),
         team_size: teamSize.trim(),
         message: message.trim(),
-        source: 'imos_demo_page',
+        source,
       });
       setSent(true);
     } catch {
@@ -71,6 +83,12 @@ export default function DemoScreen() {
         <View style={maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined}>
 
           <View style={s.titleSection}>
+            {sourceLabel ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#007AFF12', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, marginBottom: 12 }}>
+                <Ionicons name="location" size={14} color="#007AFF" />
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#007AFF' }}>From: {sourceLabel}</Text>
+              </View>
+            ) : null}
             <Text style={s.label}>SCHEDULE A DEMO</Text>
             <Text style={[s.title, isDesktop && { fontSize: 36 }]}>i'M On Social</Text>
             <Text style={s.subtitle}>

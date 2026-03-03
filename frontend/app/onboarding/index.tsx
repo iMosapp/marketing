@@ -76,7 +76,7 @@ const CongratsCardDemo = () => {
       <LinearGradient colors={['#1a1a2e', '#16213e']} style={demoStyles.congratsCard}>
         <Text style={demoStyles.congratsHeadline}>CONGRATULATIONS!</Text>
         <View style={demoStyles.customerPhotoCircle}>
-          <Ionicons name="person" size={32} color="#C9A962" />
+          <Ionicons name="person" size={32} color="#007AFF" />
         </View>
         <Text style={demoStyles.customerName}>Jessica Miller</Text>
         <Text style={demoStyles.congratsMessage}>
@@ -312,7 +312,7 @@ const BirthdayCardDemo = () => (
         <Ionicons name="person" size={28} color="#FF6B8A" />
       </View>
       <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>Sarah Johnson</Text>
-      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>Wishing you a wonderful birthday!</Text>
+      <Text style={{ color: '#6E6E73', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>Wishing you a wonderful birthday!</Text>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Ionicons name="chatbubble" size={16} color="#34C759" />
         <Ionicons name="mail" size={16} color="#007AFF" />
@@ -327,7 +327,7 @@ const ReviewPageDemo = () => (
   <View style={demoStyles.phoneFrame}>
     <View style={{ padding: 12 }}>
       <View style={{ alignItems: 'center', marginBottom: 10 }}>
-        <Text style={{ color: '#FFD60A', fontSize: 14, fontWeight: '700', marginBottom: 6 }}>Leave a Review</Text>
+        <Text style={{ color: '#007AFF', fontSize: 14, fontWeight: '700', marginBottom: 6 }}>Leave a Review</Text>
         <View style={{ flexDirection: 'row', gap: 4, marginBottom: 8 }}>
           {[1,2,3,4,5].map(i => (
             <Ionicons key={i} name="star" size={20} color="#FFD60A" />
@@ -340,7 +340,7 @@ const ReviewPageDemo = () => (
           { name: 'Facebook', icon: 'logo-facebook' as const, color: '#1877F2' },
           { name: 'Yelp', icon: 'star' as const, color: '#FF1A1A' },
         ].map(r => (
-          <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 10, gap: 10 }}>
+          <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 8, padding: 10, gap: 10 }}>
             <Ionicons name={r.icon} size={18} color={r.color} />
             <Text style={{ color: '#FFFFFF', fontSize: 13, flex: 1 }}>Leave a {r.name} Review</Text>
             <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
@@ -357,8 +357,8 @@ const ShowroomDemo = () => (
     <View style={{ padding: 10 }}>
       <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>My Showcase</Text>
       <View style={{ flexDirection: 'row', gap: 6 }}>
-        {[{ color: '#C9A962', label: 'Congrats' }, { color: '#FF6B8A', label: 'Birthday' }, { color: '#5856D6', label: 'Featured' }].map(card => (
-          <View key={card.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 8, alignItems: 'center' }}>
+        {[{ color: '#007AFF', label: 'Congrats' }, { color: '#FF6B8A', label: 'Birthday' }, { color: '#5856D6', label: 'Featured' }].map(card => (
+          <View key={card.label} style={{ flex: 1, backgroundColor: '#F5F5F7', borderRadius: 8, padding: 8, alignItems: 'center' }}>
             <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${card.color}30`, justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
               <Ionicons name="images" size={16} color={card.color} />
             </View>
@@ -393,11 +393,11 @@ const QuickActionsDemo = () => (
         {[
           { icon: 'chatbubble' as const, label: 'Send SMS', color: '#34C759' },
           { icon: 'mail' as const, label: 'Send Email', color: '#007AFF' },
-          { icon: 'gift' as const, label: 'Congrats Card', color: '#C9A962' },
-          { icon: 'star' as const, label: 'Review Invite', color: '#FFD60A' },
+          { icon: 'gift' as const, label: 'Congrats Card', color: '#007AFF' },
+          { icon: 'star' as const, label: 'Review Invite', color: '#007AFF' },
           { icon: 'card' as const, label: 'Digital Card', color: '#5856D6' },
         ].map(a => (
-          <View key={a.label} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 10, gap: 10 }}>
+          <View key={a.label} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 8, padding: 10, gap: 10 }}>
             <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${a.color}20`, justifyContent: 'center', alignItems: 'center' }}>
               <Ionicons name={a.icon} size={14} color={a.color} />
             </View>
@@ -1017,18 +1017,18 @@ const demoStyles = StyleSheet.create({
   phoneFrame: {
     width: width - 64,
     maxWidth: 320,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#F0F0F5',
   },
   chatContainer: {
     gap: 10,
   },
   customerBubble: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#F0F0F5',
     borderRadius: 16,
     borderBottomLeftRadius: 4,
     padding: 12,
@@ -1036,7 +1036,7 @@ const demoStyles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   customerText: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1049,7 +1049,7 @@ const demoStyles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   aiText: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1096,7 +1096,7 @@ const demoStyles = StyleSheet.create({
     fontWeight: '600',
   },
   aiSuggestionText: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 10,
@@ -1112,18 +1112,18 @@ const demoStyles = StyleSheet.create({
     borderRadius: 14,
   },
   sendButtonText: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 13,
     fontWeight: '600',
   },
   editButton: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#F0F0F5',
     paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 14,
   },
   editButtonText: {
-    color: '#FFFFFF',
+    color: '#3A3A3C',
     fontSize: 13,
   },
   // Congrats Card
@@ -1133,7 +1133,7 @@ const demoStyles = StyleSheet.create({
     alignItems: 'center',
   },
   congratsHeadline: {
-    color: '#C9A962',
+    color: '#007AFF',
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 2,
@@ -1143,21 +1143,21 @@ const demoStyles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(201,169,98,0.2)',
+    backgroundColor: 'rgba(0,122,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#C9A962',
+    borderColor: '#007AFF',
     marginBottom: 10,
   },
   customerName: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
   },
   congratsMessage: {
-    color: 'rgba(255,255,255,0.8)',
+    color: '#6E6E73',
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 12,
@@ -1167,12 +1167,12 @@ const demoStyles = StyleSheet.create({
     marginBottom: 12,
   },
   salesmanName: {
-    color: '#C9A962',
+    color: '#007AFF',
     fontSize: 13,
     fontWeight: '600',
   },
   dealership: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#AEAEB2',
     fontSize: 11,
   },
   shareIcons: {
@@ -1181,7 +1181,7 @@ const demoStyles = StyleSheet.create({
   },
   // Digital Card
   businessCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#F5F5F7',
     borderRadius: 16,
     padding: 16,
   },
@@ -1200,7 +1200,7 @@ const demoStyles = StyleSheet.create({
     alignItems: 'center',
   },
   cardName: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1215,7 +1215,7 @@ const demoStyles = StyleSheet.create({
   qrCode: {
     width: 80,
     height: 80,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1258,13 +1258,13 @@ const demoStyles = StyleSheet.create({
     marginBottom: 12,
   },
   transcriptBox: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
   transcriptText: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 13,
     lineHeight: 19,
     fontStyle: 'italic',
@@ -1285,7 +1285,7 @@ const demoStyles = StyleSheet.create({
     padding: 4,
   },
   campaignTitle: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
@@ -1313,13 +1313,13 @@ const demoStyles = StyleSheet.create({
     fontWeight: '600',
   },
   timelineText: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 12,
   },
   timelineLine: {
     width: 2,
     height: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#F0F0F5',
     marginLeft: 4,
   },
   // Analytics
@@ -1327,7 +1327,7 @@ const demoStyles = StyleSheet.create({
     padding: 4,
   },
   analyticsTitle: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
@@ -1340,13 +1340,13 @@ const demoStyles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 10,
     padding: 10,
     alignItems: 'center',
   },
   statNumber: {
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontSize: 20,
     fontWeight: '700',
     marginTop: 4,
@@ -1394,17 +1394,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#F0F0F5',
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#C9A962',
+    backgroundColor: '#007AFF',
     borderRadius: 2,
   },
   progressText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#8E8E93',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -1414,11 +1414,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     right: 20,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 16,
   },
   skipText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: '#6E6E73',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -1476,7 +1476,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
+    color: '#3A3A3C',
     textAlign: 'center',
     lineHeight: 21,
     maxWidth: 340,
@@ -1506,7 +1506,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   choiceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -1536,7 +1536,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   choiceDescription: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
+    color: '#8E8E93',
   },
   inputsContainer: {
     width: '100%',
@@ -1553,13 +1553,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
     color: colors.text,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: '#F0F0F5',
   },
   textInputMultiline: {
     minHeight: 80,
@@ -1567,7 +1567,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   inputHint: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
+    color: '#AEAEB2',
     textAlign: 'center',
     marginTop: 8,
     fontStyle: 'italic',
@@ -1599,13 +1599,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 8,
   },
   skipLinkText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#8E8E93',
     fontSize: 14,
   },
   navContainer: {
     paddingHorizontal: 20,
     paddingBottom: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '#FFFFFF',
   },
   navButtons: {
     flexDirection: 'row',
@@ -1629,7 +1629,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C9A962',
+    backgroundColor: '#007AFF',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 28,
@@ -1659,10 +1659,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: '#D1D1D6',
   },
   dotActive: {
-    backgroundColor: '#C9A962',
+    backgroundColor: '#007AFF',
     width: 18,
   },
   dotComplete: {
@@ -1679,14 +1679,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,214,10,0.15)',
+    backgroundColor: 'rgba(0,122,255,0.08)',
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 20,
     marginBottom: 10,
   },
   quickWinBadgeText: {
-    color: '#FFD60A',
+    color: '#007AFF',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -1718,7 +1718,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   checklistItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 14,
     padding: 14,
     marginBottom: 8,
@@ -1741,7 +1741,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 2,
   },
   checklistDescription: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#8E8E93',
     fontSize: 12,
   },
   checklistArrow: {
@@ -1759,17 +1759,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   teamInviteSubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    color: '#6E6E73',
     marginTop: 4,
     textAlign: 'center',
   },
   teamMemberCard: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#F5F5F7',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#F0F0F5',
   },
   teamMemberHeader: {
     flexDirection: 'row',
@@ -1780,17 +1780,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   teamMemberNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#C9A962',
+    color: '#007AFF',
   },
   teamInput: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
     color: colors.text,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#F0F0F5',
   },
   addMemberButton: {
     flexDirection: 'row',
@@ -1830,7 +1830,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   skipInviteLinkText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#AEAEB2',
     fontSize: 14,
     textDecorationLine: 'underline',
   },

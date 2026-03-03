@@ -246,13 +246,13 @@ export default function SalesPresentationScreen() {
           {slide.id === 'cta' && (
             <View style={styles.ctaSection}>
               <TouchableOpacity style={styles.ctaButton} onPress={() => {
-                if (Platform.OS === 'web') window.location.href = "mailto:forest@imonsocial.com?subject=iM%20On%20Social%20Demo%20Request";
+                router.push('/imos/demo?source=sales_presentation' as any);
               }} data-testid="request-demo-btn">
-                <Ionicons name="mail" size={20} color="#FFF" />
-                <Text style={styles.ctaButtonText}>Request a Demo</Text>
+                <Ionicons name="calendar" size={20} color="#FFF" />
+                <Text style={styles.ctaButtonText}>Schedule a Demo</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.ctaSecondary} onPress={() => {
-                if (Platform.OS === 'web') window.location.href = 'https://app.imonsocial.com/auth/signup';
+                router.push('/auth/signup' as any);
               }} data-testid="start-trial-btn">
                 <Text style={styles.ctaSecondaryText}>Start Free Trial</Text>
                 <Ionicons name="arrow-forward" size={16} color="#007AFF" />

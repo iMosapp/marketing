@@ -286,7 +286,7 @@ const s = StyleSheet.create({
   choicesLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8 },
   choiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   choiceText: { fontSize: 13, color: '#3A3A3C', flex: 1 },
-  navBar: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'web' ? 20 : 40, backgroundColor: 'rgba(0,0,0,0.3)' },
+  navBar: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'web' ? 20 : 40, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F0F0F5' },
   navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   navBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, minWidth: 80 },
   navBtnText: { color: '#1D1D1F', fontSize: 16, marginLeft: 4 },

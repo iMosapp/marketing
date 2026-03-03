@@ -22,7 +22,7 @@ import { useToast } from '../../components/common/Toast';
 import { useThemeStore } from '../../store/themeStore';
 // Color palette for branding
 const COLOR_OPTIONS = [
-  { name: 'Gold', value: '#C9A962' },
+  { name: 'Gold', value: '#007AFF' },
   { name: 'Blue', value: '#007AFF' },
   { name: 'Green', value: '#34C759' },
   { name: 'Purple', value: '#AF52DE' },
@@ -160,7 +160,7 @@ const { showToast } = useToast();
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C9A962" />
+          <ActivityIndicator size="large" color="#007AFF" />
         </View>
       </SafeAreaView>
     );
@@ -212,7 +212,7 @@ const { showToast } = useToast();
         {/* SMS MESSAGES Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="chatbubble-ellipses" size={22} color="#C9A962" />
+            <Ionicons name="chatbubble-ellipses" size={22} color="#007AFF" />
             <Text style={styles.sectionTitle}>SMS Messages</Text>
           </View>
           <Text style={styles.sectionDescription}>
@@ -676,7 +676,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   placeholdersTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#C9A962',
+    color: '#007AFF',
     marginBottom: 8,
   },
   placeholdersList: {

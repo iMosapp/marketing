@@ -80,7 +80,7 @@ export default function OnboardingPreviewScreen() {
 
         <ScrollView contentContainerStyle={styles.roleScrollContent}>
           <View style={styles.infoCard}>
-            <Ionicons name="eye-outline" size={24} color="#C9A962" />
+            <Ionicons name="eye-outline" size={24} color="#007AFF" />
             <View style={{ flex: 1 }}>
               <Text style={styles.infoTitle}>Preview Mode</Text>
               <Text style={styles.infoDesc}>Walk through the exact onboarding experience each role sees when they first sign up. No data will be created or modified.</Text>
@@ -104,7 +104,7 @@ export default function OnboardingPreviewScreen() {
                 <Text style={styles.roleSlideCount}>{role.slideCount} onboarding steps</Text>
               </View>
               <View style={styles.playBtn}>
-                <Ionicons name="play" size={18} color="#C9A962" />
+                <Ionicons name="play" size={18} color="#007AFF" />
               </View>
             </TouchableOpacity>
           ))}
@@ -312,14 +312,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#C9A96212',
+    backgroundColor: '#007AFF12',
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#C9A96230',
+    borderColor: '#007AFF30',
   },
-  infoTitle: { fontSize: 15, fontWeight: '600', color: '#C9A962', marginBottom: 4 },
+  infoTitle: { fontSize: 15, fontWeight: '600', color: '#007AFF', marginBottom: 4 },
   infoDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   roleCard: {
     flexDirection: 'row',
@@ -340,7 +340,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#C9A96218',
+    backgroundColor: '#007AFF18',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -357,7 +357,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#F0F0F5',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -371,7 +371,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   previewBadgeText: { fontSize: 13, fontWeight: '600' },
-  previewLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: 1, marginTop: 3 },
+  previewLabel: { fontSize: 10, color: '#AEAEB2', fontWeight: '700', letterSpacing: 1, marginTop: 3 },
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -382,12 +382,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#F0F0F5',
     borderRadius: 2,
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: '#C9A962', borderRadius: 2 },
-  progressText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' },
+  progressFill: { height: '100%', backgroundColor: '#007AFF', borderRadius: 2 },
+  progressText: { color: '#8E8E93', fontSize: 13, fontWeight: '500' },
   // Slide
   slideScroll: { flexGrow: 1, paddingBottom: 20 },
   slideContent: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 24 },
@@ -401,15 +401,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   slideTitle: { fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 4 },
   slideSubtitle: { fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 10 },
-  slideDesc: { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 21, maxWidth: 340, marginBottom: 16 },
+  slideDesc: { fontSize: 14, color: '#3A3A3C', textAlign: 'center', lineHeight: 21, maxWidth: 340, marginBottom: 16 },
   typeBadge: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#F5F5F7',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 8,
     marginBottom: 16,
   },
-  typeBadgeText: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  typeBadgeText: { fontSize: 11, color: '#8E8E93', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   benefitsList: { width: '100%', maxWidth: 340, gap: 8 },
   benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   benefitText: { fontSize: 14, color: colors.text, fontWeight: '500', flex: 1 },
@@ -440,13 +440,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   choicesPreview: { width: '100%', maxWidth: 340, marginTop: 16 },
   choicesLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 },
   choiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  choiceText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', flex: 1 },
+  choiceText: { fontSize: 13, color: '#6E6E73', flex: 1 },
   fieldsPreview: { width: '100%', maxWidth: 340, marginTop: 16 },
   fieldRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
-  fieldText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', flex: 1 },
-  fieldPlaceholder: { color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' },
+  fieldText: { fontSize: 13, color: '#6E6E73', flex: 1 },
+  fieldPlaceholder: { color: '#AEAEB2', fontStyle: 'italic' },
   // Nav
-  navBar: { paddingHorizontal: 20, paddingBottom: 8, backgroundColor: 'rgba(0,0,0,0.3)' },
+  navBar: { paddingHorizontal: 20, paddingBottom: 8, backgroundColor: '#FFFFFF' },
   navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   navBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, minWidth: 80 },
   navBtnText: { color: colors.text, fontSize: 16, marginLeft: 4 },
@@ -454,7 +454,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C9A962',
+    backgroundColor: '#007AFF',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 24,
@@ -462,7 +462,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   navBtnPrimaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
-  dotActive: { backgroundColor: '#C9A962', width: 16 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D1D1D6' },
+  dotActive: { backgroundColor: '#007AFF', width: 16 },
   dotDone: { backgroundColor: '#34C759' },
 });
