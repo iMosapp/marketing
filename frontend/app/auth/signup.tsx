@@ -38,7 +38,17 @@ interface Organization {
 const INDEPENDENT_ORG = { _id: 'independent', name: 'I work independently' };
 
 export default function SignupScreen() {
-  const { colors } = useThemeStore();
+  const { colors: themeColors } = useThemeStore();
+  // Force light theme for public signup page
+  const colors = {
+    ...themeColors,
+    bg: '#FFFFFF',
+    card: '#FFFFFF',
+    surface: '#F0F0F5',
+    text: '#111111',
+    textSecondary: '#6E6E73',
+    textTertiary: '#AEAEB2',
+  };
   const styles = getStyles(colors);
   const router = useRouter();
   const signup = useAuthStore((state) => state.signup);
@@ -474,7 +484,7 @@ export default function SignupScreen() {
                 style={{
                   width: '100%',
                   padding: '16px',
-                  backgroundColor: (loading || !acceptedTerms) ? colors.surface : '#007AFF',
+                  backgroundColor: (loading || !acceptedTerms) ? '#E5E5EA' : '#007AFF',
                   border: 'none',
                   borderRadius: '12px',
                   cursor: (loading || !acceptedTerms) ? 'not-allowed' : 'pointer',
@@ -487,7 +497,7 @@ export default function SignupScreen() {
                 disabled={loading || !acceptedTerms}
                 data-testid="signup-submit-button"
               >
-                <span style={{ color: colors.text, fontSize: '18px', fontWeight: '600' }}>
+                <span style={{ color: '#FFFFFF', fontSize: '18px', fontWeight: '600' }}>
                   {loading ? 'Creating Account...' : 'Sign Up'}
                 </span>
               </button>
@@ -650,7 +660,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   pickerButton: {
     backgroundColor: colors.card,
@@ -660,7 +670,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   pickerText: {
     fontSize: 16,
@@ -675,7 +685,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   passwordInput: {
     flex: 1,
@@ -717,7 +727,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -851,7 +861,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#3C3C3E',
+    backgroundColor: '#E5E5EA',
   },
   dividerText: {
     color: colors.textSecondary,
