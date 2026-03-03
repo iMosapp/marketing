@@ -501,12 +501,14 @@ const getStyles = (colors: any) => StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
+    aspectRatio: 1,
   },
   logoImage: {
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
+    aspectRatio: 1,
   },
   tagline: {
     fontSize: 14,
