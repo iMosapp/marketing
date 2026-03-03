@@ -401,6 +401,24 @@ export default function TagsSettings() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Action Buttons (below the form for PWA accessibility) */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSave} disabled={saving} data-testid="tag-save-btn">
+                {saving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalSaveBtnText}>
+                    {editingTag ? 'Update Tag' : 'Save Tag'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowModal(false)} data-testid="tag-cancel-btn">
+                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </View>
       </Modal>
@@ -677,5 +695,31 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   iconLabelSelected: {
     color: '#007AFF',
+  },
+  modalActions: {
+    marginTop: 24,
+    gap: 10,
+    paddingHorizontal: 4,
+  },
+  modalSaveBtn: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalSaveBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalCancelBtn: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalCancelBtnText: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
