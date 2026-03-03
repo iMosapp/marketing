@@ -781,8 +781,13 @@ export default function ContactDetailScreen() {
         }
         break;
       }
+      case 'photo-menu': {
+        // Open the photo/card sub-picker
+        setShowPhotoSubPicker(true);
+        break;
+      }
       case 'photo': {
-        // Open image picker
+        // Open image picker (photo library)
         try {
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -790,10 +795,25 @@ export default function ContactDetailScreen() {
             quality: 0.7,
           });
           if (!result.canceled && result.assets[0]?.uri) {
-            showToast('Photo selected  - sending via MMS is not yet available');
+            showToast('Photo selected - sending via MMS is not yet available');
           }
         } catch (e) {
           console.error('Photo pick error:', e);
+        }
+        break;
+      }
+      case 'camera': {
+        // Open camera
+        try {
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            quality: 0.7,
+          });
+          if (!result.canceled && result.assets[0]?.uri) {
+            showToast('Photo captured - sending via MMS is not yet available');
+          }
+        } catch (e) {
+          console.error('Camera error:', e);
         }
         break;
       }
@@ -819,6 +839,7 @@ export default function ContactDetailScreen() {
 
   // State for card template picker
   const [showCardTemplatePicker, setShowCardTemplatePicker] = useState(false);
+  const [showPhotoSubPicker, setShowPhotoSubPicker] = useState(false);
 
   // Clear a date automation field
   const handleClearAutomation = async (field: string) => {
@@ -2365,11 +2386,10 @@ export default function ContactDetailScreen() {
             <Text style={s.sendPickerTitle}>Send Something</Text>
             {[
               { key: 'card', icon: 'person-circle', label: 'My Digital Card', sub: 'Share your business card link', color: '#007AFF' },
-              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
               { key: 'review', icon: 'star', label: 'Review Link', sub: 'Request a review', color: '#FFD60A' },
               { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
               { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
-              { key: 'photo', icon: 'camera', label: 'Photo', sub: 'Take or upload a photo', color: '#32ADE6' },
+              { key: 'photo-menu', icon: 'camera', label: 'Photo / Card', sub: 'Photo library, camera, or create a card', color: '#32ADE6' },
               { key: 'campaign', icon: 'rocket', label: 'Enroll in Campaign', sub: 'Add to an active campaign', color: '#AF52DE' },
             ].map(item => (
               <TouchableOpacity
@@ -2413,6 +2433,39 @@ export default function ContactDetailScreen() {
                 onPress={() => handleCardTemplateSelect(item.type)}
                 activeOpacity={0.7}
                 data-testid={`card-template-${item.type}`}
+              >
+                <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.sendPickerLabel}>{item.label}</Text>
+                  <Text style={s.sendPickerSub}>{item.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+
+      {/* Photo / Card Sub-Picker */}
+      <Modal visible={showPhotoSubPicker} animationType="fade" transparent onRequestClose={() => setShowPhotoSubPicker(false)}>
+        <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowPhotoSubPicker(false)}>
+          <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
+            <View style={s.sendPickerHandle} />
+            <Text style={s.sendPickerTitle}>Photo / Card</Text>
+            {[
+              { key: 'photo', icon: 'image', label: 'Photo Library', sub: 'Choose from your photos', color: '#32ADE6' },
+              { key: 'camera', icon: 'camera', label: 'Camera', sub: 'Take a new photo', color: '#34C759' },
+              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
+            ].map(item => (
+              <TouchableOpacity
+                key={item.key}
+                style={s.sendPickerItem}
+                onPress={() => { setShowPhotoSubPicker(false); handleSendPickerAction(item.key); }}
+                activeOpacity={0.7}
+                data-testid={`photo-sub-${item.key}`}
               >
                 <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={20} color={item.color} />
