@@ -5,7 +5,7 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 
 ## Core Brand
 - **Name**: i'M On Social
-- **Domain**: imonsocial.com (marketing), app.imosapp.com (app)
+- **Domain**: imonsocial.com (marketing), app.imonsocial.com (app)
 - **Theme**: Clean white, blue (#007AFF) primary accent, brand colors (red, yellow, green, blue)
 - **Logo**: Colorful ring with iM center + "On social" text
 
@@ -17,7 +17,11 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 
 ## What's Been Implemented
 
-### Completed (Mar 3, 2026 - Latest Session)
+### Completed (Mar 3, 2026 - This Session)
+- **APP DIRECTORY PAGE**: Created static `/appdirectory/` page with 60+ pages organized by category, search filtering, collapsible sections. Tested and validated.
+- **LOGIN PAGE LIGHT THEME**: Fixed `/auth/login` from dark theme to white/light theme matching the signup page. Forced light colors. Tested with credentials.
+
+### Completed (Mar 3, 2026 - Previous Session)
 - **MARKETING SITE REDESIGN**: Complete rewrite of `/app/marketing/build/index.html`
   - Content-driven, no stock photos, no fake testimonials
   - Podium/Kenect/Calldrip-competitive nav with dropdown menus
@@ -50,8 +54,8 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 ## Prioritized Backlog
 
 ### P0
+- Gamification & Leaderboards (implement/verify full functionality)
 - Light mode UI fixes testing (thread bubbles, digital card mockup) - PENDING TEST
-- Gamification enhancements (existing code, may need UX polish)
 
 ### P1
 - AI-Powered Outreach (suggest follow-ups on `sold` tag)
@@ -74,7 +78,11 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 
 ## Key Files
 - `/app/marketing/build/index.html` -- Vercel marketing site (REWRITTEN)
+- `/app/marketing/build/appdirectory/index.html` -- Static app directory page
+- `/app/marketing/generate_pages.py` -- Script to generate all static pages
 - `/app/frontend/public/marketing.html` -- Preview copy of marketing site
+- `/app/frontend/app/auth/login.tsx` -- Login page (FIXED: light theme)
+- `/app/frontend/app/auth/signup.tsx` -- Signup page (light theme)
 - `/app/frontend/app/imos/_components.tsx` -- Shared header/footer (new logo, white theme)
 - `/app/frontend/app/thread/[id].tsx` -- Message thread (light mode fix pending test)
 - `/app/frontend/app/contact/[id].tsx` -- Contact page (paused automation visual)
