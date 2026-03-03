@@ -2706,51 +2706,37 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </Modal>
       
-      {/* Photo Options Modal (for Web) */}
+      {/* Photo Options Action Sheet (Web/PWA) */}
       <Modal
         visible={showPhotoOptionsModal}
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         onRequestClose={() => setShowPhotoOptionsModal(false)}
       >
         <TouchableOpacity 
-          style={styles.photoOptionsOverlay}
+          style={styles.actionSheetOverlay}
           activeOpacity={1}
           onPress={() => setShowPhotoOptionsModal(false)}
         >
-          <View style={styles.photoOptionsModal} onStartShouldSetResponder={() => true}>
-            <Text style={styles.photoOptionsTitle}>Add Photo</Text>
-            
-            <TouchableOpacity
-              style={styles.photoOptionButton}
-              onPress={() => {
-                setShowPhotoOptionsModal(false);
-                pickImage();
-              }}
-              data-testid="photo-option-library"
-            >
-              <Ionicons name="images-outline" size={24} color="#007AFF" />
-              <Text style={styles.photoOptionText}>Photo Library</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.photoOptionButton}
-              onPress={() => {
-                setShowPhotoOptionsModal(false);
-                setShowCardTypePicker(true);
-              }}
-              data-testid="photo-option-create-card"
-            >
-              <Ionicons name="color-palette-outline" size={24} color="#C9A962" />
-              <Text style={styles.photoOptionText}>Create Card</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.photoOptionButton, styles.photoOptionCancel]}
-              onPress={() => setShowPhotoOptionsModal(false)}
-              data-testid="photo-option-cancel"
-            >
-              <Text style={styles.photoOptionCancelText}>Cancel</Text>
+          <View style={styles.actionSheetContainer} onStartShouldSetResponder={() => true}>
+            <View style={styles.actionSheetGroup}>
+              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-library">
+                <Ionicons name="images-outline" size={22} color="#007AFF" />
+                <Text style={styles.actionSheetButtonText}>Photo Library</Text>
+              </TouchableOpacity>
+              <View style={styles.actionSheetDivider} />
+              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-camera">
+                <Ionicons name="camera-outline" size={22} color="#007AFF" />
+                <Text style={styles.actionSheetButtonText}>Take Photo</Text>
+              </TouchableOpacity>
+              <View style={styles.actionSheetDivider} />
+              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); setShowCardTypePicker(true); }} data-testid="photo-option-create-card">
+                <Ionicons name="color-palette-outline" size={22} color="#C9A962" />
+                <Text style={[styles.actionSheetButtonText, { color: '#C9A962' }]}>Create Card</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.actionSheetCancel} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
+              <Text style={styles.actionSheetCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -4007,49 +3993,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textPrimary,
   },
   // Photo Options Modal Styles (for Web)
-  photoOptionsOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+  // Photo Options (native action sheet style for PWA)
+  actionSheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  actionSheetContainer: { paddingHorizontal: 8, paddingBottom: 8 },
+  actionSheetGroup: {
+    backgroundColor: colors.surface, borderRadius: 14, overflow: 'hidden', marginBottom: 8,
   },
-  photoOptionsModal: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 20,
-    width: '80%',
-    maxWidth: 320,
+  actionSheetButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 18, gap: 10,
   },
-  photoOptionsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 20,
+  actionSheetButtonText: { fontSize: 20, color: '#007AFF', fontWeight: '400' },
+  actionSheetDivider: { height: 1, backgroundColor: colors.border },
+  actionSheetCancel: {
+    backgroundColor: colors.surface, borderRadius: 14, paddingVertical: 18, alignItems: 'center',
   },
-  photoOptionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: colors.elevated,
-    marginBottom: 10,
-    gap: 12,
-  },
-  photoOptionText: {
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  photoOptionCancel: {
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  photoOptionCancelText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    textAlign: 'center',
-  },
+  actionSheetCancelText: { fontSize: 20, fontWeight: '600', color: '#007AFF' },
   // Congrats Card Modal Styles
   congratsModalOverlay: {
     flex: 1,
