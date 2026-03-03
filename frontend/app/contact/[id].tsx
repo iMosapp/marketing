@@ -2386,11 +2386,11 @@ export default function ContactDetailScreen() {
             <Text style={s.sendPickerTitle}>Send Something</Text>
             {[
               { key: 'card', icon: 'person-circle', label: 'My Digital Card', sub: 'Share your business card link', color: '#007AFF' },
+              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
               { key: 'review', icon: 'star', label: 'Review Link', sub: 'Request a review', color: '#FFD60A' },
               { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
               { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
-              { key: 'photo-menu', icon: 'camera', label: 'Photo / Card', sub: 'Photo library, camera, or create a card', color: '#32ADE6' },
-              { key: 'campaign', icon: 'rocket', label: 'Enroll in Campaign', sub: 'Add to an active campaign', color: '#AF52DE' },
+              { key: 'photo-menu', icon: 'camera', label: 'Photos', sub: 'Photo library or camera', color: '#32ADE6' },
             ].map(item => (
               <TouchableOpacity
                 key={item.key}
@@ -2454,11 +2454,10 @@ export default function ContactDetailScreen() {
         <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowPhotoSubPicker(false)}>
           <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
             <View style={s.sendPickerHandle} />
-            <Text style={s.sendPickerTitle}>Photo / Card</Text>
+            <Text style={s.sendPickerTitle}>Photos</Text>
             {[
               { key: 'photo', icon: 'image', label: 'Photo Library', sub: 'Choose from your photos', color: '#32ADE6' },
               { key: 'camera', icon: 'camera', label: 'Camera', sub: 'Take a new photo', color: '#34C759' },
-              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
             ].map(item => (
               <TouchableOpacity
                 key={item.key}
