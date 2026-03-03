@@ -1,5 +1,9 @@
 # CHANGELOG — iMOs App
 
+## Mar 3, 2026 — Send Something Picker Cleanup (COMPLETED)
+- **Consolidated picker:** Removed "Enroll in Campaign" from the + button menu, moved "Create a Card" to #5, added "Photos" sub-menu (Photo Library + Camera) at #6
+- **Final order:** My Digital Card → Review Link → My Showcase → My Link Page → Create a Card → Photos
+
 ## Mar 2, 2026 — Activity Logging & Call Screen Fixes (COMPLETED)
 - **No em-dashes in AI suggestions:** Updated system prompt + added post-processing to replace em-dashes (—) with commas and en-dashes (–) with hyphens in `/api/contact-intel/{user_id}/{contact_id}/suggest-message`
 - **Call button → Call Screen on web:** Previously web just opened `tel:` with no duration logging. Now routes through `/call-screen` on all platforms so call duration is tracked and logged to the activity feed
