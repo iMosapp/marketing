@@ -439,7 +439,7 @@ export const STORE_MANAGER_SLIDES: OnboardingSlide[] = [
     type: 'team_invite' as const,
     title: 'Invite Your Sales Team',
     subtitle: 'Build Your Team',
-    description: "Add the salespeople who will use iMOs. They'll go through their own quick-wins onboarding.",
+    description: "i'M On Social",
     icon: 'people-circle',
     iconColor: '#34C759',
     bgGradient: ['#0F2E1A', '#1A2E1A'],

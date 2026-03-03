@@ -8,7 +8,7 @@ const HERO_FEATURES = [
   { icon: 'card', color: '#007AFF', label: 'Digital Cards' },
   { icon: 'star', color: '#FFD60A', label: 'Personal Reviews' },
   { icon: 'share-social', color: '#34C759', label: 'Social Links' },
-  { icon: 'camera', color: '#C9A962', label: 'Congrats Cards' },
+  { icon: 'camera', color: '#007AFF', label: 'Congrats Cards' },
   { icon: 'rocket', color: '#FF9500', label: 'Campaigns' },
   { icon: 'trophy', color: '#AF52DE', label: 'Reputation' },
 ];
@@ -34,7 +34,7 @@ const HOW_IT_WORKS = [
     desc: 'Digital business card. Review profile. Social links. Personal rating. Customer feedback history. No more hiding behind the company logo.',
     bullets: ['Personal digital card & review profile', 'Portable reputation that stays with you', 'Direct customer feedback history'],
     icon: 'person',
-    color: '#C9A962',
+    color: '#007AFF',
   },
   {
     tag: 'THE EXPERIENCE',
@@ -82,10 +82,10 @@ export default function ImosHome() {
             <Text style={[s.heroLabel, isDesktop && { fontSize: 14 }]}>i'M ON SOCIAL</Text>
             <Text style={[s.heroTitle, isDesktop && { fontSize: 52, lineHeight: 58 }]}>
               Meet the New Way{'\n'}
-              <Text style={{ color: '#C9A962' }}>to Be On Social.</Text>
+              <Text style={{ color: '#007AFF' }}>to Be On Social.</Text>
             </Text>
             <Text style={[s.heroSub, isDesktop && { fontSize: 18, maxWidth: 560 }]}>
-              In a world where companies automate everything, iMOs protects the relationship. Give organizations, teams, and individuals control of their digital presence, reviews, and customer connections.
+              In a world where companies automate everything, i'M On Social protects the relationship. Give organizations, teams, and individuals control of their digital presence, reviews, and customer connections.
             </Text>
 
             {/* Feature Icons Row */}
@@ -108,7 +108,7 @@ export default function ImosHome() {
               </TouchableOpacity>
               <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/imos/signup')} data-testid="hero-trial-btn">
                 <Text style={s.secondaryBtnText}>Start 14-Day Free Trial</Text>
-                <Ionicons name="arrow-forward" size={16} color="#C9A962" />
+                <Ionicons name="arrow-forward" size={16} color="#007AFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -151,13 +151,13 @@ export default function ImosHome() {
           {/* ========== THE SHIFT ========== */}
           <View style={s.narrativeSection}>
             <View style={[s.narrativeCard, { borderColor: 'rgba(201,169,98,0.2)' }]}>
-              <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(201,169,98,0.1)' }]}>
-                <Ionicons name="swap-horizontal" size={32} color="#C9A962" />
+              <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(0,122,255,0.06)' }]}>
+                <Ionicons name="swap-horizontal" size={32} color="#007AFF" />
               </View>
-              <Text style={[s.narrativeTag, { color: '#C9A962' }]}>THE SHIFT</Text>
+              <Text style={[s.narrativeTag, { color: '#007AFF' }]}>THE SHIFT</Text>
               <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
-                iMOs Isn't About Marketing.{'\n'}
-                <Text style={{ color: '#C9A962' }}>It's About Ownership.</Text>
+                i'M On Social Isn't About Marketing.{'\n'}
+                <Text style={{ color: '#007AFF' }}>It's About Ownership.</Text>
               </Text>
               <View style={s.narrativeDivider} />
               <View style={s.narrativeLines}>
@@ -168,7 +168,7 @@ export default function ImosHome() {
                 {[
                   { icon: 'business', color: '#007AFF', label: 'Organizations', desc: 'Teams, accounts, reputation data, social presence  - structured.' },
                   { icon: 'people', color: '#34C759', label: 'Teams', desc: 'Shared visibility. Unified brand. Individual ownership.' },
-                  { icon: 'person', color: '#C9A962', label: 'Individuals', desc: 'Digital card. Reviews. Social links. Personal rating.' },
+                  { icon: 'person', color: '#007AFF', label: 'Individuals', desc: 'Digital card. Reviews. Social links. Personal rating.' },
                 ].map((col, ci) => (
                   <View key={ci} style={s.narrativeCol}>
                     <View style={[s.narrativeColIcon, { backgroundColor: `${col.color}15` }]}>
@@ -225,7 +225,7 @@ export default function ImosHome() {
                 {[
                   { icon: 'eye', color: '#007AFF', text: 'Visibility' },
                   { icon: 'shield-checkmark', color: '#34C759', text: 'Credibility' },
-                  { icon: 'key', color: '#C9A962', text: 'Ownership' },
+                  { icon: 'key', color: '#007AFF', text: 'Ownership' },
                   { icon: 'infinite', color: '#AF52DE', text: 'Continuity' },
                 ].map((g, gi) => (
                   <View key={gi} style={s.narrativeGridItem}>
@@ -236,7 +236,7 @@ export default function ImosHome() {
               </View>
               <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(0,122,255,0.08)' }]}>
                 <Text style={[s.narrativeHighlightText, { color: '#5AC8FA' }]}>
-                  iMOs gives individuals visibility, credibility, ownership, and continuity. Their reputation moves with them.
+                  i'M On Social gives individuals visibility, credibility, ownership, and continuity. Their reputation moves with them.
                 </Text>
               </View>
             </View>
@@ -289,7 +289,7 @@ export default function ImosHome() {
               </TouchableOpacity>
               <TouchableOpacity style={s.secondaryBtn} onPress={() => navigate('/imos/signup')} data-testid="bottom-trial-btn">
                 <Text style={s.secondaryBtnText}>Start 14-Day Free Trial</Text>
-                <Ionicons name="arrow-forward" size={16} color="#C9A962" />
+                <Ionicons name="arrow-forward" size={16} color="#007AFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -302,50 +302,50 @@ export default function ImosHome() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
 
   /* HERO */
   hero: { alignItems: 'center', paddingTop: 48, paddingBottom: 40, paddingHorizontal: 20 },
   heroDesktop: { paddingTop: 72, paddingBottom: 56 },
-  heroLabel: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 16 },
-  heroTitle: { fontSize: 32, fontWeight: '900', color: '#FFF', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
-  heroSub: { fontSize: 16, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
+  heroLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 16 },
+  heroTitle: { fontSize: 32, fontWeight: '900', color: '#1D1D1F', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
+  heroSub: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
   heroIcons: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginBottom: 36 },
   heroIconItem: { alignItems: 'center', gap: 6, width: 90 },
   heroIconCircle: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  heroIconLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontWeight: '500' },
+  heroIconLabel: { fontSize: 11, color: '#86868B', textAlign: 'center', fontWeight: '500' },
   heroCTAs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#C9A962', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
+    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
   },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
+  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
   secondaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 14, paddingHorizontal: 24, borderRadius: 28,
-    borderWidth: 1, borderColor: 'rgba(201,169,98,0.3)',
+    borderWidth: 1, borderColor: 'rgba(0,122,255,0.15)',
   },
-  secondaryBtnText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
+  secondaryBtnText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
 
   /* STATS */
   statsSection: {
     flexDirection: 'column', gap: 12, paddingHorizontal: 20, paddingVertical: 32,
-    backgroundColor: 'rgba(255,255,255,0.02)', borderTopWidth: 1, borderBottomWidth: 1,
+    backgroundColor: '#FAFAFA', borderTopWidth: 1, borderBottomWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
   statsDesktop: { flexDirection: 'row', gap: 20, paddingVertical: 40 },
   statCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 24,
-    alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F5F5F7', borderRadius: 16, padding: 24,
+    alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
-  statValue: { fontSize: 40, fontWeight: '900', color: '#C9A962', marginBottom: 6 },
-  statLabel: { fontSize: 14, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 20 },
+  statValue: { fontSize: 40, fontWeight: '900', color: '#007AFF', marginBottom: 6 },
+  statLabel: { fontSize: 14, color: '#6E6E73', textAlign: 'center', lineHeight: 20 },
 
   /* HOW IT WORKS */
   howSection: { alignItems: 'center', paddingTop: 48, paddingBottom: 16, paddingHorizontal: 20 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  sectionTitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', lineHeight: 36 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  sectionTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', lineHeight: 36 },
 
   featureRow: { paddingHorizontal: 20, paddingVertical: 32, gap: 24 },
   featureRowDesktop: { flexDirection: 'row', alignItems: 'center', gap: 48, paddingVertical: 48 },
@@ -356,52 +356,52 @@ const s = StyleSheet.create({
   },
   featureText: {},
   featureTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
-  featureTitle: { fontSize: 22, fontWeight: '800', color: '#FFF', lineHeight: 30, marginBottom: 12 },
+  featureTitle: { fontSize: 22, fontWeight: '800', color: '#1D1D1F', lineHeight: 30, marginBottom: 12 },
   featureDesc: { fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 23, marginBottom: 16 },
   bulletList: { gap: 8 },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bulletText: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+  bulletText: { fontSize: 14, color: '#3A3A3C', fontWeight: '500' },
 
   /* BOTTOM CTA */
   bottomCTA: {
     alignItems: 'center', paddingVertical: 56, paddingHorizontal: 20,
-    backgroundColor: 'rgba(201,169,98,0.04)', borderTopWidth: 1, borderColor: 'rgba(201,169,98,0.1)',
+    backgroundColor: 'rgba(201,169,98,0.04)', borderTopWidth: 1, borderColor: 'rgba(0,122,255,0.06)',
   },
-  bottomCTATitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
-  bottomCTASub: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
+  bottomCTATitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
+  bottomCTASub: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
   bottomCTABtns: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
 
   /* NARRATIVE SECTIONS */
   narrativeSection: { paddingHorizontal: 20, paddingVertical: 12 },
   narrativeCard: {
-    backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, padding: 28,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#FAFAFA', borderRadius: 24, padding: 28,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   narrativeIconWrap: {
     width: 56, height: 56, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   narrativeTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 10 },
-  narrativeTitle: { fontSize: 22, fontWeight: '800', color: '#FFF', lineHeight: 30, marginBottom: 16 },
-  narrativeDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
+  narrativeTitle: { fontSize: 22, fontWeight: '800', color: '#1D1D1F', lineHeight: 30, marginBottom: 16 },
+  narrativeDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.06)', marginBottom: 16 },
   narrativeLines: { gap: 8, marginBottom: 16 },
-  narrativeLine: { fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 23 },
+  narrativeLine: { fontSize: 15, color: '#6E6E73', lineHeight: 23 },
   narrativeHighlight: {
     borderRadius: 12, padding: 16, marginTop: 4,
   },
   narrativeHighlightText: { fontSize: 15, fontWeight: '600', lineHeight: 22, textAlign: 'center' },
   narrativeColumnsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8, marginBottom: 8 },
   narrativeCol: {
-    flex: 1, minWidth: 150, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+    flex: 1, minWidth: 150, backgroundColor: '#F5F5F7', borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
   narrativeColIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  narrativeColLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 4 },
-  narrativeColDesc: { fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
+  narrativeColLabel: { fontSize: 14, fontWeight: '700', color: '#1D1D1F', marginBottom: 4 },
+  narrativeColDesc: { fontSize: 13, color: '#86868B', lineHeight: 18 },
   narrativeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
   narrativeGridItem: {
     width: '46%', flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 14,
+    backgroundColor: '#F5F5F7', borderRadius: 12, padding: 14,
   },
-  narrativeGridText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  narrativeGridText: { fontSize: 15, fontWeight: '600', color: '#1D1D1F' },
 });

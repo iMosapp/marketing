@@ -15,21 +15,21 @@ type PublicPage = {
 
 const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: PublicPage[] }[] = [
   {
-    category: 'Learn About iMOs',
+    category: "Learn About i'M On Social",
     icon: 'diamond',
-    color: '#C9A962',
+    color: '#007AFF',
     pages: [
-      { title: 'Why Use iMOs', description: 'Interactive deck showcasing iMOs capabilities', icon: 'easel', color: '#C9A962', path: '/imos/salespresentation', badge: 'Featured' },
-      { title: 'Features Overview', description: 'Explore what iMOs can do for your team', icon: 'apps', color: '#007AFF', path: '/imos/features' },
+      { title: "Why Use i'M On Social", description: "Interactive deck showcasing i'M On Social capabilities", icon: 'easel', color: '#007AFF', path: '/imos/salespresentation', badge: 'Featured' },
+      { title: 'Features Overview', description: "Explore what i'M On Social can do for your team", icon: 'apps', color: '#007AFF', path: '/imos/features' },
       { title: 'Pricing Plans', description: 'Subscription tiers and pricing', icon: 'pricetag', color: '#34C759', path: '/imos/pricing' },
     ],
   },
   {
-    category: 'Experience iMOs',
+    category: "Experience i'M On Social",
     icon: 'rocket',
     color: '#FF9500',
     pages: [
-      { title: 'Onboarding Preview', description: 'See the onboarding flow for all 5 roles', icon: 'eye', color: '#C9A962', path: '/imos/onboarding-preview', badge: 'Interactive' },
+      { title: 'Onboarding Preview', description: 'See the onboarding flow for all 5 roles', icon: 'eye', color: '#007AFF', path: '/imos/onboarding-preview', badge: 'Interactive' },
     ],
   },
   {
@@ -37,7 +37,7 @@ const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: Pub
     icon: 'person-add',
     color: '#34C759',
     pages: [
-      { title: 'Sign Up', description: 'Create your iMOs account', icon: 'person-add', color: '#34C759', path: '/auth/signup' },
+      { title: 'Sign Up', description: "Create your i'M On Social account", icon: 'person-add', color: '#34C759', path: '/auth/signup' },
       { title: 'Log In', description: 'Access your dashboard', icon: 'log-in', color: '#007AFF', path: '/auth/login' },
       { title: 'Forgot Password', description: 'Reset your credentials', icon: 'key', color: '#FF9500', path: '/auth/forgot-password' },
     ],
@@ -78,7 +78,7 @@ export default function HubScreen() {
           <View style={s.titleSection}>
             <Text style={s.label}>PAGE DIRECTORY</Text>
             <Text style={[s.title, isDesktop && { fontSize: 36 }]}>All Public Pages</Text>
-            <Text style={s.subtitle}>Browse, preview, and share every public page in the iMOs platform.</Text>
+            <Text style={s.subtitle}>i'M On Social</Text>
           </View>
 
           {/* Sections */}
@@ -130,29 +130,29 @@ export default function HubScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 24, paddingHorizontal: 20 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8, textAlign: 'center' },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 400 },
   section: { marginBottom: 24, paddingHorizontal: 16 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10, paddingLeft: 4 },
   sectionIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#1D1D1F' },
   gridDesktop: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   pageCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 8,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: '#F5F5F7', borderRadius: 12, padding: 14, marginBottom: 8,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   pageCardDesktop: { width: '48%', marginBottom: 0 },
   pageIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   pageInfo: { flex: 1 },
   pageTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pageTitle: { fontSize: 15, fontWeight: '600', color: '#FFF' },
-  badge: { backgroundColor: '#C9A96225', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  badgeText: { fontSize: 10, fontWeight: '600', color: '#C9A962' },
+  pageTitle: { fontSize: 15, fontWeight: '600', color: '#1D1D1F' },
+  badge: { backgroundColor: 'rgba(0,122,255,0.08)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  badgeText: { fontSize: 10, fontWeight: '600', color: '#007AFF' },
   pageDesc: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
   pageUrl: { fontSize: 10, color: '#4A4A4C', marginTop: 3, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
   copyBtn: { padding: 8, marginRight: 4 },

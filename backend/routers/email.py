@@ -265,7 +265,7 @@ async def send_email(request: SendEmailRequest, user_id: str):
     )
     
     params = {
-        "from": f"iMOs <{SENDER_EMAIL}>",
+        "from": f"i'M On Social <{SENDER_EMAIL}>",
         "to": [request.recipient_email],
         "subject": request.subject,
         "html": wrapped_html,

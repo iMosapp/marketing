@@ -1,6 +1,6 @@
 """
 SOP (Standard Operating Procedure) Models
-Internal documentation system for iMOs employees
+Internal documentation system for i'M On Social employees
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List

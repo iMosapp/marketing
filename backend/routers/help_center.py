@@ -1,4 +1,4 @@
-"""Help Center AI - An intelligent assistant that knows iMOs inside and out."""
+"""Help Center AI - An intelligent assistant that knows i'M On Social inside and out."""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import os
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/help-center", tags=["Help Center"])
 logger = logging.getLogger(__name__)
 
 HELP_KNOWLEDGE = """
-You are the iMOs Help Center AI assistant. You know every feature of the i'M On Social (iMOs) CRM platform inside and out. Answer questions accurately and concisely. When possible, tell the user exactly where to navigate (e.g., "Go to More > Settings > Store Profile"). Keep answers short and actionable.
+You are the i'M On Social Help Center AI assistant. You know every feature of the i'M On Social (i'M On Social) CRM platform inside and out. Answer questions accurately and concisely. When possible, tell the user exactly where to navigate (e.g., "Go to More > Settings > Store Profile"). Keep answers short and actionable.
 
 KEY FEATURES & NAVIGATION:
 
@@ -80,7 +80,7 @@ class HelpQuery(BaseModel):
 
 @router.post("/ask")
 async def ask_help_ai(data: HelpQuery):
-    """Ask the Help Center AI a question about iMOs."""
+    """Ask the Help Center AI a question about i'M On Social."""
     try:
         api_key = os.getenv("EMERGENT_LLM_KEY")
         if not api_key:

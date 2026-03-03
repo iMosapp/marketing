@@ -37,7 +37,7 @@ const REVIEW_FEATURES = [
   },
   {
     icon: 'business',
-    color: '#C9A962',
+    color: '#007AFF',
     title: 'Account-Level Dealership Card',
     desc: 'A branded public page for your dealership with team roster, approved testimonials, and a leave-a-review section. Perfect for managers to share.',
   },
@@ -156,7 +156,7 @@ export default function ImosReviews() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
 
   hero: { alignItems: 'center', paddingTop: 48, paddingBottom: 40, paddingHorizontal: 20 },
@@ -165,12 +165,12 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,214,10,0.2)',
   },
   heroLabel: { fontSize: 11, fontWeight: '700', color: '#FFD60A', letterSpacing: 2, marginBottom: 16 },
-  heroTitle: { fontSize: 32, fontWeight: '900', color: '#FFF', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
-  heroSub: { fontSize: 16, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
+  heroTitle: { fontSize: 32, fontWeight: '900', color: '#1D1D1F', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
+  heroSub: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
   heroCTAs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#C9A962', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
+    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
   },
   primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
   outlineBtn: {
@@ -180,37 +180,37 @@ const s = StyleSheet.create({
   },
   outlineBtnText: { fontSize: 15, fontWeight: '600', color: '#FFD60A' },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  sectionTitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', lineHeight: 36, marginBottom: 32 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  sectionTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', lineHeight: 36, marginBottom: 32 },
 
   featuresSection: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 20 },
   featuresGrid: { gap: 16, width: '100%' },
   featureCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 24,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F5F5F7', borderRadius: 16, padding: 24,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   featureIconWrap: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  featureCardTitle: { fontSize: 17, fontWeight: '700', color: '#FFF', marginBottom: 6 },
-  featureCardDesc: { fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 21 },
+  featureCardTitle: { fontSize: 17, fontWeight: '700', color: '#1D1D1F', marginBottom: 6 },
+  featureCardDesc: { fontSize: 14, color: '#6E6E73', lineHeight: 21 },
 
   howSection: { alignItems: 'center', paddingTop: 56, paddingHorizontal: 20 },
   stepsContainer: { gap: 16, width: '100%' },
   stepCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 24,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', alignItems: 'center',
+    backgroundColor: '#F5F5F7', borderRadius: 16, padding: 24,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', alignItems: 'center',
   },
   stepNumber: {
     width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,214,10,0.15)',
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
   stepNumberText: { fontSize: 16, fontWeight: '800', color: '#FFD60A' },
-  stepTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 6 },
+  stepTitle: { fontSize: 16, fontWeight: '700', color: '#1D1D1F', textAlign: 'center', marginBottom: 6 },
   stepDesc: { fontSize: 13, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 19 },
 
   bottomCTA: {
     alignItems: 'center', paddingVertical: 56, paddingHorizontal: 20, marginTop: 32,
     backgroundColor: 'rgba(255,214,10,0.03)', borderTopWidth: 1, borderColor: 'rgba(255,214,10,0.1)',
   },
-  bottomTitle: { fontSize: 28, fontWeight: '800', color: '#FFF', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
-  bottomSub: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
+  bottomTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
+  bottomSub: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
 });

@@ -73,7 +73,7 @@ export default function OnboardingPreviewScreen() {
             </View>
 
             <View style={s.infoCard}>
-              <Ionicons name="eye-outline" size={24} color="#C9A962" />
+              <Ionicons name="eye-outline" size={24} color="#007AFF" />
               <View style={{ flex: 1 }}>
                 <Text style={s.infoTitle}>Preview Mode</Text>
                 <Text style={s.infoDesc}>No data will be created or modified. See exactly what your team experiences.</Text>
@@ -98,7 +98,7 @@ export default function OnboardingPreviewScreen() {
                     <Text style={s.roleSlideCount}>{role.slideCount} onboarding steps</Text>
                   </View>
                   <View style={s.playBtn}>
-                    <Ionicons name="play" size={18} color="#C9A962" />
+                    <Ionicons name="play" size={18} color="#007AFF" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -238,46 +238,46 @@ export default function OnboardingPreviewScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 24, paddingHorizontal: 20 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8, textAlign: 'center' },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 420 },
-  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#C9A96212', borderRadius: 12, padding: 14, marginHorizontal: 16, marginBottom: 20, borderWidth: 1, borderColor: '#C9A96230' },
-  infoTitle: { fontSize: 15, fontWeight: '600', color: '#C9A962', marginBottom: 4 },
+  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#007AFF12', borderRadius: 12, padding: 14, marginHorizontal: 16, marginBottom: 20, borderWidth: 1, borderColor: '#007AFF30' },
+  infoTitle: { fontSize: 15, fontWeight: '600', color: '#007AFF', marginBottom: 4 },
   infoDesc: { fontSize: 13, color: '#8E8E93', lineHeight: 19 },
   roleGridDesktop: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16 },
-  roleCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16, marginBottom: 10, marginHorizontal: 16, borderWidth: 1, borderColor: '#2C2C2E' },
+  roleCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 14, padding: 16, marginBottom: 10, marginHorizontal: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   roleIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   roleInfo: { flex: 1 },
-  roleName: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  roleName: { fontSize: 16, fontWeight: '600', color: '#1D1D1F' },
   roleDesc: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
   roleSlideCount: { fontSize: 12, color: '#6E6E73', marginTop: 4 },
-  playBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center' },
+  playBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF18', alignItems: 'center', justifyContent: 'center' },
   // Slide preview
-  previewContainer: { flex: 1, backgroundColor: '#000' },
+  previewContainer: { flex: 1, backgroundColor: '#FFFFFF' },
   previewBanner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, zIndex: 10 },
   exitBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   previewBannerCenter: { flex: 1, alignItems: 'center' },
   previewBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   previewBadgeText: { fontSize: 13, fontWeight: '600' },
-  previewLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: 1, marginTop: 3 },
+  previewLabel: { fontSize: 10, color: '#86868B', fontWeight: '700', letterSpacing: 1, marginTop: 3 },
   progressRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, gap: 12 },
   progressTrack: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#C9A962', borderRadius: 2 },
-  progressText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' },
+  progressFill: { height: '100%', backgroundColor: '#007AFF', borderRadius: 2 },
+  progressText: { color: '#6E6E73', fontSize: 13, fontWeight: '500' },
   slideScroll: { flexGrow: 1, paddingBottom: 20 },
   slideContent: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 24 },
   iconCircle: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
-  slideTitle: { fontSize: 22, fontWeight: '700', color: '#FFF', textAlign: 'center', marginBottom: 4 },
+  slideTitle: { fontSize: 22, fontWeight: '700', color: '#1D1D1F', textAlign: 'center', marginBottom: 4 },
   slideSubtitle: { fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 10 },
   slideDesc: { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 21, maxWidth: 340, marginBottom: 16 },
-  typeBadge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, marginBottom: 16 },
-  typeBadgeText: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  typeBadge: { backgroundColor: 'rgba(0,0,0,0.06)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, marginBottom: 16 },
+  typeBadgeText: { fontSize: 11, color: '#6E6E73', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   benefitsList: { width: '100%', maxWidth: 340, gap: 8 },
   benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  benefitText: { fontSize: 14, color: '#FFF', fontWeight: '500', flex: 1 },
+  benefitText: { fontSize: 14, color: '#1D1D1F', fontWeight: '500', flex: 1 },
   interactiveNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,149,0,0.12)', borderRadius: 10, padding: 12, marginTop: 16, width: '100%', maxWidth: 340 },
   interactiveNoteText: { fontSize: 13, color: '#FF9500', flex: 1 },
   demoNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,122,255,0.12)', borderRadius: 10, padding: 12, marginTop: 12, width: '100%', maxWidth: 340 },
@@ -285,16 +285,16 @@ const s = StyleSheet.create({
   choicesPreview: { width: '100%', maxWidth: 340, marginTop: 16 },
   choicesLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8 },
   choiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  choiceText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', flex: 1 },
+  choiceText: { fontSize: 13, color: '#3A3A3C', flex: 1 },
   navBar: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'web' ? 20 : 40, backgroundColor: 'rgba(0,0,0,0.3)' },
   navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   navBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, minWidth: 80 },
-  navBtnText: { color: '#FFF', fontSize: 16, marginLeft: 4 },
-  navBtnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#C9A962', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, gap: 4 },
+  navBtnText: { color: '#1D1D1F', fontSize: 16, marginLeft: 4 },
+  navBtnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, gap: 4 },
   navBtnPrimaryText: { color: '#000', fontSize: 16, fontWeight: '600' },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
-  dotActive: { backgroundColor: '#C9A962', width: 16 },
+  dotActive: { backgroundColor: '#007AFF', width: 16 },
   dotDone: { backgroundColor: '#34C759' },
   keyHint: { textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 8 },
 });

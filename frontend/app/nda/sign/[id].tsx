@@ -182,7 +182,7 @@ export default function NDASignPage() {
           <View style={styles.logoArea}>
             <Ionicons name="shield-checkmark" size={48} color="#007AFF" />
             <Text style={styles.pageTitle}>Non-Disclosure Agreement</Text>
-            <Text style={styles.pageSub}>from {ndaInfo?.sender_name} at i'M On Social</Text>
+            <Text style={styles.pageSub}>i'M On Social</Text>
           </View>
 
           <View style={styles.card}>

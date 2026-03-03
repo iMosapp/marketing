@@ -136,7 +136,7 @@ export default function HelpPage() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: colors.text }]}>Help Center</Text>
-        <TouchableOpacity onPress={() => { setShowAI(!showAI); if (!showAI && chatMessages.length === 0) setChatMessages([{ role: 'assistant', text: "Hi! I'm your iMOs assistant. Ask me anything about the app and I'll help you out." }]); }} style={[s.aiToggle, { backgroundColor: colors.card }]} data-testid="help-ai-toggle">
+        <TouchableOpacity onPress={() => { setShowAI(!showAI); if (!showAI && chatMessages.length === 0) setChatMessages([{ role: 'assistant', text: "i'M On Social" }]); }} style={[s.aiToggle, { backgroundColor: colors.card }]} data-testid="help-ai-toggle">
           <Ionicons name={showAI ? 'book-outline' : 'sparkles'} size={20} color={showAI ? colors.text : '#C9A962'} />
         </TouchableOpacity>
       </View>
@@ -193,7 +193,7 @@ export default function HelpPage() {
             <View style={s.emptyState}>
               <Ionicons name="search-outline" size={40} color={colors.textTertiary} />
               <Text style={s.emptyText}>No articles match "{query}"</Text>
-              <TouchableOpacity style={s.askAIBtn} onPress={() => { setShowAI(true); setChatMessages([{ role: 'assistant', text: "Hi! I'm your iMOs assistant. Ask me anything about the app and I'll help you out." }]); askAI(); }}>
+              <TouchableOpacity style={s.askAIBtn} onPress={() => { setShowAI(true); setChatMessages([{ role: 'assistant', text: "i'M On Social" }]); askAI(); }}>
                 <Ionicons name="sparkles" size={16} color="#C9A962" />
                 <Text style={s.askAIText}>Ask AI instead</Text>
               </TouchableOpacity>

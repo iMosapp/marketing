@@ -104,9 +104,9 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Ad: Customer Showcase', description: 'Sponsored ad  - showcase happy customers & reviews', path: '/ad-showcase.html', icon: 'images-outline', color: '#34C759', requiresAuth: false, audience: 'FB/IG Ad' },
       { name: 'Ad: Review Link Machine', description: 'Sponsored ad  - one-tap Google & Facebook review requests', path: '/ad-reviews.html', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'FB/IG Ad' },
       { name: 'Ad: Stay Connected', description: 'Sponsored ad  - automated follow-ups & AI messaging', path: '/ad-autopilot.html', icon: 'rocket-outline', color: '#AF52DE', requiresAuth: false, audience: 'FB/IG Ad' },
-      { name: 'iMOs Home', description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Everyone' },
+      { name: "i'M On Social Home", description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', requiresAuth: false, audience: 'Everyone' },
       { name: 'Schedule a Demo', description: 'Lead capture form', path: '/imos/demo', icon: 'calendar-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects' },
-      { name: 'Why Use iMOs', description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
+      { name: "Why Use i'M On Social", description: 'Interactive slide deck', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', requiresAuth: false, audience: 'Prospects, investors' },
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Pricing Plans', description: 'Subscription tiers', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', requiresAuth: false, audience: 'Prospects, customers' },
       { name: 'Solutions Hub', description: 'Browse solutions', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
@@ -119,7 +119,7 @@ const PAGE_CATALOG: Category[] = [
     color: '#FF9500',
     pages: [
       { name: 'Onboarding Preview', description: 'Preview all role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#C9A962', requiresAuth: false, audience: 'Admins, prospects' },
-      { name: 'Training Hub', description: 'Learn how to use iMOs', path: '/imos/training', icon: 'school-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
+      { name: 'Training Hub', description: "Learn how to use i'M On Social", path: '/imos/training', icon: 'school-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
     ],
   },
   {
@@ -246,7 +246,7 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Privacy Policy', description: 'How we protect your data', path: '/imos/privacy', icon: 'shield-outline', color: '#5856D6', requiresAuth: false, audience: 'Everyone' },
       { name: 'Terms of Service', description: 'Usage terms and conditions', path: '/imos/terms', icon: 'document-text-outline', color: '#8E8E93', requiresAuth: false, audience: 'Everyone' },
-      { name: 'Login', description: 'Sign in to iMOs', path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Login', description: "Sign in to i'M On Social", path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
       { name: 'Sign Up', description: 'Create a new account', path: '/imos/signup', icon: 'person-add-outline', color: '#34C759', requiresAuth: false, audience: 'New users' },
     ],
   },
@@ -580,7 +580,7 @@ export default function AppDirectoryScreen() {
             <Text style={styles.inputLabel}>Custom Message (optional)</Text>
             <TextInput
               style={[styles.modalInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]}
-              placeholder="Check out this page from iMOs..."
+              placeholder="i'M On Social"
               placeholderTextColor="#6E6E73"
               value={customMessage}
               onChangeText={setCustomMessage}

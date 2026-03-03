@@ -184,7 +184,7 @@ export default function SignupScreen() {
       // Different messages based on account type - redirect immediately on web
       if (Platform.OS === 'web') {
         if (isIndependent) {
-          window.alert("Welcome to iMOs!\n\nYour account is ready! Let's set up your profile, AI assistant, and virtual business card.");
+          window.alert("i'M On Social");
         } else {
           window.alert("Account Created!\n\nYour account is pending approval. You can set up your profile and business card while you wait.");
         }
@@ -192,7 +192,7 @@ export default function SignupScreen() {
       } else {
         if (isIndependent) {
           Alert.alert(
-            'Welcome to iMOs!',
+            "Welcome to i'M On Social!",
             "Your account is ready! Let's set up your profile, AI assistant, and virtual business card to get started.",
             [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
           );
@@ -223,9 +223,9 @@ export default function SignupScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
             <View style={styles.subtitleContainer}>
-              <Text style={styles.subtitle}>Start your journey with </Text>
+              <Text style={styles.subtitle}>Start your journey with</Text>
               <Image 
-                source={require('../../assets/images/imos-logo-white-v3.png')}
+                source={require('../../public/new-logo-512-transparent.png')}
                 style={styles.subtitleLogo}
                 resizeMode="contain"
               />
@@ -636,9 +636,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   subtitleLogo: {
-    width: 50,
-    height: 20,
-    marginLeft: 4,
+    width: 44,
+    height: 44,
+    marginLeft: 8,
   },
   form: {
     gap: 16,

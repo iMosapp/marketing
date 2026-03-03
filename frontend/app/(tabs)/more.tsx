@@ -423,7 +423,7 @@ export default function MoreScreen() {
         {
           icon: 'school',
           title: 'Training Hub',
-          subtitle: 'Learn how to use iMOs',
+          subtitle: "Learn how to use i'M On Social",
           onPress: () => router.push('/training-hub'),
           color: '#FF9500',
         },

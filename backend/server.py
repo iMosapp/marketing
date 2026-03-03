@@ -1,5 +1,5 @@
 """
-iMOs API Server - Main entry point
+i'M On Social API Server - Main entry point
 Refactored to use modular routers for maintainability
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
@@ -52,7 +52,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-app = FastAPI(title="iMOs API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
+app = FastAPI(title="i'M On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -76,11 +76,11 @@ app.add_middleware(
 # ============= HEALTH CHECK =============
 @api_router.get("/")
 async def root():
-    return {"message": "iMOs API", "version": "2.0"}
+    return {"message": "i'M On Social API", "version": "2.0"}
 
 @api_router.get("/health")
 async def api_health():
-    return {"status": "healthy", "message": "iMOs API v2.0"}
+    return {"status": "healthy", "message": "i'M On Social API v2.0"}
 
 @api_router.get("/build-version")
 async def build_version():
@@ -95,7 +95,7 @@ async def build_version():
 # ============= BRANDING / STATIC ASSETS =============
 @api_router.get("/branding/logo")
 async def get_branding_logo():
-    """Serve the iMOs logo for emails and public pages"""
+    """Serve the i'M On Social logo for emails and public pages"""
     logo_path = ROOT_DIR / "static" / "imos-logo-email.png"
     if not logo_path.exists():
         raise HTTPException(status_code=404, detail="Logo not found")
@@ -474,11 +474,11 @@ async def stripe_webhook(request: Request):
 @app.get("/health")
 @app.get("/healthz")
 async def health_check():
-    return {"status": "healthy", "message": "iMOs API v2.0"}
+    return {"status": "healthy", "message": "i'M On Social API v2.0"}
 
 @app.get("/")
 async def app_root():
-    return {"status": "healthy", "message": "iMOs API v2.0"}
+    return {"status": "healthy", "message": "i'M On Social API v2.0"}
 
 
 @app.get("/l/{username}")
@@ -502,7 +502,7 @@ app.include_router(short_urls.router)
 async def startup_event():
     import time
     app.state.start_time = time.time()
-    logger.info("iMOs API v2.0 starting...")
+    logger.info("i'M On Social API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
     
     # Initialize object storage (non-blocking, will retry on first use)
@@ -544,7 +544,7 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Scheduler start failed (non-fatal): {e}")
 
-    logger.info("iMOs API v2.0 started")
+    logger.info("i'M On Social API v2.0 started")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -565,7 +565,7 @@ async def seed_admin_user(db):
             
             admin_user = {
                 "email": "admin@imosapp.com",
-                "password": "iMOs2026!",
+                "password": "i'M On Social2026!",
                 "name": "Admin User",
                 "phone": "",
                 "role": "super_admin",
@@ -593,7 +593,7 @@ async def seed_admin_user(db):
             logger.info("=" * 50)
             logger.info("DEFAULT ADMIN USER CREATED:")
             logger.info("  Email: admin@imosapp.com")
-            logger.info("  Password: iMOs2026!")
+            logger.info("  Password: i'M On Social2026!")
             logger.info("=" * 50)
         else:
             logger.info(f"Database has {user_count} existing users - skipping seed")

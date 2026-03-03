@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 async def get_brand_context(db, user_id: str) -> dict:
     """Gather all branding info from user -> store -> org -> partner."""
     brand = {
-        "store_name": "iMOs",
+        "store_name": "i'M On Social",
         "logo_url": "",
         "primary_color": "#007AFF",
         "accent_color": "#C9A962",

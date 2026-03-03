@@ -1,5 +1,5 @@
 """
-URL Shortener for iMOs
+URL Shortener for i'M On Social
 Generates short codes for business cards, congrats cards, and other shareable links.
 """
 from fastapi import APIRouter, HTTPException, Request

@@ -1,5 +1,5 @@
 """
-iMOs Demo Data Seeder
+i'M On Social Demo Data Seeder
 Populates the database with realistic demo data for testing all features.
 """
 import asyncio

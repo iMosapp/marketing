@@ -52,7 +52,7 @@ export default function DemoScreen() {
             </View>
             <Text style={s.successTitle}>We'll Be in Touch!</Text>
             <Text style={s.successDesc}>
-              Thank you for your interest in iMOs. A member of our team will reach out within 24 hours to schedule your personalized demo.
+              Thank you for your interest in i'M On Social. A member of our team will reach out within 24 hours to schedule your personalized demo.
             </Text>
             <TouchableOpacity style={s.backBtn} onPress={() => router.push('/imos' as any)} data-testid="demo-back-home">
               <Text style={s.backBtnText}>Back to Home</Text>
@@ -72,9 +72,9 @@ export default function DemoScreen() {
 
           <View style={s.titleSection}>
             <Text style={s.label}>SCHEDULE A DEMO</Text>
-            <Text style={[s.title, isDesktop && { fontSize: 36 }]}>See iMOs in Action</Text>
+            <Text style={[s.title, isDesktop && { fontSize: 36 }]}>i'M On Social</Text>
             <Text style={s.subtitle}>
-              Get a personalized walkthrough of iMOs and see how it can transform your team's customer relationships.
+              Get a personalized walkthrough of i'M On Social and see how it can transform your team's customer relationships.
             </Text>
           </View>
 
@@ -153,7 +153,7 @@ export default function DemoScreen() {
               <Text style={s.trustText}>30-minute personalized walkthrough</Text>
             </View>
             <View style={s.trustItem}>
-              <Ionicons name="people" size={20} color="#C9A962" />
+              <Ionicons name="people" size={20} color="#007AFF" />
               <Text style={s.trustText}>See real results from real teams</Text>
             </View>
           </View>

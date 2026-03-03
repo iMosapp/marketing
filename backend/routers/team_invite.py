@@ -847,7 +847,7 @@ async def send_email_invite(data: EmailInviteRequest):
         email_result = await asyncio.to_thread(
             resend.Emails.send,
             {
-                "from": f"iMOs <{SENDER_EMAIL}>",
+                "from": f"i'M On Social <{SENDER_EMAIL}>",
                 "to": [data.recipient_email],
                 "subject": f"{sender_name} invited you to join {store_name}",
                 "html": html_content,

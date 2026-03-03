@@ -110,7 +110,7 @@ export default function PricingScreen() {
                   ))}
                 </View>
                 <TouchableOpacity style={[s.planBtn, plan.badge ? s.planBtnFeatured : undefined]} onPress={() => plan.price === null ? router.push('/imos/demo' as any) : router.push('/auth/signup' as any)} data-testid={`plan-${plan.name.toLowerCase()}`}>
-                  <Text style={[s.planBtnText, plan.badge ? { color: '#000' } : undefined]}>{plan.price === null ? 'Contact Sales' : 'Get Started'}</Text>
+                  <Text style={[s.planBtnText, plan.badge ? { color: '#FFF' } : undefined]}>{plan.price === null ? 'Contact Sales' : 'Get Started'}</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -119,7 +119,7 @@ export default function PricingScreen() {
           {/* FAQ teaser */}
           <View style={s.faqSection}>
             <Text style={s.faqTitle}>Questions?</Text>
-            <Text style={s.faqDesc}>Contact us at forest@imosapp.com for custom pricing, demos, or anything else.</Text>
+            <Text style={s.faqDesc}>Contact us at forest@imonsocial.com for custom pricing, demos, or anything else.</Text>
           </View>
 
         </View>
@@ -130,43 +130,43 @@ export default function PricingScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 24 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 400 },
-  tabRow: { flexDirection: 'row', alignSelf: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 3, marginBottom: 28 },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400 },
+  tabRow: { flexDirection: 'row', alignSelf: 'center', backgroundColor: '#F5F5F7', borderRadius: 12, padding: 3, marginBottom: 28 },
   tab: { paddingVertical: 10, paddingHorizontal: 24, borderRadius: 10 },
-  tabActive: { backgroundColor: '#C9A962' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#8E8E93' },
-  tabTextActive: { color: '#000' },
+  tabActive: { backgroundColor: '#007AFF' },
+  tabText: { fontSize: 14, fontWeight: '600', color: '#6E6E73' },
+  tabTextActive: { color: '#FFF' },
   planGrid: { paddingHorizontal: 16, gap: 16, marginBottom: 32 },
   planCard: {
-    backgroundColor: '#1C1C1E', borderRadius: 16, padding: 24, marginBottom: 16,
-    borderWidth: 1, borderColor: '#2C2C2E',
+    backgroundColor: '#FAFAFA', borderRadius: 16, padding: 24, marginBottom: 16,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
-  planCardFeatured: { borderColor: '#C9A962', borderWidth: 2 },
-  planBadge: { backgroundColor: '#C9A96225', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 12 },
-  planBadgeText: { fontSize: 11, fontWeight: '700', color: '#C9A962' },
-  planName: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 8 },
+  planCardFeatured: { borderColor: '#007AFF', borderWidth: 2 },
+  planBadge: { backgroundColor: 'rgba(0,122,255,0.08)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 12 },
+  planBadgeText: { fontSize: 11, fontWeight: '700', color: '#007AFF' },
+  planName: { fontSize: 20, fontWeight: '700', color: '#1D1D1F', marginBottom: 8 },
   priceRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 4 },
-  priceSymbol: { fontSize: 20, fontWeight: '700', color: '#C9A962', marginBottom: 4 },
-  priceValue: { fontSize: 44, fontWeight: '900', color: '#FFF', lineHeight: 48 },
-  priceUnit: { fontSize: 14, color: '#8E8E93', marginBottom: 8, marginLeft: 4 },
-  priceCustom: { fontSize: 32, fontWeight: '800', color: '#C9A962', lineHeight: 48 },
+  priceSymbol: { fontSize: 20, fontWeight: '700', color: '#007AFF', marginBottom: 4 },
+  priceValue: { fontSize: 44, fontWeight: '900', color: '#1D1D1F', lineHeight: 48 },
+  priceUnit: { fontSize: 14, color: '#6E6E73', marginBottom: 8, marginLeft: 4 },
+  priceCustom: { fontSize: 32, fontWeight: '800', color: '#007AFF', lineHeight: 48 },
   minUsers: { fontSize: 12, color: '#FF9500', marginBottom: 8 },
-  planDesc: { fontSize: 14, color: '#8E8E93', lineHeight: 20, marginBottom: 16 },
+  planDesc: { fontSize: 14, color: '#6E6E73', lineHeight: 20, marginBottom: 16 },
   featureList: { gap: 8, marginBottom: 20 },
   featureItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  featureText: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  featureText: { fontSize: 13, color: '#3A3A3C' },
   planBtn: {
     alignItems: 'center', paddingVertical: 14, borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(201,169,98,0.3)',
+    borderWidth: 1.5, borderColor: 'rgba(0,122,255,0.2)',
   },
-  planBtnFeatured: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
-  planBtnText: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
+  planBtnFeatured: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  planBtnText: { fontSize: 15, fontWeight: '700', color: '#007AFF' },
   faqSection: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
-  faqTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 8 },
-  faqDesc: { fontSize: 14, color: '#8E8E93', textAlign: 'center', lineHeight: 20 },
+  faqTitle: { fontSize: 20, fontWeight: '700', color: '#1D1D1F', marginBottom: 8 },
+  faqDesc: { fontSize: 14, color: '#6E6E73', textAlign: 'center', lineHeight: 20 },
 });

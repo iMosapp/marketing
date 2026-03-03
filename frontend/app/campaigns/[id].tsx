@@ -733,7 +733,7 @@ const { showToast } = useToast();
                     <Text style={styles.previewCardPlaceholder}> - {'{ Contact Name }'}</Text>
                   </View>
                   <View style={styles.previewCardFooter}>
-                    <Text style={styles.previewCardFooterText}>Sent via i'M On Social</Text>
+                    <Text style={styles.previewCardFooterText}>i'M On Social</Text>
                   </View>
                 </View>
               );

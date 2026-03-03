@@ -1,6 +1,6 @@
 """
 Outgoing Webhook System - Fires events to registered 3rd party endpoints
-when actions happen in iMOs (contact created, message sent, deal closed, etc.)
+when actions happen in i'M On Social (contact created, message sent, deal closed, etc.)
 """
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
@@ -193,14 +193,14 @@ async def _deliver_webhook(db, subscription: dict, event_data: dict):
     sub_id = str(subscription["_id"])
     url = subscription["url"]
     
-    headers = {"Content-Type": "application/json", "X-iMOs-Event": event_data["event"]}
+    headers = {"Content-Type": "application/json", "X-i'M On Social-Event": event_data["event"]}
     
     # Add HMAC signature if secret is configured
     if subscription.get("secret"):
         import hashlib, hmac, json
         body = json.dumps(event_data, default=str).encode()
         sig = hmac.new(subscription["secret"].encode(), body, hashlib.sha256).hexdigest()
-        headers["X-iMOs-Signature"] = f"sha256={sig}"
+        headers["X-IMOS-Signature"] = f"sha256={sig}"
     
     status_code = None
     error_msg = None

@@ -41,14 +41,14 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     id: 'getting-started',
     icon: 'rocket',
     iconColor: '#FF9500',
-    title: 'Getting Started with iMOs',
+    title: "Getting Started with i'M On Social",
     description: 'Learn the basics and set up your account',
     duration: '5 min',
     category: 'Getting Started',
     videoUrl: '',
-    content: 'Welcome to iMOs! This guide will walk you through setting up your profile, understanding the main features, and making your first connection with a customer.',
+    content: "Welcome to i'M On Social! This guide will walk you through setting up your profile, understanding the main features, and making your first connection with a customer.",
     steps: [
-      'Log in to your iMOs account using the credentials provided by your admin.',
+      "Log in to your i'M On Social account using the credentials provided by your admin.",
       'Complete your profile by adding your photo, bio, and contact information.',
       'Explore the four main tabs: Inbox, Contacts, Keypad, and More.',
       'Send your first message to a customer from the Contacts tab.',
@@ -82,7 +82,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     duration: '4 min',
     category: 'Getting Started',
     videoUrl: '',
-    content: 'Your contacts are the heart of iMOs. Learn how to add contacts manually, import from CSV, and organize them with tags for targeted follow-ups.',
+    content: "Your contacts are the heart of i'M On Social. Learn how to add contacts manually, import from CSV, and organize them with tags for targeted follow-ups.",
     steps: [
       'Tap the + button on the Contacts tab to add a new contact.',
       'Fill in their name, phone, and email.',
@@ -159,7 +159,7 @@ const TRAINING_TOPICS: TrainingTopic[] = [
     content: 'Jessi is your personal AI assistant. Ask questions, get help drafting messages, or let Jessi suggest responses to customers based on conversation context.',
     steps: [
       'Go to More > Ask Jessi to open the AI assistant.',
-      'Type or speak your question about any iMOs feature.',
+      "Type or speak your question about any i'M On Social feature.",
       'Ask Jessi to draft messages for specific customer situations.',
       'Use Jessi to get tips on sales techniques and follow-up strategies.',
     ],
@@ -470,7 +470,7 @@ export default function TrainingHubScreen() {
     try {
       const response = await api.post('/jessie/chat', {
         user_id: user?._id,
-        message: `The user is asking for help with iMOs Relationship Management System. Here's their question: "${question}"\n\nPlease provide a helpful, concise answer explaining how to accomplish this in iMOs. If it involves a specific feature, mention where to find it in the app.`,
+        message: `i'M On Social`,
         context: 'training_help',
       }, { timeout: 30000 });
       setAiResponse(response.data.response || response.data.message || 'Let me help you with that...');
@@ -500,7 +500,7 @@ export default function TrainingHubScreen() {
             <Ionicons name="help-circle" size={28} color="#C9A962" />
             <View style={styles.voiceHelpText}>
               <Text style={styles.voiceHelpTitle}>Need Help?</Text>
-              <Text style={styles.voiceHelpSubtitle}>Ask anything about iMOs by voice or text</Text>
+              <Text style={styles.voiceHelpSubtitle}>i'M On Social</Text>
             </View>
           </View>
           

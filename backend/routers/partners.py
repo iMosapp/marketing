@@ -53,18 +53,18 @@ class PartnerSignup(BaseModel):
 # ============= DEFAULT TEMPLATES =============
 
 DEFAULT_RESELLER_TEMPLATE = """
-# iMOs Reseller Agreement
+# i'M On Social Reseller Agreement
 
 This Reseller Agreement ("Agreement") is entered into as of the date of digital signature below.
 
 ## 1. Appointment as Reseller
 
-iMOs hereby appoints the Reseller as a non-exclusive reseller of iMOs products and services in the territory agreed upon.
+i'M On Social hereby appoints the Reseller as a non-exclusive reseller of i'M On Social products and services in the territory agreed upon.
 
 ## 2. Reseller Obligations
 
 The Reseller agrees to:
-- Actively promote and market iMOs products
+- Actively promote and market i'M On Social products
 - Maintain professional standards in all customer interactions
 - Provide accurate information about products and pricing
 - Not make unauthorized modifications to products or services
@@ -91,7 +91,7 @@ Reseller agrees to maintain confidentiality of all proprietary information, pric
 
 ## 7. Limitation of Liability
 
-iMOs's liability is limited to the fees paid under this Agreement in the 12 months preceding any claim.
+i'M On Social's liability is limited to the fees paid under this Agreement in the 12 months preceding any claim.
 
 ---
 
@@ -99,13 +99,13 @@ By signing below, you acknowledge that you have read, understood, and agree to b
 """
 
 DEFAULT_REFERRAL_TEMPLATE = """
-# iMOs Referral Partner Agreement
+# i'M On Social Referral Partner Agreement
 
 This Referral Partner Agreement ("Agreement") is entered into as of the date of digital signature below.
 
 ## 1. Referral Partnership
 
-iMOs welcomes you as a Referral Partner. As a partner, you will earn commissions for qualified referrals that become paying customers.
+i'M On Social welcomes you as a Referral Partner. As a partner, you will earn commissions for qualified referrals that become paying customers.
 
 ## 2. How It Works
 
@@ -116,10 +116,10 @@ iMOs welcomes you as a Referral Partner. As a partner, you will earn commissions
 ## 3. Referral Partner Obligations
 
 You agree to:
-- Promote iMOs honestly and professionally
+- Promote i'M On Social honestly and professionally
 - Not engage in spam or misleading marketing
 - Disclose your referral relationship when required by law
-- Not bid on iMOs branded keywords in paid advertising
+- Not bid on i'M On Social branded keywords in paid advertising
 
 ## 4. Commission Structure
 

@@ -22,7 +22,7 @@ export default function PrivacyScreen() {
           <Text style={s.label}>LEGAL</Text>
           <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Privacy Policy</Text>
           {loading ? (
-            <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} />
+            <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
           ) : privacy ? (
             <>
               <Text style={s.updated}>Last updated: {privacy.last_updated}</Text>
@@ -30,7 +30,7 @@ export default function PrivacyScreen() {
             </>
           ) : (
             <Text style={s.body}>
-              iMOs takes your privacy seriously. We collect only the data necessary to provide our Relationship Management System services. Your contact data, messages, and personal information are stored securely and never sold to third parties.{'\n\n'}
+              i'M On Social takes your privacy seriously. We collect only the data necessary to provide our Relationship Management System services. Your contact data, messages, and personal information are stored securely and never sold to third parties.{'\n\n'}
               For questions about our privacy practices, contact us at forest@imosapp.com.
             </Text>
           )}
@@ -42,11 +42,11 @@ export default function PrivacyScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 12 },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 12 },
   updated: { fontSize: 13, color: '#8E8E93', marginBottom: 24 },
-  body: { fontSize: 15, color: 'rgba(255,255,255,0.7)', lineHeight: 24 },
+  body: { fontSize: 15, color: '#6E6E73', lineHeight: 24 },
 });

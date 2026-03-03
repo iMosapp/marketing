@@ -23,7 +23,7 @@ export default function Root({ children }: PropsWithChildren) {
         {/* PWA  - must be in static HTML for iOS standalone mode */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="iMOs" />
+        <meta name="apple-mobile-web-app-title" content="i'M On Social" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#007AFF" />
         <meta name="format-detection" content="telephone=no" />

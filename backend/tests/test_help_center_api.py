@@ -1,6 +1,6 @@
 """
 Test Help Center AI API - Tests the POST /api/help-center/ask endpoint
-which uses GPT-5.2 via EMERGENT_LLM_KEY to answer user questions about iMOs.
+which uses GPT-5.2 via EMERGENT_LLM_KEY to answer user questions about i'M On Social.
 """
 import pytest
 import requests

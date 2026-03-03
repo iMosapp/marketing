@@ -150,7 +150,7 @@ export function ImosFooter() {
           <View style={styles.footerLogoRow}>
             <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 52, height: 52 }} resizeMode="contain" />
           </View>
-          <Text style={styles.footerTagline}>Powered by i'M On Social</Text>
+          <Text style={styles.footerTagline}>i'M On Social</Text>
           <Text style={styles.footerSub}>Own your reputation.{'\n'}Own your relationships.</Text>
         </View>
 
@@ -181,7 +181,7 @@ export function ImosFooter() {
       </View>
 
       <View style={styles.footerBottom}>
-        <Text style={styles.footerCopy}>&copy; {new Date().getFullYear()} i'M On Social. All rights reserved.</Text>
+        <Text style={styles.footerCopy}>i'M On Social</Text>
       </View>
     </View>
   );

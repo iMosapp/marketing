@@ -200,7 +200,7 @@ async def send_nda_email(nda_id: str):
         app_url = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
     sign_link = f"{app_url}/nda/sign/{nda_id}"
 
-    sender_name = nda.get("sender", {}).get("name", "iMOs")
+    sender_name = nda.get("sender", {}).get("name", "i'M On Social")
 
     # Send via Resend
     resend_key = os.environ.get("RESEND_API_KEY")

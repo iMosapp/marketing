@@ -259,12 +259,12 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await get_db().users.find_one({"_id": ObjectId(user_id)})
-                    sender_name = user_doc.get('name', 'iMOs') if user_doc else 'iMOs'
+                    sender_name = user_doc.get('name', "i'M On Social") if user_doc else "i'M On Social"
                     contact_name = contact.get('name', contact.get('first_name', ''))
                     
                     brand = await get_brand_context(get_db(), user_id)
                     email_html = build_branded_email(message_data.content, brand, contact_name)
-                    store_name = brand.get('store_name', 'iMOs')
+                    store_name = brand.get('store_name', "i'M On Social")
                     
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
                         "from": f"{sender_name} at {store_name} <{SENDER}>",
@@ -964,13 +964,13 @@ async def send_message_simple(user_id: str, message_data: dict):
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
-                    sender_name = user_doc.get('name', 'iMOs') if user_doc else 'iMOs'
+                    sender_name = user_doc.get('name', "i'M On Social") if user_doc else "i'M On Social"
                     contact_name = contact.get('first_name', contact.get('name', ''))
                     
                     # Build branded email
                     brand = await get_brand_context(db, user_id)
                     email_html = build_branded_email(content, brand, contact_name)
-                    store_name = brand.get('store_name', 'iMOs')
+                    store_name = brand.get('store_name', "i'M On Social")
                     
                     from_addr = f"{sender_name} at {store_name} <{SENDER}>"
                     subject = f"Message from {sender_name} at {store_name}"
@@ -1133,7 +1133,7 @@ async def find_inbox_owner(db, to_phone: str) -> dict:
     to_phone_digits = to_phone_normalized.replace("+", "")
     to_phone_no_country = to_phone_digits[1:] if to_phone_digits.startswith("1") and len(to_phone_digits) == 11 else to_phone_digits
     
-    # 1. Check if this is a user's personal iMOs number
+    # 1. Check if this is a user's personal i'M On Social number
     user = await db.users.find_one({
         "$or": [
             {"mvpline_number": to_phone_normalized},
@@ -1516,9 +1516,9 @@ async def email_diagnostic(user_id: str, contact_id: str):
             import resend as resend_mod
             resend_mod.api_key = RESEND_KEY
             from utils.email_template import build_branded_email
-            test_html = build_branded_email("This is a diagnostic test email from iMOs.", brand, contact.get('first_name', ''))
-            sender_name = user.get('name', 'iMOs') if user else 'iMOs'
-            store_name = brand.get('store_name', 'iMOs')
+            test_html = build_branded_email("This is a diagnostic test email from i'M On Social.", brand, contact.get('first_name', ''))
+            sender_name = user.get('name', "i'M On Social") if user else "i'M On Social"
+            store_name = brand.get('store_name', "i'M On Social")
             
             result = await asyncio.to_thread(resend_mod.Emails.send, {
                 "from": f"{sender_name} at {store_name} <{SENDER}>",

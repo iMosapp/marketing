@@ -40,15 +40,15 @@ function MockupPhone({ config, isDesktop }: { config: PreviewConfig['mockup']; i
         {config.type === 'list' && config.rows.map((r, i) => (
           <View key={i} style={mp.listRow}>
             <View style={[mp.listIcon, { backgroundColor: 'rgba(201,169,98,0.12)' }]}>
-              <Ionicons name={r.icon as any} size={16} color="#C9A962" />
+              <Ionicons name={r.icon as any} size={16} color="#007AFF" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={mp.listLabel}>{r.label}</Text>
               {r.sub && <Text style={mp.listSub}>{r.sub}</Text>}
             </View>
             {r.badge && (
-              <View style={[mp.badge, { backgroundColor: (r.badgeColor || '#C9A962') + '20' }]}>
-                <Text style={[mp.badgeText, { color: r.badgeColor || '#C9A962' }]}>{r.badge}</Text>
+              <View style={[mp.badge, { backgroundColor: (r.badgeColor || '#007AFF') + '20' }]}>
+                <Text style={[mp.badgeText, { color: r.badgeColor || '#007AFF' }]}>{r.badge}</Text>
               </View>
             )}
           </View>
@@ -57,7 +57,7 @@ function MockupPhone({ config, isDesktop }: { config: PreviewConfig['mockup']; i
           <View style={mp.statsGrid}>
             {config.stats.map((s, i) => (
               <View key={i} style={mp.statCard}>
-                <Text style={[mp.statValue, { color: s.color || '#C9A962' }]}>{s.value}</Text>
+                <Text style={[mp.statValue, { color: s.color || '#007AFF' }]}>{s.value}</Text>
                 <Text style={mp.statLabel}>{s.label}</Text>
               </View>
             ))}
@@ -141,7 +141,7 @@ export function PreviewPage({ config }: { config: PreviewConfig }) {
                 </TouchableOpacity>
                 <TouchableOpacity style={s.ctaSecondary} onPress={() => router.push('/imos/demo' as any)}>
                   <Text style={s.ctaSecondaryText}>Schedule a Demo Instead</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#C9A962" />
+                  <Ionicons name="arrow-forward" size={14} color="#007AFF" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -155,45 +155,45 @@ export function PreviewPage({ config }: { config: PreviewConfig }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   hero: { alignItems: 'center', paddingTop: 40, paddingBottom: 32, paddingHorizontal: 20 },
   iconWrap: { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 10 },
-  title: { fontSize: 30, fontWeight: '800', color: '#FFF', textAlign: 'center', marginBottom: 12, lineHeight: 38 },
-  desc: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 22, maxWidth: 460 },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 10 },
+  title: { fontSize: 30, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', marginBottom: 12, lineHeight: 38 },
+  desc: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 460 },
   mainContent: { paddingHorizontal: 20, paddingBottom: 40 },
   mockupWrap: { alignItems: 'center', marginBottom: 32 },
   infoSide: {},
-  whatTitle: { fontSize: 18, fontWeight: '700', color: '#FFF', marginBottom: 16 },
+  whatTitle: { fontSize: 18, fontWeight: '700', color: '#1D1D1F', marginBottom: 16 },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
-  bulletText: { fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 22, flex: 1 },
+  bulletText: { fontSize: 15, color: '#3A3A3C', lineHeight: 22, flex: 1 },
   ctaBox: { marginTop: 28, backgroundColor: 'rgba(201,169,98,0.06)', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: 'rgba(201,169,98,0.12)' },
-  ctaTitle: { fontSize: 18, fontWeight: '700', color: '#FFF', marginBottom: 6 },
-  ctaSub: { fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 20 },
-  ctaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 24 },
+  ctaTitle: { fontSize: 18, fontWeight: '700', color: '#1D1D1F', marginBottom: 6 },
+  ctaSub: { fontSize: 14, color: '#86868B', marginBottom: 20 },
+  ctaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#007AFF', paddingVertical: 14, borderRadius: 24 },
   ctaBtnText: { fontSize: 16, fontWeight: '700', color: '#000' },
   ctaSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14 },
-  ctaSecondaryText: { fontSize: 14, color: '#C9A962', fontWeight: '500' },
+  ctaSecondaryText: { fontSize: 14, color: '#007AFF', fontWeight: '500' },
 });
 
 const mp = StyleSheet.create({
   phone: {
-    backgroundColor: '#111',
+    backgroundColor: '#F5F5F7',
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#222',
     overflow: 'hidden',
     ...(Platform.OS === 'web' ? { boxShadow: '0 8px 32px rgba(0,0,0,0.5)' } as any : {}),
   },
-  statusBar: { height: 28, backgroundColor: '#0A0A0A', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 },
+  statusBar: { height: 28, backgroundColor: '#FAFAFA', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 },
   notch: { width: 80, height: 4, borderRadius: 2, backgroundColor: '#222' },
   appHeader: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1A1A1A' },
-  appTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  appTitle: { fontSize: 17, fontWeight: '600', color: '#1D1D1F' },
   content: { padding: 12, minHeight: 260 },
   listRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1A1A1A' },
   listIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  listLabel: { fontSize: 14, fontWeight: '500', color: '#FFF' },
+  listLabel: { fontSize: 14, fontWeight: '500', color: '#1D1D1F' },
   listSub: { fontSize: 11, color: '#666', marginTop: 2 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   badgeText: { fontSize: 10, fontWeight: '600' },
@@ -202,14 +202,14 @@ const mp = StyleSheet.create({
   statValue: { fontSize: 28, fontWeight: '800' },
   statLabel: { fontSize: 10, color: '#666', marginTop: 4, textAlign: 'center' },
   chatBubble: { maxWidth: '80%', borderRadius: 16, padding: 10, marginBottom: 8 },
-  chatMe: { backgroundColor: '#C9A962', alignSelf: 'flex-end', borderBottomRightRadius: 4 },
+  chatMe: { backgroundColor: '#007AFF', alignSelf: 'flex-end', borderBottomRightRadius: 4 },
   chatThem: { backgroundColor: '#1A1A1A', alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
-  chatText: { fontSize: 13, color: '#FFF' },
+  chatText: { fontSize: 13, color: '#1D1D1F' },
   chatTime: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 4, textAlign: 'right' },
   cardsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   card: { width: '47%', backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12 },
   cardIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  cardTitle: { fontSize: 12, fontWeight: '600', color: '#FFF' },
+  cardTitle: { fontSize: 12, fontWeight: '600', color: '#1D1D1F' },
   cardSub: { fontSize: 10, color: '#666', marginTop: 2 },
   formField: { marginBottom: 12 },
   formLabel: { fontSize: 11, color: '#666', marginBottom: 4 },

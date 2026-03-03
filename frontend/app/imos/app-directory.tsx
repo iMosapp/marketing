@@ -40,7 +40,7 @@ const PAGE_CATALOG: Category[] = [
     color: '#34C759',
     pages: [
       { name: 'Digital Business Card', description: 'Shareable card with photo, QR, reviews, social links', path: '/imos/digital-card', icon: 'card-outline', color: '#007AFF', audience: 'Customers, prospects' },
-      { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', audience: 'Customers' },
+      { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/imos/congrats-template', icon: 'gift-outline', color: '#007AFF', audience: 'Customers' },
       { name: 'Birthday Card', description: 'Personalized birthday card with photo & message', path: '/imos/birthday-card', icon: 'gift-outline', color: '#FF6B8A', audience: 'Customers' },
       { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/imos/reviews', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
       { name: 'Showcase', description: 'User showcase page  - congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', audience: 'Customers, public' },
@@ -53,10 +53,10 @@ const PAGE_CATALOG: Category[] = [
     id: 'marketing',
     title: 'Marketing & Sales',
     icon: 'diamond-outline',
-    color: '#C9A962',
+    color: '#007AFF',
     pages: [
-      { name: 'iMOs Home', description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#C9A962', audience: 'Everyone' },
-      { name: 'Sales Presentation', description: 'Interactive slide deck for prospects', path: '/imos/salespresentation', icon: 'easel-outline', color: '#C9A962', audience: 'Prospects, investors' },
+      { name: "i'M On Social Home", description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#007AFF', audience: 'Everyone' },
+      { name: 'Sales Presentation', description: 'Interactive slide deck for prospects', path: '/imos/salespresentation', icon: 'easel-outline', color: '#007AFF', audience: 'Prospects, investors' },
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', audience: 'Prospects, customers' },
       { name: 'Pricing Plans', description: 'Subscription tiers & pricing', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', audience: 'Prospects, customers' },
       { name: 'Page Hub', description: 'Browse all public pages', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', audience: 'Everyone' },
@@ -70,8 +70,8 @@ const PAGE_CATALOG: Category[] = [
     icon: 'rocket-outline',
     color: '#FF9500',
     pages: [
-      { name: 'Onboarding Preview', description: 'Preview all 5 role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#C9A962', audience: 'Admins, prospects' },
-      { name: 'Training Hub', description: 'Learn how to use iMOs', path: '/imos/training', icon: 'school-outline', color: '#FF9500', audience: 'All users' },
+      { name: 'Onboarding Preview', description: 'Preview all 5 role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#007AFF', audience: 'Admins, prospects' },
+      { name: 'Training Hub', description: "Learn how to use i'M On Social", path: '/imos/training', icon: 'school-outline', color: '#FF9500', audience: 'All users' },
     ],
   },
   {
@@ -109,7 +109,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'SMS Templates', description: 'Pre-built SMS messages', path: '/imos/templates', icon: 'document-text-outline', color: '#FFD60A', audience: 'All users' },
       { name: 'Email Templates', description: 'Pre-built email designs', path: '/imos/email-templates', icon: 'mail-outline', color: '#34C759', audience: 'All users' },
       { name: 'Brand Kit', description: 'Email branding & colors', path: '/imos/brand-kit', icon: 'color-palette-outline', color: '#AF52DE', audience: 'All users' },
-      { name: 'Congrats Cards', description: 'Thank you card templates', path: '/imos/congrats-template', icon: 'gift-outline', color: '#C9A962', audience: 'All users' },
+      { name: 'Congrats Cards', description: 'Thank you card templates', path: '/imos/congrats-template', icon: 'gift-outline', color: '#007AFF', audience: 'All users' },
     ],
   },
   {
@@ -144,7 +144,7 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Digital Card', description: 'Bio, socials & shareable card', path: '/imos/digital-card', icon: 'card-outline', color: '#007AFF', audience: 'All users' },
       { name: 'AI Persona', description: 'Communication style settings', path: '/imos/persona', icon: 'sparkles-outline', color: '#AF52DE', audience: 'All users' },
-      { name: 'Ask Jessi', description: 'AI assistant', path: '/imos/jessi', icon: 'sparkles-outline', color: '#C9A962', audience: 'All users' },
+      { name: 'Ask Jessi', description: 'AI assistant', path: '/imos/jessi', icon: 'sparkles-outline', color: '#007AFF', audience: 'All users' },
       { name: 'My Account', description: 'Account settings & profile', path: '/imos/account', icon: 'person-circle-outline', color: '#8E8E93', audience: 'All users' },
     ],
   },
@@ -157,7 +157,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Security', description: 'Passwords & authentication', path: '/imos/security', icon: 'shield-checkmark-outline', color: '#FF3B30', audience: 'All users' },
       { name: 'Calendar', description: 'Connect external calendars', path: '/imos/calendar', icon: 'calendar-outline', color: '#007AFF', audience: 'All users' },
       { name: 'Integrations', description: 'API keys & webhooks', path: '/imos/integrations', icon: 'git-network-outline', color: '#5856D6', audience: 'All users' },
-      { name: 'Invite Team', description: 'Send team invitations', path: '/imos/invite-team', icon: 'person-add-outline', color: '#C9A962', audience: 'Admins' },
+      { name: 'Invite Team', description: 'Send team invitations', path: '/imos/invite-team', icon: 'person-add-outline', color: '#007AFF', audience: 'Admins' },
     ],
   },
   {
@@ -189,7 +189,7 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Privacy Policy', description: 'How we protect your data', path: '/imos/privacy', icon: 'shield-outline', color: '#5856D6', audience: 'Everyone' },
       { name: 'Terms of Service', description: 'Usage terms and conditions', path: '/imos/terms', icon: 'document-text-outline', color: '#8E8E93', audience: 'Everyone' },
-      { name: 'Login', description: 'Sign in to iMOs', path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', audience: 'All users' },
+      { name: 'Login', description: "Sign in to i'M On Social", path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', audience: 'All users' },
       { name: 'Sign Up', description: 'Create a new account', path: '/imos/signup', icon: 'person-add-outline', color: '#34C759', audience: 'New users' },
     ],
   },
@@ -304,7 +304,7 @@ export default function AppDirectoryScreen() {
           <View style={st.titleSection}>
             <Text style={st.label}>ALL PAGES</Text>
             <Text style={[st.title, isDesktop && { fontSize: 36 }]}>App Directory</Text>
-            <Text style={st.subtitle}>{totalPages} pages across the entire iMOs platform</Text>
+            <Text style={st.subtitle}>i'M On Social</Text>
           </View>
 
           {/* Search */}
@@ -370,8 +370,8 @@ export default function AppDirectoryScreen() {
                             </Text>
                           </TouchableOpacity>
                           <TouchableOpacity style={[st.actionBtn, st.shareBtn]} onPress={() => setShareModal(page)}>
-                            <Ionicons name="share-outline" size={14} color="#C9A962" />
-                            <Text style={[st.actionText, { color: '#C9A962' }]}>Share</Text>
+                            <Ionicons name="share-outline" size={14} color="#007AFF" />
+                            <Text style={[st.actionText, { color: '#007AFF' }]}>Share</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -401,7 +401,7 @@ export default function AppDirectoryScreen() {
             <TouchableOpacity onPress={closeShareModal}><Text style={st.modalCancel}>Cancel</Text></TouchableOpacity>
             <Text style={st.modalTitle}>Share Page</Text>
             <TouchableOpacity onPress={handleShare} disabled={sending}>
-              {sending ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={st.modalSend}>Send</Text>}
+              {sending ? <ActivityIndicator size="small" color="#007AFF" /> : <Text style={st.modalSend}>Send</Text>}
             </TouchableOpacity>
           </View>
           <ScrollView style={st.modalBody}>
@@ -420,11 +420,11 @@ export default function AppDirectoryScreen() {
             <Text style={st.inputLabel}>Send via</Text>
             <View style={st.channelToggle}>
               <TouchableOpacity style={[st.channelBtn, shareChannel === 'email' && st.channelBtnActive]} onPress={() => setShareChannel('email')}>
-                <Ionicons name="mail-outline" size={18} color={shareChannel === 'email' ? '#C9A962' : '#8E8E93'} />
+                <Ionicons name="mail-outline" size={18} color={shareChannel === 'email' ? '#007AFF' : '#8E8E93'} />
                 <Text style={[st.channelText, shareChannel === 'email' && st.channelTextActive]}>Email</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[st.channelBtn, shareChannel === 'sms' && st.channelBtnActive]} onPress={() => setShareChannel('sms')}>
-                <Ionicons name="chatbubble-outline" size={18} color={shareChannel === 'sms' ? '#C9A962' : '#8E8E93'} />
+                <Ionicons name="chatbubble-outline" size={18} color={shareChannel === 'sms' ? '#007AFF' : '#8E8E93'} />
                 <Text style={[st.channelText, shareChannel === 'sms' && st.channelTextActive]}>SMS</Text>
               </TouchableOpacity>
             </View>
@@ -445,7 +445,7 @@ export default function AppDirectoryScreen() {
             )}
 
             <Text style={st.inputLabel}>Custom Message (optional)</Text>
-            <TextInput style={[st.modalInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]} placeholder="Check out this page from iMOs..." placeholderTextColor="#6E6E73" value={customMessage} onChangeText={setCustomMessage} multiline />
+            <TextInput style={[st.modalInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]} placeholder="i'M On Social" placeholderTextColor="#6E6E73" value={customMessage} onChangeText={setCustomMessage} multiline />
           </ScrollView>
         </View>
       </WebModal>
@@ -454,53 +454,53 @@ export default function AppDirectoryScreen() {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 16, paddingHorizontal: 20 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8, textAlign: 'center' },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center' },
   searchWrap: { paddingHorizontal: 16, paddingBottom: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: '#FFF' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
+  searchInput: { flex: 1, fontSize: 15, color: '#1D1D1F' },
   catWrapper: { marginHorizontal: 16, marginBottom: 8 },
-  catHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 8 },
+  catHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 12, padding: 14, marginBottom: 8 },
   catIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  catTitle: { fontSize: 16, fontWeight: '600', color: '#FFF', flex: 1 },
+  catTitle: { fontSize: 16, fontWeight: '600', color: '#1D1D1F', flex: 1 },
   catBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 8 },
   catBadgeText: { fontSize: 14, fontWeight: '600' },
   pageGridDesktop: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  pageCard: { backgroundColor: '#1A1A1C', borderRadius: 12, padding: 14, marginLeft: 16, marginBottom: 8, borderWidth: 1, borderColor: '#2C2C2E' },
+  pageCard: { backgroundColor: '#F5F5F7', borderRadius: 12, padding: 14, marginLeft: 16, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   pageCardDesktop: { width: '47%', marginLeft: 0 },
   pageTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   pageIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   pageInfo: { flex: 1 },
-  pageName: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  pageName: { fontSize: 15, fontWeight: '600', color: '#1D1D1F' },
   pageDesc: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
   pageUrl: { fontSize: 10, color: '#4A4A4C', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, marginBottom: 2 },
   pageAudience: { fontSize: 11, color: '#5856D6', marginBottom: 8 },
   pageActions: { flexDirection: 'row', gap: 6 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: '#2C2C2E', paddingVertical: 8, borderRadius: 8 },
-  shareBtn: { backgroundColor: '#C9A96215' },
-  actionText: { fontSize: 12, fontWeight: '500', color: '#FFF' },
+  shareBtn: { backgroundColor: '#007AFF15' },
+  actionText: { fontSize: 12, fontWeight: '500', color: '#1D1D1F' },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { color: '#8E8E93', fontSize: 16, marginTop: 12 },
   emptySubtext: { color: '#6E6E73', fontSize: 13, marginTop: 4 },
-  modalContainer: { flex: 1, backgroundColor: '#000' },
+  modalContainer: { flex: 1, backgroundColor: '#FFFFFF' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
   modalCancel: { fontSize: 16, color: '#007AFF' },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
-  modalSend: { fontSize: 16, fontWeight: '600', color: '#C9A962' },
+  modalTitle: { fontSize: 17, fontWeight: '600', color: '#1D1D1F' },
+  modalSend: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
   modalBody: { padding: 16 },
-  sharePageInfo: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 20, gap: 12 },
+  sharePageInfo: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 12, padding: 14, marginBottom: 20, gap: 12 },
   sharePageIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  sharePageName: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  sharePageName: { fontSize: 16, fontWeight: '600', color: '#1D1D1F' },
   sharePagePath: { fontSize: 12, color: '#6E6E73', marginTop: 4 },
   inputLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginBottom: 8, marginTop: 16, marginLeft: 4 },
-  modalInput: { backgroundColor: '#1C1C1E', borderRadius: 10, padding: 14, fontSize: 15, color: '#FFF', borderWidth: 1, borderColor: '#2C2C2E' },
+  modalInput: { backgroundColor: '#F5F5F7', borderRadius: 10, padding: 14, fontSize: 15, color: '#1D1D1F', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   channelToggle: { flexDirection: 'row', gap: 10 },
-  channelBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderRadius: 12, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E' },
-  channelBtnActive: { backgroundColor: '#C9A96215', borderColor: '#C9A962' },
+  channelBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderRadius: 12, backgroundColor: '#F5F5F7', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  channelBtnActive: { backgroundColor: '#007AFF15', borderColor: '#007AFF' },
   channelText: { fontSize: 15, fontWeight: '500', color: '#8E8E93' },
-  channelTextActive: { color: '#C9A962' },
+  channelTextActive: { color: '#007AFF' },
 });

@@ -549,7 +549,7 @@ export default function AdminDashboard() {
           {
             icon: 'call',
             title: 'Phone Assignments',
-            subtitle: 'Manage iMOs numbers',
+            subtitle: "Manage i'M On Social numbers",
             onPress: () => router.push('/admin/phone-assignments'),
             color: '#5AC8FA',
           },

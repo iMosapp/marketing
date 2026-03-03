@@ -22,11 +22,11 @@ const SLIDES: Slide[] = [
     title: "i'M On Social",
     subtitle: 'Meet the New Way to Be On Social.',
     content: [
-      'iMOs is a Social Relationship OS that gives organizations, teams, and individuals control of their digital presence, reviews, and customer connections.',
+      "i'M On Social is a Social Relationship OS that gives organizations, teams, and individuals control of their digital presence, reviews, and customer connections.",
       'Own your reputation. Build your credibility. Connect every touchpoint under one social presence.',
     ],
     icon: 'diamond',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     gradient: ['#0A0A1A', '#1A1A2E'],
   },
   {
@@ -50,10 +50,10 @@ const SLIDES: Slide[] = [
     content: [
       'Every organization. Every team. Every individual.',
       'All under one structured social ecosystem.',
-      "iMOs isn't about marketing  - it's about giving people control of their digital presence.",
+      "i'M On Social",
     ],
     icon: 'swap-horizontal',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     gradient: ['#0A0A1A', '#16213E'],
     features: [
       { icon: 'business', text: 'Organizations  - structure teams, track reputation' },
@@ -147,8 +147,8 @@ const SLIDES: Slide[] = [
     title: 'Your Brand. Our Platform.',
     subtitle: 'White-label ready for organizations',
     content: [
-      'Deploy iMOs under your own brand for your entire organization.',
-      'Custom branding, your logo, your colors  - powered by iMOs.',
+      "Deploy i'M On Social under your own brand for your entire organization.",
+      "Custom branding, your logo, your colors  - powered by i'M On Social.",
       'Every account, every team member, one unified platform.',
     ],
     icon: 'business',
@@ -166,10 +166,10 @@ const SLIDES: Slide[] = [
     title: 'Ready to Own\nYour Reputation?',
     subtitle: 'The new way to be on social starts here',
     content: [
-      'See why forward-thinking organizations trust iMOs to give their people the tools to build lasting relationships.',
+      "See why forward-thinking organizations trust i'M On Social to give their people the tools to build lasting relationships.",
     ],
     icon: 'arrow-forward-circle',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     gradient: ['#0A0A1A', '#1A1A2E'],
   },
 ];
@@ -248,14 +248,14 @@ export default function SalesPresentationScreen() {
           {slide.id === 'cta' && (
             <View style={styles.ctaSection}>
               <TouchableOpacity style={styles.ctaButton} onPress={() => {
-                if (Platform.OS === 'web') window.location.href = 'mailto:forest@imosapp.com?subject=iMOs%20Demo%20Request';
+                if (Platform.OS === 'web') window.location.href = "mailto:forest@imonsocial.com?subject=iM%20On%20Social%20Demo%20Request";
               }} data-testid="request-demo-btn">
                 <Ionicons name="mail" size={20} color="#000" />
                 <Text style={styles.ctaButtonText}>Request a Demo</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.ctaSecondary} onPress={() => router.push('/imos' as any)}>
-                <Text style={styles.ctaSecondaryText}>Back to iMOs</Text>
-                <Ionicons name="arrow-forward" size={16} color="#C9A962" />
+                <Text style={styles.ctaSecondaryText}>i'M On Social</Text>
+                <Ionicons name="arrow-forward" size={16} color="#007AFF" />
               </TouchableOpacity>
             </View>
           )}
@@ -287,30 +287,30 @@ export default function SalesPresentationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 20 : 56, paddingBottom: 8, gap: 12, zIndex: 10 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   progressBar: { flex: 1, height: 3, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#C9A962', borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: '#007AFF', borderRadius: 2 },
   slideNum: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '500', minWidth: 36, textAlign: 'right' },
   slideScroll: { flexGrow: 1, justifyContent: 'center', paddingBottom: 20 },
   slideBody: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 16 },
   iconWrap: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-  title: { fontSize: 32, fontWeight: '800', color: '#FFF', textAlign: 'center', marginBottom: 8, lineHeight: 38 },
+  title: { fontSize: 32, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', marginBottom: 8, lineHeight: 38 },
   subtitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', marginBottom: 20 },
-  statCard: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: 20, marginBottom: 20, width: '100%', maxWidth: 300 },
+  statCard: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 16, padding: 20, marginBottom: 20, width: '100%', maxWidth: 300 },
   statValue: { fontSize: 48, fontWeight: '900' },
-  statLabel: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+  statLabel: { fontSize: 14, color: '#6E6E73', marginTop: 4 },
   contentLine: { fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 24, marginBottom: 10, maxWidth: 400 },
   featureGrid: { width: '100%', maxWidth: 400, gap: 10, marginTop: 12 },
-  featureCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  featureCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   featureIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  featureText: { fontSize: 15, color: '#FFF', fontWeight: '500', flex: 1 },
+  featureText: { fontSize: 15, color: '#1D1D1F', fontWeight: '500', flex: 1 },
   ctaSection: { alignItems: 'center', marginTop: 28, gap: 16 },
-  ctaButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 36, borderRadius: 30 },
-  ctaButtonText: { fontSize: 17, fontWeight: '700', color: '#000' },
+  ctaButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#007AFF', paddingVertical: 16, paddingHorizontal: 36, borderRadius: 30 },
+  ctaButtonText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
   ctaSecondary: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  ctaSecondaryText: { fontSize: 15, color: '#C9A962', fontWeight: '500' },
+  ctaSecondaryText: { fontSize: 15, color: '#007AFF', fontWeight: '500' },
   navBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16, paddingBottom: Platform.OS === 'web' ? 20 : 40 },
   navBtn: { padding: 8 },
   dotsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

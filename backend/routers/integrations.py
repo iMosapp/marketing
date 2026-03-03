@@ -190,7 +190,7 @@ AUTOMATION_PROVIDERS = {
     "zapier": {
         "name": "Zapier",
         "type": "automation",
-        "description": "Connect iMOs to 5,000+ apps",
+        "description": "Connect i'M On Social to 5,000+ apps",
         "auth_type": "webhook",
         "docs_url": "https://zapier.com",
         "setup_instructions": "Use webhooks to trigger Zaps or receive data from Zapier",
@@ -427,7 +427,7 @@ async def test_webhook(webhook_id: str):
         "event": "test",
         "timestamp": datetime.utcnow().isoformat(),
         "data": {
-            "message": "This is a test webhook from iMOs",
+            "message": "This is a test webhook from i'M On Social",
             "webhook_id": webhook_id,
         }
     }
@@ -446,8 +446,8 @@ async def test_webhook(webhook_id: str):
                 json=test_payload,
                 headers={
                     "Content-Type": "application/json",
-                    "X-iMOs-Signature": signature,
-                    "X-iMOs-Event": "test",
+                    "X-IMOS-Signature": signature,
+                    "X-i'M On Social-Event": "test",
                 }
             )
             
@@ -654,7 +654,7 @@ async def get_sync_logs(connection_id: str, limit: int = 50):
 async def get_api_overview():
     """Get API documentation overview"""
     return {
-        "name": "iMOs API",
+        "name": "i'M On Social API",
         "version": "2.0",
         "base_url": "/api",
         "authentication": {
@@ -696,7 +696,7 @@ async def get_api_overview():
         "webhooks": {
             "description": "Receive real-time notifications for events",
             "events": list(WEBHOOK_EVENTS.keys()),
-            "signature_header": "X-iMOs-Signature",
+            "signature_header": "X-IMOS-Signature",
             "signature_algorithm": "HMAC-SHA256",
         },
     }
@@ -834,11 +834,11 @@ async def get_messages_docs():
 async def get_webhooks_docs():
     """Get webhooks documentation"""
     return {
-        "overview": "Webhooks allow you to receive real-time HTTP notifications when events occur in iMOs.",
+        "overview": "Webhooks allow you to receive real-time HTTP notifications when events occur in i'M On Social.",
         "setup": {
             "steps": [
                 "1. Create a webhook endpoint in your application",
-                "2. Register the webhook URL in iMOs",
+                "2. Register the webhook URL in i'M On Social",
                 "3. Select which events to subscribe to",
                 "4. Store the signing secret securely",
             ],
@@ -850,7 +850,7 @@ async def get_webhooks_docs():
             "webhook_id": "Your webhook ID",
         },
         "signature_verification": {
-            "header": "X-iMOs-Signature",
+            "header": "X-IMOS-Signature",
             "algorithm": "HMAC-SHA256",
             "example_python": """
 import hmac

@@ -50,7 +50,7 @@ class TestPublicReviewPageAPI:
         assert "store" in data
         store = data["store"]
         assert store["id"] == TEST_STORE_ID
-        assert store["name"] == "iMOs Demo Dealership"
+        assert store["name"] == "i'M On Social Demo Dealership"
         assert store["slug"] == TEST_STORE_SLUG
         assert "logo_url" in store
         assert "phone" in store

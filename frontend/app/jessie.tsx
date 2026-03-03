@@ -597,7 +597,7 @@ export default function JessiScreen() {
             <View style={styles.introContainer}>
               <Text style={[styles.introTitle, { color: colors.text }]}>Hi, I'm Jessi!</Text>
               <Text style={[styles.introText, { color: colors.textSecondary }]}>
-                Your voice assistant for iMOs.{'\n'}
+                Your voice assistant for i'M On Social.{'\n'}
                 Tap to talk or type below.
               </Text>
             </View>

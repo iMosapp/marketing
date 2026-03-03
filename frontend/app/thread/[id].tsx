@@ -363,7 +363,7 @@ export default function ThreadScreen() {
     } catch (error) {
       console.log('No review links configured');
     }
-    // Fetch store slug for iMOs review link
+    // Fetch store slug for i'M On Social review link
     try {
       if ((user as any).store_slug) {
         setStoreSlug((user as any).store_slug);

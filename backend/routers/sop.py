@@ -1,7 +1,7 @@
 """
 SOP (Standard Operating Procedure) Router
-Internal documentation system for iMOs employees
-Only accessible by iMOs internal team members (super_admin role)
+Internal documentation system for i'M On Social employees
+Only accessible by i'M On Social internal team members (super_admin role)
 """
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel, Field
@@ -82,9 +82,9 @@ class SOPUpdate(BaseModel):
     is_published: Optional[bool] = None
 
 
-# Check if user is internal iMOs employee
+# Check if user is internal i'M On Social employee
 async def verify_internal_access(user_id: str) -> dict:
-    """Verify user is an internal iMOs employee"""
+    """Verify user is an internal i'M On Social employee"""
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
     
@@ -563,8 +563,8 @@ async def seed_sops(x_user_id: str = Header(None, alias="X-User-ID")):
     sops = [
         # ============= GETTING STARTED =============
         {
-            "title": "Welcome to iMOs",
-            "summary": "Your complete guide to getting started with iMOs. Learn the basics and set yourself up for success.",
+            "title": "Welcome to i'M On Social",
+            "summary": "Your complete guide to getting started with i'M On Social. Learn the basics and set yourself up for success.",
             "department": "all",
             "category": "getting_started",
             "is_required_reading": True,
@@ -574,9 +574,9 @@ async def seed_sops(x_user_id: str = Header(None, alias="X-User-ID")):
             "steps": [
                 {
                     "order": 1,
-                    "title": "Understanding iMOs",
-                    "description": "iMOs is an AI-powered communication platform designed for sales professionals. It helps you manage customer relationships, automate follow-ups, and close more deals.",
-                    "tip": "Think of iMOs as your personal sales assistant that never sleeps!"
+                    "title": "Understanding i'M On Social",
+                    "description": "i'M On Social is an AI-powered communication platform designed for sales professionals. It helps you manage customer relationships, automate follow-ups, and close more deals.",
+                    "tip": "Think of i'M On Social as your personal sales assistant that never sleeps!"
                 },
                 {
                     "order": 2,
@@ -600,7 +600,7 @@ async def seed_sops(x_user_id: str = Header(None, alias="X-User-ID")):
                 {
                     "order": 5,
                     "title": "Getting Help with Jessi",
-                    "description": "Jessi is your AI assistant built into iMOs. Tap 'Ask Jessi' from the More menu to:\n\n• Ask questions about features\n• Get help with tasks\n• Learn tips and tricks",
+                    "description": "Jessi is your AI assistant built into i'M On Social. Tap 'Ask Jessi' from the More menu to:\n\n• Ask questions about features\n• Get help with tasks\n• Learn tips and tricks",
                     "link_text": "Talk to Jessi",
                     "link_url": "/jessie"
                 }
@@ -987,12 +987,12 @@ async def seed_sops(x_user_id: str = Header(None, alias="X-User-ID")):
                     "order": 1,
                     "title": "Why Speed Matters",
                     "description": "Statistics show:\n\n• Responding within 5 minutes = 9x higher contact rate\n• After 30 minutes, lead quality drops 21x\n• 78% of customers buy from first responder",
-                    "tip": "Set your phone to prioritize iMOs notifications"
+                    "tip": "Set your phone to prioritize i'M On Social notifications"
                 },
                 {
                     "order": 2,
                     "title": "Enable Push Notifications",
-                    "description": "Make sure notifications are enabled:\n\n1. Go to phone Settings\n2. Find iMOs\n3. Enable all notifications\n4. Enable sound and badges"
+                    "description": "Make sure notifications are enabled:\n\n1. Go to phone Settings\n2. Find i'M On Social\n3. Enable all notifications\n4. Enable sound and badges"
                 },
                 {
                     "order": 3,
@@ -1071,7 +1071,7 @@ async def seed_sops(x_user_id: str = Header(None, alias="X-User-ID")):
                 {
                     "order": 2,
                     "title": "Notifications Not Working",
-                    "description": "If you're not getting notifications:\n\n1. Check phone Settings → iMOs → Notifications\n2. Make sure Do Not Disturb is off\n3. Check if battery saver is blocking\n4. Log out and back in"
+                    "description": "If you're not getting notifications:\n\n1. Check phone Settings → i'M On Social → Notifications\n2. Make sure Do Not Disturb is off\n3. Check if battery saver is blocking\n4. Log out and back in"
                 },
                 {
                     "order": 3,

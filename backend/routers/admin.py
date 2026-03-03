@@ -64,19 +64,19 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
         logger.warning(f"Could not read logo file: {e}")
     
     email_payload = {
-        "from": f"iMOs <{SENDER_EMAIL}>",
+        "from": f"i'M On Social <{SENDER_EMAIL}>",
         "to": email,
-        "subject": f"You're Invited to Join iMOs as {role_title}",
+        "subject": f"You're Invited to Join i'M On Social as {role_title}",
         "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
                 <div style="text-align: center; margin-bottom: 0; padding: 24px 20px 16px 20px; background-color: #ffffff; border-radius: 16px 16px 0 0; border-bottom: 2px solid #C9A962;">
-                    <img src="cid:imos-logo" alt="iMOs" width="120" style="max-width: 120px; height: auto;" />
+                    <img src="cid:imos-logo" alt="i'M On Social" width="120" style="max-width: 120px; height: auto;" />
                     <p style="margin: 8px 0 0 0; font-size: 13px; color: #666; letter-spacing: 1px;">Relationship Management System</p>
                 </div>
                 
                 <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 0 0 16px 16px; color: white;">
                     <h2 style="margin-top: 0; color: #C9A962;">Welcome, {name}!</h2>
-                    <p style="font-size: 16px; line-height: 1.6;">You've been invited to join <strong>iMOs</strong> as a <strong style="color: #C9A962;">{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
+                    <p style="font-size: 16px; line-height: 1.6;">You've been invited to join <strong>i'M On Social</strong> as a <strong style="color: #C9A962;">{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
                     
                     <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin: 25px 0;">
                         <p style="margin: 0 0 15px 0; font-weight: 600; color: #C9A962;">Your Login Credentials:</p>
@@ -102,7 +102,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
                 </div>
                 
                 <div style="text-align: center; margin-top: 25px; color: #888; font-size: 12px;">
-                    <p style="margin: 5px 0;">iMOs - Your Relationship Management System</p>
+                    <p style="margin: 5px 0;">i'M On Social - Your Relationship Management System</p>
                     <p style="margin: 5px 0; color: #aaa;">Questions? Contact support@imosapp.com</p>
                 </div>
             </div>
@@ -2059,7 +2059,7 @@ async def get_users_for_phone_assignment():
 
 @router.put("/phone-assignments/users/{user_id}")
 async def update_user_phone_assignment(user_id: str, data: dict):
-    """Assign or update a user's iMOs phone number"""
+    """Assign or update a user's i'M On Social phone number"""
     mvpline_number = data.get("mvpline_number")
     
     # If assigning a number, check it's not already assigned

@@ -74,7 +74,7 @@ export default function SubscriptionSuccessPage() {
             <View style={styles.iconContainer}>
               <Ionicons name="checkmark-circle" size={80} color="#34C759" />
             </View>
-            <Text style={styles.title}>Welcome to iMOs Pro!</Text>
+            <Text style={styles.title}>i'M On Social</Text>
             <Text style={styles.subtitle}>
               Your subscription is now active. You have 7 days to explore all features before billing begins.
             </Text>

@@ -49,7 +49,7 @@ class TestPersonalSMSMode:
         print(f"✅ User {user['email']} has no mvpline_number - Personal SMS mode active")
     
     def test_store_has_slug(self, auth_info):
-        """Verify the store has a slug for iMOs review link"""
+        """Verify the store has a slug for i'M On Social review link"""
         user_id = auth_info["user_id"]
         store_id = auth_info["user"].get("store_id")
         
@@ -142,7 +142,7 @@ class TestPersonalSMSMode:
         """
         Test that review link content is properly formatted for pre-fill
         
-        The iMOs review link should use setMessage() (pre-fill) instead of handleSend() (auto-send)
+        The i'M On Social review link should use setMessage() (pre-fill) instead of handleSend() (auto-send)
         """
         user_id = auth_info["user_id"]
         store_id = auth_info["user"].get("store_id")

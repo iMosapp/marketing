@@ -9,7 +9,7 @@ const FEATURE_SECTIONS = [
     title: 'Social Presence',
     subtitle: 'Own your digital reputation',
     icon: 'flash',
-    color: '#C9A962',
+    color: '#007AFF',
     features: [
       { icon: 'camera', title: 'Congrats Cards', desc: 'Send branded cards customers share on social media. Collects reviews and builds your personal reputation.' },
       { icon: 'chatbubbles', title: 'Smart Messaging', desc: 'SMS and email from one inbox. AI-powered suggestions. Every conversation strengthens the relationship.' },
@@ -36,7 +36,7 @@ const FEATURE_SECTIONS = [
     color: '#AF52DE',
     features: [
       { icon: 'sparkles', title: 'AI Response Suggestions', desc: 'Jessi suggests replies that sound like your team wrote them. Faster, better communication.' },
-      { icon: 'mic', title: 'Voice-to-Text', desc: 'Speak your notes on the lot. iMOs transcribes and logs everything automatically.' },
+      { icon: 'mic', title: 'Voice-to-Text', desc: "Speak your notes on the lot. i'M On Social transcribes and logs everything automatically." },
       { icon: 'school', title: 'Training Assistant', desc: 'New hires ask Jessi anything about the app. Interactive training that scales.' },
       { icon: 'bulb', title: 'Smart Tagging', desc: 'AI recommends tags and campaigns based on customer data. Less manual work, more accuracy.' },
     ],
@@ -60,7 +60,7 @@ const FEATURE_SECTIONS = [
     color: '#5AC8FA',
     features: [
       { icon: 'layers', title: 'Multi-Org Hierarchy', desc: 'Organizations, stores, teams  - structured exactly how your business operates.' },
-      { icon: 'color-palette', title: 'White-Label Ready', desc: "Your brand, your colors, your domain. Powered by i'M On Social under the hood." },
+      { icon: 'color-palette', title: 'White-Label Ready', desc: "i'M On Social" },
       { icon: 'people', title: 'Role-Based Onboarding', desc: 'Custom onboarding for every role. Admins, managers, salespeople  - each gets what they need.' },
       { icon: 'shield', title: 'Security & Compliance', desc: 'Enterprise-grade security. Role-based access. Your data stays yours.' },
     ],
@@ -125,30 +125,30 @@ export default function FeaturesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 32 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8 },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8 },
   subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 360 },
   featureSection: { paddingHorizontal: 16, marginBottom: 36 },
   sectionHead: { alignItems: 'center', marginBottom: 18 },
   sectionIcon: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 22, fontWeight: '700', color: '#FFF', marginBottom: 4 },
+  sectionTitle: { fontSize: 22, fontWeight: '700', color: '#1D1D1F', marginBottom: 4 },
   sectionSub: { fontSize: 14, fontWeight: '500' },
   featureGrid: { gap: 10 },
   featureCard: {
-    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F5F5F7', borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   featureIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  featureTitle: { fontSize: 16, fontWeight: '600', color: '#FFF', marginBottom: 4 },
+  featureTitle: { fontSize: 16, fontWeight: '600', color: '#1D1D1F', marginBottom: 4 },
   featureDesc: { fontSize: 13, color: '#8E8E93', lineHeight: 19 },
   cta: { alignItems: 'center', paddingVertical: 40 },
-  ctaTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 16 },
+  ctaTitle: { fontSize: 20, fontWeight: '700', color: '#1D1D1F', marginBottom: 16 },
   ctaBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#C9A962', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
+    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
   },
-  ctaBtnText: { fontSize: 16, fontWeight: '700', color: '#000' },
+  ctaBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
 });

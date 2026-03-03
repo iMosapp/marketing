@@ -86,7 +86,7 @@ const { showToast } = useToast();
         );
         
         if (response.data.payment_status === 'paid') {
-          Alert.alert('Payment Successful!', 'Welcome to the iMOs Partner Program!');
+          Alert.alert('Payment Successful!', "Welcome to the i'M On Social Partner Program!");
           loadAgreement();
           break;
         }
@@ -133,7 +133,7 @@ const { showToast } = useToast();
         // Redirect to payment
         initiatePayment();
       } else {
-        Alert.alert('Success!', 'Welcome to the iMOs Partner Program!');
+        Alert.alert('Success!', "Welcome to the i'M On Social Partner Program!");
         loadAgreement();
       }
     } catch (error: any) {
@@ -231,7 +231,7 @@ const { showToast } = useToast();
             </View>
             <Text style={styles.signedTitle}>Agreement Signed!</Text>
             <Text style={styles.signedSubtitle}>
-              Welcome to the iMOs Partner Program
+              Welcome to the i'M On Social Partner Program
             </Text>
             
             <View style={styles.signedDetails}>

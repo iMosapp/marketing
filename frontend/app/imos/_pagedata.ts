@@ -41,7 +41,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     mockup: {
       type: 'list',
       rows: [
-        { icon: 'person', label: 'Sarah Johnson', sub: 'Birthday: Mar 15 · Sold: Jan 2026', badge: 'VIP', badgeColor: '#C9A962' },
+        { icon: 'person', label: 'Sarah Johnson', sub: 'Birthday: Mar 15 · Sold: Jan 2026', badge: 'VIP', badgeColor: '#007AFF' },
         { icon: 'person', label: 'Mike Davis', sub: 'Anniversary: Feb 20 · 3 tags', badge: 'Sold', badgeColor: '#34C759' },
         { icon: 'person', label: 'Lisa Chen', sub: 'Added 2 days ago · New lead', badge: 'New', badgeColor: '#007AFF' },
         { icon: 'person', label: 'Robert Wilson', sub: 'Referred by Sarah · Active campaign', badge: 'Active', badgeColor: '#FF9500' },
@@ -67,7 +67,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       stats: [
         { value: '47', label: 'Calls Today', color: '#34C759' },
         { value: '3:24', label: 'Avg Duration', color: '#007AFF' },
-        { value: '89%', label: 'Answer Rate', color: '#C9A962' },
+        { value: '89%', label: 'Answer Rate', color: '#007AFF' },
         { value: '12', label: 'Callbacks Due', color: '#FF9500' },
       ],
     },
@@ -99,7 +99,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   more: {
     title: 'More',
     subtitle: 'Navigation Hub',
-    description: 'Your command center for everything in iMOs. Access all tools, settings, and features from one organized menu.',
+    description: 'Your command center for everything in i\'M On Social. Access all tools, settings, and features from one organized menu.',
     icon: 'menu',
     iconColor: '#8E8E93',
     bullets: [
@@ -184,7 +184,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { icon: 'mail', title: 'Welcome Series', sub: '3 emails · 78% open rate', color: '#34C759' },
         { icon: 'gift', title: 'Birthday Email', sub: '1 email · 92% open rate', color: '#FF9500' },
         { icon: 'car-sport', title: 'Post-Sale Drip', sub: '6 emails · 65% open rate', color: '#007AFF' },
-        { icon: 'star', title: 'Review Request', sub: '2 emails · 43% click rate', color: '#C9A962' },
+        { icon: 'star', title: 'Review Request', sub: '2 emails · 43% click rate', color: '#007AFF' },
       ],
     },
   },
@@ -206,7 +206,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       stats: [
         { value: '4.7k', label: 'Active Enrollments', color: '#34C759' },
         { value: '94%', label: 'Delivery Rate', color: '#007AFF' },
-        { value: '23%', label: 'Response Rate', color: '#C9A962' },
+        { value: '23%', label: 'Response Rate', color: '#007AFF' },
         { value: '$127k', label: 'Revenue Attributed', color: '#FF9500' },
       ],
     },
@@ -214,7 +214,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   'date-triggers': {
     title: 'Date Triggers',
     subtitle: 'Automated Milestones',
-    description: 'Never forget a birthday, anniversary, or holiday again. Set up once, and iMOs sends the right message at the right time  - forever.',
+    description: 'Never forget a birthday, anniversary, or holiday again. Set up once, and i\'M On Social sends the right message at the right time  - forever.',
     icon: 'calendar',
     iconColor: '#FF9500',
     bullets: [
@@ -254,7 +254,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { icon: 'hand-right', title: 'Welcome', sub: 'Hi {name}, welcome to...', color: '#34C759' },
         { icon: 'gift', title: 'Birthday', sub: 'Happy birthday {name}!', color: '#FF9500' },
         { icon: 'checkmark', title: 'Follow-up', sub: 'Just checking in...', color: '#007AFF' },
-        { icon: 'star', title: 'Review Ask', sub: 'Would you mind leaving...', color: '#C9A962' },
+        { icon: 'star', title: 'Review Ask', sub: 'Would you mind leaving...', color: '#007AFF' },
       ],
     },
   },
@@ -277,7 +277,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { icon: 'mail', title: 'Welcome Email', sub: 'Modern, clean design', color: '#34C759' },
         { icon: 'gift', title: 'Birthday Template', sub: 'Festive with photo', color: '#FF9500' },
         { icon: 'pricetag', title: 'Promotion', sub: 'Bold, attention-grabbing', color: '#FF2D55' },
-        { icon: 'ribbon', title: 'Thank You', sub: 'Elegant, personal', color: '#C9A962' },
+        { icon: 'ribbon', title: 'Thank You', sub: 'Elegant, personal', color: '#007AFF' },
       ],
     },
   },
@@ -298,7 +298,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       type: 'form',
       fields: [
         { label: 'Company Logo', value: 'logo.png uploaded' },
-        { label: 'Primary Color', value: '#C9A962 (Gold)' },
+        { label: 'Primary Color', value: '#007AFF (Gold)' },
         { label: 'Secondary Color', value: '#1A1A1A (Dark)' },
         { label: 'Email Footer', value: 'Your Company Inc.' },
         { label: 'Social Links', value: 'Facebook, Instagram, LinkedIn' },
@@ -310,7 +310,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     subtitle: 'Customer Celebrations',
     description: 'Snap a photo, create a branded card, and start a lifelong relationship. Customers share these on social media  - free marketing.',
     icon: 'gift',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     bullets: [
       'Take a photo with the customer on the spot',
       'Auto-generate branded congrats cards',
@@ -321,7 +321,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     mockup: {
       type: 'stats',
       stats: [
-        { value: '342', label: 'Cards Created', color: '#C9A962' },
+        { value: '342', label: 'Cards Created', color: '#007AFF' },
         { value: '89%', label: 'Share Rate', color: '#34C759' },
         { value: '1.2k', label: 'Social Views', color: '#007AFF' },
         { value: '67', label: 'Referrals Generated', color: '#FF9500' },
@@ -346,7 +346,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       stats: [
         { value: '12.4k', label: 'Messages Sent', color: '#007AFF' },
         { value: '94%', label: 'Delivery Rate', color: '#34C759' },
-        { value: '847', label: 'New Contacts', color: '#C9A962' },
+        { value: '847', label: 'New Contacts', color: '#007AFF' },
         { value: '$89k', label: 'Revenue', color: '#FF9500' },
       ],
     },
@@ -368,7 +368,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       type: 'stats',
       stats: [
         { value: '23%', label: 'Conv. Rate', color: '#34C759' },
-        { value: '4.2x', label: 'Campaign ROI', color: '#C9A962' },
+        { value: '4.2x', label: 'Campaign ROI', color: '#007AFF' },
         { value: '68%', label: 'Retention', color: '#007AFF' },
         { value: '-12%', label: 'Churn Rate', color: '#FF3B30' },
       ],
@@ -439,7 +439,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       rows: [
         { icon: 'globe', label: 'Website Forms', sub: '342 leads this month', badge: '34%', badgeColor: '#34C759' },
         { icon: 'call', label: 'Phone Calls', sub: '187 leads this month', badge: '19%', badgeColor: '#007AFF' },
-        { icon: 'people', label: 'Referrals', sub: '156 leads this month', badge: '16%', badgeColor: '#C9A962' },
+        { icon: 'people', label: 'Referrals', sub: '156 leads this month', badge: '16%', badgeColor: '#007AFF' },
         { icon: 'megaphone', label: 'Social Media', sub: '98 leads this month', badge: '10%', badgeColor: '#FF9500' },
       ],
     },
@@ -461,7 +461,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       type: 'cards',
       cards: [
         { icon: 'car-sport', title: 'Sold', sub: '2,103 contacts', color: '#34C759' },
-        { icon: 'star', title: 'VIP', sub: '347 contacts', color: '#C9A962' },
+        { icon: 'star', title: 'VIP', sub: '347 contacts', color: '#007AFF' },
         { icon: 'flash', title: 'Hot Lead', sub: '89 contacts', color: '#FF3B30' },
         { icon: 'gift', title: 'Birthday Club', sub: '1,247 contacts', color: '#FF9500' },
       ],
@@ -508,7 +508,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { value: '5.2k', label: 'Contacts Imported', color: '#34C759' },
         { value: '47', label: 'Duplicates Found', color: '#FF9500' },
         { value: '12', label: 'Fields Mapped', color: '#007AFF' },
-        { value: '3', label: 'Tags Applied', color: '#C9A962' },
+        { value: '3', label: 'Tags Applied', color: '#007AFF' },
       ],
     },
   },
@@ -565,10 +565,10 @@ export const PAGES: Record<string, PreviewConfig> = {
     subtitle: 'AI Assistant',
     description: 'Your AI-powered assistant. Ask anything about the app, get response suggestions, or let Jessi handle routine tasks.',
     icon: 'sparkles',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     bullets: [
       'AI-powered response suggestions for messages',
-      'Ask questions about any iMOs feature',
+      'Ask questions about any i\'M On Social feature',
       'Voice-to-text note taking',
       'Smart tagging recommendations',
       'Campaign optimization suggestions',
@@ -656,7 +656,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   integrations: {
     title: 'Integrations',
     subtitle: 'Connected Services',
-    description: 'Connect iMOs with your existing tools. CRM imports, calendar sync, and API access for custom workflows.',
+    description: 'Connect i\'M On Social with your existing tools. CRM imports, calendar sync, and API access for custom workflows.',
     icon: 'git-network',
     iconColor: '#5856D6',
     bullets: [
@@ -681,7 +681,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     subtitle: 'Team Management',
     description: 'Invite your team members via email. Each person gets role-based onboarding and the right level of access.',
     icon: 'person-add',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     bullets: [
       'Email invitations with one click',
       'Role-based access control',
@@ -718,7 +718,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       stats: [
         { value: '47', label: 'Active Users', color: '#34C759' },
         { value: '5', label: 'Stores', color: '#007AFF' },
-        { value: '12.4k', label: 'Messages / Month', color: '#C9A962' },
+        { value: '12.4k', label: 'Messages / Month', color: '#007AFF' },
         { value: '99.9%', label: 'Uptime', color: '#34C759' },
       ],
     },
@@ -762,8 +762,8 @@ export const PAGES: Record<string, PreviewConfig> = {
     mockup: {
       type: 'list',
       rows: [
-        { icon: 'business', label: 'Acme Motors', sub: '3 stores · 24 users', badge: 'Enterprise', badgeColor: '#C9A962' },
-        { icon: 'business', label: 'Smith Auto Group', sub: '5 stores · 47 users', badge: 'Enterprise', badgeColor: '#C9A962' },
+        { icon: 'business', label: 'Acme Motors', sub: '3 stores · 24 users', badge: 'Enterprise', badgeColor: '#007AFF' },
+        { icon: 'business', label: 'Smith Auto Group', sub: '5 stores · 47 users', badge: 'Enterprise', badgeColor: '#007AFF' },
         { icon: 'business', label: 'Pacific Dealers', sub: '2 stores · 12 users', badge: 'Team', badgeColor: '#007AFF' },
       ],
     },
@@ -828,7 +828,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     mockup: {
       type: 'list',
       rows: [
-        { icon: 'person', label: 'Independent Agent A', sub: 'Active since Jan 2026 · 156 contacts', badge: 'Pro', badgeColor: '#C9A962' },
+        { icon: 'person', label: 'Independent Agent A', sub: 'Active since Jan 2026 · 156 contacts', badge: 'Pro', badgeColor: '#007AFF' },
         { icon: 'person', label: 'Freelance Rep B', sub: 'Active since Dec 2025 · 89 contacts', badge: 'Starter', badgeColor: '#007AFF' },
         { icon: 'person', label: 'Solo Consultant C', sub: 'Active since Feb 2026 · 34 contacts', badge: 'New', badgeColor: '#34C759' },
       ],
@@ -898,7 +898,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { value: '156', label: 'Contacts Selected', color: '#007AFF' },
         { value: 'Sarah', label: 'Transfer From', color: '#FF3B30' },
         { value: 'Mike', label: 'Transfer To', color: '#34C759' },
-        { value: '3', label: 'Tags Preserved', color: '#C9A962' },
+        { value: '3', label: 'Tags Preserved', color: '#007AFF' },
       ],
     },
   },
@@ -962,7 +962,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     mockup: {
       type: 'stats',
       stats: [
-        { value: 'Pro', label: 'Current Plan', color: '#C9A962' },
+        { value: 'Pro', label: 'Current Plan', color: '#007AFF' },
         { value: '$99', label: 'Monthly Cost', color: '#34C759' },
         { value: '12', label: 'Active Users', color: '#007AFF' },
         { value: 'Mar 1', label: 'Next Invoice', color: '#FF9500' },
@@ -986,7 +986,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       type: 'list',
       rows: [
         { icon: 'chatbubble', label: 'Sarah sent SMS', sub: 'To Mike Davis · 2 min ago', badge: 'SMS', badgeColor: '#007AFF' },
-        { icon: 'camera', label: 'Mike created card', sub: 'Congrats Card · 15 min ago', badge: 'Card', badgeColor: '#C9A962' },
+        { icon: 'camera', label: 'Mike created card', sub: 'Congrats Card · 15 min ago', badge: 'Card', badgeColor: '#007AFF' },
         { icon: 'call', label: 'Lisa made call', sub: 'To Robert Wilson · 1 hr ago', badge: 'Call', badgeColor: '#34C759' },
         { icon: 'pricetag', label: 'Auto-tagged', sub: 'Emma Thompson → VIP · 2 hr ago', badge: 'Tag', badgeColor: '#FF9500' },
       ],
@@ -994,7 +994,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   },
   training: {
     title: 'Training Hub',
-    subtitle: 'Learn iMOs',
+    subtitle: 'Learn i\'M On Social',
     description: 'Video tutorials, guides, and interactive training for every feature. Get your team up to speed fast.',
     icon: 'school',
     iconColor: '#FF9500',
@@ -1018,7 +1018,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   login: {
     title: 'Log In',
     subtitle: 'Access Your Account',
-    description: 'Sign in to your iMOs account and pick up right where you left off.',
+    description: 'Sign in to your i\'M On Social account and pick up right where you left off.',
     icon: 'log-in',
     iconColor: '#007AFF',
     bullets: [
@@ -1040,7 +1040,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   signup: {
     title: 'Sign Up',
     subtitle: 'Create Your Account',
-    description: 'Join iMOs in under 60 seconds. Free to start, no credit card required.',
+    description: 'Join i\'M On Social in under 60 seconds. Free to start, no credit card required.',
     icon: 'person-add',
     iconColor: '#34C759',
     bullets: [
@@ -1079,7 +1079,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { value: '218', label: 'Cards Sent', color: '#FF6B8A' },
         { value: '91%', label: 'Open Rate', color: '#34C759' },
         { value: '847', label: 'Birthdays Tracked', color: '#007AFF' },
-        { value: '56', label: 'Social Shares', color: '#C9A962' },
+        { value: '56', label: 'Social Shares', color: '#007AFF' },
       ],
     },
   },
@@ -1099,7 +1099,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     mockup: {
       type: 'cards',
       cards: [
-        { icon: 'camera', title: 'Featured Card', sub: 'Johnson Family - Jan 2026', color: '#C9A962' },
+        { icon: 'camera', title: 'Featured Card', sub: 'Johnson Family - Jan 2026', color: '#007AFF' },
         { icon: 'camera', title: 'Recent Sale', sub: 'Smith Family - Feb 2026', color: '#34C759' },
         { icon: 'star', title: 'Top Review', sub: '5 stars - Amazing service!', color: '#FFD60A' },
         { icon: 'heart', title: 'Testimonial', sub: 'Best experience ever!', color: '#FF2D55' },
@@ -1171,7 +1171,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       fields: [
         { label: 'Store Name', value: 'Acme Motors' },
         { label: 'Logo', value: 'logo.png uploaded' },
-        { label: 'Primary Color', value: '#C9A962 (Gold)' },
+        { label: 'Primary Color', value: '#007AFF (Gold)' },
         { label: 'Website', value: 'www.acmemotors.com' },
         { label: 'Social Links', value: 'Facebook, Instagram, Google' },
       ],
@@ -1180,7 +1180,7 @@ export const PAGES: Record<string, PreviewConfig> = {
   help: {
     title: 'Help Center',
     subtitle: 'Support & Guides',
-    description: 'Find answers to common questions, step-by-step guides, and tips to get the most out of iMOs.',
+    description: 'Find answers to common questions, step-by-step guides, and tips to get the most out of i\'M On Social.',
     icon: 'help-circle',
     iconColor: '#007AFF',
     bullets: [
@@ -1196,7 +1196,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { icon: 'book', title: 'Getting Started', sub: '10 articles', color: '#34C759' },
         { icon: 'chatbubble', title: 'Messaging', sub: '8 articles', color: '#007AFF' },
         { icon: 'rocket', title: 'Campaigns', sub: '12 articles', color: '#FF9500' },
-        { icon: 'card', title: 'Cards & Reviews', sub: '6 articles', color: '#C9A962' },
+        { icon: 'card', title: 'Cards & Reviews', sub: '6 articles', color: '#007AFF' },
       ],
     },
   },
@@ -1217,7 +1217,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       type: 'stats',
       stats: [
         { value: '342', label: 'Messages Sent', color: '#007AFF' },
-        { value: '47', label: 'Cards Created', color: '#C9A962' },
+        { value: '47', label: 'Cards Created', color: '#007AFF' },
         { value: '89%', label: 'Response Rate', color: '#34C759' },
         { value: '23', label: 'Reviews Collected', color: '#FFD60A' },
       ],
@@ -1240,7 +1240,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       type: 'stats',
       stats: [
         { value: '4.7k', label: 'Team Messages', color: '#007AFF' },
-        { value: '342', label: 'Cards Created', color: '#C9A962' },
+        { value: '342', label: 'Cards Created', color: '#007AFF' },
         { value: '12', label: 'Active Members', color: '#34C759' },
         { value: '#1', label: 'Top: Sarah J.', color: '#FFD60A' },
       ],
@@ -1265,7 +1265,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { value: '2.1k', label: 'Enrolled', color: '#AF52DE' },
         { value: '94%', label: 'Delivered', color: '#34C759' },
         { value: '23%', label: 'Click Rate', color: '#007AFF' },
-        { value: '$47k', label: 'Revenue', color: '#C9A962' },
+        { value: '$47k', label: 'Revenue', color: '#007AFF' },
       ],
     },
   },
@@ -1288,7 +1288,7 @@ export const PAGES: Record<string, PreviewConfig> = {
         { value: '8.4k', label: 'SMS Sent', color: '#007AFF' },
         { value: '3.2k', label: 'Emails Sent', color: '#AF52DE' },
         { value: '2m', label: 'Avg Response', color: '#34C759' },
-        { value: '96%', label: 'Delivery Rate', color: '#C9A962' },
+        { value: '96%', label: 'Delivery Rate', color: '#007AFF' },
       ],
     },
   },
@@ -1297,7 +1297,7 @@ export const PAGES: Record<string, PreviewConfig> = {
     subtitle: 'Personal Position',
     description: 'See where you stand on the leaderboard. Track your ranking across messages, cards, reviews, and overall performance.',
     icon: 'ribbon',
-    iconColor: '#C9A962',
+    iconColor: '#007AFF',
     bullets: [
       'Personal leaderboard position',
       'Ranking by category (messages, cards, etc.)',
@@ -1380,7 +1380,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       rows: [
         { icon: 'person', label: 'Sarah Johnson', sub: 'Contact · VIP · Main Store', badge: 'Contact', badgeColor: '#5856D6' },
         { icon: 'chatbubble', label: '"Thanks for the card"', sub: 'Message from Sarah · Jan 15', badge: 'Message', badgeColor: '#007AFF' },
-        { icon: 'camera', label: 'Congrats Card #142', sub: 'Created Jan 10 for Sarah', badge: 'Card', badgeColor: '#C9A962' },
+        { icon: 'camera', label: 'Congrats Card #142', sub: 'Created Jan 10 for Sarah', badge: 'Card', badgeColor: '#007AFF' },
       ],
     },
   },
@@ -1425,7 +1425,7 @@ export const PAGES: Record<string, PreviewConfig> = {
       stats: [
         { value: '12', label: 'Samples Recorded', color: '#FF2D55' },
         { value: '87%', label: 'Voice Match', color: '#34C759' },
-        { value: 'Warm', label: 'Detected Tone', color: '#C9A962' },
+        { value: 'Warm', label: 'Detected Tone', color: '#007AFF' },
         { value: 'Pro', label: 'Style Level', color: '#007AFF' },
       ],
     },

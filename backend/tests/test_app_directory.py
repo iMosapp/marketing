@@ -53,7 +53,7 @@ class TestAppDirectoryShareEmail:
             "page_path": "/auth/login",
             "recipient_email": "test@example.com",
             "channel": "email",
-            "custom_message": "Check out this page from iMOs!"
+            "custom_message": "Check out this page from i'M On Social!"
         })
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
