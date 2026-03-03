@@ -12,26 +12,33 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 ## Architecture
 - Frontend: React Native (Expo) + Expo Router
 - Backend: FastAPI + MongoDB
-- Marketing: Static HTML (Vercel)
+- Marketing: Static HTML (Vercel) at `/app/marketing/build/index.html`
 - Integrations: Resend (email), Twilio (SMS - mocked), OpenAI (AI assistant), Pillow (image gen)
 
 ## What's Been Implemented
 
-### Completed (Mar 3, 2026)
-- **MAJOR REBRAND**: All "iMOs" → "i'M On Social" across ~70 files
-- **New Visual Theme**: All public /imos/ pages converted from dark/gold to clean white + blue
-- **Proper Logo**: Official logo in all headers/footers via shared _components.tsx
-- **Dropdown Navigation**: Calldrip/Podium-style Products/Solutions/Resources/Pricing menus
-- **Marketing Site**: Rebuilt for Vercel deployment with new brand, messaging, dropdown nav
-- **Paused Automation Visual**: Orange pause icon, strikethrough text, grey colors
-- **Font Size Increase**: App-wide readability improvement (verified, no regressions)
+### Completed (Mar 3, 2026 - Latest Session)
+- **MARKETING SITE REDESIGN**: Complete rewrite of `/app/marketing/build/index.html`
+  - Content-driven, no stock photos, no fake testimonials
+  - Podium/Kenect/Calldrip-competitive nav with dropdown menus
+  - Every product card links to actual product pages on app.imosapp.com
+  - Hero: "The backend work that makes you a rockstar."
+  - Bottom CTA: "Salespeople just need help remembering who they know."
+  - Sections: Hero, Product Grid (6 cards), Big Features (3 rows), Stats, Industries (4), How It Works, More Tools, Bottom CTA, Footer
+  - All CTAs drive to demo, signup, or specific product pages
 
-### Previously Completed
-- Engagement tracking (link clicks, views)
-- Real-time activity feed (10s polling)
+### Previously Completed (Mar 3, 2026)
+- **MAJOR REBRAND**: All "iMOs" -> "i'M On Social" across ~70 files
+- **New Visual Theme**: All public /imos/ pages from dark/gold to clean white + blue
+- **Dropdown Navigation**: Calldrip/Podium-style Products/Solutions/Resources/Pricing menus
+- **Paused Automation Visual**: Orange pause icon, strikethrough text
+- **Font Size Increase**: App-wide readability improvement
+- **Light Mode Fixes**: Fixed hardcoded dark conversation bubbles in thread view
+
+### Earlier Completed
+- Engagement tracking, real-time activity feed
 - Contact page redesign (Feed/Details tabs)
 - Pause/Resume automations per contact
-- Extensive light mode fixes (Inbox)
 - Personal SMS fallback (carrier-agnostic)
 - Comprehensive reporting system with scheduled emails
 - White-label branded HTML emails
@@ -39,12 +46,12 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 - Soft-delete system for users/contacts
 - Automated lifecycle engine (apscheduler)
 - 60+ tag icons
-- Voice memo delete fix, photo feedback, tag creation fix
 
 ## Prioritized Backlog
 
 ### P0
-- Gamification enhancements (already functional, may need UX polish)
+- Light mode UI fixes testing (thread bubbles, digital card mockup) - PENDING TEST
+- Gamification enhancements (existing code, may need UX polish)
 
 ### P1
 - AI-Powered Outreach (suggest follow-ups on `sold` tag)
@@ -52,7 +59,7 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 - Voice Help Assistant backend
 
 ### P2
-- Refactor contact/[id].tsx (~4200 lines → smaller components)
+- Refactor contact/[id].tsx (~4200 lines -> smaller components)
 - Full Twilio/Telnyx SMS integration
 - WhatsApp integration
 - Auth refactor (bcrypt hashing)
@@ -64,17 +71,16 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 
 ## Credentials
 - Super Admin: forest@imosapp.com / Admin123!
-- Contact email: forest@imonsocial.com
 
 ## Key Files
-- `/app/frontend/app/imos/_components.tsx` — Shared header/footer (new logo, white theme)
-- `/app/frontend/app/imos/index.tsx` — Main /imos landing page
-- `/app/frontend/app/imos/pricing.tsx` — Pricing page (new white theme)
-- `/app/frontend/app/imos/demo.tsx` — Demo request page (new white theme)
-- `/app/marketing/build/index.html` — Vercel marketing site
-- `/app/frontend/app/contact/[id].tsx` — Contact page (paused automation visual)
+- `/app/marketing/build/index.html` -- Vercel marketing site (REWRITTEN)
+- `/app/frontend/public/marketing.html` -- Preview copy of marketing site
+- `/app/frontend/app/imos/_components.tsx` -- Shared header/footer (new logo, white theme)
+- `/app/frontend/app/thread/[id].tsx` -- Message thread (light mode fix pending test)
+- `/app/frontend/app/contact/[id].tsx` -- Contact page (paused automation visual)
+- `/app/marketing/vercel.json` -- Vercel deployment config
 
 ## Known Issues
 - Twilio SMS is MOCKED
 - Production email delivery may need RESEND_API_KEY verification
-- Some lesser-visited /imos/ sub-pages may need individual theme spot-checks
+- Light mode thread bubbles fix needs testing
