@@ -108,7 +108,7 @@ const COLORS_LIGHT = {
   borderFocus: 'rgba(0, 122, 255, 0.5)',
 };
 
-// Default to dark (SMS mode)
+// Default to dark - inline styles using `colors` override for light mode
 let COLORS = COLORS_DARK;
 
 // AI Outcome configurations with luxury colors
@@ -777,22 +777,22 @@ export default function InboxScreen() {
             </View>
           )}
           {item.status === 'closed' && (
-            <View style={styles.closedBadge}>
+            <View style={[styles.closedBadge, { borderColor: colors.background }]}>
               <Ionicons name="checkmark" size={10} color={colors.text} />
             </View>
           )}
           {hasAiOutcome && !isAcknowledged && (
-            <View style={[styles.aiOutcomeBadge, { backgroundColor: aiOutcome.color }]}>
+            <View style={[styles.aiOutcomeBadge, { backgroundColor: aiOutcome.color, borderColor: colors.background }]}>
               <Ionicons name={aiOutcome.icon as any} size={10} color={colors.text} />
             </View>
           )}
           {hasAiOutcome && isAcknowledged && (
-            <View style={[styles.aiOutcomeBadge, styles.aiOutcomeBadgeAcknowledged]}>
-              <Ionicons name="checkmark" size={10} color={COLORS.textSecondary} />
+            <View style={[styles.aiOutcomeBadge, styles.aiOutcomeBadgeAcknowledged, { borderColor: colors.background, backgroundColor: colors.elevated }]}>
+              <Ionicons name="checkmark" size={10} color={colors.textSecondary} />
             </View>
           )}
           {!hasAiOutcome && isUrgent && (
-            <View style={styles.unreadBubble}>
+            <View style={[styles.unreadBubble, { borderColor: colors.background }]}>
               <Text style={styles.unreadBubbleText}>
                 {item.unread_count > 9 ? '9+' : item.unread_count || ''}
               </Text>
@@ -808,7 +808,7 @@ export default function InboxScreen() {
                   styles.contactName,
                   { color: colors.textPrimary },
                   isUrgent && styles.contactNameUnread,
-                  item.status === 'closed' && styles.contactNameClosed,
+                  item.status === 'closed' && { color: colors.textSecondary },
                 ]}
                 numberOfLines={1}
               >
@@ -824,12 +824,12 @@ export default function InboxScreen() {
               )}
               {hasAiOutcome && isAcknowledged && (
                 <View style={styles.aiOutcomeTagAcknowledged}>
-                  <Ionicons name="checkmark-circle" size={11} color={COLORS.textSecondary} />
+                  <Ionicons name="checkmark-circle" size={11} color={colors.textSecondary} />
                 </View>
               )}
               {!hasAiOutcome && item.ai_enabled && item.ai_mode !== 'draft_only' && item.status === 'active' && (
                 <View style={styles.mvpBadge}>
-                  <Ionicons name="sparkles" size={9} color={COLORS.success} />
+                  <Ionicons name="sparkles" size={9} color={colors.success} />
                 </View>
               )}
               {item.flagged && (
@@ -838,6 +838,7 @@ export default function InboxScreen() {
             </View>
             <Text style={[
               styles.timestamp,
+              { color: colors.textSecondary },
               isUrgent && styles.timestampUnread,
               hasAiOutcome && !isAcknowledged && { color: aiOutcome.color },
             ]}>
@@ -1218,7 +1219,7 @@ export default function InboxScreen() {
             data-testid="my-inbox-toggle"
           >
             <Ionicons name="person" size={14} color={inboxView === 'my' ? '#FFF' : colors.textSecondary} />
-            <Text style={[styles.inboxToggleText, inboxView === 'my' && styles.inboxToggleTextActive]}>
+            <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, inboxView === 'my' && styles.inboxToggleTextActive]}>
               My Inbox
             </Text>
           </Pressable>
@@ -1231,7 +1232,7 @@ export default function InboxScreen() {
             data-testid="team-inbox-toggle"
           >
             <Ionicons name="people" size={14} color={inboxView === 'team' ? '#FFF' : colors.textSecondary} />
-            <Text style={[styles.inboxToggleText, inboxView === 'team' && styles.inboxToggleTextActive]}>
+            <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, inboxView === 'team' && styles.inboxToggleTextActive]}>
               Team Inbox
             </Text>
           </Pressable>
@@ -1250,6 +1251,7 @@ export default function InboxScreen() {
             key={f}
             style={[
               styles.filterButton,
+              { backgroundColor: colors.surface, borderColor: colors.border },
               filter === f && styles.filterButtonActive,
               f === 'ai' && filter === f && styles.filterButtonAI,
             ]}
@@ -1257,15 +1259,19 @@ export default function InboxScreen() {
             activeOpacity={0.7}
           >
             {f === 'ai' ? (
-              <Image 
-                source={require('../../assets/images/imos-logo-white-v3.png')}
-                style={styles.imosLogoFilter}
-                resizeMode="contain"
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="sparkles" size={13} color={filter === f ? '#FFFFFF' : colors.textSecondary} />
+                <Text style={[
+                  styles.filterText,
+                  { color: colors.textSecondary },
+                  filter === f && styles.filterTextActive,
+                ]}>AI</Text>
+              </View>
             ) : (
               <Text
                 style={[
                   styles.filterText,
+                  { color: colors.textSecondary },
                   filter === f && styles.filterTextActive,
                 ]}
               >
@@ -1279,7 +1285,7 @@ export default function InboxScreen() {
       {/* Conversation List */}
       {loading || (inboxView === 'team' && loadingTeam) ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : inboxView === 'team' ? (
         <FlatList
@@ -1294,16 +1300,16 @@ export default function InboxScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => loadTeamConversations()}
-              tintColor={COLORS.accent}
+              tintColor={colors.accent}
             />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconContainer}>
-                <Ionicons name="people" size={48} color={COLORS.accent} />
+                <Ionicons name="people" size={48} color={colors.accent} />
               </View>
-              <Text style={styles.emptyTitle}>No team leads yet</Text>
-              <Text style={styles.emptySubtext}>Leads from your team's lead sources will appear here</Text>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No team leads yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Leads from your team's lead sources will appear here</Text>
             </View>
           )}
         />
@@ -1320,16 +1326,16 @@ export default function InboxScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={COLORS.accent}
+              tintColor={colors.accent}
             />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconContainer}>
-                <Ionicons name="chatbubbles" size={48} color={COLORS.accent} />
+                <Ionicons name="chatbubbles" size={48} color={colors.accent} />
               </View>
-              <Text style={styles.emptyTitle}>No conversations yet</Text>
-              <Text style={styles.emptySubtext}>Start connecting with your contacts</Text>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No conversations yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start connecting with your contacts</Text>
               <TouchableOpacity style={styles.emptyButton} onPress={openNewMessage} activeOpacity={0.8}>
                 <Ionicons name="add" size={20} color={colors.text} />
                 <Text style={styles.emptyButtonText}>New Message</Text>
@@ -1383,7 +1389,7 @@ export default function InboxScreen() {
             
             {loadingContacts ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.accent} />
+                <ActivityIndicator size="large" color={colors.accent} />
               </View>
             ) : (
               <FlatList
@@ -1501,7 +1507,7 @@ export default function InboxScreen() {
                 data-testid="bulk-delete-btn"
               >
                 <View style={[styles.bulkActionIcon, styles.bulkActionIconDanger]}>
-                  <Ionicons name="trash" size={20} color={COLORS.danger} />
+                  <Ionicons name="trash" size={20} color={colors.danger} />
                 </View>
                 <Text style={[styles.bulkActionText, styles.bulkActionTextDanger]}>Delete</Text>
               </TouchableOpacity>
@@ -1542,7 +1548,7 @@ export default function InboxScreen() {
             {swipeAvailableTags.length > 0 ? swipeAvailableTags.map((tag: any) => (
               <TouchableOpacity
                 key={tag._id || tag.name}
-                style={styles.swipeTagOption}
+                style={[styles.swipeTagOption, { backgroundColor: colors.surface }]}
                 onPress={() => handleApplySwipeTag(tag.name)}
                 activeOpacity={0.7}
                 data-testid={`swipe-tag-${tag.name}`}
@@ -1550,7 +1556,7 @@ export default function InboxScreen() {
                 <View style={[styles.swipeTagIcon, { backgroundColor: `${tag.color || colors.textSecondary}20` }]}>
                   <Ionicons name={(tag.icon || 'pricetag') as any} size={18} color={tag.color || colors.textSecondary} />
                 </View>
-                <Text style={styles.swipeTagName}>{tag.name}</Text>
+                <Text style={[styles.swipeTagName, { color: colors.textPrimary }]}>{tag.name}</Text>
                 <Ionicons name="add-circle" size={22} color={tag.color || colors.textSecondary} />
               </TouchableOpacity>
             )) : (
@@ -1768,13 +1774,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   conversationItemAI: {
-    borderColor: `${COLORS_DARK.success}30`,
+    borderColor: `${COLORS.success}30`,
     borderLeftWidth: 3,
-    borderLeftColor: COLORS_DARK.success,
+    borderLeftColor: COLORS.success,
   },
   conversationItemSelected: {
-    backgroundColor: `${COLORS_DARK.accent}15`,
-    borderColor: COLORS_DARK.accent,
+    backgroundColor: `${COLORS.accent}15`,
+    borderColor: COLORS.accent,
   },
   
   // Checkbox
