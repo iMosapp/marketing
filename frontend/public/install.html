@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -11,12 +12,32 @@
 <title>Install i'M On Social</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  :root {
+    --bg: #FFFFFF;
+    --text: #1D1D1F;
+    --text-2: #6E6E73;
+    --text-3: #8E8E93;
+    --card: #F5F5F7;
+    --border: #E5E5EA;
+    --accent: #007AFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --text: #FFFFFF;
+      --text-2: #8E8E93;
+      --text-3: #6E6E73;
+      --card: #1C1C1E;
+      --border: #2C2C2E;
+      --accent: #007AFF;
+    }
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { height: 100%; }
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #000;
-    color: #fff;
+    background: var(--bg);
+    color: var(--text);
     min-height: 100%;
     -webkit-font-smoothing: antialiased;
   }
@@ -30,8 +51,8 @@
   }
   .logo { width: 120px; height: 120px; border-radius: 26px; margin-bottom: 24px; }
   .hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
-  .hero h1 span { background: linear-gradient(135deg, #FF2D55, #C9A962, #007AFF, #34C759); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .hero p { font-size: 15px; color: #8E8E93; max-width: 320px; line-height: 1.5; }
+  .hero h1 span { background: linear-gradient(135deg, #007AFF, #5AC8FA, #34C759, #FF2D55); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 15px; color: var(--text-2); max-width: 320px; line-height: 1.5; }
 
   .install-btn {
     display: inline-flex; align-items: center; gap: 10px;
@@ -45,37 +66,37 @@
   .install-btn:active { transform: scale(0.97); }
   .install-btn.android { background: #34C759; }
   .install-btn svg { width: 22px; height: 22px; fill: #fff; }
-  .install-note { font-size: 12px; color: #6E6E73; }
+  .install-note { font-size: 12px; color: var(--text-3); }
 
-  .divider { width: 60px; height: 2px; background: #2C2C2E; margin: 36px auto; border-radius: 1px; }
+  .divider { width: 60px; height: 2px; background: var(--border); margin: 36px auto; border-radius: 1px; }
 
   /* Steps */
   .steps { padding: 0 24px 40px; max-width: 400px; margin: 0 auto; }
-  .steps-title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E93; font-weight: 700; margin-bottom: 20px; text-align: center; }
+  .steps-title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-2); font-weight: 700; margin-bottom: 20px; text-align: center; }
   .step {
     display: flex; gap: 16px; align-items: flex-start;
     padding: 16px 0;
-    border-bottom: 1px solid #1C1C1E;
+    border-bottom: 1px solid var(--border);
   }
   .step:last-child { border-bottom: none; }
   .step-num {
     width: 32px; height: 32px; border-radius: 10px;
-    background: #1C1C1E; color: #C9A962;
+    background: var(--card); color: var(--accent);
     display: flex; align-items: center; justify-content: center;
     font-size: 15px; font-weight: 800; flex-shrink: 0;
   }
   .step-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
-  .step-text p { font-size: 13px; color: #8E8E93; line-height: 1.4; }
+  .step-text p { font-size: 13px; color: var(--text-2); line-height: 1.4; }
   .step-icon { font-size: 18px; }
 
   /* QR Section */
   .qr-section {
     text-align: center;
     padding: 40px 24px;
-    border-top: 1px solid #1C1C1E;
+    border-top: 1px solid var(--border);
   }
   .qr-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-  .qr-section p { font-size: 13px; color: #8E8E93; margin-bottom: 20px; }
+  .qr-section p { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
   .qr-code {
     background: #fff;
     padding: 16px;
@@ -91,19 +112,19 @@
     max-width: 400px; margin: 0 auto;
   }
   .feature {
-    background: #1C1C1E; border-radius: 14px;
+    background: var(--card); border-radius: 14px;
     padding: 16px; text-align: center;
   }
   .feature-icon { font-size: 24px; margin-bottom: 6px; }
   .feature h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
-  .feature p { font-size: 11px; color: #8E8E93; }
+  .feature p { font-size: 11px; color: var(--text-2); }
 
   .footer {
     text-align: center; padding: 20px 24px 40px;
-    border-top: 1px solid #1C1C1E;
+    border-top: 1px solid var(--border);
   }
-  .footer p { font-size: 12px; color: #6E6E73; }
-  .footer a { color: #C9A962; text-decoration: none; }
+  .footer p { font-size: 12px; color: var(--text-3); }
+  .footer a { color: var(--accent); text-decoration: none; }
 
   /* Already installed banner */
   .installed-banner {
@@ -221,7 +242,7 @@
     <p>Latest features automatically</p>
   </div>
   <div class="feature">
-    <div class="feature-icon" style="color:#C9A962;">&#9733;</div>
+    <div class="feature-icon" style="color:var(--accent);">&#9733;</div>
     <h4>Full Screen</h4>
     <p>No browser bar — feels native</p>
   </div>
