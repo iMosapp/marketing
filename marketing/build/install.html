@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -21,17 +20,7 @@
     --border: #E5E5EA;
     --accent: #007AFF;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #000000;
-      --text: #FFFFFF;
-      --text-2: #8E8E93;
-      --text-3: #6E6E73;
-      --card: #1C1C1E;
-      --border: #2C2C2E;
-      --accent: #007AFF;
-    }
-  }
+  /* Always light theme to match login screen */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { height: 100%; }
   body {
