@@ -2386,10 +2386,10 @@ export default function ContactDetailScreen() {
             <Text style={s.sendPickerTitle}>Send Something</Text>
             {[
               { key: 'card', icon: 'person-circle', label: 'My Digital Card', sub: 'Share your business card link', color: '#007AFF' },
-              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
               { key: 'review', icon: 'star', label: 'Review Link', sub: 'Request a review', color: '#FFD60A' },
               { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
               { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
+              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
               { key: 'photo-menu', icon: 'camera', label: 'Photos', sub: 'Photo library or camera', color: '#32ADE6' },
             ].map(item => (
               <TouchableOpacity
