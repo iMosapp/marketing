@@ -69,13 +69,13 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
             oids = [ObjectId(cid) for cid in contact_ids]
             contacts_cursor = db.contacts.find(
                 {"_id": {"$in": oids}},
-                {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "tags": 1, "vehicle": 1}
+                {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1, "tags": 1, "vehicle": 1}
             )
             async for c in contacts_cursor:
                 contacts_map[str(c["_id"])] = {
                     "id": str(c["_id"]),
                     "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
-                    "photo": c.get("photo"),
+                    "photo": c.get("photo_thumbnail") or c.get("photo_url") or c.get("photo"),
                     "tags": c.get("tags", []),
                     "vehicle": c.get("vehicle", ""),
                 }
@@ -115,9 +115,9 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
             contact_info = contacts_map.get(cid)
             if not contact_info:
                 try:
-                    c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"_id": 0, "first_name": 1, "last_name": 1, "photo": 1})
+                    c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"_id": 0, "first_name": 1, "last_name": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1})
                     if c:
-                        contact_info = {"id": cid, "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(), "photo": c.get("photo"), "tags": [], "vehicle": ""}
+                        contact_info = {"id": cid, "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(), "photo": c.get("photo_thumbnail") or c.get("photo_url") or c.get("photo"), "tags": [], "vehicle": ""}
                 except Exception:
                     pass
             if contact_info:
@@ -169,7 +169,7 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
                             "description": f"Send {name} a birthday card",
                             "icon": "gift",
                             "color": "#FF9500",
-                            "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo"), "tags": contact.get("tags", [])},
+                            "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo_thumbnail") or contact.get("photo_url") or contact.get("photo"), "tags": contact.get("tags", [])},
                             "action": "congrats",
                             "suggested_message": f"Happy Birthday, {name}! Hope you have an amazing day!",
                         })
@@ -191,7 +191,7 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
                                 "description": f"Follow up with {name}",
                                 "icon": "time",
                                 "color": "#34C759",
-                                "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo"), "tags": contact.get("tags", [])},
+                                "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo_thumbnail") or contact.get("photo_url") or contact.get("photo"), "tags": contact.get("tags", [])},
                                 "action": "sms",
                                 "suggested_message": f"Hey {name}! It's been {milestone} days  - how's everything going? Let me know if you need anything!",
                             })
