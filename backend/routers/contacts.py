@@ -298,6 +298,33 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
     return {"message": "Profile photo updated"}
 
 
+@router.patch("/{user_id}/{contact_id}/toggle-automation")
+async def toggle_automation(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Toggle a specific automation (birthday/anniversary/sold_date) on or off for a contact."""
+    db = get_db()
+    field = data.get("field", "")
+    if field not in ("birthday", "anniversary", "sold_date"):
+        raise HTTPException(status_code=400, detail="Invalid automation field")
+
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"disabled_automations": 1})
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    disabled = contact.get("disabled_automations", [])
+    if field in disabled:
+        disabled.remove(field)
+        enabled = True
+    else:
+        disabled.append(field)
+        enabled = False
+
+    await db.contacts.update_one(
+        {"_id": ObjectId(contact_id)},
+        {"$set": {"disabled_automations": disabled}}
+    )
+    return {"field": field, "enabled": enabled, "disabled_automations": disabled}
+
+
 
 @router.delete("/{user_id}/{contact_id}")
 async def delete_contact(user_id: str, contact_id: str):

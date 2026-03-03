@@ -255,6 +255,7 @@ export default function ContactDetailScreen() {
     birthday: null as Date | null, anniversary: null as Date | null,
     date_sold: null as Date | null, custom_dates: [] as CustomDateField[],
     address_street: '', address_city: '', address_state: '', address_zip: '', address_country: '',
+    disabled_automations: [] as string[],
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
@@ -382,6 +383,7 @@ export default function ContactDetailScreen() {
   const [submittingReply, setSubmittingReply] = useState(false);
   const [collapsedDateGroups, setCollapsedDateGroups] = useState<Record<string, boolean>>({});
   const [editingAutomation, setEditingAutomation] = useState<{ field: string; label: string; color: string; value: string } | null>(null);
+  const [webActionSheet, setWebActionSheet] = useState<{ visible: boolean; title: string; options: { label: string; icon: string; color: string; onPress: () => void }[] }>({ visible: false, title: '', options: [] });
 
   // ===== DATA LOADING =====
   useEffect(() => {
@@ -442,6 +444,7 @@ export default function ContactDetailScreen() {
         address_state: data.address_state || '',
         address_zip: data.address_zip || '',
         address_country: data.address_country || '',
+        disabled_automations: data.disabled_automations || [],
       });
     } catch (e) {
       console.error('Failed to load contact:', e);
@@ -1224,10 +1227,20 @@ export default function ContactDetailScreen() {
       setShowIntel(true);
       const data = await contactsAPI.generateContactIntel(user._id, id as string);
       setIntelData(data);
-      // Scroll to top so user sees the refreshed Intel
+      setShowIntel(true);
+      // Scroll to top — use window.scrollTo for web, scrollRef for native
       setTimeout(() => {
+        if (Platform.OS === 'web') {
+          // Find the scrollable container and scroll it
+          const scrollContainer = document.querySelector('[data-testid="contact-scroll"]');
+          if (scrollContainer) {
+            scrollContainer.scrollTop = 0;
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }
         scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }, 300);
+      }, 100);
     } catch (e) {
       console.error('Failed to generate intel:', e);
       showSimpleAlert('Error', 'Failed to generate AI summary. Please try again.');
@@ -1235,6 +1248,58 @@ export default function ContactDetailScreen() {
       setIntelGenerating(false);
     }
   };
+
+  // Toggle automation on/off for a specific date field
+  const toggleAutomation = async (field: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${API}/contacts/${user._id}/${id}/toggle-automation`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+        body: JSON.stringify({ field }),
+      });
+      const data = await res.json();
+      setContact(prev => ({ ...prev, disabled_automations: data.disabled_automations || [] }));
+    } catch (e) {
+      console.error('Failed to toggle automation:', e);
+    }
+  };
+
+  // Show action sheet for automation chip (edit date vs toggle auto-card)
+  const handleAutomationChipPress = (field: string, label: string, color: string, value: Date | null) => {
+    const disabled = contact.disabled_automations.includes(field);
+    const toggleLabel = disabled ? `Resume Auto-Card` : `Pause Auto-Card`;
+
+    if (Platform.OS === 'web') {
+      setWebActionSheet({
+        visible: true,
+        title: `${label} Automation`,
+        options: [
+          { label: 'Edit Date', icon: 'calendar', color: '#007AFF', onPress: () => {
+            setAutomationPickerDate(value || new Date());
+            setEditingAutomation({ field, label, color, value });
+          }},
+          { label: toggleLabel, icon: disabled ? 'play-circle' : 'pause-circle', color: disabled ? '#34C759' : '#FF9500', onPress: () => {
+            toggleAutomation(field);
+          }},
+        ],
+      });
+    } else {
+      Alert.alert(
+        `${label} Automation`,
+        undefined,
+        [
+          { text: 'Edit Date', onPress: () => {
+            setAutomationPickerDate(value || new Date());
+            setEditingAutomation({ field, label, color, value });
+          }},
+          { text: toggleLabel, onPress: () => toggleAutomation(field) },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    }
+  };
+
 
   // ===== DATE PICKER =====
   const openDatePicker = (field: string, currentDate: Date | null, label?: string) => {
@@ -1395,7 +1460,7 @@ export default function ContactDetailScreen() {
           )}
         </View>
 
-        <ScrollView ref={scrollRef} contentContainerStyle={[s.scroll, { paddingBottom: 80 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} contentContainerStyle={[s.scroll, { paddingBottom: 80 }]} showsVerticalScrollIndicator={false} data-testid="contact-scroll">
           {/* ===== COMPACT PROFILE HERO ===== */}
           <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
             <View style={s.heroRow}>
@@ -1498,44 +1563,53 @@ export default function ContactDetailScreen() {
                   })}
                   {contact.birthday && (
                     <TouchableOpacity
-                      style={[s.heroTagChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510', borderStyle: 'dashed' }]}
-                      onPress={() => {
-                        setAutomationPickerDate(contact.birthday ? new Date(contact.birthday) : new Date());
-                        setEditingAutomation({ field: 'birthday', label: 'Birthday', color: '#FF2D55', value: contact.birthday });
-                      }}
+                      style={[s.heroTagChip, {
+                        borderColor: contact.disabled_automations.includes('birthday') ? '#ffffff20' : '#FF2D5540',
+                        backgroundColor: contact.disabled_automations.includes('birthday') ? '#ffffff08' : '#FF2D5510',
+                        borderStyle: 'dashed',
+                        opacity: contact.disabled_automations.includes('birthday') ? 0.5 : 1,
+                      }]}
+                      onPress={() => handleAutomationChipPress('birthday', 'Birthday', '#FF2D55', contact.birthday)}
                       activeOpacity={0.7}
                       data-testid="auto-birthday"
                     >
-                      <Ionicons name="gift" size={13} color="#FF2D55" />
-                      <Text style={[s.heroTagChipText, { color: '#FF2D55' }]} numberOfLines={1}>{formatDateUTC(contact.birthday)}</Text>
+                      {contact.disabled_automations.includes('birthday') && <Ionicons name="pause-circle" size={11} color="#666" style={{ marginRight: -2 }} />}
+                      <Ionicons name="gift" size={13} color={contact.disabled_automations.includes('birthday') ? '#666' : '#FF2D55'} />
+                      <Text style={[s.heroTagChipText, { color: contact.disabled_automations.includes('birthday') ? '#666' : '#FF2D55' }]} numberOfLines={1}>{formatDateUTC(contact.birthday)}</Text>
                     </TouchableOpacity>
                   )}
                   {contact.anniversary && (
                     <TouchableOpacity
-                      style={[s.heroTagChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10', borderStyle: 'dashed' }]}
-                      onPress={() => {
-                        setAutomationPickerDate(contact.anniversary ? new Date(contact.anniversary) : new Date());
-                        setEditingAutomation({ field: 'anniversary', label: 'Anniversary', color: '#FF6B6B', value: contact.anniversary });
-                      }}
+                      style={[s.heroTagChip, {
+                        borderColor: contact.disabled_automations.includes('anniversary') ? '#ffffff20' : '#FF6B6B40',
+                        backgroundColor: contact.disabled_automations.includes('anniversary') ? '#ffffff08' : '#FF6B6B10',
+                        borderStyle: 'dashed',
+                        opacity: contact.disabled_automations.includes('anniversary') ? 0.5 : 1,
+                      }]}
+                      onPress={() => handleAutomationChipPress('anniversary', 'Anniversary', '#FF6B6B', contact.anniversary)}
                       activeOpacity={0.7}
                       data-testid="auto-anniversary"
                     >
-                      <Ionicons name="heart" size={13} color="#FF6B6B" />
-                      <Text style={[s.heroTagChipText, { color: '#FF6B6B' }]} numberOfLines={1}>{formatDateUTC(contact.anniversary)}</Text>
+                      {contact.disabled_automations.includes('anniversary') && <Ionicons name="pause-circle" size={11} color="#666" style={{ marginRight: -2 }} />}
+                      <Ionicons name="heart" size={13} color={contact.disabled_automations.includes('anniversary') ? '#666' : '#FF6B6B'} />
+                      <Text style={[s.heroTagChipText, { color: contact.disabled_automations.includes('anniversary') ? '#666' : '#FF6B6B' }]} numberOfLines={1}>{formatDateUTC(contact.anniversary)}</Text>
                     </TouchableOpacity>
                   )}
                   {contact.date_sold && (
                     <TouchableOpacity
-                      style={[s.heroTagChip, { borderColor: '#34C75940', backgroundColor: '#34C75910', borderStyle: 'dashed' }]}
-                      onPress={() => {
-                        setAutomationPickerDate(contact.date_sold ? new Date(contact.date_sold) : new Date());
-                        setEditingAutomation({ field: 'date_sold', label: 'Sold Date', color: '#34C759', value: contact.date_sold });
-                      }}
+                      style={[s.heroTagChip, {
+                        borderColor: contact.disabled_automations.includes('sold_date') ? '#ffffff20' : '#34C75940',
+                        backgroundColor: contact.disabled_automations.includes('sold_date') ? '#ffffff08' : '#34C75910',
+                        borderStyle: 'dashed',
+                        opacity: contact.disabled_automations.includes('sold_date') ? 0.5 : 1,
+                      }]}
+                      onPress={() => handleAutomationChipPress('sold_date', 'Sold Date', '#34C759', contact.date_sold)}
                       activeOpacity={0.7}
                       data-testid="auto-sold"
                     >
-                      <Ionicons name="car-sport" size={13} color="#34C759" />
-                      <Text style={[s.heroTagChipText, { color: '#34C759' }]} numberOfLines={1}>{formatDateUTC(contact.date_sold)}</Text>
+                      {contact.disabled_automations.includes('sold_date') && <Ionicons name="pause-circle" size={11} color="#666" style={{ marginRight: -2 }} />}
+                      <Ionicons name="car-sport" size={13} color={contact.disabled_automations.includes('sold_date') ? '#666' : '#34C759'} />
+                      <Text style={[s.heroTagChipText, { color: contact.disabled_automations.includes('sold_date') ? '#666' : '#34C759' }]} numberOfLines={1}>{formatDateUTC(contact.date_sold)}</Text>
                     </TouchableOpacity>
                   )}
                   {contactEnrollments.map((e, i) => {
@@ -1810,7 +1884,20 @@ export default function ContactDetailScreen() {
                       )}
                     </View>
                   </View>
-                  <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color={colors.textTertiary} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        generateIntel();
+                      }}
+                      style={s.intelUpdateBtn}
+                      data-testid="intel-update-btn"
+                    >
+                      <Ionicons name="refresh" size={13} color="#C9A962" />
+                      <Text style={s.intelUpdateBtnText}>Update</Text>
+                    </TouchableOpacity>
+                    <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color={colors.textTertiary} />
+                  </View>
                 </TouchableOpacity>
 
                 {showIntel && (
@@ -2763,6 +2850,35 @@ export default function ContactDetailScreen() {
               </View>
             </View>
             <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
+              <Text style={s.actionSheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Web Action Sheet for Automation Chips */}
+      <Modal visible={webActionSheet.visible} animationType="slide" transparent={true} onRequestClose={() => setWebActionSheet(prev => ({ ...prev, visible: false }))}>
+        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setWebActionSheet(prev => ({ ...prev, visible: false }))}>
+          <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
+            <View style={s.actionSheetGroup}>
+              <View style={{ paddingVertical: 14, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>{webActionSheet.title}</Text>
+              </View>
+              {webActionSheet.options.map((option, idx) => (
+                <React.Fragment key={idx}>
+                  <TouchableOpacity 
+                    style={s.actionSheetButton} 
+                    onPress={() => { setWebActionSheet(prev => ({ ...prev, visible: false })); option.onPress(); }}
+                    data-testid={`action-sheet-${option.label.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Ionicons name={option.icon as any} size={22} color={option.color} />
+                    <Text style={[s.actionSheetButtonText, { color: option.color }]}>{option.label}</Text>
+                  </TouchableOpacity>
+                  {idx < webActionSheet.options.length - 1 && <View style={s.actionSheetDivider} />}
+                </React.Fragment>
+              ))}
+            </View>
+            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setWebActionSheet(prev => ({ ...prev, visible: false }))} data-testid="action-sheet-cancel">
               <Text style={s.actionSheetCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -3920,6 +4036,12 @@ const getS = (colors: any) => StyleSheet.create({
   },
   intelBtnTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
   intelBtnSub: { fontSize: 11, color: colors.textTertiary, marginTop: 1 },
+  intelUpdateBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 4,
+    backgroundColor: '#C9A96215', borderRadius: 8, borderWidth: 1, borderColor: '#C9A96230',
+  },
+  intelUpdateBtnText: { fontSize: 11, fontWeight: '700', color: '#C9A962' },
   intelCard: {
     marginTop: 8, padding: 14, borderRadius: 12,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,

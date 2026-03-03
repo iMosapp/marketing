@@ -198,6 +198,10 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
                 dt = contact.get(date_field)
                 if dt and isinstance(dt, datetime):
                     if dt.month == today_month and dt.day == today_day:
+                        # Skip contacts that have this automation disabled
+                        disabled = contact.get("disabled_automations", [])
+                        if trigger_type in disabled:
+                            continue
                         contacts_to_message.append(contact)
 
         elif trigger_type.startswith("holiday_"):
