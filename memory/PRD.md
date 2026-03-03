@@ -18,6 +18,14 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 ## What's Been Implemented
 
 ### Completed (Mar 3, 2026 - This Session)
+- **LEAD TRACKING & ATTRIBUTION SYSTEM**: 
+  - Every "Schedule a Demo" CTA across 27 marketing pages now has unique `?source=` tracking (80 unique source tags)
+  - Sources broken into page (homepage, digital_card, leaderboard, etc.) and position (nav, hero, cta, footer)
+  - UTM parameter capture (utm_source, utm_medium, utm_campaign, utm_content, utm_term) for paid ad tracking
+  - Auto channel classification (organic, paid_social, paid_search, email, referral, sales_presentation, in_app, direct)
+  - Admin dashboard at `/admin/lead-tracking` with summary cards, channel/page/position breakdowns, campaign tracking, recent requests
+  - Static demo form at `/demo/` reads source + UTM from URL, displays source badge, submits all to API
+- **14-DAY FREE TRIAL MESSAGING**: All "Start Free" buttons updated to "Start 14-Day Free Trial". Signup page rewritten with trial header, billing disclaimer, and auto-renew language.
 - **APP DIRECTORY PAGE**: Created static `/appdirectory/` page with 60+ pages organized by category, search filtering, collapsible sections. Tested and validated.
 - **LOGIN PAGE LIGHT THEME**: Fixed `/auth/login` from dark theme to white/light theme. Tested with credentials.
 - **FORGOT PASSWORD LIGHT THEME**: Fixed `/auth/forgot-password` from dark to white/light theme.
@@ -89,6 +97,8 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 - `/app/marketing/build/appdirectory/index.html` -- Static app directory page
 - `/app/marketing/generate_pages.py` -- Script to generate all static pages
 - `/app/frontend/public/marketing.html` -- Preview copy of marketing site
+- `/app/frontend/app/admin/lead-tracking.tsx` -- Lead tracking dashboard (NEW)
+- `/app/backend/routers/demo_requests.py` -- Demo request API with analytics (REWRITTEN)
 - `/app/frontend/app/auth/login.tsx` -- Login page (FIXED: light theme)
 - `/app/frontend/app/auth/forgot-password.tsx` -- Forgot password (FIXED: light theme)
 - `/app/frontend/app/auth/signup.tsx` -- Signup page (light theme)
