@@ -287,6 +287,15 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **"Share Business Card" Title Removed**: Removed redundant title from the share modal on both contact and thread pages. The "Share Your Stuff" heading inside the modal is sufficient.
 - **New Event Type Labels**: Both contact detail and activity tab now display labels for `digital_card_viewed`, `review_page_viewed`, `showcase_viewed`, `link_page_viewed`, `link_clicked`.
 
+### Contact Page Reorganization — Feed/Details Tabs (Mar 3, 2026)
+- **Tab-based layout**: Split the contact detail page into **Feed** and **Details** tabs, reducing visual clutter from 12 sections to a focused two-tab experience.
+  - **Feed tab**: Suggested Actions, Relationship Intel pill (collapsed), Pinned Notes, Activity Feed (with Log Customer Reply, Search), View Conversation link.
+  - **Details tab**: Voice Notes, Notes, Important Dates, Referrals, Campaigns.
+- **Merged Tags + Automations**: Tags, birthday/anniversary/sold date chips, and campaign chips are now in a single horizontal scrollable strip.
+- **Action Progress Tracker** stays above tabs for quick visibility.
+- **Edit mode** unchanged — still shows all form fields.
+- **Composer** remains sticky at bottom on both tabs.
+
 
 ## Key Files
 - `/app/frontend/app/contact/[id].tsx` — Contact detail page with unified toolbar (MAJOR REFACTOR Mar 3, 2026)
