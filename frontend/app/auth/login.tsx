@@ -35,7 +35,18 @@ const getDefaultRoute = (role?: string): string => {
 };
 
 export default function LoginScreen() {
-  const { colors, loadTheme } = useThemeStore();
+  const { colors: themeColors, loadTheme } = useThemeStore();
+  // Force light theme for public login page
+  const colors = {
+    ...themeColors,
+    bg: '#FFFFFF',
+    card: '#FFFFFF',
+    surface: '#F0F0F5',
+    text: '#111111',
+    textSecondary: '#6E6E73',
+    textTertiary: '#AEAEB2',
+    border: 'rgba(0,0,0,0.1)',
+  };
   const [themeReady, setThemeReady] = useState(false);
   const styles = getStyles(colors);
   const router = useRouter();
@@ -689,7 +700,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonPrimaryText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
