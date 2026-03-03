@@ -136,7 +136,17 @@ export default function ThreadScreen() {
     textSecondary: themeColors.textSecondary,
     textTertiary: themeColors.textTertiary || '#8E8E93',
     border: themeColors.border,
-  } : COLORS;
+    userBubbleBg: 'rgba(0,122,255,0.1)',
+    userBubbleBorder: 'rgba(0,122,255,0.2)',
+    contactBubbleBg: themeColors.card,
+    contactBubbleBorder: themeColors.border,
+  } : {
+    ...COLORS,
+    userBubbleBg: '#1A2A4A',
+    userBubbleBorder: '#1E3A6E',
+    contactBubbleBg: COLORS.surface,
+    contactBubbleBorder: '#2A2A2A',
+  };
   const styles = getStyles(colors);
   
   const [message, setMessage] = useState('');
@@ -3240,20 +3250,20 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: colors.border,
   },
   userMessageBubble: {
-    backgroundColor: '#1A2A4A',
-    borderColor: '#1E3A6E',
+    backgroundColor: colors.userBubbleBg,
+    borderColor: colors.userBubbleBorder,
   },
   contactMessageBubble: {
-    backgroundColor: colors.surface,
-    borderColor: '#2A2A2A',
+    backgroundColor: colors.contactBubbleBg,
+    borderColor: colors.contactBubbleBorder,
   },
   richMessageBubble: {
     borderLeftWidth: 3,
-    backgroundColor: colors.surface,
-    borderColor: '#2A2A2A',
+    backgroundColor: colors.contactBubbleBg,
+    borderColor: colors.contactBubbleBorder,
   },
   richContentHeader: {
     flexDirection: 'row',
@@ -3262,7 +3272,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    borderBottomColor: colors.border,
   },
   richContentIcon: {
     width: 28,
