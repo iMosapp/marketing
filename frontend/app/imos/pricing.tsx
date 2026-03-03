@@ -7,7 +7,7 @@ import { ImosHeader, ImosFooter } from './_components';
 const INDIVIDUAL_PLANS = [
   {
     name: 'Starter',
-    price: 49,
+    price: 79,
     interval: 'month',
     description: 'Perfect for individual salespeople getting started',
     features: ['Smart messaging (SMS + Email)', 'Contact management', 'Digital business card', 'Congrats cards', 'Basic campaigns', 'Mobile app access'],

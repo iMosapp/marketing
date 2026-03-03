@@ -20,7 +20,18 @@ import { useThemeStore } from '../../store/themeStore';
 type Step = 'email' | 'code' | 'password';
 
 export default function ForgotPasswordScreen() {
-  const { colors } = useThemeStore();
+  const { colors: themeColors } = useThemeStore();
+  // Force light theme for public auth page
+  const colors = {
+    ...themeColors,
+    bg: '#FFFFFF',
+    card: '#FFFFFF',
+    surface: '#F0F0F5',
+    text: '#111111',
+    textSecondary: '#6E6E73',
+    textTertiary: '#AEAEB2',
+    border: 'rgba(0,0,0,0.1)',
+  };
   const styles = getStyles(colors);
   const router = useRouter();
   
@@ -400,7 +411,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
   },

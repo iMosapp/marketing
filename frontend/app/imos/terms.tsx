@@ -1,18 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { ImosHeader, ImosFooter } from './_components';
-import api from '../../services/api';
+
+const SECTIONS = [
+  {
+    title: '1. Acceptance of Terms',
+    content: `By accessing or using i'M On Social ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service. These terms apply to all users, including individual users, team members, store managers, and organization administrators.`,
+  },
+  {
+    title: '2. Description of Service',
+    content: `i'M On Social provides a Relationship Management System (RMS) platform that includes digital business cards, contact management, messaging (SMS, email, and personal SMS), automated campaigns, AI-powered communication tools, analytics, and related services. The Service is available through web and mobile applications.`,
+  },
+  {
+    title: '3. Account Registration & Security',
+    content: `You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must notify us immediately of any unauthorized use.\n\nOrganization administrators are responsible for managing user access within their organization, including adding, deactivating, and removing team members.`,
+  },
+  {
+    title: '4. Acceptable Use',
+    content: `You agree not to:\n\n- Use the Service to send unsolicited commercial messages (spam)\n- Violate any applicable laws, including CAN-SPAM, TCPA, and GDPR\n- Upload or transmit malicious code or content\n- Attempt to gain unauthorized access to the Service or other users' accounts\n- Use the Service to harass, defame, or threaten any person\n- Resell or redistribute the Service without written permission\n- Use the AI features to generate harmful, misleading, or illegal content`,
+  },
+  {
+    title: '5. Subscription & Billing',
+    content: `Paid plans are billed on a monthly or annual basis as selected at the time of purchase. Prices are subject to change with 30 days' notice. All fees are non-refundable except as required by applicable law.\n\nFree trials, if offered, automatically convert to paid subscriptions at the end of the trial period unless cancelled. You may cancel your subscription at any time through your account settings.`,
+  },
+  {
+    title: '6. Intellectual Property',
+    content: `The Service, including all software, design, text, graphics, and other content, is owned by i'M On Social and protected by intellectual property laws. You retain ownership of content you create or upload through the Service.\n\nBy using the Service, you grant us a limited, non-exclusive license to use, store, and process your content solely for the purpose of providing and improving the Service.`,
+  },
+  {
+    title: '7. Data Ownership & Portability',
+    content: `You own your data. Your contacts, messages, templates, and other content created within the Service belong to you. You may export your data at any time through the platform's export features or by contacting support.\n\nWhen an organization account is terminated, data will be retained for 90 days to allow for export, after which it will be permanently deleted.`,
+  },
+  {
+    title: '8. API & Integration Terms',
+    content: `Access to i'M On Social's public API is subject to rate limits and usage policies. API keys are confidential and must not be shared publicly. We reserve the right to revoke API access if usage policies are violated.\n\nWebhook endpoints must be secure (HTTPS) and respond within reasonable timeframes. We are not responsible for data loss due to webhook endpoint failures.`,
+  },
+  {
+    title: '9. Limitation of Liability',
+    content: `The Service is provided "as is" without warranties of any kind, express or implied. i'M On Social shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or business opportunities.\n\nOur total liability for any claim arising from or related to the Service shall not exceed the amount you paid us in the 12 months preceding the claim.`,
+  },
+  {
+    title: '10. Termination',
+    content: `We may suspend or terminate your access to the Service at any time for violation of these terms or for any other reason with reasonable notice. You may terminate your account at any time.\n\nUpon termination, your right to use the Service ceases immediately. Provisions that by their nature should survive termination will survive, including ownership, warranty disclaimers, and limitations of liability.`,
+  },
+  {
+    title: '11. Modifications to Terms',
+    content: `We reserve the right to modify these Terms at any time. Material changes will be communicated via email or in-app notification at least 30 days before they take effect. Continued use of the Service after changes take effect constitutes acceptance of the modified terms.`,
+  },
+  {
+    title: '12. Governing Law',
+    content: `These Terms shall be governed by and construed in accordance with the laws of the State of Texas, United States, without regard to conflict of law principles. Any disputes arising from these Terms shall be resolved in the courts of Texas.`,
+  },
+  {
+    title: '13. Contact',
+    content: `For questions about these Terms of Service, contact us at:\n\ni'M On Social\nEmail: legal@imonsocial.com\nGeneral: forest@imonsocial.com\nWebsite: https://imonsocial.com`,
+  },
+];
 
 export default function TermsScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
   const maxW = isDesktop ? 800 : undefined;
-  const [loading, setLoading] = useState(true);
-  const [terms, setTerms] = useState<{ title: string; last_updated: string; content: string } | null>(null);
-
-  useEffect(() => {
-    api.get('/legal/terms').then(r => setTerms(r.data)).catch(() => {}).finally(() => setLoading(false));
-  }, []);
 
   return (
     <View style={s.container}>
@@ -21,20 +69,16 @@ export default function TermsScreen() {
         <View style={[s.content, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined]}>
           <Text style={s.label}>LEGAL</Text>
           <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Terms of Service</Text>
-          {loading ? (
-            <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
-          ) : terms ? (
-            <>
-              <Text style={s.updated}>Last updated: {terms.last_updated}</Text>
-              <Text style={s.body}>{terms.content}</Text>
-            </>
-          ) : (
-            <Text style={s.body}>
-              By using i'M On Social, you agree to these terms of service. i'M On Social provides a Relationship Management System for businesses. Users are responsible for maintaining the confidentiality of their account credentials and for all activities under their account.{'\n\n'}
-              i'M On Social reserves the right to modify these terms at any time. Continued use constitutes acceptance of modified terms.{'\n\n'}
-              For questions, contact us at forest@imonsocial.com.
-            </Text>
-          )}
+          <Text style={s.updated}>Last updated: February 1, 2026</Text>
+          <Text style={s.intro}>
+            These Terms of Service govern your access to and use of the i'M On Social platform and services. Please read these terms carefully before using our Service.
+          </Text>
+          {SECTIONS.map((section, i) => (
+            <View key={i} style={s.section}>
+              <Text style={s.sectionTitle}>{section.title}</Text>
+              <Text style={s.sectionBody}>{section.content}</Text>
+            </View>
+          ))}
         </View>
         <ImosFooter />
       </ScrollView>
@@ -47,7 +91,10 @@ const s = StyleSheet.create({
   scroll: { paddingBottom: 0 },
   content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40 },
   label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8 },
   updated: { fontSize: 13, color: '#8E8E93', marginBottom: 24 },
-  body: { fontSize: 15, color: '#6E6E73', lineHeight: 24 },
+  intro: { fontSize: 15, color: '#3A3A3C', lineHeight: 24, marginBottom: 32, borderLeftWidth: 3, borderLeftColor: '#007AFF', paddingLeft: 16 },
+  section: { marginBottom: 28 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1D1D1F', marginBottom: 8 },
+  sectionBody: { fontSize: 15, color: '#6E6E73', lineHeight: 24 },
 });

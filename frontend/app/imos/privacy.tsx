@@ -1,18 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { ImosHeader, ImosFooter } from './_components';
-import api from '../../services/api';
+
+const SECTIONS = [
+  {
+    title: '1. Information We Collect',
+    content: `When you use i'M On Social, we collect information you provide directly, including your name, email address, phone number, profile photo, and business information. We also collect data about your contacts that you import or create within the platform, including their names, phone numbers, email addresses, and communication history.\n\nWe automatically collect usage data such as device information, IP addresses, browser type, pages visited, and feature interactions to improve our services.`,
+  },
+  {
+    title: '2. How We Use Your Information',
+    content: `We use your information to:\n\n- Provide and maintain i'M On Social services, including digital business cards, messaging, campaigns, and AI-powered features\n- Process and deliver communications you initiate through our platform\n- Generate analytics and activity reports for you and your organization\n- Improve our AI assistant (Jessi) and recommendation algorithms\n- Send you service-related notices, updates, and security alerts\n- Provide customer support`,
+  },
+  {
+    title: '3. Data Storage & Security',
+    content: `Your data is stored on secure, encrypted servers hosted by industry-leading cloud infrastructure providers. We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.\n\nAll data transmitted between your device and our servers is encrypted using TLS 1.2 or higher. Database access is restricted to authorized personnel only.`,
+  },
+  {
+    title: '4. Data Sharing & Third Parties',
+    content: `We do not sell, rent, or trade your personal information to third parties. We may share data with:\n\n- Service providers who help us operate our platform (e.g., email delivery, SMS providers, cloud hosting)\n- Your organization's administrators, if you use i'M On Social as part of a team or enterprise account\n- Law enforcement or government agencies when required by applicable law\n\nAll third-party service providers are contractually obligated to protect your data.`,
+  },
+  {
+    title: '5. Your Rights & Choices',
+    content: `You have the right to:\n\n- Access, correct, or delete your personal information\n- Export your data in a portable format\n- Opt out of marketing communications\n- Request deletion of your account and associated data\n- Restrict processing of your personal data\n\nTo exercise these rights, contact us at privacy@imonsocial.com.`,
+  },
+  {
+    title: '6. Data Retention',
+    content: `We retain your personal data for as long as your account is active or as needed to provide services. When a user account is deactivated, we implement a soft-delete policy: account access is removed, but contact data and communication history are preserved for organizational continuity for a period of 90 days, after which they are permanently deleted unless the organization requests an extension.`,
+  },
+  {
+    title: '7. Cookies & Tracking',
+    content: `We use essential cookies to maintain your session and preferences. We use analytics tools to understand how our services are used. You can control cookie preferences through your browser settings. We do not use third-party advertising cookies.`,
+  },
+  {
+    title: '8. Children\'s Privacy',
+    content: `i'M On Social is not intended for use by individuals under the age of 16. We do not knowingly collect personal information from children. If we learn we have collected data from a child under 16, we will delete it promptly.`,
+  },
+  {
+    title: '9. Changes to This Policy',
+    content: `We may update this Privacy Policy from time to time. We will notify you of material changes by posting the updated policy on our website and updating the "Last Updated" date. Your continued use of our services after changes constitutes acceptance.`,
+  },
+  {
+    title: '10. Contact Us',
+    content: `If you have questions about this Privacy Policy or our data practices, contact us at:\n\ni'M On Social\nEmail: privacy@imonsocial.com\nGeneral: forest@imonsocial.com\nWebsite: https://imonsocial.com`,
+  },
+];
 
 export default function PrivacyScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
   const maxW = isDesktop ? 800 : undefined;
-  const [loading, setLoading] = useState(true);
-  const [privacy, setPrivacy] = useState<{ title: string; last_updated: string; content: string } | null>(null);
-
-  useEffect(() => {
-    api.get('/legal/privacy').then(r => setPrivacy(r.data)).catch(() => {}).finally(() => setLoading(false));
-  }, []);
 
   return (
     <View style={s.container}>
@@ -21,19 +57,16 @@ export default function PrivacyScreen() {
         <View style={[s.content, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined]}>
           <Text style={s.label}>LEGAL</Text>
           <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Privacy Policy</Text>
-          {loading ? (
-            <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
-          ) : privacy ? (
-            <>
-              <Text style={s.updated}>Last updated: {privacy.last_updated}</Text>
-              <Text style={s.body}>{privacy.content}</Text>
-            </>
-          ) : (
-            <Text style={s.body}>
-              i'M On Social takes your privacy seriously. We collect only the data necessary to provide our Relationship Management System services. Your contact data, messages, and personal information are stored securely and never sold to third parties.{'\n\n'}
-              For questions about our privacy practices, contact us at forest@imonsocial.com.
-            </Text>
-          )}
+          <Text style={s.updated}>Last updated: February 1, 2026</Text>
+          <Text style={s.intro}>
+            i'M On Social ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our Relationship Management System platform and related services.
+          </Text>
+          {SECTIONS.map((section, i) => (
+            <View key={i} style={s.section}>
+              <Text style={s.sectionTitle}>{section.title}</Text>
+              <Text style={s.sectionBody}>{section.content}</Text>
+            </View>
+          ))}
         </View>
         <ImosFooter />
       </ScrollView>
@@ -46,7 +79,10 @@ const s = StyleSheet.create({
   scroll: { paddingBottom: 0 },
   content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40 },
   label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8 },
   updated: { fontSize: 13, color: '#8E8E93', marginBottom: 24 },
-  body: { fontSize: 15, color: '#6E6E73', lineHeight: 24 },
+  intro: { fontSize: 15, color: '#3A3A3C', lineHeight: 24, marginBottom: 32, borderLeftWidth: 3, borderLeftColor: '#007AFF', paddingLeft: 16 },
+  section: { marginBottom: 28 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1D1D1F', marginBottom: 8 },
+  sectionBody: { fontSize: 15, color: '#6E6E73', lineHeight: 24 },
 });
