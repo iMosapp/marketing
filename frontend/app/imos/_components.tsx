@@ -71,7 +71,7 @@ export function ImosHeader() {
       <View style={[styles.headerInner, isDesktop && { maxWidth: 1100 }]}>
         {/* Logo */}
         <TouchableOpacity onPress={() => navigate('/imos')} data-testid="imos-header-logo">
-          <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 126, height: 126 }} resizeMode="contain" />
+          <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 90, height: 90 }} resizeMode="contain" />
         </TouchableOpacity>
 
         {isDesktop ? (
