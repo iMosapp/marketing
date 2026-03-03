@@ -119,6 +119,75 @@ async def get_short_url_stats(short_code: str) -> Optional[dict]:
     }
 
 
+def _detect_event_type(doc: dict) -> tuple:
+    """Determine the event_type, title, icon, color from a short URL doc."""
+    link_type = doc.get("link_type", "")
+    original_url = doc.get("original_url", "")
+
+    if link_type == "business_card" or "/p/" in original_url:
+        return "digital_card_viewed", "Viewed Digital Card", "eye", "#007AFF"
+    if "/review/" in original_url:
+        return "review_page_viewed", "Viewed Review Page", "eye", "#FBBC04"
+    if "/showcase/" in original_url:
+        return "showcase_viewed", "Viewed Showcase", "eye", "#C9A962"
+    if "/l/" in original_url or "/linkpage/" in original_url:
+        return "link_page_viewed", "Viewed Link Page", "eye", "#AF52DE"
+    if link_type == "congrats_card" or "/congrats/" in original_url:
+        return None, None, None, None  # handled by congrats_cards.py
+    return "link_clicked", "Clicked Link", "open", "#007AFF"
+
+
+async def _log_link_click_event(db, doc: dict, short_code: str):
+    """Find the contact who received this short link and log a contact_event."""
+    event_type, title, icon, color = _detect_event_type(doc)
+    if not event_type:
+        return  # skip (e.g., congrats cards handled elsewhere)
+
+    user_id = doc.get("user_id")
+    if not user_id:
+        return
+
+    # Find a message containing this short code to identify the contact
+    msg = await db.messages.find_one(
+        {"content": {"$regex": short_code}, "sender": "user", "user_id": user_id},
+        {"conversation_id": 1}
+    )
+    if not msg:
+        return
+
+    conv = await db.conversations.find_one(
+        {"_id": ObjectId(msg["conversation_id"])},
+        {"contact_id": 1}
+    )
+    if not conv or not conv.get("contact_id"):
+        return
+
+    contact_id = str(conv["contact_id"])
+
+    # Avoid duplicate events within a short window (1 hour)
+    from datetime import timedelta
+    recent = await db.contact_events.find_one({
+        "contact_id": contact_id,
+        "event_type": event_type,
+        "timestamp": {"$gte": datetime.utcnow() - timedelta(hours=1)},
+    })
+    if recent:
+        return
+
+    await db.contact_events.insert_one({
+        "contact_id": contact_id,
+        "user_id": user_id,
+        "event_type": event_type,
+        "icon": icon,
+        "color": color,
+        "title": title,
+        "description": f"Contact opened the shared link",
+        "category": "customer_activity",
+        "metadata": {"short_code": short_code, "link_type": doc.get("link_type", "")},
+        "timestamp": datetime.utcnow(),
+    })
+
+
 @router.get("/{short_code}")
 async def redirect_short_url(short_code: str, request: Request):
     """
@@ -154,7 +223,13 @@ async def redirect_short_url(short_code: str, request: Request):
         "clicked_at": datetime.utcnow()
     }
     await db.short_url_clicks.insert_one(click_log)
-    
+
+    # Log a contact_event so the click appears in the activity feed
+    try:
+        await _log_link_click_event(db, doc, short_code)
+    except Exception as e:
+        print(f"[ShortURL] Failed to log click event: {e}")
+
     # Redirect to the original URL
     return RedirectResponse(url=doc["original_url"], status_code=302)
 

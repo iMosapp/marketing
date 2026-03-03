@@ -467,6 +467,16 @@ async def get_contact_stats(user_id: str, contact_id: str):
         {"contact_id": contact_id}
     )
 
+    # Count link click/view events
+    click_event_types = [
+        "digital_card_viewed", "review_page_viewed", "showcase_viewed",
+        "link_page_viewed", "link_clicked", "review_link_clicked",
+        "congrats_card_viewed",
+    ]
+    link_clicks = await db.contact_events.count_documents(
+        {"contact_id": contact_id, "event_type": {"$in": click_event_types}}
+    )
+
     # Get contact created_at for "time in system"
     contact = None
     try:
@@ -489,6 +499,7 @@ async def get_contact_stats(user_id: str, contact_id: str):
         "cards_sent": card_count,
         "broadcasts": broadcast_count,
         "custom_events": custom_count,
+        "link_clicks": link_clicks,
         "created_at": created_at,
     }
 

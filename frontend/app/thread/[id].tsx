@@ -2486,7 +2486,6 @@ export default function ThreadScreen() {
           <View style={styles.templatesModal} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Share Business Card</Text>
             </View>
             
             <View style={styles.cardModalContent}>

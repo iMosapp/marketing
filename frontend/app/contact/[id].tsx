@@ -60,6 +60,7 @@ interface ContactStats {
   cards_sent: number;
   broadcasts: number;
   custom_events: number;
+  link_clicks: number;
   created_at: string | null;
 }
 
@@ -151,6 +152,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   call_placed: 'Call Placed',
   new_contact: 'Contact Created',
   link_click: 'Link Clicked',
+  link_clicked: 'Link Clicked',
   voice_note: 'Voice Note',
   note_updated: 'Note Updated',
   customer_reply: 'Customer Reply',
@@ -159,6 +161,10 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   congrats_card_share: 'Shared Card',
   review_submitted: 'Left a Review',
   review_link_clicked: 'Clicked Review Link',
+  digital_card_viewed: 'Viewed Digital Card',
+  review_page_viewed: 'Viewed Review Page',
+  showcase_viewed: 'Viewed Showcase',
+  link_page_viewed: 'Viewed Link Page',
 };
 
 function getEventTitle(evt: ContactEvent): string {
@@ -286,7 +292,7 @@ export default function ContactDetailScreen() {
   const [events, setEvents] = useState<ContactEvent[]>([]);
   const [stats, setStats] = useState<ContactStats>({
     total_touchpoints: 0, messages_sent: 0, campaigns: 0,
-    cards_sent: 0, broadcasts: 0, custom_events: 0, created_at: null,
+    cards_sent: 0, broadcasts: 0, custom_events: 0, link_clicks: 0, created_at: null,
   });
   const [eventsLoading, setEventsLoading] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Record<number, boolean>>({});
@@ -395,6 +401,15 @@ export default function ContactDetailScreen() {
       }
     }, [id, user])
   );
+
+  // Periodic polling for real-time activity updates (every 15 seconds)
+  useEffect(() => {
+    if (isNewContact || !user) return;
+    const interval = setInterval(() => {
+      loadEvents();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [id, user, isNewContact]);
 
   const loadContact = async () => {
     if (!user) return;
@@ -1455,6 +1470,11 @@ export default function ContactDetailScreen() {
                 <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{contact.referral_count}</Text>
                   <Text style={s.heroStatLbl}>referrals</Text>
+                </View>
+                <Text style={s.heroStatDot}>·</Text>
+                <View style={s.heroStatChip}>
+                  <Text style={s.heroStatVal}>{stats.link_clicks}</Text>
+                  <Text style={s.heroStatLbl}>clicks</Text>
                 </View>
               </View>
             )}
@@ -2630,7 +2650,6 @@ export default function ContactDetailScreen() {
           <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
             <View style={s.toolbarModalHeader}>
               <View style={s.toolbarModalHandle} />
-              <Text style={s.toolbarModalTitle}>Share Business Card</Text>
             </View>
             <View style={s.cardModalContent}>
               <View style={s.cardPreview}>
