@@ -127,10 +127,10 @@ export default function DemoScreen() {
               data-testid="demo-submit-btn"
             >
               {sending ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color="#FFF" />
               ) : (
                 <>
-                  <Ionicons name="calendar" size={20} color="#000" />
+                  <Ionicons name="calendar" size={20} color="#FFF" />
                   <Text style={s.submitBtnText}>Schedule My Demo</Text>
                 </>
               )}
@@ -166,47 +166,47 @@ export default function DemoScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 24, paddingHorizontal: 20 },
-  label: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 2, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 22, maxWidth: 420 },
+  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 420 },
   form: { paddingHorizontal: 20, gap: 16 },
   row: { flexDirection: 'row', gap: 12 },
   field: {},
   fieldHalf: { flex: 1 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#999', marginBottom: 6, marginLeft: 2 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#6E6E73', marginBottom: 6, marginLeft: 2 },
   input: {
-    backgroundColor: '#111',
+    backgroundColor: '#F5F5F7',
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: 'rgba(0,0,0,0.08)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#FFF',
+    color: '#1D1D1F',
   },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#C9A962',
+    backgroundColor: '#007AFF',
     paddingVertical: 16,
     borderRadius: 28,
     marginTop: 8,
   },
-  submitBtnText: { fontSize: 17, fontWeight: '700', color: '#000' },
-  hint: { fontSize: 13, color: '#666', textAlign: 'center', marginTop: 12 },
-  hintLink: { color: '#C9A962', fontWeight: '600' },
+  submitBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  hint: { fontSize: 13, color: '#86868B', textAlign: 'center', marginTop: 12 },
+  hintLink: { color: '#007AFF', fontWeight: '600' },
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20, paddingVertical: 40, paddingHorizontal: 20 },
   trustItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  trustText: { fontSize: 13, color: '#888' },
+  trustText: { fontSize: 13, color: '#6E6E73' },
   successWrap: { alignItems: 'center', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 },
   successIcon: { marginBottom: 20 },
-  successTitle: { fontSize: 28, fontWeight: '800', color: '#FFF', marginBottom: 12 },
-  successDesc: { fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 24, maxWidth: 400, marginBottom: 32 },
-  backBtn: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: 24, borderWidth: 1, borderColor: '#C9A962' },
-  backBtnText: { fontSize: 16, fontWeight: '600', color: '#C9A962' },
+  successTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 12 },
+  successDesc: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 400, marginBottom: 32 },
+  backBtn: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: 24, borderWidth: 1, borderColor: '#007AFF' },
+  backBtnText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
 });

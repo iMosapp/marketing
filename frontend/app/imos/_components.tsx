@@ -69,7 +69,7 @@ export function ImosHeader() {
         ) : (
           /* Mobile Hamburger */
           <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)} style={styles.hamburger} data-testid="header-menu-toggle">
-            <Ionicons name={menuOpen ? 'close' : 'menu'} size={26} color="#FFF" />
+            <Ionicons name={menuOpen ? 'close' : 'menu'} size={26} color="#1D1D1F" />
           </TouchableOpacity>
         )}
       </View>
@@ -79,7 +79,7 @@ export function ImosHeader() {
         <View style={styles.mobileMenu}>
           {NAV_LINKS.map((link) => (
             <TouchableOpacity key={link.path} onPress={() => navigate(link.path)} style={styles.mobileMenuItem} data-testid={`mobile-nav-${link.label.toLowerCase()}`}>
-              <Text style={[styles.mobileMenuText, isActive(link.path) && { color: '#C9A962' }]}>{link.label}</Text>
+              <Text style={[styles.mobileMenuText, isActive(link.path) && { color: '#007AFF' }]}>{link.label}</Text>
             </TouchableOpacity>
           ))}
           <View style={styles.mobileDivider} />
@@ -153,17 +153,17 @@ export function ImosFooter() {
 const styles = StyleSheet.create({
   /* ===== HEADER ===== */
   headerOuter: {
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(255,255,255,0.88)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100 } : {}),
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' } : {}),
   },
   headerInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignSelf: 'center',
     width: '100%',
   },
@@ -172,47 +172,47 @@ const styles = StyleSheet.create({
   logoM: { fontSize: 26, fontWeight: '900', color: '#FFD60A' },
   logoO: { fontSize: 26, fontWeight: '900', color: '#34C759' },
   logoS: { fontSize: 26, fontWeight: '900', color: '#007AFF' },
-  navRow: { flexDirection: 'row', alignItems: 'center', gap: 28 },
-  navLink: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.6)' },
-  navLinkActive: { color: '#C9A962', fontWeight: '600' },
-  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  loginLink: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
-  signInBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-  signInBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
-  signupBtn: { backgroundColor: '#C9A962', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
-  signupBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: 32 },
+  navLink: { fontSize: 14, fontWeight: '500', color: '#6E6E73' },
+  navLinkActive: { color: '#007AFF', fontWeight: '600' },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  loginLink: { fontSize: 14, fontWeight: '500', color: '#6E6E73' },
+  signInBtn: { paddingVertical: 9, paddingHorizontal: 20, borderRadius: 980 },
+  signInBtnText: { fontSize: 14, fontWeight: '600', color: '#1D1D1F' },
+  signupBtn: { backgroundColor: '#007AFF', paddingVertical: 9, paddingHorizontal: 22, borderRadius: 980 },
+  signupBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   hamburger: { padding: 4 },
   /* Mobile Menu */
   mobileMenu: {
-    backgroundColor: '#000',
+    backgroundColor: '#FFF',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(0,0,0,0.06)',
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
-  mobileMenuItem: { paddingVertical: 12 },
-  mobileMenuText: { fontSize: 16, fontWeight: '500', color: 'rgba(255,255,255,0.8)' },
-  mobileDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 4 },
-  mobileSignup: { backgroundColor: '#C9A962', borderRadius: 12, alignItems: 'center', marginTop: 8, paddingVertical: 14 },
-  mobileSignupText: { fontSize: 16, fontWeight: '700', color: '#000' },
+  mobileMenuItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.04)' },
+  mobileMenuText: { fontSize: 16, fontWeight: '500', color: '#1D1D1F' },
+  mobileDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.06)', marginVertical: 4 },
+  mobileSignup: { backgroundColor: '#007AFF', borderRadius: 14, alignItems: 'center', marginTop: 12, paddingVertical: 14, borderBottomWidth: 0 },
+  mobileSignupText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
 
   /* ===== FOOTER ===== */
   footer: {
-    backgroundColor: '#000',
+    backgroundColor: '#F5F5F7',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(0,0,0,0.06)',
     paddingTop: 40,
   },
   footerInner: { paddingHorizontal: 20, alignSelf: 'center', width: '100%' },
   footerBrand: { marginBottom: 32 },
   footerLogoRow: { flexDirection: 'row', marginBottom: 6 },
   fChar: { fontSize: 24, fontWeight: '800' },
-  footerTagline: { fontSize: 12, color: '#6E6E73', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
-  footerSub: { fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 20 },
+  footerTagline: { fontSize: 12, color: '#86868B', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
+  footerSub: { fontSize: 14, color: '#6E6E73', lineHeight: 20 },
   footerLinks: { gap: 24, marginBottom: 32 },
   footerCol: { gap: 8 },
-  footerColTitle: { fontSize: 13, fontWeight: '700', color: '#FFF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  footerLink: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
-  footerBottom: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingVertical: 20, alignItems: 'center' },
-  footerCopy: { fontSize: 12, color: '#3A3A3C' },
+  footerColTitle: { fontSize: 12, fontWeight: '700', color: '#1D1D1F', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  footerLink: { fontSize: 14, color: '#86868B' },
+  footerBottom: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.06)', paddingVertical: 20, alignItems: 'center' },
+  footerCopy: { fontSize: 12, color: '#86868B' },
 });
