@@ -689,6 +689,13 @@ export default function MoreScreen() {
         color: '#34C759',
       },
       {
+        icon: 'color-palette',
+        title: 'Brand Assets',
+        subtitle: 'Logos, images & downloads',
+        onPress: () => router.push('/admin/brand-assets'),
+        color: '#FF9500',
+      },
+      {
         icon: 'map-outline',
         title: 'App Directory',
         subtitle: 'Browse & share pages',
