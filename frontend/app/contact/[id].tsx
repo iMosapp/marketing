@@ -898,7 +898,15 @@ export default function ContactDetailScreen() {
   const handleCardTemplateSelect = (cardType: string) => {
     setShowCardTemplatePicker(false);
     const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
-    router.push(`/settings/create-card?type=${cardType}&for_contact=${id}&contact_name=${encodeURIComponent(contactName)}&return_to_contact=true`);
+    const params = new URLSearchParams({
+      type: cardType,
+      prefillName: contactName,
+      prefillPhone: contact.phone || '',
+      prefillEmail: contact.email || '',
+      for_contact: id as string,
+      return_to_contact: 'true',
+    });
+    router.push(`/settings/create-card?${params.toString()}`);
   };
 
   // State for card template picker
