@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -70,11 +70,8 @@ export function ImosHeader() {
     <View style={styles.headerOuter}>
       <View style={[styles.headerInner, isDesktop && { maxWidth: 1100 }]}>
         {/* Logo */}
-        <TouchableOpacity onPress={() => navigate('/imos')} style={styles.logoWrap} data-testid="imos-header-logo">
-          <Text style={styles.logoI}>i</Text>
-          <Text style={styles.logoM}>M</Text>
-          <Text style={styles.logoO}>O</Text>
-          <Text style={styles.logoS}>s</Text>
+        <TouchableOpacity onPress={() => navigate('/imos')} data-testid="imos-header-logo">
+          <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
         </TouchableOpacity>
 
         {isDesktop ? (
@@ -151,13 +148,10 @@ export function ImosFooter() {
         {/* Brand */}
         <View style={styles.footerBrand}>
           <View style={styles.footerLogoRow}>
-            <Text style={[styles.fChar, { color: '#FF3B30' }]}>i</Text>
-            <Text style={[styles.fChar, { color: '#FFD60A' }]}>M</Text>
-            <Text style={[styles.fChar, { color: '#34C759' }]}>O</Text>
-            <Text style={[styles.fChar, { color: '#007AFF' }]}>s</Text>
+            <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 52, height: 52 }} resizeMode="contain" />
           </View>
-          <Text style={styles.footerTagline}>Social Relationship OS</Text>
-          <Text style={styles.footerSub}>Meet the New Way{'\n'}to Be On Social.</Text>
+          <Text style={styles.footerTagline}>Powered by i'M On Social</Text>
+          <Text style={styles.footerSub}>Own your reputation.{'\n'}Own your relationships.</Text>
         </View>
 
         {/* Links */}
@@ -173,7 +167,7 @@ export function ImosFooter() {
             <Text style={styles.footerColTitle}>Company</Text>
             <TouchableOpacity onPress={() => navigate('/imos/privacy')}><Text style={styles.footerLink}>Privacy Policy</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/terms')}><Text style={styles.footerLink}>Terms of Service</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.location.href = 'mailto:forest@imosapp.com'; }}>
+            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.location.href = 'mailto:forest@imonsocial.com'; }}>
               <Text style={styles.footerLink}>Contact Us</Text>
             </TouchableOpacity>
           </View>
@@ -187,7 +181,7 @@ export function ImosFooter() {
       </View>
 
       <View style={styles.footerBottom}>
-        <Text style={styles.footerCopy}>&copy; {new Date().getFullYear()} iMOs. All rights reserved.</Text>
+        <Text style={styles.footerCopy}>&copy; {new Date().getFullYear()} i'M On Social. All rights reserved.</Text>
       </View>
     </View>
   );
