@@ -1966,7 +1966,7 @@ const styles = StyleSheet.create({
   
   // Timestamp & Message
   timestamp: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '500',
     flexShrink: 0,

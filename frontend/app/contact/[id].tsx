@@ -3425,7 +3425,7 @@ const getS = (colors: any) => StyleSheet.create({
   heroHighlightText: { fontSize: 13, color: '#C9A962', fontWeight: '600' },
   heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   heroMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  heroMetaText: { fontSize: 11, color: colors.textTertiary },
+  heroMetaText: { fontSize: 12, color: colors.textTertiary },
   // Compact stats line
   heroStatsLine: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -3434,7 +3434,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
   heroStatVal: { fontSize: 14, fontWeight: '700', color: colors.text },
-  heroStatLbl: { fontSize: 11, color: colors.textTertiary },
+  heroStatLbl: { fontSize: 12, color: colors.textTertiary },
   heroStatDot: { fontSize: 11, color: colors.textTertiary, marginHorizontal: 2 },
 
   // Hero tags strip
@@ -3535,9 +3535,9 @@ const getS = (colors: any) => StyleSheet.create({
   },
   pinnedNoteText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 
   // Sticky action bar → replaced by Composer
@@ -3830,7 +3830,7 @@ const getS = (colors: any) => StyleSheet.create({
   // Activity feed
   emptyFeed: { alignItems: 'center', paddingVertical: 32 },
   emptyFeedText: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
-  emptyFeedSub: { fontSize: 13, color: colors.textTertiary, marginTop: 4, textAlign: 'center' },
+  emptyFeedSub: { fontSize: 14, color: colors.textTertiary, marginTop: 4, textAlign: 'center' },
   feedTimeline: { gap: 0 },
   feedItem: {
     flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10,
@@ -3850,17 +3850,17 @@ const getS = (colors: any) => StyleSheet.create({
   },
   feedContent: { flex: 1 },
   feedTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 2 },
-  feedDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 4 },
+  feedDesc: { fontSize: 14, color: colors.textSecondary, marginBottom: 4 },
   feedExpandedPreview: { marginTop: 8, marginBottom: 4, gap: 6 },
   feedChannelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   feedChannelText: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
   feedSubject: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   feedMessageBubble: { borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.border },
   feedMessageBubbleInbound: { backgroundColor: '#30D15812', borderColor: '#30D15830' },
-  feedMessageText: { fontSize: 13, lineHeight: 18, color: colors.text },
+  feedMessageText: { fontSize: 14, lineHeight: 20, color: colors.text },
   feedViewLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 4 },
   feedViewLinkText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
-  feedTime: { fontSize: 12, color: colors.textTertiary },
+  feedTime: { fontSize: 13, color: colors.textTertiary },
   feedPhotoIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
   feedPhotoText: { fontSize: 12, color: '#30D158', fontWeight: '500' },
 
@@ -3939,7 +3939,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   suggestedIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   suggestedTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2, color: colors.text },
-  suggestedDesc: { fontSize: 13, color: colors.textSecondary },
+  suggestedDesc: { fontSize: 14, color: colors.textSecondary },
   suggestedMsgPreview: { marginTop: 6, borderRadius: 8, padding: 8, borderWidth: 1 },
   suggestedMsgText: { fontSize: 12, fontStyle: 'italic', lineHeight: 16, color: colors.textSecondary },
   suggestedArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
@@ -4050,9 +4050,9 @@ const getS = (colors: any) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   vnPlayBtnActive: { backgroundColor: '#34C759' },
-  vnCardDate: { fontSize: 13, fontWeight: '600', color: colors.text },
-  vnCardDuration: { fontSize: 12, color: colors.textTertiary },
-  vnTranscript: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginTop: 8 },
+  vnCardDate: { fontSize: 14, fontWeight: '600', color: colors.text },
+  vnCardDuration: { fontSize: 13, color: colors.textTertiary },
+  vnTranscript: { fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginTop: 8 },
   // Relationship Intel
   intelBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -4065,7 +4065,7 @@ const getS = (colors: any) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   intelBtnTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
-  intelBtnSub: { fontSize: 11, color: colors.textTertiary, marginTop: 1 },
+  intelBtnSub: { fontSize: 12, color: colors.textTertiary, marginTop: 1 },
   intelUpdateBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 10, paddingVertical: 4,
@@ -4098,7 +4098,7 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   conversationLinkTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  conversationLinkSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  conversationLinkSub: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
 
   // Input group
   inputGroup: { marginBottom: 12 },

@@ -302,10 +302,10 @@ const s = StyleSheet.create({
   },
   actionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   actionName: { fontSize: 14, fontWeight: '700' },
-  actionTitle: { fontSize: 13, fontWeight: '600', color: '#C9A962', marginTop: 4 },
-  actionDesc: { fontSize: 12, marginTop: 2 },
+  actionTitle: { fontSize: 14, fontWeight: '600', color: '#C9A962', marginTop: 4 },
+  actionDesc: { fontSize: 13, marginTop: 2 },
   msgPreview: { marginTop: 6, borderRadius: 8, padding: 8, borderWidth: 1 },
-  msgPreviewText: { fontSize: 11, fontStyle: 'italic', lineHeight: 16 },
+  msgPreviewText: { fontSize: 12, fontStyle: 'italic', lineHeight: 18 },
 
   // Mini avatar
   miniAvatar: { width: 24, height: 24, borderRadius: 7, borderWidth: 1 },
@@ -318,7 +318,7 @@ const s = StyleSheet.create({
     borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#AF52DE30',
   },
   upcomingName: { fontSize: 14, fontWeight: '600' },
-  upcomingDesc: { fontSize: 12, marginTop: 1 },
+  upcomingDesc: { fontSize: 13, marginTop: 1 },
   campaignBadge: { backgroundColor: '#AF52DE20', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   campaignBadgeText: { fontSize: 10, fontWeight: '600', color: '#AF52DE' },
 
