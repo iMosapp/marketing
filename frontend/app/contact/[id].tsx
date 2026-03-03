@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
@@ -291,10 +292,24 @@ export default function ContactDetailScreen() {
 
   // Suggested actions & log reply
   const [suggestedActions, setSuggestedActions] = useState<any[]>([]);
-  const [showLogReply, setShowLogReply] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
-  const [submittingReply, setSubmittingReply] = useState(false);
+
+  // Toolbar modals (mirroring inbox)
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showReviewLinks, setShowReviewLinks] = useState(false);
+  const [showBusinessCard, setShowBusinessCard] = useState(false);
+  const [showLandingPageOptions, setShowLandingPageOptions] = useState(false);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+  const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<any>(null);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [voiceTranscribing, setVoiceTranscribing] = useState(false);
+  const voiceRecordingRef = useRef<any>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [reviewLinks, setReviewLinks] = useState<Record<string, string>>({});
+  const [storeSlug, setStoreSlug] = useState('');
+  const [customLinkName, setCustomLinkName] = useState('');
 
   // Action progress tracker
   const [actionProgress, setActionProgress] = useState<any[]>([]);
@@ -484,6 +499,151 @@ export default function ContactDetailScreen() {
       }
     } catch (e) {
       console.error('Photo pick error:', e);
+    }
+  };
+
+  // === Toolbar functions (mirroring inbox) ===
+  const loadToolbarData = async () => {
+    if (!user) return;
+    try {
+      const [templatesRes, storeRes] = await Promise.all([
+        api.get(`/messages/templates/${user._id}`).catch(() => ({ data: [] })),
+        api.get(`/store/${user.org_id || user._id}`).catch(() => ({ data: null })),
+      ]);
+      setTemplates(templatesRes.data || []);
+      if (storeRes.data) {
+        setStoreSlug(storeRes.data.slug || '');
+        setReviewLinks(storeRes.data.review_links || {});
+        setCustomLinkName(storeRes.data.custom_link_name || '');
+      }
+    } catch (e) {
+      console.error('Toolbar data load error:', e);
+    }
+  };
+
+  React.useEffect(() => {
+    if (user && !isNewContact) loadToolbarData();
+  }, [user]);
+
+  const handleAttachPhoto = () => {
+    if (IS_WEB) {
+      setShowPhotoOptionsModal(true);
+      return;
+    }
+    Alert.alert('Add Photo', 'Choose an option', [
+      { text: 'Take Photo', onPress: async () => {
+        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7 });
+        if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
+      }},
+      { text: 'Choose from Library', onPress: async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.7 });
+        if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
+      }},
+      { text: 'Create Card', onPress: () => setShowCardTemplatePicker(true) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const insertReviewLink = (platformId: string, url: string, platformName: string) => {
+    const firstName = contact.first_name || 'there';
+    const reviewMessage = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`;
+    setShowReviewLinks(false);
+    setComposerMessage(reviewMessage);
+  };
+
+  const openBusinessCardPicker = async () => {
+    if (!user?._id) return;
+    setLoadingCampaigns(true);
+    setShowBusinessCard(true);
+    try {
+      const response = await api.get(`/card/campaigns/${user._id}`);
+      setCampaigns(response.data);
+    } catch (error) {
+      setCampaigns([]);
+    } finally {
+      setLoadingCampaigns(false);
+    }
+  };
+
+  const sendBusinessCardLink = () => {
+    if (!user?._id) return;
+    const baseUrl = 'https://app.imosapp.com';
+    let cardUrl = `${baseUrl}/card/${user._id}`;
+    const params: string[] = [];
+    if (selectedCampaign) params.push(`campaign=${selectedCampaign}`);
+    if (id) params.push(`contact=${id}`);
+    if (params.length > 0) cardUrl += `?${params.join('&')}`;
+    const firstName = contact.first_name || 'there';
+    const cardMessage = `Hey ${firstName}! Here's my digital business card: ${cardUrl}`;
+    setShowBusinessCard(false);
+    setShowLandingPageOptions(false);
+    setSelectedCampaign(null);
+    setComposerMessage(cardMessage);
+  };
+
+  const sendVCardLink = () => {
+    if (!user?._id) return;
+    const baseUrl = 'https://app.imosapp.com';
+    const vcardUrl = `${baseUrl}/api/card/vcard/${user._id}`;
+    const firstName = contact.first_name || 'there';
+    const cardMessage = `Hey ${firstName}! Tap here to save my contact info directly to your phone: ${vcardUrl}`;
+    setShowBusinessCard(false);
+    setShowLandingPageOptions(false);
+    setSelectedCampaign(null);
+    setComposerMessage(cardMessage);
+  };
+
+  const handleVoiceToText = async () => {
+    try {
+      if (isVoiceRecording) {
+        setIsVoiceRecording(false);
+        if (voiceRecordingRef.current) {
+          setVoiceTranscribing(true);
+          await voiceRecordingRef.current.stopAndUnloadAsync();
+          const uri = voiceRecordingRef.current.getURI();
+          voiceRecordingRef.current = null;
+          if (uri) {
+            const formData = new FormData();
+            if (IS_WEB) {
+              const response = await fetch(uri);
+              const blob = await response.blob();
+              formData.append('file', blob, 'recording.webm');
+            } else {
+              formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
+            }
+            try {
+              const response = await api.post('/voice/transcribe', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+              if (response.data.success && response.data.text) {
+                setComposerMessage(prev => prev ? `${prev} ${response.data.text}` : response.data.text);
+              }
+            } catch (error) {
+              console.error('Transcription error:', error);
+            }
+          }
+          setVoiceTranscribing(false);
+        }
+      } else {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          showSimpleAlert('Permission Denied', 'Microphone permission is required.');
+          return;
+        }
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const recordingOptions = IS_WEB 
+          ? { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: false, web: { mimeType: 'audio/webm;codecs=opus', bitsPerSecond: 128000 } }
+          : Audio.RecordingOptionsPresets.HIGH_QUALITY;
+        const recording = new Audio.Recording();
+        await recording.prepareToRecordAsync(recordingOptions);
+        await recording.startAsync();
+        voiceRecordingRef.current = recording;
+        setIsVoiceRecording(true);
+      }
+    } catch (error) {
+      console.error('Voice recording error:', error);
+      setIsVoiceRecording(false);
+      setVoiceTranscribing(false);
     }
   };
 
@@ -2284,6 +2444,16 @@ export default function ContactDetailScreen() {
               </View>
             ) : null}
 
+            {/* SMS hint */}
+            {composerMode === 'sms' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 6, gap: 6 }}>
+                <Ionicons name="information-circle" size={14} color="#FF9500" />
+                <Text style={{ fontSize: 11, color: '#FF9500', flex: 1 }}>
+                  Tap send to open your SMS app with message ready to go
+                </Text>
+              </View>
+            )}
+
             {/* Composer box */}
             <View style={[s.composerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
@@ -2298,21 +2468,33 @@ export default function ContactDetailScreen() {
               />
               <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
                 <View style={s.composerTools}>
-                  {/* Send Something (consolidated) */}
-                  <TouchableOpacity
-                    style={s.composerToolBtn}
-                    onPress={() => setShowSendPicker(true)}
-                    data-testid="send-picker-btn"
-                  >
-                    <Ionicons name="add-circle" size={24} color="#007AFF" />
+                  {/* Photo */}
+                  <TouchableOpacity style={s.composerToolBtn} onPress={handleAttachPhoto} data-testid="toolbar-photo-btn">
+                    <Ionicons name="image-outline" size={22} color={colors.textSecondary} />
                   </TouchableOpacity>
-                  {/* Log Reply */}
+                  {/* Templates */}
+                  <TouchableOpacity style={s.composerToolBtn} onPress={() => setShowTemplates(true)} data-testid="toolbar-templates-btn">
+                    <Ionicons name="document-text-outline" size={22} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                  {/* Review Link */}
+                  <TouchableOpacity style={s.composerToolBtn} onPress={() => setShowReviewLinks(true)} data-testid="toolbar-review-btn">
+                    <Ionicons name="star-outline" size={22} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                  {/* Business Card */}
+                  <TouchableOpacity style={s.composerToolBtn} onPress={openBusinessCardPicker} data-testid="toolbar-card-btn">
+                    <Ionicons name="card-outline" size={22} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                  {/* Voice to Text */}
                   <TouchableOpacity
-                    style={s.composerToolBtn}
-                    onPress={() => setShowLogReply(true)}
-                    data-testid="composer-log-reply-btn"
+                    style={[s.composerToolBtn, isVoiceRecording && { backgroundColor: '#FF3B3020', borderRadius: 16 }]}
+                    onPress={handleVoiceToText}
+                    data-testid="toolbar-voice-btn"
                   >
-                    <Ionicons name="arrow-undo" size={20} color="#FF9500" />
+                    {voiceTranscribing ? (
+                      <ActivityIndicator size="small" color="#FF9500" />
+                    ) : (
+                      <Ionicons name={isVoiceRecording ? 'stop-circle' : 'mic-outline'} size={22} color={isVoiceRecording ? '#FF3B30' : colors.textSecondary} />
+                    )}
                   </TouchableOpacity>
                   {/* AI Sparkle */}
                   <TouchableOpacity
@@ -3071,7 +3253,7 @@ const getS = (colors: any) => StyleSheet.create({
   composerInput: {
     fontSize: 16, color: colors.text,
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
-    minHeight: 44, maxHeight: 100,
+    minHeight: 60, maxHeight: 160,
   },
   composerToolbar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
