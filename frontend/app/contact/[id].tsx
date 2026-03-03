@@ -565,12 +565,8 @@ export default function ContactDetailScreen() {
       return;
     }
     Alert.alert('Add Photo', undefined, [
-      { text: 'Photo Library', onPress: async () => {
+      { text: 'Add a Photo', onPress: async () => {
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.7 });
-        if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
-      }},
-      { text: 'Take Photo', onPress: async () => {
-        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7 });
         if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
       }},
       { text: 'Create Card', onPress: () => setShowCardTemplatePicker(true) },
@@ -2828,14 +2824,9 @@ export default function ContactDetailScreen() {
         <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowPhotoOptionsModal(false)}>
           <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
             <View style={s.actionSheetGroup}>
-              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-library">
-                <Ionicons name="images-outline" size={22} color="#007AFF" />
-                <Text style={s.actionSheetButtonText}>Photo Library</Text>
-              </TouchableOpacity>
-              <View style={s.actionSheetDivider} />
-              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-camera">
-                <Ionicons name="camera-outline" size={22} color="#007AFF" />
-                <Text style={s.actionSheetButtonText}>Take Photo</Text>
+              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-add">
+                <Ionicons name="image-outline" size={22} color="#007AFF" />
+                <Text style={s.actionSheetButtonText}>Add a Photo</Text>
               </TouchableOpacity>
               <View style={s.actionSheetDivider} />
               <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
@@ -4005,9 +3996,9 @@ const getS = (colors: any) => StyleSheet.create({
   vnRecordBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8,
     paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
-    backgroundColor: '#1A2E1A', borderWidth: 1, borderColor: '#34C75930',
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
-  vnRecordText: { fontSize: 15, fontWeight: '600', color: '#34C759' },
+  vnRecordText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
   vnRecording: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8,
     paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,

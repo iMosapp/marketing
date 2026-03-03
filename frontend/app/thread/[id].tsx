@@ -2659,14 +2659,9 @@ export default function ThreadScreen() {
         >
           <View style={styles.actionSheetContainer} onStartShouldSetResponder={() => true}>
             <View style={styles.actionSheetGroup}>
-              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-library">
-                <Ionicons name="images-outline" size={22} color="#007AFF" />
-                <Text style={styles.actionSheetButtonText}>Photo Library</Text>
-              </TouchableOpacity>
-              <View style={styles.actionSheetDivider} />
-              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-camera">
-                <Ionicons name="camera-outline" size={22} color="#007AFF" />
-                <Text style={styles.actionSheetButtonText}>Take Photo</Text>
+              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-add">
+                <Ionicons name="image-outline" size={22} color="#007AFF" />
+                <Text style={styles.actionSheetButtonText}>Add a Photo</Text>
               </TouchableOpacity>
               <View style={styles.actionSheetDivider} />
               <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
