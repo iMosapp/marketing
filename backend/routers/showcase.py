@@ -178,6 +178,46 @@ async def get_user_showcase(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Log view event for the most recent contact who was sent this showcase
+    try:
+        from utils.contact_activity import log_customer_activity
+        from datetime import timedelta
+        msg = await db.messages.find_one(
+            {"user_id": user_id, "sender": "user",
+             "$or": [
+                 {"content": {"$regex": f"/showcase/", "$options": "i"}},
+                 {"content": {"$regex": "showcase", "$options": "i"}},
+             ]},
+            {"conversation_id": 1},
+            sort=[("created_at", -1)],
+        )
+        if msg and msg.get("conversation_id"):
+            conv = await db.conversations.find_one(
+                {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
+                {"contact_id": 1},
+            )
+            if conv and conv.get("contact_id"):
+                contact_id = str(conv["contact_id"])
+                recent = await db.contact_events.find_one({
+                    "contact_id": contact_id,
+                    "event_type": "showcase_viewed",
+                    "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
+                })
+                if not recent:
+                    await log_customer_activity(
+                        user_id=user_id,
+                        contact_id=contact_id,
+                        event_type="showcase_viewed",
+                        title="Viewed Showcase",
+                        description="Contact opened your showcase page",
+                        icon="eye",
+                        color="#C9A962",
+                        category="customer_activity",
+                        metadata={"user_id": user_id},
+                    )
+    except Exception as e:
+        print(f"[Showcase] Failed to log view activity: {e}")
+
     # Check if user has a photo (without loading the full blob)
     has_photo = await db.users.count_documents({"_id": ObjectId(user_id), "photo_url": {"$exists": True, "$ne": None, "$ne": ""}})
 

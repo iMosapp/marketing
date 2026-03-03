@@ -4,7 +4,7 @@ Includes campaign enrollment on card save/download
 """
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from routers.database import get_db, get_data_filter
 from routers.short_urls import create_short_url, get_short_url_base
@@ -42,6 +42,46 @@ async def get_card_data(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Log view event for the most recent contact who was sent this digital card
+    try:
+        from utils.contact_activity import log_customer_activity
+        from datetime import timedelta
+        msg = await db.messages.find_one(
+            {"user_id": user_id, "sender": "user",
+             "$or": [
+                 {"content": {"$regex": f"/p/{user_id}", "$options": "i"}},
+                 {"content": {"$regex": "/card/", "$options": "i"}},
+             ]},
+            {"conversation_id": 1},
+            sort=[("created_at", -1)],
+        )
+        if msg and msg.get("conversation_id"):
+            conv = await db.conversations.find_one(
+                {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
+                {"contact_id": 1},
+            )
+            if conv and conv.get("contact_id"):
+                contact_id = str(conv["contact_id"])
+                recent = await db.contact_events.find_one({
+                    "contact_id": contact_id,
+                    "event_type": "digital_card_viewed",
+                    "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
+                })
+                if not recent:
+                    await log_customer_activity(
+                        user_id=user_id,
+                        contact_id=contact_id,
+                        event_type="digital_card_viewed",
+                        title="Viewed Digital Card",
+                        description="Contact opened your digital card",
+                        icon="eye",
+                        color="#007AFF",
+                        category="customer_activity",
+                        metadata={"user_id": user_id},
+                    )
+    except Exception as e:
+        print(f"[DigitalCard] Failed to log view activity: {e}")
+
     # Get user's store info
     store = None
     if user.get("store_id"):

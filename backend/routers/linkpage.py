@@ -78,6 +78,50 @@ async def get_public_link_page(username: str):
         {"$inc": {"views": 1}}
     )
 
+    # Log view event for the most recent contact who was sent this link
+    try:
+        user_id = page.get("user_id")
+        if user_id:
+            from utils.contact_activity import log_customer_activity
+            from datetime import timedelta
+            # Find the most recent message from this user that contained a link page URL
+            msg = await db.messages.find_one(
+                {"user_id": user_id, "sender": "user",
+                 "$or": [
+                     {"content": {"$regex": f"/l/{username}", "$options": "i"}},
+                     {"content": {"$regex": "link_page_shared|linkpage", "$options": "i"}},
+                 ]},
+                {"conversation_id": 1},
+                sort=[("created_at", -1)],
+            )
+            if msg and msg.get("conversation_id"):
+                conv = await db.conversations.find_one(
+                    {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
+                    {"contact_id": 1},
+                )
+                if conv and conv.get("contact_id"):
+                    contact_id = str(conv["contact_id"])
+                    # Dedupe: skip if already logged in the last hour
+                    recent = await db.contact_events.find_one({
+                        "contact_id": contact_id,
+                        "event_type": "link_page_viewed",
+                        "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
+                    })
+                    if not recent:
+                        await log_customer_activity(
+                            user_id=user_id,
+                            contact_id=contact_id,
+                            event_type="link_page_viewed",
+                            title="Viewed Link Page",
+                            description="Contact opened your link page",
+                            icon="eye",
+                            color="#AF52DE",
+                            category="customer_activity",
+                            metadata={"username": username, "views": page.get("views", 0) + 1},
+                        )
+    except Exception as e:
+        print(f"[LinkPage] Failed to log view activity: {e}")
+
     # Build full social link URLs for public display
     social_links_raw = page.get("social_links", {})
     built_social_links = []

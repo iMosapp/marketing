@@ -1228,19 +1228,32 @@ export default function ContactDetailScreen() {
       const data = await contactsAPI.generateContactIntel(user._id, id as string);
       setIntelData(data);
       setShowIntel(true);
-      // Scroll to top — use window.scrollTo for web, scrollRef for native
-      setTimeout(() => {
-        if (Platform.OS === 'web') {
-          // Find the scrollable container and scroll it
-          const scrollContainer = document.querySelector('[data-testid="contact-scroll"]');
-          if (scrollContainer) {
-            scrollContainer.scrollTop = 0;
-          } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
-        }
+      // Scroll to top after intel loads
+      requestAnimationFrame(() => {
+        // Native approach
         scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }, 100);
+        // Web fallback: find the actual scrollable div (RNW renders ScrollView as nested divs)
+        if (Platform.OS === 'web') {
+          try {
+            const el = (scrollRef.current as any)?._nativeRef?.current
+              || (scrollRef.current as any)?.getScrollableNode?.()
+              || (scrollRef.current as any)?.getInnerViewNode?.();
+            if (el) { el.scrollTop = 0; }
+            // Brute force: walk up from any known element to find the scrollable parent
+            const hero = document.querySelector('[data-testid="contact-hero"]');
+            if (hero) {
+              let parent = hero.parentElement;
+              while (parent) {
+                if (parent.scrollHeight > parent.clientHeight && parent.scrollTop > 0) {
+                  parent.scrollTop = 0;
+                  break;
+                }
+                parent = parent.parentElement;
+              }
+            }
+          } catch (_) {}
+        }
+      });
     } catch (e) {
       console.error('Failed to generate intel:', e);
       showSimpleAlert('Error', 'Failed to generate AI summary. Please try again.');
