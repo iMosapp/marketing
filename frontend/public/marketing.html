@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>i'M On Social — Own Your Reputation</title>
+  <meta name="description" content="Digital cards. Personal reviews. Automated outreach. iMOs gives every salesperson a portable reputation that travels with them."/>
+  <meta property="og:title" content="i'M On Social — Own Your Reputation"/>
+  <meta property="og:description" content="The Social Relationship OS for organizations, teams, and individuals."/>
+  <meta property="og:type" content="website"/>
+  <link rel="icon" href="favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red: #FF3B30;
+      --yellow: #FFD60A;
+      --green: #34C759;
+      --blue: #007AFF;
+      --purple: #AF52DE;
+      --orange: #FF9500;
+      --pink: #FF2D55;
+      --bg: #FFFFFF;
+      --bg-subtle: #F5F5F7;
+      --bg-warm: #FAFAFA;
+      --text: #1D1D1F;
+      --text-secondary: #6E6E73;
+      --text-muted: #86868B;
+      --border: rgba(0,0,0,0.06);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 24px rgba(0,0,0,0.06);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,0.08);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* ===== NAV ===== */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1120px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+    }
+    .logo { display: flex; align-items: center; text-decoration: none; }
+    .logo img { height: 52px; width: auto; }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a {
+      font-size: 14px; font-weight: 500; color: var(--text-secondary);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta { display: flex; align-items: center; gap: 12px; }
+    .btn-signin {
+      padding: 9px 20px; border-radius: 980px;
+      font-size: 14px; font-weight: 600; color: var(--text);
+      text-decoration: none; transition: background 0.2s;
+    }
+    .btn-signin:hover { background: var(--bg-subtle); }
+    .btn-cta {
+      background: var(--blue); padding: 9px 22px; border-radius: 980px;
+      font-size: 14px; font-weight: 600; color: #FFF; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer;
+    }
+    .btn-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,122,255,0.3); }
+    .btn-cta-lg {
+      background: var(--blue); padding: 16px 32px; border-radius: 980px;
+      font-size: 16px; font-weight: 700; color: #FFF; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 10px;
+      transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer;
+    }
+    .btn-cta-lg:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,122,255,0.25); }
+    .btn-outline-lg {
+      padding: 16px 32px; border-radius: 980px;
+      font-size: 16px; font-weight: 600; color: var(--text);
+      text-decoration: none; border: 1.5px solid rgba(0,0,0,0.12);
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-outline-lg:hover { border-color: rgba(0,0,0,0.25); background: var(--bg-subtle); }
+
+    .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; padding: 4px; }
+    .mobile-menu {
+      display: none; flex-direction: column;
+      background: #FFF; border-top: 1px solid var(--border);
+      padding: 8px 24px 20px;
+    }
+    .mobile-menu a {
+      display: block; padding: 14px 0; font-size: 16px; font-weight: 500;
+      color: var(--text); text-decoration: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-menu a:last-of-type { border-bottom: none; }
+    .mobile-menu .mobile-cta {
+      display: block; background: var(--blue); border-radius: 14px; text-align: center;
+      padding: 14px; margin-top: 12px; font-size: 16px; font-weight: 700; color: #FFF;
+      text-decoration: none; border: none;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: block; }
+      .mobile-menu.open { display: flex; }
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 64px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg-subtle); border-radius: 980px;
+      padding: 8px 18px; margin-bottom: 24px;
+      font-size: 13px; font-weight: 600; color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .hero-badge i { color: var(--green); }
+    .hero h1 {
+      font-size: 64px; font-weight: 900; line-height: 1.08;
+      letter-spacing: -0.03em; margin-bottom: 20px;
+      color: var(--text);
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--red), var(--orange), var(--yellow));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 20px; color: var(--text-secondary); line-height: 1.55;
+      max-width: 580px; margin: 0 auto 36px;
+    }
+    .hero-ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-bottom: 56px; }
+
+    @media (max-width: 768px) {
+      .hero { padding: 48px 24px 40px; }
+      .hero h1 { font-size: 38px; letter-spacing: -0.02em; }
+      .hero p { font-size: 17px; }
+    }
+
+    /* ===== LOGO STRIP ===== */
+    .trust-strip {
+      text-align: center; padding: 0 24px 64px;
+    }
+    .trust-label {
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px;
+    }
+    .trust-icons {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 40px;
+      max-width: 700px; margin: 0 auto;
+    }
+    .trust-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .trust-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; box-shadow: var(--shadow-md);
+    }
+    .trust-item span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+    /* ===== SECTION SHARED ===== */
+    .section-header {
+      text-align: center; max-width: 640px; margin: 0 auto;
+      padding: 80px 24px 48px;
+    }
+    .section-tag {
+      font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .section-header h2 {
+      font-size: 44px; font-weight: 800; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .section-header p {
+      font-size: 18px; color: var(--text-secondary); line-height: 1.55;
+    }
+    @media (max-width: 768px) {
+      .section-header { padding: 56px 24px 32px; }
+      .section-header h2 { font-size: 30px; }
+      .section-header p { font-size: 16px; }
+    }
+
+    /* ===== FEATURE CARDS GRID ===== */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+      max-width: 1120px; margin: 0 auto; padding: 0 24px 80px;
+    }
+    .feature-card {
+      background: var(--bg-warm); border-radius: 20px; padding: 32px;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .feature-card-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 20px;
+    }
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
+    .feature-card p { font-size: 15px; color: var(--text-secondary); line-height: 1.55; }
+
+    @media (max-width: 768px) {
+      .features-grid { grid-template-columns: 1fr; gap: 14px; }
+    }
+
+    /* ===== BIG FEATURE ROW ===== */
+    .big-feature {
+      max-width: 1120px; margin: 0 auto;
+      padding: 80px 24px;
+      border-top: 1px solid var(--border);
+    }
+    .big-feature-inner {
+      display: flex; align-items: center; gap: 64px;
+    }
+    .big-feature-inner.reverse { flex-direction: row-reverse; }
+    .big-feature-visual {
+      flex: 1; display: flex; justify-content: center;
+    }
+    .big-feature-icon-wrap {
+      width: 200px; height: 200px; border-radius: 44px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 72px; position: relative;
+    }
+    .big-feature-text { flex: 1; }
+    .big-feature-tag {
+      font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .big-feature-text h3 {
+      font-size: 36px; font-weight: 800; line-height: 1.2;
+      letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .big-feature-text p {
+      font-size: 17px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;
+    }
+    .check-list { display: flex; flex-direction: column; gap: 12px; }
+    .check-row { display: flex; align-items: center; gap: 12px; }
+    .check-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .check-row span { font-size: 15px; font-weight: 500; color: var(--text); }
+
+    @media (max-width: 768px) {
+      .big-feature { padding: 48px 24px; }
+      .big-feature-inner, .big-feature-inner.reverse { flex-direction: column; gap: 32px; }
+      .big-feature-text h3 { font-size: 26px; }
+      .big-feature-icon-wrap { width: 140px; height: 140px; border-radius: 32px; font-size: 52px; }
+    }
+
+    /* ===== STATS BAR ===== */
+    .stats-bar {
+      background: var(--text); padding: 56px 24px;
+    }
+    .stats-bar-inner {
+      max-width: 1120px; margin: 0 auto;
+      display: flex; justify-content: center; gap: 80px;
+    }
+    .stat-item { text-align: center; }
+    .stat-number { font-size: 48px; font-weight: 900; color: #FFF; display: block; letter-spacing: -0.02em; }
+    .stat-desc { font-size: 14px; color: rgba(255,255,255,0.6); font-weight: 500; }
+    @media (max-width: 768px) {
+      .stats-bar-inner { flex-direction: column; gap: 32px; }
+      .stat-number { font-size: 36px; }
+    }
+
+    /* ===== HOW IT WORKS ===== */
+    .how-steps {
+      max-width: 720px; margin: 0 auto; padding: 0 24px 80px;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .step {
+      display: flex; gap: 24px; padding: 32px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: #FFF;
+    }
+    .step-content { flex: 1; }
+    .step-content h4 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .step-content p { font-size: 15px; color: var(--text-secondary); line-height: 1.55; }
+
+    /* ===== BOTTOM CTA ===== */
+    .bottom-cta {
+      text-align: center;
+      padding: 80px 24px;
+      background: linear-gradient(180deg, var(--bg-subtle) 0%, var(--bg) 100%);
+    }
+    .bottom-cta h2 {
+      font-size: 48px; font-weight: 900; line-height: 1.12;
+      letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .bottom-cta p {
+      font-size: 18px; color: var(--text-secondary); line-height: 1.55;
+      max-width: 480px; margin: 0 auto 32px;
+    }
+    .bottom-cta-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+    @media (max-width: 768px) {
+      .bottom-cta h2 { font-size: 32px; }
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg-warm);
+    }
+    .footer-inner {
+      max-width: 1120px; margin: 0 auto; padding: 48px 24px 32px;
+      display: flex; justify-content: space-between; gap: 48px;
+    }
+    .footer-brand { max-width: 260px; }
+    .footer-logo { margin-bottom: 12px; }
+    .footer-logo img { height: 48px; width: auto; }
+    .footer-tagline {
+      font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;
+    }
+    .footer-social { display: flex; gap: 12px; }
+    .footer-social a {
+      width: 36px; height: 36px; border-radius: 10px; background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); font-size: 16px; text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .footer-social a:hover { border-color: var(--blue); color: var(--blue); }
+    .footer-links { display: flex; gap: 56px; }
+    .footer-col { display: flex; flex-direction: column; gap: 10px; }
+    .footer-col-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text); margin-bottom: 4px;
+    }
+    .footer-col a { font-size: 14px; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--blue); }
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding: 20px 24px; text-align: center;
+    }
+    .footer-copy { font-size: 12px; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .footer-inner { flex-direction: column; gap: 32px; }
+      .footer-links { flex-direction: column; gap: 28px; }
+    }
+
+    /* ===== ANIMATIONS ===== */
+    .fade-up {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .stagger-1 { transition-delay: 0.1s; }
+    .stagger-2 { transition-delay: 0.2s; }
+    .stagger-3 { transition-delay: 0.3s; }
+  </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo"><img src="marketing-logo.png" alt="i'M On Social" /></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#why">Why iMOs</a>
+    </div>
+    <div class="nav-cta">
+      <a href="https://app.imosapp.com" class="btn-signin">Sign In</a>
+      <a href="https://app.imosapp.com/imos/demo" class="btn-cta">Get a Demo</a>
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mob">
+    <a href="#features" onclick="document.getElementById('mob').classList.remove('open')">Features</a>
+    <a href="#how-it-works" onclick="document.getElementById('mob').classList.remove('open')">How It Works</a>
+    <a href="#why" onclick="document.getElementById('mob').classList.remove('open')">Why iMOs</a>
+    <a href="https://app.imosapp.com" onclick="document.getElementById('mob').classList.remove('open')">Sign In</a>
+    <a href="https://app.imosapp.com/imos/demo" class="mobile-cta">Get a Demo</a>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero fade-up">
+  <div class="hero-badge"><i class="fa-solid fa-circle-check"></i> The Social Relationship OS</div>
+  <h1>Your reputation<br>should <span class="gradient">travel with you.</span></h1>
+  <p>iMOs gives every salesperson a digital card, personal review profile, and social presence they actually own — even if they switch companies tomorrow.</p>
+  <div class="hero-ctas">
+    <a href="https://app.imosapp.com/imos/demo" class="btn-cta-lg"><i class="fa-regular fa-calendar"></i> Schedule a Demo</a>
+    <a href="https://app.imosapp.com/auth/signup" class="btn-outline-lg">Start Free Trial <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+</section>
+
+<!-- ===== PRODUCT ICONS ===== -->
+<div class="trust-strip fade-up">
+  <div class="trust-label">Everything your team needs</div>
+  <div class="trust-icons">
+    <div class="trust-item">
+      <div class="trust-icon" style="background:rgba(0,122,255,0.08)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
+      <span>Digital Cards</span>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon" style="background:rgba(255,214,10,0.1)"><i class="fa-regular fa-star" style="color:#E5C100"></i></div>
+      <span>Personal Reviews</span>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon" style="background:rgba(52,199,89,0.08)"><i class="fa-solid fa-share-nodes" style="color:var(--green)"></i></div>
+      <span>Link Pages</span>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon" style="background:rgba(255,45,85,0.08)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
+      <span>Congrats Cards</span>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon" style="background:rgba(255,149,0,0.08)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div>
+      <span>Campaigns</span>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon" style="background:rgba(175,82,222,0.08)"><i class="fa-solid fa-chart-line" style="color:var(--purple)"></i></div>
+      <span>Analytics</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STATS BAR ===== -->
+<div class="stats-bar fade-up">
+  <div class="stats-bar-inner">
+    <div class="stat-item">
+      <span class="stat-number">Own</span>
+      <span class="stat-desc">your reputation — it moves with you</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">Build</span>
+      <span class="stat-desc">personal credibility that outlasts any company</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">Track</span>
+      <span class="stat-desc">every click, view, and engagement</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FEATURES GRID ===== -->
+<div id="features">
+  <div class="section-header fade-up">
+    <div class="section-tag" style="color:var(--blue)">Features</div>
+    <h2>Everything to build real relationships at scale.</h2>
+    <p>Not another CRM. A system designed for the people who actually talk to customers.</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card fade-up stagger-1">
+      <div class="feature-card-icon" style="background:rgba(0,122,255,0.08)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
+      <h3>Digital Business Cards</h3>
+      <p>Shareable, trackable cards with your photo, contact info, social links, and review profile. Share via text, email, or QR code. Know when they're viewed.</p>
+    </div>
+    <div class="feature-card fade-up stagger-2">
+      <div class="feature-card-icon" style="background:rgba(255,214,10,0.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div>
+      <h3>Personal Review Profiles</h3>
+      <p>Collect reviews that live on your profile — not just the company's Google page. Your credibility is yours. It travels with you, job to job.</p>
+    </div>
+    <div class="feature-card fade-up stagger-3">
+      <div class="feature-card-icon" style="background:rgba(255,45,85,0.08)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
+      <h3>Congrats Cards</h3>
+      <p>Every sale triggers a beautiful, branded card sent to your customer. It links to your review page, social profiles, and digital card — all in one tap.</p>
+    </div>
+    <div class="feature-card fade-up stagger-1">
+      <div class="feature-card-icon" style="background:rgba(255,149,0,0.08)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div>
+      <h3>Automated Campaigns</h3>
+      <p>Birthday messages. Anniversary cards. Sold-date follow-ups. Holiday greetings. All automated, all personal. Pause or resume per contact with one tap.</p>
+    </div>
+    <div class="feature-card fade-up stagger-2">
+      <div class="feature-card-icon" style="background:rgba(52,199,89,0.08)"><i class="fa-solid fa-share-nodes" style="color:var(--green)"></i></div>
+      <h3>Social Link Pages</h3>
+      <p>One link for everything — your Instagram, TikTok, YouTube, Google reviews, digital card, and showcase. Like a Linktree built for salespeople.</p>
+    </div>
+    <div class="feature-card fade-up stagger-3">
+      <div class="feature-card-icon" style="background:rgba(175,82,222,0.08)"><i class="fa-solid fa-trophy" style="color:var(--purple)"></i></div>
+      <h3>Leaderboards</h3>
+      <p>See who's sending the most cards, collecting the most reviews, and driving the most engagement. Store-level, org-level, and global rankings.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BIG FEATURE 1: PORTABLE REPUTATION ===== -->
+<div class="big-feature fade-up" id="why">
+  <div class="big-feature-inner">
+    <div class="big-feature-visual">
+      <div class="big-feature-icon-wrap" style="background:rgba(255,214,10,0.06); border: 2px solid rgba(255,214,10,0.12)">
+        <i class="fa-solid fa-star" style="color:var(--yellow)"></i>
+      </div>
+    </div>
+    <div class="big-feature-text">
+      <div class="big-feature-tag" style="color:var(--yellow)">Portable Reputation</div>
+      <h3>Reviews that belong to people, not companies.</h3>
+      <p>When a customer leaves a review, it lives on the salesperson's personal profile — not just on a company Google page. When that person moves to a new role, their reputation goes with them.</p>
+      <div class="check-list">
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(255,214,10,0.1)"><i class="fa-solid fa-check" style="color:#D4AD00"></i></div>
+          <span>Reviews display on your digital business card</span>
+        </div>
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(255,214,10,0.1)"><i class="fa-solid fa-check" style="color:#D4AD00"></i></div>
+          <span>Personal rating score visible to customers</span>
+        </div>
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(255,214,10,0.1)"><i class="fa-solid fa-check" style="color:#D4AD00"></i></div>
+          <span>Stays with you if you switch companies</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BIG FEATURE 2: ENGAGEMENT TRACKING ===== -->
+<div class="big-feature fade-up">
+  <div class="big-feature-inner reverse">
+    <div class="big-feature-visual">
+      <div class="big-feature-icon-wrap" style="background:rgba(0,122,255,0.06); border: 2px solid rgba(0,122,255,0.12)">
+        <i class="fa-solid fa-chart-line" style="color:var(--blue)"></i>
+      </div>
+    </div>
+    <div class="big-feature-text">
+      <div class="big-feature-tag" style="color:var(--blue)">Full Engagement Tracking</div>
+      <h3>Know exactly what's working.</h3>
+      <p>Every card shared, every link clicked, every review collected — tracked and reported. Real-time activity feeds, click analytics, and scheduled reports delivered to your inbox.</p>
+      <div class="check-list">
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(0,122,255,0.1)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div>
+          <span>Click tracking on all shared links</span>
+        </div>
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(0,122,255,0.1)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div>
+          <span>Real-time activity feed per contact</span>
+        </div>
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(0,122,255,0.1)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div>
+          <span>Scheduled email reports with full metrics</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BIG FEATURE 3: ORGANIZATION STRUCTURE ===== -->
+<div class="big-feature fade-up">
+  <div class="big-feature-inner">
+    <div class="big-feature-visual">
+      <div class="big-feature-icon-wrap" style="background:rgba(52,199,89,0.06); border: 2px solid rgba(52,199,89,0.12)">
+        <i class="fa-solid fa-building" style="color:var(--green)"></i>
+      </div>
+    </div>
+    <div class="big-feature-text">
+      <div class="big-feature-tag" style="color:var(--green)">Built for Teams</div>
+      <h3>Structure your entire organization.</h3>
+      <p>Organizations, stores, teams, and individuals — all connected under one system. Managers see everything. Individuals own their profiles. Everyone's accountable.</p>
+      <div class="check-list">
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(52,199,89,0.1)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div>
+          <span>Multi-store, multi-team management</span>
+        </div>
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(52,199,89,0.1)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div>
+          <span>Role-based permissions (admin, manager, user)</span>
+        </div>
+        <div class="check-row">
+          <div class="check-icon" style="background:rgba(52,199,89,0.1)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div>
+          <span>Team leaderboards and performance tracking</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HOW IT WORKS ===== -->
+<div id="how-it-works">
+  <div class="section-header fade-up">
+    <div class="section-tag" style="color:var(--green)">How It Works</div>
+    <h2>Up and running in minutes.</h2>
+    <p>No complicated setup. No training required.</p>
+  </div>
+
+  <div class="how-steps fade-up">
+    <div class="step">
+      <div class="step-num" style="background:var(--red)">1</div>
+      <div class="step-content">
+        <h4>Create your profile</h4>
+        <p>Add your photo, social links, and contact info. Your digital card and review profile are live immediately.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--blue)">2</div>
+      <div class="step-content">
+        <h4>Add your customers</h4>
+        <p>Import contacts or add them as you go. Tag them, track birthdays and anniversaries, log every interaction.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--green)">3</div>
+      <div class="step-content">
+        <h4>Share and automate</h4>
+        <p>Send congrats cards after every sale. Share your digital card and review page. Campaigns handle birthdays and follow-ups automatically.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple)">4</div>
+      <div class="step-content">
+        <h4>Watch it grow</h4>
+        <p>Track every click, view, and review. Compete on leaderboards. Build a reputation that's yours forever.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM CTA ===== -->
+<section class="bottom-cta fade-up">
+  <h2>Own your relationships.<br>Own your reputation.</h2>
+  <p>Join salespeople who are building personal brands that outlast any company they work for.</p>
+  <div class="bottom-cta-btns">
+    <a href="https://app.imosapp.com/imos/demo" class="btn-cta-lg"><i class="fa-regular fa-calendar"></i> Schedule a Demo</a>
+    <a href="https://app.imosapp.com/auth/signup" class="btn-outline-lg">Start Free Trial <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo"><img src="marketing-logo.png" alt="i'M On Social" /></div>
+      <p class="footer-tagline">The Social Relationship OS for organizations, teams, and individuals who believe reputation should be portable.</p>
+      <div class="footer-social">
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <div class="footer-col-title">Product</div>
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="https://app.imosapp.com/imos/pricing">Pricing</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Company</div>
+        <a href="https://app.imosapp.com/imos/privacy">Privacy Policy</a>
+        <a href="https://app.imosapp.com/imos/terms">Terms of Service</a>
+        <a href="mailto:forest@imonsocial.com">Contact Us</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Get Started</div>
+        <a href="https://app.imosapp.com/imos/demo">Schedule a Demo</a>
+        <a href="https://app.imosapp.com/auth/signup">Start Free Trial</a>
+        <a href="https://app.imosapp.com">Sign In</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2026 i'M On Social. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
