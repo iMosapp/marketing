@@ -314,6 +314,7 @@ RULES:
 - Do NOT use emojis excessively (1-2 max)
 - Do NOT use placeholder brackets like [name]
 - Be specific and personal, not generic
+- NEVER use em-dashes (the long dash character). Use commas or short hyphens instead.
 
 Return ONLY the message text, nothing else. No quotes, no explanation."""
 
@@ -332,8 +333,12 @@ Return ONLY the message text, nothing else. No quotes, no explanation."""
         if upcoming_actions:
             intent = upcoming_actions[0].get("type", "general")
 
+        # Post-process: remove em-dashes
+        clean = suggestion.strip().strip('"').strip("'")
+        clean = clean.replace('\u2014', ',').replace('\u2013', '-')
+
         return {
-            "suggestion": suggestion.strip().strip('"').strip("'"),
+            "suggestion": clean,
             "intent": intent,
             "contact_name": name,
         }

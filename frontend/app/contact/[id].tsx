@@ -804,11 +804,7 @@ export default function ContactDetailScreen() {
       }
       case 'call': {
         if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
-        if (IS_WEB && typeof window !== 'undefined') {
-          window.open(`tel:${contact.phone}`, '_self');
-        } else {
-          router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent(contactName)}&phone=${encodeURIComponent(contact.phone)}`);
-        }
+        router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent(contactName)}&phone=${encodeURIComponent(contact.phone)}`);
         break;
       }
     }
