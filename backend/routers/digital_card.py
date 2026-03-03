@@ -277,7 +277,7 @@ async def generate_vcard(user_id: str):
         vcard_lines.append(f"PHOTO;VALUE=URI:{user.get('photo_url')}")
     
     # Add links: landing page, review page, showroom
-    base_url = "https://app.imosapp.com"
+    base_url = "https://app.imonsocial.com"
     vcard_lines.append(f"URL;TYPE=PREF:{base_url}/p/{user_id}")
     
     # Add store review link if available

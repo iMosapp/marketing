@@ -564,7 +564,7 @@ async def seed_admin_user(db):
             logger.info("Empty database detected - creating default admin user...")
             
             admin_user = {
-                "email": "admin@imosapp.com",
+                "email": "admin@imonsocial.com",
                 "password": "i'M On Social2026!",
                 "name": "Admin User",
                 "phone": "",
@@ -592,7 +592,7 @@ async def seed_admin_user(db):
             await db.users.insert_one(admin_user)
             logger.info("=" * 50)
             logger.info("DEFAULT ADMIN USER CREATED:")
-            logger.info("  Email: admin@imosapp.com")
+            logger.info("  Email: admin@imonsocial.com")
             logger.info("  Password: i'M On Social2026!")
             logger.info("=" * 50)
         else:

@@ -4,7 +4,7 @@ Test Suite for New Features:
 2. Admin/Users/Create API - Individual users without org
 3. Onboarding Preview page route check (frontend)
 
-Test credentials: forest@imosapp.com / Admin123!
+Test credentials: forest@imonsocial.com / Admin123!
 """
 import pytest
 import requests
@@ -24,7 +24,7 @@ class TestInviteIndividualFeature:
     def setup(self):
         """Login as super admin and get user ID"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
@@ -156,7 +156,7 @@ class TestAdminUsersAPI:
     def setup(self):
         """Login as super admin"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200
@@ -240,7 +240,7 @@ class TestOnboardingPreviewRoute:
     def setup(self):
         """Login as super admin"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200

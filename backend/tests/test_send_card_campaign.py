@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
-TEST_EMAIL = "forest@imosapp.com"
+TEST_EMAIL = "forest@imonsocial.com"
 TEST_PASSWORD = "Admin123!"
 USER_ID = "69a0b7095fddcede09591667"
 CAMPAIGN_ID = "69a27569d1bc10a69de0c9d6"

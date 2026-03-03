@@ -97,7 +97,7 @@ export default function CongratsCardPage() {
     
     const shareUrl = Platform.OS === 'web' 
       ? window.location.href 
-      : `https://app.imosapp.com/congrats/${cardId}`;
+      : `https://app.imonsocial.com/congrats/${cardId}`;
     
     const shareText = `Check out my thank you card from ${cardData?.salesman?.name || 'my salesperson'}! ${cardData?.headline}`;
     

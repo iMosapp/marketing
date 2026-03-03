@@ -123,7 +123,7 @@ export default function ShowcasePage() {
 
   const shareUrl = IS_WEB
     ? window.location.href
-    : `https://app.imosapp.com/showcase/${id}`;
+    : `https://app.imonsocial.com/showcase/${id}`;
 
   const handleShare = async () => {
     if (IS_WEB && navigator.share) {

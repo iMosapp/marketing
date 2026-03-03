@@ -31,7 +31,7 @@ export default function PrivacyScreen() {
           ) : (
             <Text style={s.body}>
               i'M On Social takes your privacy seriously. We collect only the data necessary to provide our Relationship Management System services. Your contact data, messages, and personal information are stored securely and never sold to third parties.{'\n\n'}
-              For questions about our privacy practices, contact us at forest@imosapp.com.
+              For questions about our privacy practices, contact us at forest@imonsocial.com.
             </Text>
           )}
         </View>

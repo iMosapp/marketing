@@ -15,7 +15,7 @@ class TestMessagesPhotoData:
         """Login and get user context"""
         # Login as admin to get a user_id
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
@@ -70,7 +70,7 @@ class TestLeadSourcesPhotoData:
     def setup_method(self):
         """Login and get user context"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200
@@ -134,7 +134,7 @@ class TestLeaderboardPhotoData:
     def setup_method(self):
         """Login and get user context"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200
@@ -192,7 +192,7 @@ class TestAdminUsersPhotoData:
     def setup_method(self):
         """Login as admin"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200
@@ -249,7 +249,7 @@ class TestContactsPhotoData:
     def setup_method(self):
         """Login and get user context"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "forest@imosapp.com",
+            "email": "forest@imonsocial.com",
             "password": "Admin123!"
         })
         assert response.status_code == 200

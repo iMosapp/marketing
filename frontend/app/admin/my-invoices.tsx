@@ -124,7 +124,7 @@ export default function MyInvoicesScreen() {
               style={styles.supportButton}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                Linking.openURL('mailto:billing@imosapp.com?subject=Billing%20Question');
+                Linking.openURL('mailto:billing@imonsocial.com?subject=Billing%20Question');
               }}
             >
               <Ionicons name="help-circle-outline" size={18} color="#007AFF" />

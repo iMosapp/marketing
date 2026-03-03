@@ -69,7 +69,7 @@ export default function BirthdayCardPage() {
   };
 
   const handleShare = async () => {
-    const url = IS_WEB ? window.location.href : `https://app.imosapp.com/birthday/${cardId}`;
+    const url = IS_WEB ? window.location.href : `https://app.imonsocial.com/birthday/${cardId}`;
     if (IS_WEB && navigator.share) {
       try { await navigator.share({ title: `Birthday Card for ${card?.customer_name}`, url }); } catch {}
     } else if (IS_WEB) {

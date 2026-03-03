@@ -1006,7 +1006,7 @@ export default function ThreadScreen() {
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     let cardUrl = `${baseUrl}/card/${user._id}`;
     
     const params = [];
@@ -1029,7 +1029,7 @@ export default function ThreadScreen() {
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     const vcardUrl = `${baseUrl}/api/card/vcard/${user._id}`;
     
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
@@ -1044,7 +1044,7 @@ export default function ThreadScreen() {
   const sendShowcaseLink = () => {
     if (!user?._id) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     const showcaseUrl = `${baseUrl}/showcase/${user._id}`;
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     const msg = `Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`;
@@ -1055,7 +1055,7 @@ export default function ThreadScreen() {
   const sendLinkPageLink = async () => {
     if (!user?._id) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     const firstName = (contact_name as string || '').split(' ')[0] || 'there';
     try {
       const resp = await api.get(`/linkpage/user/${user._id}`);
@@ -1225,11 +1225,11 @@ export default function ThreadScreen() {
         }
         
         // Get the card image URL for MMS
-        const cardImageUrl = `https://app.imosapp.com/api/congrats/card/${response.data.card_id}/image`;
+        const cardImageUrl = `https://app.imonsocial.com/api/congrats/card/${response.data.card_id}/image`;
         
         // Use short URL if available, otherwise fall back to production URL
         const cardUrl = response.data.short_url || response.data.card_url || 
-          `https://app.imosapp.com/congrats/${response.data.card_id}`;
+          `https://app.imonsocial.com/congrats/${response.data.card_id}`;
         
         // Insert message with both the image and short link
         const firstName = congratsCustomerName.split(' ')[0];
@@ -2356,7 +2356,7 @@ export default function ThreadScreen() {
                     data-testid="review-link-imos"
                     onPress={() => {
                       const firstName = (contact_name as string || '').split(' ')[0] || 'there';
-                      const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
+                      const reviewUrl = `https://app.imonsocial.com/review/${storeSlug}?sp=${user?._id}`;
                       const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
                       setShowReviewLinks(false);
                       setShowAttachMenu(false);

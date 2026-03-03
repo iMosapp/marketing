@@ -597,7 +597,7 @@ export default function ContactDetailScreen() {
 
   const sendBusinessCardLink = () => {
     if (!user?._id) return;
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     let cardUrl = `${baseUrl}/card/${user._id}`;
     const params: string[] = [];
     if (selectedCampaign) params.push(`campaign=${selectedCampaign}`);
@@ -613,7 +613,7 @@ export default function ContactDetailScreen() {
 
   const sendVCardLink = () => {
     if (!user?._id) return;
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     const vcardUrl = `${baseUrl}/api/card/vcard/${user._id}`;
     const firstName = contact.first_name || 'there';
     const cardMessage = `Hey ${firstName}! Tap here to save my contact info directly to your phone: ${vcardUrl}`;
@@ -625,7 +625,7 @@ export default function ContactDetailScreen() {
 
   const sendShowcaseLink = () => {
     if (!user?._id) return;
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     const showcaseUrl = `${baseUrl}/showcase/${user._id}`;
     const firstName = contact.first_name || 'there';
     const msg = `Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`;
@@ -635,7 +635,7 @@ export default function ContactDetailScreen() {
 
   const sendLinkPageLink = async () => {
     if (!user?._id) return;
-    const baseUrl = 'https://app.imosapp.com';
+    const baseUrl = 'https://app.imonsocial.com';
     const firstName = contact.first_name || 'there';
     try {
       const resp = await api.get(`/linkpage/user/${user._id}`);
@@ -2651,7 +2651,7 @@ export default function ContactDetailScreen() {
                     data-testid="review-link-imos"
                     onPress={() => {
                       const firstName = contact.first_name || 'there';
-                      const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
+                      const reviewUrl = `https://app.imonsocial.com/review/${storeSlug}?sp=${user?._id}`;
                       const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
                       setShowReviewLinks(false);
                       setComposerMessage(reviewMsg);

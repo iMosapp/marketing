@@ -25,7 +25,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const APP_URL = 'https://app.imosapp.com';
+const APP_URL = 'https://app.imonsocial.com';
 
 type PageEntry = {
   name: string;

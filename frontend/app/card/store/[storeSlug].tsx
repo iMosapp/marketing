@@ -167,7 +167,7 @@ export default function StoreCardPage() {
                 <TouchableOpacity
                   key={member.id}
                   style={styles.teamCard}
-                  onPress={() => Linking.openURL(`https://app.imosapp.com/card/${member.id}`)}
+                  onPress={() => Linking.openURL(`https://app.imonsocial.com/card/${member.id}`)}
                   data-testid={`team-${member.id}`}
                 >
                   {member.photo_url ? (

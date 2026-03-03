@@ -407,7 +407,7 @@ export default function HomeScreen() {
   // Open share modal for a tile
   const openShareModal = (tile: string) => {
     const userId = user?._id || '';
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.imosapp.com';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.imonsocial.com';
 
     switch (tile) {
       case 'share-card':

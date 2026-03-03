@@ -326,9 +326,9 @@ async def preview_message(data: dict):
     
     # Sample placeholder values
     placeholders = {
-        "{training_link}": "https://app.imosapp.com/train/abc123",
-        "{team_invite_link}": "https://app.imosapp.com/join/xyz789",
-        "{app_link}": "https://app.imosapp.com/download",
+        "{training_link}": "https://app.imonsocial.com/train/abc123",
+        "{team_invite_link}": "https://app.imonsocial.com/join/xyz789",
+        "{app_link}": "https://app.imonsocial.com/download",
         "{user_name}": "John Smith",
         "{store_name}": "Premier Auto Group",
         "{admin_name}": "Forest Johnson",

@@ -32,7 +32,7 @@ export default function TermsScreen() {
             <Text style={s.body}>
               By using i'M On Social, you agree to these terms of service. i'M On Social provides a Relationship Management System for businesses. Users are responsible for maintaining the confidentiality of their account credentials and for all activities under their account.{'\n\n'}
               i'M On Social reserves the right to modify these terms at any time. Continued use constitutes acceptance of modified terms.{'\n\n'}
-              For questions, contact us at forest@imosapp.com.
+              For questions, contact us at forest@imonsocial.com.
             </Text>
           )}
         </View>

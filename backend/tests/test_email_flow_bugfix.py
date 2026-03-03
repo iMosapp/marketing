@@ -13,7 +13,7 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
-USER_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com
+USER_ID = "69a0b7095fddcede09591667"  # forest@imonsocial.com
 CONVERSATION_ID = "69a15f29957bacd218fed55d"  # Forest Ward conversation
 CONTACT_EMAIL = "forestward@gmail.com"
 

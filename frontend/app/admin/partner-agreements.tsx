@@ -102,7 +102,7 @@ export default function PartnerAgreementsScreen() {
       // Update to sent status
       await api.put(`/partners/agreements/${response.data.id}`, { status: 'sent' });
       
-      const baseUrl = window?.location?.origin || 'https://app.imosapp.com';
+      const baseUrl = window?.location?.origin || 'https://app.imonsocial.com';
       const link = `${baseUrl}/partner/agreement/${response.data.id}`;
       setCreatedLink(link);
       
@@ -116,7 +116,7 @@ export default function PartnerAgreementsScreen() {
   };
 
   const copyLink = async (agreementId: string) => {
-    const baseUrl = window?.location?.origin || 'https://app.imosapp.com';
+    const baseUrl = window?.location?.origin || 'https://app.imonsocial.com';
     const link = `${baseUrl}/partner/agreement/${agreementId}`;
     await Clipboard.setStringAsync(link);
     showSimpleAlert('Copied', 'Agreement link copied to clipboard');

@@ -18,11 +18,11 @@ from routers.database import get_db
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
-APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com")
+APP_URL = os.environ.get("APP_URL", "https://app.imonsocial.com")
 
 # Resend configuration
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 

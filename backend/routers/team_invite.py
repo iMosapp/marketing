@@ -18,7 +18,7 @@ router = APIRouter(prefix="/team-invite", tags=["Team Invite"])
 logger = logging.getLogger(__name__)
 
 
-APP_URL = os.environ.get("APP_URL", "https://app.imosapp.com")
+APP_URL = os.environ.get("APP_URL", "https://app.imonsocial.com")
 
 
 
@@ -775,7 +775,7 @@ async def send_email_invite(data: EmailInviteRequest):
     
     # Send email via Resend
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
     
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured - invite created but email not sent")

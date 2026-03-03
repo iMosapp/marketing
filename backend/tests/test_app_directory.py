@@ -12,7 +12,7 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
-TEST_EMAIL = "forest@imosapp.com"
+TEST_EMAIL = "forest@imonsocial.com"
 TEST_PASSWORD = "Admin123!"
 
 

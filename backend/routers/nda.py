@@ -49,7 +49,7 @@ NDA_CONTENT = {
     "title": "Non-Disclosure and Confidentiality Agreement",
     "company": "i'M On Social LLC",
     "company_address": "1741 Lunford Ln, Riverton, UT 84065",
-    "company_email": "forest@imosapp.com",
+    "company_email": "forest@imonsocial.com",
     "sections": [
         {
             "heading": "Non-Disclosure and Confidentiality Agreement",
@@ -240,7 +240,7 @@ async def send_nda_email(nda_id: str):
             """
 
             resend.Emails.send({
-                "from": "i'M On Social <noreply@imosapp.com>",
+                "from": "i'M On Social <noreply@imonsocial.com>",
                 "to": [email],
                 "subject": f"NDA for Review & Signature from {sender_name}",
                 "html": html,
@@ -380,7 +380,7 @@ async def submit_signature(nda_id: str, data: NDARecipientSign):
             import resend
             resend.api_key = resend_key
 
-            sender_email = nda.get("content", {}).get("company_email", "forest@imosapp.com")
+            sender_email = nda.get("content", {}).get("company_email", "forest@imonsocial.com")
             recipient_email = data.email
             sender_name = nda.get("sender", {}).get("name", "")
 
@@ -411,7 +411,7 @@ async def submit_signature(nda_id: str, data: NDARecipientSign):
             for to_email in [sender_email, recipient_email]:
                 if to_email:
                     resend.Emails.send({
-                        "from": "i'M On Social <noreply@imosapp.com>",
+                        "from": "i'M On Social <noreply@imonsocial.com>",
                         "to": [to_email],
                         "subject": "NDA Signed - Confirmation",
                         "html": html,

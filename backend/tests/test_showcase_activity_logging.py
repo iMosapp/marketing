@@ -20,7 +20,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_FEEDBACK_ID = "69a5ae2679b133dd270cfc90"  # jimmy's approved review with photo
 TEST_CREDENTIALS = {
-    "email": "forest@imosapp.com",
+    "email": "forest@imonsocial.com",
     "password": "Admin123!"
 }
 

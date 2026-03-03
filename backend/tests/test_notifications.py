@@ -16,7 +16,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test credentials
 TEST_USER_ID = "699907444a076891982fab35"
 TEST_CHANNEL_ID = "699d7284814aff0ca0e58c02"
-TEST_EMAIL = "forest@imosapp.com"
+TEST_EMAIL = "forest@imonsocial.com"
 TEST_PASSWORD = "Admin123!"
 
 

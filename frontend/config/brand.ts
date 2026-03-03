@@ -5,6 +5,6 @@
 export const BRAND = {
   name: "i'MOnsocial",
   poweredByText: "Powered by i'MOnsocial",
-  url: "https://app.imosapp.com/imos",
-  domain: "app.imosapp.com/imos",
+  url: "https://app.imonsocial.com/imos",
+  domain: "app.imonsocial.com/imos",
 };

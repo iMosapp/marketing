@@ -155,7 +155,7 @@ export default function PartnerAgreementDetailScreen() {
     if (!agreement) return;
     const baseUrl = Platform.OS === 'web' 
       ? window.location.origin 
-      : 'https://app.imosapp.com';
+      : 'https://app.imonsocial.com';
     const link = `${baseUrl}/partner/agreement/${agreement.id}`;
     await Clipboard.setStringAsync(link);
     showSimpleAlert('Copied', 'Agreement link copied to clipboard');

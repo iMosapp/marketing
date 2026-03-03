@@ -113,7 +113,7 @@ export default function MyAgreementScreen() {
               style={styles.supportButton}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                Linking.openURL('mailto:support@imosapp.com?subject=Agreement%20Question');
+                Linking.openURL('mailto:support@imonsocial.com?subject=Agreement%20Question');
               }}
             >
               <Ionicons name="help-circle-outline" size={18} color="#007AFF" />

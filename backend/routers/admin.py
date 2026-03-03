@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize Resend for invite emails
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
 
-APP_URL = "https://app.imosapp.com"
+APP_URL = "https://app.imonsocial.com"
 
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
@@ -103,7 +103,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
                 
                 <div style="text-align: center; margin-top: 25px; color: #888; font-size: 12px;">
                     <p style="margin: 5px 0;">i'M On Social - Your Relationship Management System</p>
-                    <p style="margin: 5px 0; color: #aaa;">Questions? Contact support@imosapp.com</p>
+                    <p style="margin: 5px 0; color: #aaa;">Questions? Contact support@imonsocial.com</p>
                 </div>
             </div>
             """
@@ -3194,7 +3194,7 @@ async def add_team_member(data: AddTeamMemberRequest):
         settings = await db.onboarding_settings.find_one({"is_global": True})
     
     # Generate training link
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imosapp.com")
+    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imonsocial.com")
     training_token = secrets.token_urlsafe(16)
     training_link = f"{base_url}/onboarding?token={training_token}"
     

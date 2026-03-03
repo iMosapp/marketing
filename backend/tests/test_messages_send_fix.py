@@ -5,7 +5,7 @@ Test Suite for Messages Send Fix - Verifies the critical bug fix where:
 3. Email channel still works correctly with Resend
 4. GET endpoints return correct data
 
-Test user: forest@imosapp.com (no mvpline_number = Personal SMS mode)
+Test user: forest@imonsocial.com (no mvpline_number = Personal SMS mode)
 Test conversation: 69a15f29957bacd218fed55d
 """
 import pytest
@@ -21,7 +21,7 @@ class TestMessagesSendFix:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test credentials and get auth token"""
-        self.email = "forest@imosapp.com"
+        self.email = "forest@imonsocial.com"
         self.password = "Admin123!"
         self.user_id = "69a0b7095fddcede09591667"
         self.conversation_id = "69a15f29957bacd218fed55d"
@@ -101,7 +101,7 @@ class TestMessagesSendFix:
     
     def test_send_personal_sms_with_card_link_creates_digital_card_event(self):
         """Personal SMS with /card/ URL creates digital_card_sent event"""
-        unique_content = f"Hey! Here's my card: https://app.imosapp.com/card/{self.user_id}?test={int(time.time())}"
+        unique_content = f"Hey! Here's my card: https://app.imonsocial.com/card/{self.user_id}?test={int(time.time())}"
         
         response = self.session.post(f"{BASE_URL}/api/messages/send/{self.user_id}", json={
             "conversation_id": self.conversation_id,
@@ -117,7 +117,7 @@ class TestMessagesSendFix:
     
     def test_send_personal_sms_with_review_link_creates_review_event(self):
         """Personal SMS with /review/ URL creates review_request_sent event"""
-        unique_content = f"Leave us a review! https://app.imosapp.com/review/test{int(time.time())}"
+        unique_content = f"Leave us a review! https://app.imonsocial.com/review/test{int(time.time())}"
         
         response = self.session.post(f"{BASE_URL}/api/messages/send/{self.user_id}", json={
             "conversation_id": self.conversation_id,
@@ -196,7 +196,7 @@ class TestConversationsAndThreadEndpoints:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test credentials"""
-        self.email = "forest@imosapp.com"
+        self.email = "forest@imonsocial.com"
         self.password = "Admin123!"
         self.user_id = "69a0b7095fddcede09591667"
         self.conversation_id = "69a15f29957bacd218fed55d"
@@ -273,7 +273,7 @@ class TestContactEvents:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test credentials"""
-        self.email = "forest@imosapp.com"
+        self.email = "forest@imonsocial.com"
         self.password = "Admin123!"
         self.user_id = "69a0b7095fddcede09591667"
         self.conversation_id = "69a15f29957bacd218fed55d"

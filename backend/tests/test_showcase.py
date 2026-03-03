@@ -11,7 +11,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test user ID from context
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_CREDENTIALS = {
-    "email": "forest@imosapp.com",
+    "email": "forest@imonsocial.com",
     "password": "Admin123!"
 }
 

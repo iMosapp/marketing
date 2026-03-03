@@ -15,7 +15,7 @@ class TestPersonalSMSMode:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test credentials and get auth token"""
-        self.email = "forest@imosapp.com"
+        self.email = "forest@imonsocial.com"
         self.password = "Admin123!"
         self.session = requests.Session()
         
@@ -41,7 +41,7 @@ class TestPersonalSMSMode:
         self.session.close()
     
     def test_user_has_no_mvpline_number(self):
-        """Verify test user (forest@imosapp.com) has no mvpline_number set"""
+        """Verify test user (forest@imonsocial.com) has no mvpline_number set"""
         # The user should NOT have mvpline_number for personal SMS mode to activate
         mvpline_number = self.user.get('mvpline_number')
         print(f"User mvpline_number: {mvpline_number}")
@@ -203,7 +203,7 @@ class TestInboxAPI:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test credentials"""
-        self.email = "forest@imosapp.com"
+        self.email = "forest@imonsocial.com"
         self.password = "Admin123!"
         self.session = requests.Session()
         

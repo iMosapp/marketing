@@ -13,7 +13,7 @@ if BASE_URL and not BASE_URL.startswith('http'):
     BASE_URL = f"https://{BASE_URL}"
 
 # Test credentials
-TEST_EMAIL = "forest@imosapp.com"
+TEST_EMAIL = "forest@imonsocial.com"
 TEST_PASSWORD = "Admin123!"
 
 

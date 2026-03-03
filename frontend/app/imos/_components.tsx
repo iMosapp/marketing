@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const PROD_BASE = 'https://app.imosapp.com';
+const PROD_BASE = 'https://app.imonsocial.com';
 
 const NAV_LINKS = [
   {

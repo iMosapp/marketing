@@ -9,7 +9,7 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Super admin credentials
-SUPER_ADMIN_EMAIL = "forest@imosapp.com"
+SUPER_ADMIN_EMAIL = "forest@imonsocial.com"
 SUPER_ADMIN_PASSWORD = "Admin123!"
 
 

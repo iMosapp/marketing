@@ -13,7 +13,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const PROD_BASE = 'https://app.imosapp.com';
+const PROD_BASE = 'https://app.imonsocial.com';
 
 type PageEntry = {
   name: string;

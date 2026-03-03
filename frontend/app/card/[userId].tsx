@@ -80,7 +80,7 @@ export default function DigitalCardPage() {
   const [pendingShareAction, setPendingShareAction] = useState<{platform: string; payload: any} | null>(null);
   
   // Direct shareable link - always use production URL like congrats cards
-  const cardUrl = `https://app.imosapp.com/card/${userId}`;
+  const cardUrl = `https://app.imonsocial.com/card/${userId}`;
   
   // Animation values
   const flipAnimation = useRef(new Animated.Value(0)).current;
@@ -211,7 +211,7 @@ export default function DigitalCardPage() {
   // Share via link
   const handleShareLink = async () => {
     try {
-      const cardUrl = `https://app.imosapp.com/card/${userId}`;
+      const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       if (Platform.OS === 'web') {
         if (navigator.share) {
           await navigator.share({
@@ -236,7 +236,7 @@ export default function DigitalCardPage() {
   // Copy link to clipboard
   const handleCopyLink = async () => {
     try {
-      const cardUrl = `https://app.imosapp.com/card/${userId}`;
+      const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       await Clipboard.setStringAsync(cardUrl);
       if (Platform.OS === 'web') {
         alert('Link copied to clipboard!');
@@ -306,7 +306,7 @@ export default function DigitalCardPage() {
 
   // Share via SMS
   const handleShareSMS = () => {
-    const cardUrl = `https://app.imosapp.com/card/${userId}`;
+    const cardUrl = `https://app.imonsocial.com/card/${userId}`;
     const message = `Check out my digital business card: ${cardUrl}`;
     const phone = shareRecipientPhone.trim();
     const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
@@ -324,7 +324,7 @@ export default function DigitalCardPage() {
 
   // Share via Email
   const handleShareEmail = () => {
-    const cardUrl = `https://app.imosapp.com/card/${userId}`;
+    const cardUrl = `https://app.imonsocial.com/card/${userId}`;
     const subject = `${cardData?.user?.name || 'My'} Digital Business Card`;
     const body = `Hi!\n\nHere's my digital business card:\n${cardUrl}\n\nLooking forward to connecting!`;
     const email = shareRecipientEmail.trim();
@@ -342,7 +342,7 @@ export default function DigitalCardPage() {
   // Share QR Code - uses short URL for cleaner sharing
   const handleShareQR = async () => {
     try {
-      const cardUrl = `https://app.imosapp.com/card/${userId}`;
+      const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       if (Platform.OS === 'web') {
         if (navigator.share) {
           await navigator.share({

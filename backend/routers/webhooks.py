@@ -396,7 +396,7 @@ async def reassign_contacts(
 async def get_webhook_config(x_user_id: str = Header(None, alias="X-User-ID")):
     """Get webhook configuration and URLs for integration setup"""
     
-    base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://app.imosapp.com")
+    base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://app.imonsocial.com")
     
     return {
         "webhook_endpoints": {

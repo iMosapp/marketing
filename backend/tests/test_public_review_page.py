@@ -16,7 +16,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test data
 TEST_STORE_SLUG = "imos-demo"
 TEST_STORE_ID = "69a0b7095fddcede09591668"
-TEST_USER_EMAIL = "forest@imosapp.com"
+TEST_USER_EMAIL = "forest@imonsocial.com"
 
 
 class TestHealthAndBasicEndpoints:

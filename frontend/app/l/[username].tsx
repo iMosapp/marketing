@@ -136,7 +136,7 @@ export default function PublicLinkPage() {
       )}
 
       <View style={s.footer}>
-        <TouchableOpacity onPress={() => Linking.openURL('https://app.imosapp.com/install.html')}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://app.imonsocial.com/install.html')}>
           <Text style={[s.footerText, { color: subColor }]}>powered by <Text style={s.footerBrand}>i'MOnsocial</Text></Text>
         </TouchableOpacity>
       </View>

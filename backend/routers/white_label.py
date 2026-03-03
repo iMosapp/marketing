@@ -55,7 +55,7 @@ async def create_partner(data: dict):
         "secondary_color": data.get("secondary_color", "#008B8B"),
         "accent_color": data.get("accent_color", "#1A1A2E"),
         "text_color": data.get("text_color", "#FFFFFF"),
-        "powered_by_text": data.get("powered_by_text", "Powered by i'MOnsocial"),
+        "powered_by_text": data.get("powered_by_text", "Powered by i'M On Social"),
         "company_name": data.get("company_name", ""),
         "company_address": data.get("company_address", ""),
         "company_phone": data.get("company_phone", ""),

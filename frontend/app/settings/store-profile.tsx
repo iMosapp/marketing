@@ -436,7 +436,7 @@ const { showToast } = useToast();
           <View style={styles.card}>
             <Text style={styles.reviewLinkLabel}>Store URL Slug</Text>
             <View style={styles.slugRow}>
-              <Text style={styles.slugPrefix}>app.imosapp.com/review/</Text>
+              <Text style={styles.slugPrefix}>app.imonsocial.com/review/</Text>
               <TextInput
                 style={styles.slugInput}
                 value={store.slug || ''}
@@ -455,12 +455,12 @@ const { showToast } = useToast();
             <Text style={[styles.reviewLinkLabel, { marginTop: 16 }]}>Share this link with customers:</Text>
             <View style={styles.reviewLinkBox}>
               <Text style={styles.reviewLinkUrl} numberOfLines={1}>
-                {`https://app.imosapp.com/review/${store.slug || store._id}`}
+                {`https://app.imonsocial.com/review/${store.slug || store._id}`}
               </Text>
               <TouchableOpacity 
                 style={styles.copyButton}
                 onPress={async () => {
-                  const url = `https://app.imosapp.com/review/${store.slug || store._id}`;
+                  const url = `https://app.imonsocial.com/review/${store.slug || store._id}`;
                   await Clipboard.setStringAsync(url);
                   showToast('Review page link copied to clipboard');
                 }}

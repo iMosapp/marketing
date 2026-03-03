@@ -991,7 +991,7 @@ async def send_report_email(
     from datetime import timezone as tz
 
     RESEND_KEY = _os.environ.get("RESEND_API_KEY")
-    SENDER = _os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+    SENDER = _os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
     if not RESEND_KEY:
         raise HTTPException(status_code=500, detail="Email not configured")
     resend_mod.api_key = RESEND_KEY

@@ -135,7 +135,7 @@ export default function InviteTeamScreen() {
 
   const getInviteText = () => {
     if (!inviteResult) return '';
-    const loginLink = `https://app.imosapp.com/auth/login?email=${encodeURIComponent(inviteResult.email)}&password=${encodeURIComponent(inviteResult.password)}`;
+    const loginLink = `https://app.imonsocial.com/auth/login?email=${encodeURIComponent(inviteResult.email)}&password=${encodeURIComponent(inviteResult.password)}`;
     return `i'M On Social`;
   };
 

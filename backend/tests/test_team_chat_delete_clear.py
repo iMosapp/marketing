@@ -7,7 +7,7 @@ import requests
 import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
-USER_ID = "699907444a076891982fab35"  # super_admin forest@imosapp.com
+USER_ID = "699907444a076891982fab35"  # super_admin forest@imonsocial.com
 
 class TestTeamChatDeleteClear:
     """Tests for delete channel and clear history endpoints"""

@@ -18,7 +18,7 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://engagement-hub-69.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
-TEST_EMAIL = "forest@imosapp.com"
+TEST_EMAIL = "forest@imonsocial.com"
 TEST_PASSWORD = "Admin123!"
 
 
@@ -161,7 +161,7 @@ class TestPersonalSMSMode:
         slug = store.get("slug")
         
         # Build expected review URL
-        expected_review_url = f"https://app.imosapp.com/review/{slug}?sp={user_id}"
+        expected_review_url = f"https://app.imonsocial.com/review/{slug}?sp={user_id}"
         
         # This is the format the frontend should use for pre-filling
         expected_message_format = f"Hey {{name}}! We'd love your feedback. Leave us a review here: {expected_review_url}"
@@ -176,7 +176,7 @@ class TestPersonalSMSMode:
         user_id = auth_info["user_id"]
         
         # Build expected card URL
-        expected_card_url = f"https://app.imosapp.com/card/{user_id}"
+        expected_card_url = f"https://app.imonsocial.com/card/{user_id}"
         
         print(f"✅ Expected digital card URL: {expected_card_url}")
         print(f"   Card link should be pre-filled, not auto-sent")

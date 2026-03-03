@@ -147,7 +147,7 @@ const { showToast } = useToast();
     try {
       const originUrl = Platform.OS === 'web' 
         ? window.location.origin 
-        : 'https://app.imosapp.com';
+        : 'https://app.imonsocial.com';
       
       const response = await api.post(`/partners/agreements/${agreementId}/create-payment`, {
         origin_url: originUrl,

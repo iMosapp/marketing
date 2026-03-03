@@ -15,7 +15,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test credentials from review_request
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_CONTACT_ID = "69a1354f2c0649ac6fb7f3f1"  # Contact with 28 events
-LOGIN_EMAIL = "forest@imosapp.com"
+LOGIN_EMAIL = "forest@imonsocial.com"
 LOGIN_PASSWORD = "Admin123!"
 
 

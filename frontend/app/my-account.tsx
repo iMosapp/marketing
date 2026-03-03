@@ -22,7 +22,7 @@ import { showSimpleAlert, showConfirm } from '../services/alert';
 import { WebModal } from '../components/WebModal';
 import api from '../services/api';
 
-const PROD_BASE = 'https://app.imosapp.com';
+const PROD_BASE = 'https://app.imonsocial.com';
 
 export default function MyAccountScreen() {
   const { colors } = useThemeStore();
@@ -657,7 +657,7 @@ export default function MyAccountScreen() {
               if (Platform.OS === 'web') {
                 window.open('/install.html', '_self');
               } else {
-                Linking.openURL('https://app.imosapp.com/install.html');
+                Linking.openURL('https://app.imonsocial.com/install.html');
               }
             }}
             data-testid="install-app-btn"

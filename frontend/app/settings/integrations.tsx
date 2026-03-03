@@ -60,7 +60,7 @@ const { showToast } = useToast();
   
   const [docsSection, setDocsSection] = useState('getting-started');
 
-  const APP_URL = 'https://app.imosapp.com';
+  const APP_URL = 'https://app.imonsocial.com';
 
   const API_REFERENCE = {
     contacts: {

@@ -96,7 +96,7 @@ class TestShortURLClickEventTypes:
     def test_business_card_short_url(self):
         """Test short URL for business card link type"""
         create_payload = {
-            "original_url": "https://app.imosapp.com/p/user123",
+            "original_url": "https://app.imonsocial.com/p/user123",
             "link_type": "business_card",
             "user_id": USER_ID,
         }
@@ -110,7 +110,7 @@ class TestShortURLClickEventTypes:
     def test_review_page_short_url(self):
         """Test short URL for review page link type"""
         create_payload = {
-            "original_url": "https://app.imosapp.com/review/store123",
+            "original_url": "https://app.imonsocial.com/review/store123",
             "link_type": "review",
             "user_id": USER_ID,
         }

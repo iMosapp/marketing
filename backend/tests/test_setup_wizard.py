@@ -14,7 +14,7 @@ import time
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test user credentials
-TEST_USER_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com user ID
+TEST_USER_ID = "69a0b7095fddcede09591667"  # forest@imonsocial.com user ID
 TEST_STORE_ID = "69a0b7095fddcede09591668"  # existing store
 
 
@@ -131,7 +131,7 @@ class TestSetupWizardBulkInvite:
         members = [
             {
                 "name": "Test Existing User",
-                "email": "forest@imosapp.com",  # existing user
+                "email": "forest@imonsocial.com",  # existing user
                 "phone": "5551111111",
                 "role": "user"
             }

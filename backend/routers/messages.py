@@ -255,7 +255,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 import resend as resend_mod
                 from utils.email_template import get_brand_context, build_branded_email
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
-                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await get_db().users.find_one({"_id": ObjectId(user_id)})
@@ -488,7 +488,7 @@ async def send_mms_message(
     media_id = str(media_result.inserted_id)
     
     # Create publicly accessible URL for the media
-    backend_url = "https://app.imosapp.com"
+    backend_url = "https://app.imonsocial.com"
     media_url = f"{backend_url}/api/messages/media/{media_id}"
     
     # Create message record
@@ -959,7 +959,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 import resend as resend_mod
                 from utils.email_template import get_brand_context, build_branded_email
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
-                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
                 logger.info(f"[EMAIL-FLOW] RESEND_API_KEY present: {bool(RESEND_KEY)}, SENDER: {SENDER}")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
@@ -1494,7 +1494,7 @@ async def email_diagnostic(user_id: str, contact_id: str):
     
     # Step 4: Check Resend config
     RESEND_KEY = os.environ.get("RESEND_API_KEY")
-    SENDER = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+    SENDER = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
     steps.append({
         "step": "resend_config",
         "ok": bool(RESEND_KEY),

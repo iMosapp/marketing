@@ -114,7 +114,7 @@ export default function MoreScreen() {
   const getReviewUrl = () => {
     if (!storeSlug) return '';
     const spParam = user?._id ? `?sp=${user._id}` : '';
-    return `https://app.imosapp.com/review/${storeSlug}${spParam}`;
+    return `https://app.imonsocial.com/review/${storeSlug}${spParam}`;
   };
 
   const handleCopyReviewLink = async () => {

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/app-directory", tags=["App Directory"])
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imosapp.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
 APP_URL = os.environ.get("APP_URL")
 
 if RESEND_API_KEY:

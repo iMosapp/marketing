@@ -121,7 +121,7 @@ export default function EditLinkPage() {
   };
 
   const copyLink = () => {
-    const url = `https://app.imosapp.com/l/${username}`;
+    const url = `https://app.imonsocial.com/l/${username}`;
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(url);
       Alert.alert('Copied!', url);
@@ -151,7 +151,7 @@ export default function EditLinkPage() {
         <TouchableOpacity style={[s.urlCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={copyLink} data-testid="linkpage-copy-url">
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 }}>YOUR LINK</Text>
-            <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '700' }}>app.imosapp.com/l/{username}</Text>
+            <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '700' }}>app.imonsocial.com/l/{username}</Text>
           </View>
           <View style={[s.copyBadge, { backgroundColor: `${colors.accent}20` }]}>
             <Ionicons name="copy-outline" size={16} color={colors.accent} />
