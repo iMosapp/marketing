@@ -68,15 +68,15 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Inline Composer**: Replaced the icon-based sticky action bar on contact detail pages with a full inbox-style composer:
   - SMS/Email mode toggle pills (green/purple) + Call button
   - Text input ("Type your message...")
-  - Toolbar with: **+** (Send Something picker), **💬** (Log Reply), **✨** (AI Sparkle), **Send** button
+  - Toolbar with: Photo, Templates, Review Link, Business Card, Voice-to-Text, AI Sparkle, Send button
   - Messages sent directly from contact page (auto-creates conversation)
-- **"Send Something" Consolidated Picker**: Single + button opens a bottom-sheet modal with all sendable items:
-  - My Digital Card (pre-fills card URL in composer)
-  - Create a Card (opens 6-template secondary picker: Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday)
-  - Review Link (pre-fills review page URL in composer)
-  - My Showcase (pre-fills showcase URL)
-  - My Link Page (fetches link page URL from API and pre-fills)
-  - Photo (open camera/gallery)
+- **Unified Toolbar** (Completed Mar 3, 2026): Replaced the old "Send Something" picker modal and "Photo Sub-Picker" modal with a clean, unified toolbar matching the inbox/thread page. 6 toolbar icons:
+  1. **Photo** (image-outline) — Opens Add Photo modal (Library, Create Card)
+  2. **Templates** (document-text-outline) — Opens Message Templates modal with pre-fill
+  3. **Review Link** (star-outline) — Opens Review Links modal (iMOs + external platforms)
+  4. **Business Card** (card-outline) — Opens Business Card modal (VCF + Landing Page)
+  5. **Voice-to-Text** (mic-outline) — Records and transcribes voice to text
+  6. **AI Sparkle** (sparkles) — Generates AI message suggestion
 - **No more inbox redirects**: All send actions stay on the contact page and pre-fill the composer with the appropriate URL/message
 - **Differentiated Toolbar Icons**: Blue + (Send Something), Orange arrow-undo (Log Reply), Purple sparkles (AI) — no longer "three green dots"
 - **Personal SMS Flow**: SMS mode opens native messaging app with message pre-filled (sms: protocol); Email mode sends directly via Resend
@@ -91,7 +91,7 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Contact Search by Tag** (Mar 2, 2026): The contacts list search field now matches contacts by tag name in addition to name/phone. The tag filter bar with chip buttons also provides quick tag-based filtering.
 - **"Send Something" Picker — 7 options** (Mar 2, 2026): Added "Enroll in Campaign" and "Photo" options. All items pre-fill the composer with URLs instead of redirecting to inbox. "Create a Card" shows a 6-template secondary picker.
 - **Profile Photo Button Fix** (Mar 2, 2026): "Set as Profile Photo" in the gallery now uses a native HTML `<button>` on web for reliable click handling.
-- **Toolbar Icons Differentiated** (Mar 2, 2026): Blue + (Send Something), Orange ↩ (Log Reply), Purple ✨ (AI) — no longer "three green dots"
+- **Toolbar Icons Differentiated** (Mar 2, 2026 → Unified Mar 3, 2026): Now uses 6 distinct toolbar icons matching inbox: Photo, Templates, Review, Card, Voice, AI
 - **SMS Personal Flow** (Mar 2, 2026): SMS mode opens native messaging app with pre-filled text via `sms:` protocol.
 
 ### Reporting & Analytics
@@ -282,6 +282,8 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 
 
 ## Key Files
+- `/app/frontend/app/contact/[id].tsx` — Contact detail page with unified toolbar (MAJOR REFACTOR Mar 3, 2026)
+- `/app/frontend/app/thread/[id].tsx` — Inbox thread page (source for toolbar design)
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component
 - `/app/frontend/app/(tabs)/home.tsx` — Home screen with action tiles
