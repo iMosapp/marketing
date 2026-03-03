@@ -103,6 +103,9 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - White-label HTML email templates via Resend
 - Centralized `PoweredByFooter.tsx` + `brand.ts` config
 - Light & Dark mode with persistence — **full app-wide theme refactor COMPLETED** (Mar 2, 2026). 250+ files converted to dynamic theme-aware StyleSheets using `getStyles(colors)` pattern. All major pages tested and verified in both light and dark mode. Deep cleanup pass completed: Contact Detail, Leaderboard, Thread, Admin Data pages, and more all have proper theme-aware text colors.
+- AI Message Suggestions — no em-dashes, post-processed (Mar 2, 2026)
+- Call Screen — web now routes through Call Screen for duration logging (Mar 2, 2026)
+- Log Customer Reply — verified working via both green button and orange toolbar shortcut (Mar 2, 2026)
 ### Linktree-Style Public Link Page (Completed Mar 2, 2026)
 - Public URL per user: `/l/{username}` (e.g., `/l/forestward`)
 - **Social Links**: All 6 major platforms (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube) pre-populated by default. Users only enter their username — the URL prefix is built automatically (matching My Profile pattern).
