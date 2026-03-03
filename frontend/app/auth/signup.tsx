@@ -231,15 +231,18 @@ export default function SignupScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.title}>Start Your 14-Day Free Trial</Text>
             <View style={styles.subtitleContainer}>
-              <Text style={styles.subtitle}>Start your journey with</Text>
+              <Text style={styles.subtitle}>Get started with</Text>
               <Image 
                 source={require('../../public/new-logo-512-transparent.png')}
                 style={styles.subtitleLogo}
                 resizeMode="contain"
               />
             </View>
+            <Text style={{ fontSize: 13, color: '#6E6E73', textAlign: 'center', marginTop: 8, lineHeight: 18 }}>
+              No charge for 14 days. Cancel anytime before your trial ends and you won't be billed. After your trial, your plan auto-renews monthly until you cancel.
+            </Text>
           </View>
           
           <View style={styles.form}>
@@ -498,7 +501,7 @@ export default function SignupScreen() {
                 data-testid="signup-submit-button"
               >
                 <span style={{ color: '#FFFFFF', fontSize: '18px', fontWeight: '600' }}>
-                  {loading ? 'Creating Account...' : 'Sign Up'}
+                  {loading ? 'Creating Account...' : 'Start My Free Trial'}
                 </span>
               </button>
             ) : (
@@ -509,10 +512,14 @@ export default function SignupScreen() {
                 data-testid="signup-submit-button"
               >
                 <Text style={styles.buttonText}>
-                  {loading ? 'Creating Account...' : 'Sign Up'}
+                  {loading ? 'Creating Account...' : 'Start My Free Trial'}
                 </Text>
               </TouchableOpacity>
             )}
+            
+            <Text style={{ fontSize: 11, color: '#AEAEB2', textAlign: 'center', marginTop: 8, lineHeight: 16 }}>
+              By starting your trial, you agree to our Terms of Service. Your plan will auto-renew at the selected rate after 14 days unless you cancel.
+            </Text>
             
             <TouchableOpacity
               style={styles.linkButton}

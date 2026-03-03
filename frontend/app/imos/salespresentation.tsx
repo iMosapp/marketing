@@ -254,7 +254,7 @@ export default function SalesPresentationScreen() {
               <TouchableOpacity style={styles.ctaSecondary} onPress={() => {
                 router.push('/auth/signup' as any);
               }} data-testid="start-trial-btn">
-                <Text style={styles.ctaSecondaryText}>Start Free Trial</Text>
+                <Text style={styles.ctaSecondaryText}>Start 14-Day Free Trial</Text>
                 <Ionicons name="arrow-forward" size={16} color="#007AFF" />
               </TouchableOpacity>
             </View>
