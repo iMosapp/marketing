@@ -51,7 +51,7 @@
       background: transparent;
     }
     nav.scrolled {
-      background: rgba(255,255,255,0.88);
+      background: rgba(255,255,255,0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
@@ -64,12 +64,46 @@
     .logo { display: flex; align-items: center; text-decoration: none; }
     .logo img { height: 64px; width: auto; }
 
-    .nav-links { display: flex; align-items: center; gap: 32px; }
-    .nav-links a {
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-item { position: relative; }
+    .nav-item > a, .nav-trigger {
       font-size: 14px; font-weight: 500; color: var(--text-secondary);
       text-decoration: none; transition: color 0.2s;
+      padding: 8px 14px; border-radius: 8px; display: flex; align-items: center; gap: 4px;
+      background: none; border: none; cursor: pointer; font-family: inherit;
     }
-    .nav-links a:hover { color: var(--text); }
+    .nav-item > a:hover, .nav-trigger:hover { color: var(--text); background: var(--bg-subtle); }
+    .nav-trigger i { font-size: 10px; transition: transform 0.2s; }
+    .nav-item:hover .nav-trigger i { transform: rotate(180deg); }
+
+    /* Dropdown */
+    .nav-dropdown {
+      display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      padding-top: 8px; min-width: 280px;
+    }
+    .nav-item:hover .nav-dropdown { display: block; }
+    .nav-dropdown-inner {
+      background: #FFF; border: 1px solid var(--border); border-radius: 16px;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.1); padding: 8px; overflow: hidden;
+    }
+    .nav-dropdown-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); padding: 8px 12px 4px; margin-top: 4px;
+    }
+    .nav-dropdown-label:first-child { margin-top: 0; }
+    .dd-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border-radius: 10px; text-decoration: none;
+      transition: background 0.15s; color: var(--text);
+    }
+    .dd-item:hover { background: var(--bg-subtle); }
+    .dd-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .dd-text { display: flex; flex-direction: column; }
+    .dd-text strong { font-size: 14px; font-weight: 600; }
+    .dd-text span { font-size: 12px; color: var(--text-muted); line-height: 1.3; }
 
     .nav-cta { display: flex; align-items: center; gap: 12px; }
     .btn-signin {
@@ -387,9 +421,106 @@
   <div class="nav-inner">
     <a href="#" class="logo"><img src="logo.png" alt="i'M On Social" /></a>
     <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#how-it-works">How It Works</a>
-      <a href="#why">Why iMOs</a>
+      <!-- Products Dropdown -->
+      <div class="nav-item">
+        <button class="nav-trigger">Products <i class="fa-solid fa-chevron-down"></i></button>
+        <div class="nav-dropdown">
+          <div class="nav-dropdown-inner">
+            <div class="nav-dropdown-label">Your Digital Presence</div>
+            <a class="dd-item" href="https://app.imosapp.com/imos/digital-card">
+              <div class="dd-icon" style="background:rgba(0,122,255,0.08)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
+              <div class="dd-text"><strong>Digital Cards</strong><span>Shareable, trackable business cards</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/reviews">
+              <div class="dd-icon" style="background:rgba(255,214,10,0.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div>
+              <div class="dd-text"><strong>Personal Reviews</strong><span>Portable reputation that travels with you</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/showcase">
+              <div class="dd-icon" style="background:rgba(52,199,89,0.08)"><i class="fa-solid fa-share-nodes" style="color:var(--green)"></i></div>
+              <div class="dd-text"><strong>Link Pages & Showcase</strong><span>All your socials in one link</span></div>
+            </a>
+            <div class="nav-dropdown-label">Engagement</div>
+            <a class="dd-item" href="https://app.imosapp.com/imos/congrats-template">
+              <div class="dd-icon" style="background:rgba(255,45,85,0.08)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
+              <div class="dd-text"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/date-triggers">
+              <div class="dd-icon" style="background:rgba(255,149,0,0.08)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div>
+              <div class="dd-text"><strong>Automated Campaigns</strong><span>Birthdays, anniversaries, follow-ups</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/inbox">
+              <div class="dd-icon" style="background:rgba(88,86,214,0.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div>
+              <div class="dd-text"><strong>Inbox & Messaging</strong><span>SMS, email, all in one place</span></div>
+            </a>
+            <div class="nav-dropdown-label">Intelligence</div>
+            <a class="dd-item" href="https://app.imosapp.com/imos/jessi">
+              <div class="dd-icon" style="background:rgba(175,82,222,0.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple)"></i></div>
+              <div class="dd-text"><strong>Jessi AI Assistant</strong><span>AI-powered relationship intelligence</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/leaderboard">
+              <div class="dd-icon" style="background:rgba(255,59,48,0.08)"><i class="fa-solid fa-trophy" style="color:var(--red)"></i></div>
+              <div class="dd-text"><strong>Leaderboards & Analytics</strong><span>Track performance across teams</span></div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Solutions Dropdown -->
+      <div class="nav-item">
+        <button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down"></i></button>
+        <div class="nav-dropdown">
+          <div class="nav-dropdown-inner">
+            <div class="nav-dropdown-label">By Role</div>
+            <a class="dd-item" href="https://app.imosapp.com/imos/organizations">
+              <div class="dd-icon" style="background:rgba(0,122,255,0.08)"><i class="fa-solid fa-building" style="color:var(--blue)"></i></div>
+              <div class="dd-text"><strong>For Organizations</strong><span>Structure teams, stores & reputation</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/individuals">
+              <div class="dd-icon" style="background:rgba(201,169,98,0.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div>
+              <div class="dd-text"><strong>For Individuals</strong><span>Own your personal brand & reviews</span></div>
+            </a>
+            <div class="nav-dropdown-label">By Industry</div>
+            <a class="dd-item" href="https://app.imosapp.com/imos/salespresentation">
+              <div class="dd-icon" style="background:rgba(52,199,89,0.08)"><i class="fa-solid fa-car" style="color:var(--green)"></i></div>
+              <div class="dd-text"><strong>Automotive</strong><span>Built for dealerships & sales teams</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/hub">
+              <div class="dd-icon" style="background:rgba(255,149,0,0.08)"><i class="fa-solid fa-briefcase" style="color:var(--orange)"></i></div>
+              <div class="dd-text"><strong>Sales Teams</strong><span>Any industry, any team size</span></div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resources Dropdown -->
+      <div class="nav-item">
+        <button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down"></i></button>
+        <div class="nav-dropdown">
+          <div class="nav-dropdown-inner">
+            <a class="dd-item" href="https://app.imosapp.com/imos/training">
+              <div class="dd-icon" style="background:rgba(0,122,255,0.08)"><i class="fa-solid fa-graduation-cap" style="color:var(--blue)"></i></div>
+              <div class="dd-text"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/help">
+              <div class="dd-icon" style="background:rgba(52,199,89,0.08)"><i class="fa-regular fa-circle-question" style="color:var(--green)"></i></div>
+              <div class="dd-text"><strong>Help Center</strong><span>Guides, FAQs & support</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/app-directory">
+              <div class="dd-icon" style="background:rgba(175,82,222,0.08)"><i class="fa-solid fa-grid-2" style="color:var(--purple)"></i></div>
+              <div class="dd-text"><strong>App Directory</strong><span>Explore all iMOs features</span></div>
+            </a>
+            <a class="dd-item" href="https://app.imosapp.com/imos/presentation">
+              <div class="dd-icon" style="background:rgba(255,149,0,0.08)"><i class="fa-solid fa-presentation-screen" style="color:var(--orange)"></i></div>
+              <div class="dd-text"><strong>Sales Deck</strong><span>See what iMOs can do for you</span></div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Direct -->
+      <div class="nav-item">
+        <a href="https://app.imosapp.com/imos/pricing">Pricing</a>
+      </div>
     </div>
     <div class="nav-cta">
       <a href="https://app.imosapp.com" class="btn-signin">Sign In</a>
@@ -400,9 +531,10 @@
     </button>
   </div>
   <div class="mobile-menu" id="mob">
-    <a href="#features" onclick="document.getElementById('mob').classList.remove('open')">Features</a>
-    <a href="#how-it-works" onclick="document.getElementById('mob').classList.remove('open')">How It Works</a>
-    <a href="#why" onclick="document.getElementById('mob').classList.remove('open')">Why iMOs</a>
+    <a href="#features" onclick="document.getElementById('mob').classList.remove('open')">Products</a>
+    <a href="https://app.imosapp.com/imos/organizations" onclick="document.getElementById('mob').classList.remove('open')">Solutions</a>
+    <a href="https://app.imosapp.com/imos/training" onclick="document.getElementById('mob').classList.remove('open')">Resources</a>
+    <a href="https://app.imosapp.com/imos/pricing" onclick="document.getElementById('mob').classList.remove('open')">Pricing</a>
     <a href="https://app.imosapp.com" onclick="document.getElementById('mob').classList.remove('open')">Sign In</a>
     <a href="https://app.imosapp.com/imos/demo" class="mobile-cta">Get a Demo</a>
   </div>

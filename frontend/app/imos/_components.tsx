@@ -6,9 +6,42 @@ import { Ionicons } from '@expo/vector-icons';
 const PROD_BASE = 'https://app.imosapp.com';
 
 const NAV_LINKS = [
-  { label: 'Features', path: '/imos/features' },
-  { label: 'Solutions', path: '/imos/hub' },
-  { label: 'Resources', path: '/imos/training' },
+  {
+    label: 'Products',
+    children: [
+      { section: 'Your Digital Presence' },
+      { label: 'Digital Cards', path: '/imos/digital-card', icon: 'card', color: '#007AFF', desc: 'Shareable, trackable business cards' },
+      { label: 'Personal Reviews', path: '/imos/reviews', icon: 'star', color: '#D4AD00', desc: 'Portable reputation that travels with you' },
+      { label: 'Link Pages & Showcase', path: '/imos/showcase', icon: 'share-social', color: '#34C759', desc: 'All your socials in one link' },
+      { section: 'Engagement' },
+      { label: 'Congrats Cards', path: '/imos/congrats-template', icon: 'image', color: '#FF2D55', desc: 'Celebrate every sale automatically' },
+      { label: 'Automated Campaigns', path: '/imos/date-triggers', icon: 'rocket', color: '#FF9500', desc: 'Birthdays, anniversaries, follow-ups' },
+      { label: 'Inbox & Messaging', path: '/imos/inbox', icon: 'chatbubble-ellipses', color: '#5856D6', desc: 'SMS, email, all in one place' },
+      { section: 'Intelligence' },
+      { label: 'Jessi AI Assistant', path: '/imos/jessi', icon: 'sparkles', color: '#AF52DE', desc: 'AI-powered relationship intelligence' },
+      { label: 'Leaderboards & Analytics', path: '/imos/leaderboard', icon: 'trophy', color: '#FF3B30', desc: 'Track performance across teams' },
+    ],
+  },
+  {
+    label: 'Solutions',
+    children: [
+      { section: 'By Role' },
+      { label: 'For Organizations', path: '/imos/organizations', icon: 'business', color: '#007AFF', desc: 'Structure teams, stores & reputation' },
+      { label: 'For Individuals', path: '/imos/individuals', icon: 'person', color: '#C9A962', desc: 'Own your personal brand & reviews' },
+      { section: 'By Industry' },
+      { label: 'Automotive', path: '/imos/salespresentation', icon: 'car-sport', color: '#34C759', desc: 'Built for dealerships & sales teams' },
+      { label: 'Sales Teams', path: '/imos/hub', icon: 'briefcase', color: '#FF9500', desc: 'Any industry, any team size' },
+    ],
+  },
+  {
+    label: 'Resources',
+    children: [
+      { label: 'Training Hub', path: '/imos/training', icon: 'school', color: '#007AFF', desc: 'Courses, videos & best practices' },
+      { label: 'Help Center', path: '/imos/help', icon: 'help-circle', color: '#34C759', desc: 'Guides, FAQs & support' },
+      { label: 'App Directory', path: '/imos/app-directory', icon: 'grid', color: '#AF52DE', desc: 'Explore all iMOs features' },
+      { label: 'Sales Deck', path: '/imos/presentation', icon: 'easel', color: '#FF9500', desc: 'See what iMOs can do for you' },
+    ],
+  },
   { label: 'Pricing', path: '/imos/pricing' },
 ];
 
@@ -48,13 +81,20 @@ export function ImosHeader() {
           <>
             {/* Desktop Nav */}
             <View style={styles.navRow}>
-              {NAV_LINKS.map((link) => (
-                <TouchableOpacity key={link.path} onPress={() => navigate(link.path)} data-testid={`nav-${link.label.toLowerCase()}`}>
-                  <Text style={[styles.navLink, isActive(link.path) && styles.navLinkActive]}>
-                    {link.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {NAV_LINKS.map((item: any) => {
+                if (item.path) {
+                  return (
+                    <TouchableOpacity key={item.label} onPress={() => navigate(item.path)} data-testid={`nav-${item.label.toLowerCase()}`}>
+                      <Text style={[styles.navLink, isActive(item.path) && styles.navLinkActive]}>{item.label}</Text>
+                    </TouchableOpacity>
+                  );
+                }
+                return (
+                  <TouchableOpacity key={item.label} onPress={() => navigate(item.children?.find((c: any) => c.path)?.path || '/imos')} data-testid={`nav-${item.label.toLowerCase()}`}>
+                    <Text style={styles.navLink}>{item.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             {/* CTA */}
             <View style={styles.ctaRow}>
@@ -77,11 +117,14 @@ export function ImosHeader() {
       {/* Mobile Dropdown */}
       {!isDesktop && menuOpen && (
         <View style={styles.mobileMenu}>
-          {NAV_LINKS.map((link) => (
-            <TouchableOpacity key={link.path} onPress={() => navigate(link.path)} style={styles.mobileMenuItem} data-testid={`mobile-nav-${link.label.toLowerCase()}`}>
-              <Text style={[styles.mobileMenuText, isActive(link.path) && { color: '#007AFF' }]}>{link.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {NAV_LINKS.map((item: any) => {
+            const target = item.path || item.children?.find((c: any) => c.path)?.path || '/imos';
+            return (
+              <TouchableOpacity key={item.label} onPress={() => navigate(target)} style={styles.mobileMenuItem} data-testid={`mobile-nav-${item.label.toLowerCase()}`}>
+                <Text style={styles.mobileMenuText}>{item.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
           <View style={styles.mobileDivider} />
           <TouchableOpacity onPress={() => navigate('/imos/login')} style={styles.mobileMenuItem}>
             <Text style={styles.mobileMenuText}>Sign In</Text>
