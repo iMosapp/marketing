@@ -2265,8 +2265,16 @@ export default function ContactDetailScreen() {
                                 <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
                                 <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
                               </View>
-                              <TouchableOpacity onPress={() => deleteVoiceNote(note.id)} style={{ padding: 4 }} data-testid={`delete-voice-note-${i}`}>
-                                <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
+                              <TouchableOpacity
+                                onPress={(e) => {
+                                  e.stopPropagation?.();
+                                  deleteVoiceNote(note.id);
+                                }}
+                                style={{ padding: 12, margin: -8, zIndex: 10 }}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                data-testid={`delete-voice-note-${i}`}
+                              >
+                                <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                               </TouchableOpacity>
                             </View>
                             {note.transcript ? (
