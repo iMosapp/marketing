@@ -37,10 +37,21 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
 .hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
 .mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px}
-.mob-menu a{display:block;padding:14px 0;font-size:16px;font-weight:500;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
-.mob-menu a:last-of-type{border-bottom:none}
+.mob-menu{padding:8px 24px 20px}
+
 .mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
-@media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
+
+    .mob-group{border-bottom:1px solid var(--border)}
+    .mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}
+    .mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}
+    .mob-group.open .mob-chev{transform:rotate(180deg)}
+    .mob-sub{display:none;padding:0 0 12px 16px}
+    .mob-group.open .mob-sub{display:block}
+    .mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none;border-bottom:none}
+    .mob-sub a:hover{color:var(--blue)}
+    .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-direct:hover{color:var(--blue)}
+    @media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
 .page-hero{padding:160px 24px 80px;text-align:center;max-width:820px;margin:0 auto}
 .page-hero h1{font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-.035em;margin-bottom:20px}
 .page-hero-sub{font-size:19px;color:var(--text-2);line-height:1.6;max-width:600px;margin:0 auto 40px}
@@ -92,7 +103,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 <body>
 <nav>
   <div class="nav-inner">
-    <a href="https://imonsocial.com" class="logo"><img src="/logo.png" alt="i'M On Social"/></a>
+    <a href="/" class="logo"><img src="/logo.png" alt="i'M On Social"/></a>
     <div class="nav-links">
       <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button>
         <div class="nav-dd"><div class="nav-dd-inner">
@@ -135,7 +146,37 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
   </div>
   <div class="mob-menu" id="mob">
-    <a href="/digital-card/">Digital Cards</a><a href="/reviews/">Reviews</a><a href="/inbox/">Inbox</a><a href="/organizations/">Organizations</a><a href="/pricing/">Pricing</a><a href="https://app.imonsocial.com">Sign In</a><a href="/demo/?source=leaderboard_nav" class="mob-cta">Get a Demo</a>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/digital-card/">Digital Cards</a>
+        <a href="/reviews/">Personal Reviews</a>
+        <a href="/showcase/">Showcase Pages</a>
+        <a href="/inbox/">Unified Inbox</a>
+        <a href="/date-triggers/">Automated Campaigns</a>
+        <a href="/jessi/">Jessi AI</a>
+        <a href="/leaderboard/">Leaderboards</a>
+      </div>
+    </div>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Solutions <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/organizations/">For Organizations</a>
+        <a href="/individuals/">For Individuals</a>
+        <a href="/features/">All Features</a>
+      </div>
+    </div>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Resources <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/training/">Training Hub</a>
+        <a href="/help/">Help Center</a>
+        <a href="/demo/">Schedule a Demo</a>
+      </div>
+    </div>
+    <a href="/pricing/" class="mob-direct">Pricing</a>
+    <a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
+    <a href="/demo/" class="mob-cta">Get a Demo</a>
   </div>
 </nav>
 <section class="page-hero rv">
