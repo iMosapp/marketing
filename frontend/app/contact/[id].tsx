@@ -2512,40 +2512,31 @@ export default function ContactDetailScreen() {
 
       {/* ===== MODALS ===== */}
 
-      {/* Review Links Modal */}
+      {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
-        <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowReviewLinks(false)}>
-          <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
-            <View style={s.toolbarModalHeader}>
-              <View style={s.toolbarModalHandle} />
-              <Text style={s.toolbarModalTitle}>Send Review Link</Text>
-            </View>
-            <ScrollView style={s.toolbarTemplatesList} contentContainerStyle={s.toolbarTemplatesListContent}>
+        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReviewLinks(false)}>
+          <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
+            <View style={s.actionSheetGroup}>
               {storeSlug && (
-                <TouchableOpacity
-                  style={s.toolbarTemplateItem}
-                  data-testid="review-link-imos"
-                  onPress={() => {
-                    const firstName = contact.first_name || 'there';
-                    const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
-                    const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
-                    setShowReviewLinks(false);
-                    setComposerMessage(reviewMsg);
-                  }}
-                >
-                  <View style={[s.toolbarTemplateIcon, { backgroundColor: '#FFD60A20' }]}>
-                    <Ionicons name="star" size={20} color="#FFD60A" />
-                  </View>
-                  <View style={s.toolbarTemplateContent}>
-                    <Text style={s.toolbarTemplateName}>Send Review Request</Text>
-                    <Text style={s.toolbarTemplatePreview} numberOfLines={1}>
-                      Sends personalized review link to {contact.first_name || 'contact'}
-                    </Text>
-                  </View>
-                  <Ionicons name="add-circle" size={24} color="#FFD60A" />
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    style={s.actionSheetButton}
+                    data-testid="review-link-imos"
+                    onPress={() => {
+                      const firstName = contact.first_name || 'there';
+                      const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
+                      const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
+                      setShowReviewLinks(false);
+                      setComposerMessage(reviewMsg);
+                    }}
+                  >
+                    <Ionicons name="star" size={22} color="#FFD60A" />
+                    <Text style={s.actionSheetButtonText}>Send Review Request</Text>
+                  </TouchableOpacity>
+                  <View style={s.actionSheetDivider} />
+                </>
               )}
-              {Object.entries(reviewLinks).filter(([_, url]) => url).map(([platformId, url]) => {
+              {Object.entries(reviewLinks).filter(([_, url]) => url).map(([platformId, url], index, arr) => {
                 const platformNames: Record<string, {name: string; icon: string; color: string}> = {
                   google: { name: 'Google Reviews', icon: 'logo-google', color: '#4285F4' },
                   facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
@@ -2555,42 +2546,34 @@ export default function ContactDetailScreen() {
                 };
                 const platform = platformNames[platformId] || platformNames.custom;
                 return (
-                  <TouchableOpacity key={platformId} style={s.toolbarTemplateItem} onPress={() => insertReviewLink(platformId, url, platform.name)}>
-                    <View style={[s.toolbarTemplateIcon, { backgroundColor: `${platform.color}20` }]}>
-                      <Ionicons name={platform.icon as any} size={20} color={platform.color} />
-                    </View>
-                    <View style={s.toolbarTemplateContent}>
-                      <Text style={s.toolbarTemplateName}>{platform.name}</Text>
-                      <Text style={s.toolbarTemplatePreview} numberOfLines={1}>{url}</Text>
-                    </View>
-                    <Ionicons name="add-circle" size={24} color="#007AFF" />
-                  </TouchableOpacity>
+                  <React.Fragment key={platformId}>
+                    <TouchableOpacity style={s.actionSheetButton} onPress={() => insertReviewLink(platformId, url, platform.name)}>
+                      <Ionicons name={platform.icon as any} size={22} color={platform.color} />
+                      <Text style={s.actionSheetButtonText}>{platform.name}</Text>
+                    </TouchableOpacity>
+                    {index < arr.length - 1 && <View style={s.actionSheetDivider} />}
+                  </React.Fragment>
                 );
               })}
               {!storeSlug && Object.keys(reviewLinks).length === 0 && (
-                <View style={s.toolbarEmptyReviews}>
-                  <Ionicons name="star-outline" size={48} color={colors.textSecondary} />
-                  <Text style={s.toolbarEmptyReviewsText}>No review links configured</Text>
-                  <TouchableOpacity style={s.toolbarSetupBtn} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
-                    <Text style={s.toolbarSetupBtnText}>Set Up Review Links</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              {(storeSlug || Object.keys(reviewLinks).length > 0) && (
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 16, opacity: 0.6 }}
-                  onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}
-                >
-                  <Ionicons name="settings-outline" size={14} color={colors.textSecondary} />
-                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>Manage Review Platform Links</Text>
+                <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
+                  <Ionicons name="settings-outline" size={22} color="#007AFF" />
+                  <Text style={s.actionSheetButtonText}>Set Up Review Links</Text>
                 </TouchableOpacity>
               )}
-            </ScrollView>
-            <View style={s.toolbarModalFooter}>
-              <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => setShowReviewLinks(false)}>
-                <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
-              </TouchableOpacity>
+              {(storeSlug || Object.keys(reviewLinks).length > 0) && (
+                <>
+                  <View style={s.actionSheetDivider} />
+                  <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
+                    <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
+                    <Text style={[s.actionSheetButtonText, { color: colors.textSecondary, fontSize: 16 }]}>Manage Review Links</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
+            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowReviewLinks(false)}>
+              <Text style={s.actionSheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
