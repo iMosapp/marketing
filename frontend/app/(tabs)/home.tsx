@@ -486,9 +486,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }} data-testid="home-back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <View style={{ width: 32 }} />
         <Text style={[styles.userName, { color: colors.text }]}>Home</Text>
         <NotificationBell />
       </View>

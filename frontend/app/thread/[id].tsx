@@ -626,19 +626,19 @@ export default function ThreadScreen() {
 
   // Relationship Intel functions
   const loadIntel = async () => {
-    if (!user?._id) return;
+    if (!user?._id || !contactIdForNav) return;
     try {
-      const res = await api.get(`/contact-intel/${user._id}/${id}`);
+      const res = await api.get(`/contact-intel/${user._id}/${contactIdForNav}`);
       if (res.data?.summary) setIntelData(res.data);
     } catch {}
   };
 
   const generateIntel = async () => {
-    if (!user?._id) return;
+    if (!user?._id || !contactIdForNav) return;
     setIntelGenerating(true);
     setShowIntel(true);
     try {
-      const res = await api.post(`/contact-intel/${user._id}/${id}`);
+      const res = await api.post(`/contact-intel/${user._id}/${contactIdForNav}`);
       setIntelData(res.data);
       // Scroll to top so user sees the refreshed intel
       if (Platform.OS === 'web') {
@@ -651,10 +651,10 @@ export default function ThreadScreen() {
     }
   };
 
-  // Load intel on mount
+  // Load intel when contact ID is available
   useEffect(() => {
-    if (user?._id && id) loadIntel();
-  }, [user?._id, id]);
+    if (user?._id && contactIdForNav) loadIntel();
+  }, [user?._id, contactIdForNav]);
 
   
   const loadMessages = async () => {
