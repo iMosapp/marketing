@@ -300,6 +300,9 @@ export default function ContactDetailScreen() {
   const [feedSearch, setFeedSearch] = useState('');
   const INITIAL_EVENT_COUNT = 5;
 
+  // Tab state for Feed vs Details
+  const [contactTab, setContactTab] = useState<'feed' | 'details'>('feed');
+
   // Suggested actions & log reply
   const [suggestedActions, setSuggestedActions] = useState<any[]>([]);
 
@@ -1479,49 +1482,23 @@ export default function ContactDetailScreen() {
               </View>
             )}
 
-            {/* Tags Strip */}
+            {/* Tags + Automations Strip (merged) */}
             {!isNewContact && (
               <View style={s.heroTagsStrip} data-testid="hero-tags-strip">
-                <View style={s.heroTagsStripHeader}>
-                  <Ionicons name="pricetags" size={14} color="#FF9500" />
-                  <Text style={s.heroTagsStripTitle}>Tags</Text>
-                  <TouchableOpacity onPress={() => { loadTags(); setShowTagPicker(true); }} style={s.heroTagsStripAdd} data-testid="hero-add-tag-btn">
-                    <Ionicons name="add" size={14} color="#007AFF" />
-                  </TouchableOpacity>
-                </View>
-                {contact.tags.length > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-                    {contact.tags.map((tag, i) => {
-                      const info = availableTags.find(t => t.name === tag);
-                      const chipColor = info?.color || colors.textSecondary;
-                      return (
-                        <View key={i} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]}>
-                          <Ionicons name={(info?.icon || 'pricetag') as any} size={13} color={chipColor} />
-                          <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{tag}</Text>
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
-                ) : (
-                  <Text style={s.heroTagsEmpty}>No tags yet</Text>
-                )}
-              </View>
-            )}
-
-            {/* Active Campaigns & Date Automations Strip */}
-            {!isNewContact && (contactEnrollments.length > 0 || contact.birthday || contact.anniversary || contact.date_sold) && (
-              <View style={s.heroCampaignsStrip} data-testid="hero-campaigns-strip">
-                <View style={s.heroCampaignsHeader}>
-                  <Ionicons name="rocket" size={14} color="#AF52DE" />
-                  <Text style={s.heroCampaignsTitle}>Automations</Text>
-                  <TouchableOpacity onPress={() => setShowCampaignPicker(true)} style={s.heroCampaignsAdd}>
-                    <Ionicons name="add" size={14} color="#007AFF" />
-                  </TouchableOpacity>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 4, alignItems: 'center' }}>
+                  {contact.tags.map((tag, i) => {
+                    const info = availableTags.find(t => t.name === tag);
+                    const chipColor = info?.color || colors.textSecondary;
+                    return (
+                      <View key={`tag-${i}`} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]}>
+                        <Ionicons name={(info?.icon || 'pricetag') as any} size={13} color={chipColor} />
+                        <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{tag}</Text>
+                      </View>
+                    );
+                  })}
                   {contact.birthday && (
                     <TouchableOpacity
-                      style={[s.heroCampaignChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510' }]}
+                      style={[s.heroTagChip, { borderColor: '#FF2D5540', backgroundColor: '#FF2D5510', borderStyle: 'dashed' }]}
                       onPress={() => {
                         setAutomationPickerDate(contact.birthday ? new Date(contact.birthday) : new Date());
                         setEditingAutomation({ field: 'birthday', label: 'Birthday', color: '#FF2D55', value: contact.birthday });
@@ -1530,13 +1507,12 @@ export default function ContactDetailScreen() {
                       data-testid="auto-birthday"
                     >
                       <Ionicons name="gift" size={13} color="#FF2D55" />
-                      <Text style={[s.heroCampaignChipText, { color: '#FF2D55' }]} numberOfLines={1}>Birthday</Text>
-                      <Text style={s.heroCampaignDate}>{formatDateUTC(contact.birthday)}</Text>
+                      <Text style={[s.heroTagChipText, { color: '#FF2D55' }]} numberOfLines={1}>{formatDateUTC(contact.birthday)}</Text>
                     </TouchableOpacity>
                   )}
                   {contact.anniversary && (
                     <TouchableOpacity
-                      style={[s.heroCampaignChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }]}
+                      style={[s.heroTagChip, { borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10', borderStyle: 'dashed' }]}
                       onPress={() => {
                         setAutomationPickerDate(contact.anniversary ? new Date(contact.anniversary) : new Date());
                         setEditingAutomation({ field: 'anniversary', label: 'Anniversary', color: '#FF6B6B', value: contact.anniversary });
@@ -1545,13 +1521,12 @@ export default function ContactDetailScreen() {
                       data-testid="auto-anniversary"
                     >
                       <Ionicons name="heart" size={13} color="#FF6B6B" />
-                      <Text style={[s.heroCampaignChipText, { color: '#FF6B6B' }]} numberOfLines={1}>Anniversary</Text>
-                      <Text style={s.heroCampaignDate}>{formatDateUTC(contact.anniversary)}</Text>
+                      <Text style={[s.heroTagChipText, { color: '#FF6B6B' }]} numberOfLines={1}>{formatDateUTC(contact.anniversary)}</Text>
                     </TouchableOpacity>
                   )}
                   {contact.date_sold && (
                     <TouchableOpacity
-                      style={[s.heroCampaignChip, { borderColor: '#34C75940', backgroundColor: '#34C75910' }]}
+                      style={[s.heroTagChip, { borderColor: '#34C75940', backgroundColor: '#34C75910', borderStyle: 'dashed' }]}
                       onPress={() => {
                         setAutomationPickerDate(contact.date_sold ? new Date(contact.date_sold) : new Date());
                         setEditingAutomation({ field: 'date_sold', label: 'Sold Date', color: '#34C759', value: contact.date_sold });
@@ -1560,30 +1535,80 @@ export default function ContactDetailScreen() {
                       data-testid="auto-sold"
                     >
                       <Ionicons name="car-sport" size={13} color="#34C759" />
-                      <Text style={[s.heroCampaignChipText, { color: '#34C759' }]} numberOfLines={1}>Sold Date</Text>
-                      <Text style={s.heroCampaignDate}>{formatDateUTC(contact.date_sold)}</Text>
+                      <Text style={[s.heroTagChipText, { color: '#34C759' }]} numberOfLines={1}>{formatDateUTC(contact.date_sold)}</Text>
                     </TouchableOpacity>
                   )}
-                  {/* Enrolled campaigns */}
                   {contactEnrollments.map((e, i) => {
                     const chipColor = e.status === 'completed' ? '#34C759' : '#007AFF';
                     return (
-                      <View key={i} style={[s.heroCampaignChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]} data-testid={`campaign-chip-${i}`}>
-                        <Ionicons 
-                          name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} 
-                          size={13} color={chipColor} 
-                        />
-                        <Text style={[s.heroCampaignChipText, { color: chipColor }]} numberOfLines={1}>{e.campaign_name}</Text>
+                      <View key={`camp-${i}`} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10`, borderStyle: 'dashed' }]} data-testid={`campaign-chip-${i}`}>
+                        <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={13} color={chipColor} />
+                        <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{e.campaign_name}</Text>
                         {e.status !== 'completed' && (
-                          <Text style={s.heroCampaignStep}>{e.current_step}/{e.total_steps}</Text>
+                          <Text style={{ fontSize: 10, color: chipColor, fontWeight: '600' }}>{e.current_step}/{e.total_steps}</Text>
                         )}
                       </View>
                     );
                   })}
+                  <TouchableOpacity onPress={() => { loadTags(); setShowTagPicker(true); }} style={[s.heroTagChip, { borderColor: '#007AFF40', backgroundColor: '#007AFF08' }]} data-testid="hero-add-tag-btn">
+                    <Ionicons name="add" size={14} color="#007AFF" />
+                  </TouchableOpacity>
                 </ScrollView>
               </View>
             )}
           </View>
+
+          {/* ===== ACTION PROGRESS TRACKER (above tabs) ===== */}
+          {!isNewContact && !isEditing && actionProgress.length > 0 && (
+            <View style={s.progressSection} data-testid="action-progress">
+              <View style={s.progressHeader}>
+                <Text style={s.progressLabel}>{progressCompleted}/{progressTotal} Actions</Text>
+                <View style={s.progressBarBg}>
+                  <View style={[s.progressBarFill, { width: `${progressTotal > 0 ? (progressCompleted / progressTotal) * 100 : 0}%` }]} />
+                </View>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.progressRow}>
+                {actionProgress.map((a: any) => (
+                  <TouchableOpacity
+                    key={a.key}
+                    style={[s.progressItem, a.done && s.progressItemDone]}
+                    onPress={() => !a.done && handleQuickAction(a.key === 'personal_sms' ? 'sms' : a.key === 'congrats_card_sent' ? 'congrats' : a.key === 'review_request_sent' ? 'review' : a.key === 'email_sent' ? 'email' : a.key === 'link_page_shared' ? 'linkpage' : a.key === 'digital_card_sent' ? 'digitalcard' : a.key)}
+                    activeOpacity={a.done ? 1 : 0.7}
+                    data-testid={`progress-${a.key}`}
+                  >
+                    <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : colors.card }]}>
+                      {a.done ? (
+                        <Ionicons name="checkmark-circle" size={18} color={a.color} />
+                      ) : (
+                        <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color={colors.borderLight} />
+                      )}
+                    </View>
+                    <Text style={[s.progressText, a.done && { color: a.color }]} numberOfLines={1}>{a.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ===== FEED / DETAILS TAB BAR ===== */}
+          {!isNewContact && !isEditing && (
+            <View style={s.tabBar} data-testid="contact-tab-bar">
+              <TouchableOpacity
+                style={[s.tabBtn, contactTab === 'feed' && s.tabBtnActive]}
+                onPress={() => setContactTab('feed')}
+                data-testid="tab-feed"
+              >
+                <Text style={[s.tabBtnText, contactTab === 'feed' && s.tabBtnTextActive]}>Feed</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.tabBtn, contactTab === 'details' && s.tabBtnActive]}
+                onPress={() => setContactTab('details')}
+                data-testid="tab-details"
+              >
+                <Text style={[s.tabBtnText, contactTab === 'details' && s.tabBtnTextActive]}>Details</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* ===== EDIT-MODE: Basic Info + Tags + Important Dates at top ===== */}
           {isEditing && (
@@ -1726,477 +1751,539 @@ export default function ContactDetailScreen() {
             </>
           )}
 
-          {/* ===== ACTION PROGRESS TRACKER ===== */}
-          {!isNewContact && !isEditing && actionProgress.length > 0 && (
-            <View style={s.progressSection} data-testid="action-progress">
-              <View style={s.progressHeader}>
-                <Text style={s.progressLabel}>{progressCompleted}/{progressTotal} Actions</Text>
-                <View style={s.progressBarBg}>
-                  <View style={[s.progressBarFill, { width: `${progressTotal > 0 ? (progressCompleted / progressTotal) * 100 : 0}%` }]} />
+          {/* ===== FEED TAB ===== */}
+          {!isNewContact && !isEditing && contactTab === 'feed' && (
+            <>
+              {/* Suggested Actions (inline at top of feed) */}
+              {suggestedActions.length > 0 && (
+                <View style={[s.section, { paddingTop: 4 }]} data-testid="suggested-actions">
+                  {suggestedActions.map((action, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={s.suggestedCard}
+                      onPress={() => handleSuggestedAction(action)}
+                      activeOpacity={0.7}
+                      data-testid={`suggested-action-${i}`}
+                    >
+                      <View style={[s.suggestedIcon, { backgroundColor: `${action.color}20` }]}>
+                        <Ionicons name={action.icon as any} size={20} color={action.color} />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={s.suggestedTitle}>{action.title}</Text>
+                        <Text style={s.suggestedDesc}>{action.description}</Text>
+                        {action.suggested_message && (
+                          <View style={s.suggestedMsgPreview}>
+                            <Text style={s.suggestedMsgText} numberOfLines={2}>"{action.suggested_message}"</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={[s.suggestedArrow, { backgroundColor: `${action.color}15` }]}>
+                        <Ionicons name="arrow-forward" size={16} color={action.color} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.progressRow}>
-                {actionProgress.map((a: any) => (
-                  <TouchableOpacity
-                    key={a.key}
-                    style={[s.progressItem, a.done && s.progressItemDone]}
-                    onPress={() => !a.done && handleQuickAction(a.key === 'personal_sms' ? 'sms' : a.key === 'congrats_card_sent' ? 'congrats' : a.key === 'review_request_sent' ? 'review' : a.key === 'email_sent' ? 'email' : a.key === 'link_page_shared' ? 'linkpage' : a.key === 'digital_card_sent' ? 'digitalcard' : a.key)}
-                    activeOpacity={a.done ? 1 : 0.7}
-                    data-testid={`progress-${a.key}`}
-                  >
-                    <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : colors.card }]}>
-                      {a.done ? (
-                        <Ionicons name="checkmark-circle" size={18} color={a.color} />
-                      ) : (
-                        <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color={colors.borderLight} />
+              )}
+
+              {/* AI Intel pill (collapsed) */}
+              <View style={[s.section, { paddingTop: suggestedActions.length > 0 ? 0 : 4 }]} data-testid="relationship-intel">
+                <TouchableOpacity
+                  style={s.intelBtn}
+                  onPress={() => {
+                    if (intelData && !showIntel) { setShowIntel(true); return; }
+                    if (!intelData) { generateIntel(); return; }
+                    setShowIntel(!showIntel);
+                  }}
+                  activeOpacity={0.7}
+                  data-testid="intel-toggle-btn"
+                >
+                  <View style={s.intelBtnLeft}>
+                    <View style={s.intelIcon}>
+                      <Ionicons name="sparkles" size={16} color="#C9A962" />
+                    </View>
+                    <View>
+                      <Text style={s.intelBtnTitle}>Relationship Intel</Text>
+                      {intelData?.generated_at && !showIntel && (
+                        <Text style={s.intelBtnSub}>
+                          Updated {formatEventTime(intelData.generated_at)}
+                        </Text>
                       )}
                     </View>
-                    <Text style={[s.progressText, a.done && { color: a.color }]} numberOfLines={1}>{a.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* ===== RELATIONSHIP INTEL ===== */}
-          {!isNewContact && (
-            <View style={s.section} data-testid="relationship-intel">
-              <TouchableOpacity
-                style={s.intelBtn}
-                onPress={() => {
-                  if (intelData && !showIntel) { setShowIntel(true); return; }
-                  if (!intelData) { generateIntel(); return; }
-                  setShowIntel(!showIntel);
-                }}
-                activeOpacity={0.7}
-                data-testid="intel-toggle-btn"
-              >
-                <View style={s.intelBtnLeft}>
-                  <View style={s.intelIcon}>
-                    <Ionicons name="sparkles" size={16} color="#C9A962" />
                   </View>
-                  <View>
-                    <Text style={s.intelBtnTitle}>Relationship Intel</Text>
-                    {intelData?.generated_at && !showIntel && (
-                      <Text style={s.intelBtnSub}>
-                        Updated {formatEventTime(intelData.generated_at)}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-                <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-
-              {showIntel && (
-                <View style={s.intelCard}>
-                  {intelGenerating ? (
-                    <View style={s.intelLoading}>
-                      <ActivityIndicator size="small" color="#C9A962" />
-                      <Text style={s.intelLoadingText}>Analyzing relationship history...</Text>
-                    </View>
-                  ) : intelData?.summary ? (
-                    <>
-                      <IntelRenderer text={intelData.summary} />
-                      <View style={s.intelMeta}>
-                        <Text style={s.intelMetaText}>
-                          Based on {intelData.data_points?.messages || 0} messages, {intelData.data_points?.events || 0} events, {intelData.data_points?.voice_notes || 0} voice notes
-                        </Text>
-                        <TouchableOpacity onPress={generateIntel} style={s.intelRefresh} data-testid="intel-refresh-btn">
-                          <Ionicons name="refresh" size={14} color="#007AFF" />
-                          <Text style={s.intelRefreshText}>Refresh</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </>
-                  ) : (
-                    <Text style={s.intelEmpty}>Tap to generate an AI briefing</Text>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Tags now shown inline in hero  - edit-mode tags remain in edit form */}
-
-
-          {/* ===== VOICE NOTES ===== */}
-          {!isNewContact && Platform.OS === 'web' && (
-            <View style={s.section} data-testid="voice-notes-section">
-              <View style={s.sectionHeaderRow}>
-                <Text style={s.sectionHeader}>Voice Notes</Text>
-                <Text style={s.sectionHeaderCount}>{voiceNotes.length} {voiceNotes.length === 1 ? 'note' : 'notes'}</Text>
-              </View>
-
-              {/* Record button / recording indicator */}
-              {isRecording ? (
-                <View style={s.vnRecording} data-testid="voice-recording-indicator">
-                  <View style={s.vnRecordingDot} />
-                  <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
-                  <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(MAX_RECORDING_SECONDS)}</Text>
-                  <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
-                    <Ionicons name="stop" size={18} color={colors.text} />
-                    <Text style={s.vnStopText}>Stop</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : uploadingVoiceNote ? (
-                <View style={s.vnRecording}>
-                  <ActivityIndicator size="small" color="#34C759" />
-                  <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
-                </View>
-              ) : (
-                <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
-                  <Ionicons name="mic" size={20} color="#34C759" />
-                  <Text style={s.vnRecordText}>Record a Voice Note</Text>
+                  <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
-              )}
 
-              {/* Voice notes list */}
-              {voiceNotesLoading ? (
-                <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
-              ) : voiceNotes.length > 0 ? (
-                <View style={{ marginTop: 12 }}>
-                  {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note, i) => {
-                    const isPlaying = playingNoteId === note.id;
-                    return (
-                      <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
-                        <View style={s.vnCardHeader}>
-                          <TouchableOpacity
-                            style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
-                            onPress={() => playVoiceNote(note.id, note.audio_url)}
-                            data-testid={`play-voice-note-${i}`}
-                          >
-                            <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
-                          </TouchableOpacity>
-                          <View style={{ flex: 1, marginLeft: 10 }}>
-                            <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
-                            <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
-                          </View>
-                          <TouchableOpacity onPress={() => deleteVoiceNote(note.id)} style={{ padding: 4 }} data-testid={`delete-voice-note-${i}`}>
-                            <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
+                {showIntel && (
+                  <View style={s.intelCard}>
+                    {intelGenerating ? (
+                      <View style={s.intelLoading}>
+                        <ActivityIndicator size="small" color="#C9A962" />
+                        <Text style={s.intelLoadingText}>Analyzing relationship history...</Text>
+                      </View>
+                    ) : intelData?.summary ? (
+                      <>
+                        <IntelRenderer text={intelData.summary} />
+                        <View style={s.intelMeta}>
+                          <Text style={s.intelMetaText}>
+                            Based on {intelData.data_points?.messages || 0} messages, {intelData.data_points?.events || 0} events, {intelData.data_points?.voice_notes || 0} voice notes
+                          </Text>
+                          <TouchableOpacity onPress={generateIntel} style={s.intelRefresh} data-testid="intel-refresh-btn">
+                            <Ionicons name="refresh" size={14} color="#007AFF" />
+                            <Text style={s.intelRefreshText}>Refresh</Text>
                           </TouchableOpacity>
                         </View>
-                        {note.transcript ? (
-                          <Text style={s.vnTranscript} numberOfLines={expandedEvents[1000 + i] ? undefined : 3}>
-                            {note.transcript}
-                          </Text>
-                        ) : (
-                          <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
-                        )}
-                        {note.transcript && note.transcript.length > 120 && (
-                          <TouchableOpacity onPress={() => setExpandedEvents(prev => ({ ...prev, [1000 + i]: !prev[1000 + i] }))}>
-                            <Text style={{ color: '#007AFF', fontSize: 12, marginTop: 4 }}>
-                              {expandedEvents[1000 + i] ? 'Show less' : 'Read full transcript'}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    );
-                  })}
-                  {voiceNotes.length > 1 && (
-                    <TouchableOpacity
-                      style={s.showMoreBtn}
-                      onPress={() => setShowAllNotes(!showAllNotes)}
-                      data-testid="show-more-voice-notes"
-                    >
-                      <Text style={s.showMoreText}>
-                        {showAllNotes ? 'Show Latest Only' : `Show All ${voiceNotes.length} Voice Notes`}
-                      </Text>
-                      <Ionicons name={showAllNotes ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ) : null}
-            </View>
-          )}
-
-          {/* ===== SUGGESTED ACTIONS ===== */}
-          {!isNewContact && !isEditing && suggestedActions.length > 0 && (
-            <View style={s.section} data-testid="suggested-actions">
-              <View style={s.sectionHeaderRow}>
-                <Text style={s.sectionHeader}>Next Actions</Text>
-                <View style={s.actionBadge}><Text style={s.actionBadgeText}>{suggestedActions.length}</Text></View>
-              </View>
-              {suggestedActions.map((action, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={s.suggestedCard}
-                  onPress={() => handleSuggestedAction(action)}
-                  activeOpacity={0.7}
-                  data-testid={`suggested-action-${i}`}
-                >
-                  <View style={[s.suggestedIcon, { backgroundColor: `${action.color}20` }]}>
-                    <Ionicons name={action.icon as any} size={20} color={action.color} />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={s.suggestedTitle}>{action.title}</Text>
-                    <Text style={s.suggestedDesc}>{action.description}</Text>
-                    {action.suggested_message && (
-                      <View style={s.suggestedMsgPreview}>
-                        <Text style={s.suggestedMsgText} numberOfLines={2}>"{action.suggested_message}"</Text>
-                      </View>
+                      </>
+                    ) : (
+                      <Text style={s.intelEmpty}>Tap to generate an AI briefing</Text>
                     )}
                   </View>
-                  <View style={[s.suggestedArrow, { backgroundColor: `${action.color}15` }]}>
-                    <Ionicons name="arrow-forward" size={16} color={action.color} />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {/* ===== RELATIONSHIP FEED (Activity) ===== */}
-          {!isNewContact && (
-            <View style={s.section} data-testid="activity-feed">
-              <View style={s.sectionHeaderRow}>
-                <Text style={s.sectionHeader}>Relationship Feed</Text>
-                <Text style={s.sectionHeaderCount}>{events.length} events</Text>
+                )}
               </View>
 
-              {/* Log Reply + Search Row */}
-              <View style={s.feedActionRow}>
-                <TouchableOpacity
-                  style={s.logReplyBtn}
-                  onPress={() => setShowLogReply(true)}
-                  data-testid="log-reply-btn"
-                >
-                  <Ionicons name="chatbubble-ellipses" size={16} color="#30D158" />
-                  <Text style={s.logReplyBtnText}>Log Customer Reply</Text>
-                </TouchableOpacity>
-                {events.length > 0 && (
-                  <View style={s.feedSearchRowCompact}>
-                    <Ionicons name="search" size={14} color={colors.textTertiary} />
-                    <TextInput
-                      style={s.feedSearchInputCompact}
-                      placeholder="Search..."
-                      placeholderTextColor={colors.textTertiary}
-                      value={feedSearch}
-                      onChangeText={setFeedSearch}
-                      data-testid="feed-search-input"
-                    />
-                    {feedSearch.length > 0 && (
-                      <TouchableOpacity onPress={() => setFeedSearch('')}>
-                        <Ionicons name="close-circle" size={14} color={colors.textTertiary} />
+              {/* Pinned Notes (view-only, inside feed) */}
+              {contact.notes ? (
+                <View style={[s.section, { paddingTop: 0 }]} data-testid="pinned-notes">
+                  <View style={s.pinnedNote}>
+                    <Ionicons name="document-text" size={14} color="#C9A962" style={{ marginTop: 2 }} />
+                    <Text style={s.pinnedNoteText} numberOfLines={3}>{contact.notes}</Text>
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Relationship Feed (Activity) */}
+              <View style={[s.section, { paddingTop: 0 }]} data-testid="activity-feed">
+                <View style={s.sectionHeaderRow}>
+                  <Text style={s.sectionHeader}>Activity</Text>
+                  <Text style={s.sectionHeaderCount}>{events.length} events</Text>
+                </View>
+
+                {/* Log Reply + Search Row */}
+                <View style={s.feedActionRow}>
+                  <TouchableOpacity
+                    style={s.logReplyBtn}
+                    onPress={() => setShowLogReply(true)}
+                    data-testid="log-reply-btn"
+                  >
+                    <Ionicons name="chatbubble-ellipses" size={16} color="#30D158" />
+                    <Text style={s.logReplyBtnText}>Log Customer Reply</Text>
+                  </TouchableOpacity>
+                  {events.length > 0 && (
+                    <View style={s.feedSearchRowCompact}>
+                      <Ionicons name="search" size={14} color={colors.textTertiary} />
+                      <TextInput
+                        style={s.feedSearchInputCompact}
+                        placeholder="Search..."
+                        placeholderTextColor={colors.textTertiary}
+                        value={feedSearch}
+                        onChangeText={setFeedSearch}
+                        data-testid="feed-search-input"
+                      />
+                      {feedSearch.length > 0 && (
+                        <TouchableOpacity onPress={() => setFeedSearch('')}>
+                          <Ionicons name="close-circle" size={14} color={colors.textTertiary} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                {/* Log Reply Inline Composer  - Chat Bubble Style */}
+                {showLogReply && (
+                  <View style={s.logReplyBubble} data-testid="log-reply-composer">
+                    <View style={s.bubbleTail} />
+                    <View style={s.bubbleHeader}>
+                      <Ionicons name="arrow-down-circle" size={18} color="#30D158" />
+                      <Text style={s.bubbleHeaderText}>Customer said...</Text>
+                      <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }} style={s.bubbleClose}>
+                        <Ionicons name="close-circle" size={22} color={colors.textTertiary} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={s.bubbleInputWrap}>
+                      <TextInput
+                        style={s.bubbleInput}
+                        placeholder="Paste what they said..."
+                        placeholderTextColor={colors.textTertiary}
+                        value={replyText}
+                        onChangeText={setReplyText}
+                        multiline
+                        data-testid="log-reply-input"
+                      />
+                    </View>
+                    {replyPhoto && (
+                      <View style={s.bubblePhotoPreview}>
+                        <Image source={{ uri: replyPhoto }} style={s.bubblePhotoThumb} resizeMode="cover" />
+                        <TouchableOpacity style={s.bubblePhotoRemove} onPress={() => setReplyPhoto(null)}>
+                          <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    <View style={s.bubbleFooter}>
+                      <TouchableOpacity style={s.bubblePhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
+                        <Ionicons name="image" size={20} color={colors.textTertiary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[s.bubbleSaveBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.35 }]}
+                        onPress={handleLogReply}
+                        disabled={(!replyText.trim() && !replyPhoto) || submittingReply}
+                        data-testid="log-reply-submit"
+                      >
+                        {submittingReply ? (
+                          <ActivityIndicator size="small" color={colors.text} />
+                        ) : (
+                          <>
+                            <Text style={s.bubbleSaveText}>Save Reply</Text>
+                            <Ionicons name="arrow-up-circle" size={22} color={colors.text} />
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {eventsLoading ? (
+                  <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
+                ) : filteredEvents.length === 0 ? (
+                  <View style={s.emptyFeed}>
+                    <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color={colors.surface} />
+                    <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : 'No activity yet'}</Text>
+                    <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
+                  </View>
+                ) : (
+                  <View style={s.feedTimeline}>
+                    {eventDateGroups.map((group, gi) => {
+                      const isCollapsed = collapsedDateGroups[group.label] === true;
+                      const groupEvents = showAllEvents ? group.events : (gi === 0 ? group.events.slice(0, INITIAL_EVENT_COUNT) : group.events);
+                      if (groupEvents.length === 0) return null;
+                      return (
+                        <View key={group.label}>
+                          <TouchableOpacity
+                            style={s.feedDateHeader}
+                            onPress={() => setCollapsedDateGroups(prev => ({ ...prev, [group.label]: !prev[group.label] }))}
+                            activeOpacity={0.7}
+                            data-testid={`feed-date-${group.label}`}
+                          >
+                            <View style={s.feedDateLine} />
+                            <Text style={s.feedDateText}>{group.label}</Text>
+                            <Text style={s.feedDateCount}>{group.events.length}</Text>
+                            <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color={colors.textTertiary} />
+                            <View style={s.feedDateLine} />
+                          </TouchableOpacity>
+
+                          {!isCollapsed && groupEvents.map((evt, i) => {
+                      const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
+                      const evtKey = `${group.label}-${i}`;
+                      const isExpanded = expandedEvents[evtKey] === true;
+                      const fullContent = evt.full_content || evt.description || '';
+                      const hasLink = !!evt.link;
+                      const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
+                      const isCustomerActivity = evt.category === 'customer_activity';
+                      const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'Personal SMS' : evt.channel === 'sms' ? 'SMS' : '';
+                      return (
+                        <TouchableOpacity
+                          key={evtKey}
+                          activeOpacity={0.7}
+                          onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))}
+                          style={[s.feedItem, isInbound && s.feedItemInbound]}
+                          data-testid={`feed-event-${evtKey}`}
+                        >
+                          {i < groupEvents.length - 1 && <View style={[s.feedLine, { backgroundColor: colors.border }]} />}
+                          <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
+                            <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
+                          </View>
+                          <View style={s.feedContent}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                                <Text style={[s.feedTitle, { color: colors.text }]}>{getEventTitle(evt)}</Text>
+                                {isInbound && (
+                                  <View style={s.inboundBadge}>
+                                    <Text style={s.inboundBadgeText}>INBOUND</Text>
+                                  </View>
+                                )}
+                                {isCustomerActivity && !isInbound && (
+                                  <View style={s.customerBadge}>
+                                    <Text style={s.customerBadgeText}>CUSTOMER</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textTertiary} />
+                            </View>
+                            {!isExpanded && evt.description ? (
+                              <Text style={[s.feedDesc, isInbound && { color: '#30D158', fontStyle: 'italic' }]} numberOfLines={1}>
+                                {isInbound ? `"${evt.description}"` : evt.description}
+                              </Text>
+                            ) : null}
+                            {isExpanded && (
+                              <View style={s.feedExpandedPreview}>
+                                {channelLabel ? (
+                                  <View style={[s.feedChannelBadge, { backgroundColor: `${evt.color || '#007AFF'}20` }]}>
+                                    <Ionicons name={evt.channel === 'email' ? 'mail' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
+                                    <Text style={[s.feedChannelText, { color: evt.color || '#007AFF' }]}>{channelLabel}</Text>
+                                  </View>
+                                ) : null}
+                                {evt.subject ? (
+                                  <Text style={s.feedSubject}>{evt.subject}</Text>
+                                ) : null}
+                                <View style={[s.feedMessageBubble, isInbound && s.feedMessageBubbleInbound]}>
+                                  <Text style={[s.feedMessageText, isInbound && { color: '#30D158' }]}>
+                                    {isInbound ? `"${fullContent}"` : fullContent}
+                                  </Text>
+                                </View>
+                                {evt.has_photo && (
+                                  <View style={s.feedPhotoIndicator}>
+                                    <Ionicons name="image" size={14} color="#30D158" />
+                                    <Text style={s.feedPhotoText}>Photo attached</Text>
+                                  </View>
+                                )}
+                                {hasLink && (
+                                  <TouchableOpacity
+                                    style={s.feedViewLink}
+                                    onPress={(e) => {
+                                      e.stopPropagation?.();
+                                      router.push(evt.link as any);
+                                    }}
+                                    data-testid={`feed-view-link-${evtKey}`}
+                                  >
+                                    <Ionicons name="open-outline" size={14} color="#007AFF" />
+                                    <Text style={s.feedViewLinkText}>View Card</Text>
+                                  </TouchableOpacity>
+                                )}
+                              </View>
+                            )}
+                            <Text style={s.feedTime}>{formatEventTime(evt.timestamp)}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                        </View>
+                      );
+                    })}
+                    {filteredEvents.length > INITIAL_EVENT_COUNT && (
+                      <TouchableOpacity
+                        style={s.showMoreBtn}
+                        onPress={() => setShowAllEvents(!showAllEvents)}
+                        data-testid="show-more-events-button"
+                      >
+                        <Text style={s.showMoreText}>
+                          {showAllEvents ? 'Show Less' : `Show All ${filteredEvents.length} Events`}
+                        </Text>
+                        <Ionicons name={showAllEvents ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
                       </TouchableOpacity>
                     )}
                   </View>
                 )}
               </View>
 
-              {/* Log Reply Inline Composer  - Chat Bubble Style */}
-              {showLogReply && (
-                <View style={s.logReplyBubble} data-testid="log-reply-composer">
-                  {/* Bubble tail indicator */}
-                  <View style={s.bubbleTail} />
-                  <View style={s.bubbleHeader}>
-                    <Ionicons name="arrow-down-circle" size={18} color="#30D158" />
-                    <Text style={s.bubbleHeaderText}>Customer said...</Text>
-                    <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }} style={s.bubbleClose}>
-                      <Ionicons name="close-circle" size={22} color={colors.textTertiary} />
-                    </TouchableOpacity>
+              {/* Conversations Link */}
+              <TouchableOpacity
+                style={s.conversationLink}
+                onPress={() => router.push({
+                  pathname: `/thread/${id}`,
+                  params: {
+                    contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                    contact_phone: contact.phone || '',
+                    contact_email: contact.email || contact.email_work || '',
+                  }
+                })}
+                data-testid="go-to-conversation"
+              >
+                <View style={[s.quickActionIcon, { backgroundColor: '#007AFF20' }]}>
+                  <Ionicons name="chatbubbles" size={20} color="#007AFF" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={s.conversationLinkTitle}>View Conversation</Text>
+                  <Text style={s.conversationLinkSub}>Open full message thread</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* ===== DETAILS TAB ===== */}
+          {!isNewContact && !isEditing && contactTab === 'details' && (
+            <>
+              {/* Voice Notes */}
+              {Platform.OS === 'web' && (
+                <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
+                  <View style={s.sectionHeaderRow}>
+                    <Text style={s.sectionHeader}>Voice Notes</Text>
+                    <Text style={s.sectionHeaderCount}>{voiceNotes.length} {voiceNotes.length === 1 ? 'note' : 'notes'}</Text>
                   </View>
-                  <View style={s.bubbleInputWrap}>
-                    <TextInput
-                      style={s.bubbleInput}
-                      placeholder="Paste what they said..."
-                      placeholderTextColor={colors.textTertiary}
-                      value={replyText}
-                      onChangeText={setReplyText}
-                      multiline
-                      data-testid="log-reply-input"
-                    />
-                  </View>
-                  {replyPhoto && (
-                    <View style={s.bubblePhotoPreview}>
-                      <Image source={{ uri: replyPhoto }} style={s.bubblePhotoThumb} resizeMode="cover" />
-                      <TouchableOpacity style={s.bubblePhotoRemove} onPress={() => setReplyPhoto(null)}>
-                        <Ionicons name="close-circle" size={22} color="#FF3B30" />
+
+                  {isRecording ? (
+                    <View style={s.vnRecording} data-testid="voice-recording-indicator">
+                      <View style={s.vnRecordingDot} />
+                      <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
+                      <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(MAX_RECORDING_SECONDS)}</Text>
+                      <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
+                        <Ionicons name="stop" size={18} color={colors.text} />
+                        <Text style={s.vnStopText}>Stop</Text>
                       </TouchableOpacity>
                     </View>
+                  ) : uploadingVoiceNote ? (
+                    <View style={s.vnRecording}>
+                      <ActivityIndicator size="small" color="#34C759" />
+                      <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
+                      <Ionicons name="mic" size={20} color="#34C759" />
+                      <Text style={s.vnRecordText}>Record a Voice Note</Text>
+                    </TouchableOpacity>
                   )}
-                  <View style={s.bubbleFooter}>
-                    <TouchableOpacity style={s.bubblePhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
-                      <Ionicons name="image" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[s.bubbleSaveBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.35 }]}
-                      onPress={handleLogReply}
-                      disabled={(!replyText.trim() && !replyPhoto) || submittingReply}
-                      data-testid="log-reply-submit"
-                    >
-                      {submittingReply ? (
-                        <ActivityIndicator size="small" color={colors.text} />
-                      ) : (
-                        <>
-                          <Text style={s.bubbleSaveText}>Save Reply</Text>
-                          <Ionicons name="arrow-up-circle" size={22} color={colors.text} />
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
 
-              {eventsLoading ? (
-                <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
-              ) : filteredEvents.length === 0 ? (
-                <View style={s.emptyFeed}>
-                  <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color={colors.surface} />
-                  <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : 'No activity yet'}</Text>
-                  <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
-                </View>
-              ) : (
-                <View style={s.feedTimeline}>
-                  {eventDateGroups.map((group, gi) => {
-                    const isCollapsed = collapsedDateGroups[group.label] === true;
-                    const groupEvents = showAllEvents ? group.events : (gi === 0 ? group.events.slice(0, INITIAL_EVENT_COUNT) : group.events);
-                    if (groupEvents.length === 0) return null;
-                    return (
-                      <View key={group.label}>
-                        {/* Collapsible date header */}
-                        <TouchableOpacity
-                          style={s.feedDateHeader}
-                          onPress={() => setCollapsedDateGroups(prev => ({ ...prev, [group.label]: !prev[group.label] }))}
-                          activeOpacity={0.7}
-                          data-testid={`feed-date-${group.label}`}
-                        >
-                          <View style={s.feedDateLine} />
-                          <Text style={s.feedDateText}>{group.label}</Text>
-                          <Text style={s.feedDateCount}>{group.events.length}</Text>
-                          <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color={colors.textTertiary} />
-                          <View style={s.feedDateLine} />
-                        </TouchableOpacity>
-
-                        {/* Events within this date group */}
-                        {!isCollapsed && groupEvents.map((evt, i) => {
-                    const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
-                    const evtKey = `${group.label}-${i}`;
-                    const isExpanded = expandedEvents[evtKey] === true;
-                    const fullContent = evt.full_content || evt.description || '';
-                    const hasLink = !!evt.link;
-                    const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
-                    const isCustomerActivity = evt.category === 'customer_activity';
-                    const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'Personal SMS' : evt.channel === 'sms' ? 'SMS' : '';
-                    return (
-                      <TouchableOpacity
-                        key={evtKey}
-                        activeOpacity={0.7}
-                        onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))}
-                        style={[s.feedItem, isInbound && s.feedItemInbound]}
-                        data-testid={`feed-event-${evtKey}`}
-                      >
-                        {i < groupEvents.length - 1 && <View style={[s.feedLine, { backgroundColor: colors.border }]} />}
-                        <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
-                          <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
-                        </View>
-                        <View style={s.feedContent}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                              <Text style={[s.feedTitle, { color: colors.text }]}>{getEventTitle(evt)}</Text>
-                              {isInbound && (
-                                <View style={s.inboundBadge}>
-                                  <Text style={s.inboundBadgeText}>INBOUND</Text>
-                                </View>
-                              )}
-                              {isCustomerActivity && !isInbound && (
-                                <View style={s.customerBadge}>
-                                  <Text style={s.customerBadgeText}>CUSTOMER</Text>
-                                </View>
-                              )}
-                            </View>
-                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textTertiary} />
-                          </View>
-                          {!isExpanded && evt.description ? (
-                            <Text style={[s.feedDesc, isInbound && { color: '#30D158', fontStyle: 'italic' }]} numberOfLines={1}>
-                              {isInbound ? `"${evt.description}"` : evt.description}
-                            </Text>
-                          ) : null}
-                          {isExpanded && (
-                            <View style={s.feedExpandedPreview}>
-                              {channelLabel ? (
-                                <View style={[s.feedChannelBadge, { backgroundColor: `${evt.color || '#007AFF'}20` }]}>
-                                  <Ionicons name={evt.channel === 'email' ? 'mail' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
-                                  <Text style={[s.feedChannelText, { color: evt.color || '#007AFF' }]}>{channelLabel}</Text>
-                                </View>
-                              ) : null}
-                              {evt.subject ? (
-                                <Text style={s.feedSubject}>{evt.subject}</Text>
-                              ) : null}
-                              <View style={[s.feedMessageBubble, isInbound && s.feedMessageBubbleInbound]}>
-                                <Text style={[s.feedMessageText, isInbound && { color: '#30D158' }]}>
-                                  {isInbound ? `"${fullContent}"` : fullContent}
-                                </Text>
+                  {voiceNotesLoading ? (
+                    <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
+                  ) : voiceNotes.length > 0 ? (
+                    <View style={{ marginTop: 12 }}>
+                      {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note, i) => {
+                        const isPlaying = playingNoteId === note.id;
+                        return (
+                          <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
+                            <View style={s.vnCardHeader}>
+                              <TouchableOpacity
+                                style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
+                                onPress={() => playVoiceNote(note.id, note.audio_url)}
+                                data-testid={`play-voice-note-${i}`}
+                              >
+                                <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
+                              </TouchableOpacity>
+                              <View style={{ flex: 1, marginLeft: 10 }}>
+                                <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
+                                <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
                               </View>
-                              {evt.has_photo && (
-                                <View style={s.feedPhotoIndicator}>
-                                  <Ionicons name="image" size={14} color="#30D158" />
-                                  <Text style={s.feedPhotoText}>Photo attached</Text>
-                                </View>
-                              )}
-                              {hasLink && (
-                                <TouchableOpacity
-                                  style={s.feedViewLink}
-                                  onPress={(e) => {
-                                    e.stopPropagation?.();
-                                    router.push(evt.link as any);
-                                  }}
-                                  data-testid={`feed-view-link-${evtKey}`}
-                                >
-                                  <Ionicons name="open-outline" size={14} color="#007AFF" />
-                                  <Text style={s.feedViewLinkText}>View Card</Text>
-                                </TouchableOpacity>
-                              )}
+                              <TouchableOpacity onPress={() => deleteVoiceNote(note.id)} style={{ padding: 4 }} data-testid={`delete-voice-note-${i}`}>
+                                <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
+                              </TouchableOpacity>
                             </View>
-                          )}
-                          <Text style={s.feedTime}>{formatEventTime(evt.timestamp)}</Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                      </View>
-                    );
-                  })}
-                  {filteredEvents.length > INITIAL_EVENT_COUNT && (
-                    <TouchableOpacity
-                      style={s.showMoreBtn}
-                      onPress={() => setShowAllEvents(!showAllEvents)}
-                      data-testid="show-more-events-button"
-                    >
-                      <Text style={s.showMoreText}>
-                        {showAllEvents ? 'Show Less' : `Show All ${filteredEvents.length} Events`}
-                      </Text>
-                      <Ionicons name={showAllEvents ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
-                    </TouchableOpacity>
-                  )}
+                            {note.transcript ? (
+                              <Text style={s.vnTranscript} numberOfLines={expandedEvents[1000 + i] ? undefined : 3}>
+                                {note.transcript}
+                              </Text>
+                            ) : (
+                              <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
+                            )}
+                            {note.transcript && note.transcript.length > 120 && (
+                              <TouchableOpacity onPress={() => setExpandedEvents(prev => ({ ...prev, [1000 + i]: !prev[1000 + i] }))}>
+                                <Text style={{ color: '#007AFF', fontSize: 12, marginTop: 4 }}>
+                                  {expandedEvents[1000 + i] ? 'Show less' : 'Read full transcript'}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        );
+                      })}
+                      {voiceNotes.length > 1 && (
+                        <TouchableOpacity
+                          style={s.showMoreBtn}
+                          onPress={() => setShowAllNotes(!showAllNotes)}
+                          data-testid="show-more-voice-notes"
+                        >
+                          <Text style={s.showMoreText}>
+                            {showAllNotes ? 'Show Latest Only' : `Show All ${voiceNotes.length} Voice Notes`}
+                          </Text>
+                          <Ionicons name={showAllNotes ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ) : null}
                 </View>
               )}
-            </View>
+
+              {/* Notes (editable view in details) */}
+              {contact.notes ? (
+                <View style={s.section}>
+                  <Text style={s.sectionHeader}>Notes</Text>
+                  <Text style={s.viewText}>{contact.notes}</Text>
+                </View>
+              ) : null}
+
+              {/* Important Dates */}
+              {(contact.birthday || contact.anniversary || contact.date_sold || contact.custom_dates.length > 0) && (
+                <View style={s.section}>
+                  <Text style={s.sectionHeader}>Important Dates</Text>
+                  {contact.birthday && (
+                    <View style={s.viewRow}>
+                      <Ionicons name="gift" size={16} color="#FF9500" />
+                      <Text style={s.viewRowLabel}>Birthday</Text>
+                      <Text style={s.viewRowValue}>{format(contact.birthday, 'MMM d, yyyy')}</Text>
+                    </View>
+                  )}
+                  {contact.anniversary && (
+                    <View style={s.viewRow}>
+                      <Ionicons name="heart" size={16} color="#FF2D55" />
+                      <Text style={s.viewRowLabel}>Anniversary</Text>
+                      <Text style={s.viewRowValue}>{format(contact.anniversary, 'MMM d, yyyy')}</Text>
+                    </View>
+                  )}
+                  {contact.date_sold && (
+                    <View style={s.viewRow}>
+                      <Ionicons name="car" size={16} color="#34C759" />
+                      <Text style={s.viewRowLabel}>Date Sold</Text>
+                      <Text style={s.viewRowValue}>{format(contact.date_sold, 'MMM d, yyyy')}</Text>
+                    </View>
+                  )}
+                  {contact.custom_dates.map((cd, i) => cd.date && (
+                    <View key={i} style={s.viewRow}>
+                      <Ionicons name="calendar-outline" size={16} color="#007AFF" />
+                      <Text style={s.viewRowLabel}>{cd.name}</Text>
+                      <Text style={s.viewRowValue}>{format(cd.date, 'MMM d, yyyy')}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Referrals */}
+              {(contact.referred_by_name || referrals.length > 0) && (
+                <View style={s.section}>
+                  <Text style={s.sectionHeader}>Referrals</Text>
+                  {contact.referred_by_name && (
+                    <View style={s.viewRow}>
+                      <Ionicons name="people" size={16} color="#34C759" />
+                      <Text style={s.viewRowLabel}>Referred by</Text>
+                      <Text style={s.viewRowValue}>{contact.referred_by_name}</Text>
+                    </View>
+                  )}
+                  {contact.referral_count > 0 && (
+                    <View style={s.viewRow}>
+                      <Ionicons name="trophy" size={16} color="#FF9500" />
+                      <Text style={s.viewRowLabel}>Referred</Text>
+                      <Text style={s.viewRowValue}>{contact.referral_count} customer{contact.referral_count > 1 ? 's' : ''}</Text>
+                    </View>
+                  )}
+                  {referrals.map(r => (
+                    <TouchableOpacity key={r._id} style={s.referralItem} onPress={() => router.push(`/contact/${r._id}`)}>
+                      <View style={s.referralAvatar}><Text style={s.referralAvatarText}>{r.first_name?.[0]}{r.last_name?.[0]}</Text></View>
+                      <Text style={s.referralName}>{r.first_name} {r.last_name || ''}</Text>
+                      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Campaigns */}
+              {contactEnrollments.length > 0 && (
+                <View style={s.section}>
+                  <Text style={s.sectionHeader}>Campaigns</Text>
+                  {contactEnrollments.map((e, i) => (
+                    <View key={i} style={s.campaignCard}>
+                      <View style={[s.quickActionIcon, { backgroundColor: e.status === 'completed' ? '#34C75920' : '#007AFF20' }]}>
+                        <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={18}
+                          color={e.status === 'completed' ? '#34C759' : '#007AFF'} />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={s.campaignName}>{e.campaign_name}</Text>
+                        <Text style={s.campaignSub}>
+                          {e.status === 'completed' ? 'Completed' : `Step ${e.current_step} of ${e.total_steps}`}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
           )}
 
-          {/* ===== CONVERSATIONS LINK ===== */}
-          {!isNewContact && (
-            <TouchableOpacity
-              style={s.conversationLink}
-              onPress={() => router.push({
-                pathname: `/thread/${id}`,
-                params: {
-                  contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                  contact_phone: contact.phone || '',
-                  contact_email: contact.email || contact.email_work || '',
-                }
-              })}
-              data-testid="go-to-conversation"
-            >
-              <View style={[s.quickActionIcon, { backgroundColor: '#007AFF20' }]}>
-                <Ionicons name="chatbubbles" size={20} color="#007AFF" />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={s.conversationLinkTitle}>View Conversation</Text>
-                <Text style={s.conversationLinkSub}>Open full message thread</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-
-          {/* ===== REMAINING EDIT FIELDS (Important Dates moved to top) ===== */}
+          {/* ===== REMAINING EDIT FIELDS ===== */}
           {isEditing && (
             <>
               {/* Referral */}
@@ -2249,103 +2336,6 @@ export default function ContactDetailScreen() {
                   <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                   <Text style={s.deleteBtnText}>Delete Contact</Text>
                 </TouchableOpacity>
-              )}
-            </>
-          )}
-
-          {/* ===== VIEW-ONLY DETAILS (when not editing) ===== */}
-          {!isEditing && !isNewContact && (
-            <>
-              {/* Notes (view) */}
-              {contact.notes ? (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Notes</Text>
-                  <Text style={s.viewText}>{contact.notes}</Text>
-                </View>
-              ) : null}
-
-              {/* Important Dates (view) */}
-              {(contact.birthday || contact.anniversary || contact.date_sold || contact.custom_dates.length > 0) && (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Important Dates</Text>
-                  {contact.birthday && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="gift" size={16} color="#FF9500" />
-                      <Text style={s.viewRowLabel}>Birthday</Text>
-                      <Text style={s.viewRowValue}>{format(contact.birthday, 'MMM d, yyyy')}</Text>
-                    </View>
-                  )}
-                  {contact.anniversary && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="heart" size={16} color="#FF2D55" />
-                      <Text style={s.viewRowLabel}>Anniversary</Text>
-                      <Text style={s.viewRowValue}>{format(contact.anniversary, 'MMM d, yyyy')}</Text>
-                    </View>
-                  )}
-                  {contact.date_sold && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="car" size={16} color="#34C759" />
-                      <Text style={s.viewRowLabel}>Date Sold</Text>
-                      <Text style={s.viewRowValue}>{format(contact.date_sold, 'MMM d, yyyy')}</Text>
-                    </View>
-                  )}
-                  {contact.custom_dates.map((cd, i) => cd.date && (
-                    <View key={i} style={s.viewRow}>
-                      <Ionicons name="calendar-outline" size={16} color="#007AFF" />
-                      <Text style={s.viewRowLabel}>{cd.name}</Text>
-                      <Text style={s.viewRowValue}>{format(cd.date, 'MMM d, yyyy')}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Referrals (view) */}
-              {(contact.referred_by_name || referrals.length > 0) && (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Referrals</Text>
-                  {contact.referred_by_name && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="people" size={16} color="#34C759" />
-                      <Text style={s.viewRowLabel}>Referred by</Text>
-                      <Text style={s.viewRowValue}>{contact.referred_by_name}</Text>
-                    </View>
-                  )}
-                  {contact.referral_count > 0 && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="trophy" size={16} color="#FF9500" />
-                      <Text style={s.viewRowLabel}>Referred</Text>
-                      <Text style={s.viewRowValue}>{contact.referral_count} customer{contact.referral_count > 1 ? 's' : ''}</Text>
-                    </View>
-                  )}
-                  {referrals.map(r => (
-                    <TouchableOpacity key={r._id} style={s.referralItem} onPress={() => router.push(`/contact/${r._id}`)}>
-                      <View style={s.referralAvatar}><Text style={s.referralAvatarText}>{r.first_name?.[0]}{r.last_name?.[0]}</Text></View>
-                      <Text style={s.referralName}>{r.first_name} {r.last_name || ''}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Campaigns (view) */}
-              {contactEnrollments.length > 0 && (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Campaigns</Text>
-                  {contactEnrollments.map((e, i) => (
-                    <View key={i} style={s.campaignCard}>
-                      <View style={[s.quickActionIcon, { backgroundColor: e.status === 'completed' ? '#34C75920' : '#007AFF20' }]}>
-                        <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={18}
-                          color={e.status === 'completed' ? '#34C759' : '#007AFF'} />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={s.campaignName}>{e.campaign_name}</Text>
-                        <Text style={s.campaignSub}>
-                          {e.status === 'completed' ? 'Completed' : `Step ${e.current_step} of ${e.total_steps}`}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
               )}
             </>
           )}
@@ -3313,8 +3303,7 @@ const getS = (colors: any) => StyleSheet.create({
 
   // Hero tags strip
   heroTagsStrip: {
-    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4,
-    borderTopWidth: 1, borderTopColor: colors.border,
+    paddingHorizontal: 16, paddingTop: 6, paddingBottom: 4,
   },
   heroTagsStripHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
@@ -3368,6 +3357,51 @@ const getS = (colors: any) => StyleSheet.create({
   heroCampaignDate: {
     fontSize: 10, fontWeight: '700', color: colors.text,
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
+  },
+
+  // Tab bar (Feed / Details)
+  tabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabBtnActive: {
+    borderBottomColor: '#C9A962',
+  },
+  tabBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textTertiary,
+  },
+  tabBtnTextActive: {
+    color: colors.text,
+  },
+
+  // Pinned note (feed tab)
+  pinnedNote: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#C9A962',
+  },
+  pinnedNoteText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
 
   // Sticky action bar → replaced by Composer
