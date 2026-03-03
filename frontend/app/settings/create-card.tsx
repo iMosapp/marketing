@@ -29,10 +29,11 @@ export default function CreateCardPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const { type, prefillName, prefillPhone, prefillEmail, returnToThread } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string }>();
+  const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
   const meta = TYPE_META[cardType] || TYPE_META.congrats;
+  const isFromContact = !!return_to_contact || !!returnToThread;
 
   const [template, setTemplate] = useState<any>(null);
   const [customerName, setCustomerName] = useState(prefillName || '');
@@ -110,6 +111,13 @@ export default function CreateCardPage() {
         if (customerEmail) qs.set('contact_email', customerEmail);
         qs.set('prefill', prefillMsg);
         router.replace(`/thread/${returnToThread}?${qs.toString()}` as any);
+        return;
+      }
+
+      // If we came from a contact page, go back and drop the URL in the composer
+      if (return_to_contact && for_contact) {
+        const prefillMsg = `Hey ${customerName}! ${shareUrl}`;
+        router.replace(`/contact/${for_contact}?prefill=${encodeURIComponent(prefillMsg)}` as any);
         return;
       }
 
@@ -373,7 +381,7 @@ export default function CreateCardPage() {
               <Ionicons name="create-outline" size={20} color={accent} /><Text style={[s.previewEditText, { color: accent }]}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.previewSendBtn, { backgroundColor: accent }, creating && { opacity: 0.5 }]} onPress={createCard} disabled={creating} data-testid="card-preview-send">
-              {creating ? <ActivityIndicator size="small" color={colors.text} /> : <><Ionicons name="send" size={18} color={colors.text} /><Text style={s.previewSendText}>Create & Send</Text></>}
+              {creating ? <ActivityIndicator size="small" color={colors.text} /> : <><Ionicons name="send" size={18} color={colors.text} /><Text style={s.previewSendText}>{isFromContact ? 'Create Card' : 'Create & Send'}</Text></>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -396,11 +404,20 @@ export default function CreateCardPage() {
             <View style={s.photoPlaceholder}><Ionicons name="camera" size={36} color={colors.textSecondary} /><Text style={s.photoPlaceholderText}>Tap to add photo</Text></View>
           )}
         </TouchableOpacity>
-        <Text style={s.fieldLabel}>RECIPIENT NAME *</Text>
-        <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
-        <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
-        <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
-        <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={colors.textSecondary} keyboardType="email-address" autoCapitalize="none" />
+        {!isFromContact && (
+          <>
+            <Text style={s.fieldLabel}>RECIPIENT NAME *</Text>
+            <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
+            <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+            <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={colors.textSecondary} keyboardType="email-address" autoCapitalize="none" />
+          </>
+        )}
+        {isFromContact && customerName ? (
+          <View style={{ marginTop: 8, marginBottom: 4 }}>
+            <Text style={{ fontSize: 15, color: colors.textSecondary }}>For: <Text style={{ fontWeight: '600', color: colors.text }}>{customerName}</Text></Text>
+          </View>
+        ) : null}
         <Text style={[s.fieldLabel, { marginTop: 16 }]}>PERSONAL MESSAGE (OPTIONAL)</Text>
         <TextInput style={[s.input, { height: 100, textAlignVertical: 'top' }]} value={customMessage} onChangeText={setCustomMessage} placeholder="Add a personal message..." placeholderTextColor={colors.textSecondary} multiline />
         <TouchableOpacity style={[s.createBtn, { backgroundColor: accent }, (!customerName.trim() || !photo) && { opacity: 0.5 }]} onPress={handlePreview} disabled={!customerName.trim() || !photo} data-testid="card-preview-btn">

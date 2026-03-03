@@ -230,7 +230,7 @@ export default function ContactDetailScreen() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id, prefill } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -353,6 +353,13 @@ export default function ContactDetailScreen() {
   const [composerMessage, setComposerMessage] = useState('');
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
+
+  // Populate composer from query param (e.g. returning from create-card)
+  useEffect(() => {
+    if (prefill && typeof prefill === 'string') {
+      setComposerMessage(prefill);
+    }
+  }, [prefill]);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestion, setShowAISuggestion] = useState(false);
