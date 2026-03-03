@@ -19,7 +19,15 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 
 ### Completed (Mar 3, 2026 - This Session)
 - **APP DIRECTORY PAGE**: Created static `/appdirectory/` page with 60+ pages organized by category, search filtering, collapsible sections. Tested and validated.
-- **LOGIN PAGE LIGHT THEME**: Fixed `/auth/login` from dark theme to white/light theme matching the signup page. Forced light colors. Tested with credentials.
+- **LOGIN PAGE LIGHT THEME**: Fixed `/auth/login` from dark theme to white/light theme. Tested with credentials.
+- **FORGOT PASSWORD LIGHT THEME**: Fixed `/auth/forgot-password` from dark to white/light theme.
+- **SALES PRESENTATION REWORK**: Complete rewrite of `/imos/salespresentation` — 10 slides, clean white theme, color-coded accents. CTA now routes to demo form with `?source=sales_presentation` tracking.
+- **ONBOARDING SLIDES LIGHT THEME**: Updated all onboarding slides (slideLibraries.ts, onboarding/index.tsx, onboarding-preview.tsx, admin/onboarding-preview.tsx) from dark/gold to light/blue theme.
+- **PRIVACY POLICY**: Complete rewrite with 10 official legal sections covering data collection, usage, storage, sharing, rights, retention, cookies, children's privacy, changes, and contact.
+- **TERMS OF SERVICE**: Complete rewrite with 13 official legal sections covering acceptance, service description, accounts, acceptable use, billing, IP, data ownership, API terms, liability, termination, modifications, governing law, and contact.
+- **PRICING UPDATE**: Starter plan changed from $49 to $79/mo.
+- **LANDING PAGE LIGHT THEME**: Updated `/landing.html` CSS from dark/gold (--bg:#000, --gold:#C9A962) to light/blue (--bg:#FFFFFF, --gold:#007AFF).
+- **4 AD PAGES LIGHT THEME**: Updated `ad-digital-card.html`, `ad-reviews.html`, `ad-showcase.html`, `ad-autopilot.html` from dark/gold to light/blue theme.
 
 ### Completed (Mar 3, 2026 - Previous Session)
 - **MARKETING SITE REDESIGN**: Complete rewrite of `/app/marketing/build/index.html`
@@ -82,8 +90,19 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 - `/app/marketing/generate_pages.py` -- Script to generate all static pages
 - `/app/frontend/public/marketing.html` -- Preview copy of marketing site
 - `/app/frontend/app/auth/login.tsx` -- Login page (FIXED: light theme)
+- `/app/frontend/app/auth/forgot-password.tsx` -- Forgot password (FIXED: light theme)
 - `/app/frontend/app/auth/signup.tsx` -- Signup page (light theme)
 - `/app/frontend/app/imos/_components.tsx` -- Shared header/footer (new logo, white theme)
+- `/app/frontend/app/imos/salespresentation.tsx` -- Sales presentation (REWRITTEN: 10 slides)
+- `/app/frontend/app/imos/privacy.tsx` -- Privacy policy (REWRITTEN: 10 sections)
+- `/app/frontend/app/imos/terms.tsx` -- Terms of service (REWRITTEN: 13 sections)
+- `/app/frontend/app/imos/pricing.tsx` -- Pricing page (Starter: $79)
+- `/app/frontend/app/onboarding/slideLibraries.ts` -- Onboarding slides (FIXED: light theme)
+- `/app/frontend/public/landing.html` -- Landing page (FIXED: light/blue theme)
+- `/app/frontend/public/ad-digital-card.html` -- Ad page (FIXED: light/blue)
+- `/app/frontend/public/ad-reviews.html` -- Ad page (FIXED: light/blue)
+- `/app/frontend/public/ad-showcase.html` -- Ad page (FIXED: light/blue)
+- `/app/frontend/public/ad-autopilot.html` -- Ad page (FIXED: light/blue)
 - `/app/frontend/app/thread/[id].tsx` -- Message thread (light mode fix pending test)
 - `/app/frontend/app/contact/[id].tsx` -- Contact page (paused automation visual)
 - `/app/marketing/vercel.json` -- Vercel deployment config
