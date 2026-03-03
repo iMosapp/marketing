@@ -263,7 +263,8 @@ window.addEventListener('scroll',()=>document.querySelector('nav').classList.tog
 
 // Show source badge
 (function(){
-  const s=new URLSearchParams(window.location.search).get('source');
+  const p=new URLSearchParams(window.location.search);
+  const s=p.get('source');
   if(s){
     const label=s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
     document.getElementById('source-label').textContent='From: '+label;
@@ -282,11 +283,16 @@ async function submitDemo(){
   if(!email.includes('@')){alert('Please enter a valid email.');return;}
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Sending...';
-  const urlSource=new URLSearchParams(window.location.search).get('source')||'marketing_site_demo';
+  const p=new URLSearchParams(window.location.search);
+  const urlSource=p.get('source')||'marketing_site_demo';
+  const payload={name,email,company,phone,team_size:team,message,source:urlSource,
+    utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',
+    utm_campaign:p.get('utm_campaign')||'',utm_content:p.get('utm_content')||'',
+    utm_term:p.get('utm_term')||'',referrer:document.referrer||''};
   try{
     const res=await fetch('https://app.imonsocial.com/api/demo-requests',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,email,company,phone,team_size:team,message,source:urlSource})
+      body:JSON.stringify(payload)
     });
     if(res.ok){
       document.getElementById('demo-form').style.display='none';

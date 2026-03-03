@@ -20,13 +20,22 @@ export default function DemoScreen() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // Detect source from URL params
+  // Detect source and UTM params from URL
   const [source, setSource] = useState('imos_demo_page');
+  const [utmParams, setUtmParams] = useState<Record<string, string>>({});
   React.useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlSource = params.get('source');
       if (urlSource) setSource(urlSource);
+      setUtmParams({
+        utm_source: params.get('utm_source') || '',
+        utm_medium: params.get('utm_medium') || '',
+        utm_campaign: params.get('utm_campaign') || '',
+        utm_content: params.get('utm_content') || '',
+        utm_term: params.get('utm_term') || '',
+        referrer: document.referrer || '',
+      });
     }
   }, []);
 
@@ -44,6 +53,7 @@ export default function DemoScreen() {
         team_size: teamSize.trim(),
         message: message.trim(),
         source,
+        ...utmParams,
       });
       setSent(true);
     } catch {

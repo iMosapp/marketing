@@ -1,0 +1,73 @@
+{
+  "summary": "Lead tracking system with full-funnel attribution tested successfully. All 10 features verified: Backend API (POST/GET demo-requests, analytics), channel classification, source parsing, marketing pages with source-tagged CTAs, static demo form with source badge, and admin lead-tracking dashboard.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "POST_demo_requests_basic": {
+      "status": "PASS",
+      "details": "Accepts name, email, source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, referrer fields"
+    },
+    "POST_demo_requests_channel_classification": {
+      "status": "PASS",
+      "details": "Auto-classifies channels: facebook+paid_social=paid_social, google+cpc=paid_search, website source=organic"
+    },
+    "POST_demo_requests_source_parsing": {
+      "status": "PASS",
+      "details": "Parses source into source_page and source_position (e.g., 'digital_card_hero' -> page='digital_card', position='hero')"
+    },
+    "GET_analytics_endpoint": {
+      "status": "PASS",
+      "details": "Returns summary, by_channel, by_page, by_position, by_source, by_campaign, daily_trend, recent_requests"
+    },
+    "GET_demo_requests_list": {
+      "status": "PASS",
+      "details": "Returns all demo requests with proper fields (name, email, source, channel, created_at, etc.)"
+    },
+    "marketing_homepage_source_tracking": {
+      "status": "PASS",
+      "details": "Nav has ?source=homepage_nav, Hero has ?source=homepage_hero, CTA has ?source=homepage_cta, Footer has ?source=homepage_footer"
+    },
+    "digital_card_page_source_tracking": {
+      "status": "PASS",
+      "details": "Hero CTA has ?source=digital_card_hero, Nav has ?source=digital_card_nav, Bottom CTA has ?source=digital_card_cta, Footer has ?source=digital_card_footer"
+    },
+    "static_demo_form_source_badge": {
+      "status": "PASS",
+      "details": "/demo/?source=pricing_hero shows 'From: Pricing Hero' badge correctly"
+    },
+    "admin_lead_tracking_dashboard": {
+      "status": "PASS",
+      "details": "Dashboard loads with summary cards (Total Requests, All Time, Top Page, Top Channel), By Channel breakdown, By Page breakdown, By CTA Position section"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_demo_requests.py",
+    "/app/test_reports/pytest/pytest_demo_requests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_demo_requests.py"
+  ],
+  "success_rate": {
+    "backend": "100% (21/21 tests passed)",
+    "frontend": "100% (all features verified)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!"
+  },
+  "seed_data_creation": "Test data auto-created during backend testing (TEST_ prefixed emails). Database had 26 demo requests at test time.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Lead tracking system fully functional. Backend tests in /app/backend/tests/test_demo_requests.py cover POST/GET APIs, channel classification, source parsing, and analytics. Marketing pages (static HTML) served from /app/marketing/build/. Admin dashboard at /admin/lead-tracking displays all analytics correctly. Note: Expo ScrollView in admin page doesn't respond to window.scrollTo but data loads correctly. Twilio SMS remains MOCKED.",
+  "mocked_apis": {
+    "Twilio SMS": "Mocked - not testing actual SMS sending"
+  }
+}
