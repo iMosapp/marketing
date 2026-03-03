@@ -190,10 +190,8 @@ export function ImosFooter() {
 const styles = StyleSheet.create({
   /* ===== HEADER ===== */
   headerOuter: {
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
-    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' } : {}),
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100 } : {}),
   },
   headerInner: {
     flexDirection: 'row',

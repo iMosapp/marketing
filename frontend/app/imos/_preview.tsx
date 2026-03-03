@@ -205,7 +205,7 @@ const mp = StyleSheet.create({
   chatMe: { backgroundColor: '#007AFF', alignSelf: 'flex-end', borderBottomRightRadius: 4 },
   chatThem: { backgroundColor: '#1A1A1A', alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
   chatText: { fontSize: 13, color: '#1D1D1F' },
-  chatTime: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 4, textAlign: 'right' },
+  chatTime: { fontSize: 9, color: '#AEAEB2', marginTop: 4, textAlign: 'right' },
   cardsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   card: { width: '47%', backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12 },
   cardIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },

@@ -208,7 +208,7 @@ export default function SalesPresentationScreen() {
       {/* Top Bar */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.push('/imos' as any)} style={styles.closeBtn} data-testid="presentation-close">
-          <Ionicons name="close" size={22} color="rgba(255,255,255,0.6)" />
+          <Ionicons name="close" size={22} color="#86868B" />
         </TouchableOpacity>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
@@ -265,7 +265,7 @@ export default function SalesPresentationScreen() {
       {/* Navigation */}
       <View style={styles.navBar}>
         <TouchableOpacity style={[styles.navBtn, currentSlide === 0 && { opacity: 0.3 }]} onPress={goPrev} disabled={currentSlide === 0} data-testid="slide-prev">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color="#1D1D1F" />
         </TouchableOpacity>
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
@@ -275,7 +275,7 @@ export default function SalesPresentationScreen() {
           ))}
         </View>
         <TouchableOpacity style={[styles.navBtn, currentSlide === SLIDES.length - 1 && { opacity: 0.3 }]} onPress={goNext} disabled={currentSlide === SLIDES.length - 1} data-testid="slide-next">
-          <Ionicons name="chevron-forward" size={24} color="#FFF" />
+          <Ionicons name="chevron-forward" size={24} color="#1D1D1F" />
         </TouchableOpacity>
       </View>
 
@@ -289,10 +289,10 @@ export default function SalesPresentationScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 20 : 56, paddingBottom: 8, gap: 12, zIndex: 10 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
-  progressBar: { flex: 1, height: 3, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.04)', alignItems: 'center', justifyContent: 'center' },
+  progressBar: { flex: 1, height: 3, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#007AFF', borderRadius: 2 },
-  slideNum: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '500', minWidth: 36, textAlign: 'right' },
+  slideNum: { color: '#AEAEB2', fontSize: 13, fontWeight: '500', minWidth: 36, textAlign: 'right' },
   slideScroll: { flexGrow: 1, justifyContent: 'center', paddingBottom: 20 },
   slideBody: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 16 },
   iconWrap: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   statCard: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 16, padding: 20, marginBottom: 20, width: '100%', maxWidth: 300 },
   statValue: { fontSize: 48, fontWeight: '900' },
   statLabel: { fontSize: 14, color: '#6E6E73', marginTop: 4 },
-  contentLine: { fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 24, marginBottom: 10, maxWidth: 400 },
+  contentLine: { fontSize: 16, color: '#3A3A3C', textAlign: 'center', lineHeight: 24, marginBottom: 10, maxWidth: 400 },
   featureGrid: { width: '100%', maxWidth: 400, gap: 10, marginTop: 12 },
   featureCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   featureIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
@@ -314,6 +314,6 @@ const styles = StyleSheet.create({
   navBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16, paddingBottom: Platform.OS === 'web' ? 20 : 40 },
   navBtn: { padding: 8 },
   dotsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
-  keyHint: { position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.08)' },
+  keyHint: { position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', fontSize: 11, color: '#D1D1D6' },
 });

@@ -121,7 +121,7 @@ export default function OnboardingPreviewScreen() {
       {/* Preview Banner */}
       <View style={[s.previewBanner, { paddingTop: Platform.OS === 'web' ? 20 : 56 }]}>
         <TouchableOpacity onPress={exitPreview} style={s.exitBtn} data-testid="exit-preview">
-          <Ionicons name="close" size={20} color="#FFF" />
+          <Ionicons name="close" size={20} color="#1D1D1F" />
         </TouchableOpacity>
         <View style={s.previewBannerCenter}>
           <View style={[s.previewBadge, { backgroundColor: `${currentRoleOption?.color}30` }]}>
@@ -203,7 +203,7 @@ export default function OnboardingPreviewScreen() {
                 {slide.inputFields.map((f: any, i: number) => (
                   <View key={i} style={s.choiceRow}>
                     <Ionicons name="create-outline" size={16} color="#8E8E93" />
-                    <Text style={s.choiceText}>{f.label}: <Text style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>{f.placeholder}</Text></Text>
+                    <Text style={s.choiceText}>{f.label}: <Text style={{ color: '#AEAEB2', fontStyle: 'italic' }}>{f.placeholder}</Text></Text>
                   </View>
                 ))}
               </View>
@@ -216,7 +216,7 @@ export default function OnboardingPreviewScreen() {
       <View style={s.navBar}>
         <View style={s.navRow}>
           <TouchableOpacity style={[s.navBtn, currentSlide === 0 && { opacity: 0.3 }]} onPress={handleBack} disabled={currentSlide === 0} data-testid="prev-slide">
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
+            <Ionicons name="chevron-back" size={22} color="#1D1D1F" />
             <Text style={s.navBtnText}>Back</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[s.navBtnPrimary, currentSlide === slides.length - 1 && { backgroundColor: '#34C759' }]} onPress={currentSlide === slides.length - 1 ? exitPreview : handleNext} data-testid="next-slide">
@@ -258,13 +258,13 @@ const s = StyleSheet.create({
   // Slide preview
   previewContainer: { flex: 1, backgroundColor: '#FFFFFF' },
   previewBanner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, zIndex: 10 },
-  exitBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  exitBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
   previewBannerCenter: { flex: 1, alignItems: 'center' },
   previewBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   previewBadgeText: { fontSize: 13, fontWeight: '600' },
   previewLabel: { fontSize: 10, color: '#86868B', fontWeight: '700', letterSpacing: 1, marginTop: 3 },
   progressRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, gap: 12 },
-  progressTrack: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, overflow: 'hidden' },
+  progressTrack: { flex: 1, height: 4, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#007AFF', borderRadius: 2 },
   progressText: { color: '#6E6E73', fontSize: 13, fontWeight: '500' },
   slideScroll: { flexGrow: 1, paddingBottom: 20 },
@@ -272,7 +272,7 @@ const s = StyleSheet.create({
   iconCircle: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   slideTitle: { fontSize: 22, fontWeight: '700', color: '#1D1D1F', textAlign: 'center', marginBottom: 4 },
   slideSubtitle: { fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 10 },
-  slideDesc: { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 21, maxWidth: 340, marginBottom: 16 },
+  slideDesc: { fontSize: 14, color: '#3A3A3C', textAlign: 'center', lineHeight: 21, maxWidth: 340, marginBottom: 16 },
   typeBadge: { backgroundColor: 'rgba(0,0,0,0.06)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, marginBottom: 16 },
   typeBadgeText: { fontSize: 11, color: '#6E6E73', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   benefitsList: { width: '100%', maxWidth: 340, gap: 8 },
@@ -293,8 +293,8 @@ const s = StyleSheet.create({
   navBtnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, gap: 4 },
   navBtnPrimaryText: { color: '#000', fontSize: 16, fontWeight: '600' },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.08)' },
   dotActive: { backgroundColor: '#007AFF', width: 16 },
   dotDone: { backgroundColor: '#34C759' },
-  keyHint: { textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 8 },
+  keyHint: { textAlign: 'center', fontSize: 11, color: '#D1D1D6', marginTop: 8 },
 });

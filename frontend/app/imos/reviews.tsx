@@ -205,7 +205,7 @@ const s = StyleSheet.create({
   },
   stepNumberText: { fontSize: 16, fontWeight: '800', color: '#FFD60A' },
   stepTitle: { fontSize: 16, fontWeight: '700', color: '#1D1D1F', textAlign: 'center', marginBottom: 6 },
-  stepDesc: { fontSize: 13, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 19 },
+  stepDesc: { fontSize: 13, color: '#86868B', textAlign: 'center', lineHeight: 19 },
 
   bottomCTA: {
     alignItems: 'center', paddingVertical: 56, paddingHorizontal: 20, marginTop: 32,

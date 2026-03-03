@@ -332,7 +332,7 @@ const s = StyleSheet.create({
   statsSection: {
     flexDirection: 'column', gap: 12, paddingHorizontal: 20, paddingVertical: 32,
     backgroundColor: '#FAFAFA', borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   statsDesktop: { flexDirection: 'row', gap: 20, paddingVertical: 40 },
   statCard: {
@@ -357,7 +357,7 @@ const s = StyleSheet.create({
   featureText: {},
   featureTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
   featureTitle: { fontSize: 22, fontWeight: '800', color: '#1D1D1F', lineHeight: 30, marginBottom: 12 },
-  featureDesc: { fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 23, marginBottom: 16 },
+  featureDesc: { fontSize: 15, color: '#6E6E73', lineHeight: 23, marginBottom: 16 },
   bulletList: { gap: 8 },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bulletText: { fontSize: 14, color: '#3A3A3C', fontWeight: '500' },
