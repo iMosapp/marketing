@@ -114,7 +114,8 @@ export default function MoreScreen() {
   const getReviewUrl = () => {
     if (!storeSlug) return '';
     const spParam = user?._id ? `?sp=${user._id}` : '';
-    return `https://app.imonsocial.com/review/${storeSlug}${spParam}`;
+    const refParam = user?.ref_code ? `${spParam ? '&' : '?'}ref=${user.ref_code}` : '';
+    return `https://app.imonsocial.com/review/${storeSlug}${spParam}${refParam}`;
   };
 
   const handleCopyReviewLink = async () => {
@@ -253,7 +254,8 @@ export default function MoreScreen() {
   // ===== Showroom Share Helpers =====
   const getShowroomUrl = () => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    return `${baseUrl}/showcase/${user?._id}`;
+    const refParam = user?.ref_code ? `?ref=${user.ref_code}` : '';
+    return `${baseUrl}/showcase/${user?._id}${refParam}`;
   };
 
   const handleCopyShowroomLink = async () => {

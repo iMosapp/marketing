@@ -1,0 +1,77 @@
+{
+  "summary": "Referral attribution system fully tested. All 9 features verified: ref/backfill endpoint, ref code resolution (34C53029 -> Forest Ward), demo request ref capture with referrer_type classification, analytics by_referrer array, login returns ref_code, demo form shows source+ref badges, login page Install App link, admin lead-tracking Referrals section, and marketing footer Install App link.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "POST_auth_ref_backfill": {
+      "status": "PASS",
+      "details": "Endpoint returns status=success with backfilled count"
+    },
+    "GET_auth_ref_34C53029": {
+      "status": "PASS",
+      "details": "Resolves to Forest Ward with user_id, name, and role"
+    },
+    "POST_demo_requests_with_ref": {
+      "status": "PASS",
+      "details": "Stores referred_by, referred_by_user_id, referred_by_name, referrer_type correctly"
+    },
+    "referrer_type_classification": {
+      "status": "PASS",
+      "details": "Super admin (Forest Ward) correctly classified as 'internal'"
+    },
+    "GET_demo_requests_analytics_by_referrer": {
+      "status": "PASS",
+      "details": "Analytics includes by_referrer array with ref_code, name, type, count fields"
+    },
+    "POST_auth_login_returns_ref_code": {
+      "status": "PASS",
+      "details": "forest@imosapp.com login returns ref_code=34C53029 in user object"
+    },
+    "demo_page_source_and_ref_badges": {
+      "status": "PASS",
+      "details": "/demo/?ref=34C53029&source=digital_card_hero shows 'From: Digital Card Hero | Ref: 34C53029' badge"
+    },
+    "login_page_install_app_link": {
+      "status": "PASS",
+      "details": "Login page shows 'Install App on Your Phone' link in blue (#007AFF) with download icon"
+    },
+    "admin_lead_tracking_referrals_section": {
+      "status": "PASS",
+      "details": "Lead tracking page shows Referrals section with Forest Ward (34C53029) - INTERNAL - 7 leads"
+    },
+    "marketing_footer_install_app": {
+      "status": "PASS",
+      "details": "Footer has 'Install App' link in GET STARTED column pointing to /install.html"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_referral_attribution.py",
+    "/app/test_reports/pytest/pytest_referral_attribution.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_referral_attribution.py"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8 pytest tests passed)",
+    "frontend": "100% (5/5 UI verifications passed)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!"
+  },
+  "seed_data_creation": "Created test demo requests with ref=34C53029 during backend testing. Forest Ward has 7 attributed referrals.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Referral attribution system is complete. Key data: Forest Ward's ref code is 34C53029 (super_admin -> internal type). The appendRef utility in /app/frontend/utils/refLink.ts appends ref codes to URLs. The demo form at /demo/ captures both source and ref params and displays them as badges. Backend classifies referrer_type based on role (super_admin/admin=internal) or prefix (PARTNER_, RESELLER_, REF_, TEAM_). Analytics by_referrer aggregates leads by referrer.",
+  "mocked_apis": {
+    "Twilio SMS": "Mocked - not testing actual SMS sending"
+  }
+}

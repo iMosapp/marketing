@@ -34,6 +34,7 @@ export default function DemoScreen() {
         utm_campaign: params.get('utm_campaign') || '',
         utm_content: params.get('utm_content') || '',
         utm_term: params.get('utm_term') || '',
+        ref: params.get('ref') || '',
         referrer: document.referrer || '',
       });
     }

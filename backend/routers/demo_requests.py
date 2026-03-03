@@ -73,6 +73,22 @@ def parse_source_position(source: str) -> str:
     return "direct"
 
 
+def _classify_referrer_type(ref_code: str, role: str) -> str:
+    """Classify the referrer type based on ref code prefix or role."""
+    code = ref_code.upper()
+    if code.startswith("PARTNER_"):
+        return "partner"
+    if code.startswith("RESELLER_"):
+        return "reseller"
+    if code.startswith("REF_"):
+        return "referral"
+    if code.startswith("TEAM_"):
+        return "internal"
+    if role in ("super_admin", "admin"):
+        return "internal"
+    return "user"
+
+
 @router.post("")
 async def create_demo_request(data: dict):
     """Capture a demo request with full attribution tracking."""
@@ -107,9 +123,20 @@ async def create_demo_request(data: dict):
         "utm_content": utm_content,
         "utm_term": utm_term,
         "referrer": data.get("referrer", "").strip(),
+        "referred_by": data.get("ref", "").strip(),
         "status": "new",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    # Resolve ref code to user if present
+    ref_code = data.get("ref", "").strip()
+    if ref_code:
+        ref_user = await db.users.find_one({"ref_code": ref_code}, {"_id": 1, "name": 1, "role": 1, "organization_id": 1})
+        if ref_user:
+            demo["referred_by_user_id"] = str(ref_user["_id"])
+            demo["referred_by_name"] = ref_user.get("name", "")
+            demo["referred_by_role"] = ref_user.get("role", "")
+            demo["referrer_type"] = _classify_referrer_type(ref_code, ref_user.get("role", ""))
 
     await db.demo_requests.insert_one({**demo, "_id": ObjectId()})
     return {"status": "success", "message": "Demo request received! We'll be in touch soon."}
@@ -216,6 +243,24 @@ async def demo_analytics(days: int = 30):
     async for doc in db.demo_requests.find({}, {"_id": 0}).sort("created_at", -1).limit(10):
         recent.append(doc)
 
+    # By referrer (for attribution to users/partners)
+    referrer_pipeline = [
+        {"$match": {"created_at": {"$gte": cutoff}, "referred_by": {"$nin": ["", None]}}},
+        {"$group": {
+            "_id": {"ref_code": "$referred_by", "name": "$referred_by_name", "type": "$referrer_type"},
+            "count": {"$sum": 1},
+        }},
+        {"$sort": {"count": -1}},
+    ]
+    referrer_stats = []
+    async for doc in db.demo_requests.aggregate(referrer_pipeline):
+        referrer_stats.append({
+            "ref_code": doc["_id"].get("ref_code", ""),
+            "name": doc["_id"].get("name", "Unknown"),
+            "type": doc["_id"].get("type", "user"),
+            "count": doc["count"],
+        })
+
     return {
         "summary": {
             "total_all_time": total_all,
@@ -229,6 +274,7 @@ async def demo_analytics(days: int = 30):
         "by_position": position_stats,
         "by_source": source_stats,
         "by_campaign": campaign_stats,
+        "by_referrer": referrer_stats,
         "daily_trend": daily_trend,
         "recent_requests": recent,
     }

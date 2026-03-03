@@ -252,7 +252,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/inbox/">Inbox</a><a href="/date-triggers/">Automations</a><a href="/leaderboard/">Leaderboards</a><a href="/jessi/">Jessi AI</a></div>
     <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy Policy</a><a href="/terms/">Terms of Service</a><a href="/landing.html">Why i'M On Social</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
-    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo/?source=demo_page_footer">Schedule a Demo</a><a href="https://app.imonsocial.com/auth/signup">Start 14-Day Free Trial</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo/?source=demo_page_footer">Schedule a Demo</a><a href="https://app.imonsocial.com/auth/signup">Start 14-Day Free Trial</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a><a href="https://app.imonsocial.com/install.html">Install App</a></div>
   </div>
   <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
 </footer>
@@ -265,9 +265,12 @@ window.addEventListener('scroll',()=>document.querySelector('nav').classList.tog
 (function(){
   const p=new URLSearchParams(window.location.search);
   const s=p.get('source');
-  if(s){
-    const label=s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-    document.getElementById('source-label').textContent='From: '+label;
+  const r=p.get('ref');
+  let label='';
+  if(s) label='From: '+s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  if(r) label+=(label?' | ':'')+'Ref: '+r;
+  if(label){
+    document.getElementById('source-label').textContent=label;
     document.getElementById('source-badge').style.display='block';
   }
 })();
@@ -288,7 +291,7 @@ async function submitDemo(){
   const payload={name,email,company,phone,team_size:team,message,source:urlSource,
     utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',
     utm_campaign:p.get('utm_campaign')||'',utm_content:p.get('utm_content')||'',
-    utm_term:p.get('utm_term')||'',referrer:document.referrer||''};
+    utm_term:p.get('utm_term')||'',ref:p.get('ref')||'',referrer:document.referrer||''};
   try{
     const res=await fetch('https://app.imonsocial.com/api/demo-requests',{
       method:'POST',headers:{'Content-Type':'application/json'},

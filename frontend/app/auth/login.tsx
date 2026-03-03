@@ -405,18 +405,32 @@ export default function LoginScreen() {
               </View>
               
               {Platform.OS === 'web' && (
-                <TouchableOpacity
-                  style={styles.refreshButton}
-                  onPress={() => {
-                    if (typeof window !== 'undefined') {
-                      window.location.reload();
-                    }
-                  }}
-                  data-testid="refresh-app-btn"
-                >
-                  <Ionicons name="refresh" size={18} color={colors.textSecondary} />
-                  <Text style={styles.refreshButtonText}>Refresh App</Text>
-                </TouchableOpacity>
+                <View style={{ alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity
+                    style={styles.refreshButton}
+                    onPress={() => {
+                      if (typeof window !== 'undefined') {
+                        window.location.href = '/install.html';
+                      }
+                    }}
+                    data-testid="install-app-btn"
+                  >
+                    <Ionicons name="download" size={18} color="#007AFF" />
+                    <Text style={[styles.refreshButtonText, { color: '#007AFF' }]}>Install App on Your Phone</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.refreshButton}
+                    onPress={() => {
+                      if (typeof window !== 'undefined') {
+                        window.location.reload();
+                      }
+                    }}
+                    data-testid="refresh-app-btn"
+                  >
+                    <Ionicons name="refresh" size={18} color={colors.textSecondary} />
+                    <Text style={styles.refreshButtonText}>Refresh App</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </ScrollView>

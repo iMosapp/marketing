@@ -257,6 +257,46 @@ export default function LeadTrackingDashboard() {
             ))}
           </View>
 
+          {/* Referrer Attribution */}
+          <View style={[s.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={[s.sectionTitle, { color: colors.text }]}>Referrals</Text>
+              {(!data.by_referrer || data.by_referrer.length === 0) && (
+                <View style={{ backgroundColor: '#34C75920', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#34C759' }}>TRACKING</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[s.sectionSub, { color: colors.textSecondary }]}>
+              {(!data.by_referrer || data.by_referrer.length === 0)
+                ? 'When users, partners, or resellers share links with their ref code, their referrals appear here.'
+                : 'Leads attributed to specific people and partners'}
+            </Text>
+            {data.by_referrer && data.by_referrer.length > 0 ? data.by_referrer.map((ref: any, i: number) => {
+              const typeColors: Record<string, string> = { user: '#007AFF', partner: '#AF52DE', reseller: '#FF9500', internal: '#34C759', referral: '#FF2D55' };
+              return (
+                <View key={i} style={[s.requestRow, { borderBottomColor: colors.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.requestName, { color: colors.text }]}>{ref.name || ref.ref_code}</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Ref: {ref.ref_code}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    <View style={[s.statusBadge, { backgroundColor: (typeColors[ref.type] || '#8E8E93') + '18' }]}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: typeColors[ref.type] || '#8E8E93' }}>{(ref.type || 'user').toUpperCase()}</Text>
+                    </View>
+                    <Text style={[s.campaignCount, { color: '#007AFF' }]}>{ref.count}</Text>
+                  </View>
+                </View>
+              );
+            }) : (
+              <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20 }}>
+                  Every shared link now includes a ref code. When someone clicks a salesperson's digital card, review link, or showcase and then schedules a demo, the lead traces back to that person.
+                </Text>
+              </View>
+            )}
+          </View>
+
           {/* Recent Requests */}
           <View style={[s.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[s.sectionTitle, { color: colors.text }]}>Recent Requests</Text>

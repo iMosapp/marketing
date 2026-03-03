@@ -201,6 +201,11 @@ async def signup(user_data: UserCreate):
         'compare_scope': 'state'
     }
     
+    # Generate unique ref code for attribution tracking
+    import hashlib
+    ref_base = hashlib.md5(f"{user_dict['email']}{datetime.utcnow().isoformat()}".encode()).hexdigest()[:8].upper()
+    user_dict['ref_code'] = ref_base
+    
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
     
@@ -791,3 +796,32 @@ async def update_review_links(user_id: str, data: dict):
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"message": "Review links saved"}
+
+
+
+@router.get("/ref/{ref_code}")
+async def resolve_ref_code(ref_code: str):
+    """Resolve a ref code to the user who owns it."""
+    db = get_db()
+    user = await db.users.find_one({"ref_code": ref_code}, {"_id": 1, "name": 1, "email": 1, "role": 1, "organization_id": 1, "store_id": 1})
+    if not user:
+        return {"status": "not_found"}
+    return {
+        "status": "found",
+        "user_id": str(user["_id"]),
+        "name": user.get("name", ""),
+        "role": user.get("role", ""),
+    }
+
+
+@router.post("/ref/backfill")
+async def backfill_ref_codes():
+    """Backfill ref_codes for existing users who don't have one."""
+    import hashlib
+    db = get_db()
+    count = 0
+    async for user in db.users.find({"ref_code": {"$exists": False}}):
+        ref_base = hashlib.md5(f"{user.get('email', '')}{str(user['_id'])}".encode()).hexdigest()[:8].upper()
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"ref_code": ref_base}})
+        count += 1
+    return {"status": "success", "backfilled": count}
