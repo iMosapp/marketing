@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -298,7 +298,6 @@ export default function ContactDetailScreen() {
   const [showReviewLinks, setShowReviewLinks] = useState(false);
   const [showBusinessCard, setShowBusinessCard] = useState(false);
   const [showLandingPageOptions, setShowLandingPageOptions] = useState(false);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
   const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
@@ -354,10 +353,13 @@ export default function ContactDetailScreen() {
   const [composerMessage, setComposerMessage] = useState('');
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
-  const [showSendPicker, setShowSendPicker] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestion, setShowAISuggestion] = useState(false);
+  const [showLogReply, setShowLogReply] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
+  const [submittingReply, setSubmittingReply] = useState(false);
   const [collapsedDateGroups, setCollapsedDateGroups] = useState<Record<string, boolean>>({});
   const [editingAutomation, setEditingAutomation] = useState<{ field: string; label: string; color: string; value: string } | null>(null);
 
@@ -591,6 +593,13 @@ export default function ContactDetailScreen() {
     setShowLandingPageOptions(false);
     setSelectedCampaign(null);
     setComposerMessage(cardMessage);
+  };
+
+  const selectTemplate = (template: { _id: string; name: string; content: string; category?: string }) => {
+    const firstName = contact.first_name || 'there';
+    const content = template.content.replace(/{name}/g, firstName);
+    setComposerMessage(content);
+    setShowTemplates(false);
   };
 
   const handleVoiceToText = async () => {
@@ -885,111 +894,6 @@ export default function ContactDetailScreen() {
     }
   };
 
-  // Handle "Send Something" picker action
-  const handleSendPickerAction = async (action: string) => {
-    setShowSendPicker(false);
-    const baseUrl = process.env.REACT_APP_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-    const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
-    
-    switch (action) {
-      case 'card': {
-        // Digital Card  - fetch short URL and pre-fill composer
-        try {
-          const resp = await api.get(`/card/short-url/${user._id}`);
-          const url = resp.data?.short_url || resp.data?.full_url || `${baseUrl}/p/${user._id}`;
-          setComposerMessage(prev => prev ? `${prev}\n${url}` : `Hey ${contact.first_name || ''}! Here's my card: ${url}`);
-        } catch {
-          setComposerMessage(prev => prev ? `${prev}\n${baseUrl}/p/${user._id}` : `Hey ${contact.first_name || ''}! Here's my card: ${baseUrl}/p/${user._id}`);
-        }
-        break;
-      }
-      case 'create-card': {
-        // Show card template picker (handled by showCardTemplatePicker state)
-        setShowCardTemplatePicker(true);
-        break;
-      }
-      case 'review': {
-        // Review Link  - construct the review page URL using store_slug
-        const storeSlug = user?.store_slug;
-        if (storeSlug) {
-          const reviewUrl = `${baseUrl}/review/${storeSlug}`;
-          setComposerMessage(prev => prev ? `${prev}\n${reviewUrl}` : `Hi ${contact.first_name || ''}, would you mind leaving us a quick review? ${reviewUrl}`);
-        } else {
-          showSimpleAlert('Not Set Up', 'No review page configured yet');
-        }
-        break;
-      }
-      case 'showcase': {
-        const showcaseUrl = user?.store_slug ? `${baseUrl}/showcase/${user.store_slug}` : '';
-        if (showcaseUrl) setComposerMessage(prev => prev ? `${prev}\n${showcaseUrl}` : `Check out my showcase: ${showcaseUrl}`);
-        else showSimpleAlert('Missing Info', 'No showcase URL configured');
-        break;
-      }
-      case 'linkpage': {
-        // Link Page  - try user data first, then API
-        try {
-          const resp = await api.get(`/linkpage/user/${user._id}`);
-          const username = resp.data?.username;
-          if (username) {
-            const url = `${baseUrl}/l/${username}`;
-            setComposerMessage(prev => prev ? `${prev}\n${url}` : `Check out my links: ${url}`);
-          } else {
-            showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
-          }
-        } catch {
-          showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
-        }
-        break;
-      }
-      case 'photo-menu': {
-        // Open the photo/card sub-picker
-        setShowPhotoSubPicker(true);
-        break;
-      }
-      case 'photo': {
-        // Open image picker (photo library)
-        try {
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 0.7,
-          });
-          if (!result.canceled && result.assets[0]?.uri) {
-            showToast('Photo selected - sending via MMS is not yet available');
-          }
-        } catch (e) {
-          console.error('Photo pick error:', e);
-        }
-        break;
-      }
-      case 'camera': {
-        // Open camera
-        try {
-          const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            quality: 0.7,
-          });
-          if (!result.canceled && result.assets[0]?.uri) {
-            showToast('Photo captured - sending via MMS is not yet available');
-          }
-        } catch (e) {
-          console.error('Camera error:', e);
-        }
-        break;
-      }
-      case 'campaign': {
-        // Open campaign picker
-        setShowCampaignPicker(true);
-        break;
-      }
-      case 'call': {
-        if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
-        router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent(contactName)}&phone=${encodeURIComponent(contact.phone)}`);
-        break;
-      }
-    }
-  };
-
   // Handle card template selection → navigate to card creation and return
   const handleCardTemplateSelect = (cardType: string) => {
     setShowCardTemplatePicker(false);
@@ -999,7 +903,6 @@ export default function ContactDetailScreen() {
 
   // State for card template picker
   const [showCardTemplatePicker, setShowCardTemplatePicker] = useState(false);
-  const [showPhotoSubPicker, setShowPhotoSubPicker] = useState(false);
 
   // Clear a date automation field
   const handleClearAutomation = async (field: string) => {
@@ -2405,7 +2308,11 @@ export default function ContactDetailScreen() {
               <View style={{ flex: 1 }} />
               <TouchableOpacity
                 style={s.composerCallBtn}
-                onPress={() => handleSendPickerAction('call')}
+                onPress={() => {
+                  if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
+                  const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+                  router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent(contactName)}&phone=${encodeURIComponent(contact.phone)}`);
+                }}
                 data-testid="composer-call-btn"
               >
                 <Ionicons name="call" size={16} color="#32ADE6" />
@@ -2560,37 +2467,227 @@ export default function ContactDetailScreen() {
 
       {/* ===== MODALS ===== */}
 
-      {/* Send Something Picker */}
-      <Modal visible={showSendPicker} animationType="fade" transparent onRequestClose={() => setShowSendPicker(false)}>
-        <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowSendPicker(false)}>
-          <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.sendPickerHandle} />
-            <Text style={s.sendPickerTitle}>Send Something</Text>
-            {[
-              { key: 'card', icon: 'person-circle', label: 'My Digital Card', sub: 'Share your business card link', color: '#007AFF' },
-              { key: 'review', icon: 'star', label: 'Review Link', sub: 'Request a review', color: '#FFD60A' },
-              { key: 'showcase', icon: 'images', label: 'My Showcase', sub: 'Share your showcase page', color: '#FF9500' },
-              { key: 'linkpage', icon: 'link', label: 'My Link Page', sub: 'Share your link page', color: '#AF52DE' },
-              { key: 'create-card', icon: 'color-palette', label: 'Create a Card', sub: 'Pick a template to send', color: '#C9A962' },
-              { key: 'photo-menu', icon: 'camera', label: 'Photos', sub: 'Photo library or camera', color: '#32ADE6' },
-            ].map(item => (
-              <TouchableOpacity
-                key={item.key}
-                style={s.sendPickerItem}
-                onPress={() => handleSendPickerAction(item.key)}
-                activeOpacity={0.7}
-                data-testid={`send-picker-${item.key}`}
-              >
-                <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+      {/* Review Links Modal */}
+      <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
+        <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowReviewLinks(false)}>
+          <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
+            <View style={s.toolbarModalHeader}>
+              <View style={s.toolbarModalHandle} />
+              <Text style={s.toolbarModalTitle}>Send Review Link</Text>
+            </View>
+            <ScrollView style={s.toolbarTemplatesList} contentContainerStyle={s.toolbarTemplatesListContent}>
+              {storeSlug && (
+                <TouchableOpacity
+                  style={s.toolbarTemplateItem}
+                  data-testid="review-link-imos"
+                  onPress={() => {
+                    const firstName = contact.first_name || 'there';
+                    const reviewUrl = `https://app.imosapp.com/review/${storeSlug}?sp=${user?._id}`;
+                    const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
+                    setShowReviewLinks(false);
+                    setComposerMessage(reviewMsg);
+                  }}
+                >
+                  <View style={[s.toolbarTemplateIcon, { backgroundColor: '#FFD60A20' }]}>
+                    <Ionicons name="star" size={20} color="#FFD60A" />
+                  </View>
+                  <View style={s.toolbarTemplateContent}>
+                    <Text style={s.toolbarTemplateName}>Send Review Request</Text>
+                    <Text style={s.toolbarTemplatePreview} numberOfLines={1}>
+                      Sends personalized review link to {contact.first_name || 'contact'}
+                    </Text>
+                  </View>
+                  <Ionicons name="add-circle" size={24} color="#FFD60A" />
+                </TouchableOpacity>
+              )}
+              {Object.entries(reviewLinks).filter(([_, url]) => url).map(([platformId, url]) => {
+                const platformNames: Record<string, {name: string; icon: string; color: string}> = {
+                  google: { name: 'Google Reviews', icon: 'logo-google', color: '#4285F4' },
+                  facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
+                  yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
+                  trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
+                  custom: { name: customLinkName || 'Custom Link', icon: 'link', color: colors.textSecondary },
+                };
+                const platform = platformNames[platformId] || platformNames.custom;
+                return (
+                  <TouchableOpacity key={platformId} style={s.toolbarTemplateItem} onPress={() => insertReviewLink(platformId, url, platform.name)}>
+                    <View style={[s.toolbarTemplateIcon, { backgroundColor: `${platform.color}20` }]}>
+                      <Ionicons name={platform.icon as any} size={20} color={platform.color} />
+                    </View>
+                    <View style={s.toolbarTemplateContent}>
+                      <Text style={s.toolbarTemplateName}>{platform.name}</Text>
+                      <Text style={s.toolbarTemplatePreview} numberOfLines={1}>{url}</Text>
+                    </View>
+                    <Ionicons name="add-circle" size={24} color="#007AFF" />
+                  </TouchableOpacity>
+                );
+              })}
+              {!storeSlug && Object.keys(reviewLinks).length === 0 && (
+                <View style={s.toolbarEmptyReviews}>
+                  <Ionicons name="star-outline" size={48} color={colors.textSecondary} />
+                  <Text style={s.toolbarEmptyReviewsText}>No review links configured</Text>
+                  <TouchableOpacity style={s.toolbarSetupBtn} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
+                    <Text style={s.toolbarSetupBtnText}>Set Up Review Links</Text>
+                  </TouchableOpacity>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.sendPickerLabel}>{item.label}</Text>
-                  <Text style={s.sendPickerSub}>{item.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
+              )}
+              {(storeSlug || Object.keys(reviewLinks).length > 0) && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 16, opacity: 0.6 }}
+                  onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}
+                >
+                  <Ionicons name="settings-outline" size={14} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>Manage Review Platform Links</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+            <View style={s.toolbarModalFooter}>
+              <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => setShowReviewLinks(false)}>
+                <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
               </TouchableOpacity>
-            ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Templates Modal */}
+      <Modal visible={showTemplates} animationType="slide" presentationStyle="pageSheet" transparent={true}>
+        <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowTemplates(false)}>
+          <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
+            <View style={s.toolbarModalHeader}>
+              <View style={s.toolbarModalHandle} />
+              <Text style={s.toolbarModalTitle}>Message Templates</Text>
+            </View>
+            <FlatList
+              data={templates}
+              keyExtractor={(item) => item._id}
+              style={s.toolbarTemplatesList}
+              contentContainerStyle={s.toolbarTemplatesListContent}
+              showsVerticalScrollIndicator={true}
+              renderItem={({ item: template }) => (
+                <TouchableOpacity style={s.toolbarTemplateItem} onPress={() => selectTemplate(template)}>
+                  <View style={s.toolbarTemplateIcon}>
+                    <Ionicons name="document-text" size={20} color="#007AFF" />
+                  </View>
+                  <View style={s.toolbarTemplateContent}>
+                    <Text style={s.toolbarTemplateName}>{template.name}</Text>
+                    <Text style={s.toolbarTemplatePreview} numberOfLines={2}>{template.content}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={() => (
+                <View style={s.toolbarEmptyTemplates}>
+                  <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
+                  <Text style={s.toolbarEmptyTemplatesText}>No templates yet</Text>
+                </View>
+              )}
+            />
+            <View style={s.toolbarModalFooter}>
+              <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => setShowTemplates(false)}>
+                <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Digital Business Card Modal */}
+      <Modal visible={showBusinessCard} animationType="slide" presentationStyle="pageSheet" transparent={true}>
+        <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowBusinessCard(false)}>
+          <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
+            <View style={s.toolbarModalHeader}>
+              <View style={s.toolbarModalHandle} />
+              <Text style={s.toolbarModalTitle}>Share Business Card</Text>
+            </View>
+            <View style={s.cardModalContent}>
+              <View style={s.cardPreview}>
+                <Ionicons name="card" size={48} color="#007AFF" />
+                <Text style={s.cardPreviewTitle}>Your Digital Business Card</Text>
+                <Text style={s.cardPreviewDesc}>Choose how you'd like to share your contact information</Text>
+              </View>
+              <View style={s.shareOptionsContainer}>
+                <TouchableOpacity style={s.shareOptionCard} onPress={sendVCardLink} data-testid="share-vcf-btn">
+                  <View style={s.shareOptionIcon}>
+                    <Ionicons name="person-add" size={28} color="#34C759" />
+                  </View>
+                  <View style={s.shareOptionContent}>
+                    <Text style={s.shareOptionTitle}>Share Contact (VCF)</Text>
+                    <Text style={s.shareOptionDesc}>Send a direct link to save your contact info to their phone</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.shareOptionCard} onPress={sendBusinessCardLink} data-testid="share-landing-btn">
+                  <View style={s.shareOptionIcon}>
+                    <Ionicons name="globe-outline" size={28} color="#007AFF" />
+                  </View>
+                  <View style={s.shareOptionContent}>
+                    <Text style={s.shareOptionTitle}>Share Landing Page</Text>
+                    <Text style={s.shareOptionDesc}>Send your full digital card with socials, bio & more</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              {showLandingPageOptions && (
+                <View style={s.landingPageOptions}>
+                  <View style={s.landingPageOptionsHeader}>
+                    <TouchableOpacity onPress={() => setShowLandingPageOptions(false)}>
+                      <Ionicons name="arrow-back" size={24} color="#007AFF" />
+                    </TouchableOpacity>
+                    <Text style={s.landingPageOptionsTitle}>Landing Page Options</Text>
+                  </View>
+                  <Text style={s.campaignPickerLabel}>Start them on a campaign (optional):</Text>
+                  {loadingCampaigns ? (
+                    <ActivityIndicator size="small" color="#007AFF" style={{ marginVertical: 20 }} />
+                  ) : campaigns.length === 0 ? (
+                    <View style={s.noCampaigns}>
+                      <Text style={s.noCampaignsText}>No active campaigns</Text>
+                      <Text style={s.noCampaignsSubtext}>Create campaigns in the Campaigns tab</Text>
+                    </View>
+                  ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.campaignScroller} contentContainerStyle={s.campaignScrollerContent}>
+                      <TouchableOpacity style={[s.campaignChip, !selectedCampaign && s.campaignChipSelected]} onPress={() => setSelectedCampaign(null)}>
+                        <Text style={[s.campaignChipText, !selectedCampaign && s.campaignChipTextSelected]}>None</Text>
+                      </TouchableOpacity>
+                      {campaigns.map((campaign: any) => (
+                        <TouchableOpacity key={campaign.id || campaign._id} style={[s.campaignChip, selectedCampaign === (campaign.id || campaign._id) && s.campaignChipSelected]} onPress={() => setSelectedCampaign(campaign.id || campaign._id)}>
+                          <Text style={[s.campaignChipText, selectedCampaign === (campaign.id || campaign._id) && s.campaignChipTextSelected]}>{campaign.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+                  <TouchableOpacity style={s.sendCardButton} onPress={sendBusinessCardLink} data-testid="send-card-btn">
+                    <Ionicons name="paper-plane" size={20} color="#FFF" />
+                    <Text style={s.sendCardButtonText}>{selectedCampaign ? 'Send Card + Start Campaign' : 'Send Landing Page'}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+            <View style={s.toolbarModalFooter}>
+              <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => { setShowBusinessCard(false); setShowLandingPageOptions(false); }}>
+                <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Photo Options Modal (Web) */}
+      <Modal visible={showPhotoOptionsModal} animationType="fade" transparent={true} onRequestClose={() => setShowPhotoOptionsModal(false)}>
+        <TouchableOpacity style={s.photoOptionsOverlay} activeOpacity={1} onPress={() => setShowPhotoOptionsModal(false)}>
+          <View style={s.photoOptionsModal} onStartShouldSetResponder={() => true}>
+            <Text style={s.photoOptionsTitle}>Add Photo</Text>
+            <TouchableOpacity style={s.photoOptionButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-library">
+              <Ionicons name="images-outline" size={24} color="#007AFF" />
+              <Text style={s.photoOptionText}>Choose from Library</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.photoOptionButton} onPress={() => { setShowPhotoOptionsModal(false); setShowCardTemplatePicker(true); }} data-testid="photo-option-create-card">
+              <Ionicons name="gift-outline" size={24} color="#C9A962" />
+              <Text style={s.photoOptionText}>Create Card</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.photoOptionButton, s.photoOptionCancel]} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
+              <Text style={s.photoOptionCancelText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -2630,37 +2727,6 @@ export default function ContactDetailScreen() {
         </TouchableOpacity>
       </Modal>
 
-
-      {/* Photo / Card Sub-Picker */}
-      <Modal visible={showPhotoSubPicker} animationType="fade" transparent onRequestClose={() => setShowPhotoSubPicker(false)}>
-        <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowPhotoSubPicker(false)}>
-          <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.sendPickerHandle} />
-            <Text style={s.sendPickerTitle}>Photos</Text>
-            {[
-              { key: 'photo', icon: 'image', label: 'Photo Library', sub: 'Choose from your photos', color: '#32ADE6' },
-              { key: 'camera', icon: 'camera', label: 'Camera', sub: 'Take a new photo', color: '#34C759' },
-            ].map(item => (
-              <TouchableOpacity
-                key={item.key}
-                style={s.sendPickerItem}
-                onPress={() => { setShowPhotoSubPicker(false); handleSendPickerAction(item.key); }}
-                activeOpacity={0.7}
-                data-testid={`photo-sub-${item.key}`}
-              >
-                <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={20} color={item.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.sendPickerLabel}>{item.label}</Text>
-                  <Text style={s.sendPickerSub}>{item.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Referral Picker */}
       <Modal visible={showReferralPicker} animationType="slide" presentationStyle="pageSheet">
@@ -3299,7 +3365,99 @@ const getS = (colors: any) => StyleSheet.create({
   aiActionBtnText: {
     fontSize: 13, fontWeight: '600', color: '#007AFF',
   },
-  // Send Something Picker Modal
+  // Toolbar Modals
+  toolbarModalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-start', paddingTop: 20,
+  },
+  toolbarModal: {
+    backgroundColor: colors.surface, borderRadius: 20, marginHorizontal: 10,
+    flex: 1, marginBottom: 20,
+  },
+  toolbarModalHeader: {
+    paddingTop: 12, paddingBottom: 16, paddingHorizontal: 20,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  toolbarModalHandle: {
+    width: 36, height: 5, backgroundColor: colors.borderLight, borderRadius: 3,
+    alignSelf: 'center', marginBottom: 16,
+  },
+  toolbarModalTitle: {
+    fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center',
+  },
+  toolbarTemplatesList: { flex: 1 },
+  toolbarTemplatesListContent: { padding: 16, paddingBottom: 8 },
+  toolbarModalFooter: {
+    padding: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  toolbarModalCloseBtn: {
+    backgroundColor: colors.card, borderRadius: 12, padding: 16, alignItems: 'center',
+  },
+  toolbarModalCloseBtnText: { fontSize: 17, fontWeight: '600', color: '#FF3B30' },
+  toolbarTemplateItem: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
+    borderRadius: 12, padding: 14, marginBottom: 10,
+  },
+  toolbarTemplateIcon: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#007AFF20',
+    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+  },
+  toolbarTemplateContent: { flex: 1 },
+  toolbarTemplateName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  toolbarTemplatePreview: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  toolbarEmptyTemplates: { alignItems: 'center', paddingVertical: 40 },
+  toolbarEmptyTemplatesText: { fontSize: 16, color: colors.textSecondary, marginTop: 12 },
+  toolbarEmptyReviews: { alignItems: 'center', paddingVertical: 32 },
+  toolbarEmptyReviewsText: { fontSize: 16, color: colors.textSecondary, marginTop: 12, marginBottom: 20 },
+  toolbarSetupBtn: { backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 },
+  toolbarSetupBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  // Business Card Modal
+  cardModalContent: { padding: 20 },
+  cardPreview: {
+    alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, padding: 24, marginBottom: 20,
+  },
+  cardPreviewTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 12 },
+  cardPreviewDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  shareOptionsContainer: { marginTop: 20, gap: 12 },
+  shareOptionCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 16,
+  },
+  shareOptionIcon: {
+    width: 50, height: 50, borderRadius: 12, backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center', marginRight: 14,
+  },
+  shareOptionContent: { flex: 1 },
+  shareOptionTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 },
+  shareOptionDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+  landingPageOptions: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
+  landingPageOptionsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
+  landingPageOptionsTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  campaignPickerLabel: { fontSize: 15, fontWeight: '500', color: colors.text, marginBottom: 12 },
+  campaignScroller: { maxHeight: 50, marginBottom: 20 },
+  campaignScrollerContent: { paddingRight: 20 },
+  campaignChip: {
+    paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.card,
+    borderRadius: 20, marginRight: 10, borderWidth: 2, borderColor: 'transparent',
+  },
+  campaignChipSelected: { backgroundColor: '#007AFF20', borderColor: '#007AFF' },
+  campaignChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+  campaignChipTextSelected: { color: '#007AFF' },
+  noCampaigns: { alignItems: 'center', paddingVertical: 20 },
+  noCampaignsText: { fontSize: 15, color: colors.textSecondary },
+  noCampaignsSubtext: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
+  sendCardButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#007AFF', borderRadius: 12, padding: 16, gap: 8,
+  },
+  sendCardButtonText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  // Photo Options Modal (Web)
+  photoOptionsOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
+  photoOptionsModal: { backgroundColor: colors.surface, borderRadius: 14, padding: 20, width: '80%', maxWidth: 320 },
+  photoOptionsTitle: { fontSize: 18, fontWeight: '600', color: colors.text, textAlign: 'center', marginBottom: 20 },
+  photoOptionButton: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 10, backgroundColor: colors.card, marginBottom: 10, gap: 12 },
+  photoOptionText: { fontSize: 16, color: colors.text },
+  photoOptionCancel: { backgroundColor: 'transparent', justifyContent: 'center', marginTop: 10 },
+  photoOptionCancelText: { fontSize: 16, color: '#FF3B30', textAlign: 'center' },
+  // Send Something Picker Modal (legacy)
   sendPickerOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
