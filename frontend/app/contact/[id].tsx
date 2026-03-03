@@ -812,6 +812,22 @@ export default function ContactDetailScreen() {
         router.back();
       } else {
         setIsEditing(false);
+        // Scroll to top so user sees the updated profile
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({ y: 0, animated: true });
+          if (Platform.OS === 'web') {
+            try {
+              const hero = document.querySelector('[data-testid="contact-hero"]');
+              if (hero) {
+                let parent = hero.parentElement;
+                while (parent) {
+                  if (parent.scrollHeight > parent.clientHeight) { parent.scrollTop = 0; break; }
+                  parent = parent.parentElement;
+                }
+              }
+            } catch (_) {}
+          }
+        });
       }
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save');
@@ -1043,7 +1059,9 @@ export default function ContactDetailScreen() {
       allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
     });
     if (!result.canceled && result.assets[0].base64) {
-      setContact({ ...contact, photo: `data:image/jpeg;base64,${result.assets[0].base64}` });
+      const photoData = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setContact({ ...contact, photo: photoData });
+      showToast('Photo selected! Tap Save to apply.');
     }
   };
 
