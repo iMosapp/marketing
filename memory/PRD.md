@@ -280,6 +280,13 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - **Contacts tab cleaned up** — Back to pure contact list (feed view moved to Activity tab)
 - Backend: `GET /api/contacts/{userId}/master-feed` powers the Activity tab
 
+### Link Click Tracking + Real-Time Feed + UI Polish (Mar 3, 2026)
+- **Link Click Tracking**: When a contact clicks a shared short URL (digital card, review page, showcase, link page), a `contact_event` is logged automatically. The short URL redirect handler (`/api/s/{code}`) now identifies the contact via message history and creates events like `digital_card_viewed`, `review_page_viewed`, `showcase_viewed`, `link_page_viewed`. Duplicate events within 1 hour are suppressed.
+- **"Clicks" Stat in Hero**: Added a 5th stat to the contact stats bar: `clicks` — counts all link click/view events for the contact.
+- **Real-Time Activity Feed**: Contact detail page now polls for new events every 15 seconds, plus auto-refreshes on screen focus. No manual reload needed.
+- **"Share Business Card" Title Removed**: Removed redundant title from the share modal on both contact and thread pages. The "Share Your Stuff" heading inside the modal is sufficient.
+- **New Event Type Labels**: Both contact detail and activity tab now display labels for `digital_card_viewed`, `review_page_viewed`, `showcase_viewed`, `link_page_viewed`, `link_clicked`.
+
 
 ## Key Files
 - `/app/frontend/app/contact/[id].tsx` — Contact detail page with unified toolbar (MAJOR REFACTOR Mar 3, 2026)
@@ -287,7 +294,8 @@ Full-stack Relationship Management System (RMS) for managing customer relationsh
 - `/app/frontend/app/settings/create-card.tsx` — Unified card creation with share flow
 - `/app/frontend/components/UniversalShareModal.tsx` — Central share component
 - `/app/frontend/app/(tabs)/home.tsx` — Home screen with action tiles
-- `/app/backend/routers/contact_events.py` — Contact matching + event logging
+- `/app/backend/routers/short_urls.py` — Short URL redirect + link click event tracking
+- `/app/backend/routers/contact_events.py` — Contact matching + event logging + link_clicks stat
 - `/app/backend/routers/congrats_cards.py` — Card template system
 - `/app/frontend/app/settings/showcase-approvals.tsx` — Showcase moderation
 - `/app/frontend/app/l/[username].tsx` — Public Linktree-style page
