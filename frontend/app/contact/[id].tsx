@@ -2724,7 +2724,7 @@ export default function ContactDetailScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Photo Options Action Sheet (Web/PWA) */}
+      {/* Photo & Card Action Sheet (Web/PWA) */}
       <Modal visible={showPhotoOptionsModal} animationType="slide" transparent={true} onRequestClose={() => setShowPhotoOptionsModal(false)}>
         <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowPhotoOptionsModal(false)}>
           <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
@@ -2739,10 +2739,29 @@ export default function ContactDetailScreen() {
                 <Text style={s.actionSheetButtonText}>Take Photo</Text>
               </TouchableOpacity>
               <View style={s.actionSheetDivider} />
-              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); setShowCardTemplatePicker(true); }} data-testid="photo-option-create-card">
-                <Ionicons name="color-palette-outline" size={22} color="#C9A962" />
-                <Text style={[s.actionSheetButtonText, { color: '#C9A962' }]}>Create Card</Text>
-              </TouchableOpacity>
+              <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}>
+                  {[
+                    { type: 'congrats', label: 'Congrats', color: '#C9A962', icon: 'trophy' },
+                    { type: 'birthday', label: 'Birthday', color: '#FF2D55', icon: 'gift' },
+                    { type: 'holiday', label: 'Holiday', color: '#5AC8FA', icon: 'snow' },
+                    { type: 'thankyou', label: 'Thank You', color: '#34C759', icon: 'thumbs-up' },
+                    { type: 'anniversary', label: 'Anniversary', color: '#FF6B6B', icon: 'heart' },
+                    { type: 'welcome', label: 'Welcome', color: '#007AFF', icon: 'hand-left' },
+                  ].map(item => (
+                    <TouchableOpacity
+                      key={item.type}
+                      style={{ alignItems: 'center', backgroundColor: `${item.color}15`, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, minWidth: 80 }}
+                      onPress={() => { setShowPhotoOptionsModal(false); handleCardTemplateSelect(item.type); }}
+                      data-testid={`card-template-${item.type}`}
+                    >
+                      <Ionicons name={item.icon as any} size={24} color={item.color} />
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
             </View>
             <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
               <Text style={s.actionSheetCancelText}>Cancel</Text>

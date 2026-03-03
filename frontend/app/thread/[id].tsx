@@ -2655,7 +2655,7 @@ export default function ThreadScreen() {
         </TouchableOpacity>
       </Modal>
       
-      {/* Photo Options Action Sheet (Web/PWA) */}
+      {/* Photo & Card Action Sheet (Web/PWA) */}
       <Modal
         visible={showPhotoOptionsModal}
         animationType="slide"
@@ -2679,53 +2679,42 @@ export default function ThreadScreen() {
                 <Text style={styles.actionSheetButtonText}>Take Photo</Text>
               </TouchableOpacity>
               <View style={styles.actionSheetDivider} />
-              <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); setShowCardTypePicker(true); }} data-testid="photo-option-create-card">
-                <Ionicons name="color-palette-outline" size={22} color="#C9A962" />
-                <Text style={[styles.actionSheetButtonText, { color: '#C9A962' }]}>Create Card</Text>
-              </TouchableOpacity>
+              <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}>
+                  {[
+                    { type: 'congrats', label: 'Congrats', color: '#C9A962', icon: 'trophy' },
+                    { type: 'birthday', label: 'Birthday', color: '#FF2D55', icon: 'gift' },
+                    { type: 'holiday', label: 'Holiday', color: '#5AC8FA', icon: 'snow' },
+                    { type: 'thankyou', label: 'Thank You', color: '#34C759', icon: 'thumbs-up' },
+                    { type: 'anniversary', label: 'Anniversary', color: '#FF6B6B', icon: 'heart' },
+                    { type: 'welcome', label: 'Welcome', color: '#007AFF', icon: 'hand-left' },
+                  ].map(item => (
+                    <TouchableOpacity
+                      key={item.type}
+                      style={{ alignItems: 'center', backgroundColor: `${item.color}15`, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, minWidth: 80 }}
+                      onPress={() => {
+                        setShowPhotoOptionsModal(false);
+                        const params = new URLSearchParams();
+                        params.set('type', item.type);
+                        if (contactName && contactName !== 'Contact') params.set('prefillName', contactName);
+                        if (contactPhone) params.set('prefillPhone', contactPhone);
+                        const email = savedContactEmail || (contact_email as string) || '';
+                        if (email) params.set('prefillEmail', email);
+                        params.set('returnToThread', id as string);
+                        router.push(`/settings/create-card?${params.toString()}` as any);
+                      }}
+                      data-testid={`card-template-${item.type}`}
+                    >
+                      <Ionicons name={item.icon as any} size={24} color={item.color} />
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
             </View>
             <TouchableOpacity style={styles.actionSheetCancel} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
               <Text style={styles.actionSheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-      
-      {/* Card Type Picker Modal */}
-      <Modal visible={showCardTypePicker} transparent animationType="slide" onRequestClose={() => setShowCardTypePicker(false)}>
-        <TouchableOpacity style={styles.photoOptionsOverlay} activeOpacity={1} onPress={() => setShowCardTypePicker(false)}>
-          <View style={styles.photoOptionsModal} onStartShouldSetResponder={() => true}>
-            <Text style={styles.photoOptionsTitle}>Choose Card Type</Text>
-            {[
-              { key: 'congrats', icon: 'gift-outline', color: '#C9A962', label: 'Congrats Card' },
-              { key: 'birthday', icon: 'balloon-outline', color: '#FF2D55', label: 'Birthday Card' },
-              { key: 'anniversary', icon: 'heart-outline', color: '#FF6B6B', label: 'Anniversary Card' },
-              { key: 'thankyou', icon: 'thumbs-up-outline', color: '#34C759', label: 'Thank You Card' },
-              { key: 'welcome', icon: 'hand-left-outline', color: '#007AFF', label: 'Welcome Card' },
-              { key: 'holiday', icon: 'snow-outline', color: '#5AC8FA', label: 'Holiday Card' },
-            ].map(card => (
-              <TouchableOpacity
-                key={card.key}
-                style={styles.photoOptionButton}
-                onPress={() => {
-                  setShowCardTypePicker(false);
-                  const params = new URLSearchParams();
-                  params.set('type', card.key);
-                  if (contactName && contactName !== 'Contact') params.set('prefillName', contactName);
-                  if (contactPhone) params.set('prefillPhone', contactPhone);
-                  const email = savedContactEmail || (contact_email as string) || '';
-                  if (email) params.set('prefillEmail', email);
-                  params.set('returnToThread', id as string);
-                  router.push(`/settings/create-card?${params.toString()}` as any);
-                }}
-                data-testid={`card-type-${card.key}`}
-              >
-                <Ionicons name={card.icon as any} size={24} color={card.color} />
-                <Text style={styles.photoOptionText}>{card.label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={[styles.photoOptionButton, styles.photoOptionCancel]} onPress={() => setShowCardTypePicker(false)} data-testid="card-type-cancel">
-              <Text style={styles.photoOptionCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
