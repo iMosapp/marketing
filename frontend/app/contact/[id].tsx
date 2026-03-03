@@ -595,6 +595,36 @@ export default function ContactDetailScreen() {
     setComposerMessage(cardMessage);
   };
 
+  const sendShowcaseLink = () => {
+    if (!user?._id) return;
+    const baseUrl = 'https://app.imosapp.com';
+    const showcaseUrl = `${baseUrl}/showcase/${user._id}`;
+    const firstName = contact.first_name || 'there';
+    const msg = `Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`;
+    setShowBusinessCard(false);
+    setComposerMessage(msg);
+  };
+
+  const sendLinkPageLink = async () => {
+    if (!user?._id) return;
+    const baseUrl = 'https://app.imosapp.com';
+    const firstName = contact.first_name || 'there';
+    try {
+      const resp = await api.get(`/linkpage/user/${user._id}`);
+      const username = resp.data?.username;
+      if (username) {
+        const url = `${baseUrl}/l/${username}`;
+        const msg = `Hey ${firstName}! Here are all my links: ${url}`;
+        setShowBusinessCard(false);
+        setComposerMessage(msg);
+      } else {
+        showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
+      }
+    } catch {
+      showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
+    }
+  };
+
   const selectTemplate = (template: { _id: string; name: string; content: string; category?: string }) => {
     const firstName = contact.first_name || 'there';
     const content = template.content.replace(/{name}/g, firstName);
@@ -2610,9 +2640,9 @@ export default function ContactDetailScreen() {
             </View>
             <View style={s.cardModalContent}>
               <View style={s.cardPreview}>
-                <Ionicons name="card" size={48} color="#007AFF" />
-                <Text style={s.cardPreviewTitle}>Your Digital Business Card</Text>
-                <Text style={s.cardPreviewDesc}>Choose how you'd like to share your contact information</Text>
+                <Ionicons name="share-social" size={48} color="#007AFF" />
+                <Text style={s.cardPreviewTitle}>Share Your Stuff</Text>
+                <Text style={s.cardPreviewDesc}>Choose what you'd like to send to {contact.first_name || 'this contact'}</Text>
               </View>
               <View style={s.shareOptionsContainer}>
                 <TouchableOpacity style={s.shareOptionCard} onPress={sendVCardLink} data-testid="share-vcf-btn">
@@ -2632,6 +2662,26 @@ export default function ContactDetailScreen() {
                   <View style={s.shareOptionContent}>
                     <Text style={s.shareOptionTitle}>Share Landing Page</Text>
                     <Text style={s.shareOptionDesc}>Send your full digital card with socials, bio & more</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.shareOptionCard} onPress={sendShowcaseLink} data-testid="share-showcase-btn">
+                  <View style={s.shareOptionIcon}>
+                    <Ionicons name="images-outline" size={28} color="#FF9500" />
+                  </View>
+                  <View style={s.shareOptionContent}>
+                    <Text style={s.shareOptionTitle}>Share Showcase</Text>
+                    <Text style={s.shareOptionDesc}>Show off your happy customers & featured work</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.shareOptionCard} onPress={sendLinkPageLink} data-testid="share-linkpage-btn">
+                  <View style={s.shareOptionIcon}>
+                    <Ionicons name="link-outline" size={28} color="#AF52DE" />
+                  </View>
+                  <View style={s.shareOptionContent}>
+                    <Text style={s.shareOptionTitle}>Share Link Page</Text>
+                    <Text style={s.shareOptionDesc}>Send all your social links in one place</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>

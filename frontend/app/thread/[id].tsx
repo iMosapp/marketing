@@ -1031,6 +1031,38 @@ export default function ThreadScreen() {
     setMessage(cardMessage);
   };
 
+  const sendShowcaseLink = () => {
+    if (!user?._id) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const baseUrl = 'https://app.imosapp.com';
+    const showcaseUrl = `${baseUrl}/showcase/${user._id}`;
+    const firstName = (contact_name as string || '').split(' ')[0] || 'there';
+    const msg = `Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`;
+    setShowBusinessCard(false);
+    setMessage(msg);
+  };
+
+  const sendLinkPageLink = async () => {
+    if (!user?._id) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const baseUrl = 'https://app.imosapp.com';
+    const firstName = (contact_name as string || '').split(' ')[0] || 'there';
+    try {
+      const resp = await api.get(`/linkpage/user/${user._id}`);
+      const username = resp.data?.username;
+      if (username) {
+        const url = `${baseUrl}/l/${username}`;
+        const msg = `Hey ${firstName}! Here are all my links: ${url}`;
+        setShowBusinessCard(false);
+        setMessage(msg);
+      } else {
+        Alert.alert('Not Set Up', 'Set up your Link Page in Settings first');
+      }
+    } catch {
+      Alert.alert('Not Set Up', 'Set up your Link Page in Settings first');
+    }
+  };
+
   // Congrats Card Functions
   const pickCongratsPhoto = async () => {
     // On web, directly open file picker
@@ -2510,10 +2542,10 @@ export default function ThreadScreen() {
             
             <View style={styles.cardModalContent}>
               <View style={styles.cardPreview}>
-                <Ionicons name="card" size={48} color="#007AFF" />
-                <Text style={styles.cardPreviewTitle}>Your Digital Business Card</Text>
+                <Ionicons name="share-social" size={48} color="#007AFF" />
+                <Text style={styles.cardPreviewTitle}>Share Your Stuff</Text>
                 <Text style={styles.cardPreviewDesc}>
-                  Choose how you'd like to share your contact information
+                  Choose what you'd like to send
                 </Text>
               </View>
               
@@ -2548,6 +2580,40 @@ export default function ThreadScreen() {
                     <Text style={styles.shareOptionTitle}>Share Landing Page</Text>
                     <Text style={styles.shareOptionDesc}>
                       Send your full digital card with socials, bio & more
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.shareOptionCard}
+                  onPress={sendShowcaseLink}
+                  data-testid="share-showcase-btn"
+                >
+                  <View style={styles.shareOptionIcon}>
+                    <Ionicons name="images-outline" size={28} color="#FF9500" />
+                  </View>
+                  <View style={styles.shareOptionContent}>
+                    <Text style={styles.shareOptionTitle}>Share Showcase</Text>
+                    <Text style={styles.shareOptionDesc}>
+                      Show off your happy customers & featured work
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.shareOptionCard}
+                  onPress={sendLinkPageLink}
+                  data-testid="share-linkpage-btn"
+                >
+                  <View style={styles.shareOptionIcon}>
+                    <Ionicons name="link-outline" size={28} color="#AF52DE" />
+                  </View>
+                  <View style={styles.shareOptionContent}>
+                    <Text style={styles.shareOptionTitle}>Share Link Page</Text>
+                    <Text style={styles.shareOptionDesc}>
+                      Send all your social links in one place
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
