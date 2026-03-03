@@ -1463,6 +1463,11 @@ export default function ContactDetailScreen() {
                 </View>
                 <Text style={s.heroStatDot}>·</Text>
                 <View style={s.heroStatChip}>
+                  <Text style={s.heroStatVal}>{stats.link_clicks}</Text>
+                  <Text style={s.heroStatLbl}>clicks</Text>
+                </View>
+                <Text style={s.heroStatDot}>·</Text>
+                <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{stats.campaigns}</Text>
                   <Text style={s.heroStatLbl}>campaigns</Text>
                 </View>
@@ -1470,11 +1475,6 @@ export default function ContactDetailScreen() {
                 <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{contact.referral_count}</Text>
                   <Text style={s.heroStatLbl}>referrals</Text>
-                </View>
-                <Text style={s.heroStatDot}>·</Text>
-                <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{stats.link_clicks}</Text>
-                  <Text style={s.heroStatLbl}>clicks</Text>
                 </View>
               </View>
             )}
