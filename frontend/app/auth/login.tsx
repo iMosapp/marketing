@@ -13,7 +13,6 @@ import {
   Modal,
   Image,
   Animated,
-  useColorScheme,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,37 +35,27 @@ const getDefaultRoute = (role?: string): string => {
 };
 
 export default function LoginScreen() {
-  const { colors } = useThemeStore();
+  const { colors, loadTheme } = useThemeStore();
+  const [themeReady, setThemeReady] = useState(false);
   const styles = getStyles(colors);
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
-  const systemScheme = useColorScheme();
-  const isDark = systemScheme === 'dark';
 
   // Fade-in animation to prevent flash
   const fadeAnim = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    loadTheme().finally(() => {
+      setThemeReady(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
   }, []);
 
-  // Theme colors based on system preference
-  const theme = {
-    bg: isDark ? '#000000' : '#FFFFFF',
-    surface: isDark ? colors.card : colors.bg,
-    border: isDark ? colors.surface : colors.border,
-    text: isDark ? '#FFFFFF' : '#000000',
-    textSecondary: isDark ? colors.textSecondary : colors.textSecondary,
-    modalBg: isDark ? colors.card : '#FFFFFF',
-    modalOverlay: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.4)',
-    errorBg: isDark ? '#FF3B3010' : '#FF3B3015',
-  };
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -270,7 +259,7 @@ export default function LoginScreen() {
   };
   
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={styles.container}>
       <Animated.View style={[styles.innerContainer, { opacity: fadeAnim }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -289,14 +278,14 @@ export default function LoginScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={[styles.tagline, { color: theme.textSecondary }]}>Relationship Management System</Text>
+              <Text style={styles.tagline}>Relationship Management System</Text>
             </View>
             
             <View style={styles.form}>
               <TextInput
-                style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                style={styles.input}
                 placeholder="Email"
-                placeholderTextColor={theme.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -307,11 +296,11 @@ export default function LoginScreen() {
                 blurOnSubmit={false}
               />
               
-              <View style={[styles.passwordContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={styles.passwordContainer}>
                 <TextInput
-                  style={[styles.passwordInput, { color: theme.text }]}
+                  style={styles.passwordInput}
                   placeholder="Password"
-                  placeholderTextColor={theme.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -327,7 +316,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-off' : 'eye'}
                     size={22}
-                    color={theme.textSecondary}
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -343,7 +332,7 @@ export default function LoginScreen() {
                       <Ionicons name="checkmark" size={14} color={colors.text} />
                     )}
                   </View>
-                  <Text style={[styles.rememberMeText, { color: theme.textSecondary }]}>Remember me</Text>
+                  <Text style={styles.rememberMeText}>Remember me</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -367,7 +356,7 @@ export default function LoginScreen() {
               />
               
               {loginError ? (
-                <View style={[styles.errorContainer, { backgroundColor: theme.errorBg }]}>
+                <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle" size={18} color="#FF3B30" />
                   <Text style={styles.errorText}>{loginError}</Text>
                 </View>
@@ -375,7 +364,7 @@ export default function LoginScreen() {
               
               {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
                 <TouchableOpacity
-                  style={[styles.biometricButton, { backgroundColor: theme.surface, borderColor: '#007AFF' }, biometricLoading && styles.buttonDisabled]}
+                  style={[styles.biometricButton, biometricLoading && styles.buttonDisabled]}
                   onPress={handleBiometricLogin}
                   disabled={biometricLoading}
                   data-testid="biometric-login-button"
@@ -392,7 +381,7 @@ export default function LoginScreen() {
               )}
               
               <View style={styles.signupContainer}>
-                <Text style={[styles.signupText, { color: theme.textSecondary }]}>Don't have an account?</Text>
+                <Text style={styles.signupText}>Don't have an account?</Text>
                 <WebSafeButton
                   onPress={() => router.push('/auth/signup')}
                   title="Sign Up"
@@ -414,8 +403,8 @@ export default function LoginScreen() {
                   }}
                   data-testid="refresh-app-btn"
                 >
-                  <Ionicons name="refresh" size={18} color={theme.textSecondary} />
-                  <Text style={[styles.refreshButtonText, { color: theme.textSecondary }]}>Refresh App</Text>
+                  <Ionicons name="refresh" size={18} color={colors.textSecondary} />
+                  <Text style={styles.refreshButtonText}>Refresh App</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -430,8 +419,8 @@ export default function LoginScreen() {
         transparent={true}
         onRequestClose={handleSkipBiometric}
       >
-        <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
-          <View style={[styles.modalContent, { backgroundColor: theme.modalBg }]}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
             <View style={styles.modalIcon}>
               <Ionicons
                 name={getBiometricIcon(biometricStatus?.biometricType || 'none') as any}
@@ -440,21 +429,21 @@ export default function LoginScreen() {
               />
             </View>
             
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
+            <Text style={styles.modalTitle}>
               Enable {biometricStatus?.biometricLabel}?
             </Text>
             
-            <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
+            <Text style={styles.modalDescription}>
               Login faster next time using {biometricStatus?.biometricLabel}. 
               Your credentials will be stored securely on this device.
             </Text>
             
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButtonSecondary, { backgroundColor: theme.surface }]}
+                style={styles.modalButtonSecondary}
                 onPress={handleSkipBiometric}
               >
-                <Text style={[styles.modalButtonSecondaryText, { color: theme.text }]}>Not Now</Text>
+                <Text style={styles.modalButtonSecondaryText}>Not Now</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -528,7 +517,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -536,7 +525,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   passwordInput: {
     flex: 1,
