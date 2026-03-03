@@ -949,11 +949,11 @@ export default function ThreadScreen() {
     
     Alert.alert(
       'Add Photo',
-      'Choose an option',
+      undefined,
       [
+        { text: 'Photo Library', onPress: pickImage },
         { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Library', onPress: pickImage },
-        { text: 'Create Congrats Card', onPress: () => openCongratsModal() },
+        { text: 'Create Card', onPress: () => openCongratsModal() },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
@@ -1117,7 +1117,7 @@ export default function ThreadScreen() {
           },
         },
         {
-          text: 'Choose from Library',
+          text: 'Photo Library',
           onPress: async () => {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
@@ -2725,24 +2725,12 @@ export default function ThreadScreen() {
               style={styles.photoOptionButton}
               onPress={() => {
                 setShowPhotoOptionsModal(false);
-                takePhoto();
-              }}
-              data-testid="photo-option-camera"
-            >
-              <Ionicons name="camera-outline" size={24} color="#34C759" />
-              <Text style={styles.photoOptionText}>Take Photo</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.photoOptionButton}
-              onPress={() => {
-                setShowPhotoOptionsModal(false);
                 pickImage();
               }}
               data-testid="photo-option-library"
             >
               <Ionicons name="images-outline" size={24} color="#007AFF" />
-              <Text style={styles.photoOptionText}>Choose from Library</Text>
+              <Text style={styles.photoOptionText}>Photo Library</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -2753,7 +2741,7 @@ export default function ThreadScreen() {
               }}
               data-testid="photo-option-create-card"
             >
-              <Ionicons name="gift-outline" size={24} color="#C9A962" />
+              <Ionicons name="color-palette-outline" size={24} color="#C9A962" />
               <Text style={styles.photoOptionText}>Create Card</Text>
             </TouchableOpacity>
             

@@ -539,13 +539,13 @@ export default function ContactDetailScreen() {
       setShowPhotoOptionsModal(true);
       return;
     }
-    Alert.alert('Add Photo', 'Choose an option', [
-      { text: 'Take Photo', onPress: async () => {
-        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7 });
+    Alert.alert('Add Photo', undefined, [
+      { text: 'Photo Library', onPress: async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.7 });
         if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
       }},
-      { text: 'Choose from Library', onPress: async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.7 });
+      { text: 'Take Photo', onPress: async () => {
+        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7 });
         if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
       }},
       { text: 'Create Card', onPress: () => setShowCardTemplatePicker(true) },
@@ -2744,10 +2744,10 @@ export default function ContactDetailScreen() {
             <Text style={s.photoOptionsTitle}>Add Photo</Text>
             <TouchableOpacity style={s.photoOptionButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-library">
               <Ionicons name="images-outline" size={24} color="#007AFF" />
-              <Text style={s.photoOptionText}>Choose from Library</Text>
+              <Text style={s.photoOptionText}>Photo Library</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.photoOptionButton} onPress={() => { setShowPhotoOptionsModal(false); setShowCardTemplatePicker(true); }} data-testid="photo-option-create-card">
-              <Ionicons name="gift-outline" size={24} color="#C9A962" />
+              <Ionicons name="color-palette-outline" size={24} color="#C9A962" />
               <Text style={s.photoOptionText}>Create Card</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.photoOptionButton, s.photoOptionCancel]} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
