@@ -13,12 +13,19 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover"
         />
         <title>i'M On Social</title>
+        {/* Open Graph / iMessage Link Previews */}
+        <meta property="og:title" content="i'M On Social" />
+        <meta property="og:description" content="Your all-in-one relationship management system" />
+        <meta property="og:image" content="/logo512.png" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:image" content="/logo512.png" />
         {/* PWA  - must be in static HTML for iOS standalone mode */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="iMOs" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#007AFF" />
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
