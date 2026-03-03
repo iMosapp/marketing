@@ -517,6 +517,13 @@ export default function MoreScreen() {
           onPress: () => router.push('/admin/leaderboard'),
           color: '#AF52DE',
         },
+        {
+          icon: 'analytics',
+          title: 'Lead Attribution',
+          subtitle: 'Demo requests, sources & referrals',
+          onPress: () => router.push('/admin/lead-tracking'),
+          color: '#C9A962',
+        },
       ],
     },
     // Templates & Branding
@@ -604,6 +611,13 @@ export default function MoreScreen() {
           subtitle: 'Approve showcase posts',
           onPress: () => router.push('/settings/showcase-approvals'),
           color: '#34C759',
+        },
+        {
+          icon: 'analytics',
+          title: 'Lead Attribution',
+          subtitle: 'Track demo sources & referrals',
+          onPress: () => router.push('/admin/lead-tracking'),
+          color: '#C9A962',
         },
       ],
     },

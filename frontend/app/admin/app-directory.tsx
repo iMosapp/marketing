@@ -91,6 +91,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Campaign Reports', description: 'Campaign enrollment & delivery stats', path: '/imos/reports-campaigns', icon: 'megaphone-outline', color: '#AF52DE', requiresAuth: false, audience: 'All users' },
       { name: 'Messaging Reports', description: 'SMS & email analytics', path: '/imos/reports-messaging', icon: 'chatbubble-outline', color: '#5856D6', requiresAuth: false, audience: 'All users' },
       { name: 'My Rankings', description: 'Your personal leaderboard position & stats', path: '/imos/my-rankings', icon: 'ribbon-outline', color: '#C9A962', requiresAuth: false, audience: 'All users' },
+      { name: 'Lead Attribution', description: 'Track demo requests, sources, UTM campaigns & referrals', path: '/admin/lead-tracking', icon: 'analytics-outline', color: '#C9A962', requiresAuth: true, audience: 'Admins' },
     ],
   },
   {
@@ -190,6 +191,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Contact Tags', description: 'Tag management', path: '/imos/tags', icon: 'pricetags-outline', color: '#FF9500', requiresAuth: false, audience: 'All users' },
       { name: 'Review Links', description: 'Google, Facebook, Yelp links', path: '/imos/review-links', icon: 'star-outline', color: '#FFD60A', requiresAuth: false, audience: 'All users' },
       { name: 'Import Contacts', description: 'Bulk import from CSV', path: '/imos/import', icon: 'cloud-upload-outline', color: '#007AFF', requiresAuth: false, audience: 'All users' },
+      { name: 'Lead Attribution', description: 'Demo requests, sources, UTM campaigns & referral tracking', path: '/admin/lead-tracking', icon: 'analytics-outline', color: '#C9A962', requiresAuth: true, audience: 'Admins' },
     ],
   },
   {
