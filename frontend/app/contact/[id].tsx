@@ -2410,16 +2410,6 @@ export default function ContactDetailScreen() {
               </View>
             ) : null}
 
-            {/* SMS hint */}
-            {composerMode === 'sms' && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 6, gap: 6 }}>
-                <Ionicons name="information-circle" size={14} color="#FF9500" />
-                <Text style={{ fontSize: 11, color: '#FF9500', flex: 1 }}>
-                  Tap send to open your SMS app with message ready to go
-                </Text>
-              </View>
-            )}
-
             {/* Composer box */}
             <View style={[s.composerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput

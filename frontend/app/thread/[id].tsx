@@ -2178,15 +2178,6 @@ export default function ThreadScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Personal SMS hint */}
-        {messageMode === 'sms' && !(user as any)?.mvpline_number && (
-          <View style={styles.personalSmsHint} data-testid="personal-sms-hint">
-            <Ionicons name="phone-portrait-outline" size={13} color="#FF9500" />
-            <Text style={styles.personalSmsHintText}>
-              Tap send to open your SMS app with message ready to go
-            </Text>
-          </View>
-        )}
         <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
           {/* Main composer box */}
           <View style={[styles.composerBox, { backgroundColor: colors.surface }]}>
