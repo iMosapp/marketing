@@ -18,6 +18,14 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 ## What's Been Implemented
 
 ### Completed (Mar 3, 2026 - This Session)
+- **REFERRAL ATTRIBUTION SYSTEM**:
+  - Every user gets a unique `ref_code` (auto-generated, 8-char hex) stored on their profile
+  - All share URLs (digital card, review link, showcase, congrats) now auto-append `?ref={code}`
+  - Demo form captures ref code → resolves to user → stores referred_by, referred_by_user_id, referred_by_name, referrer_type
+  - Referrer type auto-classified: user, internal (admin), partner (PARTNER_ prefix), reseller (RESELLER_ prefix), referral (REF_ prefix)
+  - Admin dashboard shows "Referrals" section with referrer name, code, type, and lead count
+  - Backfill endpoint for existing users: POST /api/auth/ref/backfill
+- **INSTALL APP LINK**: Added to login page (blue "Install App on Your Phone" button) and all marketing site footers
 - **LEAD TRACKING & ATTRIBUTION SYSTEM**: 
   - Every "Schedule a Demo" CTA across 27 marketing pages now has unique `?source=` tracking (80 unique source tags)
   - Sources broken into page (homepage, digital_card, leaderboard, etc.) and position (nav, hero, cta, footer)
@@ -97,6 +105,7 @@ Full-stack Relationship Management System (RMS) for organizations, teams, and in
 - `/app/marketing/build/appdirectory/index.html` -- Static app directory page
 - `/app/marketing/generate_pages.py` -- Script to generate all static pages
 - `/app/frontend/public/marketing.html` -- Preview copy of marketing site
+- `/app/frontend/utils/refLink.ts` -- appendRef utility for share URLs
 - `/app/frontend/app/admin/lead-tracking.tsx` -- Lead tracking dashboard (NEW)
 - `/app/backend/routers/demo_requests.py` -- Demo request API with analytics (REWRITTEN)
 - `/app/frontend/app/auth/login.tsx` -- Login page (FIXED: light theme)
