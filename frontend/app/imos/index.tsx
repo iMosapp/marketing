@@ -6,7 +6,7 @@ import { ImosHeader, ImosFooter } from './_components';
 
 const HERO_FEATURES = [
   { icon: 'card', color: '#007AFF', label: 'Digital Cards' },
-  { icon: 'star', color: '#FFD60A', label: 'Personal Reviews' },
+  { icon: 'star', color: '#007AFF', label: 'Personal Reviews' },
   { icon: 'share-social', color: '#34C759', label: 'Social Links' },
   { icon: 'camera', color: '#007AFF', label: 'Congrats Cards' },
   { icon: 'rocket', color: '#FF9500', label: 'Campaigns' },
@@ -50,7 +50,7 @@ const HOW_IT_WORKS = [
     desc: 'Not just public Google reviews  - direct feedback that lives on your digital card, builds your personal credibility, and stays with you long-term. Even if you switch stores or industries.',
     bullets: ['Reviews live on your digital card', 'Personal credibility that travels', 'Strengthens your individual brand'],
     icon: 'star',
-    color: '#FFD60A',
+    color: '#007AFF',
   },
   {
     tag: 'AUTOMATED CAMPAIGNS',
@@ -188,7 +188,7 @@ export default function ImosHome() {
               <View style={[s.narrativeIconWrap, { backgroundColor: 'rgba(255,214,10,0.1)' }]}>
                 <Ionicons name="flash" size={32} color="#FFD60A" />
               </View>
-              <Text style={[s.narrativeTag, { color: '#FFD60A' }]}>THE POWER MOVE</Text>
+              <Text style={[s.narrativeTag, { color: '#007AFF' }]}>THE POWER MOVE</Text>
               <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
                 Personal Reviews Change Everything.
               </Text>
@@ -199,7 +199,7 @@ export default function ImosHome() {
                 <Text style={s.narrativeLine}>Stays with you  - even if you switch stores or industries.</Text>
               </View>
               <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(255,214,10,0.08)' }]}>
-                <Text style={[s.narrativeHighlightText, { color: '#FFD60A' }]}>
+                <Text style={[s.narrativeHighlightText, { color: '#007AFF' }]}>
                   Reputation becomes portable. That's powerful.
                 </Text>
               </View>
@@ -318,7 +318,7 @@ const s = StyleSheet.create({
   heroCTAs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
+    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 980,
   },
   primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
   secondaryBtn: {

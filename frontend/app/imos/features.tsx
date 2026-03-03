@@ -148,7 +148,7 @@ const s = StyleSheet.create({
   ctaTitle: { fontSize: 20, fontWeight: '700', color: '#1D1D1F', marginBottom: 16 },
   ctaBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 28,
+    backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 980,
   },
   ctaBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
 });

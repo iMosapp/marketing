@@ -291,7 +291,7 @@ const s = StyleSheet.create({
   navBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, minWidth: 80 },
   navBtnText: { color: '#1D1D1F', fontSize: 16, marginLeft: 4 },
   navBtnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, gap: 4 },
-  navBtnPrimaryText: { color: '#000', fontSize: 16, fontWeight: '600' },
+  navBtnPrimaryText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.08)' },
   dotActive: { backgroundColor: '#007AFF', width: 16 },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,25 +12,25 @@ const NAV_LINKS = [
       { section: 'Your Digital Presence' },
       { label: 'Digital Cards', path: '/imos/digital-card', icon: 'card', color: '#007AFF', desc: 'Shareable, trackable business cards' },
       { label: 'Personal Reviews', path: '/imos/reviews', icon: 'star', color: '#D4AD00', desc: 'Portable reputation that travels with you' },
-      { label: 'Link Pages & Showcase', path: '/imos/showcase', icon: 'share-social', color: '#34C759', desc: 'All your socials in one link' },
+      { label: 'Link Pages', path: '/imos/showcase', icon: 'share-social', color: '#34C759', desc: 'All your socials in one link' },
       { section: 'Engagement' },
       { label: 'Congrats Cards', path: '/imos/congrats-template', icon: 'image', color: '#FF2D55', desc: 'Celebrate every sale automatically' },
-      { label: 'Automated Campaigns', path: '/imos/date-triggers', icon: 'rocket', color: '#FF9500', desc: 'Birthdays, anniversaries, follow-ups' },
+      { label: 'Automated Campaigns', path: '/imos/date-triggers', icon: 'rocket', color: '#FF9500', desc: 'Birthdays, follow-ups, on autopilot' },
       { label: 'Inbox & Messaging', path: '/imos/inbox', icon: 'chatbubble-ellipses', color: '#5856D6', desc: 'SMS, email, all in one place' },
       { section: 'Intelligence' },
-      { label: 'Jessi AI Assistant', path: '/imos/jessi', icon: 'sparkles', color: '#AF52DE', desc: 'AI-powered relationship intelligence' },
-      { label: 'Leaderboards & Analytics', path: '/imos/leaderboard', icon: 'trophy', color: '#FF3B30', desc: 'Track performance across teams' },
+      { label: 'Jessi AI', path: '/imos/jessi', icon: 'sparkles', color: '#AF52DE', desc: 'AI-powered relationship insights' },
+      { label: 'Leaderboards', path: '/imos/leaderboard', icon: 'trophy', color: '#FF3B30', desc: 'Track performance across teams' },
     ],
   },
   {
     label: 'Solutions',
     children: [
       { section: 'By Role' },
-      { label: 'For Organizations', path: '/imos/organizations', icon: 'business', color: '#007AFF', desc: 'Structure teams, stores & reputation' },
-      { label: 'For Individuals', path: '/imos/individuals', icon: 'person', color: '#C9A962', desc: 'Own your personal brand & reviews' },
+      { label: 'For Organizations', path: '/imos/organizations', icon: 'business', color: '#007AFF', desc: 'Manage teams, stores & reputation' },
+      { label: 'For Individuals', path: '/imos/individuals', icon: 'person', color: '#C9A962', desc: 'Own your personal brand' },
       { section: 'By Industry' },
-      { label: 'Automotive', path: '/imos/salespresentation', icon: 'car-sport', color: '#34C759', desc: 'Built for dealerships & sales teams' },
-      { label: 'Sales Teams', path: '/imos/hub', icon: 'briefcase', color: '#FF9500', desc: 'Any industry, any team size' },
+      { label: 'Automotive', path: '/imos/salespresentation', icon: 'car-sport', color: '#34C759', desc: 'Built for dealerships' },
+      { label: 'Sales Teams', path: '/imos/hub', icon: 'briefcase', color: '#FF9500', desc: 'Any industry, any size' },
     ],
   },
   {
@@ -38,8 +38,7 @@ const NAV_LINKS = [
     children: [
       { label: 'Training Hub', path: '/imos/training', icon: 'school', color: '#007AFF', desc: 'Courses, videos & best practices' },
       { label: 'Help Center', path: '/imos/help', icon: 'help-circle', color: '#34C759', desc: 'Guides, FAQs & support' },
-      { label: 'App Directory', path: '/imos/app-directory', icon: 'grid', color: '#AF52DE', desc: 'Explore all iMOs features' },
-      { label: 'Sales Deck', path: '/imos/presentation', icon: 'easel', color: '#FF9500', desc: 'See what iMOs can do for you' },
+      { label: 'Sales Deck', path: '/imos/presentation', icon: 'easel', color: '#FF9500', desc: 'See what we can do for you' },
     ],
   },
   { label: 'Pricing', path: '/imos/pricing' },
@@ -49,85 +48,128 @@ export function getShareUrl(path: string) {
   return `${PROD_BASE}${path}`;
 }
 
+function DropdownMenu({ item, onNavigate }: { item: any; onNavigate: (p: string) => void }) {
+  return (
+    <View style={dd.wrap}>
+      <View style={dd.inner}>
+        {item.children.map((child: any, i: number) => {
+          if (child.section) {
+            return <Text key={i} style={dd.sectionLabel}>{child.section}</Text>;
+          }
+          return (
+            <TouchableOpacity key={i} style={dd.item} onPress={() => onNavigate(child.path)} data-testid={`dd-${child.label?.toLowerCase().replace(/\s+/g, '-')}`}>
+              <View style={[dd.icon, { backgroundColor: child.color + '14' }]}>
+                <Ionicons name={child.icon as any} size={17} color={child.color} />
+              </View>
+              <View style={dd.text}>
+                <Text style={dd.name}>{child.label}</Text>
+                <Text style={dd.desc}>{child.desc}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export function ImosHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const closeTimerRef = useRef<any>(null);
 
   const navigate = (path: string) => {
     setMenuOpen(false);
+    setActiveDropdown(null);
     router.push(path as any);
   };
 
-  const isActive = (path: string) => {
-    if (path === '/imos') return pathname === '/imos' || pathname === '/imos/';
-    return pathname.startsWith(path);
-  };
+  const handleMouseEnter = useCallback((label: string) => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setActiveDropdown(label);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    closeTimerRef.current = setTimeout(() => setActiveDropdown(null), 200);
+  }, []);
 
   return (
-    <View style={styles.headerOuter}>
-      <View style={[styles.headerInner, isDesktop && { maxWidth: 1100 }]}>
-        {/* Logo */}
+    <View style={h.outer}>
+      <View style={[h.inner, isDesktop && { maxWidth: 1200 }]}>
         <TouchableOpacity onPress={() => navigate('/imos')} data-testid="imos-header-logo">
-          <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 90, height: 90 }} resizeMode="contain" />
+          <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 80, height: 80 }} resizeMode="contain" />
         </TouchableOpacity>
 
         {isDesktop ? (
           <>
-            {/* Desktop Nav */}
-            <View style={styles.navRow}>
+            <View style={h.navRow}>
               {NAV_LINKS.map((item: any) => {
                 if (item.path) {
                   return (
                     <TouchableOpacity key={item.label} onPress={() => navigate(item.path)} data-testid={`nav-${item.label.toLowerCase()}`}>
-                      <Text style={[styles.navLink, isActive(item.path) && styles.navLinkActive]}>{item.label}</Text>
+                      <Text style={h.navLink}>{item.label}</Text>
                     </TouchableOpacity>
                   );
                 }
+                const isOpen = activeDropdown === item.label;
                 return (
-                  <TouchableOpacity key={item.label} onPress={() => navigate(item.children?.find((c: any) => c.path)?.path || '/imos')} data-testid={`nav-${item.label.toLowerCase()}`}>
-                    <Text style={styles.navLink}>{item.label}</Text>
-                  </TouchableOpacity>
+                  <View
+                    key={item.label}
+                    style={h.navItem}
+                    {...(Platform.OS === 'web' ? {
+                      onMouseEnter: () => handleMouseEnter(item.label),
+                      onMouseLeave: handleMouseLeave,
+                    } : {})}
+                  >
+                    <TouchableOpacity
+                      onPress={() => setActiveDropdown(isOpen ? null : item.label)}
+                      style={h.navTrigger}
+                      data-testid={`nav-${item.label.toLowerCase()}`}
+                    >
+                      <Text style={h.navLink}>{item.label}</Text>
+                      <Ionicons name="chevron-down" size={10} color="#86868B" style={isOpen ? { transform: [{ rotate: '180deg' }] } : undefined} />
+                    </TouchableOpacity>
+                    {isOpen && <DropdownMenu item={item} onNavigate={navigate} />}
+                  </View>
                 );
               })}
             </View>
-            {/* CTA */}
-            <View style={styles.ctaRow}>
-              <TouchableOpacity onPress={() => navigate('/imos/login')} style={styles.signInBtn} data-testid="header-login-btn">
-                <Text style={styles.signInBtnText}>Sign In</Text>
+            <View style={h.ctaRow}>
+              <TouchableOpacity onPress={() => navigate('/imos/login')} style={h.signInBtn} data-testid="header-login-btn">
+                <Text style={h.signInText}>Sign In</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.signupBtn} onPress={() => navigate('/imos/demo')} data-testid="header-demo-btn">
-                <Text style={styles.signupBtnText}>Get Demo</Text>
+              <TouchableOpacity style={h.demoBtn} onPress={() => navigate('/imos/demo')} data-testid="header-demo-btn">
+                <Text style={h.demoBtnText}>Get a Demo</Text>
               </TouchableOpacity>
             </View>
           </>
         ) : (
-          /* Mobile Hamburger */
-          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)} style={styles.hamburger} data-testid="header-menu-toggle">
+          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)} style={h.hamburger} data-testid="header-menu-toggle">
             <Ionicons name={menuOpen ? 'close' : 'menu'} size={26} color="#1D1D1F" />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Mobile Dropdown */}
       {!isDesktop && menuOpen && (
-        <View style={styles.mobileMenu}>
+        <View style={h.mobileMenu}>
           {NAV_LINKS.map((item: any) => {
             const target = item.path || item.children?.find((c: any) => c.path)?.path || '/imos';
             return (
-              <TouchableOpacity key={item.label} onPress={() => navigate(target)} style={styles.mobileMenuItem} data-testid={`mobile-nav-${item.label.toLowerCase()}`}>
-                <Text style={styles.mobileMenuText}>{item.label}</Text>
+              <TouchableOpacity key={item.label} onPress={() => navigate(target)} style={h.mobileItem} data-testid={`mobile-nav-${item.label.toLowerCase()}`}>
+                <Text style={h.mobileItemText}>{item.label}</Text>
               </TouchableOpacity>
             );
           })}
-          <View style={styles.mobileDivider} />
-          <TouchableOpacity onPress={() => navigate('/imos/login')} style={styles.mobileMenuItem}>
-            <Text style={styles.mobileMenuText}>Sign In</Text>
+          <View style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.06)', marginVertical: 4 }} />
+          <TouchableOpacity onPress={() => navigate('/imos/login')} style={h.mobileItem}>
+            <Text style={h.mobileItemText}>Sign In</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigate('/imos/demo')} style={[styles.mobileMenuItem, styles.mobileSignup]}>
-            <Text style={styles.mobileSignupText}>Get Demo</Text>
+          <TouchableOpacity onPress={() => navigate('/imos/demo')} style={h.mobileCta}>
+            <Text style={h.mobileCtaText}>Get a Demo</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -139,115 +181,113 @@ export function ImosFooter() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
-
   const navigate = (path: string) => router.push(path as any);
 
   return (
-    <View style={styles.footer}>
-      <View style={[styles.footerInner, isDesktop && { maxWidth: 1100, flexDirection: 'row', justifyContent: 'space-between' }]}>
-        {/* Brand */}
-        <View style={styles.footerBrand}>
-          <View style={styles.footerLogoRow}>
-            <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 52, height: 52 }} resizeMode="contain" />
-          </View>
-          <Text style={styles.footerTagline}>i'M On Social</Text>
-          <Text style={styles.footerSub}>Own your reputation.{'\n'}Own your relationships.</Text>
+    <View style={f.footer}>
+      <View style={[f.inner, isDesktop && { maxWidth: 1200, flexDirection: 'row', justifyContent: 'space-between' }]}>
+        <View style={f.brand}>
+          <Image source={require('../../public/new-logo-512-transparent.png')} style={{ width: 48, height: 48, marginBottom: 8 }} resizeMode="contain" />
+          <Text style={f.tagline}>The relationship engine for sales professionals.</Text>
+          <Text style={f.sub}>Build a reputation that's yours forever.</Text>
         </View>
-
-        {/* Links */}
-        <View style={[styles.footerLinks, isDesktop && { flexDirection: 'row', gap: 48 }]}>
-          <View style={styles.footerCol}>
-            <Text style={styles.footerColTitle}>Product</Text>
-            <TouchableOpacity onPress={() => navigate('/imos/features')}><Text style={styles.footerLink}>Features</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/pricing')}><Text style={styles.footerLink}>Pricing</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/salespresentation')}><Text style={styles.footerLink}>Why Use iMOs</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/hub')}><Text style={styles.footerLink}>Solutions</Text></TouchableOpacity>
+        <View style={[f.links, isDesktop && { flexDirection: 'row', gap: 48 }]}>
+          <View style={f.col}>
+            <Text style={f.colTitle}>Product</Text>
+            <TouchableOpacity onPress={() => navigate('/imos/digital-card')}><Text style={f.link}>Digital Cards</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/reviews')}><Text style={f.link}>Personal Reviews</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/inbox')}><Text style={f.link}>Inbox</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/date-triggers')}><Text style={f.link}>Automations</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/leaderboard')}><Text style={f.link}>Leaderboards</Text></TouchableOpacity>
           </View>
-          <View style={styles.footerCol}>
-            <Text style={styles.footerColTitle}>Company</Text>
-            <TouchableOpacity onPress={() => navigate('/imos/privacy')}><Text style={styles.footerLink}>Privacy Policy</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/terms')}><Text style={styles.footerLink}>Terms of Service</Text></TouchableOpacity>
+          <View style={f.col}>
+            <Text style={f.colTitle}>Company</Text>
+            <TouchableOpacity onPress={() => navigate('/imos/organizations')}><Text style={f.link}>For Teams</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/pricing')}><Text style={f.link}>Pricing</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/privacy')}><Text style={f.link}>Privacy</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/terms')}><Text style={f.link}>Terms</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.location.href = 'mailto:forest@imonsocial.com'; }}>
-              <Text style={styles.footerLink}>Contact Us</Text>
+              <Text style={f.link}>Contact</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.footerCol}>
-            <Text style={styles.footerColTitle}>Get Started</Text>
-            <TouchableOpacity onPress={() => navigate('/imos/demo')}><Text style={styles.footerLink}>Schedule a Demo</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/signup')}><Text style={styles.footerLink}>Start 14-Day Free Trial</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/login')}><Text style={styles.footerLink}>Sign In</Text></TouchableOpacity>
+          <View style={f.col}>
+            <Text style={f.colTitle}>Get Started</Text>
+            <TouchableOpacity onPress={() => navigate('/imos/demo')}><Text style={f.link}>Schedule a Demo</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/signup')}><Text style={f.link}>Start Free Trial</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/login')}><Text style={f.link}>Sign In</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/training')}><Text style={f.link}>Training</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/help')}><Text style={f.link}>Help Center</Text></TouchableOpacity>
           </View>
         </View>
       </View>
-
-      <View style={styles.footerBottom}>
-        <Text style={styles.footerCopy}>i'M On Social</Text>
+      <View style={f.bottom}>
+        <Text style={f.copy}>&copy; 2026 i'M On Social. All rights reserved.</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  /* ===== HEADER ===== */
-  headerOuter: {
-    backgroundColor: 'transparent',
-    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100 } : {}),
+const h = StyleSheet.create({
+  outer: {
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 0, zIndex: 100, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' } as any : {}),
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  headerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  logoWrap: { flexDirection: 'row' },
-  logoI: { fontSize: 26, fontWeight: '900', color: '#FF3B30' },
-  logoM: { fontSize: 26, fontWeight: '900', color: '#FFD60A' },
-  logoO: { fontSize: 26, fontWeight: '900', color: '#34C759' },
-  logoS: { fontSize: 26, fontWeight: '900', color: '#007AFF' },
-  navRow: { flexDirection: 'row', alignItems: 'center', gap: 32 },
-  navLink: { fontSize: 14, fontWeight: '500', color: '#6E6E73' },
-  navLinkActive: { color: '#007AFF', fontWeight: '600' },
-  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  loginLink: { fontSize: 14, fontWeight: '500', color: '#6E6E73' },
+  inner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 10, alignSelf: 'center', width: '100%' },
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  navItem: { position: 'relative' as any },
+  navTrigger: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+  navLink: { fontSize: 14, fontWeight: '500', color: '#555' },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   signInBtn: { paddingVertical: 9, paddingHorizontal: 20, borderRadius: 980 },
-  signInBtnText: { fontSize: 14, fontWeight: '600', color: '#1D1D1F' },
-  signupBtn: { backgroundColor: '#007AFF', paddingVertical: 9, paddingHorizontal: 22, borderRadius: 980 },
-  signupBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  signInText: { fontSize: 14, fontWeight: '600', color: '#1D1D1F' },
+  demoBtn: { backgroundColor: '#007AFF', paddingVertical: 9, paddingHorizontal: 22, borderRadius: 980 },
+  demoBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   hamburger: { padding: 4 },
-  /* Mobile Menu */
-  mobileMenu: {
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  mobileMenuItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.04)' },
-  mobileMenuText: { fontSize: 16, fontWeight: '500', color: '#1D1D1F' },
-  mobileDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.06)', marginVertical: 4 },
-  mobileSignup: { backgroundColor: '#007AFF', borderRadius: 14, alignItems: 'center', marginTop: 12, paddingVertical: 14, borderBottomWidth: 0 },
-  mobileSignupText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+  mobileMenu: { backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.06)', paddingHorizontal: 20, paddingBottom: 16 },
+  mobileItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.04)' },
+  mobileItemText: { fontSize: 16, fontWeight: '500', color: '#1D1D1F' },
+  mobileCta: { backgroundColor: '#007AFF', borderRadius: 14, alignItems: 'center', marginTop: 12, paddingVertical: 14 },
+  mobileCtaText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+});
 
-  /* ===== FOOTER ===== */
-  footer: {
-    backgroundColor: '#F5F5F7',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
-    paddingTop: 40,
+const dd = StyleSheet.create({
+  wrap: {
+    position: 'absolute' as any,
+    top: '100%',
+    left: '50%',
+    ...(Platform.OS === 'web' ? { transform: 'translateX(-50%)' } as any : {}),
+    paddingTop: 8,
+    minWidth: 300,
+    zIndex: 200,
   },
-  footerInner: { paddingHorizontal: 20, alignSelf: 'center', width: '100%' },
-  footerBrand: { marginBottom: 32 },
-  footerLogoRow: { flexDirection: 'row', marginBottom: 6 },
-  fChar: { fontSize: 24, fontWeight: '800' },
-  footerTagline: { fontSize: 12, color: '#86868B', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
-  footerSub: { fontSize: 14, color: '#6E6E73', lineHeight: 20 },
-  footerLinks: { gap: 24, marginBottom: 32 },
-  footerCol: { gap: 8 },
-  footerColTitle: { fontSize: 12, fontWeight: '700', color: '#1D1D1F', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  footerLink: { fontSize: 14, color: '#86868B' },
-  footerBottom: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.06)', paddingVertical: 20, alignItems: 'center' },
-  footerCopy: { fontSize: 12, color: '#86868B' },
+  inner: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    padding: 10,
+    ...(Platform.OS === 'web' ? { boxShadow: '0 20px 60px rgba(0,0,0,0.12)' } as any : { elevation: 12 }),
+  },
+  sectionLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2, color: '#888', paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12 },
+  icon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  text: {},
+  name: { fontSize: 14, fontWeight: '600', color: '#111' },
+  desc: { fontSize: 12, color: '#888', lineHeight: 16 },
+});
+
+const f = StyleSheet.create({
+  footer: { backgroundColor: '#F8F9FB', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.06)', paddingTop: 48 },
+  inner: { paddingHorizontal: 24, alignSelf: 'center', width: '100%' },
+  brand: { marginBottom: 32 },
+  tagline: { fontSize: 14, color: '#555', lineHeight: 20, marginBottom: 4 },
+  sub: { fontSize: 14, color: '#888', lineHeight: 20 },
+  links: { gap: 24, marginBottom: 32 },
+  col: { gap: 10 },
+  colTitle: { fontSize: 12, fontWeight: '700', color: '#111', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  link: { fontSize: 14, color: '#888' },
+  bottom: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.06)', paddingVertical: 20, alignItems: 'center' },
+  copy: { fontSize: 12, color: '#888' },
 });

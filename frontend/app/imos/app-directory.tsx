@@ -42,7 +42,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Digital Business Card', description: 'Shareable card with photo, QR, reviews, social links', path: '/imos/digital-card', icon: 'card-outline', color: '#007AFF', audience: 'Customers, prospects' },
       { name: 'Congrats Card', description: 'Branded congratulations card for customers', path: '/imos/congrats-template', icon: 'gift-outline', color: '#007AFF', audience: 'Customers' },
       { name: 'Birthday Card', description: 'Personalized birthday card with photo & message', path: '/imos/birthday-card', icon: 'gift-outline', color: '#FF6B8A', audience: 'Customers' },
-      { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/imos/reviews', icon: 'star-outline', color: '#FFD60A', audience: 'Customers' },
+      { name: 'Review Page', description: 'Store review landing page with Google, Yelp, Facebook links', path: '/imos/reviews', icon: 'star-outline', color: '#007AFF', audience: 'Customers' },
       { name: 'Showcase', description: 'User showcase page  - congrats cards, featured work', path: '/imos/showcase', icon: 'images-outline', color: '#007AFF', audience: 'Customers, public' },
       { name: 'Join / Invite Page', description: 'Team invite link landing page', path: '/imos/join', icon: 'person-add-outline', color: '#34C759', audience: 'New team members' },
       { name: 'Partner Agreement', description: 'Public partner agreement signing page', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', audience: 'Partners' },
@@ -61,7 +61,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Pricing Plans', description: 'Subscription tiers & pricing', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', audience: 'Prospects, customers' },
       { name: 'Page Hub', description: 'Browse all public pages', path: '/imos/hub', icon: 'grid-outline', color: '#5856D6', audience: 'Everyone' },
       { name: 'App Directory', description: 'Full page catalog with search & share', path: '/imos/app-directory', icon: 'folder-outline', color: '#FF9500', audience: 'Admins, partners' },
-      { name: 'Reviews & Reputation', description: 'Marketing page for the reviews feature', path: '/imos/reviews', icon: 'star', color: '#FFD60A', audience: 'Prospects, demos' },
+      { name: 'Reviews & Reputation', description: 'Marketing page for the reviews feature', path: '/imos/reviews', icon: 'star', color: '#007AFF', audience: 'Prospects, demos' },
     ],
   },
   {
@@ -106,7 +106,7 @@ const PAGE_CATALOG: Category[] = [
     icon: 'color-palette-outline',
     color: '#AF52DE',
     pages: [
-      { name: 'SMS Templates', description: 'Pre-built SMS messages', path: '/imos/templates', icon: 'document-text-outline', color: '#FFD60A', audience: 'All users' },
+      { name: 'SMS Templates', description: 'Pre-built SMS messages', path: '/imos/templates', icon: 'document-text-outline', color: '#007AFF', audience: 'All users' },
       { name: 'Email Templates', description: 'Pre-built email designs', path: '/imos/email-templates', icon: 'mail-outline', color: '#34C759', audience: 'All users' },
       { name: 'Brand Kit', description: 'Email branding & colors', path: '/imos/brand-kit', icon: 'color-palette-outline', color: '#AF52DE', audience: 'All users' },
       { name: 'Congrats Cards', description: 'Thank you card templates', path: '/imos/congrats-template', icon: 'gift-outline', color: '#007AFF', audience: 'All users' },
@@ -121,7 +121,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Analytics', description: 'Performance metrics', path: '/imos/analytics', icon: 'stats-chart-outline', color: '#34C759', audience: 'All users' },
       { name: 'Reports', description: 'Detailed performance reports', path: '/imos/reports', icon: 'bar-chart-outline', color: '#007AFF', audience: 'All users' },
       { name: 'Email Analytics', description: 'Opens, clicks, engagement', path: '/imos/email-analytics', icon: 'trending-up-outline', color: '#FF2D55', audience: 'All users' },
-      { name: 'Leaderboard', description: 'Team performance rankings', path: '/imos/leaderboard', icon: 'trophy-outline', color: '#FFD60A', audience: 'Team members' },
+      { name: 'Leaderboard', description: 'Team performance rankings', path: '/imos/leaderboard', icon: 'trophy-outline', color: '#007AFF', audience: 'Team members' },
     ],
   },
   {
@@ -132,7 +132,7 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Lead Sources', description: 'Inbound lead routing config', path: '/imos/lead-sources', icon: 'git-branch-outline', color: '#5856D6', audience: 'Admins' },
       { name: 'Contact Tags', description: 'Tag management', path: '/imos/tags', icon: 'pricetags-outline', color: '#FF9500', audience: 'All users' },
-      { name: 'Review Links', description: 'Google, Facebook, Yelp links', path: '/imos/review-links', icon: 'star-outline', color: '#FFD60A', audience: 'All users' },
+      { name: 'Review Links', description: 'Google, Facebook, Yelp links', path: '/imos/review-links', icon: 'star-outline', color: '#007AFF', audience: 'All users' },
       { name: 'Import Contacts', description: 'Bulk import from CSV', path: '/imos/import', icon: 'cloud-upload-outline', color: '#007AFF', audience: 'All users' },
     ],
   },
