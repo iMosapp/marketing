@@ -54,16 +54,17 @@ export default function BrandAssetsPage() {
 
   // Built-in logo assets from the app
   const builtInAssets: BrandAsset[] = [
-    { id: 'logo-512', label: 'App Logo (512px)', description: 'Full-size app logo with white tile  - PNG', url: '/logo512.png', size: '512x512', category: 'logo' },
-    { id: 'logo-192', label: 'App Logo (192px)', description: 'Medium app logo with white tile  - PNG', url: '/logo192.png', size: '192x192', category: 'logo' },
-    { id: 'logo-dark', label: 'Logo (Dark Mode)', description: 'Logo on black background for dark themes', url: '/new-logo-512-dark.png', size: '512x512', category: 'logo' },
-    { id: 'logo-light', label: 'Logo (Light Mode)', description: 'Logo on white background for light themes', url: '/new-logo-512-light.png', size: '512x512', category: 'logo' },
-    { id: 'logo-transparent', label: 'Transparent Logo', description: 'Logo with transparent background', url: '/imos-logo-transparent.png', size: '512x512', category: 'logo' },
-    { id: 'logo-original', label: 'Original Full Logo', description: 'Original high-res logo file', url: '/new-logo-original.png', size: '1536x1024', category: 'logo' },
+    { id: 'logo-512', label: 'App Logo (512px)', description: 'White tile logo — PWA home screen & app icon', url: '/logo512.png', size: '512x512', category: 'logo' },
+    { id: 'logo-192', label: 'App Logo (192px)', description: 'White tile logo — Android Chrome', url: '/logo192.png', size: '192x192', category: 'logo' },
+    { id: 'logo-dark', label: 'Logo (Dark Background)', description: 'Logo on dark background for dark themes', url: '/new-logo-512-dark.png', size: '512x512', category: 'logo' },
+    { id: 'logo-light', label: 'Logo (White Background)', description: 'Logo on white background for light themes', url: '/new-logo-512-light.png', size: '512x512', category: 'logo' },
+    { id: 'logo-transparent', label: 'Transparent Logo (512px)', description: 'Logo with no background — headers, overlays', url: '/imos-logo-transparent.png', size: '512x512', category: 'logo' },
+    { id: 'logo-transparent-hd', label: 'Transparent Logo (1024px)', description: 'High-res transparent logo for print & large displays', url: '/imos-logo-transparent-1024.png', size: '1024x1024', category: 'logo' },
+    { id: 'logo-original', label: 'Original Full Logo (1024px)', description: 'Highest resolution transparent logo', url: '/new-logo-original.png', size: '1024x1024', category: 'logo' },
     { id: 'favicon-256', label: 'Favicon (256px)', description: 'High-res browser icon', url: '/favicon-256.png', size: '256x256', category: 'icon' },
     { id: 'favicon-32', label: 'Favicon (32px)', description: 'Standard browser tab icon', url: '/favicon-32x32.png', size: '32x32', category: 'icon' },
     { id: 'favicon-16', label: 'Favicon (16px)', description: 'Small favicon', url: '/favicon-16x16.png', size: '16x16', category: 'icon' },
-    { id: 'apple-touch', label: 'Apple Touch Icon', description: 'iOS home screen icon', url: '/apple-touch-icon.png', size: '180x180', category: 'icon' },
+    { id: 'apple-touch', label: 'Apple Touch Icon', description: 'iOS home screen icon — 180px white tile', url: '/apple-touch-icon.png', size: '180x180', category: 'icon' },
   ];
 
   useEffect(() => {
