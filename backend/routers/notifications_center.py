@@ -52,15 +52,34 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
         }
         leads = list(db.notifications.find(lead_query).sort("created_at", -1).limit(15))
         for n in leads:
+            contact_id = n.get("contact_id", "")
+            conversation_id = n.get("conversation_id", "")
+            # Build the best link: prefer contact detail, fallback to thread, then lead tracking
+            if contact_id:
+                link = f"/contact/{contact_id}"
+            elif conversation_id:
+                link = f"/thread/{conversation_id}?contact_name={n.get('contact_name', '')}"
+            elif n.get("demo_request_id"):
+                link = "/admin/lead-tracking"
+            else:
+                link = None
+
+            # For new lead notifications, show form details in body
+            body = n.get("message", "")
+            form_details = n.get("form_details", "")
+            if form_details and n.get("type") in ("new_lead", "new_demo_request"):
+                body = form_details
+
             notifications.append({
                 "id": str(n["_id"]),
                 "type": n.get("type", "lead"),
-                "category": "leads",
+                "category": "leads" if n.get("type") in ("new_lead", "lead_assigned", "jump_ball") else "campaigns",
                 "priority": 0 if not n.get("read") else 3,
                 "title": n.get("title", "New Lead"),
-                "body": n.get("message", ""),
-                "link": f"/thread/{n.get('conversation_id', '')}?contact_name={n.get('contact_name', '')}" if n.get("conversation_id") else None,
+                "body": body,
+                "link": link,
                 "contact_name": n.get("contact_name"),
+                "contact_id": contact_id,
                 "timestamp": _ts(n.get("created_at")),
                 "read": n.get("read", False),
                 "source": "leads",
@@ -72,10 +91,15 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     try:
         overdue = list(db.tasks.find({
             "user_id": user_id,
-            "status": {"$ne": "completed"},
-            "due_date": {"$lt": now.isoformat()}
+            "completed": {"$ne": True},
+            "due_date": {"$lt": now}
         }).sort("due_date", 1).limit(10))
         for t in overdue:
+            contact_id = t.get("contact_id", "")
+            desc = t.get("description", "")
+            import urllib.parse
+            prefill = urllib.parse.quote(desc[:500]) if desc else ""
+            link = f"/contact/{contact_id}?prefill={prefill}" if contact_id else None
             notifications.append({
                 "id": f"task_{t['_id']}",
                 "type": "task_overdue",
@@ -83,7 +107,8 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
                 "priority": 1,
                 "title": "Overdue Task",
                 "body": t.get("title", "Follow up"),
-                "link": f"/contact/{t.get('contact_id', '')}",
+                "link": link,
+                "contact_id": contact_id,
                 "timestamp": _ts(t.get("due_date")),
                 "read": False,
                 "source": "tasks",
@@ -93,13 +118,17 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
     # 3. UPCOMING TASKS (due within 24h)
     try:
-        tomorrow = (now + timedelta(hours=24)).isoformat()
+        tomorrow = now + timedelta(hours=24)
         upcoming = list(db.tasks.find({
             "user_id": user_id,
-            "status": {"$ne": "completed"},
-            "due_date": {"$gte": now.isoformat(), "$lte": tomorrow}
+            "completed": {"$ne": True},
+            "due_date": {"$gte": now, "$lte": tomorrow}
         }).sort("due_date", 1).limit(5))
         for t in upcoming:
+            contact_id = t.get("contact_id", "")
+            desc = t.get("description", "")
+            prefill = urllib.parse.quote(desc[:500]) if desc else ""
+            link = f"/contact/{contact_id}?prefill={prefill}" if contact_id else None
             notifications.append({
                 "id": f"task_soon_{t['_id']}",
                 "type": "task_due_soon",
@@ -107,7 +136,8 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
                 "priority": 2,
                 "title": "Task Due Soon",
                 "body": t.get("title", "Follow up"),
-                "link": f"/contact/{t.get('contact_id', '')}",
+                "link": link,
+                "contact_id": contact_id,
                 "timestamp": _ts(t.get("due_date")),
                 "read": False,
                 "source": "tasks",
@@ -198,6 +228,11 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
             "status": "pending",
         }).sort("created_at", -1).limit(10))
         for ps in pending_sends:
+            contact_id = ps.get("contact_id", "")
+            message_content = ps.get("message", "")
+            import urllib.parse
+            prefill = urllib.parse.quote(message_content[:500]) if message_content else ""
+            link = f"/contact/{contact_id}?prefill={prefill}" if contact_id else None
             notifications.append({
                 "id": f"csend_{ps['_id']}",
                 "type": "campaign_send",
@@ -205,8 +240,9 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
                 "priority": 1,
                 "title": f"Send: {ps.get('campaign_name', 'Campaign')}",
                 "body": f"Step {ps.get('step', 0)} to {ps.get('contact_name', 'contact')} via {ps.get('channel', 'sms').upper()}",
-                "link": f"/campaigns/pending-send/{ps['_id']}",
+                "link": link,
                 "contact_name": ps.get("contact_name"),
+                "contact_id": contact_id,
                 "timestamp": _ts(ps.get("created_at")),
                 "read": False,
                 "source": "campaigns",

@@ -240,7 +240,7 @@ export default function ContactDetailScreen() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const { id, prefill } = useLocalSearchParams();
+  const { id, prefill, channel } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -373,7 +373,11 @@ export default function ContactDetailScreen() {
     if (prefill && typeof prefill === 'string') {
       setComposerMessage(prefill);
     }
-  }, [prefill]);
+    if (channel && typeof channel === 'string') {
+      if (channel === 'email') setComposerMode('email');
+      else setComposerMode('sms');
+    }
+  }, [prefill, channel]);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestion, setShowAISuggestion] = useState(false);

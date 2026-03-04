@@ -138,7 +138,75 @@ async def create_demo_request(data: dict):
             demo["referred_by_role"] = ref_user.get("role", "")
             demo["referrer_type"] = _classify_referrer_type(ref_code, ref_user.get("role", ""))
 
-    await db.demo_requests.insert_one({**demo, "_id": ObjectId()})
+    result = await db.demo_requests.insert_one({**demo, "_id": ObjectId()})
+    demo_id = str(result.inserted_id)
+
+    # Create lead notification for the referring salesperson AND all admins
+    lead_name = demo["name"]
+    lead_source = demo.get("source", "direct")
+    lead_channel = demo.get("channel", "unknown")
+    utm_info = f"utm_source={demo.get('utm_source', '')}" if demo.get("utm_source") else ""
+    form_details = f"Name: {lead_name}"
+    if demo.get("email"):
+        form_details += f"\nEmail: {demo['email']}"
+    if demo.get("phone"):
+        form_details += f"\nPhone: {demo['phone']}"
+    if demo.get("company"):
+        form_details += f"\nCompany: {demo['company']}"
+    if demo.get("message"):
+        form_details += f"\nMessage: {demo['message'][:200]}"
+    if demo.get("source"):
+        form_details += f"\nSource: {demo['source']}"
+    if utm_info:
+        form_details += f"\n{utm_info}"
+    if demo.get("referred_by_name"):
+        form_details += f"\nReferred by: {demo['referred_by_name']}"
+
+    notif_body = f"{lead_name} submitted a form via {lead_source or 'direct'}."
+    if demo.get("referred_by_name"):
+        notif_body += f" Referred by {demo['referred_by_name']}."
+
+    # Notify the referring salesperson
+    notify_user_ids = set()
+    if demo.get("referred_by_user_id"):
+        notify_user_ids.add(demo["referred_by_user_id"])
+
+    # Also notify all admins/super_admins in the same org
+    org_id = None
+    if demo.get("referred_by_user_id"):
+        ref_user_full = await db.users.find_one({"_id": ObjectId(demo["referred_by_user_id"])}, {"organization_id": 1})
+        if ref_user_full:
+            org_id = ref_user_full.get("organization_id")
+    if org_id:
+        async for admin in db.users.find({"organization_id": org_id, "role": {"$in": ["admin", "super_admin"]}}, {"_id": 1}):
+            notify_user_ids.add(str(admin["_id"]))
+    else:
+        # No org context — notify all super admins
+        async for admin in db.users.find({"role": "super_admin"}, {"_id": 1}):
+            notify_user_ids.add(str(admin["_id"]))
+
+    for uid in notify_user_ids:
+        await db.notifications.insert_one({
+            "user_id": uid,
+            "type": "new_lead",
+            "title": f"New Lead: {lead_name}",
+            "message": notif_body,
+            "form_details": form_details,
+            "lead_name": lead_name,
+            "lead_email": demo.get("email", ""),
+            "lead_phone": demo.get("phone", ""),
+            "lead_source": lead_source,
+            "lead_channel": lead_channel,
+            "demo_request_id": demo_id,
+            "referred_by_user_id": demo.get("referred_by_user_id", ""),
+            "referred_by_name": demo.get("referred_by_name", ""),
+            "contact_name": lead_name,
+            "action_required": True,
+            "read": False,
+            "dismissed": False,
+            "created_at": datetime.now(timezone.utc),
+        })
+
     return {"status": "success", "message": "Demo request received! We'll be in touch soon."}
 
 

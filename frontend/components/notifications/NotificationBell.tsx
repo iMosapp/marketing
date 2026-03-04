@@ -33,6 +33,8 @@ function getNotifIcon(type: string): string {
     case 'sms_sent': return 'chatbox';
     case 'badge_earned': return 'trophy';
     case 'campaign_send': return 'megaphone';
+    case 'date_trigger': return 'calendar';
+    case 'new_demo_request': return 'person-add';
     default: return 'notifications';
   }
 }
@@ -51,7 +53,9 @@ function getNotifColor(type: string): string {
     case 'sms_sent': return '#34C759';
     case 'badge_earned': return '#FFD60A';
     case 'campaign_send': return '#FF9500';
-    default: return colors.textSecondary;
+    case 'date_trigger': return '#5856D6';
+    case 'new_demo_request': return '#34C759';
+    default: return '#6E6E73';
   }
 }
 

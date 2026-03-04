@@ -107,7 +107,6 @@ export default function TasksScreen() {
       case 'call':
       case 'callback':
         if (contact?.phone) {
-          // Navigate to dialer or make call
           showConfirm(
             'Call Contact',
             `Call ${contact.name} at ${contact.phone}?`,
@@ -115,7 +114,6 @@ export default function TasksScreen() {
               const phoneUrl = Platform.OS === 'ios' ? `telprompt:${contact.phone}` : `tel:${contact.phone}`;
               try {
                 await Linking.openURL(phoneUrl);
-                // Mark task as complete after call initiated
                 await completeTask(task._id || task.id);
               } catch (error) {
                 showSimpleAlert('Error', 'Unable to make phone call');
@@ -126,28 +124,41 @@ export default function TasksScreen() {
             'Cancel'
           );
         } else {
-          // Navigate to dialer
           router.push('/(tabs)/dialer');
         }
         break;
+
+      case 'campaign_send':
+      case 'date_trigger': {
+        // Navigate to contact detail page with message pre-populated
+        const contactId = task.contact_id || contact?._id;
+        if (contactId) {
+          const prefillMsg = task.description || '';
+          router.push({
+            pathname: `/contact/${contactId}`,
+            params: { prefill: prefillMsg }
+          });
+        } else {
+          showSimpleAlert('Task', task.description || task.title);
+        }
+        break;
+      }
 
       case 'follow_up':
       case 'message':
       case 'text':
       case 'sms':
         if (contact?._id) {
-          // Navigate to message thread
           router.push({
             pathname: `/thread/${contact._id}`,
             params: {
               contact_name: contact.name,
               contact_phone: contact.phone || '',
               contact_email: contact.email || contact.email_work || '',
-              task_id: task._id || task.id, // Pass task ID to mark complete after sending
+              task_id: task._id || task.id,
             }
           });
         } else {
-          // Navigate to inbox to start a new message
           router.push('/(tabs)/inbox');
         }
         break;
@@ -156,7 +167,6 @@ export default function TasksScreen() {
       case 'meeting':
       case 'schedule':
         if (contact?._id) {
-          // Navigate to contact detail to schedule
           router.push({
             pathname: `/contact/${contact._id}`,
             params: { action: 'schedule' }
@@ -167,17 +177,24 @@ export default function TasksScreen() {
         break;
 
       default:
-        // Generic task - just offer to complete it
-        showConfirm(
-          'Complete Task',
-          `Mark "${task.title}" as complete?`,
-          async () => {
-            await completeTask(task._id || task.id);
-          },
-          undefined,
-          'Complete',
-          'Not Yet'
-        );
+        // If task has a contact_id + description, navigate to contact with prefill
+        if (task.contact_id && task.description) {
+          router.push({
+            pathname: `/contact/${task.contact_id}`,
+            params: { prefill: task.description }
+          });
+        } else {
+          showConfirm(
+            'Complete Task',
+            `Mark "${task.title}" as complete?`,
+            async () => {
+              await completeTask(task._id || task.id);
+            },
+            undefined,
+            'Complete',
+            'Not Yet'
+          );
+        }
         break;
     }
   };
@@ -256,12 +273,16 @@ export default function TasksScreen() {
       case 'text':
       case 'sms':
         return { icon: 'chatbubble', color: '#34C759' };
+      case 'campaign_send':
+        return { icon: 'megaphone', color: '#FF9500' };
+      case 'date_trigger':
+        return { icon: 'calendar', color: '#5856D6' };
       case 'appointment':
       case 'meeting':
       case 'schedule':
-        return { icon: 'calendar', color: '#FF9500' };
+        return { icon: 'calendar-outline', color: '#FF9500' };
       default:
-        return { icon: 'checkmark-circle', color: colors.textSecondary };
+        return { icon: 'checkmark-circle', color: '#6E6E73' };
     }
   };
 
@@ -276,6 +297,10 @@ export default function TasksScreen() {
       case 'text':
       case 'sms':
         return 'Tap to message';
+      case 'campaign_send':
+        return 'Tap to open & send';
+      case 'date_trigger':
+        return 'Tap to open & send';
       case 'appointment':
       case 'meeting':
       case 'schedule':
