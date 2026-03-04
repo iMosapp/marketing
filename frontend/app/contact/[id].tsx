@@ -784,8 +784,12 @@ export default function ContactDetailScreen() {
 
   // ===== SAVE / DELETE =====
   const handleSave = async () => {
-    if (!contact.first_name || !contact.phone) {
-      showSimpleAlert('Error', 'Name and phone are required');
+    if (!contact.first_name) {
+      showSimpleAlert('Error', 'First name is required');
+      return;
+    }
+    if (!contact.phone && !contact.email) {
+      showSimpleAlert('Error', 'Please provide a phone number or email');
       return;
     }
     if (!user) return;
@@ -812,11 +816,13 @@ export default function ContactDetailScreen() {
           } catch (e) { /* non-critical */ }
         }
       }
-      showToast('Contact saved!');
+      showToast('Contact saved!', 'success');
       if (isNewContact) {
         router.back();
       } else {
         setIsEditing(false);
+        // Reload contact data so the profile picture and all fields reflect the saved state
+        loadContact();
         // Scroll to top so user sees the updated profile
         requestAnimationFrame(() => {
           scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -835,7 +841,8 @@ export default function ContactDetailScreen() {
         });
       }
     } catch (e: any) {
-      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save');
+      console.error('handleSave error:', e);
+      showSimpleAlert('Error', e?.response?.data?.detail || e?.message || 'Failed to save contact. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -1059,14 +1066,30 @@ export default function ContactDetailScreen() {
 
   // ===== PHOTO =====
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
-    });
-    if (!result.canceled && result.assets[0].base64) {
-      const photoData = `data:image/jpeg;base64,${result.assets[0].base64}`;
-      setContact({ ...contact, photo: photoData });
-      showToast('Photo selected! Tap Save to apply.');
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        let photoData: string | null = null;
+        if (asset.base64) {
+          photoData = `data:image/jpeg;base64,${asset.base64}`;
+        } else if (asset.uri) {
+          // On web, base64 may not be returned — use the blob URI directly
+          photoData = asset.uri;
+        }
+        if (photoData) {
+          setContact({ ...contact, photo: photoData });
+          showToast('Photo selected! Tap Save to apply.', 'info');
+        } else {
+          showToast('Could not load the selected photo. Please try again.', 'warning');
+        }
+      }
+    } catch (e) {
+      console.error('pickImage error:', e);
+      showToast('Failed to pick photo. Please try again.', 'error');
     }
   };
 
@@ -1477,9 +1500,16 @@ export default function ContactDetailScreen() {
           </TouchableOpacity>
           <Text style={[s.headerTitle, { color: colors.text }]} numberOfLines={1}>{isNewContact ? 'New Contact' : fullName}</Text>
           {isEditing ? (
-            <TouchableOpacity onPress={handleSave} style={s.headerBtn} disabled={saving} data-testid="contact-save-button">
-              {saving ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={s.headerAction}>Save</Text>}
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {!isNewContact && (
+                <TouchableOpacity onPress={() => { setIsEditing(false); loadContact(); }} style={s.headerBtn} data-testid="contact-cancel-button">
+                  <Text style={[s.headerAction, { color: colors.textSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={handleSave} style={[s.headerBtn, { backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 }]} disabled={saving} data-testid="contact-save-button">
+                {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={[s.headerAction, { color: '#000', fontWeight: '700' }]}>Save</Text>}
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity onPress={() => setIsEditing(true)} style={s.headerBtn} data-testid="contact-edit-button">
               <Text style={s.headerAction}>Edit</Text>
@@ -1735,7 +1765,7 @@ export default function ContactDetailScreen() {
                     value={contact.last_name} onChangeText={t => setContact({ ...contact, last_name: t })} data-testid="input-last-name" />
                 </View>
                 <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>Phone *</Text>
+                  <Text style={s.inputLabel}>Phone</Text>
                   <TextInput style={s.input} placeholder="+1 (555) 123-4567" placeholderTextColor={colors.textTertiary}
                     value={contact.phone} onChangeText={t => setContact({ ...contact, phone: t })} keyboardType="phone-pad" data-testid="input-phone" />
                 </View>
@@ -3329,7 +3359,11 @@ export default function ContactDetailScreen() {
                       try {
                         await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: fullPhoto });
                         setContact((prev: any) => ({ ...prev, photo: fullPhoto, photo_url: fullPhoto, photo_thumbnail: fullPhoto }));
-                        showToast('Profile photo updated!');
+                        showToast('Profile photo updated!', 'success');
+                        // Close the gallery modal so the user sees the updated avatar
+                        setShowPhotoViewer(false);
+                        setFullPhoto(null);
+                        setSelectedPhotoIndex(0);
                       } catch (e: any) {
                         showSimpleAlert('Error', 'Failed to update profile photo');
                       }
@@ -3352,7 +3386,11 @@ export default function ContactDetailScreen() {
                       try {
                         await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: fullPhoto });
                         setContact((prev: any) => ({ ...prev, photo: fullPhoto, photo_url: fullPhoto, photo_thumbnail: fullPhoto }));
-                        showToast('Profile photo updated!');
+                        showToast('Profile photo updated!', 'success');
+                        // Close the gallery modal so the user sees the updated avatar
+                        setShowPhotoViewer(false);
+                        setFullPhoto(null);
+                        setSelectedPhotoIndex(0);
                       } catch (e: any) {
                         showSimpleAlert('Error', 'Failed to update profile photo');
                       }

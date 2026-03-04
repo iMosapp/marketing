@@ -290,7 +290,7 @@ class Contact(BaseModel):
 class ContactCreate(BaseModel):
     first_name: str
     last_name: Optional[str] = None
-    phone: str
+    phone: Optional[str] = ""
     email: Optional[str] = None
     email_work: Optional[str] = None
     photo: Optional[str] = None  # base64 encoded image
