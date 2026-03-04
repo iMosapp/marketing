@@ -327,6 +327,8 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [pendingTasks, setPendingTasks] = useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   // Modals
@@ -346,14 +348,14 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?._id) { loadRecentActivity(); loadStoreSlug(); }
+      if (user?._id) { loadRecentActivity(); loadPendingTasks(); loadStoreSlug(); }
     }, [user?._id])
   );
 
-  // Auto-refresh activity feed every 30 seconds
+  // Auto-refresh activity feed and tasks every 30 seconds
   useEffect(() => {
     if (!user?._id) return;
-    const interval = setInterval(() => { loadRecentActivity(); }, 30000);
+    const interval = setInterval(() => { loadRecentActivity(); loadPendingTasks(); }, 30000);
     return () => clearInterval(interval);
   }, [user?._id]);
 
@@ -392,6 +394,37 @@ export default function HomeScreen() {
   const loadRecentActivity = async () => {
     if (!user?._id) return;
     try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=10`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
+  };
+
+  const loadPendingTasks = async () => {
+    if (!user?._id) return;
+    try {
+      setLoadingTasks(true);
+      const res = await api.get(`/tasks/${user._id}?completed=false`);
+      const tasks = Array.isArray(res.data) ? res.data : [];
+      // Sort by due_date ascending (most urgent first), then limit to 5
+      const sorted = tasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()).slice(0, 5);
+      setPendingTasks(sorted);
+    } catch {} finally { setLoadingTasks(false); }
+  };
+
+  const completeTask = async (taskId: string) => {
+    if (!user?._id) return;
+    try {
+      await api.put(`/tasks/${user._id}/${taskId}`, { completed: true });
+      setPendingTasks(prev => prev.filter(t => (t._id || t.id) !== taskId));
+    } catch {}
+  };
+
+  const getTaskIcon = (task: any) => {
+    if (task.channel === 'email') return { icon: 'mail', color: '#AF52DE' };
+    if (task.channel === 'sms') return { icon: 'chatbubble', color: '#007AFF' };
+    if (task.type === 'callback' || task.type === 'call') return { icon: 'call', color: '#32ADE6' };
+    if (task.type === 'follow_up') return { icon: 'arrow-redo', color: '#FF9500' };
+    if (task.type === 'appointment') return { icon: 'calendar', color: '#34C759' };
+    if (task.type === 'date_trigger') return { icon: 'gift', color: '#C9A962' };
+    if (task.source === 'campaign') return { icon: 'rocket', color: '#AF52DE' };
+    return { icon: 'checkmark-circle', color: '#FF9500' };
   };
 
   // Send a Card  - contact search helpers
@@ -539,6 +572,65 @@ export default function HomeScreen() {
           ))}
         </View>
 
+        {/* ===== ACTION ITEMS (Pending Tasks) ===== */}
+        {pendingTasks.length > 0 && (
+          <View style={styles.activitySection} data-testid="action-items-section">
+            <View style={styles.activityHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Action Items</Text>
+              <TouchableOpacity onPress={() => router.push('/tasks' as any)} data-testid="view-all-tasks">
+                <Text style={[styles.viewAll, { color: colors.accent }]}>View All</Text>
+              </TouchableOpacity>
+            </View>
+            {pendingTasks.map((task, idx) => {
+              const ti = getTaskIcon(task);
+              const taskId = task._id || task.id;
+              const dueDate = task.due_date ? new Date(task.due_date) : null;
+              const isOverdue = dueDate && dueDate.getTime() < Date.now();
+              return (
+                <TouchableOpacity
+                  key={taskId || idx}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (task.contact_id) {
+                      const params: any = {};
+                      if (task.channel === 'sms' && task.description) params.prefill = task.description;
+                      if (task.channel === 'email' && task.description) params.prefill = task.description;
+                      if (task.channel) params.channel = task.channel;
+                      const qs = new URLSearchParams(params).toString();
+                      router.push(`/contact/${task.contact_id}${qs ? '?' + qs : ''}` as any);
+                    }
+                  }}
+                  style={[styles.taskItem, { backgroundColor: colors.card, borderColor: isOverdue ? '#FF3B3044' : colors.border }]}
+                  data-testid={`task-item-${idx}`}
+                >
+                  <View style={[styles.activityIconWrap, { backgroundColor: `${ti.color}18` }]}>
+                    <Ionicons name={ti.icon as any} size={20} color={ti.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.activityMsg, { color: colors.text }]} numberOfLines={1}>{task.title}</Text>
+                    <Text style={[styles.activityTime, { color: isOverdue ? '#FF3B30' : colors.textTertiary }]}>
+                      {isOverdue ? 'Overdue' : dueDate ? getRelativeTime(task.due_date) : ''}
+                      {task.campaign_name ? ` \u00B7 ${task.campaign_name}` : ''}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation(); completeTask(taskId); }}
+                    style={styles.taskDoneBtn}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    data-testid={`task-done-${idx}`}
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={26} color="#34C759" />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+        {loadingTasks && pendingTasks.length === 0 && (
+          <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 10 }} />
+        )}
+
+        {/* ===== RECENT ACTIVITY ===== */}
         <View style={styles.activitySection}>
           <View style={styles.activityHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
@@ -559,13 +651,24 @@ export default function HomeScreen() {
               const icon = item.icon || fallback.icon;
               const color = item.color || fallback.color;
               return (
-                <View key={idx} style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`activity-item-${idx}`}>
+                <TouchableOpacity
+                  key={idx}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (item.entity_id) {
+                      router.push(`/contact/${item.entity_id}` as any);
+                    }
+                  }}
+                  style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  data-testid={`activity-item-${idx}`}
+                >
                   <View style={[styles.activityIconWrap, { backgroundColor: `${color}18` }]}><Ionicons name={icon as any} size={22} color={color} /></View>
                   <View style={styles.activityContent}>
                     <Text style={[styles.activityMsg, { color: colors.text }]} numberOfLines={1}>{item.message}</Text>
                     <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.timestamp ? getRelativeTime(item.timestamp) : ''}</Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                </TouchableOpacity>
               );
             })
           )}
@@ -714,6 +817,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   activityContent: { flex: 1 },
   activityMsg: { fontSize: 15, fontWeight: '600', lineHeight: 20 },
   activityTime: { fontSize: 13, marginTop: 3 },
+  taskItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, marginBottom: 8, borderWidth: 1 },
+  taskDoneBtn: { padding: 4, marginLeft: 8 },
   // Modal shared
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, maxHeight: '75%' },
