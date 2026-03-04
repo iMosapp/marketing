@@ -3568,6 +3568,11 @@ async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
 @router.post("/seed/backfill-all")
 async def backfill_all_user_defaults():
     """Backfill default templates, campaigns, and date triggers for ALL existing users."""
-    from services.seed_defaults import backfill_all_users
-    result = await backfill_all_users()
-    return {"status": "success", **result}
+    try:
+        from services.seed_defaults import backfill_all_users
+        result = await backfill_all_users()
+        return {"status": "success", **result}
+    except Exception as e:
+        import traceback
+        logger.error(f"Backfill error: {traceback.format_exc()}")
+        return {"status": "error", "message": str(e)}

@@ -428,27 +428,38 @@ async def seed_store_defaults(store_id: str, organization_id: str = ""):
 
 
 async def backfill_all_users():
-    """Run seed_user_defaults for every existing user, and seed_store_defaults for every store."""
+    """Run seed_user_defaults for every existing user, and seed_store_defaults for every store.
+    Includes per-user error handling so one failure doesn't stop the entire backfill."""
     db = get_db()
-    total = {"users": 0, "sms_templates": 0, "email_templates": 0, "campaigns": 0, "date_triggers": 0, "review_response_templates": 0, "social_templates": 0, "stores": 0, "tags": 0, "lead_sources": 0}
+    total = {"users": 0, "sms_templates": 0, "email_templates": 0, "campaigns": 0, "date_triggers": 0, "review_response_templates": 0, "social_templates": 0, "stores": 0, "tags": 0, "lead_sources": 0, "errors": 0}
 
     # Seed users
     users = await db.users.find({"is_active": {"$ne": False}}, {"_id": 1}).to_list(5000)
     for user in users:
-        uid = str(user["_id"])
-        result = await seed_user_defaults(uid)
-        total["users"] += 1
-        for k, v in result.items():
-            total[k] += v
+        try:
+            uid = str(user["_id"])
+            result = await seed_user_defaults(uid)
+            total["users"] += 1
+            for k, v in result.items():
+                if k in total:
+                    total[k] += v
+        except Exception as e:
+            total["errors"] += 1
+            logger.error(f"Backfill error for user {user.get('_id')}: {e}")
 
     # Seed stores
     stores = await db.stores.find({}, {"_id": 1, "organization_id": 1}).to_list(5000)
     for store in stores:
-        sid = str(store["_id"])
-        org_id = store.get("organization_id", "")
-        result = await seed_store_defaults(sid, org_id)
-        total["stores"] += 1
-        for k, v in result.items():
-            total[k] += v
+        try:
+            sid = str(store["_id"])
+            org_id = str(store.get("organization_id", ""))
+            result = await seed_store_defaults(sid, org_id)
+            total["stores"] += 1
+            for k, v in result.items():
+                if k in total:
+                    total[k] += v
+        except Exception as e:
+            total["errors"] += 1
+            logger.error(f"Backfill error for store {store.get('_id')}: {e}")
 
     return total
