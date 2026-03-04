@@ -22,21 +22,23 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - "Set as Profile Photo" from gallery closes modal after success
 - Photo picker with error handling and web fallback
 - Quick Add form for new contacts (progressive disclosure)
-- Auto-tagging based on date fields (Birthday, Anniversary, Sold Date)
-- Contact referral tracking, Voice notes on contacts
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
 - Email sending via Resend with white-label branded HTML templates
 - All communications logged as `contact_events`
-- Message composer with SMS/Email channel toggle
 
-### Home Screen
+### Home Screen Dashboard
 - Quick action tiles: Share My Card, Review Link, Send a Card, My Showcase, Keypad, Add Contact
-- **Real-time activity feed** pulling from `contact_events` collection (FIXED - was previously not querying this collection)
-- Auto-refresh every 30 seconds + relative timestamp refresh every 60 seconds
-- Proper icon mapping for all event types (digital_card_shared, review_request_sent, showcase_shared, sms_sent, email_sent, etc.)
-- Larger, more readable activity tiles
+- **Action Items section** — Shows pending campaign tasks with:
+  - Task title, campaign source, channel icon
+  - Red "Overdue" labels for past-due tasks
+  - Green checkmark to mark as done (removes from list instantly)
+  - Tapping navigates to contact page with pre-filled message
+- **Recent Activity feed** — Pulls from `contact_events` collection (FIXED)
+  - Tappable items with chevron → navigates to contact detail page
+  - Proper icon/color mapping for all event types
+  - Auto-refresh every 30 seconds + relative timestamp refresh every 60 seconds
 
 ### Notifications
 - Bell notifications with deep-linking
@@ -47,16 +49,14 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Date-based triggers, Tag-triggered campaign enrollment
 - Scheduled task processing (every 15 min)
 
-### Reporting
+### Reporting & Leaderboards
 - Activity summary dashboard with 14+ metrics
 - Date filters and scheduled email delivery
+- Store, Org, Global leaderboard levels with category breakdowns
 
 ### Public API & Webhooks
 - API-key authenticated REST API
 - Outgoing webhook system for CRM integration
-
-### Leaderboard
-- Store, Org, Global levels with category breakdowns
 
 ## Pending Issues
 - P1: Production marketing site logo link causes infinite spinner (likely browser cache)
