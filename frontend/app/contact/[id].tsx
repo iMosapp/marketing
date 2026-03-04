@@ -267,6 +267,7 @@ export default function ContactDetailScreen() {
   const [allPhotos, setAllPhotos] = useState<any[]>([]);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(isNewContact);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   // Voice notes
   const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
@@ -1719,13 +1720,14 @@ export default function ContactDetailScreen() {
           {/* ===== EDIT-MODE: Basic Info + Tags + Important Dates at top ===== */}
           {isEditing && (
             <>
-              {/* Basic Info */}
+              {/* Quick Add - Essential Fields */}
               <View style={s.section}>
-                <Text style={s.sectionHeader}>Basic Info</Text>
+                {isNewContact && <Text style={[s.sectionHeader, { fontSize: 18, marginBottom: 12 }]}>Quick Add</Text>}
+                {!isNewContact && <Text style={s.sectionHeader}>Basic Info</Text>}
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>First Name *</Text>
                   <TextInput style={s.input} placeholder="First name" placeholderTextColor={colors.textTertiary}
-                    value={contact.first_name} onChangeText={t => setContact({ ...contact, first_name: t })} data-testid="input-first-name" />
+                    value={contact.first_name} onChangeText={t => setContact({ ...contact, first_name: t })} autoFocus={isNewContact} data-testid="input-first-name" />
                 </View>
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>Last Name</Text>
@@ -1742,48 +1744,80 @@ export default function ContactDetailScreen() {
                   <TextInput style={s.input} placeholder="email@example.com" placeholderTextColor={colors.textTertiary}
                     value={contact.email} onChangeText={t => setContact({ ...contact, email: t })} keyboardType="email-address" autoCapitalize="none" data-testid="input-email" />
                 </View>
-                <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>Vehicle</Text>
-                  <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor={colors.textTertiary}
-                    value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
-                </View>
               </View>
 
-              {/* Address Section */}
-              <View style={s.section}>
-                <Text style={s.sectionHeader}>Address</Text>
-                <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>Street</Text>
-                  <TextInput style={s.input} placeholder="123 Main St" placeholderTextColor={colors.textTertiary}
-                    value={contact.address_street} onChangeText={t => setContact({ ...contact, address_street: t })} data-testid="input-address-street" />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <View style={[s.inputGroup, { flex: 1 }]}>
-                    <Text style={s.inputLabel}>City</Text>
-                    <TextInput style={s.input} placeholder="City" placeholderTextColor={colors.textTertiary}
-                      value={contact.address_city} onChangeText={t => setContact({ ...contact, address_city: t })} data-testid="input-address-city" />
+              {/* Collapsible More Details - Vehicle, Address, Tags, Dates */}
+              {isNewContact && !showMoreDetails && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, marginHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+                  onPress={() => setShowMoreDetails(true)}
+                  data-testid="show-more-details-btn"
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="#007AFF" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF' }}>More Details (optional)</Text>
+                </TouchableOpacity>
+              )}
+
+              {(!isNewContact || showMoreDetails) && (
+                <>
+                  {isNewContact && (
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, marginHorizontal: 16, marginBottom: 4 }}
+                      onPress={() => setShowMoreDetails(false)}
+                      data-testid="hide-more-details-btn"
+                    >
+                      <Ionicons name="chevron-up" size={18} color={colors.textSecondary} style={{ marginRight: 6 }} />
+                      <Text style={{ fontSize: 14, color: colors.textSecondary }}>Hide Details</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <View style={s.section}>
+                    {!isNewContact && <View />}
+                    <View style={s.inputGroup}>
+                      <Text style={s.inputLabel}>Vehicle</Text>
+                      <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor={colors.textTertiary}
+                        value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
+                    </View>
                   </View>
-                  <View style={[s.inputGroup, { flex: 0.5 }]}>
-                    <Text style={s.inputLabel}>State</Text>
-                    <TextInput style={s.input} placeholder="ST" placeholderTextColor={colors.textTertiary}
-                      value={contact.address_state} onChangeText={t => setContact({ ...contact, address_state: t })} autoCapitalize="characters" data-testid="input-address-state" />
+
+                  {/* Address Section */}
+                  <View style={s.section}>
+                    <Text style={s.sectionHeader}>Address</Text>
+                    <View style={s.inputGroup}>
+                      <Text style={s.inputLabel}>Street</Text>
+                      <TextInput style={s.input} placeholder="123 Main St" placeholderTextColor={colors.textTertiary}
+                        value={contact.address_street} onChangeText={t => setContact({ ...contact, address_street: t })} data-testid="input-address-street" />
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <View style={[s.inputGroup, { flex: 1 }]}>
+                        <Text style={s.inputLabel}>City</Text>
+                        <TextInput style={s.input} placeholder="City" placeholderTextColor={colors.textTertiary}
+                          value={contact.address_city} onChangeText={t => setContact({ ...contact, address_city: t })} data-testid="input-address-city" />
+                      </View>
+                      <View style={[s.inputGroup, { flex: 0.5 }]}>
+                        <Text style={s.inputLabel}>State</Text>
+                        <TextInput style={s.input} placeholder="ST" placeholderTextColor={colors.textTertiary}
+                          value={contact.address_state} onChangeText={t => setContact({ ...contact, address_state: t })} autoCapitalize="characters" data-testid="input-address-state" />
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <View style={[s.inputGroup, { flex: 1 }]}>
+                        <Text style={s.inputLabel}>ZIP Code</Text>
+                        <TextInput style={s.input} placeholder="12345" placeholderTextColor={colors.textTertiary}
+                          value={contact.address_zip} onChangeText={t => setContact({ ...contact, address_zip: t })} keyboardType="number-pad" data-testid="input-address-zip" />
+                      </View>
+                      <View style={[s.inputGroup, { flex: 1 }]}>
+                        <Text style={s.inputLabel}>Country</Text>
+                        <TextInput style={s.input} placeholder="US" placeholderTextColor={colors.textTertiary}
+                          value={contact.address_country} onChangeText={t => setContact({ ...contact, address_country: t })} data-testid="input-address-country" />
+                      </View>
+                    </View>
                   </View>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <View style={[s.inputGroup, { flex: 1 }]}>
-                    <Text style={s.inputLabel}>ZIP Code</Text>
-                    <TextInput style={s.input} placeholder="12345" placeholderTextColor={colors.textTertiary}
-                      value={contact.address_zip} onChangeText={t => setContact({ ...contact, address_zip: t })} keyboardType="number-pad" data-testid="input-address-zip" />
-                  </View>
-                  <View style={[s.inputGroup, { flex: 1 }]}>
-                    <Text style={s.inputLabel}>Country</Text>
-                    <TextInput style={s.input} placeholder="US" placeholderTextColor={colors.textTertiary}
-                      value={contact.address_country} onChangeText={t => setContact({ ...contact, address_country: t })} data-testid="input-address-country" />
-                  </View>
-                </View>
-              </View>
+                </>
+              )}
 
               {/* Tags (edit mode  - at top) */}
+              {(!isNewContact || showMoreDetails) && (
               <View style={s.section}>
                 <Text style={s.sectionHeader}>Tags</Text>
                 <View style={s.tagsWrap}>
@@ -1805,8 +1839,10 @@ export default function ContactDetailScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+              )}
 
               {/* Important Dates (edit mode  - at top) */}
+              {(!isNewContact || showMoreDetails) && (
               <View style={s.section}>
                 <Text style={s.sectionHeader}>Important Dates</Text>
                 {[
@@ -1854,6 +1890,7 @@ export default function ContactDetailScreen() {
                   <Text style={s.addBtnText}>Add Custom Date</Text>
                 </TouchableOpacity>
               </View>
+              )}
             </>
           )}
 
