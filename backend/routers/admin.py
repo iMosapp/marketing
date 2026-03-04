@@ -403,6 +403,13 @@ async def create_store(store_data: StoreCreate, x_user_id: str = Header(None, al
             "created_at": datetime.utcnow(),
         })
     await db.congrats_templates.insert_many(templates_to_insert)
+
+    # Seed store-level defaults (tags, lead sources)
+    try:
+        from services.seed_defaults import seed_store_defaults
+        await seed_store_defaults(store_id, org_data.get("organization_id", ""))
+    except Exception as e:
+        logger.error(f"Failed to seed store defaults for {store_id}: {e}")
     
     return store_dict
 

@@ -8,7 +8,7 @@ from typing import List, Optional
 import logging
 
 from models import Contact, ContactCreate
-from routers.database import get_db, get_data_filter, increment_user_stat
+from routers.database import get_db, get_data_filter, get_user_by_id, get_accessible_user_ids, increment_user_stat
 
 router = APIRouter(prefix="/contacts", tags=["Contacts"])
 logger = logging.getLogger(__name__)
@@ -77,8 +77,10 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     contact_dict['updated_at'] = datetime.utcnow()
     
     # Determine ownership type based on source
+    # Personal = user's own contacts (only they see details)
+    # Org = store/company leads (admins can see details)
     source = contact_dict.get('source', 'manual')
-    if source in ('csv', 'phone_contacts'):
+    if source in ('manual', 'csv', 'phone_contacts'):
         contact_dict['ownership_type'] = 'personal'
     else:
         contact_dict['ownership_type'] = 'org'
@@ -109,26 +111,54 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
 async def get_contacts(user_id: str, search: Optional[str] = None):
     """Get all contacts accessible to a user based on their role.
     Excludes heavy photo field - uses photo_thumbnail for avatars.
-    Excludes hidden contacts (from deactivated users' personal imports)."""
-    db = get_db()
-    base_filter = await get_data_filter(user_id)
+    Excludes hidden contacts (from deactivated users' personal imports).
     
-    # Always exclude hidden contacts unless the user owns them
-    active_filter = {
-        "$and": [
-            base_filter,
-            {"$or": [
-                {"status": {"$ne": "hidden"}},
-                {"status": {"$exists": False}},
-                {"original_user_id": user_id},  # User can always see their own contacts
-            ]}
-        ]
-    }
+    Privacy rules:
+    - Regular users: see only their own contacts
+    - Admins/managers: see their own contacts + 'org' ownership_type contacts from their store/org
+      Personal contacts of other users are NOT visible (only activity stats are shared)
+    """
+    db = get_db()
+    user = await get_user_by_id(user_id)
+    if not user:
+        return []
+    
+    role = user.get("role", "user")
+    
+    # Build privacy-aware filter
+    if role in ("super_admin", "org_admin", "store_manager"):
+        # Admins see: their own contacts (any type) + other users' org/store contacts
+        accessible_ids = await get_accessible_user_ids(user)
+        privacy_filter = {
+            "$and": [
+                {"$or": [
+                    {"user_id": user_id},  # All of my own contacts
+                    {"user_id": {"$in": accessible_ids}, "ownership_type": {"$ne": "personal"}},  # Other users' non-personal contacts
+                ]},
+                {"$or": [
+                    {"status": {"$ne": "hidden"}},
+                    {"status": {"$exists": False}},
+                    {"original_user_id": user_id},
+                ]}
+            ]
+        }
+    else:
+        # Regular users: only their own contacts
+        privacy_filter = {
+            "$and": [
+                {"user_id": user_id},
+                {"$or": [
+                    {"status": {"$ne": "hidden"}},
+                    {"status": {"$exists": False}},
+                    {"original_user_id": user_id},
+                ]}
+            ]
+        }
     
     if search:
         query = {
             "$and": [
-                active_filter,
+                privacy_filter,
                 {"$or": [
                     {"first_name": {"$regex": search, "$options": "i"}},
                     {"last_name": {"$regex": search, "$options": "i"}},
@@ -138,7 +168,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
             ]
         }
     else:
-        query = active_filter
+        query = privacy_filter
     
     # Exclude heavy 'photo' field from list queries  - use photo_thumbnail instead
     contacts = await db.contacts.find(query, {"photo": 0}).sort("first_name", 1).limit(500).to_list(500)
@@ -640,3 +670,29 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             })
 
     return {"photos": photos, "total": len(photos)}
+
+
+@router.post("/admin/backfill-ownership")
+async def backfill_contact_ownership():
+    """Set ownership_type on all contacts based on source.
+    manual/csv/phone_contacts → personal, everything else → org.
+    Corrects any misclassified contacts."""
+    db = get_db()
+    
+    # Set personal for manual, csv, phone_contacts sources
+    personal_result = await db.contacts.update_many(
+        {"source": {"$in": ["manual", "csv", "phone_contacts"]}, "ownership_type": {"$ne": "personal"}},
+        {"$set": {"ownership_type": "personal"}}
+    )
+    
+    # Set org for all other sources that aren't already set
+    org_result = await db.contacts.update_many(
+        {"source": {"$nin": ["manual", "csv", "phone_contacts"]}, "ownership_type": {"$ne": "org"}},
+        {"$set": {"ownership_type": "org"}}
+    )
+    
+    return {
+        "status": "success",
+        "personal_contacts": personal_result.modified_count,
+        "org_contacts": org_result.modified_count
+    }

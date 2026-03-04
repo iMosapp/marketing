@@ -121,6 +121,51 @@ DEFAULT_CAMPAIGNS = [
             {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 12, "message_template": "Hi {name}! Can you believe it's been a year? Time flies! I hope you're doing well. Let me know if there's anything I can help with.", "media_urls": [], "ai_generated": False, "step_context": "annual anniversary", "card_type": ""},
         ],
     },
+    {
+        "name": "Birthday Campaign",
+        "type": "birthday",
+        "trigger_tag": "",
+        "segment_tags": [],
+        "active": True,
+        "send_time": "09:00",
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "ownership_level": "user",
+        "sequences": [
+            {"step": 1, "action_type": "send_card", "card_type": "birthday", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Happy Birthday, {name}! Hope your day is as amazing as you are!", "media_urls": [], "ai_generated": False, "step_context": "send birthday card"},
+            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 1, "delay_months": 0, "message_template": "Hope you had a wonderful birthday, {name}! Just wanted to say we appreciate you.", "media_urls": [], "ai_generated": False, "step_context": "day-after follow-up", "card_type": ""},
+        ],
+    },
+    {
+        "name": "Anniversary Campaign",
+        "type": "anniversary",
+        "trigger_tag": "",
+        "segment_tags": [],
+        "active": True,
+        "send_time": "10:00",
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "ownership_level": "user",
+        "sequences": [
+            {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Happy Anniversary, {name}! Wishing you and yours a wonderful celebration today.", "media_urls": [], "ai_generated": False, "step_context": "anniversary greeting", "card_type": ""},
+            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 7, "delay_months": 0, "message_template": "Hi {name}! Hope you had a great anniversary celebration. Let me know if there's anything I can help with!", "media_urls": [], "ai_generated": False, "step_context": "post-anniversary check-in", "card_type": ""},
+        ],
+    },
+    {
+        "name": "Sold Date Anniversary",
+        "type": "custom",
+        "trigger_tag": "",
+        "segment_tags": ["sold"],
+        "active": True,
+        "send_time": "10:00",
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "ownership_level": "user",
+        "sequences": [
+            {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Hi {name}! It's the anniversary of when we started working together. Time flies! Hope everything is still going great.", "media_urls": [], "ai_generated": False, "step_context": "purchase anniversary", "card_type": ""},
+            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 3, "delay_months": 0, "message_template": "By the way, {name} — if you know anyone who could use our help, I'd love an introduction. Referrals mean the world!", "media_urls": [], "ai_generated": False, "step_context": "referral ask after anniversary", "card_type": ""},
+        ],
+    },
 ]
 
 # ==================== DEFAULT DATE TRIGGERS ====================
@@ -146,6 +191,54 @@ DEFAULT_DATE_TRIGGERS = [
         "message_template": "Hi {name}! It's the anniversary of when we first connected. Hope you're doing great!",
         "include_birthday_card": False,
     },
+    {
+        "trigger_type": "holiday",
+        "enabled": True,
+        "delivery_method": "sms",
+        "message_template": "Happy Holidays, {name}! Wishing you and your family a wonderful season!",
+        "include_birthday_card": False,
+        "holiday_id": "thanksgiving",
+    },
+    {
+        "trigger_type": "holiday",
+        "enabled": True,
+        "delivery_method": "sms",
+        "message_template": "Merry Christmas, {name}! Wishing you a joyful holiday season!",
+        "include_birthday_card": False,
+        "holiday_id": "christmas",
+    },
+    {
+        "trigger_type": "holiday",
+        "enabled": True,
+        "delivery_method": "sms",
+        "message_template": "Happy New Year, {name}! Wishing you an incredible year ahead!",
+        "include_birthday_card": False,
+        "holiday_id": "new_years",
+    },
+]
+
+# ==================== DEFAULT TAGS ====================
+DEFAULT_TAGS = [
+    {"name": "new_client", "color": "#34C759", "description": "New client"},
+    {"name": "sold", "color": "#007AFF", "description": "Closed deal"},
+    {"name": "hot_lead", "color": "#FF3B30", "description": "High priority lead"},
+    {"name": "cold_lead", "color": "#8E8E93", "description": "Low priority lead"},
+    {"name": "referral", "color": "#FF9500", "description": "Referred by someone"},
+    {"name": "VIP", "color": "#C9A962", "description": "VIP customer"},
+    {"name": "past_client", "color": "#AF52DE", "description": "Former client"},
+    {"name": "follow_up", "color": "#5AC8FA", "description": "Needs follow-up"},
+]
+
+# ==================== DEFAULT LEAD SOURCES ====================
+DEFAULT_LEAD_SOURCES = [
+    {"name": "Website", "type": "inbound", "color": "#007AFF"},
+    {"name": "Referral", "type": "inbound", "color": "#34C759"},
+    {"name": "Walk-In", "type": "inbound", "color": "#FF9500"},
+    {"name": "Social Media", "type": "inbound", "color": "#AF52DE"},
+    {"name": "Phone Call", "type": "inbound", "color": "#5AC8FA"},
+    {"name": "Event", "type": "inbound", "color": "#FF2D55"},
+    {"name": "Email", "type": "inbound", "color": "#FFD60A"},
+    {"name": "Personal Network", "type": "outbound", "color": "#C9A962"},
 ]
 
 
@@ -195,15 +288,56 @@ async def seed_user_defaults(user_id: str):
     return seeded
 
 
-async def backfill_all_users():
-    """Run seed_user_defaults for every existing user. Safe to run multiple times."""
+async def seed_store_defaults(store_id: str, organization_id: str = ""):
+    """Provision default data at the store/org level. Safe to call multiple times."""
     db = get_db()
+    now = datetime.now(timezone.utc)
+    seeded = {}
+
+    # 1. Tags (store-level)
+    existing_tags = await db.tags.count_documents({"store_id": store_id})
+    if existing_tags == 0:
+        docs = [{"store_id": store_id, "organization_id": organization_id, **t, "is_default": True, "created_at": now} for t in DEFAULT_TAGS]
+        await db.tags.insert_many(docs)
+        seeded["tags"] = len(docs)
+    else:
+        seeded["tags"] = 0
+
+    # 2. Lead Sources (store-level)
+    existing_sources = await db.lead_sources.count_documents({"store_id": store_id})
+    if existing_sources == 0:
+        docs = [{"store_id": store_id, "organization_id": organization_id, **s, "is_default": True, "active": True, "created_at": now} for s in DEFAULT_LEAD_SOURCES]
+        await db.lead_sources.insert_many(docs)
+        seeded["lead_sources"] = len(docs)
+    else:
+        seeded["lead_sources"] = 0
+
+    logger.info(f"Seeded store defaults for {store_id}: {seeded}")
+    return seeded
+
+
+async def backfill_all_users():
+    """Run seed_user_defaults for every existing user, and seed_store_defaults for every store."""
+    db = get_db()
+    total = {"users": 0, "sms_templates": 0, "email_templates": 0, "campaigns": 0, "date_triggers": 0, "stores": 0, "tags": 0, "lead_sources": 0}
+
+    # Seed users
     users = await db.users.find({"is_active": {"$ne": False}}, {"_id": 1}).to_list(5000)
-    total = {"users": 0, "sms_templates": 0, "email_templates": 0, "campaigns": 0, "date_triggers": 0}
     for user in users:
         uid = str(user["_id"])
         result = await seed_user_defaults(uid)
         total["users"] += 1
         for k, v in result.items():
             total[k] += v
+
+    # Seed stores
+    stores = await db.stores.find({}, {"_id": 1, "organization_id": 1}).to_list(5000)
+    for store in stores:
+        sid = str(store["_id"])
+        org_id = store.get("organization_id", "")
+        result = await seed_store_defaults(sid, org_id)
+        total["stores"] += 1
+        for k, v in result.items():
+            total[k] += v
+
     return total
