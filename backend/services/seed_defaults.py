@@ -285,7 +285,7 @@ DEFAULT_DATE_TRIGGERS = [
         "include_birthday_card": False,
     },
     {
-        "trigger_type": "holiday",
+        "trigger_type": "holiday_thanksgiving",
         "enabled": True,
         "delivery_method": "sms",
         "message_template": "Happy Thanksgiving, {name}! Grateful for people like you. Enjoy the day!",
@@ -293,7 +293,7 @@ DEFAULT_DATE_TRIGGERS = [
         "holiday_id": "thanksgiving",
     },
     {
-        "trigger_type": "holiday",
+        "trigger_type": "holiday_christmas",
         "enabled": True,
         "delivery_method": "sms",
         "message_template": "Merry Christmas, {name}! Wishing you and yours a wonderful holiday season!",
@@ -301,7 +301,7 @@ DEFAULT_DATE_TRIGGERS = [
         "holiday_id": "christmas",
     },
     {
-        "trigger_type": "holiday",
+        "trigger_type": "holiday_new_years",
         "enabled": True,
         "delivery_method": "sms",
         "message_template": "Happy New Year, {name}! Wishing you an incredible year ahead!",
