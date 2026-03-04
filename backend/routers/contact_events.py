@@ -741,6 +741,8 @@ async def get_reply_photo(user_id: str, contact_id: str, event_index: int):
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url=photo_data)
     raise HTTPException(status_code=404, detail="Photo format not supported")
+
+@router.post("/{user_id}/find-or-create-and-log")
 async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
     """
     Smart contact matching: find by phone (last 10 digits) or email, create if not found.

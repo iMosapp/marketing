@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -360,6 +360,28 @@ export default function HomeScreen() {
     }
   };
 
+  // Relative time helper + auto-refresh
+  const getRelativeTime = useCallback((timestamp: string) => {
+    const now = Date.now();
+    const then = new Date(timestamp).getTime();
+    const diffMs = now - then;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }, []);
+
+  // Auto-refresh activity timestamps every 60 seconds
+  const [, setTickRefresh] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTickRefresh(t => t + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const loadRecentActivity = async () => {
     if (!user?._id) return;
     try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=5`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
@@ -522,10 +544,10 @@ export default function HomeScreen() {
               const ai = getActivityIcon(item.type);
               return (
                 <View key={idx} style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`activity-item-${idx}`}>
-                  <View style={[styles.activityIconWrap, { backgroundColor: `${ai.color}18` }]}><Ionicons name={ai.icon as any} size={18} color={ai.color} /></View>
+                  <View style={[styles.activityIconWrap, { backgroundColor: `${ai.color}18` }]}><Ionicons name={ai.icon as any} size={22} color={ai.color} /></View>
                   <View style={styles.activityContent}>
                     <Text style={[styles.activityMsg, { color: colors.text }]} numberOfLines={1}>{item.message}</Text>
-                    <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.timestamp ? new Date(item.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}</Text>
+                    <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.timestamp ? getRelativeTime(item.timestamp) : ''}</Text>
                   </View>
                 </View>
               );
@@ -671,11 +693,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   viewAll: { fontSize: 13, fontWeight: '600' },
   emptyActivity: { borderRadius: 14, padding: 24, alignItems: 'center', borderWidth: 1 },
   emptyText: { fontSize: 13, marginTop: 10, textAlign: 'center', lineHeight: 20 },
-  activityItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1 },
-  activityIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  activityItem: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 14, marginBottom: 10, borderWidth: 1 },
+  activityIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   activityContent: { flex: 1 },
-  activityMsg: { fontSize: 13, fontWeight: '600' },
-  activityTime: { fontSize: 11, marginTop: 2 },
+  activityMsg: { fontSize: 15, fontWeight: '600', lineHeight: 20 },
+  activityTime: { fontSize: 13, marginTop: 3 },
   // Modal shared
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, maxHeight: '75%' },
