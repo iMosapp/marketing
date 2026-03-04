@@ -319,7 +319,7 @@ async def patch_user_profile(user_id: str, data: dict):
 async def get_activity_feed(user_id: str, limit: int = 20):
     """
     Get team activity feed based on user's role.
-    Shows recent actions by accessible team members.
+    Shows recent actions by accessible team members, including contact events.
     """
     from routers.database import get_data_filter, get_user_by_id
     
@@ -330,74 +330,142 @@ async def get_activity_feed(user_id: str, limit: int = 20):
     
     base_filter = await get_data_filter(user_id)
     activities = []
+    sub_limit = max(limit // 5, 2)
     
-    # Get recent contacts added
-    recent_contacts = await db.contacts.find(base_filter).sort("created_at", -1).limit(limit // 4).to_list(limit // 4)
-    for c in recent_contacts:
-        # Get the user who created this contact
-        creator = await db.users.find_one({"_id": ObjectId(c['user_id'])}, {"name": 1})
-        activities.append({
-            "type": "contact_added",
-            "icon": "person-add",
-            "color": "#34C759",
-            "message": f"{creator.get('name', 'Someone') if creator else 'Someone'} added {c.get('first_name', '')} {c.get('last_name', '')}",
-            "timestamp": c.get('created_at'),
-            "user_id": c.get('user_id'),
-            "entity_id": str(c['_id'])
-        })
-    
-    # Get recent messages sent
-    recent_messages = await db.messages.find({"sender": "user"}).sort("timestamp", -1).limit(limit // 4).to_list(limit // 4)
-    for m in recent_messages:
-        # Get conversation to find user
-        conv = await db.conversations.find_one({"_id": ObjectId(m.get('conversation_id'))})
-        if conv and conv.get('user_id') in [f.get('user_id') if isinstance(f, dict) else f for f in [base_filter.get('user_id')] if f] + (base_filter.get('user_id', {}).get('$in', []) if isinstance(base_filter.get('user_id'), dict) else []):
-            creator = await db.users.find_one({"_id": ObjectId(conv['user_id'])}, {"name": 1})
+    # ── 1. Contact Events (the PRIMARY source for tracked user actions) ──
+    try:
+        recent_events = await db.contact_events.find(base_filter).sort("timestamp", -1).limit(limit).to_list(limit)
+        for ev in recent_events:
+            # Get creator name
+            creator_name = "Someone"
+            try:
+                creator = await db.users.find_one({"_id": ObjectId(ev.get('user_id'))}, {"name": 1})
+                if creator:
+                    creator_name = creator.get('name', 'Someone')
+            except Exception:
+                pass
+            # Get contact name
+            contact_name = ev.get('contact_name', '')
+            if not contact_name and ev.get('contact_id'):
+                try:
+                    contact = await db.contacts.find_one({"_id": ObjectId(ev['contact_id'])}, {"first_name": 1, "last_name": 1})
+                    if contact:
+                        contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+                except Exception:
+                    pass
+            # Build human-readable message from event type
+            event_type = ev.get('event_type', 'activity')
+            event_labels = {
+                'digital_card_shared': 'shared a digital card with',
+                'digital_card_sent': 'shared a digital card with',
+                'review_request_sent': 'sent a review invite to',
+                'congrats_card_sent': 'sent a congrats card to',
+                'showcase_shared': 'shared the showroom with',
+                'vcard_sent': 'shared a contact card with',
+                'sms_sent': 'texted',
+                'email_sent': 'emailed',
+                'call_placed': 'called',
+                'note_updated': 'updated notes for',
+                'link_page_shared': 'shared link page with',
+            }
+            label = event_labels.get(event_type, ev.get('title', event_type.replace('_', ' ')))
+            msg = f"{creator_name} {label} {contact_name}".strip() if contact_name else f"{creator_name} {label}".strip()
+            
             activities.append({
-                "type": "message_sent",
-                "icon": "chatbubble",
-                "color": "#007AFF",
-                "message": f"{creator.get('name', 'Someone') if creator else 'Someone'} sent a message",
-                "timestamp": m.get('timestamp'),
-                "user_id": conv.get('user_id'),
-                "entity_id": str(m['_id'])
+                "type": event_type,
+                "icon": ev.get('icon', 'flash'),
+                "color": ev.get('color', '#C9A962'),
+                "message": msg,
+                "timestamp": ev.get('timestamp'),
+                "user_id": ev.get('user_id'),
+                "entity_id": str(ev.get('contact_id', ev.get('_id', ''))),
             })
+    except Exception as e:
+        logger.error(f"Error fetching contact_events for activity feed: {e}")
     
-    # Get recent tasks created
-    recent_tasks = await db.tasks.find(base_filter).sort("created_at", -1).limit(limit // 4).to_list(limit // 4)
-    for t in recent_tasks:
-        creator = await db.users.find_one({"_id": ObjectId(t['user_id'])}, {"name": 1})
-        activities.append({
-            "type": "task_created",
-            "icon": "checkmark-circle",
-            "color": "#FF9500",
-            "message": f"{creator.get('name', 'Someone') if creator else 'Someone'} created task: {t.get('title', 'Untitled')[:30]}",
-            "timestamp": t.get('created_at'),
-            "user_id": t.get('user_id'),
-            "entity_id": str(t['_id'])
-        })
+    # ── 2. Recent contacts added ──
+    try:
+        recent_contacts = await db.contacts.find(base_filter).sort("created_at", -1).limit(sub_limit).to_list(sub_limit)
+        existing_contact_ids = {a.get('entity_id') for a in activities}
+        for c in recent_contacts:
+            cid = str(c['_id'])
+            if cid in existing_contact_ids:
+                continue
+            creator_name = "Someone"
+            try:
+                creator = await db.users.find_one({"_id": ObjectId(c['user_id'])}, {"name": 1})
+                if creator:
+                    creator_name = creator.get('name', 'Someone')
+            except Exception:
+                pass
+            activities.append({
+                "type": "contact_added",
+                "icon": "person-add",
+                "color": "#34C759",
+                "message": f"{creator_name} added {c.get('first_name', '')} {c.get('last_name', '')}".strip(),
+                "timestamp": c.get('created_at'),
+                "user_id": c.get('user_id'),
+                "entity_id": cid,
+            })
+    except Exception as e:
+        logger.error(f"Error fetching contacts for activity feed: {e}")
     
-    # Get recent campaign enrollments
-    recent_enrollments = await db.campaign_enrollments.find(base_filter).sort("enrolled_at", -1).limit(limit // 4).to_list(limit // 4)
-    for e in recent_enrollments:
-        creator = await db.users.find_one({"_id": ObjectId(e['user_id'])}, {"name": 1})
-        activities.append({
-            "type": "campaign_enrollment",
-            "icon": "rocket",
-            "color": "#AF52DE",
-            "message": f"{creator.get('name', 'Someone') if creator else 'Someone'} enrolled {e.get('contact_name', 'a contact')} in campaign",
-            "timestamp": e.get('enrolled_at'),
-            "user_id": e.get('user_id'),
-            "entity_id": str(e['_id'])
-        })
+    # ── 3. Recent tasks created ──
+    try:
+        recent_tasks = await db.tasks.find(base_filter).sort("created_at", -1).limit(sub_limit).to_list(sub_limit)
+        for t in recent_tasks:
+            creator_name = "Someone"
+            try:
+                creator = await db.users.find_one({"_id": ObjectId(t['user_id'])}, {"name": 1})
+                if creator:
+                    creator_name = creator.get('name', 'Someone')
+            except Exception:
+                pass
+            activities.append({
+                "type": "task_created",
+                "icon": "checkmark-circle",
+                "color": "#FF9500",
+                "message": f"{creator_name} created task: {t.get('title', 'Untitled')[:40]}",
+                "timestamp": t.get('created_at'),
+                "user_id": t.get('user_id'),
+                "entity_id": str(t['_id']),
+            })
+    except Exception as e:
+        logger.error(f"Error fetching tasks for activity feed: {e}")
     
-    # Sort all activities by timestamp
+    # ── 4. Recent campaign enrollments ──
+    try:
+        recent_enrollments = await db.campaign_enrollments.find(base_filter).sort("enrolled_at", -1).limit(sub_limit).to_list(sub_limit)
+        for en in recent_enrollments:
+            creator_name = "Someone"
+            try:
+                creator = await db.users.find_one({"_id": ObjectId(en['user_id'])}, {"name": 1})
+                if creator:
+                    creator_name = creator.get('name', 'Someone')
+            except Exception:
+                pass
+            activities.append({
+                "type": "campaign_enrollment",
+                "icon": "rocket",
+                "color": "#AF52DE",
+                "message": f"{creator_name} enrolled {en.get('contact_name', 'a contact')} in campaign",
+                "timestamp": en.get('enrolled_at'),
+                "user_id": en.get('user_id'),
+                "entity_id": str(en['_id']),
+            })
+    except Exception as e:
+        logger.error(f"Error fetching enrollments for activity feed: {e}")
+    
+    # Sort all activities by timestamp (newest first)
     activities.sort(key=lambda x: x.get('timestamp') or datetime.min, reverse=True)
     
-    # Convert timestamps to strings for JSON serialization
+    # Convert timestamps to ISO strings
     for a in activities:
-        if a.get('timestamp'):
-            a['timestamp'] = a['timestamp'].isoformat() if hasattr(a['timestamp'], 'isoformat') else str(a['timestamp'])
+        ts = a.get('timestamp')
+        if ts and hasattr(ts, 'isoformat'):
+            a['timestamp'] = ts.isoformat() + 'Z' if not str(ts).endswith('Z') else ts.isoformat()
+        elif ts:
+            a['timestamp'] = str(ts)
     
     return {
         "activities": activities[:limit],

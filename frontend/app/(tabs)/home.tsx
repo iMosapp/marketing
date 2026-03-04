@@ -350,6 +350,13 @@ export default function HomeScreen() {
     }, [user?._id])
   );
 
+  // Auto-refresh activity feed every 30 seconds
+  useEffect(() => {
+    if (!user?._id) return;
+    const interval = setInterval(() => { loadRecentActivity(); }, 30000);
+    return () => clearInterval(interval);
+  }, [user?._id]);
+
   const loadStoreSlug = async () => {
     if (user?.store_slug) { setStoreSlug(user.store_slug); return; }
     if (user?.store_id) {
@@ -384,7 +391,7 @@ export default function HomeScreen() {
 
   const loadRecentActivity = async () => {
     if (!user?._id) return;
-    try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=5`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
+    try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=10`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
   };
 
   // Send a Card  - contact search helpers
@@ -489,9 +496,16 @@ export default function HomeScreen() {
       call_placed: { icon: 'call', color: '#32ADE6' },
       card_shared: { icon: 'card', color: '#C9A962' },
       digital_card_shared: { icon: 'card', color: '#C9A962' },
+      digital_card_sent: { icon: 'card', color: '#C9A962' },
       review_invite_sent: { icon: 'star', color: '#FFD60A' },
+      review_request_sent: { icon: 'star', color: '#FFD60A' },
       congrats_card: { icon: 'gift', color: '#C9A962' },
+      congrats_card_sent: { icon: 'gift', color: '#C9A962' },
       showroom_shared: { icon: 'storefront', color: '#34C759' },
+      showcase_shared: { icon: 'storefront', color: '#34C759' },
+      vcard_sent: { icon: 'person-circle', color: '#007AFF' },
+      note_updated: { icon: 'document-text', color: '#FF9F0A' },
+      link_page_shared: { icon: 'link', color: '#32ADE6' },
     };
     return map[type] || { icon: 'ellipse', color: colors.textSecondary };
   };
@@ -541,10 +555,12 @@ export default function HomeScreen() {
             </View>
           ) : (
             recentActivity.map((item, idx) => {
-              const ai = getActivityIcon(item.type);
+              const fallback = getActivityIcon(item.type);
+              const icon = item.icon || fallback.icon;
+              const color = item.color || fallback.color;
               return (
                 <View key={idx} style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`activity-item-${idx}`}>
-                  <View style={[styles.activityIconWrap, { backgroundColor: `${ai.color}18` }]}><Ionicons name={ai.icon as any} size={22} color={ai.color} /></View>
+                  <View style={[styles.activityIconWrap, { backgroundColor: `${color}18` }]}><Ionicons name={icon as any} size={22} color={color} /></View>
                   <View style={styles.activityContent}>
                     <Text style={[styles.activityMsg, { color: colors.text }]} numberOfLines={1}>{item.message}</Text>
                     <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.timestamp ? getRelativeTime(item.timestamp) : ''}</Text>
