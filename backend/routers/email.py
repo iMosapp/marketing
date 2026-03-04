@@ -317,13 +317,12 @@ async def get_email_templates(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Get user's custom templates
+    # Get user's templates (personal + store/org level)
     templates = await db.email_templates.find({
         "$or": [
             {"user_id": user_id},
-            {"store_id": user.get("store_id")},
-            {"organization_id": user.get("organization_id")},
-            {"is_default": True}
+            {"store_id": user.get("store_id"), "user_id": {"$exists": False}},
+            {"organization_id": user.get("organization_id"), "user_id": {"$exists": False}},
         ]
     }).to_list(100)
     

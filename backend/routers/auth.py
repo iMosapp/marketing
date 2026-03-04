@@ -209,6 +209,13 @@ async def signup(user_data: UserCreate):
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
     
+    # Seed all default templates, campaigns, and triggers for this user
+    try:
+        from services.seed_defaults import seed_user_defaults
+        await seed_user_defaults(str(result.inserted_id))
+    except Exception as e:
+        logger.error(f"Failed to seed defaults for new user: {e}")
+    
     # Send welcome email to new user
     await send_welcome_email(user_dict)
     

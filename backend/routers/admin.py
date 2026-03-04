@@ -685,6 +685,14 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
     
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
+    
+    # Seed all default templates, campaigns, and triggers
+    try:
+        from services.seed_defaults import seed_user_defaults
+        await seed_user_defaults(str(result.inserted_id))
+    except Exception as e:
+        logger.error(f"Failed to seed defaults for admin user: {e}")
+    
     del user_dict['password']
     
     return user_dict
@@ -761,6 +769,13 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     
     result = await get_db().users.insert_one(user_dict)
     user_id = str(result.inserted_id)
+    
+    # Seed all default templates, campaigns, and triggers
+    try:
+        from services.seed_defaults import seed_user_defaults
+        await seed_user_defaults(user_id)
+    except Exception as e:
+        logger.error(f"Failed to seed defaults for new user {user_id}: {e}")
     
     # Send invite email if requested
     invite_sent = False
@@ -3194,6 +3209,13 @@ async def add_team_member(data: AddTeamMemberRequest):
     user_id = str(result.inserted_id)
     new_user["_id"] = user_id
     
+    # Seed all default templates, campaigns, and triggers
+    try:
+        from services.seed_defaults import seed_user_defaults
+        await seed_user_defaults(user_id)
+    except Exception as e:
+        logger.error(f"Failed to seed defaults for user {user_id}: {e}")
+    
     # Get onboarding settings
     settings = await db.onboarding_settings.find_one({"store_id": data.store_id})
     if not settings and store.get("organization_id"):
@@ -3407,3 +3429,11 @@ async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
     )
 
     return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}
+
+
+@router.post("/seed/backfill-all")
+async def backfill_all_user_defaults():
+    """Backfill default templates, campaigns, and date triggers for ALL existing users."""
+    from services.seed_defaults import backfill_all_users
+    result = await backfill_all_users()
+    return {"status": "success", **result}
