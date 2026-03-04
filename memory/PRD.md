@@ -12,52 +12,43 @@ Full-stack Relationship Management System (RMS) for sales professionals. React f
 
 ## What's Been Implemented
 
-### Marketing Website (Complete - March 2026)
-- 58 files in `/app/marketing/build/` (homepage, 20+ feature pages, pricing, demo, privacy, terms, install, ad pages, all assets)
-- All assets verified — zero broken references
-- 72px logo standardized across all 22 HTML pages
-- Logo home link fixed (href="/" for same-domain navigation)
-- Mobile hamburger menu rebuilt with expandable top-level categories (Products, Solutions, Resources, Pricing)
-- Live demo request form with source/UTM/ref tracking
-- ~80 unique source tags across CTAs
-- vercel.json: trailingSlash: true, outputDirectory: build
-
-### App Directory (Complete - March 2026)
-- Public marketing directory at `/appdirectory/` mirrors in-app admin directory exactly
-- 14 categories, 94 pages total
-- Search functionality across all pages
-- Lead Attribution added to Analytics & Reporting and Contacts & Leads
-
-### Turnkey Account Provisioning (Complete - March 2026)
-- **Card Templates:** 6 types seeded per store (congrats, birthday, anniversary, thank you, welcome, holiday)
-- **SMS Templates:** 7 per user (greeting, follow-up, appointment, thank you, review request, referral, sold)
-- **Email Templates:** 5 per user (welcome, digital card, review request, follow-up, referral)
-- **Campaigns:** 7 per user (New Client Welcome, Sold Follow-Up, 90-Day Check-In, Annual Re-Engage, Birthday, Anniversary, Sold Date Anniversary)
-- **Date Triggers:** 6 per user (birthday, anniversary, sold date + Thanksgiving, Christmas, New Year's)
-- **Tags:** 8 per store (new_client, sold, hot_lead, cold_lead, referral, VIP, past_client, follow_up)
-- **Lead Sources:** 8 per store (Website, Referral, Walk-In, Social Media, Phone, Event, Email, Personal Network)
+### Turnkey Default Package (Complete - March 2026)
+Full auto-provisioning on new user signup with:
+- **SMS Templates (12):** Welcome, Add Socials Nudge, Review Ask, Review Follow-Up, Referral Ask, Check-In, Birthday, Anniversary, Congrats/Sold, Reactivation, Winback After Feedback, Just Because
+- **Email Templates (8):** Welcome + Card Setup, Digital Business Card, Review Request, Follow-Up/Check-In, Referral Request, Congrats/Purchase, Reputation Rescue, Reactivation
+- **Campaigns (6):** New Account Onboarding (5-step), First 10 Reviews Sprint (3-step), Ongoing Relationship Touches (5-step quarterly), Post-Purchase Follow-Up (5-step triggered by `sold` tag), Reputation Rescue (3-step triggered by `negative_feedback`), Social Growth Loop (3-step)
+- **Date Triggers (6):** Birthday, Anniversary, Sold Date, Thanksgiving, Christmas, New Year's
+- **Review Response Templates (3):** 5-Star, 3-4 Star, 1-2 Star
+- **Social Content Starters (5):** Intro Post, Value Post, Proof Post, Community Post, Offer Post
+- **Store-Level Defaults:** 8 tags (new_client, sold, hot_lead, cold_lead, referral, VIP, past_client, negative_feedback), 8 lead sources
+- **CRUD Endpoints:** `/api/review-templates/{user_id}` and `/api/social-templates/{user_id}`
+- **Backfill:** `POST /api/admin/seed/backfill-all` (idempotent)
 - Service: `/app/backend/services/seed_defaults.py`
 - Hooked into: signup, admin user creation, store creation
-- Backfill: `POST /api/admin/seed/backfill-all`
+
+### Card Templates (Complete - March 2026)
+- 6 types seeded per store (congrats, birthday, anniversary, thank you, welcome, holiday)
+- Fixed fallback logic for birthday cards
+- Backfill: `POST /api/congrats/templates/backfill`
 
 ### Contact Privacy Model (Complete - March 2026)
-- `ownership_type: "personal"` for manual/CSV/phone contacts → only owner sees
-- `ownership_type: "org"` for lead_form/API/DMs/referral contacts → admins can see
-- Admin dashboard shows activity stats without exposing personal contact details
-- Bulk transfer gives new owner full access
+- `ownership_type: "personal"` vs `"org"` contacts
+- Admin dashboard shows activity without exposing personal details
 - Backfill: `POST /api/contacts/admin/backfill-ownership`
 
-### Birthday/Card Template Fix (March 2026)
-- Fixed fallback template logic — birthday cards no longer use congrats text
-- Backend: `is_fallback_template` flag in congrats_cards.py
-- Store creation seeds all 6 card types properly
-- Backfill: `POST /api/congrats/templates/backfill`
+### Marketing Website (Complete - March 2026)
+- 58 files in `/app/marketing/build/` (homepage, 20+ feature pages, pricing, demo, privacy, terms)
+- All assets verified, 72px logo standardized, mobile hamburger menu rebuilt
+- Live demo request form with source/UTM/ref tracking
+
+### App Directory (Complete - March 2026)
+- Public marketing directory at `/appdirectory/` mirrors in-app admin directory
+- 14 categories, 94 pages total with search
 
 ### Lead & Referral Tracking (Complete)
 - Backend: `/app/backend/routers/demo_requests.py`
 - Frontend: `/app/frontend/app/admin/lead-tracking.tsx`
-- Lead Attribution accessible from More → Reports and More → Contacts & Leads
-- Referral codes: `/app/frontend/utils/refLink.ts`
+- Lead Attribution accessible from More → Reports and Contacts & Leads
 
 ### Core App Features (Previous Sessions)
 - Carrier-agnostic messaging (personal SMS fallback)
@@ -86,9 +77,11 @@ curl -X POST https://app.imonsocial.com/api/auth/ref/backfill
 - Gamification & Leaderboards — activity-based leaderboards for users, managers, customers
 
 ### P1
+- Onboarding UI Flow — choose account type, primary goal, show "Launch Score"
 - AI-Powered Outreach — AI-suggested follow-ups on `sold` tag
 - Enrich VCF File — add link page, review link, showcase URL
 - Voice Help Assistant Backend
+- Production marketing site logo link infinite spinner (user verification pending)
 
 ### P2
 - Break down monolithic `contact/[id].tsx` (~4200 lines)
@@ -102,14 +95,18 @@ curl -X POST https://app.imonsocial.com/api/auth/ref/backfill
 - Mobile app tags data sync issue
 
 ## Key Files
+- `/app/backend/services/seed_defaults.py` — Turnkey account provisioning (all default data)
+- `/app/backend/routers/review_templates.py` — Review response templates CRUD
+- `/app/backend/routers/social_templates.py` — Social content templates CRUD
+- `/app/backend/routers/auth.py` — Signup with auto-seeding
+- `/app/backend/routers/admin.py` — Admin user/store creation with seeding + backfill endpoint
+- `/app/backend/routers/campaigns.py` — Campaign management
+- `/app/backend/routers/date_triggers.py` — Date trigger config
 - `/app/marketing/build/` — Marketing site deployment root (58 files)
-- `/app/backend/services/seed_defaults.py` — Turnkey account provisioning
-- `/app/backend/routers/congrats_cards.py` — Card template logic (fixed fallback)
+- `/app/backend/routers/congrats_cards.py` — Card template logic
 - `/app/backend/routers/contacts.py` — Contact privacy model
-- `/app/backend/routers/demo_requests.py` — Lead tracking API
 - `/app/backend/routers/messages.py` — Messaging (email/SMS channel fix)
 - `/app/backend/services/email_service.py` — White-label email templates
-- `/app/frontend/app/admin/lead-tracking.tsx` — Lead analytics dashboard
 
 ## 3rd Party Integrations
 - **Resend:** Transactional emails
