@@ -79,9 +79,12 @@ async def get_store_template(store_id: str, card_type: str = "congrats"):
 
     template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": card_type})
 
+    is_fallback = False
     if not template:
         # Fall back to store-level generic template
         template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": {"$exists": False}})
+        if template:
+            is_fallback = True
 
     if not template:
         return {
@@ -104,13 +107,13 @@ async def get_store_template(store_id: str, card_type: str = "congrats"):
         "card_type": card_type,
         "template": {
             "id": str(template["_id"]),
-            "headline": template.get("headline", defaults["headline"]),
-            "message": template.get("message", defaults["message"]),
+            "headline": defaults["headline"] if is_fallback else template.get("headline", defaults["headline"]),
+            "message": defaults["message"] if is_fallback else template.get("message", defaults["message"]),
             "footer_text": template.get("footer_text", ""),
             "show_salesman": template.get("show_salesman", True),
             "show_store_logo": template.get("show_store_logo", True),
             "background_color": template.get("background_color", defaults["background_color"]),
-            "accent_color": template.get("accent_color", defaults["accent_color"]),
+            "accent_color": defaults["accent_color"] if is_fallback else template.get("accent_color", defaults["accent_color"]),
             "text_color": template.get("text_color", defaults["text_color"]),
         }
     }
@@ -202,11 +205,14 @@ async def create_congrats_card(
     
     # Get store template (type-specific, then generic fallback)
     template = None
+    is_fallback_template = False
     type_defaults = _get_type_defaults(card_type)
     if store_id:
         template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": card_type})
         if not template:
             template = await db.congrats_templates.find_one({"store_id": store_id, "card_type": {"$exists": False}})
+            if template:
+                is_fallback_template = True
     
     # Process photo
     contents = await photo.read()
@@ -287,14 +293,14 @@ async def create_congrats_card(
         "customer_photo": photo_url,
         "custom_message": custom_message,
         "card_type": card_type,
-        # Template settings (use type-specific defaults)
-        "headline": template.get("headline", type_defaults["headline"]) if template else type_defaults["headline"],
-        "message": template.get("message", type_defaults["message"]) if template else type_defaults["message"],
+        # Template settings - use type defaults for headline/message when using a fallback generic template
+        "headline": type_defaults["headline"] if (not template or is_fallback_template) else template.get("headline", type_defaults["headline"]),
+        "message": template.get("message", type_defaults["message"]) if (template and not is_fallback_template) else type_defaults["message"],
         "footer_text": template.get("footer_text", "") if template else "",
         "show_salesman": template.get("show_salesman", True) if template else True,
         "show_store_logo": template.get("show_store_logo", True) if template else True,
         "background_color": template.get("background_color", type_defaults["background_color"]) if template else type_defaults["background_color"],
-        "accent_color": template.get("accent_color", type_defaults["accent_color"]) if template else type_defaults["accent_color"],
+        "accent_color": type_defaults["accent_color"] if (not template or is_fallback_template) else template.get("accent_color", type_defaults["accent_color"]),
         "text_color": template.get("text_color", type_defaults["text_color"]) if template else type_defaults["text_color"],
         # Tracking
         "views": 0,
