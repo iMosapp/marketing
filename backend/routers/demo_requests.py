@@ -363,3 +363,110 @@ async def update_demo_status(request_id: str, data: dict):
     if result.modified_count == 0:
         return {"status": "error", "message": "Request not found"}
     return {"status": "success"}
+
+
+@router.post("/{request_id}/claim")
+async def claim_lead(request_id: str, data: dict):
+    """
+    Claim a demo request lead: creates a contact from the lead data,
+    assigns it to the claiming user, and returns the contact_id with
+    a pre-built welcome message ready to send.
+    """
+    db = get_db()
+    user_id = data.get("user_id", "")
+    if not user_id:
+        return {"status": "error", "message": "user_id is required"}
+
+    # Get the demo request
+    demo = await db.demo_requests.find_one({"_id": ObjectId(request_id)})
+    if not demo:
+        return {"status": "error", "message": "Lead not found"}
+
+    # Check if already claimed
+    if demo.get("claimed_by"):
+        # Already claimed — return the existing contact
+        existing = await db.contacts.find_one({"_id": ObjectId(demo["claimed_contact_id"])})
+        if existing:
+            return {
+                "status": "already_claimed",
+                "contact_id": demo["claimed_contact_id"],
+                "claimed_by": demo["claimed_by"],
+                "prefill_message": _build_lead_welcome(demo, existing),
+            }
+        return {"status": "error", "message": "Lead already claimed but contact not found"}
+
+    # Get the claiming user's info
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "organization_id": 1, "store_id": 1})
+    if not user:
+        return {"status": "error", "message": "User not found"}
+
+    # Create a contact from the demo request
+    name_parts = (demo.get("name", "") or "").strip().split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+    contact_doc = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "phone": demo.get("phone", ""),
+        "email": demo.get("email", ""),
+        "company": demo.get("company", ""),
+        "user_id": user_id,
+        "organization_id": str(user.get("organization_id", "")),
+        "store_id": str(user.get("store_id", "")),
+        "ownership_type": "org",
+        "source": "lead_form",
+        "lead_source": demo.get("source", "website"),
+        "tags": ["new_client", "hot_lead"],
+        "notes": f"Lead from {demo.get('source', 'website')}. {demo.get('message', '')}".strip(),
+        "utm_source": demo.get("utm_source", ""),
+        "utm_medium": demo.get("utm_medium", ""),
+        "utm_campaign": demo.get("utm_campaign", ""),
+        "referred_by_user_id": demo.get("referred_by_user_id", ""),
+        "referred_by_name": demo.get("referred_by_name", ""),
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    result = await db.contacts.insert_one(contact_doc)
+    contact_id = str(result.inserted_id)
+
+    # Mark the demo request as claimed
+    await db.demo_requests.update_one(
+        {"_id": ObjectId(request_id)},
+        {"$set": {
+            "status": "contacted",
+            "claimed_by": user_id,
+            "claimed_by_name": user.get("name", ""),
+            "claimed_contact_id": contact_id,
+            "claimed_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+
+    # Update the notification to include the new contact_id
+    await db.notifications.update_many(
+        {"demo_request_id": str(request_id)},
+        {"$set": {"contact_id": contact_id}}
+    )
+
+    # Build a welcome message
+    prefill = _build_lead_welcome(demo, contact_doc)
+
+    return {
+        "status": "success",
+        "contact_id": contact_id,
+        "contact_name": demo.get("name", ""),
+        "prefill_message": prefill,
+    }
+
+
+def _build_lead_welcome(demo: dict, contact: dict) -> str:
+    """Build a personalized welcome message for a claimed lead."""
+    first = contact.get("first_name", demo.get("name", "").split(" ")[0])
+    source_raw = demo.get("source", "")
+    # Clean up source names: "pricing_page_hero" -> "pricing page"
+    source = source_raw.replace("_", " ").replace("hero", "").replace("cta", "").replace("  ", " ").strip() if source_raw else ""
+    msg = f"Hi {first}! Thanks for reaching out"
+    if source and source not in ("direct", "unknown", ""):
+        msg += f" through our {source}"
+    msg += ". I'd love to learn more about what you're looking for and see how we can help. When's a good time to chat?"
+    return msg

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useNotifications } from '../../hooks/useNotifications';
 
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
 const IS_WEB = Platform.OS === 'web';
 
 function getNotifIcon(type: string): string {
@@ -100,6 +101,7 @@ export function NotificationBell() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const { user } = useAuthStore();
   const {
     notifications,
     unreadCount,
@@ -117,9 +119,33 @@ export function NotificationBell() {
     setOpen(!open);
   };
 
-  const handleNotificationPress = (n: any) => {
+  const handleNotificationPress = async (n: any) => {
     markAsRead(n.id);
     setOpen(false);
+
+    // For new leads with a demo_request_id: claim the lead → navigate to contact with prefill
+    if (n.type === 'new_lead' && n.demo_request_id && n.source === 'leads') {
+      try {
+        const API = process.env.REACT_APP_BACKEND_URL || '';
+        const userId = user?._id || '';
+        const res = await fetch(`${API}/api/demo-requests/${n.demo_request_id}/claim`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        const result = await res.json();
+        if (result.contact_id) {
+          router.push({
+            pathname: `/contact/${result.contact_id}`,
+            params: { prefill: result.prefill_message || '' },
+          } as any);
+          return;
+        }
+      } catch (e) {
+        // Fall through to default link behavior
+      }
+    }
+
     if (n.link) {
       router.push(n.link as any);
     }
