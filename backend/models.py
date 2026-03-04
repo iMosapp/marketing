@@ -456,12 +456,20 @@ class Task(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user_id: str
     contact_id: Optional[str] = None
-    type: str  # callback, follow_up, appointment
+    type: str  # callback, follow_up, appointment, campaign_send, date_trigger
     title: str
     description: str = ""
     due_date: datetime
     priority: str = "medium"  # low, medium, high
     completed: bool = False
+    source: Optional[str] = None  # campaign, date_trigger
+    campaign_id: Optional[str] = None
+    campaign_name: Optional[str] = None
+    pending_send_id: Optional[str] = None
+    channel: Optional[str] = None  # sms, email
+    trigger_type: Optional[str] = None  # birthday, anniversary, etc.
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:

@@ -251,6 +251,51 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
                 except Exception as e:
                     logger.error(f"[Scheduler] Birthday card creation failed for {contact_name}: {e}")
 
+            # Friendly trigger labels
+            trigger_labels = {
+                "birthday": "Birthday",
+                "anniversary": "Anniversary",
+                "sold_date": "Sold Date Anniversary",
+                "holiday_thanksgiving": "Thanksgiving",
+                "holiday_christmas": "Christmas",
+                "holiday_new_years": "New Year's",
+            }
+            trigger_label = trigger_labels.get(trigger_type, trigger_type.replace("_", " ").title())
+
+            # Create a TASK on the user's to-do list
+            await db.tasks.insert_one({
+                "user_id": user_id,
+                "contact_id": contact_id,
+                "type": "date_trigger",
+                "title": f"{trigger_label}: Send {delivery.upper()} to {contact_name}",
+                "description": message,
+                "due_date": datetime.now(timezone.utc),
+                "priority": "high",
+                "completed": False,
+                "source": "date_trigger",
+                "trigger_type": trigger_type,
+                "channel": delivery,
+                "contact_phone": contact.get("phone", ""),
+                "contact_email": contact.get("email", ""),
+                "created_at": datetime.now(timezone.utc),
+            })
+
+            # Create a notification (bell alert)
+            await db.notifications.insert_one({
+                "user_id": user_id,
+                "type": "date_trigger",
+                "title": f"{trigger_label} Today",
+                "message": f"It's {contact_name}'s {trigger_label.lower()} today! Send them a message.",
+                "contact_name": contact_name,
+                "contact_id": contact_id,
+                "trigger_type": trigger_type,
+                "action_required": True,
+                "read": False,
+                "dismissed": False,
+                "created_at": datetime.now(timezone.utc),
+            })
+
+            # Also queue the message for tracking
             if delivery in ("sms", "both") and contact.get("phone"):
                 try:
                     await db.messages.insert_one({
@@ -258,8 +303,9 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
                         "sender": "user",
                         "content": message,
                         "timestamp": datetime.now(timezone.utc),
-                        "auto_sent": True,
+                        "auto_sent": False,
                         "trigger_type": trigger_type,
+                        "pending_manual_send": True,
                     })
                     send_result["sms"] = True
                 except Exception as e:
@@ -406,8 +452,8 @@ async def process_pending_campaign_steps():
                     )
 
                 else:
-                    # MANUAL: Create a notification for the user to send
-                    await db.campaign_pending_sends.insert_one({
+                    # MANUAL: Create a pending send record
+                    pending_result = await db.campaign_pending_sends.insert_one({
                         "user_id": user_id,
                         "contact_id": contact_id,
                         "contact_name": enrollment.get("contact_name", ""),
@@ -423,23 +469,52 @@ async def process_pending_campaign_steps():
                         "created_at": now,
                     })
 
-                    # Also create a notification
+                    # Create a TASK on the user's to-do list
+                    action_type = step.get("action_type", "message")
+                    contact_display = enrollment.get("contact_name", "contact")
+                    if action_type == "send_card":
+                        card_type = step.get("card_type", "congrats")
+                        task_title = f"Send {card_type.title()} Card to {contact_display}"
+                        task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_type} card to {contact_display}."
+                    else:
+                        task_title = f"Send {channel.upper()} to {contact_display}"
+                        task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
+
+                    await db.tasks.insert_one({
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "type": "campaign_send",
+                        "title": task_title,
+                        "description": task_desc,
+                        "due_date": now,
+                        "priority": "high",
+                        "completed": False,
+                        "source": "campaign",
+                        "campaign_id": enrollment["campaign_id"],
+                        "campaign_name": campaign.get("name", ""),
+                        "pending_send_id": str(pending_result.inserted_id),
+                        "channel": channel,
+                        "created_at": now,
+                    })
+
+                    # Create a notification (bell alert)
                     await db.notifications.insert_one({
                         "user_id": user_id,
                         "type": "campaign_send",
                         "title": f"Campaign: {campaign.get('name', '')}",
-                        "message": f"Time to send step {current_step} to {enrollment.get('contact_name', '')}",
+                        "message": f"Time to send step {current_step} to {contact_display}",
                         "contact_name": enrollment.get("contact_name", ""),
                         "contact_id": contact_id,
                         "campaign_id": enrollment["campaign_id"],
                         "pending_send_step": current_step,
+                        "action_required": True,
                         "read": False,
                         "dismissed": False,
                         "created_at": now,
                     })
 
                     logger.info(
-                        f"[Scheduler] MANUAL notification created for step {current_step} to {enrollment.get('contact_name', 'unknown')}"
+                        f"[Scheduler] MANUAL task + notification created for step {current_step} to {enrollment.get('contact_name', 'unknown')}"
                     )
 
                 # Advance enrollment

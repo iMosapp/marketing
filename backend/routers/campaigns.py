@@ -686,23 +686,54 @@ async def trigger_scheduler():
                     # TODO: Auto-generate and send card via Twilio when live
                     logger.info(f"[MOCK] Auto-sending {card_label} to {enrollment['contact_phone']}")
                 else:
-                    # Create pending task for user to send the card manually
-                    await get_db().campaign_pending_sends.insert_one({
+                    contact_display = enrollment.get('contact_name', 'contact')
+                    pending_result = await get_db().campaign_pending_sends.insert_one({
                         "user_id": enrollment['user_id'],
                         "campaign_id": enrollment['campaign_id'],
                         "campaign_name": campaign.get('name', ''),
                         "contact_id": enrollment.get('contact_id', ''),
-                        "contact_name": enrollment.get('contact_name', ''),
+                        "contact_name": contact_display,
                         "contact_phone": enrollment.get('contact_phone', ''),
                         "step": current_step,
                         "action_type": "send_card",
                         "card_type": card_type,
-                        "message": f"Send a {card_label} to {enrollment.get('contact_name', 'contact')}",
+                        "message": f"Send a {card_label} to {contact_display}",
                         "channel": step.get('channel', 'sms'),
                         "status": "pending",
                         "created_at": now,
                     })
-                    logger.info(f"Created pending send_card task: {card_label} for {enrollment.get('contact_name')}")
+                    # Create task on to-do list
+                    await get_db().tasks.insert_one({
+                        "user_id": enrollment['user_id'],
+                        "contact_id": enrollment.get('contact_id', ''),
+                        "type": "campaign_send",
+                        "title": f"Send {card_label} to {contact_display}",
+                        "description": f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_label} to {contact_display}.",
+                        "due_date": now,
+                        "priority": "high",
+                        "completed": False,
+                        "source": "campaign",
+                        "campaign_id": enrollment['campaign_id'],
+                        "pending_send_id": str(pending_result.inserted_id),
+                        "channel": step.get('channel', 'sms'),
+                        "created_at": now,
+                    })
+                    # Notification bell
+                    await get_db().notifications.insert_one({
+                        "user_id": enrollment['user_id'],
+                        "type": "campaign_send",
+                        "title": f"Campaign: {campaign.get('name', '')}",
+                        "message": f"Time to send {card_label} to {contact_display}",
+                        "contact_name": contact_display,
+                        "contact_id": enrollment.get('contact_id', ''),
+                        "campaign_id": enrollment['campaign_id'],
+                        "pending_send_step": current_step,
+                        "action_required": True,
+                        "read": False,
+                        "dismissed": False,
+                        "created_at": now,
+                    })
+                    logger.info(f"Created task + notification: {card_label} for {contact_display}")
             else:
                 message_content = step.get('message_template', step.get('message', ''))
                 
@@ -710,22 +741,54 @@ async def trigger_scheduler():
                     # Mock: Log the message that would be sent
                     logger.info(f"[MOCK] Sending campaign message to {enrollment['contact_phone']}: {message_content[:50]}...")
                 else:
-                    # Create pending task for manual send
-                    await get_db().campaign_pending_sends.insert_one({
+                    contact_display = enrollment.get('contact_name', 'contact')
+                    channel = step.get('channel', 'sms')
+                    pending_result = await get_db().campaign_pending_sends.insert_one({
                         "user_id": enrollment['user_id'],
                         "campaign_id": enrollment['campaign_id'],
                         "campaign_name": campaign.get('name', ''),
                         "contact_id": enrollment.get('contact_id', ''),
-                        "contact_name": enrollment.get('contact_name', ''),
+                        "contact_name": contact_display,
                         "contact_phone": enrollment.get('contact_phone', ''),
                         "step": current_step,
                         "action_type": "message",
                         "message": message_content,
-                        "channel": step.get('channel', 'sms'),
+                        "channel": channel,
                         "status": "pending",
                         "created_at": now,
                     })
-                    logger.info(f"Created pending message task for {enrollment.get('contact_name')}")
+                    # Create task on to-do list
+                    await get_db().tasks.insert_one({
+                        "user_id": enrollment['user_id'],
+                        "contact_id": enrollment.get('contact_id', ''),
+                        "type": "campaign_send",
+                        "title": f"Send {channel.upper()} to {contact_display}",
+                        "description": f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}",
+                        "due_date": now,
+                        "priority": "high",
+                        "completed": False,
+                        "source": "campaign",
+                        "campaign_id": enrollment['campaign_id'],
+                        "pending_send_id": str(pending_result.inserted_id),
+                        "channel": channel,
+                        "created_at": now,
+                    })
+                    # Notification bell
+                    await get_db().notifications.insert_one({
+                        "user_id": enrollment['user_id'],
+                        "type": "campaign_send",
+                        "title": f"Campaign: {campaign.get('name', '')}",
+                        "message": f"Time to send step {current_step} to {contact_display}",
+                        "contact_name": contact_display,
+                        "contact_id": enrollment.get('contact_id', ''),
+                        "campaign_id": enrollment['campaign_id'],
+                        "pending_send_step": current_step,
+                        "action_required": True,
+                        "read": False,
+                        "dismissed": False,
+                        "created_at": now,
+                    })
+                    logger.info(f"Created task + notification for {contact_display}")
             
             # Calculate next send time
             if current_step < len(sequences):
