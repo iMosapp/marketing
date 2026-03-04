@@ -378,20 +378,31 @@ async def create_store(store_data: StoreCreate, x_user_id: str = Header(None, al
     store_id = str(result.inserted_id)
     store_dict['_id'] = store_id
     
-    # Auto-create default congrats card template for the new store
-    default_template = {
-        "store_id": store_id,
-        "headline": "Thank You!",
-        "message": "Thank you for choosing us, {customer_name}! We truly appreciate your business and look forward to serving you again.",
-        "footer_text": "Your satisfaction is our priority",
-        "show_salesman": True,
-        "show_store_logo": True,
-        "background_color": "#1A1A1A",
-        "accent_color": "#C9A962",
-        "text_color": "#FFFFFF",
-        "created_at": datetime.utcnow(),
+    # Auto-create default card templates for all card types
+    card_type_defaults = {
+        "congrats": {"headline": "Congratulations!", "message": "Thank you for choosing us, {customer_name}! We truly appreciate your business.", "accent_color": "#C9A962"},
+        "birthday": {"headline": "Happy Birthday!", "message": "Wishing you the happiest of birthdays, {customer_name}!", "accent_color": "#FF2D55"},
+        "anniversary": {"headline": "Happy Anniversary!", "message": "Celebrating this special milestone with you, {customer_name}!", "accent_color": "#FF6B6B"},
+        "thankyou": {"headline": "Thank You!", "message": "We truly appreciate your loyalty and trust, {customer_name}!", "accent_color": "#34C759"},
+        "welcome": {"headline": "Welcome!", "message": "We're so excited to have you, {customer_name}! Welcome to the family.", "accent_color": "#007AFF"},
+        "holiday": {"headline": "Happy Holidays!", "message": "Warm wishes this holiday season, {customer_name}! Thank you for being part of our family.", "accent_color": "#5AC8FA"},
     }
-    await db.congrats_templates.insert_one(default_template)
+    templates_to_insert = []
+    for ctype, defaults in card_type_defaults.items():
+        templates_to_insert.append({
+            "store_id": store_id,
+            "card_type": ctype,
+            "headline": defaults["headline"],
+            "message": defaults["message"],
+            "footer_text": "",
+            "show_salesman": True,
+            "show_store_logo": True,
+            "background_color": "#1A1A1A",
+            "accent_color": defaults["accent_color"],
+            "text_color": "#FFFFFF",
+            "created_at": datetime.utcnow(),
+        })
+    await db.congrats_templates.insert_many(templates_to_insert)
     
     return store_dict
 

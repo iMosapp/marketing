@@ -172,6 +172,35 @@ async def save_store_template(store_id: str, data: dict):
     return {"success": True, "message": f"{card_type} template saved"}
 
 
+
+@router.post("/templates/backfill")
+async def backfill_all_store_templates():
+    """Create missing card-type templates for all existing stores."""
+    db = get_db()
+    stores = await db.stores.find({}, {"_id": 1}).to_list(1000)
+    created = 0
+    for store in stores:
+        sid = str(store["_id"])
+        for ctype, defaults in CARD_TYPE_DEFAULTS.items():
+            exists = await db.congrats_templates.find_one({"store_id": sid, "card_type": ctype})
+            if not exists:
+                await db.congrats_templates.insert_one({
+                    "store_id": sid,
+                    "card_type": ctype,
+                    "headline": defaults["headline"],
+                    "message": defaults["message"],
+                    "footer_text": "",
+                    "show_salesman": True,
+                    "show_store_logo": True,
+                    "background_color": defaults["background_color"],
+                    "accent_color": defaults["accent_color"],
+                    "text_color": defaults["text_color"],
+                    "created_at": datetime.now(timezone.utc),
+                })
+                created += 1
+    return {"status": "success", "templates_created": created}
+
+
 @router.post("/create")
 async def create_congrats_card(
     salesman_id: str = Form(...),
