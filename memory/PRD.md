@@ -23,8 +23,7 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Photo picker with error handling and web fallback
 - Quick Add form for new contacts (progressive disclosure)
 - Auto-tagging based on date fields (Birthday, Anniversary, Sold Date)
-- Contact referral tracking
-- Voice notes on contacts
+- Contact referral tracking, Voice notes on contacts
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
@@ -34,7 +33,9 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ### Home Screen
 - Quick action tiles: Share My Card, Review Link, Send a Card, My Showcase, Keypad, Add Contact
-- Real-time activity feed with dayjs relative timestamps
+- **Real-time activity feed** pulling from `contact_events` collection (FIXED - was previously not querying this collection)
+- Auto-refresh every 30 seconds + relative timestamp refresh every 60 seconds
+- Proper icon mapping for all event types (digital_card_shared, review_request_sent, showcase_shared, sms_sent, email_sent, etc.)
 - Larger, more readable activity tiles
 
 ### Notifications
@@ -43,8 +44,7 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ### Campaigns & Automation
 - Campaign management with multi-step flows
-- Date-based triggers
-- Tag-triggered campaign enrollment
+- Date-based triggers, Tag-triggered campaign enrollment
 - Scheduled task processing (every 15 min)
 
 ### Reporting
@@ -55,12 +55,8 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - API-key authenticated REST API
 - Outgoing webhook system for CRM integration
 
-### Default Package Seeding
-- New accounts provisioned with templates, campaigns, triggers, tags
-
 ### Leaderboard
-- Store, Org, Global levels
-- Category breakdowns (cards, reviews, emails, SMS, etc.)
+- Store, Org, Global levels with category breakdowns
 
 ## Pending Issues
 - P1: Production marketing site logo link causes infinite spinner (likely browser cache)
