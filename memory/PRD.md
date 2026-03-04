@@ -12,6 +12,24 @@ Full-stack Relationship Management System (RMS) for sales professionals. React f
 
 ## What's Been Implemented
 
+### Manual Campaign → Task + Notification System (Complete - March 2026)
+When a manual campaign step fires (via 15-min scheduler or manual trigger), the system creates:
+1. **campaign_pending_sends** record with message content, contact info, channel
+2. **Task** on the user's to-do list (`type: campaign_send`, `priority: high`, linked to campaign/contact)
+3. **Notification** (bell alert) with `action_required: true` so the user knows to act
+
+When a **date trigger** fires (birthday, anniversary, sold date, holidays):
+1. **Task** created (`type: date_trigger`, `priority: high`) with the pre-filled message
+2. **Notification** (bell alert) saying "It's [Name]'s [trigger] today!"
+3. Message queued for tracking
+
+**Updated Task model** includes: `source`, `campaign_id`, `campaign_name`, `pending_send_id`, `channel`, `trigger_type`, `contact_phone`, `contact_email`
+
+Key files:
+- `/app/backend/scheduler.py` — Campaign step processor + date trigger processor
+- `/app/backend/routers/campaigns.py` — Manual trigger endpoint
+- `/app/backend/models.py` — Updated Task model
+
 ### Turnkey Default Package (Complete - March 2026)
 Full auto-provisioning on new user signup with:
 - **SMS Templates (12):** Welcome, Add Socials Nudge, Review Ask, Review Follow-Up, Referral Ask, Check-In, Birthday, Anniversary, Congrats/Sold, Reactivation, Winback After Feedback, Just Because
@@ -20,35 +38,21 @@ Full auto-provisioning on new user signup with:
 - **Date Triggers (6):** Birthday, Anniversary, Sold Date, Thanksgiving, Christmas, New Year's
 - **Review Response Templates (3):** 5-Star, 3-4 Star, 1-2 Star
 - **Social Content Starters (5):** Intro Post, Value Post, Proof Post, Community Post, Offer Post
-- **Store-Level Defaults:** 8 tags (new_client, sold, hot_lead, cold_lead, referral, VIP, past_client, negative_feedback), 8 lead sources
+- **Store-Level Defaults:** 8 tags, 8 lead sources
 - **CRUD Endpoints:** `/api/review-templates/{user_id}` and `/api/social-templates/{user_id}`
 - **Backfill:** `POST /api/admin/seed/backfill-all` (idempotent)
-- Service: `/app/backend/services/seed_defaults.py`
-- Hooked into: signup, admin user creation, store creation
 
 ### Card Templates (Complete - March 2026)
 - 6 types seeded per store (congrats, birthday, anniversary, thank you, welcome, holiday)
 - Fixed fallback logic for birthday cards
-- Backfill: `POST /api/congrats/templates/backfill`
 
 ### Contact Privacy Model (Complete - March 2026)
 - `ownership_type: "personal"` vs `"org"` contacts
 - Admin dashboard shows activity without exposing personal details
-- Backfill: `POST /api/contacts/admin/backfill-ownership`
 
 ### Marketing Website (Complete - March 2026)
-- 58 files in `/app/marketing/build/` (homepage, 20+ feature pages, pricing, demo, privacy, terms)
-- All assets verified, 72px logo standardized, mobile hamburger menu rebuilt
-- Live demo request form with source/UTM/ref tracking
-
-### App Directory (Complete - March 2026)
-- Public marketing directory at `/appdirectory/` mirrors in-app admin directory
-- 14 categories, 94 pages total with search
-
-### Lead & Referral Tracking (Complete)
-- Backend: `/app/backend/routers/demo_requests.py`
-- Frontend: `/app/frontend/app/admin/lead-tracking.tsx`
-- Lead Attribution accessible from More → Reports and Contacts & Leads
+- 58 files in `/app/marketing/build/`
+- All assets verified, mobile hamburger menu rebuilt
 
 ### Core App Features (Previous Sessions)
 - Carrier-agnostic messaging (personal SMS fallback)
@@ -59,6 +63,7 @@ Full auto-provisioning on new user signup with:
 - Public REST API with API-key auth
 - Outgoing webhook system
 - User lifecycle engine (automated daily via apscheduler)
+- Lead & Referral Tracking
 
 ## Credentials
 - **Super Admin:** `forest@imosapp.com` / `Admin123!`
@@ -95,18 +100,16 @@ curl -X POST https://app.imonsocial.com/api/auth/ref/backfill
 - Mobile app tags data sync issue
 
 ## Key Files
-- `/app/backend/services/seed_defaults.py` — Turnkey account provisioning (all default data)
+- `/app/backend/scheduler.py` — Campaign step processor + date triggers (creates tasks + notifications)
+- `/app/backend/routers/campaigns.py` — Campaign CRUD + enrollment + manual trigger
+- `/app/backend/services/seed_defaults.py` — Turnkey account provisioning
 - `/app/backend/routers/review_templates.py` — Review response templates CRUD
 - `/app/backend/routers/social_templates.py` — Social content templates CRUD
+- `/app/backend/routers/tasks.py` — Task CRUD
+- `/app/backend/routers/notifications.py` — Notification system
+- `/app/backend/models.py` — Updated Task model with campaign fields
 - `/app/backend/routers/auth.py` — Signup with auto-seeding
-- `/app/backend/routers/admin.py` — Admin user/store creation with seeding + backfill endpoint
-- `/app/backend/routers/campaigns.py` — Campaign management
-- `/app/backend/routers/date_triggers.py` — Date trigger config
-- `/app/marketing/build/` — Marketing site deployment root (58 files)
-- `/app/backend/routers/congrats_cards.py` — Card template logic
-- `/app/backend/routers/contacts.py` — Contact privacy model
-- `/app/backend/routers/messages.py` — Messaging (email/SMS channel fix)
-- `/app/backend/services/email_service.py` — White-label email templates
+- `/app/backend/routers/admin.py` — Admin user/store creation + backfill
 
 ## 3rd Party Integrations
 - **Resend:** Transactional emails
