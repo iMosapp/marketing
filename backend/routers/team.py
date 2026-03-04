@@ -326,14 +326,23 @@ async def bulk_transfer_customers(data: BulkTransferRequest):
         "results": {},
     }
     
-    # Build contact query
+    # Build contact query - only transfer org/store contacts by default
+    # Personal contacts belong to the user, not the store
     contact_query = {"user_id": data.from_user_id}
+    if not getattr(data, 'include_personal', False):
+        contact_query["ownership_type"] = {"$ne": "personal"}
     if data.tag_filter:
         contact_query["tags"] = {"$in": data.tag_filter}
     
-    # Transfer contacts
+    # Transfer contacts (org contacts only by default)
     contacts_transferred = 0
+    personal_kept = 0
     if data.transfer_contacts:
+        # Count personal contacts being kept
+        personal_kept = await db.contacts.count_documents(
+            {"user_id": data.from_user_id, "ownership_type": "personal"}
+        )
+        
         result = await db.contacts.update_many(
             contact_query,
             {
@@ -346,7 +355,8 @@ async def bulk_transfer_customers(data: BulkTransferRequest):
         )
         contacts_transferred = result.modified_count
         transfer_log["results"]["contacts"] = contacts_transferred
-        logger.info(f"Transferred {contacts_transferred} contacts from {data.from_user_id} to {data.to_user_id}")
+        transfer_log["results"]["personal_kept"] = personal_kept
+        logger.info(f"Transferred {contacts_transferred} org contacts from {data.from_user_id} to {data.to_user_id}. {personal_kept} personal contacts kept with original owner.")
     
     # Get transferred contact IDs for related transfers
     transferred_contacts = await db.contacts.find(

@@ -1039,20 +1039,51 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
     
     # Handle contacts based on ownership
     if not is_individual:
-        # ORG USER: personal/imported contacts get hidden from org, org contacts stay
-        await get_db().contacts.update_many(
-            {"user_id": user_id, "ownership_type": "personal"},
-            {"$set": {
-                "status": "hidden",
-                "hidden_at": now,
-                "hidden_reason": "user_deactivated",
-                "purge_date": grace_end,
-                "hard_delete_date": hard_delete,
-            }}
+        # ORG USER: Archive personal contacts separately, org contacts stay with store
+        
+        # 1. Archive personal contacts to a separate collection
+        personal_contacts = await get_db().contacts.find(
+            {"user_id": user_id, "ownership_type": "personal"}
+        ).to_list(None)
+        
+        archived_count = 0
+        if personal_contacts:
+            # Store archived copies (for potential individual account conversion)
+            for contact in personal_contacts:
+                contact["original_user_id"] = user_id
+                contact["archived_at"] = now
+                contact["archive_reason"] = "user_deactivated_from_org"
+                contact["retain_until"] = hard_delete
+            await get_db().archived_contacts.insert_many(personal_contacts)
+            archived_count = len(personal_contacts)
+            
+            # Hide personal contacts from org view
+            await get_db().contacts.update_many(
+                {"user_id": user_id, "ownership_type": "personal"},
+                {"$set": {
+                    "status": "hidden",
+                    "hidden_at": now,
+                    "hidden_reason": "user_deactivated",
+                    "purge_date": grace_end,
+                    "hard_delete_date": hard_delete,
+                }}
+            )
+        
+        # 2. Org contacts stay with the store (available for bulk transfer)
+        org_contact_count = await get_db().contacts.count_documents(
+            {"user_id": user_id, "ownership_type": {"$ne": "personal"}}
         )
-        logger.info(f"User {user_id} deactivated from org. Personal contacts hidden, org contacts retained. Purge: {grace_end.isoformat()}, Hard delete: {hard_delete.isoformat()}")
+        # Tag org contacts with the original owner for audit trail
+        await get_db().contacts.update_many(
+            {"user_id": user_id, "ownership_type": {"$ne": "personal"}},
+            {"$set": {"original_user_id": user_id, "user_deactivated": True}}
+        )
+        
+        logger.info(f"User {user_id} deactivated from org. {archived_count} personal contacts archived, {org_contact_count} org contacts retained. Purge: {grace_end.isoformat()}")
     else:
         # INDIVIDUAL USER: they keep everything, just deactivated
+        archived_count = 0
+        org_contact_count = 0
         logger.info(f"Individual user {user_id} deactivated. All contacts retained. Hard delete: {hard_delete.isoformat()}")
     
     # Fire lifecycle hooks
@@ -1066,7 +1097,83 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
         "message": "User deactivated",
         "grace_period_end": grace_end.isoformat(),
         "hard_delete_date": hard_delete.isoformat(),
+        "personal_contacts_archived": archived_count,
+        "org_contacts_retained": org_contact_count,
+        "conversion_available": not is_individual,
     }
+
+
+@router.post("/users/{user_id}/convert-to-individual")
+async def convert_to_individual(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Convert a deactivated org user to an individual account with their personal data.
+    Restores archived personal contacts and strips org association."""
+    db = get_db()
+    
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("is_active", True) and user.get("status") != "deactivated":
+        raise HTTPException(status_code=400, detail="User must be deactivated first")
+    
+    # 1. Restore archived personal contacts back to the contacts collection
+    archived = await db.archived_contacts.find(
+        {"original_user_id": user_id}
+    ).to_list(None)
+    
+    restored_count = 0
+    if archived:
+        for contact in archived:
+            contact.pop("archived_at", None)
+            contact.pop("archive_reason", None)
+            contact.pop("retain_until", None)
+            contact.pop("_id", None)
+            contact["status"] = "active"
+            contact.pop("hidden_at", None)
+            contact.pop("hidden_reason", None)
+            contact.pop("purge_date", None)
+            contact.pop("hard_delete_date", None)
+        
+        await db.contacts.insert_many(archived)
+        restored_count = len(archived)
+        
+        # Remove the hidden personal contacts (they've been restored from archive)
+        await db.contacts.delete_many({
+            "user_id": user_id,
+            "ownership_type": "personal",
+            "status": "hidden",
+            "hidden_reason": "user_deactivated"
+        })
+        
+        # Clean up archive
+        await db.archived_contacts.delete_many({"original_user_id": user_id})
+    
+    # 2. Convert user to individual (strip org/store)
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "is_active": True,
+            "status": "active",
+            "role": "individual",
+            "organization_id": None,
+            "store_id": None,
+            "converted_from_org": user.get("organization_id"),
+            "converted_at": datetime.utcnow(),
+            "converted_by": x_user_id or "system",
+        }, "$unset": {
+            "deactivated_at": "",
+            "deactivated_by": "",
+            "grace_period_end": "",
+            "hard_delete_date": "",
+        }}
+    )
+    
+    return {
+        "message": "User converted to individual account",
+        "personal_contacts_restored": restored_count,
+        "org_contacts_stayed_with_store": True,
+    }
+
 
 
 
@@ -1098,11 +1205,31 @@ async def reactivate_user(user_id: str, x_user_id: str = Header(None, alias="X-U
     
     # Restore their hidden personal contacts
     restored = await db.contacts.update_many(
-        {"original_user_id": user_id, "status": "hidden", "hidden_reason": "user_deactivated"},
-        {"$set": {"status": "active"}, "$unset": {"hidden_at": "", "hidden_reason": ""}}
+        {"user_id": user_id, "status": "hidden", "hidden_reason": "user_deactivated"},
+        {"$set": {"status": "active"}, "$unset": {"hidden_at": "", "hidden_reason": "", "purge_date": "", "hard_delete_date": ""}}
     )
     
-    logger.info(f"User {user_id} reactivated. {restored.modified_count} personal contacts restored.")
+    # Also restore any archived personal contacts
+    archived = await db.archived_contacts.find({"original_user_id": user_id}).to_list(None)
+    archive_restored = 0
+    if archived:
+        for contact in archived:
+            contact.pop("archived_at", None)
+            contact.pop("archive_reason", None)
+            contact.pop("retain_until", None)
+            contact.pop("_id", None)
+            contact["status"] = "active"
+        await db.contacts.insert_many(archived)
+        await db.archived_contacts.delete_many({"original_user_id": user_id})
+        archive_restored = len(archived)
+    
+    # Unflag org contacts
+    await db.contacts.update_many(
+        {"user_id": user_id, "user_deactivated": True},
+        {"$unset": {"user_deactivated": ""}}
+    )
+    
+    logger.info(f"User {user_id} reactivated. {restored.modified_count} contacts unhidden, {archive_restored} restored from archive.")
     
     # Fire lifecycle hooks
     try:
