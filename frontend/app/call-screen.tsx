@@ -89,16 +89,16 @@ export default function CallScreen() {
 
         // Also log as a contact event for the activity feed
         try {
-          await api.post('/contact-events', {
+          await api.post(`/contacts/${user._id}/${contactId}/events`, {
             event_type: 'call_outbound',
-            channel: 'phone',
-            content: `Outbound call to ${contactName} (${formatTime(seconds)})`,
-            contact_id: contactId,
-            user_id: user._id,
-            org_id: user.organization_id || '',
+            icon: 'call',
+            color: '#34C759',
+            title: 'Outbound Call',
+            description: `Called ${contactName} — ${formatTime(seconds)}`,
+            category: 'call',
           });
         } catch (e) {
-          // Non-critical
+          console.error('Failed to log call event:', e);
         }
       }
     } catch (e) {
