@@ -254,6 +254,38 @@ const IntelRenderer = ({ text }: { text: string }) => {
 export default function ContactDetailScreen() {
   const { colors } = useThemeStore();
   const s = getS(colors);
+  const ncs = {
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden' as const,
+    },
+    cardInput: {
+      fontSize: 16,
+      color: colors.text,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+    },
+    cardDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginLeft: 16,
+    },
+    cardRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    cardRowIcon: {
+      width: 28,
+      marginRight: 10,
+    },
+  };
   const router = useRouter();
   const { id, prefill, channel } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
@@ -1561,7 +1593,369 @@ export default function ContactDetailScreen() {
   const timeValue = getTimeInSystem(stats.created_at);
   const timeLabel = getTimeInSystemLabel(stats.created_at);
 
-  // ===== RENDER =====
+  // ===== RENDER: NEW CONTACT (iOS native style) =====
+  if (isNewContact) {
+    return (
+      <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          {/* Header: Cancel / Done */}
+          <View style={[s.header, { borderBottomColor: colors.border }]} data-testid="new-contact-header">
+            <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} data-testid="new-contact-cancel">
+              <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[s.headerTitle, { color: colors.text }]}>New Contact</Text>
+            <TouchableOpacity
+              onPress={handleSave}
+              style={[s.headerBtn, { backgroundColor: (contact.first_name && (contact.phone || contact.email)) ? '#C9A962' : colors.card, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 }]}
+              disabled={saving || !contact.first_name}
+              data-testid="new-contact-done"
+            >
+              {saving ? <ActivityIndicator size="small" color="#000" /> : (
+                <Text style={{ fontSize: 16, fontWeight: '700', color: (contact.first_name && (contact.phone || contact.email)) ? '#000' : colors.textTertiary }}>Done</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {/* Centered Photo */}
+            <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 20 }}>
+              <TouchableOpacity onPress={pickImage} activeOpacity={0.7} data-testid="new-contact-photo">
+                {contact.photo ? (
+                  <Image source={{ uri: contact.photo }} style={{ width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#C9A962' }} />
+                ) : (
+                  <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="camera" size={32} color={colors.textTertiary} />
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={pickImage} style={{ marginTop: 8 }}>
+                <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600' }}>{contact.photo ? 'Change Photo' : 'Add Photo'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Name Card */}
+            <View style={ncs.card}>
+              <TextInput
+                style={ncs.cardInput}
+                placeholder="First name"
+                placeholderTextColor={colors.textTertiary}
+                value={contact.first_name}
+                onChangeText={t => setContact({ ...contact, first_name: t })}
+                autoFocus
+                returnKeyType="next"
+                data-testid="input-first-name"
+              />
+              <View style={ncs.cardDivider} />
+              <TextInput
+                style={ncs.cardInput}
+                placeholder="Last name"
+                placeholderTextColor={colors.textTertiary}
+                value={contact.last_name}
+                onChangeText={t => setContact({ ...contact, last_name: t })}
+                returnKeyType="next"
+                data-testid="input-last-name"
+              />
+            </View>
+
+            {/* Contact Info Card */}
+            <View style={ncs.card}>
+              <View style={ncs.cardRow}>
+                <Ionicons name="call-outline" size={20} color="#34C759" style={ncs.cardRowIcon} />
+                <TextInput
+                  style={[ncs.cardInput, { flex: 1 }]}
+                  placeholder="Phone"
+                  placeholderTextColor={colors.textTertiary}
+                  value={contact.phone}
+                  onChangeText={t => setContact({ ...contact, phone: t })}
+                  keyboardType="phone-pad"
+                  returnKeyType="next"
+                  data-testid="input-phone"
+                />
+              </View>
+              <View style={ncs.cardDivider} />
+              <View style={ncs.cardRow}>
+                <Ionicons name="mail-outline" size={20} color="#007AFF" style={ncs.cardRowIcon} />
+                <TextInput
+                  style={[ncs.cardInput, { flex: 1 }]}
+                  placeholder="Email"
+                  placeholderTextColor={colors.textTertiary}
+                  value={contact.email}
+                  onChangeText={t => setContact({ ...contact, email: t })}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  returnKeyType="next"
+                  data-testid="input-email"
+                />
+              </View>
+            </View>
+
+            {/* Vehicle Card */}
+            <View style={ncs.card}>
+              <View style={ncs.cardRow}>
+                <Ionicons name="car-outline" size={20} color="#FF9500" style={ncs.cardRowIcon} />
+                <TextInput
+                  style={[ncs.cardInput, { flex: 1 }]}
+                  placeholder="Vehicle (e.g., 2023 Toyota RAV4)"
+                  placeholderTextColor={colors.textTertiary}
+                  value={contact.vehicle}
+                  onChangeText={t => setContact({ ...contact, vehicle: t })}
+                  data-testid="input-vehicle"
+                />
+              </View>
+            </View>
+
+            {/* Referral Card */}
+            <View style={ncs.card}>
+              <TouchableOpacity
+                style={ncs.cardRow}
+                onPress={() => { loadAllContacts(); setShowReferralPicker(true); }}
+                data-testid="new-contact-referral"
+              >
+                <Ionicons name="people-outline" size={20} color="#AF52DE" style={ncs.cardRowIcon} />
+                <View style={{ flex: 1 }}>
+                  {contact.referred_by_name ? (
+                    <Text style={{ fontSize: 16, color: colors.text }}>{contact.referred_by_name}</Text>
+                  ) : (
+                    <Text style={{ fontSize: 16, color: colors.textTertiary }}>Referred by</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Notes Card */}
+            <View style={ncs.card}>
+              <View style={[ncs.cardRow, { alignItems: 'flex-start' }]}>
+                <Ionicons name="document-text-outline" size={20} color="#FF9F0A" style={[ncs.cardRowIcon, { marginTop: 2 }]} />
+                <TextInput
+                  style={[ncs.cardInput, { flex: 1, minHeight: 60, textAlignVertical: 'top' }]}
+                  placeholder="Notes"
+                  placeholderTextColor={colors.textTertiary}
+                  value={contact.notes}
+                  onChangeText={t => setContact({ ...contact, notes: t })}
+                  multiline
+                  data-testid="input-notes"
+                />
+              </View>
+            </View>
+
+            {/* Tags Card */}
+            <View style={ncs.card}>
+              <View style={[ncs.cardRow, { flexWrap: 'wrap', gap: 6 }]}>
+                <Ionicons name="pricetag-outline" size={20} color="#5AC8FA" style={ncs.cardRowIcon} />
+                {contact.tags.map((tag, i) => {
+                  const info = availableTags.find(t => t.name === tag);
+                  return (
+                    <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
+                      {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || colors.textSecondary} />}
+                      <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
+                      <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close-circle" size={15} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF15', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 }}
+                  onPress={() => { loadTags(); setShowTagPicker(true); }}
+                  data-testid="new-contact-add-tag"
+                >
+                  <Ionicons name="add" size={16} color="#007AFF" />
+                  <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600', marginLeft: 2 }}>Tag</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Expandable: More Details */}
+            {!showMoreDetails ? (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, marginHorizontal: 16, marginBottom: 16 }}
+                onPress={() => setShowMoreDetails(true)}
+                data-testid="new-contact-more-details"
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '500' }}>Add Address & Dates</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                {/* Address Card */}
+                <View style={ncs.card}>
+                  <View style={ncs.cardRow}>
+                    <Ionicons name="location-outline" size={20} color="#FF3B30" style={ncs.cardRowIcon} />
+                    <TextInput
+                      style={[ncs.cardInput, { flex: 1 }]}
+                      placeholder="Street"
+                      placeholderTextColor={colors.textTertiary}
+                      value={contact.address_street}
+                      onChangeText={t => setContact({ ...contact, address_street: t })}
+                      data-testid="input-address-street"
+                    />
+                  </View>
+                  <View style={[ncs.cardDivider, { marginLeft: 40 }]} />
+                  <View style={{ flexDirection: 'row' }}>
+                    <TextInput
+                      style={[ncs.cardInput, { flex: 1, marginLeft: 40 }]}
+                      placeholder="City"
+                      placeholderTextColor={colors.textTertiary}
+                      value={contact.address_city}
+                      onChangeText={t => setContact({ ...contact, address_city: t })}
+                      data-testid="input-address-city"
+                    />
+                    <TextInput
+                      style={[ncs.cardInput, { width: 60 }]}
+                      placeholder="ST"
+                      placeholderTextColor={colors.textTertiary}
+                      value={contact.address_state}
+                      onChangeText={t => setContact({ ...contact, address_state: t })}
+                      autoCapitalize="characters"
+                      data-testid="input-address-state"
+                    />
+                    <TextInput
+                      style={[ncs.cardInput, { width: 80 }]}
+                      placeholder="ZIP"
+                      placeholderTextColor={colors.textTertiary}
+                      value={contact.address_zip}
+                      onChangeText={t => setContact({ ...contact, address_zip: t })}
+                      keyboardType="number-pad"
+                      data-testid="input-address-zip"
+                    />
+                  </View>
+                </View>
+
+                {/* Dates Card */}
+                <View style={ncs.card}>
+                  {[
+                    { field: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF9500' },
+                    { field: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF2D55' },
+                    { field: 'date_sold', label: 'Date Sold', icon: 'car', color: '#34C759' },
+                  ].map((d, idx) => (
+                    <React.Fragment key={d.field}>
+                      {idx > 0 && <View style={[ncs.cardDivider, { marginLeft: 40 }]} />}
+                      <TouchableOpacity style={ncs.cardRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)}>
+                        <View style={[{ width: 28, height: 28, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: `${d.color}20` }]}>
+                          <Ionicons name={d.icon as any} size={16} color={d.color} />
+                        </View>
+                        <Text style={{ flex: 1, fontSize: 16, color: (contact as any)[d.field] ? colors.text : colors.textTertiary }}>
+                          {(contact as any)[d.field] ? new Date((contact as any)[d.field]).toLocaleDateString() : d.label}
+                        </Text>
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        {/* Reuse existing modals */}
+        {/* Tag Picker */}
+        <Modal visible={showTagPicker} animationType="slide" transparent={true}>
+          <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowTagPicker(false)}>
+            <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
+              <View style={s.actionSheetGroup}>
+                <View style={{ padding: 16 }}>
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Add Tag</Text>
+                  <TextInput
+                    style={[s.input, { marginBottom: 12 }]}
+                    placeholder="Search tags..."
+                    placeholderTextColor={colors.textTertiary}
+                    value={tagSearch}
+                    onChangeText={setTagSearch}
+                    autoFocus
+                  />
+                  <ScrollView style={{ maxHeight: 250 }}>
+                    {availableTags.filter(t => !contact.tags.includes(t.name) && (!tagSearch || t.name.toLowerCase().includes(tagSearch.toLowerCase()))).map(tag => (
+                      <TouchableOpacity key={tag._id} style={s.pickerItem} onPress={() => addTag(tag.name)} data-testid={`tag-option-${tag.name}`}>
+                        {tag.icon && <Ionicons name={tag.icon as any} size={18} color={tag.color || colors.textSecondary} />}
+                        <Text style={s.pickerItemText}>{tag.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+              <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowTagPicker(false)}>
+                <Text style={s.actionSheetCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Date Picker */}
+        <Modal visible={showDatePicker} animationType="fade" transparent={true}>
+          <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowDatePicker(false)}>
+            <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
+              <View style={[s.actionSheetGroup, { padding: 16 }]}>
+                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>{activeDateLabel}</Text>
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="date"
+                    value={tempDate ? new Date(tempDate).toISOString().split('T')[0] : ''}
+                    onChange={(e: any) => {
+                      if (e.target.value) {
+                        const d = new Date(e.target.value + 'T12:00:00');
+                        setTempDate(d);
+                        setWebYear(d.getFullYear());
+                        setWebMonth(d.getMonth());
+                        setWebDay(d.getDate());
+                      }
+                    }}
+                    style={{ fontSize: 18, padding: 12, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.card, color: colors.text, width: '100%' }}
+                  />
+                ) : null}
+                <TouchableOpacity
+                  style={{ marginTop: 16, alignItems: 'center', padding: 14, backgroundColor: '#007AFF', borderRadius: 10 }}
+                  onPress={confirmDateSelection}
+                >
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Referral Picker Modal */}
+        <Modal visible={showReferralPicker} animationType="slide" transparent={true}>
+          <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReferralPicker(false)}>
+            <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
+              <View style={s.actionSheetGroup}>
+                <View style={{ padding: 16 }}>
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Select Referrer</Text>
+                  <TextInput
+                    style={[s.input, { marginBottom: 12 }]}
+                    placeholder="Search contacts..."
+                    placeholderTextColor={colors.textTertiary}
+                    value={contactSearch}
+                    onChangeText={setContactSearch}
+                    autoFocus
+                  />
+                  <ScrollView style={{ maxHeight: 250 }}>
+                    {filteredContacts.map((c: any) => (
+                      <TouchableOpacity
+                        key={c._id}
+                        style={s.pickerItem}
+                        onPress={() => {
+                          setContact({ ...contact, referred_by: c._id, referred_by_name: `${c.first_name} ${c.last_name || ''}`.trim() });
+                          setShowReferralPicker(false);
+                          setContactSearch('');
+                        }}
+                      >
+                        <Text style={s.pickerItemText}>{c.first_name} {c.last_name || ''}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+              <TouchableOpacity style={s.actionSheetCancel} onPress={() => { setShowReferralPicker(false); setContactSearch(''); }}>
+                <Text style={s.actionSheetCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      </SafeAreaView>
+    );
+  }
+
+  // ===== RENDER (existing contact) =====
   return (
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
