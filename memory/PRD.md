@@ -13,13 +13,14 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ### Authentication & Users
 - JWT-based auth with role-based access
-- **Login persistence** — extended timeout to 10s safety net
-- User management with soft-delete support
+- Login persistence — extended timeout to 10s safety net
 
 ### Contact Management
 - Full CRUD with photo upload/gallery
 - Cancel/Save buttons, gold Save button, "Contact saved!" toast
 - Phone optional when email is provided
+- Photo viewer modal uses SafeAreaView (no more battery bar overlap)
+- Photo gallery labels use actual card type (not hardcoded "congrats")
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
@@ -27,28 +28,26 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - All communications logged as `contact_events`
 
 ### Home Screen Dashboard
-- Quick action tiles: Share My Card, Review Link, Send a Card, My Showcase, Keypad, Add Contact
-- **Action Items section** — pending campaign tasks with overdue indicators + mark done
-- **Recent Activity feed** — pulls from `contact_events`, auto-refresh 30s, tappable items
+- Quick action tiles + Action Items (pending tasks) + Recent Activity (from contact_events)
+- Auto-refresh every 30 seconds
 
 ### Activity Tab (Bottom Nav)
 - FlatList virtualization (prevents freezing)
-- 52px avatar tiles, 16px names (larger, more readable)
-- Auto-refresh every 30 seconds + pull-to-refresh
-- Tappable items → navigate to contact page
+- Larger tiles, auto-refresh, tappable items
 
-### Public-Facing Pages (Customer-Facing)
-- **No back buttons** on any customer-facing page (digital card, congrats card, showcase)
-- **"Leave a Review" is prominently placed** on every card type:
-  - Digital card: CTA right after Quick Actions with inline expandable star rating form
-  - Congrats card: Inline review form instead of redirecting to link page
-  - Showcase: Inline review form instead of redirecting to link page
-- No more scrolling to the bottom to find the review form
-
-### Card Type Tracking
-- Birthday card → "Viewed Birthday Card" (was always "Viewed Congrats Card")
-- Thank You card → "Viewed Thank You Card"
-- Holiday card → "Viewed Holiday Card"
+### Public-Facing Pages — ALL FIXED
+- **No back buttons** on any customer-facing page
+- **Inline "Leave a Review"** on all pages (digital card, congrats, showcase)
+  - Expandable star rating + feedback form — no redirects
+- **Inline "Refer a Friend"** on all pages
+  - Share/copy functionality with native share sheet
+- **Card type-specific events** (FIXED):
+  - Birthday card → "Viewed Birthday Card" / "Downloaded Birthday Card"
+  - Thank You card → "Viewed Thank You Card" / "Downloaded Thank You Card"
+  - Holiday card → "Viewed Holiday Card" / "Downloaded Holiday Card"
+  - Photo source stores actual card type
+  - Short URL link_type uses actual card type
+  - Track download/share uses actual card type
 - Short URL dedup window: 5 minutes (was 1 hour)
 
 ### Reporting & Leaderboards
@@ -56,8 +55,7 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Store, Org, Global leaderboard levels
 
 ### Public API & Webhooks
-- API-key authenticated REST API
-- Outgoing webhook system for CRM integration
+- API-key authenticated REST API, outgoing webhook system
 
 ## Pending Issues
 - P1: Production marketing site logo link causes infinite spinner (likely browser cache)
@@ -74,9 +72,7 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - (P2) Full Twilio/Telnyx Integration (currently MOCKED)
 - (P2) WhatsApp Integration
 - (P2) Partner/Reseller Portal
-- (P2) Full LMS (Learning Management System)
-- (P2) Code cleanup (~80 files)
-- (P2) Break down contact/[id].tsx (~4300 lines)
+- (P2) Full LMS, Code cleanup, contact page refactor
 
 ## Key Credentials
 - Super Admin: forest@imosapp.com / Admin123!
