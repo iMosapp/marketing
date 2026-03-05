@@ -11,17 +11,23 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
+### Home Screen Quick Actions Fix (Mar 2026)
+- **CRITICAL FIX:** All Home quick actions (Share My Card, Review Link, Send a Card, My Showcase) now navigate to a **contact picker** → then to the **contact record** to complete the action
+- Previous behavior incorrectly opened generic share modals with no contact context
+- Contact detail page now supports `?action=xxx` query param to auto-trigger the relevant action (digitalcard, review, congrats, showcase)
+- `handleQuickAction` in contact page now handles ALL action keys: sms, call, email, review, card, gift, congrats, digitalcard, linkpage, showcase
+- Action progress tracker items on the contact page are now all clickable and functional
+
 ### LMS / Training Hub — Role-Based (Mar 2026)
 - **4 training tracks** with 21 total lessons:
   - **Sales Team Onboarding** (6 lessons) — for `user`, `manager`, `admin`, `store_manager`
   - **Partner & Reseller Onboarding** (6 lessons) — for `partner`, `reseller`, `admin`, `super_admin`
-  - **White Label Partner Guide** (5 lessons) — for `partner`, `reseller`, `admin`, `super_admin`
+  - **White Label Partner Guide** (5 lessons, NEW) — for `partner`, `reseller`, `admin`, `super_admin`
   - **Manager's Playbook** (4 lessons) — for `manager`, `admin`, `store_manager`, `super_admin`
 - **Role-based filtering**: Users only see tracks matching their role; `super_admin` and `admin` see all
-- **Admin Manage Training page** (`/admin/manage-training`): Full CRUD for tracks (create, edit, delete) and lessons (create, edit, delete) with role assignment
-- **Partner Dashboard Training Hub link**: Partners can access training directly from their portal
-- **Progress tracking**: Users can mark lessons complete, with persistent progress bars
-- Pre-populated with comprehensive content on messaging, onboarding, selling, branding, and support
+- **Admin Manage Training page** (`/admin/manage-training`): Full CRUD for tracks and lessons
+- **Partner Dashboard** Training Hub link for easy partner access
+- **Progress tracking**: Users can mark lessons complete with persistent progress bars
 
 ### Admin Onboarding Wizard (Mar 2026)
 - 7-step guided wizard at `/admin/setup-wizard` for turnkey client onboarding
@@ -33,9 +39,6 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ### First-Login Profile Completion (Mar 2026)
 - `/auth/complete-profile` — 4-step guided onboarding for new users
-
-### Partner Agreements (Mar 2026)
-- Custom Commission Structure, White Label Checkbox
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
@@ -52,21 +55,16 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - P2: Mobile app `tags` data sync
 
 ## Upcoming Tasks
-1. (P0) Make Training Hub Content Editable — DONE (admin CRUD at /admin/manage-training)
-2. (P0) Gamification & Leaderboards
-3. (P1) Automated Welcome Emails after wizard user creation
-4. (P1) Link Orgs from Partner Agreement View
-5. (P1) Quoting System
-6. (P1) AI-Powered Outreach
+1. (P0) Gamification & Leaderboards
+2. (P1) Automated Welcome Emails after wizard user creation
+3. (P1) Link Orgs from Partner Agreement View
+4. (P1) Quoting System
+5. (P1) AI-Powered Outreach
 
 ## Future/Backlog
-- Auth refactor (bcrypt)
-- Push notifications
-- Voice Help Assistant
-- Full Twilio integration (currently MOCKED)
-- WhatsApp Integration
-- Inventory Management Module
-- Code cleanup (~80 files)
+- Auth refactor (bcrypt), Push notifications, Voice Help Assistant
+- Full Twilio integration (currently MOCKED), WhatsApp Integration
+- Inventory Management Module, Code cleanup (~80 files)
 
 ## Key Credentials
 - Super Admin: forest@imosapp.com / Admin123!
