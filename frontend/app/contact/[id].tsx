@@ -2095,7 +2095,7 @@ export default function ContactDetailScreen() {
               <View style={s.heroStatsLine} data-testid="contact-stats-row">
                 <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{stats.total_touchpoints}</Text>
-                  <Text style={s.heroStatLbl}>touches</Text>
+                  <Text style={s.heroStatLbl}>tchs</Text>
                 </View>
                 <Text style={s.heroStatDot}>·</Text>
                 <View style={s.heroStatChip}>
@@ -2105,17 +2105,17 @@ export default function ContactDetailScreen() {
                 <Text style={s.heroStatDot}>·</Text>
                 <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{stats.link_clicks}</Text>
-                  <Text style={s.heroStatLbl}>clicks</Text>
+                  <Text style={s.heroStatLbl}>clks</Text>
                 </View>
                 <Text style={s.heroStatDot}>·</Text>
                 <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{stats.campaigns}</Text>
-                  <Text style={s.heroStatLbl}>campaigns</Text>
+                  <Text style={s.heroStatLbl}>cmpn</Text>
                 </View>
                 <Text style={s.heroStatDot}>·</Text>
                 <View style={s.heroStatChip}>
                   <Text style={s.heroStatVal}>{contact.referral_count}</Text>
-                  <Text style={s.heroStatLbl}>referrals</Text>
+                  <Text style={s.heroStatLbl}>refs</Text>
                 </View>
               </View>
             )}
@@ -4026,14 +4026,14 @@ const getS = (colors: any) => StyleSheet.create({
   heroMetaText: { fontSize: 12, color: colors.textTertiary },
   // Compact stats line
   heroStatsLine: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap',
     marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
     gap: 4,
   },
-  heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
-  heroStatVal: { fontSize: 14, fontWeight: '700', color: colors.text },
-  heroStatLbl: { fontSize: 12, color: colors.textTertiary },
-  heroStatDot: { fontSize: 11, color: colors.textTertiary, marginHorizontal: 2 },
+  heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+  heroStatVal: { fontSize: 13, fontWeight: '700', color: colors.text },
+  heroStatLbl: { fontSize: 11, color: colors.textTertiary },
+  heroStatDot: { fontSize: 11, color: colors.textTertiary, marginHorizontal: 1 },
 
   // Hero tags strip
   heroTagsStrip: {
