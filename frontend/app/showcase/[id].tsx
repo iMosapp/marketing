@@ -582,16 +582,16 @@ const styles = StyleSheet.create({
 
   heroSection: { alignItems: 'center', marginBottom: 24 },
   heroAvatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 220,
+    height: 150,
+    borderRadius: 16,
     borderWidth: 3,
     marginBottom: 12,
   },
   heroAvatarFallback: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 220,
+    height: 150,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,

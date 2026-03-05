@@ -782,9 +782,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileImage: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 220,
+    height: 150,
+    borderRadius: 16,
     borderWidth: 4,
     borderColor: '#FFF',
   },
