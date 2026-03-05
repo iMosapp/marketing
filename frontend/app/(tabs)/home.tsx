@@ -629,11 +629,17 @@ export default function HomeScreen() {
                   onPress={() => {
                     if (task.contact_id) {
                       const params: any = {};
-                      if (task.channel === 'sms' && task.description) params.prefill = task.description;
-                      if (task.channel === 'email' && task.description) params.prefill = task.description;
+                      // Always prefill with the task description (the message to send)
+                      if (task.description) params.prefill = task.description;
                       if (task.channel) params.channel = task.channel;
+                      // Pass task context so contact page shows what to do
+                      params.taskId = taskId;
+                      params.taskTitle = task.title || '';
                       const qs = new URLSearchParams(params).toString();
                       router.push(`/contact/${task.contact_id}${qs ? '?' + qs : ''}` as any);
+                    } else {
+                      // No contact — navigate to tasks page
+                      router.push('/tasks' as any);
                     }
                   }}
                   style={[styles.taskItem, { backgroundColor: colors.card, borderColor: isOverdue ? '#FF3B3044' : colors.border }]}
@@ -896,9 +902,9 @@ export default function HomeScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, zIndex: 10000, position: 'relative' },
   userName: { fontSize: 18, fontWeight: '700' },
-  scroll: { flex: 1 },
+  scroll: { flex: 1, zIndex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: { width: '48%', flexBasis: '47%', flexGrow: 1, borderRadius: 16, padding: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, minHeight: 120 },

@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -169,8 +170,9 @@ export function NotificationBell() {
       </TouchableOpacity>
 
       {open && (
-        <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
-          <Pressable style={styles.dropdown} onPress={(e) => e.stopPropagation()}>
+        <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+          <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
+            <Pressable style={styles.dropdown} onPress={(e) => e.stopPropagation()}>
             {/* Header */}
             <View style={styles.dropdownHeader}>
               <Text style={styles.dropdownTitle}>Notifications</Text>
@@ -252,6 +254,7 @@ export function NotificationBell() {
             </ScrollView>
           </Pressable>
         </Pressable>
+        </Modal>
       )}
     </View>
   );
@@ -293,20 +296,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   overlay: {
-    ...(IS_WEB ? {
-      position: 'fixed' as any,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-    } : {
-      position: 'absolute',
-      top: 0,
-      left: -300,
-      width: 400,
-      height: 500,
-    }),
-    zIndex: 99998,
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   dropdown: {
     position: 'absolute',
@@ -319,7 +310,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.surface,
     overflow: 'hidden',
-    zIndex: 99999,
     ...(IS_WEB ? {
       boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     } : {

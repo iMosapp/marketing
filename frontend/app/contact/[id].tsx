@@ -287,7 +287,7 @@ export default function ContactDetailScreen() {
     },
   };
   const router = useRouter();
-  const { id, prefill, channel, action } = useLocalSearchParams();
+  const { id, prefill, channel, action, taskId, taskTitle } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -416,16 +416,21 @@ export default function ContactDetailScreen() {
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
 
-  // Populate composer from query param (e.g. returning from create-card)
+  // Populate composer from query param (e.g. returning from create-card or task action item)
   useEffect(() => {
     if (prefill && typeof prefill === 'string') {
       setComposerMessage(prefill);
+      // If arriving from a task, auto-open the composer
+      if (taskId) {
+        const ch = typeof channel === 'string' ? channel : 'sms';
+        setComposerMode(ch === 'email' ? 'email' : 'sms');
+      }
     }
-    if (channel && typeof channel === 'string') {
+    if (channel && typeof channel === 'string' && !taskId) {
       if (channel === 'email') setComposerMode('email');
       else setComposerMode('sms');
     }
-  }, [prefill, channel]);
+  }, [prefill, channel, taskId]);
 
   // Auto-trigger action from query param (e.g. /contact/123?action=digitalcard)
   useEffect(() => {
@@ -2037,6 +2042,20 @@ export default function ContactDetailScreen() {
         </View>
 
         <ScrollView ref={scrollRef} contentContainerStyle={[s.scroll, { paddingBottom: 80 }]} showsVerticalScrollIndicator={false} data-testid="contact-scroll">
+          {/* ===== TASK BANNER (when arriving from Home action item) ===== */}
+          {taskTitle && typeof taskTitle === 'string' && (
+            <View style={{ backgroundColor: '#007AFF12', borderBottomWidth: 1, borderBottomColor: '#007AFF30', paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }} data-testid="task-banner">
+              <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#007AFF20', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="checkbox-outline" size={18} color="#007AFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#007AFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>Task</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginTop: 1 }}>{taskTitle}</Text>
+              </View>
+              <Text style={{ fontSize: 11, color: colors.textTertiary }}>Send below</Text>
+              <Ionicons name="arrow-down" size={14} color={colors.textTertiary} />
+            </View>
+          )}
           {/* ===== COMPACT PROFILE HERO ===== */}
           <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
             <View style={s.heroRow}>
