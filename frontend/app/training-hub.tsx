@@ -1,1011 +1,347 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  Platform,
-  Linking,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
-import { useAuthStore } from '../store/authStore';
-import { useThemeStore } from '../store/themeStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-import { showSimpleAlert } from '../services/alert';
+import { useThemeStore } from '../store/themeStore';
 
-const IS_WEB = Platform.OS === 'web';
-
-interface TrainingTopic {
-  id: string;
-  icon: string;
-  iconColor: string;
-  title: string;
-  description: string;
-  duration?: string;
-  category: string;
-  route?: string;
-  content?: string;
-  videoUrl?: string;
-  steps?: string[];
+interface Track {
+  id: string; slug: string; title: string; description: string;
+  icon: string; color: string; roles: string[];
+  lesson_count: number; completed_count: number;
 }
 
-const TRAINING_TOPICS: TrainingTopic[] = [
-  // Getting Started
-  {
-    id: 'getting-started',
-    icon: 'rocket',
-    iconColor: '#FF9500',
-    title: "Getting Started with i'M On Social",
-    description: 'Learn the basics and set up your account',
-    duration: '5 min',
-    category: 'Getting Started',
-    videoUrl: '',
-    content: "Welcome to i'M On Social! This guide will walk you through setting up your profile, understanding the main features, and making your first connection with a customer.",
-    steps: [
-      "Log in to your i'M On Social account using the credentials provided by your admin.",
-      'Complete your profile by adding your photo, bio, and contact information.',
-      'Explore the four main tabs: Inbox, Contacts, Keypad, and More.',
-      'Send your first message to a customer from the Contacts tab.',
-    ],
-  },
-  {
-    id: 'profile-setup',
-    icon: 'person-circle',
-    iconColor: '#5856D6',
-    title: 'Setting Up Your Profile',
-    description: 'Create your digital business card',
-    duration: '3 min',
-    category: 'Getting Started',
-    route: '/settings/my-profile',
-    videoUrl: '',
-    content: 'Your digital card is your first impression. Add a professional photo, write a compelling bio, and link your social media to make it easy for customers to connect with you.',
-    steps: [
-      'Go to More > My Digital Card.',
-      'Upload a professional headshot photo.',
-      'Write a short bio that highlights your experience.',
-      'Add your social media links and review page URLs.',
-      'Share your card link in your email signature.',
-    ],
-  },
-  {
-    id: 'adding-contacts',
-    icon: 'people',
-    iconColor: '#34C759',
-    title: 'Adding & Managing Contacts',
-    description: 'Build your customer database from day one',
-    duration: '4 min',
-    category: 'Getting Started',
-    videoUrl: '',
-    content: "Your contacts are the heart of i'M On Social. Learn how to add contacts manually, import from CSV, and organize them with tags for targeted follow-ups.",
-    steps: [
-      'Tap the + button on the Contacts tab to add a new contact.',
-      'Fill in their name, phone, and email.',
-      'Use the Import feature to bulk-upload contacts from a CSV file.',
-      'Add tags like "VIP", "Hot Lead", or "Service Due" to organize contacts.',
-    ],
-  },
-  // Messaging
-  {
-    id: 'inbox-basics',
-    icon: 'mail',
-    iconColor: '#007AFF',
-    title: 'Inbox & Conversations',
-    description: 'Manage customer messages like a pro',
-    duration: '4 min',
-    category: 'Messaging',
-    videoUrl: '',
-    content: 'The inbox is your command center. Learn to send SMS and email, use AI suggestions, and manage multiple conversations efficiently.',
-    steps: [
-      'Open the Inbox tab to see all your conversations.',
-      'Tap any conversation to view the full thread.',
-      'Use the compose bar at the bottom to type and send messages.',
-      'Toggle between SMS and Email modes using the icons.',
-      'Look for AI outcome badges (Hot Lead, Appt Set) to prioritize.',
-    ],
-  },
-  {
-    id: 'templates',
-    icon: 'document-text',
-    iconColor: '#34C759',
-    title: 'Using Message Templates',
-    description: 'Save time with pre-written messages',
-    duration: '3 min',
-    category: 'Messaging',
-    route: '/settings/templates',
-    videoUrl: '',
-    content: 'Templates let you respond faster with consistent, professional messages. Create templates for common scenarios like follow-ups, greetings, and appointment confirmations.',
-    steps: [
-      'Go to More > Message Templates to create templates.',
-      'Use variables like {first_name} for personalization.',
-      'In any conversation, tap the template icon to insert one.',
-      'Create templates for: greetings, follow-ups, appointment confirmations, and thank-you messages.',
-    ],
-  },
-  {
-    id: 'voice-to-text',
-    icon: 'mic',
-    iconColor: '#FF3B30',
-    title: 'Voice-to-Text Messaging',
-    description: 'Speak your messages instead of typing',
-    duration: '2 min',
-    category: 'Messaging',
-    videoUrl: '',
-    content: 'Tap the microphone icon in any message compose area to speak your message. The AI will transcribe it accurately, saving you time on long messages.',
-    steps: [
-      'Open any conversation thread.',
-      'Tap and hold the microphone icon to start recording.',
-      'Speak your message naturally.',
-      'Release to stop recording - AI transcribes it instantly.',
-      'Review and edit before hitting send.',
-    ],
-  },
-  // AI Features
-  {
-    id: 'jessi-ai',
-    icon: 'sparkles',
-    iconColor: '#C9A962',
-    title: 'Using Jessi AI Assistant',
-    description: 'Get AI help for any task',
-    duration: '5 min',
-    category: 'AI Features',
-    route: '/jessie',
-    videoUrl: '',
-    content: 'Jessi is your personal AI assistant. Ask questions, get help drafting messages, or let Jessi suggest responses to customers based on conversation context.',
-    steps: [
-      'Go to More > Ask Jessi to open the AI assistant.',
-      "Type or speak your question about any i'M On Social feature.",
-      'Ask Jessi to draft messages for specific customer situations.',
-      'Use Jessi to get tips on sales techniques and follow-up strategies.',
-    ],
-  },
-  {
-    id: 'ai-suggestions',
-    icon: 'bulb',
-    iconColor: '#FFD60A',
-    title: 'AI Message Suggestions',
-    description: 'Let AI help craft perfect responses',
-    duration: '3 min',
-    category: 'AI Features',
-    videoUrl: '',
-    content: 'When viewing a conversation, watch for the AI suggestion bar. It analyzes the conversation and suggests contextually appropriate responses you can use or modify.',
-    steps: [
-      'Open any conversation to see AI-powered suggestions.',
-      'Tap the magic wand icon for response suggestions.',
-      'AI considers the full conversation context to suggest responses.',
-      'Edit the suggestion to add your personal touch before sending.',
-    ],
-  },
-  {
-    id: 'voice-training',
-    icon: 'recording',
-    iconColor: '#AF52DE',
-    title: 'Voice Training Your AI',
-    description: 'Train AI to sound like you',
-    duration: '5 min',
-    category: 'AI Features',
-    route: '/voice-training',
-    videoUrl: '',
-    content: 'The AI learns your personality through voice training. Just talk naturally about yourself, and the AI will adapt to match your communication style.',
-    steps: [
-      'Go to More > Voice Training to start.',
-      'Record yourself talking naturally about your work and personality.',
-      'The AI analyzes your speaking style, vocabulary, and tone.',
-      'Future AI suggestions will match how you actually communicate.',
-    ],
-  },
-  // Sales Tools
-  {
-    id: 'congrats-cards',
-    icon: 'gift',
-    iconColor: '#FF2D55',
-    title: 'Congrats Cards',
-    description: 'Celebrate customer purchases',
-    duration: '3 min',
-    category: 'Sales Tools',
-    videoUrl: '',
-    content: "After a sale, send a beautiful congrats card with the customer's photo. They can download it, share on social media, and leave reviews - all from one link!",
-    steps: [
-      'Open a customer conversation after a sale.',
-      'Tap the gift/card icon to create a Congrats Card.',
-      "Add the customer's photo (take one with them!).",
-      'Customize your message and send it.',
-      'The customer gets a shareable card they can post on social media.',
-    ],
-  },
-  {
-    id: 'review-links',
-    icon: 'star',
-    iconColor: '#FFD60A',
-    title: 'Getting Customer Reviews',
-    description: 'Build your reputation with reviews',
-    duration: '3 min',
-    category: 'Sales Tools',
-    route: '/settings/review-links',
-    videoUrl: '',
-    content: 'Set up your review links to make it easy for satisfied customers to leave reviews on Google, Facebook, or other platforms.',
-    steps: [
-      'Go to More > Review Links to configure your review pages.',
-      'Add your Google Business, Facebook, and other review URLs.',
-      'After every positive interaction, share your review link.',
-      'Congrats Cards automatically include a review prompt.',
-    ],
-  },
-  {
-    id: 'lead-management',
-    icon: 'funnel',
-    iconColor: '#5AC8FA',
-    title: 'Managing Leads',
-    description: 'Track and convert leads effectively',
-    duration: '5 min',
-    category: 'Sales Tools',
-    videoUrl: '',
-    content: 'Learn how to tag leads, set follow-up reminders, and use the lead routing system to never miss an opportunity.',
-    steps: [
-      'New leads appear in your Inbox with a "New Lead" badge.',
-      'Respond within 5 minutes for the best conversion rate.',
-      'Tag leads appropriately: Hot Lead, Warm, Appointment Set, etc.',
-      'Set a follow-up task if you can\'t close immediately.',
-      'Use Nurture Campaigns to automate long-term follow-ups.',
-    ],
-  },
-  // Campaigns
-  {
-    id: 'sms-campaigns',
-    icon: 'chatbubbles',
-    iconColor: '#FF9500',
-    title: 'SMS Campaigns',
-    description: 'Automated text follow-ups',
-    duration: '4 min',
-    category: 'Campaigns',
-    route: '/campaigns',
-    videoUrl: '',
-    content: 'Set up automated SMS campaigns to nurture leads over time. Schedule messages, add personalization, and track engagement.',
-    steps: [
-      'Go to Campaigns from the More menu.',
-      'Tap "Create Campaign" and choose SMS type.',
-      'Write your message sequence (e.g., Day 1, Day 3, Day 7).',
-      'Set the trigger (tag-based, date-based, or manual enrollment).',
-      'Activate and monitor from the Campaign Dashboard.',
-    ],
-  },
-  {
-    id: 'email-campaigns',
-    icon: 'mail-unread',
-    iconColor: '#AF52DE',
-    title: 'Email Campaigns',
-    description: 'Professional email sequences',
-    duration: '4 min',
-    category: 'Campaigns',
-    route: '/campaigns/email',
-    videoUrl: '',
-    content: 'Create branded email campaigns with your logo and colors. Perfect for longer-form content and professional follow-ups.',
-    steps: [
-      'Go to Campaigns > Email Campaigns.',
-      'Choose a template or start from scratch.',
-      'Add your content, images, and personalization variables.',
-      'Set the sending schedule and target audience.',
-      'Preview and activate the campaign.',
-    ],
-  },
-  // Team Features
-  {
-    id: 'team-chat',
-    icon: 'people',
-    iconColor: '#34C759',
-    title: 'Team Communication',
-    description: 'Chat with your team internally',
-    duration: '3 min',
-    category: 'Team Features',
-    route: '/team',
-    videoUrl: '',
-    content: 'Use the Team tab for internal communication. Create channels for different topics, mention team members, and keep customer info separate from team discussions.',
-    steps: [
-      'Open the Team tab from the bottom navigation.',
-      'Browse existing channels or create a new one.',
-      'Use channels for topics like "Deals", "Questions", "Announcements".',
-      'Tag team members with @ mentions for direct attention.',
-    ],
-  },
-  {
-    id: 'admin-panel',
-    icon: 'shield-checkmark',
-    iconColor: '#5856D6',
-    title: 'Admin Panel Overview',
-    description: 'For managers: manage your team and reports',
-    duration: '5 min',
-    category: 'Team Features',
-    route: '/admin',
-    videoUrl: '',
-    content: 'The Admin Panel gives managers tools to oversee their team, view performance metrics, approve users, and manage organizational settings.',
-    steps: [
-      'Go to More > Admin Panel.',
-      'View the dashboard for key metrics and recent activity.',
-      'Manage team members: add, edit roles, or deactivate accounts.',
-      'Check Leaderboards to track team performance.',
-      'Access Training & SOPs to manage internal documentation.',
-    ],
-  },
-];
-
-// Video embed component for web
-const VideoEmbed = ({ url }: { url: string }) => {
-  const { colors } = useThemeStore();
-  const styles = getStyles(colors);
-  // Empty URL - show "coming soon" placeholder
-  if (!url) {
-    return (
-      <View style={styles.videoPlaceholder}>
-        <View style={[styles.playButton, { backgroundColor: '#3A3A3C' }]}>
-          <Ionicons name="videocam" size={28} color="#8E8E93" />
-        </View>
-        <Text style={styles.videoPlaceholderText}>Training video coming soon</Text>
-      </View>
-    );
-  }
-
-  if (!IS_WEB) {
-    return (
-      <TouchableOpacity
-        style={styles.videoPlaceholder}
-        onPress={() => Linking.openURL(url.replace('/embed/', '/watch?v='))}
-      >
-        <View style={styles.playButton}>
-          <Ionicons name="play" size={32} color={'#FFFFFF'} />
-        </View>
-        <Text style={styles.videoPlaceholderText}>Tap to watch video</Text>
-      </TouchableOpacity>
-    );
-  }
-
-  return (
-    <View style={styles.videoContainer}>
-      <iframe
-        src={url}
-        style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 } as any}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    </View>
-  );
-};
+interface Lesson {
+  id: string; slug: string; title: string; description: string;
+  icon: string; duration: string; order: number;
+  content: string; video_url: string; steps: string[];
+}
 
 export default function TrainingHubScreen() {
   const { colors } = useThemeStore();
-  const styles = getStyles(colors);
+  const s = getS(colors);
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [voiceQuestion, setVoiceQuestion] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const recordingRef = React.useRef<Audio.Recording | null>(null);
 
-  const categories = [...new Set(TRAINING_TOPICS.map(t => t.category))];
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [selectedTrack, setSelectedTrack] = useState<{ id: string; title: string; color: string; lessons: Lesson[] } | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [progress, setProgress] = useState<Record<string, boolean>>({});
+  const [user, setUser] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Filter topics by search and category
-  const filteredTopics = TRAINING_TOPICS.filter(t => {
-    const matchesSearch = !searchQuery ||
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || t.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => { loadData(); }, []);
 
-  // Group by category
-  const groupedTopics = filteredTopics.reduce((acc, topic) => {
-    if (!acc[topic.category]) acc[topic.category] = [];
-    acc[topic.category].push(topic);
-    return acc;
-  }, {} as Record<string, TrainingTopic[]>);
-
-  const handleTopicPress = (topic: TrainingTopic) => {
-    setExpandedTopic(expandedTopic === topic.id ? null : topic.id);
-  };
-
-  const startVoiceQuestion = async () => {
+  const loadData = async () => {
     try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        showSimpleAlert('Permission Required', 'Please allow microphone access');
-        return;
+      const userStr = await AsyncStorage.getItem('user');
+      const u = userStr ? JSON.parse(userStr) : null;
+      setUser(u);
+      const [tracksRes, progressRes] = await Promise.all([
+        api.get('/training/tracks'),
+        u?._id ? api.get(`/training/progress/${u._id}`).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+      ]);
+      setTracks(Array.isArray(tracksRes.data) ? tracksRes.data : []);
+      const pm: Record<string, boolean> = {};
+      if (Array.isArray(progressRes.data)) {
+        progressRes.data.forEach((p: any) => { if (p.completed) pm[p.lesson_id] = true; });
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      recordingRef.current = recording;
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Recording error:', error);
-    }
+      setProgress(pm);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefreshing(false); }
   };
 
-  const stopVoiceQuestion = async () => {
-    if (!recordingRef.current) return;
-    setIsRecording(false);
-    setProcessing(true);
+  const openTrack = async (track: Track) => {
     try {
-      const recording = recordingRef.current;
-      recordingRef.current = null;
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      if (uri) {
-        const formData = new FormData();
-        if (IS_WEB) {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          formData.append('file', blob, 'question.webm');
-        } else {
-          formData.append('file', { uri, type: 'audio/m4a', name: 'question.m4a' } as any);
-        }
-        formData.append('user_id', user?._id || '');
-        const transcribeRes = await api.post('/voice/transcribe', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 30000,
-        });
-        const question = transcribeRes.data.text || transcribeRes.data.transcription || '';
-        if (question) {
-          setVoiceQuestion(question);
-          await getAIHelp(question);
-        }
-      }
-    } catch (error) {
-      console.error('Error processing voice:', error);
-      showSimpleAlert('Error', 'Could not process your question');
-    } finally {
-      setProcessing(false);
-    }
+      const res = await api.get(`/training/tracks/${track.id}`);
+      setSelectedTrack({ id: track.id, title: res.data.title, color: track.color, lessons: res.data.lessons || [] });
+      setSelectedLesson(null);
+    } catch (e) { console.error(e); }
   };
 
-  const getAIHelp = async (question: string) => {
-    setProcessing(true);
+  const toggleComplete = async (lessonId: string, trackId: string) => {
+    if (!user?._id) return;
+    const current = progress[lessonId] || false;
+    setSaving(true);
     try {
-      const response = await api.post('/jessie/chat', {
-        user_id: user?._id,
-        message: `i'M On Social`,
-        context: 'training_help',
-      }, { timeout: 30000 });
-      setAiResponse(response.data.response || response.data.message || 'Let me help you with that...');
-    } catch (error) {
-      console.error('AI help error:', error);
-      setAiResponse('Sorry, I had trouble processing that. Try asking in a different way.');
-    } finally {
-      setProcessing(false);
-    }
+      await api.post('/training/progress', { user_id: user._id, lesson_id: lessonId, track_id: trackId, completed: !current });
+      setProgress(prev => ({ ...prev, [lessonId]: !current }));
+      // Update track counts
+      setTracks(prev => prev.map(t => t.id === trackId ? { ...t, completed_count: t.completed_count + (current ? -1 : 1) } : t));
+    } catch (e) { console.error(e); }
+    finally { setSaving(false); }
   };
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="training-hub-back">
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Training Hub</Text>
-        <View style={{ width: 28 }} />
+  const renderMarkdown = (content: string) => {
+    const lines = content.split('\n');
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <View key={i} style={{ height: 8 }} />;
+      if (trimmed.startsWith('## ')) return <Text key={i} style={s.mdH2}>{trimmed.replace('## ', '')}</Text>;
+      if (trimmed.startsWith('### ')) return <Text key={i} style={s.mdH3}>{trimmed.replace('### ', '')}</Text>;
+      if (trimmed.startsWith('> ')) return <View key={i} style={s.mdQuote}><Text style={s.mdQuoteText}>{trimmed.replace('> ', '')}</Text></View>;
+      if (trimmed.startsWith('- ')) return (
+        <View key={i} style={s.mdListItem}>
+          <Text style={s.mdBullet}>{'\u2022'}</Text>
+          <Text style={s.mdListText}>{renderInline(trimmed.replace('- ', ''))}</Text>
+        </View>
+      );
+      if (/^\d+\.\s/.test(trimmed)) return (
+        <View key={i} style={s.mdListItem}>
+          <Text style={s.mdBullet}>{trimmed.match(/^(\d+)\./)?.[1]}.</Text>
+          <Text style={s.mdListText}>{renderInline(trimmed.replace(/^\d+\.\s/, ''))}</Text>
+        </View>
+      );
+      if (trimmed.startsWith('*') && trimmed.endsWith('*') && !trimmed.startsWith('**')) return <Text key={i} style={s.mdItalic}>{trimmed.replace(/\*/g, '')}</Text>;
+      return <Text key={i} style={s.mdParagraph}>{renderInline(trimmed)}</Text>;
+    });
+  };
+
+  const renderInline = (text: string): string => {
+    return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+  };
+
+  // ---- TRACK LIST VIEW ----
+  const renderTrackList = () => (
+    <View>
+      <View style={s.heroSection}>
+        <View style={s.heroIcon}><Ionicons name="school" size={32} color="#C9A962" /></View>
+        <Text style={s.heroTitle}>Training Hub</Text>
+        <Text style={s.heroDesc}>Role-based learning paths to get you up and running. Complete at your own pace — you can always come back.</Text>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {/* Voice Help Section */}
-        <View style={styles.voiceHelpSection}>
-          <View style={styles.voiceHelpHeader}>
-            <Ionicons name="help-circle" size={28} color="#C9A962" />
-            <View style={styles.voiceHelpText}>
-              <Text style={styles.voiceHelpTitle}>Need Help?</Text>
-              <Text style={styles.voiceHelpSubtitle}>i'M On Social</Text>
+      {/* Overall Progress */}
+      {tracks.length > 0 && (() => {
+        const totalLessons = tracks.reduce((a, t) => a + t.lesson_count, 0);
+        const totalDone = tracks.reduce((a, t) => a + t.completed_count, 0);
+        const pct = totalLessons > 0 ? Math.round((totalDone / totalLessons) * 100) : 0;
+        return (
+          <View style={s.overallProgress}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Overall Progress</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>{totalDone}/{totalLessons} lessons ({pct}%)</Text>
             </View>
+            <View style={s.progressBar}><View style={[s.progressFill, { width: `${pct}%` }]} /></View>
           </View>
-          
-          <View style={styles.askContainer}>
-            <TextInput
-              style={styles.askInput}
-              placeholder="Type your question..."
-              placeholderTextColor="#6E6E73"
-              value={voiceQuestion}
-              onChangeText={setVoiceQuestion}
-              multiline
-              data-testid="training-ask-input"
-            />
-            <View style={styles.askButtons}>
-              <TouchableOpacity
-                style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
-                onPress={isRecording ? stopVoiceQuestion : startVoiceQuestion}
-                disabled={processing}
-                data-testid="training-voice-btn"
-              >
-                <Ionicons name={isRecording ? 'stop' : 'mic'} size={24} color={colors.text} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.askButton, !voiceQuestion.trim() && styles.askButtonDisabled]}
-                onPress={() => voiceQuestion.trim() && getAIHelp(voiceQuestion)}
-                disabled={!voiceQuestion.trim() || processing}
-                data-testid="training-ask-submit"
-              >
-                {processing ? (
-                  <ActivityIndicator size="small" color={colors.text} />
-                ) : (
-                  <Ionicons name="arrow-forward" size={20} color={colors.text} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+        );
+      })()}
 
-          {aiResponse ? (
-            <View style={styles.aiResponseContainer}>
-              <View style={styles.aiResponseHeader}>
-                <Ionicons name="sparkles" size={18} color="#C9A962" />
-                <Text style={styles.aiResponseLabel}>Jessi's Answer</Text>
+      {tracks.map(track => {
+        const pct = track.lesson_count > 0 ? Math.round((track.completed_count / track.lesson_count) * 100) : 0;
+        const allDone = track.completed_count === track.lesson_count && track.lesson_count > 0;
+        return (
+          <TouchableOpacity key={track.id} style={s.trackCard} onPress={() => openTrack(track)} activeOpacity={0.7} data-testid={`track-${track.slug}`}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <View style={[s.trackIconBox, { backgroundColor: track.color + '18' }]}>
+                <Ionicons name={track.icon as any} size={24} color={track.color} />
               </View>
-              <Text style={styles.aiResponseText}>{aiResponse}</Text>
-              <TouchableOpacity 
-                style={styles.clearButton}
-                onPress={() => { setAiResponse(''); setVoiceQuestion(''); }}
-              >
-                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
-                <Text style={styles.clearButtonText}>Clear</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search training topics..."
-            placeholderTextColor="#6E6E73"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            data-testid="training-search"
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {/* Category Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryFilterRow}
-        >
-          <TouchableOpacity
-            style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
-            onPress={() => setSelectedCategory(null)}
-          >
-            <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>All</Text>
-          </TouchableOpacity>
-          {categories.map(cat => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
-              onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-            >
-              <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Topics */}
-        {Object.entries(groupedTopics).map(([category, topics]) => (
-          <View key={category} style={styles.categorySection}>
-            <Text style={styles.categoryTitle}>{category}</Text>
-            {topics.map(topic => {
-              const isExpanded = expandedTopic === topic.id;
-              return (
-                <View key={topic.id}>
-                  <TouchableOpacity
-                    style={[styles.topicCard, isExpanded && styles.topicCardExpanded]}
-                    onPress={() => handleTopicPress(topic)}
-                    activeOpacity={0.7}
-                    data-testid={`training-topic-${topic.id}`}
-                  >
-                    <View style={[styles.topicIcon, { backgroundColor: `${topic.iconColor}20` }]}>
-                      <Ionicons name={topic.icon as any} size={24} color={topic.iconColor} />
-                    </View>
-                    <View style={styles.topicContent}>
-                      <Text style={styles.topicTitle}>{topic.title}</Text>
-                      <Text style={styles.topicDescription}>{topic.description}</Text>
-                    </View>
-                    <View style={styles.topicMeta}>
-                      {topic.videoUrl ? (
-                        <View style={styles.videoBadge}>
-                          <Ionicons name="videocam" size={12} color="#FF2D55" />
-                        </View>
-                      ) : null}
-                      {topic.duration ? <Text style={styles.topicDuration}>{topic.duration}</Text> : null}
-                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
-                    </View>
-                  </TouchableOpacity>
-                  
-                  {/* Expanded Content */}
-                  {isExpanded ? (
-                    <View style={styles.expandedPanel}>
-                      {/* Video */}
-                      {topic.videoUrl ? <VideoEmbed url={topic.videoUrl} /> : null}
-                      
-                      {/* Text Content */}
-                      {topic.content ? <Text style={styles.expandedText}>{topic.content}</Text> : null}
-                      
-                      {/* Steps */}
-                      {topic.steps && topic.steps.length > 0 ? (
-                        <View style={styles.stepsContainer}>
-                          <Text style={styles.stepsTitle}>Quick Steps</Text>
-                          {topic.steps.map((step, idx) => (
-                            <View key={idx} style={styles.stepRow}>
-                              <View style={styles.stepBullet}>
-                                <Text style={styles.stepBulletText}>{idx + 1}</Text>
-                              </View>
-                              <Text style={styles.stepText}>{step}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      ) : null}
-                      
-                      {/* Go To Feature Button */}
-                      {topic.route ? (
-                        <TouchableOpacity
-                          style={styles.goToButton}
-                          onPress={() => router.push(topic.route as any)}
-                          data-testid={`training-goto-${topic.id}`}
-                        >
-                          <Ionicons name="open-outline" size={16} color="#007AFF" />
-                          <Text style={styles.goToButtonText}>Open in App</Text>
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-                  ) : null}
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={s.trackTitle}>{track.title}</Text>
+                  {allDone && <Ionicons name="checkmark-circle" size={18} color="#34C759" />}
                 </View>
-              );
-            })}
-          </View>
-        ))}
+                <Text style={s.trackDesc} numberOfLines={2}>{track.description}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                  <Text style={{ fontSize: 12, color: colors.textTertiary }}>{track.lesson_count} lessons</Text>
+                  <View style={[s.progressBar, { flex: 1, height: 4 }]}><View style={[s.progressFill, { width: `${pct}%`, backgroundColor: track.color }]} /></View>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: track.color }}>{pct}%</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
 
-        <View style={{ height: 40 }} />
+  // ---- LESSON LIST VIEW ----
+  const renderLessonList = () => {
+    if (!selectedTrack) return null;
+    const completedCount = selectedTrack.lessons.filter(l => progress[l.id]).length;
+    return (
+      <View>
+        <TouchableOpacity onPress={() => setSelectedTrack(null)} style={s.breadcrumb}>
+          <Ionicons name="arrow-back" size={18} color="#C9A962" />
+          <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '600' }}>All Tracks</Text>
+        </TouchableOpacity>
+        <Text style={s.sectionTitle}>{selectedTrack.title}</Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>{completedCount}/{selectedTrack.lessons.length} lessons completed</Text>
+        {selectedTrack.lessons.map((lesson, idx) => {
+          const done = progress[lesson.id] || false;
+          return (
+            <TouchableOpacity key={lesson.id} style={[s.lessonCard, done && { borderLeftWidth: 3, borderLeftColor: '#34C759' }]}
+              onPress={() => setSelectedLesson(lesson)} activeOpacity={0.7} data-testid={`lesson-${lesson.slug}`}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={[s.lessonNum, done && { backgroundColor: '#34C759', borderColor: '#34C759' }]}>
+                  {done ? <Ionicons name="checkmark" size={14} color="#FFF" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textTertiary }}>{idx + 1}</Text>}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.lessonTitle, done && { color: colors.textSecondary }]}>{lesson.title}</Text>
+                  <Text style={s.lessonMeta}>{lesson.description}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={{ fontSize: 11, color: colors.textTertiary }}>{lesson.duration}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // ---- LESSON DETAIL VIEW ----
+  const renderLessonDetail = () => {
+    if (!selectedLesson || !selectedTrack) return null;
+    const done = progress[selectedLesson.id] || false;
+    const currIdx = selectedTrack.lessons.findIndex(l => l.id === selectedLesson.id);
+    const nextLesson = currIdx < selectedTrack.lessons.length - 1 ? selectedTrack.lessons[currIdx + 1] : null;
+    return (
+      <View>
+        <TouchableOpacity onPress={() => setSelectedLesson(null)} style={s.breadcrumb}>
+          <Ionicons name="arrow-back" size={18} color="#C9A962" />
+          <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '600' }}>{selectedTrack.title}</Text>
+        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <View style={[s.lessonNum, { width: 32, height: 32, borderRadius: 8, backgroundColor: selectedTrack.color + '18', borderColor: selectedTrack.color }]}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: selectedTrack.color }}>{currIdx + 1}</Text>
+          </View>
+          <Text style={s.lessonDetailTitle}>{selectedLesson.title}</Text>
+        </View>
+        <Text style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 20 }}>{selectedLesson.duration} read</Text>
+
+        {/* Content */}
+        <View style={s.contentCard}>
+          {renderMarkdown(selectedLesson.content)}
+        </View>
+
+        {/* Video */}
+        {selectedLesson.video_url ? (
+          <View style={[s.contentCard, { marginTop: 12 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Ionicons name="play-circle" size={20} color={selectedTrack.color} />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Watch the Video</Text>
+            </View>
+            <TouchableOpacity style={s.videoPlaceholder}>
+              <Ionicons name="play" size={32} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 13, marginTop: 4 }}>Open Video</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Action Steps */}
+        {selectedLesson.steps && selectedLesson.steps.length > 0 && (
+          <View style={[s.contentCard, { marginTop: 12, borderColor: selectedTrack.color, borderWidth: 1 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="list" size={18} color={selectedTrack.color} />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Action Steps</Text>
+            </View>
+            {selectedLesson.steps.map((step, i) => (
+              <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}>
+                <View style={[s.stepCheck, { borderColor: selectedTrack.color }]}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: selectedTrack.color }}>{i + 1}</Text>
+                </View>
+                <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>{step}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Mark Complete + Next */}
+        <View style={{ marginTop: 20, gap: 10 }}>
+          <TouchableOpacity style={[s.markBtn, done && s.markBtnDone]}
+            onPress={() => toggleComplete(selectedLesson.id, selectedTrack.id)}
+            disabled={saving} data-testid="mark-complete-btn">
+            <Ionicons name={done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={done ? '#FFF' : selectedTrack.color} />
+            <Text style={[s.markBtnText, done && { color: '#FFF' }]}>{done ? 'Completed!' : 'Mark as Complete'}</Text>
+          </TouchableOpacity>
+          {nextLesson && (
+            <TouchableOpacity style={s.nextBtn} onPress={() => { setSelectedLesson(nextLesson); scrollRef?.current?.scrollTo({ y: 0, animated: true }); }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textSecondary }}>Next: {nextLesson.title}</Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  const scrollRef = React.useRef<ScrollView>(null);
+
+  if (loading) return (
+    <SafeAreaView style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ActivityIndicator size="large" color="#C9A962" />
+    </SafeAreaView>
+  );
+
+  return (
+    <SafeAreaView style={s.container} edges={['top']}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => {
+          if (selectedLesson) setSelectedLesson(null);
+          else if (selectedTrack) setSelectedTrack(null);
+          else router.back();
+        }} style={s.headerBackBtn}>
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>{selectedLesson ? selectedLesson.title : selectedTrack ? selectedTrack.title : 'Training Hub'}</Text>
+        <View style={{ width: 36 }} />
+      </View>
+      <ScrollView ref={scrollRef} contentContainerStyle={s.content}
+        refreshControl={!selectedTrack ? <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor="#C9A962" /> : undefined}
+        showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {selectedLesson ? renderLessonDetail() : selectedTrack ? renderLessonList() : renderTrackList()}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: undefined,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: undefined,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: undefined,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  // Voice Help
-  voiceHelpSection: {
-    backgroundColor: undefined,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-  },
-  voiceHelpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  voiceHelpText: { flex: 1 },
-  voiceHelpTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: undefined,
-  },
-  voiceHelpSubtitle: {
-    fontSize: 13,
-    color: undefined,
-    marginTop: 2,
-  },
-  askContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'flex-end',
-  },
-  askInput: {
-    flex: 1,
-    backgroundColor: undefined,
-    borderRadius: 12,
-    padding: 14,
-    color: undefined,
-    fontSize: 15,
-    minHeight: 48,
-    maxHeight: 100,
-  },
-  askButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  voiceButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  voiceButtonActive: {
-    backgroundColor: '#FF3B30',
-  },
-  askButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#34C759',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  askButtonDisabled: {
-    backgroundColor: colors.borderLight,
-  },
-  aiResponseContainer: {
-    marginTop: 16,
-    backgroundColor: undefined,
-    borderRadius: 12,
-    padding: 16,
-  },
-  aiResponseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  aiResponseLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#C9A962',
-  },
-  aiResponseText: {
-    fontSize: 15,
-    color: undefined,
-    lineHeight: 22,
-  },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 12,
-  },
-  clearButtonText: {
-    fontSize: 13,
-    color: undefined,
-  },
-  // Search
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: undefined,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-    marginBottom: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: undefined,
-  },
-  // Category Filter
-  categoryFilterRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingBottom: 16,
-  },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: undefined,
-    borderRadius: 20,
-  },
-  categoryChipActive: {
-    backgroundColor: '#007AFF',
-  },
-  categoryChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: undefined,
-  },
-  categoryChipTextActive: {
-    color: undefined,
-  },
-  // Category Section
-  categorySection: {
-    marginBottom: 24,
-  },
-  categoryTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: undefined,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  // Topic Card
-  topicCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: undefined,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    gap: 14,
-  },
-  topicCardExpanded: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    marginBottom: 0,
-  },
-  topicIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topicContent: {
-    flex: 1,
-  },
-  topicTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: undefined,
-    marginBottom: 4,
-  },
-  topicDescription: {
-    fontSize: 13,
-    color: undefined,
-  },
-  topicMeta: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  topicDuration: {
-    fontSize: 12,
-    color: '#6E6E73',
-  },
-  videoBadge: {
-    backgroundColor: '#FF2D5520',
-    borderRadius: 10,
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Expanded Panel
-  expandedPanel: {
-    backgroundColor: undefined,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    marginBottom: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.surface,
-  },
-  expandedText: {
-    fontSize: 14,
-    color: '#E5E5E7',
-    lineHeight: 22,
-    marginTop: 16,
-  },
-  // Video
-  videoContainer: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 16,
-    backgroundColor: undefined,
-  },
-  videoPlaceholder: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: 12,
-    backgroundColor: undefined,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FF2D55',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  videoPlaceholderText: {
-    fontSize: 13,
-    color: undefined,
-  },
-  // Steps
-  stepsContainer: {
-    marginTop: 16,
-    backgroundColor: undefined,
-    borderRadius: 12,
-    padding: 16,
-  },
-  stepsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#C9A962',
-    marginBottom: 12,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-    gap: 10,
-  },
-  stepBullet: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#007AFF30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  stepBulletText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#E5E5E7',
-    lineHeight: 20,
-  },
-  // Go To Button
-  goToButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF20',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginTop: 16,
-    gap: 8,
-  },
-  goToButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
+const getS = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  headerBackBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
+  content: { padding: 20, paddingBottom: 60, maxWidth: 700, alignSelf: 'center', width: '100%' },
+  heroSection: { alignItems: 'center', paddingVertical: 24 },
+  heroIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  heroTitle: { fontSize: 26, fontWeight: '800', color: colors.text, marginBottom: 8 },
+  heroDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, maxWidth: 400 },
+  overallProgress: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
+  progressBar: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#C9A962', borderRadius: 3 },
+  trackCard: { backgroundColor: colors.card, borderRadius: 14, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  trackIconBox: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  trackTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  trackDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16, paddingVertical: 4 },
+  sectionTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 },
+  lessonCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+  lessonNum: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  lessonTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
+  lessonMeta: { fontSize: 12, color: colors.textTertiary, marginTop: 2 },
+  lessonDetailTitle: { fontSize: 22, fontWeight: '800', color: colors.text, flex: 1 },
+  contentCard: { backgroundColor: colors.card, borderRadius: 14, padding: 20, borderWidth: 1, borderColor: colors.border },
+  mdH2: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 16, marginBottom: 8 },
+  mdH3: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 12, marginBottom: 6 },
+  mdParagraph: { fontSize: 15, color: colors.text, lineHeight: 22, marginBottom: 4 },
+  mdQuote: { borderLeftWidth: 3, borderLeftColor: '#C9A962', paddingLeft: 14, paddingVertical: 8, marginVertical: 8, backgroundColor: '#C9A96210', borderRadius: 4 },
+  mdQuoteText: { fontSize: 15, color: colors.text, fontStyle: 'italic', lineHeight: 22 },
+  mdListItem: { flexDirection: 'row', gap: 8, paddingVertical: 2, paddingLeft: 4 },
+  mdBullet: { fontSize: 15, color: '#C9A962', fontWeight: '700', width: 16 },
+  mdListText: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
+  mdItalic: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic', marginVertical: 4 },
+  videoPlaceholder: { height: 120, borderRadius: 10, backgroundColor: '#333', alignItems: 'center', justifyContent: 'center' },
+  stepCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  markBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 14, borderWidth: 2, borderColor: '#C9A962' },
+  markBtnDone: { backgroundColor: '#34C759', borderColor: '#34C759' },
+  markBtnText: { fontSize: 16, fontWeight: '700', color: '#C9A962' },
+  nextBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
 });
