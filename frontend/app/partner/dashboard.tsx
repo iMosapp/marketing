@@ -219,7 +219,7 @@ export default function PartnerDashboard() {
 const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   content: { padding: 16, paddingBottom: 40, maxWidth: 700, alignSelf: 'center', width: '100%' },
   onboardBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#C9A962', borderRadius: 16, padding: 18, gap: 14, marginBottom: 16 },

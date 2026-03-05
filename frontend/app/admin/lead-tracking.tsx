@@ -90,8 +90,8 @@ export default function LeadTrackingDashboard() {
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="lead-tracking-back">
+      <View style={[s.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={[s.backBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]} data-testid="lead-tracking-back">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -108,11 +108,11 @@ export default function LeadTrackingDashboard() {
         {PERIODS.map(p => (
           <TouchableOpacity
             key={p.days}
-            style={[s.periodTab, period === p.days && s.periodTabActive]}
+            style={[s.periodTab, { backgroundColor: colors.card }, period === p.days && s.periodTabActive]}
             onPress={() => setPeriod(p.days)}
             data-testid={`period-${p.label}`}
           >
-            <Text style={[s.periodText, period === p.days && s.periodTextActive]}>{p.label}</Text>
+            <Text style={[s.periodText, { color: colors.textSecondary }, period === p.days && s.periodTextActive]}>{p.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -169,7 +169,7 @@ export default function LeadTrackingDashboard() {
                     <Ionicons name={info.icon as any} size={16} color={info.color} />
                   </View>
                   <Text style={[s.channelLabel, { color: colors.text }]}>{info.label}</Text>
-                  <View style={s.channelBar}>
+                  <View style={[s.channelBar, { backgroundColor: colors.border }]}>
                     <View style={[s.channelBarFill, { width: `${pct}%`, backgroundColor: info.color }]} />
                   </View>
                   <Text style={[s.channelCount, { color: colors.text }]}>{ch.count}</Text>
@@ -190,7 +190,7 @@ export default function LeadTrackingDashboard() {
                 <Text style={[s.pageRank, { color: colors.textSecondary }]}>{i + 1}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.pageLabel, { color: colors.text }]}>{formatPage(pg.page)}</Text>
-                  <View style={s.pageBarTrack}>
+                  <View style={[s.pageBarTrack, { backgroundColor: colors.border }]}>
                     <View style={[s.pageBarFill, { width: `${(pg.count / maxBarVal) * 100}%` }]} />
                   </View>
                 </View>
@@ -247,7 +247,7 @@ export default function LeadTrackingDashboard() {
                 </Text>
               </View>
             ) : data.by_campaign.map((c, i) => (
-              <View key={i} style={s.campaignRow}>
+              <View key={i} style={[s.campaignRow, { borderBottomColor: colors.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.campaignName, { color: colors.text }]}>{c.campaign}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary }}>{c.utm_source} / {c.utm_medium}</Text>
@@ -333,14 +333,14 @@ export default function LeadTrackingDashboard() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: Platform.OS === 'web' ? 20 : 56, paddingBottom: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F5F7', alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800' },
   subtitle: { fontSize: 13, marginTop: 2 },
   refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF12', alignItems: 'center', justifyContent: 'center' },
   periodRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 16 },
-  periodTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F5F5F7' },
+  periodTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   periodTabActive: { backgroundColor: '#007AFF' },
-  periodText: { fontSize: 13, fontWeight: '600', color: '#6E6E73' },
+  periodText: { fontSize: 13, fontWeight: '600' },
   periodTextActive: { color: '#FFF' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 16, paddingBottom: 40 },

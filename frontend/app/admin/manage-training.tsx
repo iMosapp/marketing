@@ -433,7 +433,7 @@ const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center' },
   saveBtn: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#C9A962', borderRadius: 8 },
   saveBtnText: { color: '#000', fontWeight: '700', fontSize: 14 },
