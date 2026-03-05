@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../services/api';
@@ -279,6 +279,15 @@ export default function InboxScreen() {
   useEffect(() => {
     loadConversations();
   }, [user]);
+
+  // Re-fetch conversations every time the Inbox tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadConversations();
+      }
+    }, [user])
+  );
   
   const loadConversations = async () => {
     if (!user) return;

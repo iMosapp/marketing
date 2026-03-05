@@ -1110,7 +1110,13 @@ export default function ContactDetailScreen() {
         }
       }
 
-      const messageContent = photoUrl ? `${content || ''}\n${photoUrl}`.trim() : (content || '');
+      // Make photo URL absolute so it's a clickable link in SMS
+      let absolutePhotoUrl = photoUrl;
+      if (photoUrl && photoUrl.startsWith('/')) {
+        const baseUrl = IS_WEB ? window.location.origin : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
+        absolutePhotoUrl = `${baseUrl}${photoUrl}`;
+      }
+      const messageContent = absolutePhotoUrl ? `${content || ''}\n${absolutePhotoUrl}`.trim() : (content || '');
       
       // Create or get existing conversation for this contact
       const conv = await messagesAPI.createConversation(user._id, {
