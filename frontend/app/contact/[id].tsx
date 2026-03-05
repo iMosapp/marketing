@@ -593,7 +593,7 @@ export default function ContactDetailScreen() {
     if (!user) return;
     try {
       // Load templates
-      const templatesRes = await api.get(`/messages/templates/${user._id}`).catch(() => ({ data: [] }));
+      const templatesRes = await api.get(`/templates/${user._id}`).catch(() => ({ data: [] }));
       setTemplates(Array.isArray(templatesRes.data) ? templatesRes.data : []);
 
       // Load review links from user-level first

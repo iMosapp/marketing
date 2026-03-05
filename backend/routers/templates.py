@@ -62,23 +62,59 @@ DEFAULT_TEMPLATES = [
 
 @router.get("/{user_id}")
 async def get_templates(user_id: str):
-    """Get all templates for a user (including defaults)"""
+    """Get all templates for a user (including org-level and defaults)"""
     db = get_db()
     
-    # Get user's custom templates
+    # Get user's own templates
     user_templates = await db.templates.find(
         {"user_id": user_id}
     ).sort("name", 1).to_list(100)
     
-    # Convert ObjectIds
+    # Also get org-level templates (created by admin/manager in same org)
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"org_id": 1, "store_id": 1})
+    org_templates = []
+    if user_doc:
+        org_id = user_doc.get("org_id")
+        store_id = user_doc.get("store_id")
+        if org_id:
+            # Find templates from other users in the same org that are marked shared or default
+            org_users = await db.users.find(
+                {"org_id": org_id, "_id": {"$ne": ObjectId(user_id)}},
+                {"_id": 1}
+            ).to_list(50)
+            org_user_ids = [str(u["_id"]) for u in org_users]
+            if org_user_ids:
+                org_templates = await db.templates.find(
+                    {"user_id": {"$in": org_user_ids}, "is_default": True}
+                ).sort("name", 1).to_list(100)
+        elif store_id:
+            # Use store_id to find org templates
+            store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"org_id": 1})
+            if store and store.get("org_id"):
+                org_users = await db.users.find(
+                    {"org_id": store["org_id"], "_id": {"$ne": ObjectId(user_id)}},
+                    {"_id": 1}
+                ).to_list(50)
+                org_user_ids = [str(u["_id"]) for u in org_users]
+                if org_user_ids:
+                    org_templates = await db.templates.find(
+                        {"user_id": {"$in": org_user_ids}, "is_default": True}
+                    ).sort("name", 1).to_list(100)
+    
+    # Merge: user's templates first, then org templates (avoid dupes by name)
+    user_names = {t.get("name", "").lower() for t in user_templates}
     templates = []
     for t in user_templates:
         t["_id"] = str(t["_id"])
         templates.append(t)
+    for t in org_templates:
+        if t.get("name", "").lower() not in user_names:
+            t["_id"] = str(t["_id"])
+            t["is_org_template"] = True
+            templates.append(t)
     
-    # If user has no templates, return defaults
+    # If user has no templates at all, create defaults
     if not templates:
-        # Create default templates for this user
         for default in DEFAULT_TEMPLATES:
             template = {
                 "user_id": user_id,
