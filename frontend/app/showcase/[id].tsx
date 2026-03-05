@@ -520,6 +520,36 @@ export default function ShowcasePage() {
           ))
         )}
 
+        {/* Refer a Friend */}
+        {!isStoreView && (
+          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+            <TouchableOpacity
+              style={[styles.referralBanner, { borderColor: accent + '40' }]}
+              onPress={() => {
+                const shareText = `Check out this showcase! ${typeof window !== 'undefined' ? window.location.href : ''}`;
+                if (Platform.OS === 'web') {
+                  if (typeof navigator !== 'undefined' && navigator.share) {
+                    navigator.share({ title: 'Refer a Friend', text: shareText, url: window.location.href });
+                  } else if (typeof navigator !== 'undefined') {
+                    navigator.clipboard?.writeText(shareText);
+                    alert('Link copied! Share it with a friend.');
+                  }
+                } else {
+                  Share.share({ message: shareText });
+                }
+              }}
+              data-testid="showcase-refer-friend"
+            >
+              <Ionicons name="people" size={20} color="#34C759" />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.referralTitle}>Know someone who could use my services?</Text>
+                <Text style={styles.referralSub}>Tap to refer a friend</Text>
+              </View>
+              <Ionicons name="share-outline" size={18} color="#34C759" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Footer */}
         <PoweredByFooter />
       </ScrollView>
@@ -740,6 +770,12 @@ const styles = StyleSheet.create({
   },
   reviewSubmitBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 4 },
   reviewSubmitText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  referralBanner: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E',
+    borderRadius: 14, padding: 16, borderWidth: 1,
+  },
+  referralTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  referralSub: { color: '#34C759', fontSize: 13, marginTop: 2, fontWeight: '500' },
 
   // QR
   qrContainer: { alignItems: 'center', marginTop: 4, padding: 16, backgroundColor: '#111', borderRadius: 16 },

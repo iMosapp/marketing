@@ -146,6 +146,10 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   congrats_card_sent: 'Congrats Card Sent',
   birthday_card_sent: 'Birthday Card Sent',
   thank_you_card_sent: 'Thank You Card Sent',
+  thankyou_card_sent: 'Thank You Card Sent',
+  holiday_card_sent: 'Holiday Card Sent',
+  welcome_card_sent: 'Welcome Card Sent',
+  anniversary_card_sent: 'Anniversary Card Sent',
   vcard_sent: 'vCard Shared',
   showcase_shared: 'Showcase Shared',
   link_page_shared: 'Link Page Shared',
@@ -157,8 +161,19 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   note_updated: 'Note Updated',
   customer_reply: 'Customer Reply',
   congrats_card_viewed: 'Viewed Congrats Card',
-  congrats_card_download: 'Downloaded Card',
-  congrats_card_share: 'Shared Card',
+  birthday_card_viewed: 'Viewed Birthday Card',
+  thankyou_card_viewed: 'Viewed Thank You Card',
+  holiday_card_viewed: 'Viewed Holiday Card',
+  welcome_card_viewed: 'Viewed Welcome Card',
+  anniversary_card_viewed: 'Viewed Anniversary Card',
+  congrats_card_download: 'Downloaded Congrats Card',
+  birthday_card_download: 'Downloaded Birthday Card',
+  thankyou_card_download: 'Downloaded Thank You Card',
+  holiday_card_download: 'Downloaded Holiday Card',
+  congrats_card_share: 'Shared Congrats Card',
+  birthday_card_share: 'Shared Birthday Card',
+  thankyou_card_share: 'Shared Thank You Card',
+  holiday_card_share: 'Shared Holiday Card',
   review_submitted: 'Left a Review',
   review_link_clicked: 'Clicked Review Link',
   digital_card_viewed: 'Viewed Digital Card',
@@ -3256,7 +3271,7 @@ export default function ContactDetailScreen() {
 
       {/* Full Photo Viewer Modal with Gallery */}
       <Modal visible={showPhotoViewer} animationType="fade" transparent onRequestClose={() => setShowPhotoViewer(false)}>
-        <View style={s.photoViewerOverlay}>
+        <SafeAreaView style={s.photoViewerOverlay} edges={['top', 'bottom']}>
           {IS_WEB ? (
             <button
               type="button"
@@ -3264,7 +3279,7 @@ export default function ContactDetailScreen() {
               data-testid="close-photo-viewer"
               style={{ position: 'absolute', top: 16, right: 16, zIndex: 100, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: 20, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
-              <Ionicons name="close" size={28} color={colors.text} />
+              <Ionicons name="close" size={28} color="#FFF" />
             </button>
           ) : (
             <TouchableOpacity
@@ -3272,7 +3287,7 @@ export default function ContactDetailScreen() {
               onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
               data-testid="close-photo-viewer"
             >
-              <Ionicons name="close" size={28} color={colors.text} />
+              <Ionicons name="close" size={28} color="#FFF" />
             </TouchableOpacity>
           )}
 
@@ -3422,7 +3437,7 @@ export default function ContactDetailScreen() {
                     <Image source={{ uri: photo.url }} style={s.galleryTileImg} resizeMode="cover" />
                     <View style={s.galleryTileBadge}>
                       <Text style={s.galleryTileBadgeText}>
-                        {photo.type === 'profile' ? 'Profile' : photo.type === 'congrats' ? 'Congrats' : photo.type === 'birthday' ? 'Birthday' : photo.type}
+                        {photo.type === 'profile' ? 'Profile' : (photo.type || '').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -3432,7 +3447,7 @@ export default function ContactDetailScreen() {
           ) : (
             <Text style={{ color: colors.textSecondary, fontSize: 16 }}>No photos available</Text>
           )}
-        </View>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -4034,8 +4049,8 @@ const getS = (colors: any) => StyleSheet.create({
     flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerClose: {
-    position: 'absolute', top: 50, right: 20, zIndex: 10, width: 40, height: 40,
-    borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center',
+    position: 'absolute', top: 12, right: 16, zIndex: 10, width: 44, height: 44,
+    borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center',
   },
   photoViewerContent: {
     width: '90%', maxHeight: '80%', justifyContent: 'center', alignItems: 'center',

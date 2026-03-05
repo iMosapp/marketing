@@ -710,6 +710,34 @@ export default function DigitalCardPage() {
             )}
           </View>
 
+          {/* Refer a Friend */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.referralBanner}
+              onPress={() => {
+                const shareText = `Check out ${user.name || 'my contact'}! ${typeof window !== 'undefined' ? window.location.href : ''}`;
+                if (Platform.OS === 'web') {
+                  if (navigator.share) {
+                    navigator.share({ title: `Refer ${user.name}`, text: shareText, url: window.location.href });
+                  } else {
+                    navigator.clipboard?.writeText(shareText);
+                    alert('Link copied! Share it with a friend.');
+                  }
+                } else {
+                  Share.share({ message: shareText });
+                }
+              }}
+              data-testid="refer-friend-btn"
+            >
+              <Ionicons name="people" size={22} color="#34C759" />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.referralBannerTitle}>Know someone who could use my services?</Text>
+                <Text style={styles.referralBannerSub}>Tap to refer a friend</Text>
+              </View>
+              <Ionicons name="share-outline" size={20} color="#34C759" />
+            </TouchableOpacity>
+          </View>
+
           {/* Bio Section */}
           {user.bio && (
             <View style={styles.section}>
@@ -1346,6 +1374,17 @@ const styles = StyleSheet.create({
   },
   reviewCTABannerTitle: { color: '#FFF', fontSize: 16, fontWeight: '700' },
   reviewCTABannerSub: { color: '#C9A962', fontSize: 13, marginTop: 2, fontWeight: '500' },
+  referralBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1C',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#34C75940',
+  },
+  referralBannerTitle: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  referralBannerSub: { color: '#34C759', fontSize: 13, marginTop: 2, fontWeight: '500' },
   feedbackCard: {
     backgroundColor: '#1A1A1C',
     borderRadius: 12,

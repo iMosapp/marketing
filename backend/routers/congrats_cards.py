@@ -279,7 +279,7 @@ async def create_congrats_card(
                     {"$set": {
                         "photo_thumbnail": thumbnail,
                         "photo_url": thumbnail,
-                        "photo_source": "congrats_card"
+                        "photo_source": card_type
                     }}
                 )
                 # Store full-res separately
@@ -297,7 +297,7 @@ async def create_congrats_card(
                 # Fallback: store original as photo_url
                 await db.contacts.update_one(
                     {"_id": contact["_id"]},
-                    {"$set": {"photo_url": photo_url, "photo_source": "congrats_card"}}
+                    {"$set": {"photo_url": photo_url, "photo_source": card_type}}
                 )
             contact_updated = True
             print(f"[CongratsCard] Updated contact {contact.get('first_name', '')} {contact.get('last_name', '')} avatar from congrats card photo")
@@ -349,10 +349,10 @@ async def create_congrats_card(
     
     short_url_result = await create_short_url(
         original_url=full_card_url,
-        link_type="congrats_card",
+        link_type=f"{card_type}_card",
         reference_id=card_id,
         user_id=salesman_id,
-        metadata={"customer_name": customer_name}
+        metadata={"customer_name": customer_name, "card_type": card_type}
     )
     
     # Update card with short URL
@@ -478,23 +478,25 @@ async def track_card_action(card_id: str, data: dict):
         {"$inc": {field: 1}}
     )
     
-    # Log activity: customer downloaded/shared their congrats card
+    # Log activity: customer downloaded/shared their card
     try:
         card = await db.congrats_cards.find_one({"card_id": card_id}, {"salesman_id": 1, "customer_phone": 1, "customer_name": 1, "card_type": 1})
         if card and card.get("salesman_id"):
             from utils.contact_activity import log_activity_for_customer
             action_label = "Downloaded" if action == "download" else "Shared"
+            ct = card.get("card_type", "congrats")
+            ct_display = ct.replace("_", " ").title()
             await log_activity_for_customer(
                 user_id=card["salesman_id"],
                 customer_phone=card.get("customer_phone"),
                 customer_name=card.get("customer_name"),
-                event_type=f"congrats_card_{action}",
-                title=f"{action_label} Congrats Card",
-                description=f"{card.get('customer_name', 'Customer')} {action_label.lower()} their {card.get('card_type', 'congrats')} card",
+                event_type=f"{ct}_card_{action}",
+                title=f"{action_label} {ct_display} Card",
+                description=f"{card.get('customer_name', 'Customer')} {action_label.lower()} their {ct} card",
                 icon="download" if action == "download" else "share-social",
                 color="#34C759" if action == "download" else "#007AFF",
                 category="customer_activity",
-                metadata={"card_id": card_id, "action": action},
+                metadata={"card_id": card_id, "action": action, "card_type": ct},
             )
     except Exception as e:
         print(f"[CongratsCard] Failed to log {action} activity: {e}")
