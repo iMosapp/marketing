@@ -164,12 +164,12 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
 
     contact_id = str(conv["contact_id"])
 
-    # Avoid duplicate events within a short window (1 hour)
+    # Avoid duplicate events within a short window (5 minutes)
     from datetime import timedelta
     recent = await db.contact_events.find_one({
         "contact_id": contact_id,
         "event_type": event_type,
-        "timestamp": {"$gte": datetime.utcnow() - timedelta(hours=1)},
+        "timestamp": {"$gte": datetime.utcnow() - timedelta(minutes=5)},
     })
     if recent:
         return

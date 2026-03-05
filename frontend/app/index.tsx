@@ -40,15 +40,21 @@ export default function Index() {
     }
   }, [mounted, isLoading, isAuthenticated, user]);
   
-  // Fallback timeout for web
+  // Fallback timeout — only for truly stuck loading states (10s safety net)
   useEffect(() => {
     if (!mounted || redirectPath) return;
     
     const timer = setTimeout(() => {
-      if (!redirectPath) {
-        setRedirectPath('/auth/login');
+      if (!redirectPath && isLoading) {
+        // Force reload auth one more time before giving up
+        loadAuth().finally(() => {
+          const { isAuthenticated: authNow } = useAuthStore.getState();
+          if (!authNow) {
+            setRedirectPath('/auth/login');
+          }
+        });
       }
-    }, 2000);
+    }, 10000);
     
     return () => clearTimeout(timer);
   }, [mounted, redirectPath]);

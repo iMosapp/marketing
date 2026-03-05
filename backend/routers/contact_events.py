@@ -143,17 +143,28 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
     except Exception as e:
         logger.error(f"Error fetching campaign upcoming: {e}")
 
-    # 3) Suggested actions across all contacts
+    # 3) Suggested actions — check only contacts with upcoming dates (lightweight)
     suggested = []
     try:
-        all_contacts = await db.contacts.find(
-            {"user_id": user_id, "status": {"$ne": "deleted"}},
-            {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "birthday": 1, "date_sold": 1, "purchase_date": 1, "tags": 1}
-        ).to_list(500)
+        # Only query contacts that actually HAVE birthday or date_sold fields
+        date_filter = {
+            "user_id": user_id,
+            "status": {"$ne": "deleted"},
+            "$or": [
+                {"birthday": {"$exists": True, "$ne": None}},
+                {"date_sold": {"$exists": True, "$ne": None}},
+                {"purchase_date": {"$exists": True, "$ne": None}},
+            ]
+        }
+        date_contacts = await db.contacts.find(
+            date_filter,
+            {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1, "birthday": 1, "date_sold": 1, "purchase_date": 1, "tags": 1}
+        ).limit(50).to_list(50)
 
-        for contact in all_contacts:
+        for contact in date_contacts:
             cid = str(contact["_id"])
             name = contact.get("first_name", "")
+            contact_info = {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo_thumbnail") or contact.get("photo_url") or contact.get("photo"), "tags": contact.get("tags", [])}
 
             # Birthday check
             bday = contact.get("birthday")
@@ -163,14 +174,11 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
                     days_until = (bday_aware - now).days % 365
                     if days_until <= 3:
                         suggested.append({
-                            "type": "suggested",
-                            "priority": 0,
+                            "type": "suggested", "priority": 0,
                             "title": f"Birthday {'today' if days_until == 0 else f'in {days_until}d'}!",
                             "description": f"Send {name} a birthday card",
-                            "icon": "gift",
-                            "color": "#FF9500",
-                            "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo_thumbnail") or contact.get("photo_url") or contact.get("photo"), "tags": contact.get("tags", [])},
-                            "action": "congrats",
+                            "icon": "gift", "color": "#FF9500",
+                            "contact": contact_info, "action": "congrats",
                             "suggested_message": f"Happy Birthday, {name}! Hope you have an amazing day!",
                         })
                 except Exception:
@@ -185,15 +193,12 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
                     for milestone in [30, 60, 90]:
                         if milestone - 2 <= days_since <= milestone + 2:
                             suggested.append({
-                                "type": "suggested",
-                                "priority": 1,
+                                "type": "suggested", "priority": 1,
                                 "title": f"{milestone}-day check-in",
                                 "description": f"Follow up with {name}",
-                                "icon": "time",
-                                "color": "#34C759",
-                                "contact": {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo_thumbnail") or contact.get("photo_url") or contact.get("photo"), "tags": contact.get("tags", [])},
-                                "action": "sms",
-                                "suggested_message": f"Hey {name}! It's been {milestone} days  - how's everything going? Let me know if you need anything!",
+                                "icon": "time", "color": "#34C759",
+                                "contact": contact_info, "action": "sms",
+                                "suggested_message": f"Hey {name}! It's been {milestone} days - how's everything going? Let me know if you need anything!",
                             })
                             break
                 except Exception:

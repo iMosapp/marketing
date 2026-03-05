@@ -389,24 +389,37 @@ async def get_congrats_card(card_id: str):
         {"$inc": {"views": 1}}
     )
     
-    # Log activity: customer viewed their congrats card
+    # Log activity: customer viewed their card (specific to card type)
     try:
         from utils.contact_activity import log_activity_for_customer
         salesman_id = card.get("salesman_id")
         customer_phone = card.get("customer_phone")
         customer_name = card.get("customer_name")
+        card_type = card.get("card_type", "congrats")
+        
+        # Build type-specific event info
+        card_type_labels = {
+            "congrats": ("Viewed Congrats Card", "congrats_card_viewed"),
+            "birthday": ("Viewed Birthday Card", "birthday_card_viewed"),
+            "anniversary": ("Viewed Anniversary Card", "anniversary_card_viewed"),
+            "thankyou": ("Viewed Thank You Card", "thankyou_card_viewed"),
+            "welcome": ("Viewed Welcome Card", "welcome_card_viewed"),
+            "holiday": ("Viewed Holiday Card", "holiday_card_viewed"),
+        }
+        title, event_type = card_type_labels.get(card_type, (f"Viewed {card_type.title()} Card", f"{card_type}_card_viewed"))
+        
         if salesman_id:
             await log_activity_for_customer(
                 user_id=salesman_id,
                 customer_phone=customer_phone,
                 customer_name=customer_name,
-                event_type="congrats_card_viewed",
-                title="Viewed Congrats Card",
-                description=f"{customer_name or 'Customer'} opened their {card.get('card_type', 'congrats')} card",
+                event_type=event_type,
+                title=title,
+                description=f"{customer_name or 'Customer'} opened their {card_type} card",
                 icon="eye",
                 color="#C9A962",
                 category="customer_activity",
-                metadata={"card_id": card_id, "card_type": card.get("card_type", "congrats"), "views": card.get("views", 0) + 1},
+                metadata={"card_id": card_id, "card_type": card_type, "views": card.get("views", 0) + 1},
             )
     except Exception as e:
         print(f"[CongratsCard] Failed to log card view activity: {e}")
