@@ -47,11 +47,9 @@ KEY_ACTIONS = [
 async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
     """
     Aggregate a social-media-style feed across ALL contacts for a user.
-    Returns recent events + upcoming campaign actions + suggested next steps.
+    Returns recent events. Campaign/suggested data loads separately via dedicated endpoints.
     """
     db = get_db()
-
-    now = datetime.now(timezone.utc)
 
     # 1) Recent events across all contacts (newest first)
     recent_events = await db.contact_events.find(
@@ -59,23 +57,29 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
         {"_id": 0, "photo": 0}
     ).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
 
-    # Get all contact IDs referenced
+    # Get all unique contact IDs
     contact_ids = list({e.get("contact_id") for e in recent_events if e.get("contact_id")})
 
-    # Bulk fetch contact info
+    # Bulk fetch contact info — only small fields, exclude heavy photo
     contacts_map = {}
     if contact_ids:
         try:
             oids = [ObjectId(cid) for cid in contact_ids]
             contacts_cursor = db.contacts.find(
                 {"_id": {"$in": oids}},
-                {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1, "tags": 1, "vehicle": 1}
+                {"_id": 1, "first_name": 1, "last_name": 1, "photo_thumbnail": 1, "photo_url": 1, "photo": 1, "tags": 1, "vehicle": 1}
             )
             async for c in contacts_cursor:
+                # Prefer thumbnail/url; fall back to photo only if it's a URL (not base64 blob)
+                photo = c.get("photo_thumbnail") or c.get("photo_url")
+                if not photo:
+                    raw = c.get("photo") or ""
+                    if raw and not raw.startswith("data:") and len(raw) < 500:
+                        photo = raw
                 contacts_map[str(c["_id"])] = {
                     "id": str(c["_id"]),
                     "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
-                    "photo": c.get("photo_thumbnail") or c.get("photo_url") or c.get("photo"),
+                    "photo": photo,
                     "tags": c.get("tags", []),
                     "vehicle": c.get("vehicle", ""),
                 }
@@ -104,114 +108,10 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
             "channel": evt.get("channel"),
         })
 
-    # 2) Upcoming campaign events (next 48 hours)
-    upcoming = []
-    try:
-        enrollments = await db.campaign_enrollments.find(
-            {"user_id": user_id, "status": "active"}
-        ).to_list(100)
-        for enrollment in enrollments[:20]:
-            cid = enrollment.get("contact_id")
-            contact_info = contacts_map.get(cid)
-            if not contact_info:
-                try:
-                    c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"_id": 0, "first_name": 1, "last_name": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1})
-                    if c:
-                        contact_info = {"id": cid, "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(), "photo": c.get("photo_thumbnail") or c.get("photo_url") or c.get("photo"), "tags": [], "vehicle": ""}
-                except Exception:
-                    pass
-            if contact_info:
-                try:
-                    campaign = await db.campaigns.find_one({"_id": ObjectId(enrollment.get("campaign_id"))}, {"_id": 0, "name": 1, "steps": 1})
-                    if campaign:
-                        step_idx = enrollment.get("current_step", 0)
-                        steps = campaign.get("steps", [])
-                        if step_idx < len(steps):
-                            upcoming.append({
-                                "type": "campaign_upcoming",
-                                "title": f"Campaign: {campaign['name']}",
-                                "description": f"Step {step_idx + 1} of {len(steps)}  - {steps[step_idx].get('type', 'action')}",
-                                "icon": "rocket",
-                                "color": "#AF52DE",
-                                "contact": contact_info,
-                                "campaign_name": campaign["name"],
-                                "step_number": step_idx + 1,
-                                "total_steps": len(steps),
-                            })
-                except Exception:
-                    pass
-    except Exception as e:
-        logger.error(f"Error fetching campaign upcoming: {e}")
-
-    # 3) Suggested actions — check only contacts with upcoming dates (lightweight)
-    suggested = []
-    try:
-        # Only query contacts that actually HAVE birthday or date_sold fields
-        date_filter = {
-            "user_id": user_id,
-            "status": {"$ne": "deleted"},
-            "$or": [
-                {"birthday": {"$exists": True, "$ne": None}},
-                {"date_sold": {"$exists": True, "$ne": None}},
-                {"purchase_date": {"$exists": True, "$ne": None}},
-            ]
-        }
-        date_contacts = await db.contacts.find(
-            date_filter,
-            {"_id": 1, "first_name": 1, "last_name": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1, "birthday": 1, "date_sold": 1, "purchase_date": 1, "tags": 1}
-        ).limit(50).to_list(50)
-
-        for contact in date_contacts:
-            cid = str(contact["_id"])
-            name = contact.get("first_name", "")
-            contact_info = {"id": cid, "name": f"{name} {contact.get('last_name','')}".strip(), "photo": contact.get("photo_thumbnail") or contact.get("photo_url") or contact.get("photo"), "tags": contact.get("tags", [])}
-
-            # Birthday check
-            bday = contact.get("birthday")
-            if bday and hasattr(bday, "month"):
-                try:
-                    bday_aware = bday.replace(year=now.year, tzinfo=timezone.utc) if not getattr(bday, 'tzinfo', None) else bday.replace(year=now.year)
-                    days_until = (bday_aware - now).days % 365
-                    if days_until <= 3:
-                        suggested.append({
-                            "type": "suggested", "priority": 0,
-                            "title": f"Birthday {'today' if days_until == 0 else f'in {days_until}d'}!",
-                            "description": f"Send {name} a birthday card",
-                            "icon": "gift", "color": "#FF9500",
-                            "contact": contact_info, "action": "congrats",
-                            "suggested_message": f"Happy Birthday, {name}! Hope you have an amazing day!",
-                        })
-                except Exception:
-                    pass
-
-            # 30-day follow-up
-            sold = contact.get("date_sold") or contact.get("purchase_date")
-            if sold and hasattr(sold, "date"):
-                try:
-                    sold_aware = sold.replace(tzinfo=timezone.utc) if not getattr(sold, 'tzinfo', None) else sold
-                    days_since = (now - sold_aware).days
-                    for milestone in [30, 60, 90]:
-                        if milestone - 2 <= days_since <= milestone + 2:
-                            suggested.append({
-                                "type": "suggested", "priority": 1,
-                                "title": f"{milestone}-day check-in",
-                                "description": f"Follow up with {name}",
-                                "icon": "time", "color": "#34C759",
-                                "contact": contact_info, "action": "sms",
-                                "suggested_message": f"Hey {name}! It's been {milestone} days - how's everything going? Let me know if you need anything!",
-                            })
-                            break
-                except Exception:
-                    pass
-
-        suggested.sort(key=lambda x: x.get("priority", 99))
-    except Exception as e:
-        logger.error(f"Error generating suggested actions: {e}")
-
     return {
         "feed": feed_items,
-        "upcoming": upcoming[:10],
-        "suggested": suggested[:10],
+        "upcoming": [],
+        "suggested": [],
         "total_events": len(feed_items),
         "has_more": len(feed_items) == limit,
     }

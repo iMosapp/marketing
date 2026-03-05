@@ -599,6 +599,9 @@ async def startup_event():
                     db.users.create_index("role"),
                     db.contact_photos.create_index("contact_id", unique=True),
                     db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
+                    db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
+                    db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
+                    db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
                 ), timeout=15)
                 logger.info("Database indexes created/verified")
             except asyncio.TimeoutError:

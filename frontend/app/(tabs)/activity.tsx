@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Image,
-  ActivityIndicator, RefreshControl,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
+  ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,7 +86,7 @@ export default function ActivityTab() {
   const loadFeed = useCallback(async () => {
     if (!userId) return;
     try {
-      const resp = await api.get(`/contacts/${userId}/master-feed?limit=50`);
+      const resp = await api.get(`/contacts/${userId}/master-feed?limit=100`);
       setFeed(resp.data.feed || []);
     } catch (e) {
       console.error('Failed to load activity feed:', e);
@@ -148,6 +148,7 @@ export default function ActivityTab() {
 
     const isInbound = item.is_inbound;
     const evtLabel = FEED_EVENT_LABELS[item.event_type] || item.title || 'Activity';
+    const photoUri = item.contact?.photo;
 
     return (
       <TouchableOpacity
@@ -157,8 +158,18 @@ export default function ActivityTab() {
         data-testid={`activity-event-item`}
       >
         <View style={s.avatarGroup}>
-          {item.contact?.photo ? (
-            <Image source={{ uri: item.contact.photo }} style={s.eventAvatar} />
+          {photoUri ? (
+            Platform.OS === 'web' ? (
+              <View style={s.eventAvatar}>
+                <img
+                  src={photoUri}
+                  style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', display: 'block' }}
+                  loading="lazy"
+                />
+              </View>
+            ) : (
+              <Image source={{ uri: photoUri }} style={s.eventAvatar} />
+            )
           ) : (
             <View style={[s.eventAvatarPlaceholder, { backgroundColor: colors.border }]}>
               <Text style={[s.eventAvatarText, { color: colors.textTertiary }]}>{item.contact?.name?.[0] || '?'}</Text>
@@ -203,28 +214,29 @@ export default function ActivityTab() {
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={s.header}>
         <Text style={[s.headerTitle, { color: colors.text }]}>Activity</Text>
-        <Text style={[s.headerSubtitle, { color: colors.textTertiary }]}>{feed.length} events across all contacts</Text>
+        <Text style={[s.headerSubtitle, { color: colors.textTertiary }]}>{feed.length} event{feed.length !== 1 ? 's' : ''} across all contacts</Text>
       </View>
 
-      <FlatList
-        data={listData}
-        renderItem={renderItem}
-        keyExtractor={(item, idx) => item._type === 'header' ? `hdr-${item.label}` : `evt-${idx}`}
+      <ScrollView
+        style={s.scrollContainer}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />}
         showsVerticalScrollIndicator={false}
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={true}
-        ListEmptyComponent={
+      >
+        {listData.length === 0 ? (
           <View style={s.empty}>
             <Ionicons name="pulse-outline" size={48} color={colors.surface} />
             <Text style={[s.emptyText, { color: colors.textSecondary }]}>No activity yet</Text>
             <Text style={[s.emptySubtext, { color: colors.textTertiary }]}>Send a message or card to get started</Text>
           </View>
-        }
-      />
+        ) : (
+          listData.map((item, idx) => (
+            <React.Fragment key={item._type === 'header' ? `hdr-${item.label}` : `evt-${idx}`}>
+              {renderItem({ item })}
+            </React.Fragment>
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -234,6 +246,7 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
   headerSubtitle: { fontSize: 13, marginTop: 2 },
+  scrollContainer: { flex: 1 },
   scroll: { paddingBottom: 40 },
 
   // Date groups

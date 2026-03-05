@@ -32,8 +32,11 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Auto-refresh every 30 seconds
 
 ### Activity Tab (Bottom Nav)
-- FlatList virtualization (prevents freezing)
-- Larger tiles, auto-refresh, tappable items
+- ScrollView-based rendering (fixed FlatList web virtualization bug)
+- Larger tiles, auto-refresh every 30s, tappable items → contact detail
+- 100 events loaded per page
+- Native `<img>` tags on web with lazy loading for avatars
+- Backend optimized: DB indexes on contact_events, no heavy photo blobs in feed
 
 ### Public-Facing Pages — ALL FIXED
 - **No back buttons** on any customer-facing page
