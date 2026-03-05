@@ -801,3 +801,113 @@ async def get_user_agreement(user_id: str):
         "signer_name": agreement.get("signer_name"),
         "signer_email": agreement.get("signer_email"),
     }
+
+
+# ============= PARTNER PORTAL ENDPOINTS =============
+
+@router.get("/portal/orgs")
+async def get_partner_orgs(request: Request):
+    """Get organizations managed by this partner (via partner_id or user's agreement)"""
+    db = get_db()
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Find orgs where this user is linked as a partner
+    # Option 1: User has a partner_agreement_id
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"partner_agreement_id": 1, "email": 1, "role": 1, "organization_id": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    orgs = []
+    
+    # Check if user has a partner agreement
+    agreement_id = user.get("partner_agreement_id")
+    if agreement_id:
+        agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+        if agreement and agreement.get("assigned_org_ids"):
+            org_ids = [ObjectId(oid) for oid in agreement["assigned_org_ids"]]
+            org_docs = await db.organizations.find({"_id": {"$in": org_ids}}, {"_id": 0}).to_list(100)
+            for doc in org_docs:
+                doc["_id"] = str(doc.get("_id", ""))
+            orgs = org_docs
+    
+    # Also check orgs with partner_id matching the user's email or agreement
+    email = user.get("email", "")
+    partner_orgs = await db.organizations.find(
+        {"$or": [
+            {"partner_email": email},
+            {"partner_user_id": user_id},
+        ]}
+    ).to_list(100)
+    
+    for org in partner_orgs:
+        org["_id"] = str(org["_id"])
+        if not any(o.get("_id") == org["_id"] for o in orgs):
+            orgs.append(org)
+    
+    # If user is org_admin, also show their own org
+    if user.get("organization_id"):
+        try:
+            own_org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])})
+            if own_org:
+                own_org["_id"] = str(own_org["_id"])
+                if not any(o.get("_id") == own_org["_id"] for o in orgs):
+                    orgs.append(own_org)
+        except Exception:
+            pass  # Skip invalid ObjectIds
+    
+    return orgs
+
+
+@router.get("/portal/orgs/{org_id}/stores")
+async def get_partner_org_stores(org_id: str):
+    """Get stores under an org that a partner manages"""
+    db = get_db()
+    stores = await db.stores.find({"organization_id": org_id}).to_list(200)
+    for s in stores:
+        s["_id"] = str(s["_id"])
+    return stores
+
+
+@router.get("/portal/orgs/{org_id}/users")
+async def get_partner_org_users(org_id: str):
+    """Get users under an org that a partner manages"""
+    db = get_db()
+    users = await db.users.find(
+        {"organization_id": org_id},
+        {"password": 0}
+    ).to_list(500)
+    for u in users:
+        u["_id"] = str(u["_id"])
+    return users
+
+
+@router.post("/portal/assign-org")
+async def assign_org_to_partner(request: Request):
+    """Super admin assigns an org to a partner agreement"""
+    db = get_db()
+    data = await request.json()
+    agreement_id = data.get("agreement_id")
+    org_id = data.get("org_id")
+    partner_email = data.get("partner_email")
+    
+    if not agreement_id or not org_id:
+        raise HTTPException(status_code=400, detail="agreement_id and org_id required")
+    
+    # Add org to the agreement's assigned_org_ids
+    await db.partner_agreements.update_one(
+        {"_id": ObjectId(agreement_id)},
+        {"$addToSet": {"assigned_org_ids": org_id}}
+    )
+    
+    # Also mark the org with partner info
+    update = {"partner_agreement_id": agreement_id}
+    if partner_email:
+        update["partner_email"] = partner_email
+    await db.organizations.update_one(
+        {"_id": ObjectId(org_id)},
+        {"$set": update}
+    )
+    
+    return {"success": True}

@@ -526,6 +526,13 @@ export default function AdminDashboard() {
             color: '#C9A962',
           },
           {
+            icon: 'people-circle',
+            title: 'Partner Portal',
+            subtitle: 'View as partner/reseller',
+            onPress: () => router.push('/partner/dashboard' as any),
+            color: '#007AFF',
+          },
+          {
             icon: 'person-add',
             title: 'Pending Users',
             subtitle: 'Approve new signups',
