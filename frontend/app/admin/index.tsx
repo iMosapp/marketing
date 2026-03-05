@@ -519,6 +519,13 @@ export default function AdminDashboard() {
         color: '#FF3B30',
         items: [
           {
+            icon: 'rocket',
+            title: 'Onboard New Account',
+            subtitle: 'Guided setup wizard',
+            onPress: () => router.push('/admin/setup-wizard' as any),
+            color: '#C9A962',
+          },
+          {
             icon: 'person-add',
             title: 'Pending Users',
             subtitle: 'Approve new signups',
@@ -571,7 +578,7 @@ export default function AdminDashboard() {
             icon: 'settings',
             title: 'Onboarding Settings',
             subtitle: 'Branding & automation',
-            onPress: () => router.push('/admin/onboarding-settings'),
+            onPress: () => router.push('/admin/setup-wizard' as any),
             color: '#FF2D55',
           },
           {
@@ -840,6 +847,31 @@ export default function AdminDashboard() {
           </View>
         )}
         
+        {/* Onboard New Account - Hero Action */}
+        {isSuperAdmin && (
+          <TouchableOpacity
+            style={{
+              marginHorizontal: 16, marginBottom: 16,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: '#C9A962', borderRadius: 16, padding: 18,
+            }}
+            onPress={() => router.push('/admin/setup-wizard' as any)}
+            activeOpacity={0.8}
+            data-testid="onboard-new-account-btn"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="rocket" size={24} color="#000" />
+              </View>
+              <View>
+                <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Onboard New Account</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(0,0,0,0.6)', marginTop: 2 }}>Set up org, team & credentials</Text>
+              </View>
+            </View>
+            <Ionicons name="arrow-forward" size={22} color="#000" />
+          </TouchableOpacity>
+        )}
+
         {/* Time Filter - show above data section */}
         {(isSuperAdmin || isOrgAdmin || isStoreManager) && (
           <View style={styles.filterRow}>
