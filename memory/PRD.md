@@ -11,22 +11,24 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
-### Home Screen & Action Items Fix (Mar 2026)
-- **Notification Bell z-index:** Migrated from `position: fixed` overlay to `Modal` component — dropdown now always renders on top of tiles
-- **Action Items navigate to Contact Record:** Tasks with a `contact_id` navigate to the contact page with prefilled message in the composer. Tasks without `contact_id` go to `/tasks` page
-- **Task Banner on Contact Page:** When arriving from a task, a blue "TASK" banner shows the task title and "Send below" hint. Composer auto-opens with SMS/Email mode and the message pre-filled
-- **Quick Action tiles** (Share My Card, Review Link, Send a Card, Showcase) all open a Contact Picker first, then navigate to the contact record with the action auto-triggered
+### Contact Page Bug Fixes (Mar 2026)
+- **Photo Attachment:** New `pickComposerPhoto()` function properly sets `selectedMedia` state. Photo preview shows in composer with "Photo attached" label and remove button. Photo uploads to `/api/images/upload` on send and URL is included in the message.
+- **Composer Text Expansion:** TextInput now has `minHeight: 44`, `maxHeight: 200`, `textAlignVertical: 'top'` for proper expansion when templates prefill long messages.
+- **Auto-Refresh Disabled:** Removed 15-second polling interval that was jumping users back to the top of the activity feed. Events now only refresh on page focus and after user actions.
 
-### Contact Detail handleQuickAction Fix (Mar 2026)
-- Added missing action handlers: `digitalcard`, `linkpage`, `congrats`, `showcase`
-- Contact page supports `?action=xxx` query param to auto-trigger actions
-- Action progress tracker items are now all clickable and functional
+### Home Screen & Action Items Fix (Mar 2026)
+- Notification Bell now uses `Modal` component (renders above tiles)
+- Action Items navigate to contact record with prefilled composer
+- Task Banner on contact page shows task context and auto-opens composer
+- Quick Action tiles open Contact Picker → Contact Record flow
+
+### Lead Tracking Back Button Fix (Mar 2026)
+- Fixed hardcoded white colors on back button, period tabs, bar backgrounds
 
 ### LMS / Training Hub — Role-Based (Mar 2026)
 - 4 training tracks with 21 total lessons covering all roles
 - Role-based filtering, Admin CRUD at `/admin/manage-training`
 - White Label Partner Guide track (5 lessons)
-- Partner Dashboard Training Hub link
 
 ### Admin Onboarding Wizard, Partner Portal, First-Login Profile Completion
 ### Communication (carrier-agnostic messaging, white-label emails)
