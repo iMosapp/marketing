@@ -13,14 +13,13 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ### Authentication & Users
 - JWT-based auth with role-based access
-- **Login persistence** — extended timeout to 10s safety net so AsyncStorage can load before redirect
+- **Login persistence** — extended timeout to 10s safety net
 - User management with soft-delete support
 
 ### Contact Management
 - Full CRUD with photo upload/gallery
 - Cancel/Save buttons, gold Save button, "Contact saved!" toast
 - Phone optional when email is provided
-- "Set as Profile Photo" closes modal after success
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
@@ -33,18 +32,24 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - **Recent Activity feed** — pulls from `contact_events`, auto-refresh 30s, tappable items
 
 ### Activity Tab (Bottom Nav)
-- **Rewritten with FlatList virtualization** — prevents freezing on large datasets
-- 52px avatar tiles, 16px bold names (larger, more readable)
+- FlatList virtualization (prevents freezing)
+- 52px avatar tiles, 16px names (larger, more readable)
 - Auto-refresh every 30 seconds + pull-to-refresh
-- Tappable items with chevron → navigate to contact page
-- Date grouping (Today, Yesterday, etc.)
-- Reduced load from 100 to 50 items
+- Tappable items → navigate to contact page
 
-### Card Type Tracking (FIXED)
-- **Birthday card → "Viewed Birthday Card"** (was always "Viewed Congrats Card")
-- **Thank You card → "Viewed Thank You Card"**
-- **Holiday card → "Viewed Holiday Card"**
-- Short URL dedup window reduced from 1 hour to 5 minutes (captures re-visits)
+### Public-Facing Pages (Customer-Facing)
+- **No back buttons** on any customer-facing page (digital card, congrats card, showcase)
+- **"Leave a Review" is prominently placed** on every card type:
+  - Digital card: CTA right after Quick Actions with inline expandable star rating form
+  - Congrats card: Inline review form instead of redirecting to link page
+  - Showcase: Inline review form instead of redirecting to link page
+- No more scrolling to the bottom to find the review form
+
+### Card Type Tracking
+- Birthday card → "Viewed Birthday Card" (was always "Viewed Congrats Card")
+- Thank You card → "Viewed Thank You Card"
+- Holiday card → "Viewed Holiday Card"
+- Short URL dedup window: 5 minutes (was 1 hour)
 
 ### Reporting & Leaderboards
 - Activity summary dashboard with 14+ metrics

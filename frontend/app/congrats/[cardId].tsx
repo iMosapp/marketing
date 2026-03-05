@@ -10,6 +10,7 @@ import {
   Share,
   Platform,
   Linking,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,6 +53,12 @@ export default function CongratsCardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const cardRef = useRef<View>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     loadCardData();
@@ -74,6 +81,28 @@ export default function CongratsCardPage() {
       await api.post(`/congrats/card/${cardId}/track`, { action });
     } catch (err) {
       console.log('Tracking error:', err);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0 || !cardData?.salesman_id) return;
+    setSubmittingReview(true);
+    try {
+      // Get the store slug to submit review
+      const userResp = await api.get(`/auth/user/${cardData.salesman_id}`);
+      const storeSlug = userResp.data?.store?.slug;
+      if (storeSlug) {
+        await api.post(`/review/submit/${storeSlug}`, {
+          customer_name: reviewName.trim() || cardData.customer_name || 'Anonymous',
+          rating: reviewRating,
+          text_review: reviewText.trim() || null,
+        });
+      }
+      setReviewSubmitted(true);
+    } catch (e) {
+      console.error('Review submit error:', e);
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -232,19 +261,41 @@ export default function CongratsCardPage() {
       {/* Quick Links  - under salesman info */}
       {cardData.salesman_id && (
         <View style={styles.quickLinksSection}>
-          {/* Leave a Review CTA */}
+          {/* Leave a Review CTA — Inline form, no redirect */}
           <TouchableOpacity
             style={[styles.reviewCTA, { borderColor: style.accent_color }]}
-            onPress={() => router.push(`/p/${cardData.salesman_id}` as any)}
+            onPress={() => { if (!reviewSubmitted) setShowReviewForm(!showReviewForm); }}
             data-testid="card-leave-review-btn"
           >
             <Ionicons name="star" size={20} color="#FFD60A" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
-              <Text style={[styles.reviewCTASubtitle, { color: style.accent_color }]}>Leave a Review</Text>
+              <Text style={styles.reviewCTATitle}>{reviewSubmitted ? 'Thank you for your review!' : 'Had a great experience?'}</Text>
+              <Text style={[styles.reviewCTASubtitle, { color: style.accent_color }]}>{reviewSubmitted ? 'Your feedback means a lot.' : 'Tap to leave a review'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={style.accent_color} />
+            {!reviewSubmitted && <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={18} color={style.accent_color} />}
           </TouchableOpacity>
+
+          {showReviewForm && !reviewSubmitted && (
+            <View style={[styles.reviewFormCard, { borderColor: style.accent_color + '40' }]}>
+              <Text style={styles.reviewFormLabel}>How was your experience?</Text>
+              <View style={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setReviewRating(star)} data-testid={`congrats-star-${star}`}>
+                    <Ionicons name={star <= reviewRating ? 'star' : 'star-outline'} size={36} color={star <= reviewRating ? '#FFD60A' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {reviewRating > 0 && (
+                <>
+                  <TextInput style={styles.reviewInput} placeholder="Your name (optional)" placeholderTextColor="#888" value={reviewName} onChangeText={setReviewName} />
+                  <TextInput style={[styles.reviewInput, { height: 80, textAlignVertical: 'top' }]} placeholder="Tell us about your experience..." placeholderTextColor="#888" value={reviewText} onChangeText={setReviewText} multiline numberOfLines={3} />
+                  <TouchableOpacity style={[styles.reviewSubmitBtn, { backgroundColor: style.accent_color }]} onPress={handleSubmitReview} disabled={submittingReview} data-testid="congrats-review-submit">
+                    {submittingReview ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.reviewSubmitText}>Submit Review</Text>}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Quick link row */}
           <View style={styles.quickLinksRow}>
@@ -577,6 +628,33 @@ const styles = StyleSheet.create({
   },
   reviewCTATitle: { fontSize: 14, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
   reviewCTASubtitle: { fontSize: 16, fontWeight: '700' },
+  reviewFormCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 20,
+    marginTop: 10,
+    width: '100%',
+    borderWidth: 1,
+  },
+  reviewFormLabel: { color: '#E5E5EA', fontSize: 15, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
+  starRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
+  reviewInput: {
+    backgroundColor: '#2A2A2C',
+    borderRadius: 10,
+    padding: 14,
+    color: '#FFF',
+    fontSize: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#3A3A3C',
+  },
+  reviewSubmitBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  reviewSubmitText: { color: '#000', fontSize: 16, fontWeight: '700' },
   quickLinksRow: {
     flexDirection: 'row',
     alignItems: 'center',

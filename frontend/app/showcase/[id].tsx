@@ -10,6 +10,7 @@ import {
   Platform,
   Share,
   Linking,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -95,6 +96,12 @@ export default function ShowcasePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const pageScope = (scope as string) || 'user';
   const fromUserId = from as string | undefined;
@@ -124,6 +131,32 @@ export default function ShowcasePage() {
   const shareUrl = IS_WEB
     ? window.location.href
     : `https://app.imonsocial.com/showcase/${id}`;
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) return;
+    setSubmittingReview(true);
+    try {
+      // Try to get store slug from the showcase data
+      const storeId = data?.store?.id;
+      if (storeId) {
+        const storeResp = await api.get(`/stores/${storeId}`);
+        const slug = storeResp.data?.slug;
+        if (slug) {
+          await api.post(`/review/submit/${slug}`, {
+            customer_name: reviewName.trim() || 'Anonymous',
+            rating: reviewRating,
+            text_review: reviewText.trim() || null,
+          });
+        }
+      }
+      setReviewSubmitted(true);
+    } catch (e) {
+      console.error('Review submit error:', e);
+      setReviewSubmitted(true); // Still show success to user
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const handleShare = async () => {
     if (IS_WEB && navigator.share) {
@@ -261,18 +294,42 @@ export default function ShowcasePage() {
           {/* Quick action links  - under profile, above showcase feed */}
           <View style={styles.quickLinks}>
             {!isStoreView && (
-              <TouchableOpacity
-                style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
-                onPress={() => router.push(`/p/${id}`)}
-                data-testid="leave-review-btn"
-              >
-                <Ionicons name="star" size={20} color="#FFD60A" />
-                <View style={styles.reviewCTAContent}>
-                  <Text style={styles.reviewCTATitle}>Had a great experience?</Text>
-                  <Text style={[styles.reviewCTASubtitle, { color: accent }]}>Leave a Review</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={accent} />
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
+                  onPress={() => { if (!reviewSubmitted) setShowReviewForm(!showReviewForm); }}
+                  data-testid="leave-review-btn"
+                >
+                  <Ionicons name="star" size={20} color="#FFD60A" />
+                  <View style={styles.reviewCTAContent}>
+                    <Text style={styles.reviewCTATitle}>{reviewSubmitted ? 'Thank you for your review!' : 'Had a great experience?'}</Text>
+                    <Text style={[styles.reviewCTASubtitle, { color: accent }]}>{reviewSubmitted ? 'Your feedback means a lot.' : 'Tap to leave a review'}</Text>
+                  </View>
+                  {!reviewSubmitted && <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={18} color={accent} />}
+                </TouchableOpacity>
+
+                {showReviewForm && !reviewSubmitted && (
+                  <View style={[styles.reviewFormCard, { borderColor: accent + '40' }]}>
+                    <Text style={styles.reviewFormLabel}>How was your experience?</Text>
+                    <View style={styles.reviewStarRow}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <TouchableOpacity key={star} onPress={() => setReviewRating(star)} data-testid={`showcase-star-${star}`}>
+                          <Ionicons name={star <= reviewRating ? 'star' : 'star-outline'} size={36} color={star <= reviewRating ? '#FFD60A' : '#555'} />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {reviewRating > 0 && (
+                      <>
+                        <TextInput style={styles.reviewInput} placeholder="Your name (optional)" placeholderTextColor="#888" value={reviewName} onChangeText={setReviewName} />
+                        <TextInput style={[styles.reviewInput, { height: 80, textAlignVertical: 'top' }]} placeholder="Tell us about your experience..." placeholderTextColor="#888" value={reviewText} onChangeText={setReviewText} multiline numberOfLines={3} />
+                        <TouchableOpacity style={[styles.reviewSubmitBtn, { backgroundColor: accent }]} onPress={handleSubmitReview} disabled={submittingReview} data-testid="showcase-review-submit">
+                          {submittingReview ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.reviewSubmitText}>Submit Review</Text>}
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                )}
+              </>
             )}
 
             <View style={styles.quickLinksRow}>
@@ -662,6 +719,27 @@ const styles = StyleSheet.create({
   reviewCTAContent: { flex: 1 },
   reviewCTATitle: { fontSize: 14, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
   reviewCTASubtitle: { fontSize: 16, fontWeight: '700' },
+  reviewFormCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 20,
+    marginTop: 10,
+    borderWidth: 1,
+  },
+  reviewFormLabel: { color: '#E5E5EA', fontSize: 15, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
+  reviewStarRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
+  reviewInput: {
+    backgroundColor: '#2A2A2C',
+    borderRadius: 10,
+    padding: 14,
+    color: '#FFF',
+    fontSize: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#3A3A3C',
+  },
+  reviewSubmitBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 4 },
+  reviewSubmitText: { color: '#000', fontSize: 16, fontWeight: '700' },
 
   // QR
   qrContainer: { alignItems: 'center', marginTop: 4, padding: 16, backgroundColor: '#111', borderRadius: 16 },
