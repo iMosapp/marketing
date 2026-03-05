@@ -26,6 +26,7 @@ interface Agreement {
   partner_name?: string;
   partner_email?: string;
   commission_tier?: { name: string; percentage: number };
+  custom_commission_notes?: string;
   commission_tiers?: { name: string; percentage: number; description?: string }[];
   payment_required: boolean;
   payment_amount?: number;
@@ -295,16 +296,24 @@ export default function PartnerAgreementDetailScreen() {
         </View>
 
         {/* Commission Tier */}
-        {agreement.commission_tier && (
+        {(agreement.commission_tier || agreement.custom_commission_notes) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Commission</Text>
-            <View style={styles.commissionCard}>
-              <View style={styles.commissionHeader}>
-                <Text style={styles.commissionTier}>{agreement.commission_tier.name}</Text>
-                <Text style={styles.commissionPercentage}>{agreement.commission_tier.percentage}%</Text>
+            {agreement.commission_tier && (
+              <View style={styles.commissionCard}>
+                <View style={styles.commissionHeader}>
+                  <Text style={styles.commissionTier}>{agreement.commission_tier.name}</Text>
+                  <Text style={styles.commissionPercentage}>{agreement.commission_tier.percentage}%</Text>
+                </View>
+                <Text style={styles.commissionLabel}>Commission Rate</Text>
               </View>
-              <Text style={styles.commissionLabel}>Commission Rate</Text>
-            </View>
+            )}
+            {agreement.custom_commission_notes && (
+              <View style={[styles.commissionCard, { marginTop: agreement.commission_tier ? 10 : 0, borderLeftWidth: 3, borderLeftColor: '#C9A962' }]}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#C9A962', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Custom Terms</Text>
+                <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>{agreement.custom_commission_notes}</Text>
+              </View>
+            )}
           </View>
         )}
 

@@ -27,7 +27,7 @@ def serialize_partner(p: dict) -> dict:
 @router.get("")
 async def list_partners():
     db = get_db()
-    partners = await db.white_label_partners.find({}, {"_id": 1, "name": 1, "slug": 1, "logo": 1, "primary_color": 1, "is_active": 1}).to_list(100)
+    partners = await db.white_label_partners.find({}, {"_id": 1, "name": 1, "slug": 1, "logo": 1, "primary_color": 1, "is_active": 1, "commission_notes": 1}).to_list(100)
     for p in partners:
         p["_id"] = str(p["_id"])
     return partners

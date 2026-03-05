@@ -34,6 +34,7 @@ interface Agreement {
   partner_name?: string;
   partner_email?: string;
   commission_tier?: { name: string; percentage: number };
+  custom_commission_notes?: string;
   payment_required: boolean;
   payment_amount?: number;
   status: string;
@@ -59,6 +60,7 @@ export default function PartnerAgreementsScreen() {
   const [partnerName, setPartnerName] = useState('');
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [customCommissionNotes, setCustomCommissionNotes] = useState('');
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export default function PartnerAgreementsScreen() {
       const response = await api.post('/partners/agreements', {
         template_id: selectedTemplate.id,
         commission_tier: selectedTier,
+        custom_commission_notes: customCommissionNotes || null,
         partner_email: partnerEmail || null,
         partner_name: partnerName || null,
         payment_required: paymentRequired,
@@ -130,6 +133,7 @@ export default function PartnerAgreementsScreen() {
     setPartnerName('');
     setPaymentRequired(false);
     setPaymentAmount('');
+    setCustomCommissionNotes('');
     setCreatedLink(null);
   };
 
@@ -241,6 +245,12 @@ export default function PartnerAgreementsScreen() {
               {agreement.commission_tier && (
                 <Text style={styles.agreementTier}>
                   {agreement.commission_tier.name} - {agreement.commission_tier.percentage}% commission
+                </Text>
+              )}
+              
+              {agreement.custom_commission_notes && (
+                <Text style={styles.agreementCustomCommission} numberOfLines={2}>
+                  {agreement.custom_commission_notes}
                 </Text>
               )}
               
@@ -357,6 +367,25 @@ export default function PartnerAgreementsScreen() {
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
+                  </>
+                )}
+
+                {/* Custom Commission Structure */}
+                {selectedTemplate && (
+                  <>
+                    <Text style={styles.formLabel}>Custom Commission Structure</Text>
+                    <TextInput
+                      style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                      value={customCommissionNotes}
+                      onChangeText={setCustomCommissionNotes}
+                      placeholder="e.g., 15% of MRR for first 12 months, then 10% ongoing. $50 flat per account + 5% of add-ons."
+                      placeholderTextColor={colors.textSecondary}
+                      multiline
+                      data-testid="custom-commission-notes"
+                    />
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: -8, marginBottom: 4 }}>
+                      Describe the full commission deal. This overrides or supplements the tier above.
+                    </Text>
                   </>
                 )}
 
@@ -558,6 +587,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 13,
     color: '#007AFF',
     marginTop: 12,
+  },
+  agreementCustomCommission: {
+    fontSize: 13,
+    color: '#C9A962',
+    marginTop: 6,
+    fontStyle: 'italic',
   },
   agreementFooter: {
     flexDirection: 'row',

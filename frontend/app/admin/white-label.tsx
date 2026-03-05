@@ -19,6 +19,7 @@ export default function WhiteLabelPartnersScreen() {
     name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B',
     accent_color: '#1B2A4A', powered_by_text: "i'M On Social",
     company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '',
+    commission_notes: '',
   });
 
   useEffect(() => { loadPartners(); }, []);
@@ -41,7 +42,7 @@ export default function WhiteLabelPartnersScreen() {
         await api.post('/admin/partners', form);
       }
       setShowForm(false); setEditing(null);
-      setForm({ name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B', accent_color: '#1B2A4A', powered_by_text: "i'M On Social", company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '' });
+      setForm({ name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B', accent_color: '#1B2A4A', powered_by_text: "i'M On Social", company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '', commission_notes: '' });
       loadPartners();
     } catch (e) { console.error(e); }
     setSaving(false);
@@ -51,7 +52,7 @@ export default function WhiteLabelPartnersScreen() {
     try {
       const res = await api.get(`/admin/partners/${id}`);
       const p = res.data;
-      setForm({ name: p.name, slug: p.slug, primary_color: p.primary_color, secondary_color: p.secondary_color, accent_color: p.accent_color, powered_by_text: p.powered_by_text, company_name: p.company_name || '', company_address: p.company_address || '', company_phone: p.company_phone || '', company_email: p.company_email || '', company_website: p.company_website || '' });
+      setForm({ name: p.name, slug: p.slug, primary_color: p.primary_color, secondary_color: p.secondary_color, accent_color: p.accent_color, powered_by_text: p.powered_by_text, company_name: p.company_name || '', company_address: p.company_address || '', company_phone: p.company_phone || '', company_email: p.company_email || '', company_website: p.company_website || '', commission_notes: p.commission_notes || '' });
       setEditing(p); setShowForm(true);
     } catch (e) { console.error(e); }
   };
@@ -92,6 +93,17 @@ export default function WhiteLabelPartnersScreen() {
                   value={(form as any)[f.key]} onChangeText={t => setForm({ ...form, [f.key]: t })} />
               </View>
             ))}
+            <View style={s.inputGroup}>
+              <Text style={s.inputLabel}>Commission Structure</Text>
+              <TextInput style={[s.input, { minHeight: 72, textAlignVertical: 'top' }]}
+                placeholder="e.g., 15% of MRR for first 12 months, then 10% ongoing"
+                placeholderTextColor={colors.textTertiary}
+                value={form.commission_notes}
+                onChangeText={t => setForm({ ...form, commission_notes: t })}
+                multiline
+                data-testid="commission-notes-input"
+              />
+            </View>
             <Text style={s.inputLabel}>Brand Colors</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
               {[
@@ -135,6 +147,9 @@ export default function WhiteLabelPartnersScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={s.partnerName}>{p.name}</Text>
                   <Text style={s.partnerSlug}>/{p.slug}</Text>
+                  {p.commission_notes && (
+                    <Text style={{ fontSize: 12, color: '#C9A962', marginTop: 3, fontStyle: 'italic' }} numberOfLines={1}>{p.commission_notes}</Text>
+                  )}
                 </View>
                 <View style={[s.statusBadge, p.is_active && s.statusActive]}>
                   <Text style={s.statusText}>{p.is_active ? 'Active' : 'Inactive'}</Text>
