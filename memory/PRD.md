@@ -11,48 +11,45 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
-### Admin Onboarding Wizard (NEW - Mar 2026)
-- **8-step guided wizard** at `/admin/setup-wizard` for turnkey client onboarding
-- Steps: Organization & Store → Branding → Create User → Profile → Review Links → Templates → Tags → Handoff Checklist
-- Create new org OR select existing org (with auto-populated store picker)
-- Industry selector dropdown with 10 industry options
-- Logo upload, brand color picker (10 colors), custom email footer
-- User creation with auto-generated temp password + copy-to-clipboard
-- User profile: headshot upload, job title, bio, social links (IG/FB/LinkedIn)
-- Review links: Google, Facebook, Yelp, DealerRater, custom review links
-- Pre-loaded message templates (6 defaults) with toggle on/off + add custom
-- Tag creation and selection
-- **Skip functionality** on Steps 2, 4, 5, 6, 7
-- **Handoff Checklist**: shows completion status + user to-do items for skipped/incomplete steps
-- Backend: `PUT /admin/users/{id}` now accepts `title`, `bio`, `photo_url`, `social_links`
-- Backend: `PUT /admin/stores/{id}` now accepts `email_footer`, `industry`
-- Backend wizard progress tracking via `/api/setup-wizard/progress/{org_id}`
-- **Fully tested**: Backend 100% (10/10 tests), Frontend UI verified
+### Admin Onboarding Wizard (Mar 2026)
+- **7-step guided wizard** at `/admin/setup-wizard` for turnkey client onboarding
+- Steps: Organization & Store -> Branding -> **Team Roster (Bulk)** -> Review Links -> Templates -> Tags -> Handoff
+- Create new org OR select existing org (with store picker)
+- Industry selector, logo upload, brand color picker, email footer
+- **Bulk Team Roster**: Add multiple team members (name, email, phone, role) and create all at once
+  - Each user gets auto-generated temp password
+  - Users created with `onboarding_complete=false` and `needs_password_change=true`
+- **Handoff Checklist**: Full credential table with Copy All + CSV Download, configuration status, remaining items
+- Skip functionality on Steps 2, 4, 5, 6
+
+### First-Login Profile Completion (Mar 2026)
+- New page at `/auth/complete-profile` — 4-step guided onboarding for new users
+- Steps: Upload Headshot -> Title & Bio -> Social Links -> Set Password
+- Users with `onboarding_complete === false` are automatically redirected here after login
+- Super admins are excluded from the redirect
+- On completion, sets `onboarding_complete = true` and lands on dashboard
+- Skip button available on each step
+- Helpful tips and clear instructions throughout
+
+### Backend Changes (Mar 2026)
+- `POST /api/admin/users` now accepts `onboarding_complete` and `needs_password_change` fields
+- `PUT /api/profile/{user_id}` now accepts `onboarding_complete`, `social_instagram`, `social_facebook`, `social_linkedin`
+- `PUT /api/admin/users/{id}` accepts `title`, `bio`, `photo_url`, `social_links`
+- `PUT /api/admin/stores/{id}` accepts `email_footer`, `industry`
+- `StoreCreate` model now includes `website` and `industry` fields
 
 ### Authentication & Users
 - JWT-based auth with role-based access
-- Login persistence — extended timeout to 10s safety net
+- Login flow checks: password change -> onboarding complete -> default route
 
 ### Contact Management
 - Full CRUD with photo upload/gallery
-- Cancel/Save buttons, gold Save button, "Contact saved!" toast
-- Phone optional when email is provided
-- Photo viewer modal uses SafeAreaView (no more battery bar overlap)
-- Photo gallery labels use actual card type (not hardcoded "congrats")
+- Phone optional when email provided
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
 - Email sending via Resend with white-label branded HTML templates
 - All communications logged as `contact_events`
-
-### Home Screen Dashboard
-- Quick action tiles + Action Items (pending tasks) + Recent Activity (from contact_events)
-- Auto-refresh every 30 seconds
-
-### Review Links
-- Review links now load from BOTH user-level AND store-level settings
-- Store-level links (Google, Yelp, Facebook, DealerRater, etc.) merge with user-level overrides
-- All actions (Share Card, Review Link, Congrats, SMS, Email) now stay on the contact page
 
 ### Reporting & Leaderboards
 - Activity summary dashboard with 14+ metrics
