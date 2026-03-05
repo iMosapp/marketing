@@ -12,16 +12,15 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 ## What's Been Implemented
 
 ### Authentication & Users
-- JWT-based auth with role-based access (super_admin, org_admin, store_admin, user)
+- JWT-based auth with role-based access
+- **Login persistence** — extended timeout to 10s safety net so AsyncStorage can load before redirect
 - User management with soft-delete support
 
 ### Contact Management
-- Full CRUD for contacts with photo upload/gallery
-- Contact edit flow with Cancel/Save buttons, gold Save button, "Contact saved!" toast
-- Phone is optional when email is provided (relaxed validation)
-- "Set as Profile Photo" from gallery closes modal after success
-- Photo picker with error handling and web fallback
-- Quick Add form for new contacts (progressive disclosure)
+- Full CRUD with photo upload/gallery
+- Cancel/Save buttons, gold Save button, "Contact saved!" toast
+- Phone optional when email is provided
+- "Set as Profile Photo" closes modal after success
 
 ### Communication
 - Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
@@ -30,29 +29,26 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ### Home Screen Dashboard
 - Quick action tiles: Share My Card, Review Link, Send a Card, My Showcase, Keypad, Add Contact
-- **Action Items section** — Shows pending campaign tasks with:
-  - Task title, campaign source, channel icon
-  - Red "Overdue" labels for past-due tasks
-  - Green checkmark to mark as done (removes from list instantly)
-  - Tapping navigates to contact page with pre-filled message
-- **Recent Activity feed** — Pulls from `contact_events` collection (FIXED)
-  - Tappable items with chevron → navigates to contact detail page
-  - Proper icon/color mapping for all event types
-  - Auto-refresh every 30 seconds + relative timestamp refresh every 60 seconds
+- **Action Items section** — pending campaign tasks with overdue indicators + mark done
+- **Recent Activity feed** — pulls from `contact_events`, auto-refresh 30s, tappable items
 
-### Notifications
-- Bell notifications with deep-linking
-- Lead claim flow (notification -> claim -> create contact -> pre-filled message)
+### Activity Tab (Bottom Nav)
+- **Rewritten with FlatList virtualization** — prevents freezing on large datasets
+- 52px avatar tiles, 16px bold names (larger, more readable)
+- Auto-refresh every 30 seconds + pull-to-refresh
+- Tappable items with chevron → navigate to contact page
+- Date grouping (Today, Yesterday, etc.)
+- Reduced load from 100 to 50 items
 
-### Campaigns & Automation
-- Campaign management with multi-step flows
-- Date-based triggers, Tag-triggered campaign enrollment
-- Scheduled task processing (every 15 min)
+### Card Type Tracking (FIXED)
+- **Birthday card → "Viewed Birthday Card"** (was always "Viewed Congrats Card")
+- **Thank You card → "Viewed Thank You Card"**
+- **Holiday card → "Viewed Holiday Card"**
+- Short URL dedup window reduced from 1 hour to 5 minutes (captures re-visits)
 
 ### Reporting & Leaderboards
 - Activity summary dashboard with 14+ metrics
-- Date filters and scheduled email delivery
-- Store, Org, Global leaderboard levels with category breakdowns
+- Store, Org, Global leaderboard levels
 
 ### Public API & Webhooks
 - API-key authenticated REST API
@@ -62,7 +58,6 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - P1: Production marketing site logo link causes infinite spinner (likely browser cache)
 - P2: React Hydration Error #418
 - P2: Mobile app `tags` data sync
-- P2: Leaderboard toggle functionality not fully tested
 
 ## Upcoming Tasks (Priority Order)
 1. (P1) AI-Powered Outreach — sold tag triggers AI-suggested follow-up messages
