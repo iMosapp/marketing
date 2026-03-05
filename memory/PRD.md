@@ -11,43 +11,26 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
-### Home Screen Quick Actions Fix (Mar 2026)
-- **CRITICAL FIX:** All Home quick actions (Share My Card, Review Link, Send a Card, My Showcase) now navigate to a **contact picker** → then to the **contact record** to complete the action
-- Previous behavior incorrectly opened generic share modals with no contact context
-- Contact detail page now supports `?action=xxx` query param to auto-trigger the relevant action (digitalcard, review, congrats, showcase)
-- `handleQuickAction` in contact page now handles ALL action keys: sms, call, email, review, card, gift, congrats, digitalcard, linkpage, showcase
-- Action progress tracker items on the contact page are now all clickable and functional
+### Home Screen & Action Items Fix (Mar 2026)
+- **Notification Bell z-index:** Migrated from `position: fixed` overlay to `Modal` component — dropdown now always renders on top of tiles
+- **Action Items navigate to Contact Record:** Tasks with a `contact_id` navigate to the contact page with prefilled message in the composer. Tasks without `contact_id` go to `/tasks` page
+- **Task Banner on Contact Page:** When arriving from a task, a blue "TASK" banner shows the task title and "Send below" hint. Composer auto-opens with SMS/Email mode and the message pre-filled
+- **Quick Action tiles** (Share My Card, Review Link, Send a Card, Showcase) all open a Contact Picker first, then navigate to the contact record with the action auto-triggered
+
+### Contact Detail handleQuickAction Fix (Mar 2026)
+- Added missing action handlers: `digitalcard`, `linkpage`, `congrats`, `showcase`
+- Contact page supports `?action=xxx` query param to auto-trigger actions
+- Action progress tracker items are now all clickable and functional
 
 ### LMS / Training Hub — Role-Based (Mar 2026)
-- **4 training tracks** with 21 total lessons:
-  - **Sales Team Onboarding** (6 lessons) — for `user`, `manager`, `admin`, `store_manager`
-  - **Partner & Reseller Onboarding** (6 lessons) — for `partner`, `reseller`, `admin`, `super_admin`
-  - **White Label Partner Guide** (5 lessons, NEW) — for `partner`, `reseller`, `admin`, `super_admin`
-  - **Manager's Playbook** (4 lessons) — for `manager`, `admin`, `store_manager`, `super_admin`
-- **Role-based filtering**: Users only see tracks matching their role; `super_admin` and `admin` see all
-- **Admin Manage Training page** (`/admin/manage-training`): Full CRUD for tracks and lessons
-- **Partner Dashboard** Training Hub link for easy partner access
-- **Progress tracking**: Users can mark lessons complete with persistent progress bars
+- 4 training tracks with 21 total lessons covering all roles
+- Role-based filtering, Admin CRUD at `/admin/manage-training`
+- White Label Partner Guide track (5 lessons)
+- Partner Dashboard Training Hub link
 
-### Admin Onboarding Wizard (Mar 2026)
-- 7-step guided wizard at `/admin/setup-wizard` for turnkey client onboarding
-- Bulk team creation with auto-generated temp passwords and CSV download
-
-### Partner Portal & Scoped Wizard (Mar 2026)
-- **Partner Dashboard** (`/partner/dashboard`): Shows assigned orgs, locations, users
-- **Partner Onboard Wizard** (`/partner/onboard`): 5-step scoped wizard
-
-### First-Login Profile Completion (Mar 2026)
-- `/auth/complete-profile` — 4-step guided onboarding for new users
-
-### Communication
-- Carrier-agnostic messaging (Twilio or personal phone SMS fallback)
-- Email via Resend with white-label branded HTML templates
-- All logged as `contact_events`
-
-### Reporting & Activity
-- Activity summary dashboard with 14+ metrics
-- Schedulable email delivery
+### Admin Onboarding Wizard, Partner Portal, First-Login Profile Completion
+### Communication (carrier-agnostic messaging, white-label emails)
+### Reporting & Activity (14+ metrics, scheduled delivery)
 
 ## Pending Issues
 - P0: Production email delivery — BLOCKED on user verifying `RESEND_API_KEY`
