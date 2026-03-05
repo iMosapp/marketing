@@ -709,11 +709,24 @@ export default function ContactDetailScreen() {
     }
   };
 
-  const insertReviewLink = (platformId: string, url: string, platformName: string) => {
+  const insertReviewLink = async (platformId: string, url: string, platformName: string) => {
     const firstName = contact.first_name || 'there';
-    const reviewMessage = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`;
     setShowReviewLinks(false);
-    setComposerMessage(reviewMessage);
+    try {
+      // Create a trackable short URL with contact_id in metadata
+      const shortRes = await api.post('/s/create', {
+        original_url: url,
+        link_type: 'review_request',
+        user_id: user?._id,
+        reference_id: id as string,
+        metadata: { contact_id: id as string, platform: platformId },
+      });
+      const trackableUrl = shortRes.data?.short_url || url;
+      setComposerMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${trackableUrl}`);
+    } catch (e) {
+      // Fallback to raw URL if short URL creation fails
+      setComposerMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`);
+    }
   };
 
   const openBusinessCardPicker = async () => {
@@ -3329,12 +3342,23 @@ export default function ContactDetailScreen() {
                   <TouchableOpacity
                     style={s.actionSheetButton}
                     data-testid="review-link-imos"
-                    onPress={() => {
+                    onPress={async () => {
                       const firstName = contact.first_name || 'there';
                       const reviewUrl = `https://app.imonsocial.com/review/${storeSlug}?sp=${user?._id}`;
-                      const reviewMsg = `Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
                       setShowReviewLinks(false);
-                      setComposerMessage(reviewMsg);
+                      try {
+                        const shortRes = await api.post('/s/create', {
+                          original_url: reviewUrl,
+                          link_type: 'review_request',
+                          user_id: user?._id,
+                          reference_id: id as string,
+                          metadata: { contact_id: id as string, platform: 'imos' },
+                        });
+                        const trackableUrl = shortRes.data?.short_url || reviewUrl;
+                        setComposerMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${trackableUrl}`);
+                      } catch (e) {
+                        setComposerMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`);
+                      }
                     }}
                   >
                     <Ionicons name="star" size={22} color="#FFD60A" />

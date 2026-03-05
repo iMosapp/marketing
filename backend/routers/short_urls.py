@@ -124,10 +124,10 @@ def _detect_event_type(doc: dict) -> tuple:
     link_type = doc.get("link_type", "")
     original_url = doc.get("original_url", "")
 
+    if link_type == "review_request" or "/review/" in original_url:
+        return "review_link_clicked", "Clicked Review Link", "star", "#FFD60A"
     if link_type == "business_card" or "/p/" in original_url:
         return "digital_card_viewed", "Viewed Digital Card", "eye", "#007AFF"
-    if "/review/" in original_url:
-        return "review_page_viewed", "Viewed Review Page", "eye", "#FBBC04"
     if "/showcase/" in original_url:
         return "showcase_viewed", "Viewed Showcase", "eye", "#C9A962"
     if "/l/" in original_url or "/linkpage/" in original_url:
@@ -147,22 +147,25 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
     if not user_id:
         return
 
-    # Find a message containing this short code to identify the contact
-    msg = await db.messages.find_one(
-        {"content": {"$regex": short_code}, "sender": "user", "user_id": user_id},
-        {"conversation_id": 1}
-    )
-    if not msg:
-        return
+    # First, check if contact_id is stored directly in metadata (most reliable)
+    contact_id = (doc.get("metadata") or {}).get("contact_id")
 
-    conv = await db.conversations.find_one(
-        {"_id": ObjectId(msg["conversation_id"])},
-        {"contact_id": 1}
-    )
-    if not conv or not conv.get("contact_id"):
-        return
+    # Fallback: search messages for the short code to identify the contact
+    if not contact_id:
+        msg = await db.messages.find_one(
+            {"content": {"$regex": short_code}, "sender": "user", "user_id": user_id},
+            {"conversation_id": 1}
+        )
+        if msg:
+            conv = await db.conversations.find_one(
+                {"_id": ObjectId(msg["conversation_id"])},
+                {"contact_id": 1}
+            )
+            if conv and conv.get("contact_id"):
+                contact_id = str(conv["contact_id"])
 
-    contact_id = str(conv["contact_id"])
+    if not contact_id:
+        return
 
     # Avoid duplicate events within a short window (5 minutes)
     from datetime import timedelta
@@ -174,6 +177,14 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
     if recent:
         return
 
+    contact_name = ""
+    try:
+        c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+        if c:
+            contact_name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+    except Exception:
+        pass
+
     await db.contact_events.insert_one({
         "contact_id": contact_id,
         "user_id": user_id,
@@ -181,7 +192,7 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
         "icon": icon,
         "color": color,
         "title": title,
-        "description": f"Contact opened the shared link",
+        "description": f"{contact_name or 'Contact'} opened the shared link",
         "category": "customer_activity",
         "metadata": {"short_code": short_code, "link_type": doc.get("link_type", "")},
         "timestamp": datetime.utcnow(),
