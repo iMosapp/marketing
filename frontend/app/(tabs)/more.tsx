@@ -253,7 +253,7 @@ export default function MoreScreen() {
 
   // ===== Showroom Share Helpers =====
   const getShowroomUrl = () => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
     const refParam = user?.ref_code ? `?ref=${user.ref_code}` : '';
     return `${baseUrl}/showcase/${user?._id}${refParam}`;
   };

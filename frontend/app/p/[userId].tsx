@@ -458,7 +458,7 @@ export default function PublicLandingPage() {
       <View style={styles.quickLinksSection}>
         <TouchableOpacity
           style={styles.quickLinkBtn}
-          onPress={() => Linking.openURL(`${typeof window !== 'undefined' ? window.location.origin : ''}/showcase/${userId}`)}
+          onPress={() => Linking.openURL(`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/showcase/${userId}`)}
           data-testid="landing-view-showroom"
         >
           <View style={[styles.quickLinkIcon, { backgroundColor: '#34C75918' }]}>

@@ -48,7 +48,7 @@ export default function PublicLinkPage() {
 
   const openLink = (link: LinkItem) => {
     api.post(`/linkpage/public/${username}/click`, { link_id: link.id }).catch(() => {});
-    const url = link.url.startsWith('/') ? `${Platform.OS === 'web' ? window.location.origin : ''}${link.url}` : link.url;
+    const url = link.url.startsWith('/') ? `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}${link.url}` : link.url;
     Linking.openURL(url).catch(() => {});
   };
 

@@ -104,7 +104,7 @@ export default function BrandAssetsPage() {
   const allAssets = [...builtInAssets, ...dynamicAssets, ...customAssets];
 
   const handleDownload = (asset: BrandAsset) => {
-    const fullUrl = asset.url.startsWith('http') ? asset.url : `${window.location.origin}${asset.url}`;
+    const fullUrl = asset.url.startsWith('http') ? asset.url : `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}${asset.url}`;
     if (IS_WEB) {
       const a = document.createElement('a');
       a.href = fullUrl;
@@ -118,7 +118,7 @@ export default function BrandAssetsPage() {
   };
 
   const handleCopyUrl = async (asset: BrandAsset) => {
-    const fullUrl = asset.url.startsWith('http') ? asset.url : `${window.location.origin}${asset.url}`;
+    const fullUrl = asset.url.startsWith('http') ? asset.url : `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}${asset.url}`;
     try {
       if (IS_WEB) {
         await navigator.clipboard.writeText(fullUrl);

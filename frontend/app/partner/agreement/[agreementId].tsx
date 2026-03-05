@@ -146,7 +146,7 @@ const { showToast } = useToast();
   const initiatePayment = async () => {
     try {
       const originUrl = Platform.OS === 'web' 
-        ? window.location.origin 
+        ? (process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com')
         : 'https://app.imonsocial.com';
       
       const response = await api.post(`/partners/agreements/${agreementId}/create-payment`, {

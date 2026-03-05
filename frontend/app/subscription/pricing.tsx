@@ -90,7 +90,7 @@ export default function PricingPage() {
     
     try {
       const originUrl = typeof window !== 'undefined' 
-        ? window.location.origin 
+        ? (process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com')
         : 'https://app.imonsocial.com';
       
       const checkoutData: any = {

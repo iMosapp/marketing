@@ -1,0 +1,72 @@
+{
+  "summary": "Verified URL fix: All customer-facing outgoing links now use EXPO_PUBLIC_APP_URL=https://app.imonsocial.com instead of window.location.origin. Frontend loads correctly, backend short URL API preserves original URLs with app.imonsocial.com domain.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "bugs_verified": {
+    "url_fix_for_customer_facing_links": {
+      "status": "VERIFIED",
+      "summary": "All window.location.origin usages for customer-facing URLs replaced with process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'",
+      "files_fixed": [
+        "/app/frontend/app/(tabs)/home.tsx - Line 508: baseUrl uses EXPO_PUBLIC_APP_URL",
+        "/app/frontend/app/(tabs)/more.tsx - Line 256: getShowroomUrl uses EXPO_PUBLIC_APP_URL",
+        "/app/frontend/app/settings/create-card.tsx - Line 16: BASE_URL uses EXPO_PUBLIC_APP_URL",
+        "/app/frontend/app/p/[userId].tsx - Line 461: showcase URL uses EXPO_PUBLIC_APP_URL",
+        "/app/frontend/app/l/[username].tsx - Line 51: link page URLs use EXPO_PUBLIC_APP_URL"
+      ],
+      "env_files_updated": [
+        "/app/frontend/.env - EXPO_PUBLIC_APP_URL=https://app.imonsocial.com",
+        "/app/backend/.env - APP_URL=https://app.imonsocial.com"
+      ],
+      "remaining_window_location_origin": {
+        "file": "/app/frontend/app/contact/[id].tsx:1116",
+        "status": "ACCEPTABLE",
+        "reason": "This is for uploaded photo URL absolutization (internal images), not customer-facing outgoing links. EXPO_PUBLIC_APP_URL is checked FIRST as primary, window.location.origin is only a fallback for local dev."
+      }
+    }
+  },
+  "api_tests_passed": {
+    "GET /api/health": "PASS",
+    "POST /api/s/create": "PASS - Short URLs created with original_url preserved",
+    "GET /api/s/{short_code}": "PASS - Redirects to original app.imonsocial.com URL"
+  },
+  "code_review_verification": {
+    "frontend_env_EXPO_PUBLIC_APP_URL": "VERIFIED - https://app.imonsocial.com",
+    "backend_env_APP_URL": "VERIFIED - https://app.imonsocial.com",
+    "home_tsx_uses_EXPO_PUBLIC_APP_URL": "VERIFIED",
+    "more_tsx_uses_EXPO_PUBLIC_APP_URL": "VERIFIED",
+    "no_customer_facing_window_location_origin_violations": "VERIFIED"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_url_fix_verification.py",
+    "/app/test_reports/pytest/pytest_url_fix.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_url_fix_verification.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (Frontend loads, URL fix verified via code review)"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "URL fix verified: All customer-facing outgoing links (review requests, share my card, showcase, link page, congrats cards) now use process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com' instead of window.location.origin. The one remaining window.location.origin in contact/[id].tsx:1116 is for photo URL absolutization (internal images) and is acceptable since EXPO_PUBLIC_APP_URL is checked first. Backend short URL API correctly preserves original URLs with app.imonsocial.com domain.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sends are logged but not actually delivered"
+  },
+  "note_about_short_url_domain": "In preview environment, the short_url field in POST /api/s/create response points to preview domain because supervisor config sets APP_URL to preview domain. However, the original_url with app.imonsocial.com is correctly preserved and the redirect works correctly. In production, APP_URL will be set correctly by deployment platform."
+}

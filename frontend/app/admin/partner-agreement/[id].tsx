@@ -156,7 +156,7 @@ export default function PartnerAgreementDetailScreen() {
   const copyLink = async () => {
     if (!agreement) return;
     const baseUrl = Platform.OS === 'web' 
-      ? window.location.origin 
+      ? (process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com')
       : 'https://app.imonsocial.com';
     const link = `${baseUrl}/partner/agreement/${agreement.id}`;
     await Clipboard.setStringAsync(link);
