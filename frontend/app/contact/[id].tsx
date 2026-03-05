@@ -471,14 +471,12 @@ export default function ContactDetailScreen() {
     }, [id, user])
   );
 
-  // Periodic polling for real-time activity updates (every 15 seconds)
-  useEffect(() => {
-    if (isNewContact || !user) return;
-    const interval = setInterval(() => {
-      loadEvents();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [id, user, isNewContact]);
+  // Periodic polling DISABLED — causes scroll jumps. Events refresh on focus and after user actions.
+  // useEffect(() => {
+  //   if (isNewContact || !user) return;
+  //   const interval = setInterval(() => { loadEvents(); }, 15000);
+  //   return () => clearInterval(interval);
+  // }, [id, user, isNewContact]);
 
   const loadContact = async () => {
     if (!user) return;
@@ -692,6 +690,23 @@ export default function ContactDetailScreen() {
       { text: 'Create Card', onPress: () => setShowCardTemplatePicker(true) },
       { text: 'Cancel', style: 'cancel' },
     ]);
+  };
+
+  // Pick a photo to attach to the composer message
+  const pickComposerPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedMedia(result.assets[0]);
+      }
+    } catch (e) {
+      console.error('pickComposerPhoto error:', e);
+      showToast('Failed to pick photo. Please try again.', 'error');
+    }
   };
 
   const insertReviewLink = (platformId: string, url: string, platformName: string) => {
@@ -1033,7 +1048,8 @@ export default function ContactDetailScreen() {
   // ===== COMPOSER: Send message directly from contact page =====
   const handleComposerSend = async (textOverride?: string) => {
     const content = textOverride || composerMessage.trim();
-    if (!content || !user) return;
+    if (!content && !selectedMedia) return;
+    if (!user) return;
     
     const contactEmail = contact.email || '';
     if (composerMode === 'email' && !contactEmail) {
@@ -1047,6 +1063,27 @@ export default function ContactDetailScreen() {
     
     setComposerSending(true);
     try {
+      // Upload photo if attached
+      let photoUrl = '';
+      if (selectedMedia?.uri) {
+        try {
+          const formData = new FormData();
+          if (IS_WEB) {
+            const response = await fetch(selectedMedia.uri);
+            const blob = await response.blob();
+            formData.append('file', blob, 'photo.jpg');
+          } else {
+            formData.append('file', { uri: selectedMedia.uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+          }
+          const uploadRes = await api.post('/images/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          photoUrl = uploadRes.data?.original_url || uploadRes.data?.url || uploadRes.data?.file_url || '';
+        } catch (uploadErr) {
+          console.warn('Photo upload failed, sending text only:', uploadErr);
+        }
+      }
+
+      const messageContent = photoUrl ? `${content || ''}\n${photoUrl}`.trim() : (content || '');
+      
       // Create or get existing conversation for this contact
       const conv = await messagesAPI.createConversation(user._id, {
         contact_id: id as string,
@@ -1058,7 +1095,7 @@ export default function ContactDetailScreen() {
         // For SMS: Use personal SMS flow  - log the message server-side, then open native SMS app
         await messagesAPI.send(user._id, {
           conversation_id: conversationId,
-          content,
+          content: messageContent,
           channel: 'sms_personal',
         });
         
@@ -1067,7 +1104,7 @@ export default function ContactDetailScreen() {
           const ua = window.navigator.userAgent.toLowerCase();
           const isIos = /iphone|ipad|ipod/.test(ua);
           const sep = isIos ? '&' : '?';
-          const smsUrl = `sms:${encodeURIComponent(contact.phone || '')}${sep}body=${encodeURIComponent(content)}`;
+          const smsUrl = `sms:${encodeURIComponent(contact.phone || '')}${sep}body=${encodeURIComponent(messageContent)}`;
           window.open(smsUrl, '_self');
         }
         
@@ -1076,13 +1113,14 @@ export default function ContactDetailScreen() {
         // Email: send directly via Resend
         await messagesAPI.send(user._id, {
           conversation_id: conversationId,
-          content,
+          content: messageContent,
           channel: 'email',
         });
         showToast('Email sent!');
       }
       
       setComposerMessage('');
+      setSelectedMedia(null);
       setShowAISuggestion(false);
       setAiSuggestion('');
       // Refresh events to show the new message in the feed
@@ -3164,6 +3202,19 @@ export default function ContactDetailScreen() {
 
             {/* Composer box */}
             <View style={[s.composerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {/* Photo attachment preview */}
+              {selectedMedia?.uri && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 10, gap: 8 }} data-testid="composer-photo-preview">
+                  <Image source={{ uri: selectedMedia.uri }} style={{ width: 60, height: 60, borderRadius: 8 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>Photo attached</Text>
+                    <Text style={{ fontSize: 11, color: colors.textTertiary }}>Will be sent with your message</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setSelectedMedia(null)} style={{ padding: 4 }} data-testid="remove-photo-btn">
+                    <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              )}
               <TextInput
                 style={[s.composerInput, { color: colors.text }]}
                 placeholder="Type your message..."
@@ -3223,15 +3274,15 @@ export default function ContactDetailScreen() {
                   <button
                     type="button"
                     onClick={() => handleComposerSend()}
-                    disabled={!composerMessage.trim() || composerSending}
+                    disabled={(!composerMessage.trim() && !selectedMedia) || composerSending}
                     data-testid="composer-send-btn"
                     style={{
                       width: 36, height: 36, borderRadius: 18,
-                      backgroundColor: composerMessage.trim() && !composerSending
+                      backgroundColor: (composerMessage.trim() || selectedMedia) && !composerSending
                         ? (composerMode === 'sms' ? '#34C759' : '#AF52DE')
                         : colors.borderLight,
                       border: 'none',
-                      cursor: !composerMessage.trim() || composerSending ? 'not-allowed' : 'pointer',
+                      cursor: (!composerMessage.trim() && !selectedMedia) || composerSending ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
@@ -3482,7 +3533,7 @@ export default function ContactDetailScreen() {
         <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowPhotoOptionsModal(false)}>
           <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
             <View style={s.actionSheetGroup}>
-              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickImage(); }} data-testid="photo-option-add">
+              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickComposerPhoto(); }} data-testid="photo-option-add">
                 <Ionicons name="image-outline" size={22} color="#007AFF" />
                 <Text style={s.actionSheetButtonText}>Add a Photo</Text>
               </TouchableOpacity>
@@ -4226,7 +4277,8 @@ const getS = (colors: any) => StyleSheet.create({
   composerInput: {
     fontSize: 16, color: colors.text,
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
-    minHeight: 60, maxHeight: 160,
+    minHeight: 44, maxHeight: 200,
+    textAlignVertical: 'top',
   },
   composerToolbar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
