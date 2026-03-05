@@ -179,9 +179,7 @@ export default function ShowcasePage() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Sticky top bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="showroom-back-btn">
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <View style={{ width: 32 }} />
         <Text style={styles.topBarTitle}>{isStoreView ? `${data.store?.name || 'Store'} Showcase` : 'The Showcase'}</Text>
         <View style={{ width: 32 }} />
       </View>

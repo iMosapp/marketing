@@ -160,16 +160,6 @@ export default function CongratsCardPage() {
       style={[styles.container, { backgroundColor: style.background_color }]}
       contentContainerStyle={styles.contentContainer}
     >
-      {/* Back Button */}
-      <TouchableOpacity
-        onPress={() => router.back()}
-        style={styles.backBtn}
-        data-testid="congrats-card-back-btn"
-      >
-        <Ionicons name="chevron-back" size={22} color="#FFF" />
-        <Text style={styles.backBtnText}>Back</Text>
-      </TouchableOpacity>
-
       {/* Card Content */}
       <View ref={cardRef} style={styles.cardWrapper}>
         {/* Store Logo */}

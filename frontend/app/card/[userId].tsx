@@ -428,16 +428,9 @@ export default function DigitalCardPage() {
   return (
     <View style={styles.container}>
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
-        {/* Header with Back Button */}
+        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            style={styles.backButton}
-            accessibilityRole="button"
-            data-testid="back-button"
-          >
-            <Ionicons name="chevron-back" size={28} color="#C9A962" />
-          </TouchableOpacity>
+          <View style={{ width: 28 }} />
           <Text style={styles.headerTitle}>My Digital Card</Text>
           <View style={{ width: 28 }} />
         </View>
