@@ -509,7 +509,8 @@ async def update_store(store_id: str, store_data: dict):
     allowed_fields = [
         'name', 'organization_id', 'state', 'settings', 'phone', 'address', 'city',
         'review_links', 'website', 'logo_url', 'cover_image_url', 'primary_color',
-        'business_hours', 'timezone', 'social_links', 'slug', 'active'
+        'business_hours', 'timezone', 'social_links', 'slug', 'active',
+        'email_footer', 'industry'
     ]
     update_dict = {k: v for k, v in store_data.items() if k in allowed_fields}
     update_dict['updated_at'] = datetime.utcnow()
@@ -917,7 +918,7 @@ async def update_admin_user(
         if user_data.get('role') == 'super_admin' and requesting_user.get('role') != 'super_admin':
             raise HTTPException(status_code=403, detail="Only super admins can grant super admin role")
     
-    allowed_fields = ['name', 'phone', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active', 'onboarding_complete']
+    allowed_fields = ['name', 'phone', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active', 'onboarding_complete', 'title', 'bio', 'photo_url', 'social_links', 'social_instagram', 'social_facebook', 'social_linkedin']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
     
     result = await get_db().users.update_one(
