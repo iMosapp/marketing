@@ -4728,8 +4728,9 @@ const getS = (colors: any) => StyleSheet.create({
   modalSearchInput: { flex: 1, padding: 12, fontSize: 16, color: colors.text },
   pickerItem: {
     flexDirection: 'row', alignItems: 'center', padding: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+    borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10,
   },
+  pickerItemText: { fontSize: 16, fontWeight: '500', color: colors.text },
   pickerAvatar: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
