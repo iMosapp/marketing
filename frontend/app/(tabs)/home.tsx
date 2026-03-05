@@ -341,6 +341,14 @@ export default function HomeScreen() {
   const [cardSearch, setCardSearch] = useState('');
   const [cardContactsLoading, setCardContactsLoading] = useState(false);
 
+  // Contact picker for quick actions (share card, review, showcase → contact record)
+  const [showActionPicker, setShowActionPicker] = useState(false);
+  const [pendingAction, setPendingAction] = useState('');
+  const [actionPickerTitle, setActionPickerTitle] = useState('');
+  const [actionContacts, setActionContacts] = useState<any[]>([]);
+  const [actionSearch, setActionSearch] = useState('');
+  const [actionContactsLoading, setActionContactsLoading] = useState(false);
+
   // Universal share modals
   const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showPreview: boolean; previewUrl?: string; showQR: boolean; eventType: string }>({
     visible: false, title: '', subtitle: '', url: '', showPreview: true, showQR: false, eventType: '',
@@ -434,6 +442,34 @@ export default function HomeScreen() {
     try { const data = await contactsAPI.getAll(user._id); setCardContacts(data || []); } catch {}
     setCardContactsLoading(false);
   };
+
+  // Action picker — load contacts for quick actions
+  const loadActionContacts = async () => {
+    if (!user?._id) return;
+    setActionContactsLoading(true);
+    try { const data = await contactsAPI.getAll(user._id); setActionContacts(data || []); } catch {}
+    setActionContactsLoading(false);
+  };
+
+  const openActionPicker = (actionKey: string, title: string) => {
+    setPendingAction(actionKey);
+    setActionPickerTitle(title);
+    setActionSearch('');
+    setShowActionPicker(true);
+    loadActionContacts();
+  };
+
+  const handleActionContactSelect = (contact: any) => {
+    setShowActionPicker(false);
+    const contactId = contact._id || contact.id;
+    router.push(`/contact/${contactId}?action=${pendingAction}` as any);
+  };
+
+  const filteredActionContacts = actionContacts.filter(c => {
+    const q = actionSearch.toLowerCase();
+    if (!q) return true;
+    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q);
+  });
 
   const filteredCardContacts = cardContacts.filter(c => {
     const q = cardSearch.toLowerCase();
@@ -544,10 +580,10 @@ export default function HomeScreen() {
   };
 
   const TILES = [
-    { key: 'share-card', icon: 'card-outline', label: 'Share My Card', color: '#007AFF', onPress: () => openShareModal('share-card') },
-    { key: 'share-review', icon: 'star-outline', label: 'Review Link', color: '#FFD60A', onPress: () => openShareModal('share-review') },
-    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => { setSendCardStep('type'); setShowSendCard(true); } },
-    { key: 'showroom', icon: 'storefront-outline', label: 'My Showcase', color: '#34C759', onPress: () => openShareModal('showroom') },
+    { key: 'share-card', icon: 'card-outline', label: 'Share My Card', color: '#007AFF', onPress: () => openActionPicker('digitalcard', 'Share My Card') },
+    { key: 'share-review', icon: 'star-outline', label: 'Review Link', color: '#FFD60A', onPress: () => openActionPicker('review', 'Send Review Link') },
+    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => openActionPicker('congrats', 'Send a Card') },
+    { key: 'showroom', icon: 'storefront-outline', label: 'My Showcase', color: '#34C759', onPress: () => openActionPicker('showcase', 'Share Showcase') },
     { key: 'keypad', icon: 'keypad-outline', label: 'Keypad', color: '#32ADE6', onPress: () => { setContactActionMode('keypad'); setShowContactAction(true); } },
     { key: 'add-contact', icon: 'person-add-outline', label: 'Add Contact', color: '#AF52DE', onPress: () => { setContactActionMode('search'); setShowContactAction(true); } },
   ];
@@ -692,6 +728,68 @@ export default function HomeScreen() {
       />
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
+
+      {/* Action Picker — Pick a contact then navigate to their record to complete the action */}
+      <Modal visible={showActionPicker} animationType="slide" transparent={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowActionPicker(false)} style={{ padding: 4 }} data-testid="action-picker-back-btn">
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
+              {actionPickerTitle}
+            </Text>
+            <View style={{ width: 32 }} />
+          </View>
+
+          <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Select a contact to send to</Text>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+            <TextInput
+              style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: colors.text }}
+              placeholder="Search contacts..."
+              placeholderTextColor={colors.textTertiary}
+              value={actionSearch}
+              onChangeText={setActionSearch}
+              data-testid="action-picker-search"
+            />
+          </View>
+
+          {actionContactsLoading ? (
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
+          ) : (
+            <FlatList
+              data={filteredActionContacts}
+              keyExtractor={(item) => item._id}
+              style={{ flex: 1, paddingHorizontal: 16 }}
+              renderItem={({ item }) => {
+                const name = `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.phone || 'Unknown';
+                const initials = `${(item.first_name || '?')[0]}${(item.last_name || '')[0] || ''}`.toUpperCase();
+                return (
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: colors.border, gap: 10 }}
+                    onPress={() => handleActionContactSelect(item)}
+                    data-testid={`action-contact-${item._id}`}
+                  >
+                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{initials}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{name}</Text>
+                      {item.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.phone}</Text> : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 14 }}>
+                  {actionSearch ? 'No contacts found' : 'No contacts yet'}
+                </Text>
+              }
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
 
       {/* Send a Card  - Step 1: Template Picker, Step 2: Contact Search */}
       <Modal visible={showSendCard} animationType="slide" transparent={false}>

@@ -287,7 +287,7 @@ export default function ContactDetailScreen() {
     },
   };
   const router = useRouter();
-  const { id, prefill, channel } = useLocalSearchParams();
+  const { id, prefill, channel, action } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -426,6 +426,13 @@ export default function ContactDetailScreen() {
       else setComposerMode('sms');
     }
   }, [prefill, channel]);
+
+  // Auto-trigger action from query param (e.g. /contact/123?action=digitalcard)
+  useEffect(() => {
+    if (action && typeof action === 'string' && !isNewContact && !loading && contact.first_name) {
+      setTimeout(() => handleQuickAction(action), 300);
+    }
+  }, [action, loading, contact.first_name]);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestion, setShowAISuggestion] = useState(false);
@@ -990,7 +997,6 @@ export default function ContactDetailScreen() {
         setComposerMode('sms');
         break;
       case 'call': {
-        const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contactEmail)}`;
         router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
         break;
       }
@@ -1004,7 +1010,17 @@ export default function ContactDetailScreen() {
         openBusinessCardPicker();
         break;
       case 'gift':
+      case 'congrats':
         setShowCardTemplatePicker(true);
+        break;
+      case 'digitalcard':
+        openBusinessCardPicker();
+        break;
+      case 'linkpage':
+        sendLinkPageLink();
+        break;
+      case 'showcase':
+        sendShowcaseLink();
         break;
     }
   };
