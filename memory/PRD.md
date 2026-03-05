@@ -11,17 +11,23 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
+### Customer-Facing URL Fix (Mar 2026)
+- **Critical Fix:** All outgoing customer-facing links (review requests, share card, showcase, link page, congrats cards) were incorrectly using `window.location.origin`, causing links to point to test/staging domains instead of production
+- Added `EXPO_PUBLIC_APP_URL=https://app.imonsocial.com` to frontend env
+- Fixed 10+ files: home.tsx, more.tsx, create-card.tsx, p/[userId].tsx, l/[username].tsx, brand-assets.tsx, app-directory.tsx, pricing.tsx, partner agreements
+- All links now use `process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'`
+- Backend short URL system already uses `APP_URL` correctly
+
 ### Inbox Refresh Fix (Mar 2026)
-- Added `useFocusEffect` from `expo-router` to `/app/frontend/app/(tabs)/inbox.tsx` so conversations reload every time the Inbox tab gains focus
-- Pull-to-refresh also correctly triggers `loadConversations`
+- Added `useFocusEffect` from `expo-router` to inbox.tsx so conversations reload on tab focus
+- Pull-to-refresh works correctly
 
 ### Photo URL Fix in SMS Composer (Mar 2026)
-- Fixed photo attachments in contact page composer sending raw relative API paths (e.g. `/api/images/imos/...`) in SMS body
-- Now converts relative URLs to absolute public URLs using `window.location.origin` before inserting into message content
-- Recipients now see a clickable link instead of a raw path
+- Fixed photo attachments sending raw API paths in SMS body
+- Now converts to absolute public URLs before inserting into message content
 
 ### Persistent Login (Mar 2026)
-- HTTP-only cookies (`imos_session`) for indefinite sessions surviving browser restarts and iOS ITP
+- HTTP-only cookies (`imos_session`) for indefinite sessions
 
 ### Dynamic Share Previews (Mar 2026)
 - Short URL redirector serves dynamic OG tags for branded link previews
@@ -61,3 +67,9 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## Mocked Services
 - Twilio SMS: All SMS functionality is MOCKED
+
+## Deployment Checklist
+- Ensure `APP_URL=https://app.imonsocial.com` in backend .env
+- Ensure `EXPO_PUBLIC_APP_URL=https://app.imonsocial.com` in frontend .env
+- Verify `RESEND_API_KEY` is set in production
+- Verify `MONGO_URL` points to Atlas (NOT localhost)
