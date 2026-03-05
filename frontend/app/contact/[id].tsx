@@ -900,8 +900,9 @@ export default function ContactDetailScreen() {
     if (!user) return;
     try {
       setSaving(true);
+      let result: any = null;
       if (isNewContact) {
-        await contactsAPI.create(user._id, contact);
+        result = await contactsAPI.create(user._id, contact);
       } else {
         await contactsAPI.update(user._id, id as string, contact);
         // Log note change to activity feed
@@ -923,7 +924,13 @@ export default function ContactDetailScreen() {
       }
       showToast('Contact saved!', 'success');
       if (isNewContact) {
-        router.back();
+        // Navigate to the new contact's page so user can record voice notes, etc.
+        const newId = result?._id || result?.id;
+        if (newId) {
+          router.replace(`/contact/${newId}` as any);
+        } else {
+          router.back();
+        }
       } else {
         setIsEditing(false);
         // Reload contact data so the profile picture and all fields reflect the saved state
@@ -1857,13 +1864,36 @@ export default function ContactDetailScreen() {
                   <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Add Tag</Text>
                   <TextInput
                     style={[s.input, { marginBottom: 12 }]}
-                    placeholder="Search tags..."
+                    placeholder="Search or create a tag..."
                     placeholderTextColor={colors.textTertiary}
                     value={tagSearch}
                     onChangeText={setTagSearch}
                     autoFocus
                   />
                   <ScrollView style={{ maxHeight: 250 }}>
+                    {/* Show "Create new tag" option when search doesn't match existing tags */}
+                    {tagSearch.trim() && !availableTags.some(t => t.name.toLowerCase() === tagSearch.trim().toLowerCase()) && (
+                      <TouchableOpacity
+                        style={[s.pickerItem, { backgroundColor: '#007AFF10' }]}
+                        onPress={async () => {
+                          const newName = tagSearch.trim();
+                          if (!newName) return;
+                          try {
+                            await api.post(`/tags/${user?._id}`, { name: newName, color: '#C9A962', icon: 'pricetag' });
+                            addTag(newName);
+                            loadTags();
+                            setTagSearch('');
+                            showToast(`Tag "${newName}" created!`, 'success');
+                          } catch (e: any) {
+                            showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to create tag');
+                          }
+                        }}
+                        data-testid="create-new-tag-btn"
+                      >
+                        <Ionicons name="add-circle" size={22} color="#007AFF" />
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#007AFF' }}>Create "{tagSearch.trim()}"</Text>
+                      </TouchableOpacity>
+                    )}
                     {availableTags.filter(t => !contact.tags.includes(t.name) && (!tagSearch || t.name.toLowerCase().includes(tagSearch.toLowerCase()))).map(tag => (
                       <TouchableOpacity key={tag._id} style={s.pickerItem} onPress={() => addTag(tag.name)} data-testid={`tag-option-${tag.name}`}>
                         {tag.icon && <Ionicons name={tag.icon as any} size={18} color={tag.color || colors.textSecondary} />}
