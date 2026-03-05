@@ -2068,6 +2068,26 @@ export default function ContactDetailScreen() {
                   )}
                 </View>
               </View>
+
+              {/* Quick Record Button */}
+              {!isEditing && !isNewContact && (
+                <TouchableOpacity
+                  onPress={isRecording ? stopRecording : startRecording}
+                  activeOpacity={0.7}
+                  style={{
+                    width: 44, height: 44, borderRadius: 22,
+                    backgroundColor: isRecording ? '#FF3B30' : '#34C759',
+                    alignItems: 'center', justifyContent: 'center',
+                    shadowColor: isRecording ? '#FF3B30' : '#34C759',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
+                    marginLeft: 8,
+                  }}
+                  data-testid="hero-record-btn"
+                >
+                  <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color="#FFF" />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Compact stats line */}
