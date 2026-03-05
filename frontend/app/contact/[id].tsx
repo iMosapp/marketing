@@ -739,20 +739,22 @@ export default function ContactDetailScreen() {
       showSimpleAlert('Missing Info', 'No phone number available');
       return;
     }
-    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contact.email || '')}`;
     
     switch (action.action) {
       case 'sms':
-        router.push(`/thread/${id}?${threadParams}&mode=sms&prefill=${encodeURIComponent(action.suggested_message || '')}`);
+        setComposerMode('sms');
+        setComposerMessage(action.suggested_message || '');
         break;
       case 'congrats':
-        router.push(`/thread/${id}?${threadParams}&mode=congrats`);
+        setShowCardTemplatePicker(true);
         break;
       case 'email':
-        router.push(`/thread/${id}?${threadParams}&mode=email&prefill=${encodeURIComponent(action.suggested_message || '')}`);
+        setComposerMode('email');
+        setComposerMessage(action.suggested_message || '');
         break;
       default:
-        router.push(`/thread/${id}?${threadParams}&mode=sms&prefill=${encodeURIComponent(action.suggested_message || '')}`);
+        setComposerMode('sms');
+        setComposerMessage(action.suggested_message || '');
     }
   };
 
@@ -888,27 +890,26 @@ export default function ContactDetailScreen() {
       return;
     }
     
-    // Build thread URL with contact info  - always include both email fields
-    const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contactEmail)}`;
-    
     switch (key) {
       case 'sms':
-        router.push(`/thread/${id}?${threadParams}&mode=sms`);
+        setComposerMode('sms');
         break;
-      case 'call':
+      case 'call': {
+        const threadParams = `contact_name=${encodeURIComponent(contact.first_name + ' ' + (contact.last_name || ''))}&contact_phone=${encodeURIComponent(contact.phone || '')}&contact_email=${encodeURIComponent(contactEmail)}`;
         router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent((contact.first_name || '') + ' ' + (contact.last_name || ''))}&phone=${encodeURIComponent(contact.phone)}`);
         break;
+      }
       case 'email':
-        router.push(`/thread/${id}?${threadParams}&mode=email`);
+        setComposerMode('email');
         break;
       case 'review':
-        router.push(`/thread/${id}?${threadParams}&mode=review`);
+        setShowReviewLinks(true);
         break;
       case 'card':
-        router.push(`/thread/${id}?${threadParams}&mode=card`);
+        openBusinessCardPicker();
         break;
       case 'gift':
-        router.push(`/thread/${id}?${threadParams}&mode=congrats`);
+        setShowCardTemplatePicker(true);
         break;
     }
   };

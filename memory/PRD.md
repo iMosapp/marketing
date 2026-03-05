@@ -31,7 +31,11 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Quick action tiles + Action Items (pending tasks) + Recent Activity (from contact_events)
 - Auto-refresh every 30 seconds
 
-### Activity Tab (Bottom Nav)
+### Contact Detail Quick Actions
+- All actions (Share Card, Review Link, Congrats, SMS, Email) now stay on the contact page
+- Opens modals/composer locally instead of navigating to inbox thread
+- Suggested actions pre-fill the composer with the message text
+- User can update notes, view history, and continue working without extra navigation
 - ScrollView-based rendering (fixed FlatList web virtualization bug)
 - Larger tiles, auto-refresh every 30s, tappable items → contact detail
 - 100 events loaded per page
