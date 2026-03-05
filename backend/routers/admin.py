@@ -678,7 +678,8 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
         "store_id": user_data.get('store_id'),
         "state": user_data.get('state', ''),
         "created_at": datetime.utcnow(),
-        "onboarding_complete": True,
+        "onboarding_complete": user_data.get('onboarding_complete', True),
+        "needs_password_change": user_data.get('needs_password_change', False),
         "stats": {
             'contacts_added': 0,
             'messages_sent': 0,

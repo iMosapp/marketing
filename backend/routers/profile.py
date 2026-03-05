@@ -106,7 +106,8 @@ async def update_profile(user_id: str, data: dict):
     db = get_db()
     
     allowed_fields = [
-        'name', 'phone', 'title', 'photo_url', 'social_links'
+        'name', 'phone', 'title', 'photo_url', 'social_links', 'onboarding_complete',
+        'social_instagram', 'social_facebook', 'social_linkedin'
     ]
     
     # Handle persona fields separately

@@ -185,6 +185,12 @@ export default function LoginScreen() {
         return;
       }
       
+      // Check if user needs to complete profile onboarding
+      if (loggedInUser?.onboarding_complete === false && loggedInUser?.role !== 'super_admin') {
+        router.replace('/auth/complete-profile' as any);
+        return;
+      }
+      
       const defaultRoute = getDefaultRoute(loggedInUser?.role);
       
       // After successful login, check if we should offer biometric setup
@@ -222,6 +228,12 @@ export default function LoginScreen() {
         // Check if user needs to change password
         if (loggedInUser?.needs_password_change) {
           router.replace('/auth/change-password');
+          return;
+        }
+        
+        // Check if user needs to complete profile onboarding
+        if (loggedInUser?.onboarding_complete === false && loggedInUser?.role !== 'super_admin') {
+          router.replace('/auth/complete-profile' as any);
           return;
         }
         
