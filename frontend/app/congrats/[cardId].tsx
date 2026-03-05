@@ -510,9 +510,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   photoContainer: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 180,
+    height: 180,
+    borderRadius: 20,
     borderWidth: 4,
     overflow: 'hidden',
     marginBottom: 20,
