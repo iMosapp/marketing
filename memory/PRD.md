@@ -11,31 +11,36 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
+### Inbox Refresh Fix (Mar 2026)
+- Added `useFocusEffect` from `expo-router` to `/app/frontend/app/(tabs)/inbox.tsx` so conversations reload every time the Inbox tab gains focus
+- Pull-to-refresh also correctly triggers `loadConversations`
+
+### Photo URL Fix in SMS Composer (Mar 2026)
+- Fixed photo attachments in contact page composer sending raw relative API paths (e.g. `/api/images/imos/...`) in SMS body
+- Now converts relative URLs to absolute public URLs using `window.location.origin` before inserting into message content
+- Recipients now see a clickable link instead of a raw path
+
+### Persistent Login (Mar 2026)
+- HTTP-only cookies (`imos_session`) for indefinite sessions surviving browser restarts and iOS ITP
+
+### Dynamic Share Previews (Mar 2026)
+- Short URL redirector serves dynamic OG tags for branded link previews
+
+### Training Hub V2 (Mar 2026)
+- Role-based content filtering, White Label Partner track, admin CRUD interface
+
 ### Contact Page Bug Fixes (Mar 2026)
-- **Photo Attachment:** New `pickComposerPhoto()` function properly sets `selectedMedia` state. Photo preview shows in composer with "Photo attached" label and remove button. Photo uploads to `/api/images/upload` on send and URL is included in the message.
-- **Composer Text Expansion:** TextInput now has `minHeight: 44`, `maxHeight: 200`, `textAlignVertical: 'top'` for proper expansion when templates prefill long messages.
-- **Auto-Refresh Disabled:** Removed 15-second polling interval that was jumping users back to the top of the activity feed. Events now only refresh on page focus and after user actions.
+- Photo attachments, composer text expansion, auto-refresh removal, call logging, review link tracking, referral count ticker
 
 ### Home Screen & Action Items Fix (Mar 2026)
-- Notification Bell now uses `Modal` component (renders above tiles)
-- Action Items navigate to contact record with prefilled composer
-- Task Banner on contact page shows task context and auto-opens composer
-- Quick Action tiles open Contact Picker → Contact Record flow
+- Notification Bell Modal, action items navigation, quick action contact picker flow
 
-### Lead Tracking Back Button Fix (Mar 2026)
-- Fixed hardcoded white colors on back button, period tabs, bar backgrounds
-
-### LMS / Training Hub — Role-Based (Mar 2026)
-- 4 training tracks with 21 total lessons covering all roles
-- Role-based filtering, Admin CRUD at `/admin/manage-training`
-- White Label Partner Guide track (5 lessons)
-
-### Admin Onboarding Wizard, Partner Portal, First-Login Profile Completion
 ### Communication (carrier-agnostic messaging, white-label emails)
 ### Reporting & Activity (14+ metrics, scheduled delivery)
+### Admin Onboarding Wizard, Partner Portal, First-Login Profile Completion
 
 ## Pending Issues
-- P0: Production email delivery — BLOCKED on user verifying `RESEND_API_KEY`
+- P0: Production email delivery — BLOCKED on user verifying `RESEND_API_KEY` in production
 - P2: React Hydration Error #418
 - P2: Mobile app `tags` data sync
 
