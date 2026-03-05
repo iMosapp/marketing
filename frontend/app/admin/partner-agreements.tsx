@@ -35,6 +35,7 @@ interface Agreement {
   partner_email?: string;
   commission_tier?: { name: string; percentage: number };
   custom_commission_notes?: string;
+  is_white_label?: boolean;
   payment_required: boolean;
   payment_amount?: number;
   status: string;
@@ -61,6 +62,7 @@ export default function PartnerAgreementsScreen() {
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [customCommissionNotes, setCustomCommissionNotes] = useState('');
+  const [isWhiteLabel, setIsWhiteLabel] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function PartnerAgreementsScreen() {
         template_id: selectedTemplate.id,
         commission_tier: selectedTier,
         custom_commission_notes: customCommissionNotes || null,
+        is_white_label: isWhiteLabel,
         partner_email: partnerEmail || null,
         partner_name: partnerName || null,
         payment_required: paymentRequired,
@@ -134,6 +137,7 @@ export default function PartnerAgreementsScreen() {
     setPaymentRequired(false);
     setPaymentAmount('');
     setCustomCommissionNotes('');
+    setIsWhiteLabel(false);
     setCreatedLink(null);
   };
 
@@ -252,6 +256,13 @@ export default function PartnerAgreementsScreen() {
                 <Text style={styles.agreementCustomCommission} numberOfLines={2}>
                   {agreement.custom_commission_notes}
                 </Text>
+              )}
+              
+              {agreement.is_white_label && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: '#C9A96215', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, alignSelf: 'flex-start' }}>
+                  <Ionicons name="layers" size={14} color="#C9A962" />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C9A962' }}>White Label</Text>
+                </View>
               )}
               
               <View style={styles.agreementFooter}>
@@ -432,6 +443,21 @@ export default function PartnerAgreementsScreen() {
                     />
                   </View>
                 )}
+
+                {/* White Label Toggle */}
+                <TouchableOpacity
+                  style={styles.paymentToggle}
+                  onPress={() => setIsWhiteLabel(!isWhiteLabel)}
+                  data-testid="white-label-toggle"
+                >
+                  <View style={[styles.checkbox, isWhiteLabel && { backgroundColor: '#C9A962', borderColor: '#C9A962' }]}>
+                    {isWhiteLabel && <Ionicons name="checkmark" size={16} color="#000" />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.paymentToggleText}>White Label Partner</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Partner will have branded sub-orgs, accounts & users</Text>
+                  </View>
+                </TouchableOpacity>
 
                 {/* Create Button */}
                 <TouchableOpacity

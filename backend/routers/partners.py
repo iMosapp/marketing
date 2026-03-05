@@ -292,6 +292,7 @@ async def create_agreement(data: dict):
         "content": data.get("content", template["content"]),  # Allow customization
         "commission_tier": data.get("commission_tier"),  # Selected tier
         "custom_commission_notes": data.get("custom_commission_notes"),  # Free-form commission structure
+        "is_white_label": data.get("is_white_label", False),  # White label partner flag
         "payment_required": data.get("payment_required", template.get("payment_required", False)),
         "payment_amount": data.get("payment_amount", template.get("payment_amount")),
         "partner_email": data.get("partner_email"),  # Optional pre-fill
@@ -336,6 +337,7 @@ async def list_agreements(status: Optional[str] = None):
             "partner_email": a.get("partner_email") or a.get("signed_partner", {}).get("email"),
             "commission_tier": a.get("commission_tier"),
             "custom_commission_notes": a.get("custom_commission_notes"),
+            "is_white_label": a.get("is_white_label", False),
             "payment_required": a.get("payment_required", False),
             "payment_amount": a.get("payment_amount"),
             "status": a.get("status"),
@@ -376,6 +378,7 @@ async def get_agreement(agreement_id: str):
         "content": agreement.get("content"),
         "commission_tier": agreement.get("commission_tier"),
         "custom_commission_notes": agreement.get("custom_commission_notes"),
+        "is_white_label": agreement.get("is_white_label", False),
         "commission_tiers": template.get("commission_tiers", []) if template else [],
         "payment_required": agreement.get("payment_required", False),
         "payment_amount": agreement.get("payment_amount"),
@@ -394,7 +397,7 @@ async def update_agreement(agreement_id: str, data: dict):
     """Update an agreement (before sending)"""
     db = get_db()
     
-    allowed_fields = ["content", "commission_tier", "custom_commission_notes", "payment_required", "payment_amount", "partner_email", "partner_name", "notes", "status"]
+    allowed_fields = ["content", "commission_tier", "custom_commission_notes", "is_white_label", "payment_required", "payment_amount", "partner_email", "partner_name", "notes", "status"]
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     update_dict["updated_at"] = datetime.utcnow()
     

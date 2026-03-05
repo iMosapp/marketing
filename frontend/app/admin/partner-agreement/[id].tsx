@@ -27,6 +27,7 @@ interface Agreement {
   partner_email?: string;
   commission_tier?: { name: string; percentage: number };
   custom_commission_notes?: string;
+  is_white_label?: boolean;
   commission_tiers?: { name: string; percentage: number; description?: string }[];
   payment_required: boolean;
   payment_amount?: number;
@@ -238,6 +239,12 @@ export default function PartnerAgreementDetailScreen() {
             </View>
           </View>
           <Text style={styles.typeText}>{agreement.type === 'reseller' ? 'Reseller Agreement' : 'Referral Partner Agreement'}</Text>
+          {agreement.is_white_label && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: '#C9A96218', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, alignSelf: 'flex-start' }}>
+              <Ionicons name="layers" size={16} color="#C9A962" />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>White Label Partner</Text>
+            </View>
+          )}
         </View>
 
         {/* Partner Info */}
