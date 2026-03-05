@@ -31,7 +31,11 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Quick action tiles + Action Items (pending tasks) + Recent Activity (from contact_events)
 - Auto-refresh every 30 seconds
 
-### Contact Detail Quick Actions
+### Review Links
+- Review links now load from BOTH user-level AND store-level settings
+- Store-level links (Google, Yelp, Facebook, DealerRater, etc.) merge with user-level overrides
+- Handles custom review links stored as arrays in store settings
+- Fixed: Contact page was calling non-existent `/store/` endpoint instead of `/admin/stores/`
 - All actions (Share Card, Review Link, Congrats, SMS, Email) now stay on the contact page
 - Opens modals/composer locally instead of navigating to inbox thread
 - Suggested actions pre-fill the composer with the message text

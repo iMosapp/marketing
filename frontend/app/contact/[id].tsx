@@ -560,15 +560,71 @@ export default function ContactDetailScreen() {
   const loadToolbarData = async () => {
     if (!user) return;
     try {
-      const [templatesRes, storeRes] = await Promise.all([
-        api.get(`/messages/templates/${user._id}`).catch(() => ({ data: [] })),
-        api.get(`/store/${user.org_id || user._id}`).catch(() => ({ data: null })),
-      ]);
-      setTemplates(templatesRes.data || []);
-      if (storeRes.data) {
-        setStoreSlug(storeRes.data.slug || '');
-        setReviewLinks(storeRes.data.review_links || {});
-        setCustomLinkName(storeRes.data.custom_link_name || '');
+      // Load templates
+      const templatesRes = await api.get(`/messages/templates/${user._id}`).catch(() => ({ data: [] }));
+      setTemplates(Array.isArray(templatesRes.data) ? templatesRes.data : []);
+
+      // Load review links from user-level first
+      let userReviewLinks: Record<string, string> = {};
+      let userCustomName = '';
+      try {
+        const reviewRes = await api.get(`/users/${user._id}/review-links`);
+        userReviewLinks = reviewRes.data?.review_links || {};
+        userCustomName = reviewRes.data?.custom_link_name || '';
+      } catch { }
+
+      // Load store data (slug + store-level review links)
+      try {
+        if ((user as any).store_slug) {
+          setStoreSlug((user as any).store_slug);
+        }
+        if (user.store_id) {
+          const storeRes = await api.get(`/admin/stores/${user.store_id}`, {
+            headers: { 'X-User-ID': user._id }
+          });
+          const storeData = storeRes.data;
+          if (storeData) {
+            // Set store slug
+            const slug = storeData.slug;
+            if (slug) {
+              setStoreSlug(slug);
+            } else if (storeData.name) {
+              setStoreSlug(storeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+            }
+            // Merge store-level review links with user-level (user overrides store)
+            const storeLinks = storeData.review_links || {};
+            const mergedLinks: Record<string, string> = {};
+            for (const [key, val] of Object.entries(storeLinks)) {
+              if (key === 'custom' && Array.isArray(val)) {
+                // Handle custom links array - use first one with a name
+                for (const item of val as any[]) {
+                  if (item?.url) {
+                    mergedLinks['custom'] = item.url;
+                    if (item.name && !userCustomName) {
+                      setCustomLinkName(item.name);
+                    }
+                    break;
+                  }
+                }
+              } else if (typeof val === 'string' && val) {
+                mergedLinks[key] = val;
+              }
+            }
+            // User-level links override store-level
+            for (const [key, val] of Object.entries(userReviewLinks)) {
+              if (typeof val === 'string' && val) mergedLinks[key] = val;
+            }
+            setReviewLinks(mergedLinks);
+            setCustomLinkName(userCustomName || storeData.custom_link_name || '');
+          }
+        } else {
+          // No store — just use user-level links
+          setReviewLinks(userReviewLinks);
+          setCustomLinkName(userCustomName);
+        }
+      } catch {
+        setReviewLinks(userReviewLinks);
+        setCustomLinkName(userCustomName);
       }
     } catch (e) {
       console.error('Toolbar data load error:', e);
@@ -2756,6 +2812,8 @@ export default function ContactDetailScreen() {
                   facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
                   yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
                   trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
+                  dealerrater: { name: 'DealerRater', icon: 'car-sport', color: '#ED8B00' },
+                  cars_com: { name: 'Cars.com', icon: 'car', color: '#5C2D91' },
                   custom: { name: customLinkName || 'Custom Link', icon: 'link', color: colors.textSecondary },
                 };
                 const platform = platformNames[platformId] || platformNames.custom;

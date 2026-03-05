@@ -366,29 +366,60 @@ export default function ThreadScreen() {
 
   const loadReviewLinks = async () => {
     if (!user) return;
+    let userLinks: Record<string, string> = {};
+    let userCustomName = '';
     try {
       const response = await messagesAPI.getReviewLinks(user._id);
-      setReviewLinks(response.review_links || {});
-      setCustomLinkName(response.custom_link_name || '');
+      userLinks = response.review_links || {};
+      userCustomName = response.custom_link_name || '';
     } catch (error) {
-      console.log('No review links configured');
+      console.log('No user-level review links');
     }
-    // Fetch store slug for i'M On Social review link
+    // Fetch store slug + store-level review links
     try {
       if ((user as any).store_slug) {
         setStoreSlug((user as any).store_slug);
-      } else if (user.store_id) {
+      }
+      if (user.store_id) {
         const storeRes = await api.get(`/admin/stores/${user.store_id}`, {
           headers: { 'X-User-ID': user._id }
         });
-        const slug = storeRes.data?.slug;
-        if (slug) {
-          setStoreSlug(slug);
-        } else if (storeRes.data?.name) {
-          setStoreSlug(storeRes.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+        const storeData = storeRes.data;
+        if (storeData) {
+          const slug = storeData.slug;
+          if (slug) {
+            setStoreSlug(slug);
+          } else if (storeData.name) {
+            setStoreSlug(storeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+          }
+          // Merge store-level review links with user-level (user overrides store)
+          const storeLinks = storeData.review_links || {};
+          const merged: Record<string, string> = {};
+          for (const [key, val] of Object.entries(storeLinks)) {
+            if (key === 'custom' && Array.isArray(val)) {
+              for (const item of val as any[]) {
+                if (item?.url) {
+                  merged['custom'] = item.url;
+                  if (item.name) setCustomLinkName(item.name);
+                  break;
+                }
+              }
+            } else if (typeof val === 'string' && val) {
+              merged[key] = val;
+            }
+          }
+          for (const [key, val] of Object.entries(userLinks)) {
+            if (typeof val === 'string' && val) merged[key] = val;
+          }
+          setReviewLinks(merged);
+          setCustomLinkName(userCustomName || storeData.custom_link_name || '');
+          return;
         }
       }
     } catch {}
+    // Fallback to user-level only
+    setReviewLinks(userLinks);
+    setCustomLinkName(userCustomName);
   };
 
   // Load available tags for quick contact creation
@@ -2375,6 +2406,8 @@ export default function ThreadScreen() {
                   facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
                   yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
                   trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
+                  dealerrater: { name: 'DealerRater', icon: 'car-sport', color: '#ED8B00' },
+                  cars_com: { name: 'Cars.com', icon: 'car', color: '#5C2D91' },
                   custom: { name: customLinkName || 'Custom Link', icon: 'link', color: colors.textSecondary },
                 };
                 const platform = platformNames[platformId] || platformNames.custom;
