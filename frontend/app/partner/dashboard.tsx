@@ -91,6 +91,23 @@ export default function PartnerDashboard() {
           <Ionicons name="arrow-forward" size={22} color="#000" />
         </TouchableOpacity>
 
+        {/* Training Hub Link */}
+        <TouchableOpacity
+          style={[s.onboardBtn, { backgroundColor: '#AF52DE' }]}
+          onPress={() => router.push('/training-hub' as any)}
+          activeOpacity={0.8}
+          data-testid="partner-training-btn"
+        >
+          <View style={[s.onboardIcon, { backgroundColor: '#FFF' }]}>
+            <Ionicons name="school" size={24} color="#AF52DE" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.onboardTitle, { color: '#FFF' }]}>Training Hub</Text>
+            <Text style={[s.onboardSub, { color: 'rgba(255,255,255,0.8)' }]}>Learn how to sell, onboard, and support clients</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={22} color="#FFF" />
+        </TouchableOpacity>
+
         {/* Stats Row */}
         <View style={s.statsRow}>
           <View style={s.statCard}>

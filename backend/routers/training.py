@@ -2,9 +2,10 @@
 Training / LMS Router
 Role-based learning tracks with progress tracking and admin-editable content.
 """
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Query
 from bson import ObjectId
 from datetime import datetime, timezone
+from typing import Optional
 
 router = APIRouter(prefix="/training", tags=["training"])
 
@@ -170,13 +171,79 @@ SEED_TRACKS = [
         ],
     },
     {
+        "slug": "white-label-partners",
+        "title": "White Label Partner Guide",
+        "description": "Run the platform under your brand — setup, client onboarding, and support playbook.",
+        "icon": "color-palette",
+        "color": "#AF52DE",
+        "roles": ["partner", "reseller", "admin", "super_admin"],
+        "order": 3,
+        "lessons": [
+            {
+                "slug": "wl-what-is-white-label",
+                "title": "What is White Labeling?",
+                "description": "Understand how white-label works and what you control.",
+                "icon": "layers",
+                "duration": "4 min",
+                "order": 1,
+                "content": "## What is White Labeling?\n\nAs a **white-label partner**, you run i'M On Social under **your own brand**. Your clients see your logo, your colors, and your company name — they never see ours.\n\n### What You Control\n- **Your logo** replaces ours throughout the app\n- **Your brand colors** are applied to buttons, headers, and emails\n- **Your company name** appears in all client-facing communications\n- **Custom email domain** — emails come from your domain (e.g., noreply@yourbrand.com)\n- **Custom footer text** on all automated messages\n\n### What Stays the Same\n- The core platform functionality\n- All features (messaging, cards, reviews, reporting)\n- Backend infrastructure and uptime\n- Mobile app experience\n\n### Your Value Proposition\nWhite labeling lets you:\n- Build a **recurring revenue stream** without building software\n- Offer a **premium, branded experience** to your clients\n- **Differentiate** from competitors who resell generic tools\n- Maintain **full control** of the client relationship\n\n### Getting Started\nYour admin will configure your brand assets. Once set up, everything your clients see will carry your brand.",
+                "video_url": "",
+                "steps": ["Review your brand assets (logo, colors, tagline)", "Confirm your custom email domain is verified", "Visit the White Label settings page to see your branding", "Open a test account to see the white-label experience"],
+            },
+            {
+                "slug": "wl-branding-setup",
+                "title": "Setting Up Your Brand",
+                "description": "Configure logos, colors, and email branding.",
+                "icon": "brush",
+                "duration": "5 min",
+                "order": 2,
+                "content": "## Setting Up Your Brand\n\n### Brand Assets Needed\nBefore you begin, gather:\n1. **Logo** — High-res PNG with transparent background (min 400x400px)\n2. **Primary brand color** — Hex code (e.g., #FF5500)\n3. **Secondary color** — For accents and highlights\n4. **Company tagline** — Short phrase for email footers\n5. **Support email** — Where clients send questions\n\n### Configuration Steps\n1. Go to **Admin > White Label Settings**\n2. Upload your logo\n3. Set your primary and secondary brand colors\n4. Enter your company name and tagline\n5. Configure your email \"From\" name and domain\n6. Save and preview\n\n### Email Branding\nAll automated emails will include:\n- Your logo at the top\n- Your brand colors for buttons and accents\n- Your company name in the footer\n- A \"Powered by\" link (optional, can be hidden)\n\n### Testing Your Brand\n- Send a test email from the inbox to yourself\n- Open a digital business card link\n- Check the login page appearance\n- Verify review request emails look correct\n\n### Best Practices\n- Use a **clean, horizontal logo** for email headers\n- Choose colors with **good contrast** for readability\n- Keep your tagline **under 10 words**\n- Test on both desktop and mobile email clients",
+                "video_url": "",
+                "steps": ["Upload your logo to the White Label settings", "Set your brand colors", "Send a test email and verify branding", "Check the digital card appearance"],
+            },
+            {
+                "slug": "wl-onboarding-clients",
+                "title": "Onboarding Clients Under Your Brand",
+                "description": "The step-by-step process to get clients live with your branded platform.",
+                "icon": "person-add",
+                "duration": "6 min",
+                "order": 3,
+                "content": "## Onboarding Clients Under Your Brand\n\n### Overview\nWhen you onboard a client, they experience **your brand** from day one. Here's how to deliver a seamless, professional onboarding.\n\n### Step 1: Prepare the Account\n1. Use the **Partner Onboard Wizard** to create the organization\n2. Upload the client's store logo and set their location details\n3. Add team members — the system generates temporary passwords\n4. Download the credentials CSV\n\n### Step 2: Customize Their Experience\n- Their emails will show **your logo and colors** (not theirs)\n- Digital cards will link back to **your branded domain**\n- Review requests go out under **your brand identity**\n\n### Step 3: Deliver a Branded Welcome\nSend a welcome email (using your branded template) that includes:\n- Login credentials\n- A link to the Training Hub\n- Your support contact information\n- A quick-start guide or short video\n\n### Step 4: The Kickoff Call\nSchedule a 20-minute kickoff:\n1. **Walk through the app** — show the 4 main tabs (2 min)\n2. **Set up their profile** — photo, bio, title (5 min)\n3. **Send their first message** — a real customer text (3 min)\n4. **Share their digital card** — with you, as practice (2 min)\n5. **Q&A** — address any concerns (8 min)\n\n### Step 5: Follow-Up Cadence\n- **Day 1:** Confirm login works for everyone\n- **Day 3:** Check profile completion\n- **Week 1:** Review activity numbers\n- **Week 2:** Coaching call if needed\n- **Month 1:** ROI review and testimonial request",
+                "video_url": "",
+                "steps": ["Create a test organization in the Partner Wizard", "Verify the welcome email shows your branding", "Practice the 20-minute kickoff call flow", "Set calendar reminders for the follow-up cadence"],
+            },
+            {
+                "slug": "wl-messaging-guide",
+                "title": "Messaging Under Your Brand",
+                "description": "How your clients' messages are sent and branded.",
+                "icon": "chatbubble-ellipses",
+                "duration": "4 min",
+                "order": 4,
+                "content": "## Messaging Under Your Brand\n\n### How It Works\nWhen your clients send messages through the platform, the experience varies by channel:\n\n### SMS Messages\n- Sent from the **user's personal phone** (carrier-agnostic mode) or a provisioned number\n- The app pre-fills the message and opens the native SMS app\n- All activity is **logged in the CRM** regardless of how it's sent\n- Tracking links are included for review requests and digital cards\n\n### Email Messages\n- Sent through your **branded email domain**\n- Your logo and colors appear in the email header\n- A custom footer with your company info is included\n- Reply-to address can be the user's direct email\n\n### Review Requests\n- Custom short URLs track click-through and completion\n- The landing page carries **your branding**\n- Automated follow-ups can be scheduled\n\n### Digital Business Cards\n- Cards display your user's info under **your brand umbrella**\n- Card share links are tracked\n- Analytics show views, saves, and clicks\n\n### Training Your Clients on Messaging\nTeach them the **5-touch rule**:\n1. **Day of sale** — Thank you message\n2. **1 week later** — Check-in\n3. **30 days** — Review request\n4. **90 days** — Touch base\n5. **Birthdays/Anniversaries** — Never miss these\n\n### Pro Tips for Your Team\n- Always personalize — add the customer's name and a specific detail\n- Best time to text: 8-10am or 5-7pm\n- Keep texts under 160 characters\n- Use templates but add personal touches",
+                "video_url": "",
+                "steps": ["Send a test SMS through the app", "Send a test email and verify your branding", "Share a digital card and check the branded link", "Review the tracking analytics after sending"],
+            },
+            {
+                "slug": "wl-support-playbook",
+                "title": "Supporting Your Clients",
+                "description": "Handle common questions and keep clients happy.",
+                "icon": "help-circle",
+                "duration": "4 min",
+                "order": 5,
+                "content": "## Supporting Your Clients\n\n### Your Support Responsibilities\nAs a white-label partner, **you are the first line of support**. Your clients reach out to you, not to us.\n\n### Common Questions & Answers\n\n**\"How do I send a message?\"**\n> Open a contact > Tap the message icon > Choose SMS or Email > Type your message > Send. The app logs everything automatically.\n\n**\"I can't log in\"**\n> Verify they're using the correct email (case-sensitive). Reset their password from Admin > Users if needed.\n\n**\"Where's my digital card?\"**\n> They need to complete their profile first. Go to My Account > Edit Profile > ensure photo, title, and bio are filled in.\n\n**\"How do I get more reviews?\"**\n> Open a customer's contact > Quick Actions > Request Review. The link is tracked so they can see when it's clicked and completed.\n\n**\"My messages aren't sending\"**\n> For SMS: Make sure they're opening the native SMS app when prompted. For Email: Check that the email address on the contact is correct.\n\n**\"Can I see my team's activity?\"**\n> Managers can view the Activity Dashboard and Leaderboard. Users can only see their own metrics.\n\n### Escalation Path\nIf you can't resolve an issue:\n1. Gather the details (user email, screenshot, steps to reproduce)\n2. Contact your account manager\n3. We'll respond within 24 business hours\n\n### Reducing Support Volume\n- Point clients to the **Training Hub** for self-service learning\n- Create a **FAQ document** with your branding\n- Schedule **monthly check-in calls** to address issues proactively",
+                "video_url": "",
+                "steps": ["Create a branded FAQ document for your clients", "Practice answering each common question out loud", "Set up your escalation email template", "Schedule monthly check-ins with your top clients"],
+            },
+        ],
+    },
+    {
         "slug": "managers",
         "title": "Manager's Playbook",
         "description": "Lead your team, read the data, and coach for performance.",
         "icon": "shield",
         "color": "#34C759",
         "roles": ["manager", "admin", "store_manager", "super_admin"],
-        "order": 3,
+        "order": 4,
         "lessons": [
             {
                 "slug": "manager-overview",
@@ -251,8 +318,8 @@ async def seed_training_content():
 
 
 @router.get("/tracks")
-async def get_tracks(request: Request):
-    """Get all training tracks with lesson counts and user progress"""
+async def get_tracks(request: Request, role: Optional[str] = Query(None)):
+    """Get training tracks filtered by role, with lesson counts and user progress"""
     db = get_db()
     user_id = request.headers.get("X-User-ID")
 
@@ -261,14 +328,16 @@ async def get_tracks(request: Request):
     if count == 0:
         await seed_training_content()
 
-    tracks = await db.training_tracks.find({}, {"_id": 0}).to_list(20)
+    query = {}
+    # super_admin and admin see all tracks
+    if role and role not in ("super_admin", "admin"):
+        query["roles"] = role
+
+    tracks_cursor = db.training_tracks.find(query)
+    tracks_raw = await tracks_cursor.to_list(50)
     result = []
-    for track in tracks:
-        track_id = str(track.get("_id", ""))
-        # Get track_id from slug lookup
-        track_doc = await db.training_tracks.find_one({"slug": track["slug"]})
-        if track_doc:
-            track_id = str(track_doc["_id"])
+    for track in tracks_raw:
+        track_id = str(track["_id"])
         lesson_count = await db.training_lessons.count_documents({"track_id": track_id})
         completed = 0
         if user_id:
@@ -361,3 +430,146 @@ async def update_lesson(lesson_id: str, request: Request):
     update["updated_at"] = datetime.now(timezone.utc)
     await db.training_lessons.update_one({"_id": ObjectId(lesson_id)}, {"$set": update})
     return {"success": True}
+
+
+# ---- Admin CRUD for Tracks ----
+
+@router.get("/admin/tracks")
+async def admin_list_tracks():
+    """Admin: list all tracks with lesson counts"""
+    db = get_db()
+    tracks_raw = await db.training_tracks.find().sort("order", 1).to_list(50)
+    result = []
+    for t in tracks_raw:
+        tid = str(t["_id"])
+        lesson_count = await db.training_lessons.count_documents({"track_id": tid})
+        result.append({
+            "id": tid,
+            "slug": t["slug"],
+            "title": t["title"],
+            "description": t["description"],
+            "icon": t.get("icon"),
+            "color": t.get("color"),
+            "roles": t.get("roles", []),
+            "order": t.get("order", 0),
+            "lesson_count": lesson_count,
+        })
+    return result
+
+
+@router.put("/admin/tracks/{track_id}")
+async def admin_update_track(track_id: str, request: Request):
+    """Admin: update track metadata"""
+    db = get_db()
+    data = await request.json()
+    allowed = ["title", "description", "icon", "color", "roles", "order"]
+    update = {k: v for k, v in data.items() if k in allowed}
+    if not update:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    update["updated_at"] = datetime.now(timezone.utc)
+    await db.training_tracks.update_one({"_id": ObjectId(track_id)}, {"$set": update})
+    return {"success": True}
+
+
+@router.post("/admin/tracks")
+async def admin_create_track(request: Request):
+    """Admin: create a new track"""
+    db = get_db()
+    data = await request.json()
+    track = {
+        "slug": data.get("slug", data.get("title", "").lower().replace(" ", "-")),
+        "title": data["title"],
+        "description": data.get("description", ""),
+        "icon": data.get("icon", "book"),
+        "color": data.get("color", "#007AFF"),
+        "roles": data.get("roles", []),
+        "order": data.get("order", 99),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+    result = await db.training_tracks.insert_one(track)
+    return {"id": str(result.inserted_id), "success": True}
+
+
+@router.delete("/admin/tracks/{track_id}")
+async def admin_delete_track(track_id: str):
+    """Admin: delete a track and its lessons"""
+    db = get_db()
+    await db.training_lessons.delete_many({"track_id": track_id})
+    await db.training_progress.delete_many({"track_id": track_id})
+    await db.training_tracks.delete_one({"_id": ObjectId(track_id)})
+    return {"success": True}
+
+
+# ---- Admin CRUD for Lessons ----
+
+@router.get("/admin/tracks/{track_id}/lessons")
+async def admin_list_lessons(track_id: str):
+    """Admin: list all lessons in a track"""
+    db = get_db()
+    lessons = await db.training_lessons.find({"track_id": track_id}).sort("order", 1).to_list(100)
+    return [{
+        "id": str(l["_id"]),
+        "slug": l.get("slug", ""),
+        "title": l["title"],
+        "description": l.get("description", ""),
+        "icon": l.get("icon"),
+        "duration": l.get("duration"),
+        "order": l.get("order", 0),
+        "content": l.get("content", ""),
+        "video_url": l.get("video_url", ""),
+        "steps": l.get("steps", []),
+    } for l in lessons]
+
+
+@router.post("/admin/tracks/{track_id}/lessons")
+async def admin_create_lesson(track_id: str, request: Request):
+    """Admin: add a new lesson to a track"""
+    db = get_db()
+    data = await request.json()
+    lesson = {
+        "track_id": track_id,
+        "slug": data.get("slug", data.get("title", "").lower().replace(" ", "-")),
+        "title": data["title"],
+        "description": data.get("description", ""),
+        "icon": data.get("icon", "document-text"),
+        "duration": data.get("duration", "5 min"),
+        "order": data.get("order", 99),
+        "content": data.get("content", ""),
+        "video_url": data.get("video_url", ""),
+        "steps": data.get("steps", []),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+    result = await db.training_lessons.insert_one(lesson)
+    return {"id": str(result.inserted_id), "success": True}
+
+
+@router.delete("/admin/lessons/{lesson_id}")
+async def admin_delete_lesson(lesson_id: str):
+    """Admin: delete a lesson"""
+    db = get_db()
+    await db.training_progress.delete_many({"lesson_id": lesson_id})
+    await db.training_lessons.delete_one({"_id": ObjectId(lesson_id)})
+    return {"success": True}
+
+
+@router.post("/reseed")
+async def reseed_new_tracks():
+    """Seed only new tracks that don't already exist in the DB"""
+    db = get_db()
+    created = 0
+    for track_data in SEED_TRACKS:
+        existing = await db.training_tracks.find_one({"slug": track_data["slug"]})
+        if existing:
+            continue
+        td = {k: v for k, v in track_data.items() if k != "lessons"}
+        td["created_at"] = datetime.now(timezone.utc)
+        td["updated_at"] = datetime.now(timezone.utc)
+        result = await db.training_tracks.insert_one(td)
+        track_id = str(result.inserted_id)
+        for lesson in track_data.get("lessons", []):
+            lesson_copy = {**lesson, "track_id": track_id, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)}
+            await db.training_lessons.insert_one(lesson_copy)
+        created += 1
+    return {"seeded": created}

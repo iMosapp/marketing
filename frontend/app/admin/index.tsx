@@ -482,6 +482,14 @@ export default function AdminDashboard() {
           onPress: () => router.push('/admin/sop'),
           color: '#34C759',
         },
+        {
+          icon: 'school',
+          title: 'Manage Training Hub',
+          subtitle: 'Edit LMS tracks, lessons & roles',
+          onPress: () => router.push('/admin/manage-training'),
+          color: '#AF52DE',
+          indent: true,
+        },
       ];
       
       if (isStoreManager) {

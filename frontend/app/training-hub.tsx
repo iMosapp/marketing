@@ -43,8 +43,9 @@ export default function TrainingHubScreen() {
       const userStr = await AsyncStorage.getItem('user');
       const u = userStr ? JSON.parse(userStr) : null;
       setUser(u);
+      const userRole = u?.role || 'user';
       const [tracksRes, progressRes] = await Promise.all([
-        api.get('/training/tracks'),
+        api.get(`/training/tracks?role=${userRole}`),
         u?._id ? api.get(`/training/progress/${u._id}`).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ]);
       setTracks(Array.isArray(tracksRes.data) ? tracksRes.data : []);
