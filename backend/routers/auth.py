@@ -1,7 +1,7 @@
 """
 Authentication router - handles login, signup, forgot password
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Response, Cookie
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -329,13 +329,71 @@ async def login(credentials: dict):
     except Exception as e:
         logger.warning(f"Lifecycle login hook error: {e}")
 
-    response = {
+    response_data = {
         "token": f"mock_token_{user['_id']}",
         "user": user
     }
     if partner_branding:
-        response["partner_branding"] = partner_branding
-    return response
+        response_data["partner_branding"] = partner_branding
+
+    # Set persistent session cookie (survives iOS Safari ITP clearing localStorage)
+    from fastapi.responses import JSONResponse
+    import json as json_mod
+
+    def _serialize(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
+    resp.set_cookie(
+        key="imos_session",
+        value=str(user['_id']),
+        max_age=60 * 60 * 24 * 365 * 10,  # 10 years
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+    return resp
+
+
+@router.get("/me")
+async def get_current_user(request: Request):
+    """Restore session from persistent cookie when localStorage is cleared"""
+    session_id = request.cookies.get("imos_session")
+    if not session_id:
+        raise HTTPException(status_code=401, detail="No session")
+    try:
+        user = await get_db().users.find_one({"_id": ObjectId(session_id)})
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    user["_id"] = str(user["_id"])
+    if "password" in user:
+        del user["password"]
+    for k in list(user.keys()):
+        if isinstance(user[k], ObjectId):
+            user[k] = str(user[k])
+        if isinstance(user[k], datetime):
+            user[k] = user[k].isoformat()
+
+    return {
+        "token": f"mock_token_{user['_id']}",
+        "user": user
+    }
+
+
+@router.post("/logout")
+async def logout_session():
+    """Clear the persistent session cookie"""
+    from fastapi.responses import JSONResponse
+    resp = JSONResponse(content={"success": True})
+    resp.delete_cookie("imos_session")
+    return resp
 
 @router.post("/forgot-password/request")
 async def request_password_reset(data: dict):

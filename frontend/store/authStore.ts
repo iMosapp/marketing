@@ -117,6 +117,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('original_auth');
     await AsyncStorage.removeItem('partner_branding');
+    // Clear server-side session cookie
+    try {
+      const { default: api } = await import('../services/api');
+      await api.post('/auth/logout');
+    } catch {}
     set({ 
       user: null, 
       token: null, 
@@ -160,6 +165,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           originalToken
         });
       } else {
+        // localStorage empty — try restoring from persistent cookie
+        try {
+          const { default: api } = await import('../services/api');
+          const res = await api.get('/auth/me');
+          if (res.data?.user && res.data?.token) {
+            const user = res.data.user;
+            const restoredToken = res.data.token;
+            await AsyncStorage.setItem('auth_token', restoredToken);
+            await AsyncStorage.setItem('user', JSON.stringify(user));
+            set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
+            return;
+          }
+        } catch {
+          // No cookie session — user needs to log in
+        }
         set({ isLoading: false });
       }
     } catch (error) {
