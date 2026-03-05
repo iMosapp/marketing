@@ -46,7 +46,7 @@ export default function NDADetailPage() {
   };
 
   const handleCopyLink = async () => {
-    const appUrl = process.env.EXPO_PUBLIC_APP_URL || window?.location?.origin || '';
+    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
     await Clipboard.setStringAsync(`${appUrl}/nda/sign/${id}`);
     showSimpleAlert('Copied', 'Link copied');
   };

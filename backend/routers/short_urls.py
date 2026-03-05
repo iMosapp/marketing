@@ -24,10 +24,14 @@ def generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     return ''.join(random.choices(SHORT_CODE_CHARS, k=length))
 
 def get_short_url_base() -> str:
-    """Get the base URL for short links."""
+    """Get the base URL for short links. Prioritizes PUBLIC_FACING_URL to avoid
+    deployment platforms overriding APP_URL with the staging/deploy domain."""
     short_domain = os.environ.get('SHORT_URL_DOMAIN')
     if short_domain:
         return short_domain.rstrip('/')
+    public_url = os.environ.get("PUBLIC_FACING_URL")
+    if public_url:
+        return public_url.rstrip('/')
     return os.environ.get("APP_URL", "https://app.imonsocial.com")
 
 async def create_short_url(

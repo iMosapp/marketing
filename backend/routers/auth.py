@@ -18,7 +18,7 @@ from routers.database import get_db
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
-APP_URL = os.environ.get("APP_URL", "https://app.imonsocial.com")
+APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
 # Resend configuration
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")

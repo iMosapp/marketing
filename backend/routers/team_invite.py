@@ -18,7 +18,7 @@ router = APIRouter(prefix="/team-invite", tags=["Team Invite"])
 logger = logging.getLogger(__name__)
 
 
-APP_URL = os.environ.get("APP_URL", "https://app.imonsocial.com")
+APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
 
 

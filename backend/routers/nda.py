@@ -124,7 +124,7 @@ async def create_nda(data: NDASenderSign):
     result = await db.nda_agreements.insert_one(agreement)
     nda_id = str(result.inserted_id)
 
-    app_url = os.environ.get("APP_URL", "").rstrip("/")
+    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
     if not app_url:
         frontend_url = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
         app_url = frontend_url
@@ -195,7 +195,7 @@ async def send_nda_email(nda_id: str):
     if not email:
         raise HTTPException(status_code=400, detail="No recipient email")
 
-    app_url = os.environ.get("APP_URL", "").rstrip("/")
+    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
     if not app_url:
         app_url = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
     sign_link = f"{app_url}/nda/sign/{nda_id}"

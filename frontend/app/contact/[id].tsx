@@ -1113,7 +1113,7 @@ export default function ContactDetailScreen() {
       // Make photo URL absolute so it's a clickable link in SMS
       let absolutePhotoUrl = photoUrl;
       if (photoUrl && photoUrl.startsWith('/')) {
-        const baseUrl = process.env.EXPO_PUBLIC_APP_URL || (IS_WEB ? window.location.origin : (process.env.EXPO_PUBLIC_BACKEND_URL || ''));
+        const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
         absolutePhotoUrl = `${baseUrl}${photoUrl}`;
       }
       const messageContent = absolutePhotoUrl ? `${content || ''}\n${absolutePhotoUrl}`.trim() : (content || '');
