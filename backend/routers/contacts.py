@@ -3,7 +3,7 @@ Contacts router - handles contact CRUD operations
 """
 from fastapi import APIRouter, HTTPException, Body
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 import logging
 
@@ -353,6 +353,24 @@ async def toggle_automation(user_id: str, contact_id: str, data: dict = Body(...
         {"$set": {"disabled_automations": disabled}}
     )
     return {"field": field, "enabled": enabled, "disabled_automations": disabled}
+
+
+@router.patch("/{user_id}/{contact_id}/tags")
+async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Update tags on a contact without requiring the full contact payload."""
+    db = get_db()
+    tags = data.get("tags", [])
+    if not isinstance(tags, list):
+        raise HTTPException(status_code=400, detail="tags must be a list")
+    
+    result = await db.contacts.update_one(
+        {"_id": ObjectId(contact_id), "user_id": user_id},
+        {"$set": {"tags": tags, "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"tags": tags}
+
 
 
 

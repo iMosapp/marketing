@@ -1142,17 +1142,25 @@ export default function ContactDetailScreen() {
   // Add tag from hero (immediate save)
   const addTagFromHero = async (name: string) => {
     if (!user || contact.tags.includes(name)) return;
-    const updatedTags = [...contact.tags, name];
-    setContact((prev: any) => ({ ...prev, tags: updatedTags }));
     setShowTagPicker(false);
     setTagSearch('');
-    try {
-      await contactsAPI.update(user._id, id as string, { tags: updatedTags });
-      showToast(`Tag "${name}" added`);
-    } catch (e: any) {
-      setContact((prev: any) => ({ ...prev, tags: prev.tags.filter((t: string) => t !== name) }));
-      showSimpleAlert('Error', 'Could not add tag');
-    }
+    
+    // Confirmation dialog
+    showConfirm(
+      'Add Tag',
+      `Add "${name}" to ${contact.first_name || 'this contact'}?`,
+      async () => {
+        const updatedTags = [...contact.tags, name];
+        setContact((prev: any) => ({ ...prev, tags: updatedTags }));
+        try {
+          await api.patch(`/contacts/${user._id}/${id}/tags`, { tags: updatedTags });
+          showToast(`Tag "${name}" added`);
+        } catch (e: any) {
+          setContact((prev: any) => ({ ...prev, tags: prev.tags.filter((t: string) => t !== name) }));
+          showSimpleAlert('Error', 'Could not add tag');
+        }
+      }
+    );
   };
 
   // Group events by date for collapsible sections
