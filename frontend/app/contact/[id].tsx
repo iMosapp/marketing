@@ -743,7 +743,7 @@ export default function ContactDetailScreen() {
     }
   };
 
-  const sendBusinessCardLink = () => {
+  const sendBusinessCardLink = async () => {
     if (!user?._id) return;
     const baseUrl = 'https://app.imonsocial.com';
     let cardUrl = `${baseUrl}/card/${user._id}`;
@@ -752,11 +752,16 @@ export default function ContactDetailScreen() {
     if (id) params.push(`contact=${id}`);
     if (params.length > 0) cardUrl += `?${params.join('&')}`;
     const firstName = contact.first_name || 'there';
-    const cardMessage = `Hey ${firstName}! Here's my digital business card: ${cardUrl}`;
     setShowBusinessCard(false);
     setShowLandingPageOptions(false);
     setSelectedCampaign(null);
-    setComposerMessage(cardMessage);
+    try {
+      const shortRes = await api.post('/s/create', {
+        original_url: cardUrl, link_type: 'business_card', user_id: user._id,
+        reference_id: id as string, metadata: { contact_id: id as string },
+      });
+      setComposerMessage(`Hey ${firstName}! Here's my digital business card: ${shortRes.data?.short_url || cardUrl}`);
+    } catch { setComposerMessage(`Hey ${firstName}! Here's my digital business card: ${cardUrl}`); }
   };
 
   const sendVCardLink = () => {
@@ -771,14 +776,19 @@ export default function ContactDetailScreen() {
     setComposerMessage(cardMessage);
   };
 
-  const sendShowcaseLink = () => {
+  const sendShowcaseLink = async () => {
     if (!user?._id) return;
     const baseUrl = 'https://app.imonsocial.com';
     const showcaseUrl = `${baseUrl}/showcase/${user._id}`;
     const firstName = contact.first_name || 'there';
-    const msg = `Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`;
     setShowBusinessCard(false);
-    setComposerMessage(msg);
+    try {
+      const shortRes = await api.post('/s/create', {
+        original_url: showcaseUrl, link_type: 'showcase', user_id: user._id,
+        reference_id: id as string, metadata: { contact_id: id as string },
+      });
+      setComposerMessage(`Hey ${firstName}! Check out some of our happy customers: ${shortRes.data?.short_url || showcaseUrl}`);
+    } catch { setComposerMessage(`Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`); }
   };
 
   const sendLinkPageLink = async () => {
@@ -790,9 +800,14 @@ export default function ContactDetailScreen() {
       const username = resp.data?.username;
       if (username) {
         const url = `${baseUrl}/l/${username}`;
-        const msg = `Hey ${firstName}! Here are all my links: ${url}`;
-        setShowBusinessCard(false);
-        setComposerMessage(msg);
+        try {
+          const shortRes = await api.post('/s/create', {
+            original_url: url, link_type: 'link_page', user_id: user._id,
+            reference_id: id as string, metadata: { contact_id: id as string },
+          });
+          setShowBusinessCard(false);
+          setComposerMessage(`Hey ${firstName}! Here are all my links: ${shortRes.data?.short_url || url}`);
+        } catch { setShowBusinessCard(false); setComposerMessage(`Hey ${firstName}! Here are all my links: ${url}`); }
       } else {
         showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
       }
@@ -3468,10 +3483,11 @@ export default function ContactDetailScreen() {
       {/* Digital Business Card Modal */}
       <Modal visible={showBusinessCard} animationType="slide" presentationStyle="pageSheet" transparent={true}>
         <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowBusinessCard(false)}>
-          <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
+          <View style={[s.toolbarModal, { marginBottom: 40 }]} onStartShouldSetResponder={() => true}>
             <View style={s.toolbarModalHeader}>
               <View style={s.toolbarModalHandle} />
             </View>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }} bounces={false}>
             <View style={s.cardModalContent}>
               <View style={s.cardPreview}>
                 <Ionicons name="share-social" size={48} color="#007AFF" />
@@ -3555,6 +3571,7 @@ export default function ContactDetailScreen() {
                 </View>
               )}
             </View>
+            </ScrollView>
             <View style={s.toolbarModalFooter}>
               <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => { setShowBusinessCard(false); setShowLandingPageOptions(false); }}>
                 <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
@@ -4388,6 +4405,7 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card, borderRadius: 12, padding: 16, alignItems: 'center',
   },
   toolbarModalCloseBtnText: { fontSize: 17, fontWeight: '600', color: '#FF3B30' },
+  toolbarModalFooter: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 },
   toolbarTemplateItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 12, padding: 14, marginBottom: 10,

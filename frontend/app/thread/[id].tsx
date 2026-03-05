@@ -1888,7 +1888,7 @@ export default function ThreadScreen() {
       </Pressable>
 
       {showIntel && (
-        <View style={styles.intelContent} data-testid="thread-intel-content">
+        <ScrollView style={[styles.intelContent, { maxHeight: 200 }]} nestedScrollEnabled data-testid="thread-intel-content">
           {intelGenerating ? (
             <View style={styles.intelLoadingRow}>
               <ActivityIndicator size="small" color="#C9A962" />
@@ -1915,7 +1915,7 @@ export default function ThreadScreen() {
           ) : (
             <Text style={styles.intelEmptyText}>Tap to generate an AI briefing about this contact</Text>
           )}
-        </View>
+        </ScrollView>
       )}
 
       {/* Quick Contact Creation Panel */}

@@ -203,7 +203,8 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
 async def redirect_short_url(short_code: str, request: Request):
     """
     Redirect a short URL to the original URL.
-    Also tracks click analytics.
+    Serves dynamic OG meta tags for link previewers (iMessage, Facebook, etc.)
+    so shared links show the store's logo instead of the default.
     """
     db = get_db()
     
@@ -211,7 +212,6 @@ async def redirect_short_url(short_code: str, request: Request):
     doc = await db.short_urls.find_one({"short_code": short_code})
     
     if not doc:
-        # Return a nice error page or redirect to home
         raise HTTPException(status_code=404, detail="Link not found")
     
     # Update click stats
@@ -241,8 +241,65 @@ async def redirect_short_url(short_code: str, request: Request):
     except Exception as e:
         print(f"[ShortURL] Failed to log click event: {e}")
 
-    # Redirect to the original URL
-    return RedirectResponse(url=doc["original_url"], status_code=302)
+    original_url = doc["original_url"]
+    user_agent = (request.headers.get("user-agent") or "").lower()
+
+    # Detect link preview crawlers (iMessage, Facebook, Twitter, etc.)
+    is_crawler = any(bot in user_agent for bot in [
+        "facebookexternalhit", "twitterbot", "linkedinbot", "slackbot",
+        "whatsapp", "telegrambot", "applebot", "iframely", "embedly",
+        "bot", "crawler", "spider", "preview",
+    ])
+
+    if is_crawler:
+        # Serve HTML with dynamic OG tags using the store's branding
+        og_title = "Check this out!"
+        og_description = ""
+        og_image = ""
+        link_type = doc.get("link_type", "")
+        user_id = doc.get("user_id")
+
+        if user_id:
+            try:
+                user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "first_name": 1, "last_name": 1, "photo_url": 1})
+                if user_doc and user_doc.get("store_id"):
+                    store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"name": 1, "logo_url": 1, "logo_avatar_url": 1})
+                    if store:
+                        og_image = store.get("logo_avatar_url") or store.get("logo_url") or ""
+                        store_name = store.get("name", "")
+                        user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
+                        if link_type == "business_card":
+                            og_title = f"{user_name}'s Digital Card" if user_name else "Digital Business Card"
+                            og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
+                        elif link_type == "review_request":
+                            og_title = f"Leave a Review for {store_name}" if store_name else "Leave a Review"
+                            og_description = f"{user_name} would love your feedback!"
+                        else:
+                            og_title = store_name or "Check this out!"
+                            og_description = f"Shared by {user_name}" if user_name else ""
+                        if not og_image and user_doc.get("photo_url"):
+                            og_image = user_doc["photo_url"]
+            except Exception:
+                pass
+
+        # Filter out base64 images (too large for OG tags)
+        if og_image and og_image.startswith("data:"):
+            og_image = ""
+
+        from fastapi.responses import HTMLResponse
+        html = f"""<!DOCTYPE html>
+<html><head>
+<meta property="og:title" content="{og_title}" />
+<meta property="og:description" content="{og_description}" />
+{f'<meta property="og:image" content="{og_image}" />' if og_image else ''}
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta http-equiv="refresh" content="0;url={original_url}" />
+</head><body><a href="{original_url}">Continue</a></body></html>"""
+        return HTMLResponse(content=html)
+
+    # Regular redirect for normal browsers
+    return RedirectResponse(url=original_url, status_code=302)
 
 
 @router.post("/create")
