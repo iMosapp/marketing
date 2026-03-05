@@ -22,6 +22,8 @@ const FEED_EVENT_LABELS: Record<string, string> = {
   thank_you_card_sent: 'Thank You Card Sent',
   thankyou_card_sent: 'Thank You Card Sent',
   holiday_card_sent: 'Holiday Card Sent',
+  welcome_card_sent: 'Welcome Card Sent',
+  anniversary_card_sent: 'Anniversary Card Sent',
   vcard_sent: 'Shared vCard',
   showcase_shared: 'Showcase Shared',
   link_page_shared: 'Link Page Shared',

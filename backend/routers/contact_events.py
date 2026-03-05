@@ -29,7 +29,7 @@ KEY_ACTIONS = [
     {"key": "digital_card_sent", "label": "Contact Card", "icon": "card", "color": "#007AFF",
      "event_types": ["digital_card_sent", "vcard_sent"]},
     {"key": "congrats_card_sent", "label": "Congrats", "icon": "gift", "color": "#C9A962",
-     "event_types": ["congrats_card_sent"]},
+     "event_types": ["congrats_card_sent", "birthday_card_sent", "anniversary_card_sent", "holiday_card_sent", "thank_you_card_sent", "thankyou_card_sent", "welcome_card_sent"]},
     {"key": "review_request_sent", "label": "Review Link", "icon": "star", "color": "#FFD60A",
      "event_types": ["review_request_sent"]},
     {"key": "link_page_shared", "label": "Link Page", "icon": "link", "color": "#AF52DE",
@@ -286,15 +286,26 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         ts = c.get("sent_at")
         if ts and hasattr(ts, "isoformat"):
             ts = _ts_iso(ts)
+        ct = c.get("card_type", "congrats")
+        card_type_labels = {
+            "congrats": ("Sent Congrats Card", "gift", "#C9A962"),
+            "birthday": ("Sent Birthday Card", "gift", "#FF9500"),
+            "anniversary": ("Sent Anniversary Card", "heart", "#FF2D55"),
+            "holiday": ("Sent Holiday Card", "snow", "#5AC8FA"),
+            "thank_you": ("Sent Thank You Card", "thumbs-up", "#34C759"),
+            "thankyou": ("Sent Thank You Card", "thumbs-up", "#34C759"),
+            "welcome": ("Sent Welcome Card", "hand-left", "#007AFF"),
+        }
+        title, icon, color = card_type_labels.get(ct, (f"Sent {ct.replace('_', ' ').title()} Card", "gift", "#C9A962"))
         events.append({
-            "event_type": "congrats_card_sent",
-            "icon": "gift",
-            "color": "#C9A962",
-            "title": "Sent Congrats Card",
+            "event_type": f"{ct}_card_sent",
+            "icon": icon,
+            "color": color,
+            "title": title,
             "description": c.get("message", "")[:60],
             "full_content": c.get("message", ""),
             "card_id": c.get("card_id"),
-            "card_type": c.get("card_type", "congrats"),
+            "card_type": ct,
             "link": f"/congrats/{c.get('card_id')}" if c.get("card_id") else None,
             "timestamp": ts,
             "category": "card",
