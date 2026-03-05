@@ -1868,7 +1868,6 @@ export default function ContactDetailScreen() {
                     placeholderTextColor={colors.textTertiary}
                     value={tagSearch}
                     onChangeText={setTagSearch}
-                    autoFocus
                   />
                   <ScrollView style={{ maxHeight: 250 }}>
                     {/* Show "Create new tag" option when search doesn't match existing tags */}
