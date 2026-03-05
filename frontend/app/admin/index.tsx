@@ -1069,6 +1069,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   sectionContent: {
     borderTopWidth: 1,
     borderTopColor: colors.surface,
+    marginLeft: 20,
   },
   menuItem: {
     flexDirection: 'row',
