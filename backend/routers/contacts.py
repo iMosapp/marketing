@@ -277,12 +277,39 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
         existing_tags.add('Sold Date')
     update_dict['tags'] = list(existing_tags)
     
-    # If setting a referrer, update the referrer's count
+    # If setting a referrer, update the referrer's count (only when referred_by actually changes)
     if contact_data.referred_by:
-        await get_db().contacts.update_one(
-            {"$and": [{"_id": contact_data.referred_by}, base_filter]},
-            {"$inc": {"referral_count": 1}}
-        )
+        try:
+            # Check if referred_by actually changed
+            existing = await get_db().contacts.find_one(
+                {"$and": [{"_id": ObjectId(contact_id)}, base_filter]},
+                {"referred_by": 1}
+            )
+            old_ref = str(existing.get("referred_by", "")) if existing else ""
+            new_ref = str(contact_data.referred_by)
+            if old_ref != new_ref:
+                # Increment the new referrer's count
+                try:
+                    await get_db().contacts.update_one(
+                        {"$and": [{"_id": ObjectId(new_ref)}, base_filter]},
+                        {"$inc": {"referral_count": 1}}
+                    )
+                except Exception:
+                    await get_db().contacts.update_one(
+                        {"$and": [{"_id": new_ref}, base_filter]},
+                        {"$inc": {"referral_count": 1}}
+                    )
+                # Decrement the old referrer's count if there was one
+                if old_ref:
+                    try:
+                        await get_db().contacts.update_one(
+                            {"$and": [{"_id": ObjectId(old_ref)}, base_filter]},
+                            {"$inc": {"referral_count": -1}}
+                        )
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.error(f"Referral count update failed: {e}")
     
     try:
         result = await get_db().contacts.update_one(

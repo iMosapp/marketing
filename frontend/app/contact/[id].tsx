@@ -1627,9 +1627,21 @@ export default function ContactDetailScreen() {
   );
 
   // ===== REFERRAL =====
-  const selectReferrer = (ref: any) => {
-    setContact({ ...contact, referred_by: ref._id, referred_by_name: `${ref.first_name} ${ref.last_name || ''}`.trim() });
+  const selectReferrer = async (ref: any) => {
+    // "New Referral" means: the CURRENT contact referred the PICKED contact
+    // So we update the PICKED contact's referred_by = current contact ID
     setShowReferralPicker(false);
+    if (!user?._id) return;
+    try {
+      await contactsAPI.update(user._id, ref._id, { referred_by: id as string });
+      // Increment current contact's referral count locally for instant UI update
+      setContact(prev => ({ ...prev, referral_count: (prev.referral_count || 0) + 1 }));
+      // Reload referrals list to show the new entry
+      loadReferrals();
+      showToast(`Added ${ref.first_name || 'contact'} as a referral`);
+    } catch (e) {
+      showSimpleAlert('Error', 'Failed to add referral');
+    }
   };
   const clearReferrer = () => setContact({ ...contact, referred_by: null, referred_by_name: null });
 
