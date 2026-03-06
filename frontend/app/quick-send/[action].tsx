@@ -361,12 +361,26 @@ export default function QuickSendPage() {
         <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <Ionicons name={config.icon as any} size={20} color={config.color} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#C9A962' }}>{config.previewTitle}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#C9A962', flex: 1 }}>{config.previewTitle}</Text>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: 'rgba(0,122,255,0.1)', borderRadius: 8 }}
+              onPress={() => { if (shareUrl) Linking.openURL(shareUrl); }}
+              data-testid="qs-preview-link"
+            >
+              <Ionicons name="eye-outline" size={16} color="#007AFF" />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>Preview</Text>
+            </TouchableOpacity>
           </View>
           <View style={{ padding: 16 }}>
             <View style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14 }}>
               <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 22 }}>{messageText}</Text>
             </View>
+            <TouchableOpacity
+              style={{ marginTop: 8 }}
+              onPress={() => { if (shareUrl) Linking.openURL(shareUrl); }}
+            >
+              <Text style={{ fontSize: 13, color: '#007AFF' }} numberOfLines={1}>{shareUrl}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
