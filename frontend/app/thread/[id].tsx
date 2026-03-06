@@ -1901,7 +1901,7 @@ export default function ThreadScreen() {
       </Pressable>
 
       {showIntel && (
-        <ScrollView style={[styles.intelContent, { maxHeight: 200 }]} nestedScrollEnabled data-testid="thread-intel-content">
+        <ScrollView style={[styles.intelContent, { flex: 1 }]} nestedScrollEnabled data-testid="thread-intel-content">
           {intelGenerating ? (
             <View style={styles.intelLoadingRow}>
               <ActivityIndicator size="small" color="#C9A962" />
@@ -2174,8 +2174,8 @@ export default function ThreadScreen() {
         </View>
       </Modal>
       
-      {/* Messages */}
-      {loading ? (
+      {/* Messages - hidden when intel is expanded */}
+      {!showIntel && (loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
@@ -2206,7 +2206,7 @@ export default function ThreadScreen() {
             }
           }}
         />
-      )}
+      ))}
       
       {/* AI Suggestion */}
       {showAISuggestion && aiMode !== 'off' && aiSuggestion.text && (

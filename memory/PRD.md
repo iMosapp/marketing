@@ -11,6 +11,12 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
+### Relationship Intel Panel Fix (March 6, 2026)
+- Fixed the Relationship Intel dropdown in the inbox thread view
+- Previously: either covered the whole screen (couldn't scroll) or compressed to one line (unusable)
+- Now: expands to fill space between the intel bar and the text input, hides messages while open, scrollable if content is long
+- Collapses back to show messages when tapped again
+
 ### Critical Bug Fix: Congrats Card Mislabeling (March 6, 2026)
 **Root Cause Identified & Fixed:** ALL card types (Birthday, Holiday, Thank You, Welcome, Anniversary) use the `/congrats/{card_id}` URL prefix. The old `resolve_event_type()` function had a simple pattern match `if '/congrats/' in content: return 'congrats_card_sent'` that caught ALL card types and mislabeled them.
 
