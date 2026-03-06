@@ -76,6 +76,15 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Fixed photo attachments sending raw relative API paths in SMS body
 - Now converts to absolute production URLs before inserting into message content
 
+### Activity Event Type Resolution Fix (Mar 2026)
+- **Root cause:** Backend event type detection used `/api/s/` as a catch-all that incorrectly classified ALL short URL messages as `congrats_card_sent` — e.g., digital business cards, review invites, showcases all showed as "Congrats Card Sent" in the activity feed
+- **Fix (3 layers):**
+  1. **Explicit `event_type` from frontend:** Added `event_type` field to `MessageCreate` model. Frontend now passes the correct event type when composing messages from quick actions (digital card, review invite, showcase, link page, vCard)
+  2. **DB-lookup fallback:** When no explicit event_type is provided, the backend extracts the short code from `/api/s/{code}` URLs in the message, looks up the `link_type` from the `short_urls` collection, and maps it to the correct event type via `_LINK_TYPE_TO_EVENT`
+  3. **Keyword fallback:** For messages without short URLs, keyword-based detection (e.g., "congrats", "birthday") still works
+- **Frontend changes:** Both `contact/[id].tsx` (composerEventType state) and `thread/[id].tsx` (pendingEventType state) now track and pass event_type through the send API
+- **Result:** Activity feed now accurately shows "Digital Card Shared", "Review Invite Sent", etc. instead of all showing "Congrats Card Sent"
+
 ### Previous Session Work
 - **Persistent Login:** HTTP-only cookies (`imos_session`) for indefinite sessions
 - **Dynamic Share Previews:** Short URL redirector serves dynamic OG tags for branded link previews
@@ -106,7 +115,8 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - `PATCH /api/contacts/{user_id}/{contact_id}/profile-photo` — Set profile photo
 
 ### Messages
-- `POST /api/messages/send/{user_id}` — Send message (handles email, SMS, personal SMS channels)
+- `POST /api/messages/send/{user_id}` — Send message (handles email, SMS, personal SMS channels; accepts optional `event_type` for accurate activity tracking)
+- `POST /api/messages/send/{user_id}/{conversation_id}` — Send message (Pydantic endpoint, also accepts `event_type`)
 - `POST /api/messages/send-mms/{user_id}` — Send MMS (now uses object storage, not MongoDB)
 
 ### Auth
