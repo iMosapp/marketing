@@ -49,6 +49,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   // Other
   call_placed: 'Call Placed',
   new_contact: 'Contact Created',
+  new_contact_added: 'New Contact Added',
   voice_note: 'Voice Note',
   note_updated: 'Note Updated',
   customer_reply: 'Customer Reply',

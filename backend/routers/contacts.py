@@ -105,7 +105,72 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     # Track stat for leaderboard
     await increment_user_stat(user_id, "contacts_added")
     
+    # Log "new contact added" to activity feed
+    try:
+        user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "name": 1, "org_id": 1})
+        user_name = user_doc.get("name", "User") if user_doc else "User"
+        org_id = user_doc.get("org_id", "") if user_doc else ""
+        contact_name = f"{contact_dict.get('first_name', '')} {contact_dict.get('last_name', '')}".strip()
+        await db.contact_events.insert_one({
+            "event_type": "new_contact_added",
+            "title": "New Contact Added",
+            "description": f"{user_name} added {contact_name}",
+            "contact_id": str(result.inserted_id),
+            "user_id": user_id,
+            "org_id": org_id,
+            "channel": "system",
+            "category": "contact",
+            "icon": "person-add",
+            "color": "#AF52DE",
+            "content": f"Added new contact: {contact_name}",
+            "timestamp": datetime.now(timezone.utc),
+            "created_at": datetime.now(timezone.utc),
+        })
+    except Exception as e:
+        logger.error(f"Failed to log new contact event: {e}")
+    
     return Contact(**contact_dict)
+
+
+@router.get("/{user_id}/check-duplicate")
+async def check_duplicate_contact(user_id: str, phone: Optional[str] = None, email: Optional[str] = None):
+    """Check if a contact with this phone or email already exists for this user."""
+    db = get_db()
+    if not phone and not email:
+        return {"matches": []}
+    
+    conditions = []
+    if phone:
+        # Normalize: strip spaces, dashes, parens — match last 10 digits
+        clean = ''.join(c for c in phone if c.isdigit())
+        if len(clean) >= 7:
+            # Match on last 10 digits to handle +1 prefix variations
+            suffix = clean[-10:] if len(clean) >= 10 else clean
+            conditions.append({"phone": {"$regex": suffix + "$"}})
+    if email:
+        email_clean = email.strip().lower()
+        if len(email_clean) >= 3:
+            conditions.append({"email": {"$regex": f"^{email_clean}$", "$options": "i"}})
+    
+    if not conditions:
+        return {"matches": []}
+    
+    matches = await db.contacts.find(
+        {"user_id": user_id, "$or": conditions, "status": {"$ne": "hidden"}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1, "photo_thumbnail": 1}
+    ).to_list(5)
+    
+    return {"matches": [
+        {
+            "id": str(m["_id"]),
+            "first_name": m.get("first_name", ""),
+            "last_name": m.get("last_name", ""),
+            "phone": m.get("phone", ""),
+            "email": m.get("email", ""),
+            "photo_thumbnail": m.get("photo_thumbnail", ""),
+        }
+        for m in matches
+    ]}
 
 @router.get("/{user_id}", response_model=List[Contact])
 async def get_contacts(user_id: str, search: Optional[str] = None):

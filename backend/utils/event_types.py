@@ -49,6 +49,7 @@ EVENT_TYPE_LABELS = {
     "link_click": "Link Clicked",
     "link_clicked": "Link Clicked",
     "voice_note": "Voice Note",
+    "new_contact_added": "New Contact Added",
     "note_updated": "Note Updated",
     "customer_reply": "Customer Reply",
     "congrats_card_viewed": "Viewed Congrats Card",

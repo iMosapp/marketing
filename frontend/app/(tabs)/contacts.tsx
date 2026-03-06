@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -73,6 +73,15 @@ export default function ContactsScreen() {
       initialLoadDone.current = true;
     }
   }, [userId, isPending]);
+
+  // Auto-refresh when tab gains focus (e.g. after adding a new contact)
+  useFocusEffect(
+    useCallback(() => {
+      if (initialLoadDone.current && userId && !isPending) {
+        loadContacts();
+      }
+    }, [userId, isPending])
+  );
 
   const loadTags = async () => {
     if (!user?._id) return;

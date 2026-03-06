@@ -591,7 +591,7 @@ export default function HomeScreen() {
     { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => openActionPicker('congrats', 'Send a Card') },
     { key: 'showroom', icon: 'storefront-outline', label: 'My Showcase', color: '#34C759', onPress: () => openActionPicker('showcase', 'Share Showcase') },
     { key: 'keypad', icon: 'keypad-outline', label: 'Keypad', color: '#32ADE6', onPress: () => { setContactActionMode('keypad'); setShowContactAction(true); } },
-    { key: 'add-contact', icon: 'person-add-outline', label: 'Add Contact', color: '#AF52DE', onPress: () => { setContactActionMode('search'); setShowContactAction(true); } },
+    { key: 'add-contact', icon: 'person-add-outline', label: 'Add Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
   ];
 
   return (

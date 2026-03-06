@@ -379,6 +379,18 @@ export default function ContactDetailScreen() {
   const [tagSearch, setTagSearch] = useState('');
   const [referrals, setReferrals] = useState<any[]>([]);
 
+  // New contact: duplicate detection
+  const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
+  const dupCheckTimer = useRef<any>(null);
+
+  // New contact: voice recorder for notes
+  const [ncVoiceRecording, setNcVoiceRecording] = useState(false);
+  const [ncVoiceTranscribing, setNcVoiceTranscribing] = useState(false);
+  const ncVoiceRef = useRef<any>(null);
+
+  // Ref for ScrollView in new contact form
+  const ncScrollRef = useRef<ScrollView>(null);
+  const referredByRef = useRef<View>(null);
   // Composer state (inline inbox)
   const [composerMessage, setComposerMessage] = useState('');
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
@@ -918,6 +930,87 @@ export default function ContactDetailScreen() {
       const data = await contactsAPI.getAll(user._id);
       setAllContacts(data.filter((c: any) => c._id !== id));
     } catch (e) { console.error(e); }
+  };
+
+  // ===== NEW CONTACT: DUPLICATE CHECK =====
+  const checkDuplicate = useCallback(async (phone: string, email: string) => {
+    if (!user) return;
+    const params = new URLSearchParams();
+    if (phone && phone.replace(/\D/g, '').length >= 7) params.set('phone', phone);
+    if (email && email.length >= 3 && email.includes('@')) params.set('email', email);
+    if (!params.toString()) { setDuplicateMatches([]); return; }
+    try {
+      const res = await api.get(`/contacts/${user._id}/check-duplicate?${params.toString()}`);
+      setDuplicateMatches(res.data.matches || []);
+    } catch (e) { setDuplicateMatches([]); }
+  }, [user]);
+
+  const onPhoneOrEmailChange = useCallback((field: 'phone' | 'email', value: string) => {
+    setContact(prev => ({ ...prev, [field]: value }));
+    if (isNewContact) {
+      clearTimeout(dupCheckTimer.current);
+      dupCheckTimer.current = setTimeout(() => {
+        const p = field === 'phone' ? value : contact.phone;
+        const e = field === 'email' ? value : contact.email;
+        checkDuplicate(p, e);
+      }, 500);
+    }
+  }, [isNewContact, contact.phone, contact.email, checkDuplicate]);
+
+  // ===== NEW CONTACT: VOICE-TO-TEXT =====
+  const handleNewContactVoice = async () => {
+    try {
+      if (ncVoiceRecording) {
+        setNcVoiceRecording(false);
+        if (ncVoiceRef.current) {
+          setNcVoiceTranscribing(true);
+          await ncVoiceRef.current.stopAndUnloadAsync();
+          const uri = ncVoiceRef.current.getURI();
+          ncVoiceRef.current = null;
+          if (uri) {
+            const formData = new FormData();
+            if (IS_WEB) {
+              const resp = await fetch(uri);
+              const blob = await resp.blob();
+              formData.append('file', blob, 'recording.webm');
+            } else {
+              formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
+            }
+            try {
+              const response = await api.post('/voice/transcribe', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+              if (response.data.success && response.data.text) {
+                setContact(prev => ({
+                  ...prev,
+                  notes: prev.notes ? `${prev.notes}\n${response.data.text}` : response.data.text
+                }));
+              }
+            } catch (err) { console.error('Transcription error:', err); }
+          }
+          setNcVoiceTranscribing(false);
+        }
+      } else {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          showSimpleAlert('Permission Denied', 'Microphone permission is required.');
+          return;
+        }
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const recordingOptions = IS_WEB
+          ? { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: false, web: { mimeType: 'audio/webm;codecs=opus', bitsPerSecond: 128000 } }
+          : Audio.RecordingOptionsPresets.HIGH_QUALITY;
+        const recording = new Audio.Recording();
+        await recording.prepareToRecordAsync(recordingOptions);
+        await recording.startAsync();
+        ncVoiceRef.current = recording;
+        setNcVoiceRecording(true);
+      }
+    } catch (err) {
+      console.error('Voice recording error:', err);
+      setNcVoiceRecording(false);
+      setNcVoiceTranscribing(false);
+    }
   };
 
   // ===== SAVE / DELETE =====
@@ -1716,7 +1809,7 @@ export default function ContactDetailScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView ref={ncScrollRef} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Centered Photo */}
             <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 20 }}>
               <TouchableOpacity onPress={pickImage} activeOpacity={0.7} data-testid="new-contact-photo">
@@ -1766,7 +1859,7 @@ export default function ContactDetailScreen() {
                   placeholder="Phone"
                   placeholderTextColor={colors.textTertiary}
                   value={contact.phone}
-                  onChangeText={t => setContact({ ...contact, phone: t })}
+                  onChangeText={t => onPhoneOrEmailChange('phone', t)}
                   keyboardType="phone-pad"
                   returnKeyType="next"
                   data-testid="input-phone"
@@ -1780,7 +1873,7 @@ export default function ContactDetailScreen() {
                   placeholder="Email"
                   placeholderTextColor={colors.textTertiary}
                   value={contact.email}
-                  onChangeText={t => setContact({ ...contact, email: t })}
+                  onChangeText={t => onPhoneOrEmailChange('email', t)}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   returnKeyType="next"
@@ -1788,6 +1881,32 @@ export default function ContactDetailScreen() {
                 />
               </View>
             </View>
+
+            {/* Duplicate Contact Match Banner */}
+            {duplicateMatches.length > 0 && (
+              <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, backgroundColor: '#FF9500' + '20', borderWidth: 1, borderColor: '#FF9500', overflow: 'hidden' }} data-testid="duplicate-match-banner">
+                <View style={{ padding: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#FF9500', marginBottom: 6 }}>Existing Contact Found</Text>
+                  {duplicateMatches.map((m: any) => (
+                    <TouchableOpacity
+                      key={m.id}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#FF950030' }}
+                      onPress={() => router.replace(`/contact/${m.id}` as any)}
+                      data-testid={`duplicate-match-${m.id}`}
+                    >
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{(m.first_name || '?')[0]}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{m.first_name} {m.last_name}</Text>
+                        <Text style={{ fontSize: 13, color: colors.textSecondary }}>{m.phone || m.email}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color="#FF9500" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* Vehicle Card */}
             <View style={ncs.card}>
@@ -1837,6 +1956,34 @@ export default function ContactDetailScreen() {
                   data-testid="input-notes"
                 />
               </View>
+            </View>
+
+            {/* Voice Note Recorder */}
+            <View style={[ncs.card, { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 }]}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 24, backgroundColor: ncVoiceRecording ? '#FF3B3020' : ncVoiceTranscribing ? colors.card : '#34C75920', borderWidth: 1, borderColor: ncVoiceRecording ? '#FF3B30' : ncVoiceTranscribing ? colors.border : '#34C759', width: '100%' }}
+                onPress={handleNewContactVoice}
+                disabled={ncVoiceTranscribing}
+                data-testid="new-contact-voice-btn"
+              >
+                {ncVoiceTranscribing ? (
+                  <>
+                    <ActivityIndicator size="small" color="#C9A962" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>Transcribing...</Text>
+                  </>
+                ) : ncVoiceRecording ? (
+                  <>
+                    <Ionicons name="stop-circle" size={22} color="#FF3B30" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#FF3B30' }}>Stop Recording</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="mic" size={22} color="#34C759" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>Record Voice Note</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 6, textAlign: 'center' }}>Record a voice memo — it will be transcribed and added to notes</Text>
             </View>
 
             {/* Tags Card */}
@@ -2035,43 +2182,48 @@ export default function ContactDetailScreen() {
           </TouchableOpacity>
         </Modal>
 
-        {/* Referral Picker Modal */}
-        <Modal visible={showReferralPicker} animationType="slide" transparent={true}>
-          <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReferralPicker(false)}>
-            <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
-              <View style={s.actionSheetGroup}>
-                <View style={{ padding: 16 }}>
-                  <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Select Referrer</Text>
-                  <TextInput
-                    style={[s.input, { marginBottom: 12 }]}
-                    placeholder="Search contacts..."
-                    placeholderTextColor={colors.textTertiary}
-                    value={contactSearch}
-                    onChangeText={setContactSearch}
-                    autoFocus
-                  />
-                  <ScrollView style={{ maxHeight: 250 }}>
-                    {filteredContacts.map((c: any) => (
-                      <TouchableOpacity
-                        key={c._id}
-                        style={s.pickerItem}
-                        onPress={() => {
-                          setContact({ ...contact, referred_by: c._id, referred_by_name: `${c.first_name} ${c.last_name || ''}`.trim() });
-                          setShowReferralPicker(false);
-                          setContactSearch('');
-                        }}
-                      >
-                        <Text style={s.pickerItemText}>{c.first_name} {c.last_name || ''}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+        {/* Referral Picker Modal — Full screen with KeyboardAvoidingView to keep search visible */}
+        <Modal visible={showReferralPicker} animationType="slide" transparent={false}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>Select Referrer</Text>
+                <TouchableOpacity onPress={() => { setShowReferralPicker(false); setContactSearch(''); }}>
+                  <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={s.actionSheetCancel} onPress={() => { setShowReferralPicker(false); setContactSearch(''); }}>
-                <Text style={s.actionSheetCancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
+              <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+                <TextInput
+                  style={[s.input, { marginBottom: 12 }]}
+                  placeholder="Search contacts..."
+                  placeholderTextColor={colors.textTertiary}
+                  value={contactSearch}
+                  onChangeText={setContactSearch}
+                  autoFocus
+                  data-testid="referral-search-input"
+                />
+              </View>
+              <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+                {filteredContacts.map((c: any) => (
+                  <TouchableOpacity
+                    key={c._id}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
+                    onPress={() => {
+                      setContact({ ...contact, referred_by: c._id, referred_by_name: `${c.first_name} ${c.last_name || ''}`.trim() });
+                      setShowReferralPicker(false);
+                      setContactSearch('');
+                    }}
+                    data-testid={`referral-option-${c._id}`}
+                  >
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{(c.first_name || '?')[0]}</Text>
+                    </View>
+                    <Text style={{ fontSize: 16, color: colors.text }}>{c.first_name} {c.last_name || ''}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
         </Modal>
       </SafeAreaView>
     );
