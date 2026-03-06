@@ -11,6 +11,13 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
+### Quick-Send Flow Built (March 6, 2026)
+- All 4 quick action tiles (Share My Card, Review Link, Send a Card, My Showcase) now use a dedicated quick-send page
+- Flow: Enter name/phone/email → duplicate match on phone → preview what you're sending → choose SMS/Email/Copy Link → send → confirmation → auto-redirect to contact page
+- Send a Card has extra card type picker step (Congrats, Birthday, Holiday, Thank You, Anniversary, Welcome)
+- New contacts auto-created when phone doesn't match existing
+- All activity properly logged with correct event types
+
 ### Add Contact Flow Overhaul (March 6, 2026)
 - "Add Contact" from home screen now goes **directly to the New Contact form** — no intermediate search modal
 - **Duplicate detection** on phone/email: as you type, the app checks for existing contacts and shows a match banner
