@@ -3402,9 +3402,16 @@ export default function ContactDetailScreen() {
                 value={composerMessage}
                 onChangeText={setComposerMessage}
                 multiline
+                numberOfLines={1}
                 maxLength={1000}
                 onContentSizeChange={(e) => {
-                  setComposerInputHeight(e.nativeEvent.contentSize.height);
+                  const h = e.nativeEvent.contentSize.height;
+                  // Only grow when user has content; reset to min when empty
+                  if (composerMessage.trim()) {
+                    setComposerInputHeight(h);
+                  } else {
+                    setComposerInputHeight(36);
+                  }
                 }}
                 scrollEnabled={composerInputHeight > 150}
                 data-testid="composer-input"
@@ -4464,7 +4471,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   composerInput: {
     fontSize: 16, color: colors.text,
-    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8,
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
     textAlignVertical: 'top',
   },
   composerToolbar: {

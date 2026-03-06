@@ -262,24 +262,13 @@ export default function ThreadScreen() {
   const [congratsSelectedTags, setCongratsSelectedTags] = useState<string[]>([]);
   const [congratsCampaigns, setCongratsCampaigns] = useState<{id: string, name: string, trigger_tag: string}[]>([]);
 
-  // Quick Contact Creation state (for new numbers)
-  const [isNewContact, setIsNewContact] = useState(false);
-  const [newContactFirstName, setNewContactFirstName] = useState('');
-  const [newContactLastName, setNewContactLastName] = useState('');
-  const [newContactPhoto, setNewContactPhoto] = useState<string | null>(null);
-  const [newContactTags, setNewContactTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<{_id: string, name: string, color: string}[]>([]);
-  const [showTagPicker, setShowTagPicker] = useState(false);
-  const [showQuickContactPanel, setShowQuickContactPanel] = useState(true);
+  // Contact creation tracking (for send flow)
   const [contactCreated, setContactCreated] = useState(false);
   const [createdContactId, setCreatedContactId] = useState<string | null>(null);
-
-  // User Account Creation state (for admins/managers)
-  const [createUserAccount, setCreateUserAccount] = useState(false);
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState('user');
-  const [creatingUser, setCreatingUser] = useState(false);
   
+  // Tags for congrats card
+  const [availableTags, setAvailableTags] = useState<{_id: string, name: string, color: string}[]>([]);
+
   // Check if current user is admin/manager
   const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager';
 
@@ -426,150 +415,6 @@ export default function ThreadScreen() {
     setCustomLinkName(userCustomName);
   };
 
-  // Load available tags for quick contact creation
-  const loadAvailableTags = async () => {
-    if (!user?._id) return;
-    try {
-      const response = await api.get(`/tags/${user._id}`);
-      setAvailableTags(response.data || []);
-    } catch (error) {
-      console.log('Failed to load tags');
-    }
-  };
-
-  // Check if this is a new contact (phone number not in system)
-  const checkIfNewContact = async () => {
-    if (!user?._id || !contactPhone) return;
-    
-    // If the id looks like a phone number or is "new", this is likely a new contact
-    const isPhoneNumberId = /^[\d\+\-\s\(\)]+$/.test(id as string) || id === 'new';
-    
-    if (isPhoneNumberId) {
-      setIsNewContact(true);
-      loadAvailableTags();
-      return;
-    }
-    
-    // Try to find the contact by the id
-    try {
-      const contactResponse = await api.get(`/contacts/${user._id}/${id}`);
-      if (contactResponse.data) {
-        // Contact exists
-        setIsNewContact(false);
-        setContactCreated(true);
-        setCreatedContactId(id as string);
-      }
-    } catch (error) {
-      // Contact doesn't exist by id, check by phone
-      try {
-        const searchResponse = await api.get(`/contacts/${user._id}?search=${encodeURIComponent(contactPhone)}`);
-        const contacts = searchResponse.data || [];
-        const exactMatch = contacts.find((c: any) => c.phone === contactPhone);
-        if (exactMatch) {
-          setIsNewContact(false);
-          setContactCreated(true);
-          setCreatedContactId(exactMatch._id);
-        } else {
-          setIsNewContact(true);
-          loadAvailableTags();
-        }
-      } catch (e) {
-        // Assume new contact if we can't verify
-        setIsNewContact(true);
-        loadAvailableTags();
-      }
-    }
-  };
-
-  // Handle photo selection for new contact
-  const handleNewContactPhoto = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        if (asset.base64) {
-          const base64Data = `data:image/jpeg;base64,${asset.base64}`;
-          setNewContactPhoto(base64Data);
-          setContactPhoto(base64Data); // Also update header photo immediately
-        }
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      showSimpleAlert('Error', 'Failed to select photo');
-    }
-  };
-
-  // Create contact with collected info
-  const createQuickContact = async (): Promise<string | null> => {
-    if (!user?._id || !contactPhone || contactCreated) return createdContactId;
-    
-    try {
-      const contactData = {
-        first_name: newContactFirstName || contactPhone,
-        last_name: newContactLastName || '',
-        phone: contactPhone,
-        photo: newContactPhoto || null,
-        tags: newContactTags,
-        source: 'quick_create',
-      };
-
-      const response = await api.post(`/contacts/${user._id}`, contactData);
-      const newContactId = response.data._id || response.data.id;
-      
-      setContactCreated(true);
-      setCreatedContactId(newContactId);
-      setIsNewContact(false);
-      setShowQuickContactPanel(false);
-      
-      // If admin wants to create user account, do that too
-      if (createUserAccount && newUserEmail) {
-        await createUserAccountForContact();
-      }
-      
-      return newContactId;
-    } catch (error) {
-      console.error('Error creating contact:', error);
-      // Don't block message sending if contact creation fails
-      return null;
-    }
-  };
-
-  // Create user account (admin only)
-  const createUserAccountForContact = async () => {
-    if (!user?._id || !newUserEmail || !isAdmin) return;
-    
-    setCreatingUser(true);
-    try {
-      const userData = {
-        name: `${newContactFirstName} ${newContactLastName}`.trim() || contactPhone,
-        email: newUserEmail.trim().toLowerCase(),
-        phone: contactPhone,
-        role: newUserRole,
-        organization_id: user.organization_id,
-        store_id: user.store_id,
-        added_by: user._id,
-      };
-
-      await api.post('/admin/users', userData);
-      showSimpleAlert(
-        'User Created', 
-        `${userData.name} has been added. They will receive a welcome SMS with login instructions.`
-      );
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      showSimpleAlert('Error', error.response?.data?.detail || 'Failed to create user account');
-    } finally {
-      setCreatingUser(false);
-    }
-  };
-  
   const conversationId = id as string;
   const contactName = (contact_name as string) || 'Contact';
   const contactPhone = (contact_phone as string) || '';
@@ -582,7 +427,6 @@ export default function ThreadScreen() {
     if (user?._id && id) {
       ensureConversation();
       loadContactInfo();
-      checkIfNewContact();
     }
   }, [id, user?._id]);
   
@@ -853,11 +697,6 @@ export default function ThreadScreen() {
     // REGULAR FLOW: Email, Twilio SMS, etc. (no page navigation)
     try {
       setSending(true);
-      
-      // If this is a new contact, create the contact first
-      if (isNewContact && !contactCreated) {
-        await createQuickContact();
-      }
       
       // Ensure we have a valid conversation ID before sending
       let convId = actualConversationId || conversationId;
@@ -1936,59 +1775,6 @@ export default function ThreadScreen() {
       )}
 
       
-      {/* Tag Picker Modal */}
-      <Modal
-        visible={showTagPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowTagPicker(false)}
-      >
-        <View style={styles.tagPickerOverlay}>
-          <View style={styles.tagPickerContainer}>
-            <View style={styles.tagPickerHeader}>
-              <Text style={styles.tagPickerTitle}>Select Tags</Text>
-              <TouchableOpacity onPress={() => setShowTagPicker(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.tagPickerList}>
-              {availableTags.map((tag) => {
-                const isSelected = newContactTags.includes(tag.name);
-                return (
-                  <TouchableOpacity
-                    key={tag._id}
-                    style={[
-                      styles.tagPickerItem,
-                      isSelected && styles.tagPickerItemSelected
-                    ]}
-                    onPress={() => {
-                      if (isSelected) {
-                        setNewContactTags(prev => prev.filter(t => t !== tag.name));
-                      } else {
-                        setNewContactTags(prev => [...prev, tag.name]);
-                      }
-                    }}
-                  >
-                    <View style={[styles.tagPickerDot, { backgroundColor: tag.color }]} />
-                    <Text style={styles.tagPickerItemText}>{tag.name}</Text>
-                    {isSelected && <Ionicons name="checkmark" size={20} color="#007AFF" />}
-                  </TouchableOpacity>
-                );
-              })}
-              {availableTags.length === 0 && (
-                <Text style={styles.tagPickerEmpty}>No tags available. Create tags in Settings → Contact Tags</Text>
-              )}
-            </ScrollView>
-            <TouchableOpacity 
-              style={styles.tagPickerDone}
-              onPress={() => setShowTagPicker(false)}
-            >
-              <Text style={styles.tagPickerDoneText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-      
       {/* Messages - hidden when intel is expanded */}
       {!showIntel && (loading ? (
         <View style={styles.loadingContainer}>
@@ -2072,10 +1858,15 @@ export default function ThreadScreen() {
               value={message}
               onChangeText={setMessage}
               multiline
+              numberOfLines={1}
               maxLength={1000}
               onContentSizeChange={(e) => {
                 const h = e.nativeEvent.contentSize.height;
-                setInputHeight(h);
+                if (message.trim()) {
+                  setInputHeight(h);
+                } else {
+                  setInputHeight(36);
+                }
               }}
               scrollEnabled={inputHeight > 150}
             />
