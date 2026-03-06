@@ -11,9 +11,12 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
-### Quick-Send Flow Built (March 6, 2026)
+### Quick-Send Flow Rebuilt & Polished (March 6, 2026)
 - All 4 quick action tiles (Share My Card, Review Link, Send a Card, My Showcase) now use a dedicated quick-send page
-- Flow: Enter name/phone/email → duplicate match on phone → preview what you're sending → choose SMS/Email/Copy Link → send → confirmation → auto-redirect to contact page
+- **Visual overhaul:** Form now matches clean Add Contact styling — First/Last name split, card-based grouped inputs with dividers, no blue focus boxes, no yellow backgrounds, no colored borders
+- **Global CSS fix:** Injected browser focus outline suppression and autofill background override in `_layout.tsx`
+- **Corrected send flow:** SMS opens native phone messaging app (carrier-agnostic), Email sends via Resend backend, Copy Link copies to clipboard. All log events before showing confirmation
+- Flow: Enter first/last name + phone/email → duplicate match on phone → preview content with Preview button → choose SMS/Email/Copy Link → send → confirmation → auto-redirect to contact page
 - Send a Card has extra card type picker step (Congrats, Birthday, Holiday, Thank You, Anniversary, Welcome)
 - New contacts auto-created when phone doesn't match existing
 - All activity properly logged with correct event types
@@ -56,11 +59,14 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 ## Key Files
 - `/app/backend/utils/event_types.py` — Single source of truth for ALL event types
 - `/app/frontend/utils/eventTypes.ts` — Frontend event label mapping
+- `/app/frontend/app/quick-send/[action].tsx` — Quick Send flow (all 4 tile types)
+- `/app/frontend/app/_layout.tsx` — Root layout with global CSS injection
 - `/app/backend/routers/contact_events.py` — Activity feed, events, migration endpoint
 - `/app/backend/routers/messages.py` — Message sending with channel routing
 - `/app/backend/routers/congrats_cards.py` — Card creation (all types)
 - `/app/backend/tests/test_event_types.py` — 38 unit regression tests
 - `/app/backend/tests/test_event_types_api.py` — 7 API integration tests
+- `/app/backend/tests/test_quick_send_flow.py` — Quick Send backend tests
 
 ## Pending Issues
 - P0: User must deploy latest checkpoint to production and run migration endpoint
