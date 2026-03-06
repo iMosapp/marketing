@@ -11,6 +11,11 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
+### Thread & Composer Fixes (March 6, 2026)
+- Removed all "new contact" handling from inbox thread (isNewContact, tag picker, contact creation form, photo picker) — contact details should only be managed from the contact page
+- Fixed contact page composer to start as true single line (36px) matching inbox behavior — added numberOfLines={1} and content-aware height reset
+- Added global CSS `textarea { min-height: 0 }` to prevent browser default from inflating textarea height
+
 ### Quick-Send Flow Rebuilt & Polished (March 6, 2026)
 - All 4 quick action tiles (Share My Card, Review Link, Send a Card, My Showcase) now use a dedicated quick-send page
 - **Visual overhaul:** Form now matches clean Add Contact styling — First/Last name split, card-based grouped inputs with dividers, no blue focus boxes, no yellow backgrounds, no colored borders
