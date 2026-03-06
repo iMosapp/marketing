@@ -85,6 +85,24 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - **Frontend changes:** Both `contact/[id].tsx` (composerEventType state) and `thread/[id].tsx` (pendingEventType state) now track and pass event_type through the send API
 - **Result:** Activity feed now accurately shows "Digital Card Shared", "Review Invite Sent", etc. instead of all showing "Congrats Card Sent"
 
+### Centralized Event Type Architecture (Mar 2026) — PERMANENT FIX
+- **Problem:** "Congrats Card Sent" kept resurfacing because event type detection was scattered across 6+ files, each with its own copy of the logic and different bugs. One file would get fixed, another would still produce wrong types.
+- **Solution:** Created `/app/backend/utils/event_types.py` as the **SINGLE SOURCE OF TRUTH**:
+  - `resolve_event_type(content, db, explicit_event_type)` — THE one function for determining event type
+  - `LINK_TYPE_TO_EVENT` — maps short URL link_types to event_types
+  - `EVENT_TYPE_LABELS` — maps event_types to human-readable labels
+  - `get_card_sent_info(card_type)` — returns event_type, label, icon, color for card sends
+  - `get_card_viewed_info(card_type)` — same for card views
+- **Updated consumers:** `messages.py`, `congrats_cards.py`, `contact_events.py`, `short_urls.py` — all import from `utils/event_types.py`
+- **Also fixed:** `short_urls.py` click detection now handles ALL card types (birthday, thank_you, holiday, etc.) instead of only congrats
+- **Migration:** Ran a DB migration to fix existing wrongly-typed events
+- **Frontend:** `create-card.tsx` passes `event_type` via URL params → `thread/[id].tsx` includes it in message payload → backend uses it directly
+
+### Image EXIF Orientation Fix (Mar 2026)
+- Added `ImageOps.exif_transpose()` to both `_compress_image()` and `generate_thumbnail()` in `image_storage.py`
+- Fixes sideways photos from iPhone cameras
+- Migration script: `/app/backend/scripts/fix_photo_orientation.py`
+
 ### Photo Gallery v2 Rewrite (Mar 2026)
 - **Issues fixed:** 1) Black screen when opening gallery (photos didn't load for legacy contacts), 2) X close button hidden under iOS status bar
 - **New gallery features:**
