@@ -51,8 +51,9 @@ function usePWAMetaTags() {
         textarea { min-height: 0 !important; }
         input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus,
         textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus {
-          -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
-          -webkit-text-fill-color: inherit !important;
+          -webkit-box-shadow: 0 0 0px 1000px #1C1C1E inset !important;
+          -webkit-text-fill-color: #FFFFFF !important;
+          caret-color: #FFFFFF !important;
           transition: background-color 5000s ease-in-out 0s;
         }
       `;

@@ -51,7 +51,7 @@ const CARD_TYPES = [
   { key: 'congrats', label: 'Congrats Card', icon: 'trophy', color: '#C9A962' },
   { key: 'birthday', label: 'Birthday Card', icon: 'gift', color: '#FF6B6B' },
   { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA' },
-  { key: 'thank_you', label: 'Thank You Card', icon: 'heart', color: '#FF2D55' },
+  { key: 'thankyou', label: 'Thank You Card', icon: 'heart', color: '#FF2D55' },
   { key: 'anniversary', label: 'Anniversary Card', icon: 'ribbon', color: '#AF52DE' },
   { key: 'welcome', label: 'Welcome Card', icon: 'hand-left', color: '#34C759' },
 ];
