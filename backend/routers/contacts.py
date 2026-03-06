@@ -659,24 +659,28 @@ async def regenerate_thumbnails():
 
 @router.get("/{user_id}/{contact_id}/photos/all")
 async def get_all_contact_photos(user_id: str, contact_id: str):
-    """Get all photos associated with a contact: profile, congrats cards, birthday cards."""
+    """Get all photos for a contact with thumbnail + full URLs for fast gallery loading."""
     db = get_db()
     photos = []
 
-    # 1. Profile photo
     try:
-        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 1, "first_name": 1, "phone": 1})
+        contact = await db.contacts.find_one(
+            {"_id": ObjectId(contact_id)},
+            {"photo": 1, "photo_thumbnail": 1, "first_name": 1, "phone": 1}
+        )
     except Exception:
         contact = None
 
+    # 1. Profile photo
     if contact and contact.get("photo"):
         photos.append({
             "type": "profile",
             "label": "Profile Photo",
-            "url": contact["photo"],  # Already a data URI or URL
+            "url": contact["photo"],
+            "thumbnail_url": contact.get("photo_thumbnail") or contact["photo"],
         })
 
-    # 2. Congrats card photos (match by contact_id or customer_phone)
+    # 2. Congrats card photos
     congrats_filter = {"$or": []}
     if contact_id:
         congrats_filter["$or"].append({"contact_id": contact_id})
@@ -688,31 +692,93 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
     if congrats_filter["$or"]:
         congrats = await db.congrats_cards.find(
             congrats_filter,
-            {"card_id": 1, "customer_name": 1, "created_at": 1, "_id": 0}
+            {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1,
+             "photo_url": 1, "photo_thumbnail_url": 1, "_id": 1}
         ).sort("created_at", -1).to_list(50)
         for c in congrats:
+            # Use optimized URLs if already migrated to object storage
+            if c.get("photo_url") and c["photo_url"].startswith("/api/images/"):
+                full_url = c["photo_url"]
+                thumb_url = c.get("photo_thumbnail_url") or full_url
+            elif c.get("customer_photo") and c["customer_photo"].startswith("/api/images/"):
+                full_url = c["customer_photo"]
+                thumb_url = full_url
+            elif c.get("customer_photo") and c["customer_photo"].startswith("data:"):
+                # Lazy-migrate base64 to object storage for speed
+                try:
+                    from utils.image_storage import upload_image
+                    result = await upload_image(c["customer_photo"], prefix="congrats", entity_id=contact_id)
+                    if result:
+                        full_url = f"/api/images/{result['original_path']}"
+                        thumb_url = f"/api/images/{result['thumbnail_path']}"
+                        await db.congrats_cards.update_one(
+                            {"_id": c["_id"]},
+                            {"$set": {"photo_url": full_url, "photo_thumbnail_url": thumb_url}}
+                        )
+                    else:
+                        full_url = f"/api/showcase/photo/{c.get('card_id')}"
+                        thumb_url = full_url
+                except Exception:
+                    full_url = f"/api/showcase/photo/{c.get('card_id')}"
+                    thumb_url = full_url
+            else:
+                full_url = f"/api/showcase/photo/{c.get('card_id')}"
+                thumb_url = full_url
+
             photos.append({
                 "type": "congrats",
                 "label": f"Congrats - {c.get('customer_name', '')}",
                 "card_id": c.get("card_id"),
-                "url": f"/api/showcase/photo/{c.get('card_id')}",
+                "url": full_url,
+                "thumbnail_url": thumb_url,
                 "date": c["created_at"].isoformat() if c.get("created_at") else None,
             })
 
     # 3. Birthday card photos
     bday_cards = await db.birthday_cards.find(
         {"contact_id": contact_id},
-        {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1, "_id": 0}
+        {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1,
+         "photo_url": 1, "photo_thumbnail_url": 1, "_id": 1}
     ).sort("created_at", -1).to_list(50)
     for bc in bday_cards:
-        if bc.get("customer_photo"):
-            photos.append({
-                "type": "birthday",
-                "label": f"Birthday - {bc.get('customer_name', '')}",
-                "card_id": bc.get("card_id"),
-                "url": bc["customer_photo"] if bc["customer_photo"].startswith("http") else f"/api/birthday/photo/{bc.get('card_id')}",
-                "date": bc["created_at"].isoformat() if bc.get("created_at") else None,
-            })
+        photo = bc.get("customer_photo", "")
+        if bc.get("photo_url") and bc["photo_url"].startswith("/api/images/"):
+            full_url = bc["photo_url"]
+            thumb_url = bc.get("photo_thumbnail_url") or full_url
+        elif photo and photo.startswith("/api/images/"):
+            full_url = photo
+            thumb_url = photo
+        elif photo and photo.startswith("data:"):
+            try:
+                from utils.image_storage import upload_image
+                result = await upload_image(photo, prefix="birthday", entity_id=contact_id)
+                if result:
+                    full_url = f"/api/images/{result['original_path']}"
+                    thumb_url = f"/api/images/{result['thumbnail_path']}"
+                    await db.birthday_cards.update_one(
+                        {"_id": bc["_id"]},
+                        {"$set": {"photo_url": full_url, "photo_thumbnail_url": thumb_url}}
+                    )
+                else:
+                    full_url = f"/api/birthday/photo/{bc.get('card_id')}"
+                    thumb_url = full_url
+            except Exception:
+                full_url = f"/api/birthday/photo/{bc.get('card_id')}"
+                thumb_url = full_url
+        elif photo and photo.startswith("http"):
+            full_url = photo
+            thumb_url = photo
+        else:
+            continue
+
+        photos.append({
+            "type": "birthday",
+            "label": f"Birthday - {bc.get('customer_name', '')}",
+            "card_id": bc.get("card_id"),
+            "url": full_url,
+            "thumbnail_url": thumb_url,
+            "date": bc["created_at"].isoformat() if bc.get("created_at") else None,
+        })
 
     return {"photos": photos, "total": len(photos)}
 
