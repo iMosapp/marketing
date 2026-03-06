@@ -92,38 +92,74 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         ("last_message_at", -1)  # Then by recency
     ]).limit(500).to_list(500)
     
-    result = []
+    if not conversations:
+        return []
+    
+    # Batch-load contacts and last messages to avoid N+1 queries
+    contact_ids = set()
+    conv_ids = []
     for conv in conversations:
         conv['_id'] = str(conv['_id'])
-        
-        # Get contact info
-        try:
-            contact = await db.contacts.find_one({"_id": ObjectId(conv['contact_id'])}, {"photo": 0})
-        except:
-            contact = await db.contacts.find_one({"_id": conv['contact_id']}, {"photo": 0})
-        
-        if contact:
-            conv['contact'] = {
-                "id": str(contact['_id']),
-                "name": f"{contact['first_name']} {contact.get('last_name', '')}".strip(),
-                "phone": contact['phone'],
-                "email": _get_contact_email(contact),
-                "photo": contact.get('photo_thumbnail') or contact.get('photo_url'),
-                "photo_thumbnail": contact.get('photo_thumbnail'),
-                "photo_url": contact.get('photo_url'),
+        conv_ids.append(conv['_id'])
+        cid = conv.get('contact_id')
+        if cid:
+            contact_ids.add(cid)
+    
+    # Single query for all contacts
+    contact_map = {}
+    if contact_ids:
+        oid_list = []
+        for cid in contact_ids:
+            try:
+                oid_list.append(ObjectId(cid))
+            except:
+                pass
+        if oid_list:
+            contacts_cursor = db.contacts.find(
+                {"_id": {"$in": oid_list}},
+                {"photo": 0}
+            )
+            async for contact in contacts_cursor:
+                cid_str = str(contact['_id'])
+                contact_map[cid_str] = {
+                    "id": cid_str,
+                    "name": f"{contact['first_name']} {contact.get('last_name', '')}".strip(),
+                    "phone": contact['phone'],
+                    "email": _get_contact_email(contact),
+                    "photo": contact.get('photo_thumbnail') or contact.get('photo_url'),
+                    "photo_thumbnail": contact.get('photo_thumbnail'),
+                    "photo_url": contact.get('photo_url'),
+                }
+    
+    # Single query for last messages (one per conversation using aggregation)
+    last_msg_map = {}
+    if conv_ids:
+        pipeline = [
+            {"$match": {"conversation_id": {"$in": conv_ids}}},
+            {"$sort": {"timestamp": -1}},
+            {"$group": {
+                "_id": "$conversation_id",
+                "content": {"$first": "$content"},
+                "timestamp": {"$first": "$timestamp"},
+                "sender": {"$first": "$sender"},
+            }}
+        ]
+        async for msg in db.messages.aggregate(pipeline):
+            last_msg_map[msg['_id']] = {
+                "content": msg['content'],
+                "timestamp": msg['timestamp'],
+                "sender": msg['sender'],
             }
+    
+    # Assemble results
+    result = []
+    for conv in conversations:
+        cid = conv.get('contact_id')
+        if cid and cid in contact_map:
+            conv['contact'] = contact_map[cid]
         
-        # Get last message
-        last_msg = await db.messages.find_one(
-            {"conversation_id": str(conv['_id'])},
-            sort=[("timestamp", -1)]
-        )
-        if last_msg:
-            conv['last_message'] = {
-                "content": last_msg['content'],
-                "timestamp": last_msg['timestamp'],
-                "sender": last_msg['sender']
-            }
+        if conv['_id'] in last_msg_map:
+            conv['last_message'] = last_msg_map[conv['_id']]
         
         result.append(conv)
     

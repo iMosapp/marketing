@@ -393,6 +393,7 @@ export default function ContactDetailScreen() {
   const referredByRef = useRef<View>(null);
   // Composer state (inline inbox)
   const [composerMessage, setComposerMessage] = useState('');
+  const [composerInputHeight, setComposerInputHeight] = useState(36);
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
   const [composerEventType, setComposerEventType] = useState<string | null>(null);
@@ -1229,6 +1230,7 @@ export default function ContactDetailScreen() {
       }
       
       setComposerMessage('');
+      setComposerInputHeight(36);
       setComposerEventType(null);
       setSelectedMedia(null);
       setShowAISuggestion(false);
@@ -3394,13 +3396,17 @@ export default function ContactDetailScreen() {
                 </View>
               )}
               <TextInput
-                style={[s.composerInput, { color: colors.text }]}
+                style={[s.composerInput, { color: colors.text, height: Math.max(36, Math.min(composerInputHeight, 150)) }]}
                 placeholder="Type your message..."
                 placeholderTextColor={colors.textTertiary}
                 value={composerMessage}
                 onChangeText={setComposerMessage}
                 multiline
                 maxLength={1000}
+                onContentSizeChange={(e) => {
+                  setComposerInputHeight(e.nativeEvent.contentSize.height);
+                }}
+                scrollEnabled={composerInputHeight > 150}
                 data-testid="composer-input"
               />
               <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
@@ -4458,8 +4464,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   composerInput: {
     fontSize: 16, color: colors.text,
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
-    minHeight: 44, maxHeight: 200,
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8,
     textAlignVertical: 'top',
   },
   composerToolbar: {
