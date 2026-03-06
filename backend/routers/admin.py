@@ -218,7 +218,7 @@ async def update_organization(
         else:
             raise HTTPException(status_code=403, detail="Only admins can update organizations")
     
-    allowed_fields = ['name', 'admin_email', 'admin_phone', 'city', 'state', 'active', 'settings']
+    allowed_fields = ['name', 'admin_email', 'admin_phone', 'city', 'state', 'active', 'settings', 'hires_images']
     update_dict = {k: v for k, v in org_data.items() if k in allowed_fields}
     
     result = await get_db().organizations.update_one(

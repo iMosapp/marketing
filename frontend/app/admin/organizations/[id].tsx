@@ -27,6 +27,7 @@ interface Organization {
   city?: string;
   state?: string;
   active: boolean;
+  hires_images?: boolean;
 }
 
 interface UserInfo {
@@ -656,6 +657,25 @@ export default function OrganizationDetailScreen() {
                 </View>
               </View>
               
+              {/* Full Resolution Photos Toggle */}
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Full-Resolution Photos</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                    Preserves uncompressed originals for print (calendars, etc.)
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.toggleBtn, editedOrg.hires_images && styles.toggleBtnActive]}
+                  onPress={() => setEditedOrg({ ...editedOrg, hires_images: !editedOrg.hires_images })}
+                  data-testid="hires-images-toggle"
+                >
+                  <Text style={[styles.toggleBtnText, editedOrg.hires_images && styles.toggleBtnTextActive]}>
+                    {editedOrg.hires_images ? 'ON' : 'OFF'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
               <TouchableOpacity 
                 style={styles.cancelButton}
                 onPress={() => {
@@ -1079,5 +1099,33 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 8,
+    paddingVertical: 8,
+  },
+  toggleBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  toggleBtnActive: {
+    backgroundColor: '#C9A962',
+    borderColor: '#C9A962',
+  },
+  toggleBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  toggleBtnTextActive: {
+    color: '#FFF',
   },
 });

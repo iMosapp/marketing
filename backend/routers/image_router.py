@@ -140,11 +140,35 @@ async def _check_hires_flag(user_id: str | None) -> bool:
         db = get_db()
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"organization_id": 1})
         if user and user.get("organization_id"):
-            org = await db.organizations.find_one(
-                {"_id": ObjectId(user["organization_id"])},
-                {"hires_images": 1}
-            )
+            org_id = user["organization_id"]
+            # Try ObjectId first, fall back to string match
+            try:
+                org = await db.organizations.find_one(
+                    {"_id": ObjectId(org_id)},
+                    {"hires_images": 1}
+                )
+            except Exception:
+                org = await db.organizations.find_one(
+                    {"_id": org_id},
+                    {"hires_images": 1}
+                )
             return bool(org and org.get("hires_images"))
     except Exception as e:
         logger.debug(f"hires check: {e}")
     return False
+
+
+@router.delete("/raw/{path:path}")
+async def cleanup_raw_image(path: str):
+    """Mark a raw (uncompressed) original as no longer needed.
+    Note: The raw file's URL is only returned at upload time and not stored
+    in any database record. Once you've sent the full-res image to the partner,
+    simply discard the raw_url. The compressed WebP version remains for in-app use."""
+    if "_raw." not in path:
+        raise HTTPException(status_code=400, detail="Can only clean up raw originals (path must contain '_raw.')")
+    logger.info(f"Raw image cleanup noted: {path}")
+    return {
+        "message": "Raw image flagged for cleanup. The compressed version remains available.",
+        "path": path,
+        "note": "raw_url is only provided at upload time. Do not persist it after sending to the partner.",
+    }
