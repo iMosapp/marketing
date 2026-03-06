@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Quick Action Flow - Preview & Send</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'SF Pro',system-ui,sans-serif;display:flex;justify-content:center;padding:20px 10px}
+  .phone{width:393px;min-height:852px;background:#111;border-radius:40px;border:3px solid #333;overflow:hidden}
+  .statusbar{height:54px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px}
+  .statusbar span{font-size:15px;font-weight:600;color:#fff}
+  .header{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #222}
+  .header .back{font-size:28px;color:#fff;text-decoration:none;padding:0 8px}
+  .header h2{flex:1;text-align:center;font-size:18px;font-weight:700;color:#fff}
+  .section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;padding:16px 20px 8px}
+
+  .recipient{display:flex;align-items:center;gap:12px;padding:14px 16px;margin:12px 16px;background:#1a1a1a;border-radius:14px;border:1px solid #2a2a2a}
+  .recipient-avatar{width:44px;height:44px;border-radius:14px;background:rgba(201,169,98,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#C9A962}
+  .recipient-name{font-size:16px;font-weight:700;color:#fff}
+  .recipient-phone{font-size:13px;color:#888;margin-top:2px}
+  .recipient-tag{font-size:11px;color:#34C759;font-weight:600;background:rgba(52,199,89,0.12);padding:3px 8px;border-radius:6px;margin-left:auto}
+
+  .preview-card{margin:8px 16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;overflow:hidden}
+  .preview-top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #222}
+  .preview-icon{font-size:20px}
+  .preview-type{font-size:14px;font-weight:700;color:#C9A962}
+  .preview-eye{font-size:13px;color:#007AFF;margin-left:auto;font-weight:600;cursor:pointer}
+  .preview-body{padding:16px}
+  .preview-msg{background:#222;border-radius:12px;padding:14px;font-size:14px;color:#ccc;line-height:22px}
+  .preview-link{color:#007AFF;word-break:break-all}
+  .preview-thumb{margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid #333;background:#1e1e1e;padding:16px;text-align:center}
+  .preview-thumb-title{font-size:16px;font-weight:700;color:#C9A962;margin-bottom:4px}
+  .preview-thumb-name{font-size:14px;color:#ccc}
+  .preview-thumb-co{font-size:12px;color:#888;margin-top:2px}
+
+  .send-options{padding:12px 16px;display:flex;gap:10px}
+  .send-opt{flex:1;padding:12px 8px;border-radius:12px;text-align:center;cursor:pointer;border:1px solid #333;transition:all .15s}
+  .send-opt .opt-icon{font-size:24px;margin-bottom:4px;display:block}
+  .send-opt .opt-label{font-size:12px;font-weight:600;color:#888}
+  .send-opt.active{border-color:#C9A962;background:rgba(201,169,98,0.08)}
+  .send-opt.active .opt-label{color:#C9A962}
+
+  .send-btn{margin:8px 16px;padding:16px;border-radius:14px;background:#C9A962;text-align:center;font-size:17px;font-weight:700;color:#000;cursor:pointer}
+  .alt-row{display:flex;justify-content:center;gap:20px;padding:12px 16px}
+  .alt-link{font-size:13px;color:#34C759;font-weight:600;cursor:pointer}
+  .alt-link2{font-size:13px;color:#007AFF;font-weight:600;cursor:pointer}
+
+  .nav-links{display:flex;justify-content:center;gap:16px;padding:20px;position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #333}
+  .nav-links a{padding:10px 24px;border-radius:20px;font-size:14px;font-weight:600;text-decoration:none;transition:all .15s}
+  .nav-links a.active{background:#C9A962;color:#000}
+  .nav-links a:not(.active){background:#333;color:#aaa}
+</style>
+</head>
+<body>
+<div style="max-width:420px;margin:0 auto;padding-bottom:80px">
+
+  <div style="text-align:center;margin-bottom:20px">
+    <h1 style="color:#C9A962;font-size:20px;font-weight:800;margin-bottom:4px">MOCKUP: Share My Card</h1>
+    <p style="color:#666;font-size:13px">Step 2 of 3 &mdash; Preview what you're sending & choose how</p>
+  </div>
+
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="header">
+      <a class="back" href="mockup-step1.html">&larr;</a>
+      <h2>Share My Card</h2>
+      <div style="width:40px"></div>
+    </div>
+
+    <!-- Recipient -->
+    <div class="recipient">
+      <div class="recipient-avatar">JD</div>
+      <div>
+        <div class="recipient-name">John Davis</div>
+        <div class="recipient-phone">801-555-1234</div>
+      </div>
+      <div class="recipient-tag">Existing</div>
+    </div>
+
+    <div class="section-label">What you're sending</div>
+
+    <!-- Card Preview -->
+    <div class="preview-card">
+      <div class="preview-top">
+        <span class="preview-icon">&#128179;</span>
+        <span class="preview-type">Digital Business Card</span>
+        <span class="preview-eye">&#128065; Preview</span>
+      </div>
+      <div class="preview-body">
+        <div class="preview-msg">
+          Hey John! Here's my digital business card. Save my info and reach out anytime!<br><br>
+          <span class="preview-link">https://imos.app/s/FW4x8k</span>
+        </div>
+        <div class="preview-thumb">
+          <div style="font-size:32px;margin-bottom:8px">&#128179;</div>
+          <div class="preview-thumb-title">Forest Ward</div>
+          <div class="preview-thumb-name">Sales Professional</div>
+          <div class="preview-thumb-co">Larry H. Miller Dealerships</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">How do you want to send it?</div>
+
+    <!-- Send Options -->
+    <div class="send-options">
+      <div class="send-opt active">
+        <span class="opt-icon">&#128172;</span>
+        <span class="opt-label">Text / SMS</span>
+      </div>
+      <div class="send-opt">
+        <span class="opt-icon">&#9993;</span>
+        <span class="opt-label">Email</span>
+      </div>
+      <div class="send-opt">
+        <span class="opt-icon">&#128279;</span>
+        <span class="opt-label">Copy Link</span>
+      </div>
+    </div>
+
+    <!-- Send Button -->
+    <a href="mockup-step3.html" style="text-decoration:none"><div class="send-btn">Send via SMS</div></a>
+
+    <div class="alt-row">
+      <span class="alt-link">&#128241; Send from My Phone</span>
+    </div>
+
+  </div>
+
+  <div class="nav-links">
+    <a href="mockup-step1.html">1. Enter Info</a>
+    <a href="mockup-step2.html" class="active">2. Preview</a>
+    <a href="mockup-step3.html">3. Sent</a>
+  </div>
+</div>
+</body>
+</html>
