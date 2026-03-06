@@ -586,10 +586,10 @@ export default function HomeScreen() {
   };
 
   const TILES = [
-    { key: 'share-card', icon: 'card-outline', label: 'Share My Card', color: '#007AFF', onPress: () => openActionPicker('digitalcard', 'Share My Card') },
-    { key: 'share-review', icon: 'star-outline', label: 'Review Link', color: '#FFD60A', onPress: () => openActionPicker('review', 'Send Review Link') },
-    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => openActionPicker('congrats', 'Send a Card') },
-    { key: 'showroom', icon: 'storefront-outline', label: 'My Showcase', color: '#34C759', onPress: () => openActionPicker('showcase', 'Share Showcase') },
+    { key: 'share-card', icon: 'card-outline', label: 'Share My Card', color: '#007AFF', onPress: () => router.push('/quick-send/digitalcard' as any) },
+    { key: 'share-review', icon: 'star-outline', label: 'Review Link', color: '#FFD60A', onPress: () => router.push('/quick-send/review' as any) },
+    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => router.push('/quick-send/congrats' as any) },
+    { key: 'showroom', icon: 'storefront-outline', label: 'My Showcase', color: '#34C759', onPress: () => router.push('/quick-send/showcase' as any) },
     { key: 'keypad', icon: 'keypad-outline', label: 'Keypad', color: '#32ADE6', onPress: () => { setContactActionMode('keypad'); setShowContactAction(true); } },
     { key: 'add-contact', icon: 'person-add-outline', label: 'Add Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
   ];
