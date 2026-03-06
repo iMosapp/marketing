@@ -40,6 +40,23 @@ function usePWAMetaTags() {
 
     // Set title
     document.title = "i'M On Social";
+
+    // Suppress browser focus outlines and autofill background on inputs
+    const styleId = 'imos-global-input-styles';
+    if (!head.querySelector(`#${styleId}`)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        input:focus, textarea:focus { outline: none !important; box-shadow: none !important; }
+        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus,
+        textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus {
+          -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+          -webkit-text-fill-color: inherit !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `;
+      head.appendChild(style);
+    }
   }, []);
 }
 

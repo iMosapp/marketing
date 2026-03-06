@@ -11,7 +11,6 @@ import api from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
 
-// Action config — what each tile sends
 const ACTION_CONFIG: Record<string, {
   title: string; icon: string; color: string; previewTitle: string;
   getUrl: (userId: string, storeSlug: string) => string;
@@ -42,7 +41,7 @@ const ACTION_CONFIG: Record<string, {
   congrats: {
     title: 'Send a Card', icon: 'gift-outline', color: '#C9A962',
     previewTitle: 'Greeting Card',
-    getUrl: () => '', // Cards need to be created first — handled separately
+    getUrl: () => '',
     getMessage: () => '',
     eventType: 'congrats_card_sent',
   },
@@ -67,31 +66,61 @@ export default function QuickSendPage() {
   const actionKey = (typeof action === 'string' ? action : 'digitalcard');
   const config = ACTION_CONFIG[actionKey] || ACTION_CONFIG.digitalcard;
 
-  // Step state
   const [step, setStep] = useState<Step>(actionKey === 'congrats' ? 'cardtype' : 'info');
 
-  // Customer info
-  const [name, setName] = useState('');
+  // Customer info — split into first/last name
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [matchedContact, setMatchedContact] = useState<any>(null);
   const [checking, setChecking] = useState(false);
   const dupTimer = useRef<any>(null);
 
-  // Card type (for Send a Card)
   const [selectedCardType, setSelectedCardType] = useState('congrats');
 
-  // Preview
   const [shareUrl, setShareUrl] = useState('');
   const [messageText, setMessageText] = useState('');
   const [sendMethod, setSendMethod] = useState<'sms' | 'email' | 'copy'>('sms');
 
-  // Sending
   const [sending, setSending] = useState(false);
   const [newContactId, setNewContactId] = useState('');
 
   const storeSlug = user?.store_slug || user?.storeSlug || '';
   const userId = user?._id || '';
+
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  // Card-grouped styles matching Add Contact form
+  const cardStyle = {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden' as const,
+  };
+  const inputStyle = {
+    fontSize: 16,
+    color: colors.text,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  };
+  const dividerStyle = {
+    height: 1,
+    backgroundColor: colors.border,
+    marginLeft: 16,
+  };
+  const rowStyle = {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  };
+  const rowIconStyle = {
+    width: 28,
+    marginRight: 10,
+  };
 
   // Duplicate check on phone
   const checkPhone = useCallback(async (p: string) => {
@@ -106,7 +135,8 @@ export default function QuickSendPage() {
       if (matches.length > 0) {
         const m = matches[0];
         setMatchedContact(m);
-        if (m.first_name) setName(`${m.first_name} ${m.last_name || ''}`.trim());
+        if (m.first_name) setFirstName(m.first_name);
+        if (m.last_name) setLastName(m.last_name || '');
         if (m.email) setEmail(m.email);
       } else {
         setMatchedContact(null);
@@ -123,13 +153,10 @@ export default function QuickSendPage() {
 
   // Move to preview step
   const goToPreview = async () => {
-    const firstName = name.split(/\s+/)[0] || name;
-
     if (actionKey === 'congrats') {
-      // For cards, navigate to card creation flow and come back
       const params = new URLSearchParams();
       params.set('type', selectedCardType);
-      if (name) params.set('prefillName', name);
+      if (fullName) params.set('prefillName', fullName);
       if (phone) params.set('prefillPhone', phone);
       if (email) params.set('prefillEmail', email);
       params.set('return_quick_send', '1');
@@ -138,15 +165,33 @@ export default function QuickSendPage() {
     }
 
     const url = config.getUrl(userId, storeSlug);
-    const msg = config.getMessage(firstName, url);
+    const msg = config.getMessage(firstName || fullName, url);
     setShareUrl(url);
     setMessageText(msg);
     setStep('preview');
   };
 
-  // Send the message
+  // Open native SMS app with pre-populated message
+  const openNativeSMS = (phoneNum: string, body: string) => {
+    const encodedBody = encodeURIComponent(body);
+    const encodedPhone = encodeURIComponent(phoneNum);
+    if (IS_WEB && typeof window !== 'undefined') {
+      const ua = window.navigator.userAgent.toLowerCase();
+      const isIos = /iphone|ipad|ipod/.test(ua);
+      const sep = isIos ? '&' : '?';
+      const smsUrl = `sms:${encodedPhone}${sep}body=${encodedBody}`;
+      window.location.href = smsUrl;
+    } else {
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${encodedPhone}&body=${encodedBody}`
+        : `sms:${encodedPhone}?body=${encodedBody}`;
+      Linking.openURL(smsUrl);
+    }
+  };
+
+  // Send the message — corrected flow
   const handleSend = async () => {
-    if (!name.trim()) return;
+    if (!firstName.trim()) return;
     setSending(true);
     setStep('sending');
 
@@ -155,10 +200,9 @@ export default function QuickSendPage() {
 
       // If no matched contact, create one
       if (!contactId) {
-        const parts = name.trim().split(/\s+/);
         const res = await api.post(`/contacts/${userId}`, {
-          first_name: parts[0],
-          last_name: parts.slice(1).join(' '),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
           phone: phone,
           email: email,
         });
@@ -177,35 +221,51 @@ export default function QuickSendPage() {
           channel: 'link_copy',
           content: messageText,
         }).catch(() => {});
+
+        setStep('done');
+        setTimeout(() => {
+          if (contactId) router.replace(`/contact/${contactId}` as any);
+          else router.back();
+        }, 2000);
+
       } else if (sendMethod === 'sms') {
-        // Send via messages API
+        // Log the event server-side first
         await api.post(`/messages/send/${userId}`, {
           contact_id: contactId,
           content: messageText,
           channel: 'sms_personal',
           event_type: config.eventType,
         }).catch(() => {});
+
+        // Open native SMS app with pre-populated message
+        openNativeSMS(phone, messageText);
+
+        // Show confirmation after a brief delay (to let SMS app open)
+        setTimeout(() => {
+          setStep('done');
+          setTimeout(() => {
+            if (contactId) router.replace(`/contact/${contactId}` as any);
+            else router.back();
+          }, 2000);
+        }, 500);
+
       } else if (sendMethod === 'email') {
         if (email) {
+          // Send email via backend (Resend)
           await api.post(`/messages/send/${userId}`, {
             contact_id: contactId,
             content: messageText,
             channel: 'email',
             to_email: email,
             event_type: config.eventType,
-          }).catch(() => {});
+          });
         }
+        setStep('done');
+        setTimeout(() => {
+          if (contactId) router.replace(`/contact/${contactId}` as any);
+          else router.back();
+        }, 2000);
       }
-
-      setStep('done');
-      // Auto-redirect to contact after 2 seconds
-      setTimeout(() => {
-        if (contactId) {
-          router.replace(`/contact/${contactId}` as any);
-        } else {
-          router.back();
-        }
-      }, 2000);
 
     } catch (err) {
       console.error('Send error:', err);
@@ -251,53 +311,68 @@ export default function QuickSendPage() {
           Who are you sending to?
         </Text>
 
-        {/* Name */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, marginBottom: 10, gap: 10 }}>
-          <Ionicons name="person-outline" size={18} color={colors.textTertiary} />
+        {/* Name Card — First + Last like Add Contact */}
+        <View style={cardStyle}>
           <TextInput
-            style={{ flex: 1, paddingVertical: 14, fontSize: 16, color: colors.text }}
-            placeholder="Customer name"
+            style={inputStyle}
+            placeholder="First name"
             placeholderTextColor={colors.textTertiary}
-            value={name}
-            onChangeText={setName}
+            value={firstName}
+            onChangeText={setFirstName}
             autoFocus
-            data-testid="qs-name"
+            returnKeyType="next"
+            data-testid="qs-first-name"
+          />
+          <View style={dividerStyle} />
+          <TextInput
+            style={inputStyle}
+            placeholder="Last name"
+            placeholderTextColor={colors.textTertiary}
+            value={lastName}
+            onChangeText={setLastName}
+            returnKeyType="next"
+            data-testid="qs-last-name"
           />
         </View>
 
-        {/* Phone */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: matchedContact ? '#34C759' : colors.border, borderRadius: 12, paddingHorizontal: 14, marginBottom: 10, gap: 10 }}>
-          <Ionicons name="call-outline" size={18} color={matchedContact ? '#34C759' : colors.textTertiary} />
-          <TextInput
-            style={{ flex: 1, paddingVertical: 14, fontSize: 16, color: colors.text }}
-            placeholder="Phone number"
-            placeholderTextColor={colors.textTertiary}
-            value={phone}
-            onChangeText={onPhoneChange}
-            keyboardType="phone-pad"
-            data-testid="qs-phone"
-          />
-          {checking && <ActivityIndicator size="small" color={colors.accent} />}
-        </View>
-
-        {/* Email */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, marginBottom: 12, gap: 10 }}>
-          <Ionicons name="mail-outline" size={18} color={colors.textTertiary} />
-          <TextInput
-            style={{ flex: 1, paddingVertical: 14, fontSize: 16, color: colors.text }}
-            placeholder="Email (optional)"
-            placeholderTextColor={colors.textTertiary}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            data-testid="qs-email"
-          />
+        {/* Contact Info Card — Phone + Email */}
+        <View style={cardStyle}>
+          <View style={rowStyle}>
+            <Ionicons name="call-outline" size={20} color="#34C759" style={rowIconStyle} />
+            <TextInput
+              style={[inputStyle, { flex: 1, paddingVertical: 0 }]}
+              placeholder="Phone"
+              placeholderTextColor={colors.textTertiary}
+              value={phone}
+              onChangeText={onPhoneChange}
+              keyboardType="phone-pad"
+              returnKeyType="next"
+              data-testid="qs-phone"
+            />
+            {checking && <ActivityIndicator size="small" color={colors.accent} />}
+          </View>
+          <View style={dividerStyle} />
+          <View style={rowStyle}>
+            <Ionicons name="mail-outline" size={20} color="#007AFF" style={rowIconStyle} />
+            <TextInput
+              style={[inputStyle, { flex: 1, paddingVertical: 0 }]}
+              placeholder="Email (optional)"
+              placeholderTextColor={colors.textTertiary}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              data-testid="qs-email"
+            />
+          </View>
         </View>
 
         {/* Match banner */}
         {matchedContact && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52,199,89,0.08)', borderWidth: 1, borderColor: 'rgba(52,199,89,0.3)', borderRadius: 12, padding: 12, gap: 12, marginBottom: 12 }} data-testid="qs-match-banner">
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, marginBottom: 12,
+            backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
+          }} data-testid="qs-match-banner">
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontWeight: '700', fontSize: 14, color: colors.accent }}>
                 {(matchedContact.first_name || '?')[0]}{(matchedContact.last_name || '')[0] || ''}
@@ -315,17 +390,20 @@ export default function QuickSendPage() {
 
         {/* Next button */}
         <TouchableOpacity
-          style={{ padding: 16, borderRadius: 14, backgroundColor: (name.trim() && phone.trim()) ? '#C9A962' : colors.border, alignItems: 'center', marginTop: 8 }}
+          style={{
+            padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 8,
+            backgroundColor: (firstName.trim() && phone.trim()) ? '#C9A962' : colors.border,
+          }}
           onPress={goToPreview}
-          disabled={!name.trim() || !phone.trim()}
+          disabled={!firstName.trim() || !phone.trim()}
           data-testid="qs-next-btn"
         >
-          <Text style={{ fontSize: 17, fontWeight: '700', color: (name.trim() && phone.trim()) ? '#000' : colors.textTertiary }}>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: (firstName.trim() && phone.trim()) ? '#000' : colors.textTertiary }}>
             {actionKey === 'congrats' ? 'Create Card' : 'Preview'}
           </Text>
         </TouchableOpacity>
 
-        {!matchedContact && name.trim() && phone.trim() && (
+        {!matchedContact && firstName.trim() && phone.trim() && (
           <Text style={{ fontSize: 13, color: colors.textTertiary, textAlign: 'center', marginTop: 10 }}>
             New contact will be auto-created when you send
           </Text>
@@ -334,111 +412,105 @@ export default function QuickSendPage() {
     </KeyboardAvoidingView>
   );
 
-  const renderPreview = () => {
-    const firstName = name.split(/\s+/)[0] || name;
-    return (
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-        {/* Recipient */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 16 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontWeight: '700', fontSize: 16, color: colors.accent }}>{(name || '?')[0].toUpperCase()}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{name}</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>{phone}</Text>
-          </View>
-          {matchedContact && (
-            <View style={{ backgroundColor: 'rgba(52,199,89,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#34C759' }}>Existing</Text>
-            </View>
-          )}
+  const renderPreview = () => (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+      {/* Recipient */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
+        backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+      }}>
+        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontWeight: '700', fontSize: 16, color: colors.accent }}>{(firstName || '?')[0].toUpperCase()}</Text>
         </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{fullName}</Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>{phone}</Text>
+        </View>
+        {matchedContact && (
+          <View style={{ backgroundColor: 'rgba(52,199,89,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#34C759' }}>Existing</Text>
+          </View>
+        )}
+      </View>
 
-        {/* What you're sending */}
-        <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-          What you're sending
-        </Text>
-        <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Ionicons name={config.icon as any} size={20} color={config.color} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#C9A962', flex: 1 }}>{config.previewTitle}</Text>
+      {/* What you're sending */}
+      <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+        What you're sending
+      </Text>
+      <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <Ionicons name={config.icon as any} size={20} color={config.color} />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, flex: 1 }}>{config.previewTitle}</Text>
+          {shareUrl ? (
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: 'rgba(0,122,255,0.1)', borderRadius: 8 }}
-              onPress={() => { if (shareUrl) Linking.openURL(shareUrl); }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: `${config.color}18`, borderRadius: 8 }}
+              onPress={() => Linking.openURL(shareUrl)}
               data-testid="qs-preview-link"
             >
-              <Ionicons name="eye-outline" size={16} color="#007AFF" />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>Preview</Text>
+              <Ionicons name="eye-outline" size={16} color={config.color} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: config.color }}>Preview</Text>
             </TouchableOpacity>
+          ) : null}
+        </View>
+        <View style={{ padding: 16 }}>
+          <View style={{ backgroundColor: colors.bg, borderRadius: 10, padding: 14 }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 22 }}>{messageText}</Text>
           </View>
-          <View style={{ padding: 16 }}>
-            <View style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 14 }}>
-              <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 22 }}>{messageText}</Text>
-            </View>
-            <TouchableOpacity
-              style={{ marginTop: 8 }}
-              onPress={() => { if (shareUrl) Linking.openURL(shareUrl); }}
-            >
+          {shareUrl ? (
+            <TouchableOpacity style={{ marginTop: 8 }} onPress={() => Linking.openURL(shareUrl)}>
               <Text style={{ fontSize: 13, color: '#007AFF' }} numberOfLines={1}>{shareUrl}</Text>
             </TouchableOpacity>
-          </View>
+          ) : null}
         </View>
+      </View>
 
-        {/* Send options */}
-        <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-          How do you want to send it?
-        </Text>
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-          {[
-            { key: 'sms' as const, icon: 'chatbubble', label: 'Text / SMS' },
-            { key: 'email' as const, icon: 'mail', label: 'Email', disabled: !email },
-            { key: 'copy' as const, icon: 'copy', label: 'Copy Link' },
-          ].map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={{
-                flex: 1, padding: 12, borderRadius: 12, alignItems: 'center',
-                borderWidth: 1,
-                borderColor: sendMethod === opt.key ? '#C9A962' : colors.border,
-                backgroundColor: sendMethod === opt.key ? 'rgba(201,169,98,0.08)' : colors.card,
-                opacity: opt.disabled ? 0.4 : 1,
-              }}
-              onPress={() => !opt.disabled && setSendMethod(opt.key)}
-              disabled={opt.disabled}
-              data-testid={`qs-method-${opt.key}`}
-            >
-              <Ionicons name={opt.icon as any} size={22} color={sendMethod === opt.key ? '#C9A962' : colors.textTertiary} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: sendMethod === opt.key ? '#C9A962' : colors.textTertiary, marginTop: 4 }}>{opt.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Send button */}
-        <TouchableOpacity
-          style={{ padding: 16, borderRadius: 14, backgroundColor: '#C9A962', alignItems: 'center' }}
-          onPress={handleSend}
-          data-testid="qs-send-btn"
-        >
-          <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>
-            {sendMethod === 'copy' ? 'Copy Link' : sendMethod === 'email' ? 'Send via Email' : 'Send via SMS'}
-          </Text>
-        </TouchableOpacity>
-
-        {sendMethod === 'sms' && (
+      {/* Send options */}
+      <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+        How do you want to send it?
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+        {[
+          { key: 'sms' as const, icon: 'chatbubble', label: 'Text / SMS' },
+          { key: 'email' as const, icon: 'mail', label: 'Email', disabled: !email },
+          { key: 'copy' as const, icon: 'copy', label: 'Copy Link' },
+        ].map(opt => (
           <TouchableOpacity
-            style={{ alignItems: 'center', paddingVertical: 12 }}
-            onPress={() => {
-              const smsBody = encodeURIComponent(messageText);
-              const smsUrl = Platform.OS === 'ios' ? `sms:${phone}&body=${smsBody}` : `sms:${phone}?body=${smsBody}`;
-              Linking.openURL(smsUrl);
+            key={opt.key}
+            style={{
+              flex: 1, padding: 12, borderRadius: 12, alignItems: 'center',
+              borderWidth: 1,
+              borderColor: sendMethod === opt.key ? '#C9A962' : colors.border,
+              backgroundColor: sendMethod === opt.key ? 'rgba(201,169,98,0.08)' : colors.card,
+              opacity: opt.disabled ? 0.4 : 1,
             }}
+            onPress={() => !opt.disabled && setSendMethod(opt.key)}
+            disabled={opt.disabled}
+            data-testid={`qs-method-${opt.key}`}
           >
-            <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>Send from My Phone</Text>
+            <Ionicons name={opt.icon as any} size={22} color={sendMethod === opt.key ? '#C9A962' : colors.textTertiary} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: sendMethod === opt.key ? '#C9A962' : colors.textTertiary, marginTop: 4 }}>{opt.label}</Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
-    );
-  };
+        ))}
+      </View>
+
+      {/* Send button */}
+      <TouchableOpacity
+        style={{ padding: 16, borderRadius: 14, backgroundColor: '#C9A962', alignItems: 'center' }}
+        onPress={handleSend}
+        data-testid="qs-send-btn"
+      >
+        <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>
+          {sendMethod === 'copy' ? 'Copy Link' : sendMethod === 'email' ? 'Send Email' : 'Send via SMS'}
+        </Text>
+      </TouchableOpacity>
+
+      {sendMethod === 'sms' && (
+        <Text style={{ fontSize: 12, color: colors.textTertiary, textAlign: 'center', marginTop: 8 }}>
+          This will open your phone's messaging app
+        </Text>
+      )}
+    </ScrollView>
+  );
 
   const renderSending = () => (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
@@ -454,10 +526,10 @@ export default function QuickSendPage() {
       </View>
       <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 8 }}>Sent!</Text>
       <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 }}>
-        {config.previewTitle} sent to{'\n'}<Text style={{ fontWeight: '700', color: colors.text }}>{name}</Text>
+        {config.previewTitle} sent to{'\n'}<Text style={{ fontWeight: '700', color: colors.text }}>{fullName}</Text>
       </Text>
 
-      <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14, width: '100%', marginTop: 20 }}>
+      <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14, width: '100%', marginTop: 20 }}>
         <Text style={{ fontSize: 12, color: colors.textTertiary, fontWeight: '600', marginBottom: 8 }}>AUTOMATICALLY LOGGED</Text>
         {[
           { icon: 'checkmark-circle', text: `${config.previewTitle} shared`, color: '#34C759' },
