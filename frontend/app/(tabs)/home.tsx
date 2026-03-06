@@ -754,49 +754,31 @@ export default function HomeScreen() {
             <View style={{ width: 32 }} />
           </View>
 
-          <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14 }}>
-              <Ionicons name="search" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-              <TextInput
-                style={{ flex: 1, paddingVertical: 12, fontSize: 16, color: colors.text }}
-                placeholder="Type a name, phone, or email..."
-                placeholderTextColor={colors.textTertiary}
-                value={actionSearch}
-                onChangeText={setActionSearch}
-                autoFocus
-                data-testid="action-picker-search"
-              />
-              {actionSearch ? (
-                <TouchableOpacity onPress={() => setActionSearch('')}>
-                  <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Select a contact to send to</Text>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+            <TextInput
+              style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: colors.text }}
+              placeholder="Search contacts..."
+              placeholderTextColor={colors.textTertiary}
+              value={actionSearch}
+              onChangeText={setActionSearch}
+              data-testid="action-picker-search"
+            />
           </View>
 
           {actionContactsLoading ? (
             <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
           ) : (
             <FlatList
-              data={actionSearch.trim() ? filteredActionContacts : []}
+              data={filteredActionContacts}
               keyExtractor={(item) => item._id}
-              keyboardShouldPersistTaps="handled"
               style={{ flex: 1, paddingHorizontal: 16 }}
-              ListHeaderComponent={
-                actionSearch.trim() && filteredActionContacts.length === 0 ? null : (
-                  !actionSearch.trim() ? (
-                    <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontSize: 15, lineHeight: 22 }}>
-                      Start typing to find a contact{'\n'}or add a new one
-                    </Text>
-                  ) : null
-                )
-              }
               renderItem={({ item }) => {
                 const name = `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.phone || 'Unknown';
                 const initials = `${(item.first_name || '?')[0]}${(item.last_name || '')[0] || ''}`.toUpperCase();
                 return (
                   <TouchableOpacity
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border, gap: 10 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: colors.border, gap: 10 }}
                     onPress={() => handleActionContactSelect(item)}
                     data-testid={`action-contact-${item._id}`}
                   >
@@ -804,44 +786,17 @@ export default function HomeScreen() {
                       <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{initials}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{name}</Text>
-                      {item.phone ? <Text style={{ fontSize: 13, color: colors.textSecondary }}>{item.phone}</Text> : null}
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{name}</Text>
+                      {item.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.phone}</Text> : null}
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 );
               }}
-              ListFooterComponent={
-                actionSearch.trim() ? (
-                  <TouchableOpacity
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, marginTop: 4, borderTopWidth: 0.5, borderTopColor: colors.border, gap: 10 }}
-                    onPress={async () => {
-                      const parts = actionSearch.trim().split(/\s+/);
-                      const firstName = parts[0] || actionSearch.trim();
-                      const lastName = parts.slice(1).join(' ') || '';
-                      try {
-                        const res = await api.post(`/contacts/${user?._id}`, { first_name: firstName, last_name: lastName });
-                        const newContact = res.data;
-                        const newId = newContact._id || newContact.id;
-                        setShowActionPicker(false);
-                        setActionSearch('');
-                        router.push(`/contact/${newId}?action=${pendingAction}` as any);
-                      } catch (err) {
-                        console.error('Failed to create contact:', err);
-                      }
-                    }}
-                    data-testid="action-picker-add-new"
-                  >
-                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="person-add" size={20} color="#34C759" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>Add "{actionSearch.trim()}" as new contact</Text>
-                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>Create and send</Text>
-                    </View>
-                    <Ionicons name="add-circle" size={20} color="#34C759" />
-                  </TouchableOpacity>
-                ) : null
+              ListEmptyComponent={
+                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 14 }}>
+                  {actionSearch ? 'No contacts found' : 'No contacts yet'}
+                </Text>
               }
             />
           )}
