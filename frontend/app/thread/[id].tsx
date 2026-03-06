@@ -150,6 +150,7 @@ export default function ThreadScreen() {
   const styles = getStyles(colors);
   
   const [message, setMessage] = useState('');
+  const [inputHeight, setInputHeight] = useState(36);
   const [pendingEventType, setPendingEventType] = useState<string | null>(
     typeof paramEventType === 'string' ? paramEventType : null
   );
@@ -788,6 +789,7 @@ export default function ThreadScreen() {
       };
       setMessages((prev) => [...prev, optimisticMessage]);
       setMessage('');
+      setInputHeight(36);
       setShowAISuggestion(false);
       setSending(true);
       
@@ -889,6 +891,7 @@ export default function ThreadScreen() {
       
       setMessages((prev) => [...prev, optimisticMessage]);
       setMessage('');
+      setInputHeight(36);
       setShowAISuggestion(false);
       
       // Scroll to bottom
@@ -1549,6 +1552,7 @@ export default function ThreadScreen() {
       }]);
       
       setMessage('');
+      setInputHeight(36);
       setSelectedMedia(null);
       
       // Show success or warning
@@ -2251,13 +2255,18 @@ export default function ThreadScreen() {
             
             {/* Text input area */}
             <TextInput
-              style={[styles.composerInput, { color: colors.textPrimary }]}
+              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(36, Math.min(inputHeight, 150)) }]}
               placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
               placeholderTextColor={colors.textSecondary}
               value={message}
               onChangeText={setMessage}
               multiline
               maxLength={1000}
+              onContentSizeChange={(e) => {
+                const h = e.nativeEvent.contentSize.height;
+                setInputHeight(h);
+              }}
+              scrollEnabled={inputHeight > 150}
             />
             
             {/* Bottom toolbar inside the box */}
@@ -3607,10 +3616,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 10,
     paddingBottom: 10,
-    minHeight: 48,
-    maxHeight: 120,
     textAlignVertical: 'top',
   },
   composerToolbar: {
