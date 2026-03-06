@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Resend
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
 
 # Universal brand footer  - change URL here when domain migrates
 BRAND_URL = "https://app.imonsocial.com/imos"
@@ -267,6 +267,7 @@ async def send_email(request: SendEmailRequest, user_id: str):
     params = {
         "from": f"i'M On Social <{SENDER_EMAIL}>",
         "to": [request.recipient_email],
+        "reply_to": "support@imonsocial.com",
         "subject": request.subject,
         "html": wrapped_html,
     }

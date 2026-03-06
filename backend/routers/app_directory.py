@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/app-directory", tags=["App Directory"])
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
 APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
 if RESEND_API_KEY:
@@ -96,6 +96,7 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
             result = await asyncio.to_thread(resend.Emails.send, {
                 "from": f"i'M On Social <{SENDER_EMAIL}>",
                 "to": data.recipient_email,
+                "reply_to": "support@imonsocial.com",
                 "subject": f"{sender_name} shared \"{data.page_name}\" with you from i'M On Social",
                 "html": html,
             })

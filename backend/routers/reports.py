@@ -991,7 +991,7 @@ async def send_report_email(
     from datetime import timezone as tz
 
     RESEND_KEY = _os.environ.get("RESEND_API_KEY")
-    SENDER = _os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+    SENDER = _os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
     if not RESEND_KEY:
         raise HTTPException(status_code=500, detail="Email not configured")
     resend_mod.api_key = RESEND_KEY
@@ -1056,6 +1056,7 @@ async def send_report_email(
         result = await asyncio.to_thread(resend_mod.Emails.send, {
             "from": f"i'M On Social Reports <{SENDER}>",
             "to": to_email,
+            "reply_to": "support@imonsocial.com",
             "subject": f"i'M On Social Activity Report | {sfmt} - {efmt}",
             "html": html,
         })

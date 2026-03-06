@@ -22,7 +22,7 @@ APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https:/
 
 # Resend configuration
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 
@@ -67,7 +67,8 @@ async def send_welcome_email(user: dict):
         result = await asyncio.to_thread(resend.Emails.send, {
             "from": f"i'M On Social <{SENDER_EMAIL}>",
             "to": [user.get('email')],
-            "subject": "Welcome to i'M On Social! 🎉",
+            "reply_to": "support@imonsocial.com",
+            "subject": "Welcome to i'M On Social!",
             "html": html_content
         })
         
@@ -422,6 +423,7 @@ async def request_password_reset(data: dict):
             params = {
                 "from": f"i'M On Social <{SENDER_EMAIL}>",
                 "to": [email],
+                "reply_to": "support@imonsocial.com",
                 "subject": "Your i'M On Social Password Reset Code",
                 "html": f"""
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; background: #ffffff;">

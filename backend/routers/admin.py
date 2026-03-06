@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Resend for invite emails
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
 
 APP_URL = "https://app.imonsocial.com"
 
@@ -66,6 +66,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
     email_payload = {
         "from": f"i'M On Social <{SENDER_EMAIL}>",
         "to": email,
+        "reply_to": "support@imonsocial.com",
         "subject": f"You're Invited to Join i'M On Social as {role_title}",
         "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">

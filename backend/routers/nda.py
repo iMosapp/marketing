@@ -239,9 +239,11 @@ async def send_nda_email(nda_id: str):
             </div>
             """
 
+            SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
             resend.Emails.send({
-                "from": "i'M On Social <noreply@imonsocial.com>",
+                "from": f"i'M On Social <{SENDER_EMAIL}>",
                 "to": [email],
+                "reply_to": "support@imonsocial.com",
                 "subject": f"NDA for Review & Signature from {sender_name}",
                 "html": html,
             })
@@ -410,9 +412,11 @@ async def submit_signature(nda_id: str, data: NDARecipientSign):
             # Send to both parties
             for to_email in [sender_email, recipient_email]:
                 if to_email:
+                    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
                     resend.Emails.send({
-                        "from": "i'M On Social <noreply@imonsocial.com>",
+                        "from": f"i'M On Social <{SENDER_EMAIL}>",
                         "to": [to_email],
+                        "reply_to": "support@imonsocial.com",
                         "subject": "NDA Signed - Confirmation",
                         "html": html,
                     })

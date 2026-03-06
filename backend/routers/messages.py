@@ -255,7 +255,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 import resend as resend_mod
                 from utils.email_template import get_brand_context, build_branded_email
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
-                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+                SENDER = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
                     user_doc = await get_db().users.find_one({"_id": ObjectId(user_id)})
@@ -269,6 +269,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
                         "from": f"{sender_name} at {store_name} <{SENDER}>",
                         "to": [contact_email],
+                        "reply_to": user_doc.get('email', SENDER) if user_doc else SENDER,
                         "subject": f"Message from {sender_name} at {store_name}",
                         "html": email_html,
                     })
@@ -969,7 +970,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 import resend as resend_mod
                 from utils.email_template import get_brand_context, build_branded_email
                 RESEND_KEY = os.environ.get("RESEND_API_KEY")
-                SENDER = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+                SENDER = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
                 logger.info(f"[EMAIL-FLOW] RESEND_API_KEY present: {bool(RESEND_KEY)}, SENDER: {SENDER}")
                 if RESEND_KEY:
                     resend_mod.api_key = RESEND_KEY
@@ -989,6 +990,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
                         "from": from_addr,
                         "to": [contact_email],
+                        "reply_to": user_doc.get('email', SENDER) if user_doc else SENDER,
                         "subject": subject,
                         "html": email_html,
                     })
@@ -1504,7 +1506,7 @@ async def email_diagnostic(user_id: str, contact_id: str):
     
     # Step 4: Check Resend config
     RESEND_KEY = os.environ.get("RESEND_API_KEY")
-    SENDER = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+    SENDER = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
     steps.append({
         "step": "resend_config",
         "ok": bool(RESEND_KEY),
@@ -1533,6 +1535,7 @@ async def email_diagnostic(user_id: str, contact_id: str):
             result = await asyncio.to_thread(resend_mod.Emails.send, {
                 "from": f"{sender_name} at {store_name} <{SENDER}>",
                 "to": [clean],
+                "reply_to": user.get('email', SENDER) if user else SENDER,
                 "subject": f"[DIAGNOSTIC] Test from {store_name}",
                 "html": test_html,
             })

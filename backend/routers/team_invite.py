@@ -775,7 +775,7 @@ async def send_email_invite(data: EmailInviteRequest):
     
     # Send email via Resend
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@imonsocial.com")
+    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
     
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured - invite created but email not sent")
@@ -849,6 +849,7 @@ async def send_email_invite(data: EmailInviteRequest):
             {
                 "from": f"i'M On Social <{SENDER_EMAIL}>",
                 "to": [data.recipient_email],
+                "reply_to": "support@imonsocial.com",
                 "subject": f"{sender_name} invited you to join {store_name}",
                 "html": html_content,
             }
