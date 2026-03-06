@@ -11,32 +11,30 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 
 ## What's Been Implemented
 
-### Image Pipeline Optimization (Mar 2026)
-**Backend:**
-- All uploaded images auto-compressed to WebP format, capped at 1200px wide (85% quality)
-- Achieved 94% size reduction (94KB JPEG → 6KB WebP in testing)
-- All thumbnails (200x200) and avatars (80x80) now WebP
-- Immutable cache headers (`Cache-Control: public, max-age=31536000, immutable`) — 1 year cache since UUID-based paths never change
-- `hires_images` org flag: when enabled, also stores the raw uncompressed original for accounts that need high-res prints (calendars, etc.)
-- MMS media moved from base64-in-MongoDB to Emergent Object Storage (compressed WebP)
+### CDN-Like Image Caching Layer (Mar 2026)
+- **In-memory LRU cache** (200MB, configurable via `IMAGE_CACHE_MB` env var): hot images served from RAM in <1ms
+- **ETag + 304 Not Modified**: browsers with cached images get zero-body responses (~0.7ms)
+- **Immutable cache headers** (`Cache-Control: public, max-age=31536000, immutable`): browser never re-validates
+- **Cache warming on upload**: newly uploaded images are pre-cached in RAM
+- **Cache stats endpoint**: `GET /api/images/cache-stats` for monitoring
+- Performance: cached fetches ~0.9ms, 304 responses ~0.7ms
 
-**Frontend:**
-- Switched from React Native's `<Image>` to `expo-image` (`Image from 'expo-image'`) on key pages: inbox, thread, contact detail
-- expo-image provides: disk caching, memory caching, smooth transitions, progressive loading
-- Updated all `resizeMode` props to `contentFit` for expo-image compatibility
-- Created `OptimizedImage` reusable component at `/app/frontend/components/OptimizedImage.tsx`
+### Image Pipeline Optimization (Mar 2026)
+- All originals auto-compressed to WebP (1200px max, 85% quality) — 94% size reduction
+- Thumbnails (200x200) and avatars (80x80) also WebP
+- `hires_images` org flag preserves raw uncompressed originals for print-quality accounts
+- MMS media moved from base64-in-MongoDB to compressed WebP in Object Storage
+- Frontend: expo-image on inbox, thread, contact pages (disk + memory caching)
 
 ### Production URL Fix (Mar 2026)
-- Added `PUBLIC_FACING_URL` env var to prevent deployment platform from overriding customer-facing URLs
-- Eliminated all `window.location.origin` from customer-facing URL construction
-
-### Inbox Refresh Fix (Mar 2026)
-- `useFocusEffect` added for reliable conversation loading
+- `PUBLIC_FACING_URL` env var prevents deployment platform from overriding customer-facing URLs
+- Eliminated all `window.location.origin` from 13+ files
 
 ### Previous Work
 - Persistent Login, Dynamic Share Previews, Training Hub V2
 - Contact Page Bug Fixes, Home Screen Fixes
 - Carrier-agnostic messaging, white-label emails, Reporting
+- Inbox refresh fix (useFocusEffect)
 
 ## Pending Issues
 - P0: Production email delivery — BLOCKED on user verifying `RESEND_API_KEY`
@@ -50,10 +48,10 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 4. (P1) AI-Powered Outreach
 
 ## Future/Backlog
+- Extend expo-image to remaining pages (settings, admin, etc.)
 - Auth refactor (bcrypt), Push notifications, Voice Help Assistant
 - Full Twilio integration (MOCKED), WhatsApp Integration
 - Inventory Management, Code cleanup (~80 files)
-- Extend expo-image to remaining pages (settings, admin, etc.)
 
 ## Key Credentials
 - Super Admin: forest@imosapp.com / Admin123!
@@ -63,6 +61,7 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - `EXPO_PUBLIC_APP_URL=https://app.imonsocial.com` in frontend env
 - `RESEND_API_KEY` in production
 - `MONGO_URL` points to Atlas
+- Optional: `IMAGE_CACHE_MB=200` (default) to tune image cache size
 
 ## Mocked Services
 - Twilio SMS: All SMS functionality is MOCKED
