@@ -11,6 +11,11 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
+### Bug Fixes & Dialer Redesign (March 6, 2026)
+- Fixed Thank You Card mislabeling: key was `thank_you` but create-card.tsx expected `thankyou`
+- Fixed black autofill text in dark mode: global CSS now forces white text and dark background on autofilled inputs
+- Redesigned dialer to match iPhone: 80px circular buttons with letter labels (ABC, DEF, etc.), matching contacts appear as you type, backspace button next to green call button, phone number auto-formats as (XXX) XXX-XXXX
+
 ### Thread & Composer Fixes (March 6, 2026)
 - Removed all "new contact" handling from inbox thread (isNewContact, tag picker, contact creation form, photo picker) — contact details should only be managed from the contact page
 - Fixed contact page composer to start as true single line (36px) matching inbox behavior — added numberOfLines={1} and content-aware height reset
