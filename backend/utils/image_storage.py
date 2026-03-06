@@ -17,7 +17,7 @@ import logging
 import threading
 import requests
 from collections import OrderedDict
-from PIL import Image
+from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +152,8 @@ def get_object(path: str):
 def _compress_image(image_bytes: bytes, max_width: int, quality: int) -> tuple:
     """Compress and resize an image to WebP. Returns (bytes, content_type)."""
     img = Image.open(io.BytesIO(image_bytes))
+    # Apply EXIF orientation before processing (fixes sideways iPhone photos)
+    img = ImageOps.exif_transpose(img)
     has_alpha = img.mode in ("RGBA", "LA", "PA") or (
         img.mode == "P" and "transparency" in img.info
     )
@@ -173,6 +175,8 @@ def _compress_image(image_bytes: bytes, max_width: int, quality: int) -> tuple:
 def generate_thumbnail(image_bytes: bytes, size: tuple) -> tuple:
     """Generate a WebP thumbnail. Returns (bytes, content_type, ext)."""
     img = Image.open(io.BytesIO(image_bytes))
+    # Apply EXIF orientation before processing (fixes sideways iPhone photos)
+    img = ImageOps.exif_transpose(img)
     has_alpha = img.mode in ("RGBA", "LA", "PA") or (
         img.mode == "P" and "transparency" in img.info
     )
