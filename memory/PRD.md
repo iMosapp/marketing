@@ -11,6 +11,14 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
+### Add Contact Flow Overhaul (March 6, 2026)
+- "Add Contact" from home screen now goes **directly to the New Contact form** — no intermediate search modal
+- **Duplicate detection** on phone/email: as you type, the app checks for existing contacts and shows a match banner
+- **Voice recorder** on the form: record a voice note that gets transcribed and added to the Notes field
+- **Activity feed logging**: creating a new contact now appears in the Activity tab as "New Contact Added"
+- **Contacts tab auto-refreshes** when gaining focus (useFocusEffect) — no manual refresh needed
+- **Referred By picker** is now a full-screen modal with KeyboardAvoidingView — no more keyboard overlap
+
 ### Relationship Intel Panel Fix (March 6, 2026)
 - Fixed the Relationship Intel dropdown in the inbox thread view
 - Previously: either covered the whole screen (couldn't scroll) or compressed to one line (unusable)
