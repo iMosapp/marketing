@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -22,6 +21,7 @@ import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
+import { Image } from 'expo-image';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, campaignsAPI, tagsAPI, messagesAPI } from '../../services/api';
@@ -2739,7 +2739,7 @@ export default function ContactDetailScreen() {
                     </View>
                     {replyPhoto && (
                       <View style={s.bubblePhotoPreview}>
-                        <Image source={{ uri: replyPhoto }} style={s.bubblePhotoThumb} resizeMode="cover" />
+                        <Image source={{ uri: replyPhoto }} style={s.bubblePhotoThumb} contentFit="cover" />
                         <TouchableOpacity style={s.bubblePhotoRemove} onPress={() => setReplyPhoto(null)}>
                           <Ionicons name="close-circle" size={22} color="#FF3B30" />
                         </TouchableOpacity>
@@ -3953,7 +3953,7 @@ export default function ContactDetailScreen() {
               <Image
                 source={{ uri: fullPhoto }}
                 style={s.photoViewerImage}
-                resizeMode="contain"
+                contentFit="contain"
                 data-testid="full-photo-image"
               />
               <Text style={s.photoViewerName}>
@@ -4089,7 +4089,7 @@ export default function ContactDetailScreen() {
                     }}
                     data-testid={`gallery-tile-${idx}`}
                   >
-                    <Image source={{ uri: photo.url }} style={s.galleryTileImg} resizeMode="cover" />
+                    <Image source={{ uri: photo.url }} style={s.galleryTileImg} contentFit="cover" />
                     <View style={s.galleryTileBadge}>
                       <Text style={s.galleryTileBadgeText}>
                         {photo.type === 'profile' ? 'Profile' : (photo.type || '').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}

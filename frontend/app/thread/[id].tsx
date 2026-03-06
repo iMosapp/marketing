@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
-  Image,
   RefreshControl,
   Linking,
 } from 'react-native';
@@ -23,6 +22,7 @@ import { format } from 'date-fns';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import { useAuthStore } from '../../store/authStore';
@@ -1682,8 +1682,9 @@ export default function ThreadScreen() {
                   <Image 
                     source={{ uri: url }} 
                     style={styles.mediaImage}
-                    resizeMode="cover"
-                    defaultSource={{ uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                 </View>
               ))}

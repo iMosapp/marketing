@@ -15,7 +15,6 @@ import {
   Linking,
   ScrollView,
   KeyboardAvoidingView,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -25,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Image } from 'expo-image';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../services/api';

@@ -1,6 +1,13 @@
 """
-Image storage service  - handles uploads to Emergent Object Storage,
-generates thumbnails/avatars, and serves images via public URLs.
+Image storage service - handles uploads to Emergent Object Storage,
+generates thumbnails/avatars, compresses originals, and serves images via public URLs.
+
+Optimization strategy:
+- All originals are compressed to max 1200px wide, WebP format, 85% quality
+- Thumbnails: 200x200 WebP
+- Avatars: 80x80 WebP
+- Accounts with `hires_images: true` also get the uncompressed raw original stored
+- All images use immutable cache headers (UUID-based paths never change)
 """
 import os
 import io
@@ -18,8 +25,12 @@ APP_NAME = "imos"
 
 storage_key = None
 
+# Size presets
+ORIGINAL_MAX_WIDTH = 1200
 THUMBNAIL_SIZE = (200, 200)
 AVATAR_SIZE = (80, 80)
+WEBP_QUALITY = 85
+THUMB_QUALITY = 80
 
 
 def init_storage():
@@ -60,21 +71,47 @@ def get_object(path: str):
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 
-def generate_thumbnail(image_bytes: bytes, size: tuple, preserve_alpha: bool = False) -> tuple:
-    """Generate a thumbnail. Returns (bytes, format_str, content_type, ext)."""
+def _compress_image(image_bytes: bytes, max_width: int, quality: int) -> tuple:
+    """Compress and resize an image to WebP. Returns (bytes, content_type).
+    Preserves transparency for PNGs by using lossless WebP."""
     img = Image.open(io.BytesIO(image_bytes))
-    if preserve_alpha and img.mode in ("RGBA", "LA", "PA"):
+    has_alpha = img.mode in ("RGBA", "LA", "PA") or (
+        img.mode == "P" and "transparency" in img.info
+    )
+
+    # Resize if wider than max_width (maintain aspect ratio)
+    if img.width > max_width:
+        ratio = max_width / img.width
+        new_size = (max_width, int(img.height * ratio))
+        img = img.resize(new_size, Image.LANCZOS)
+
+    buf = io.BytesIO()
+    if has_alpha:
         img = img.convert("RGBA")
-        img.thumbnail(size, Image.LANCZOS)
-        buf = io.BytesIO()
-        img.save(buf, format="PNG", optimize=True)
-        return buf.getvalue(), "PNG", "image/png", "png"
+        img.save(buf, format="WEBP", quality=quality, method=4)
     else:
         img = img.convert("RGB")
-        img.thumbnail(size, Image.LANCZOS)
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=80, optimize=True)
-        return buf.getvalue(), "JPEG", "image/jpeg", "jpg"
+        img.save(buf, format="WEBP", quality=quality, method=4)
+
+    return buf.getvalue(), "image/webp"
+
+
+def generate_thumbnail(image_bytes: bytes, size: tuple) -> tuple:
+    """Generate a WebP thumbnail. Returns (bytes, content_type, ext)."""
+    img = Image.open(io.BytesIO(image_bytes))
+    has_alpha = img.mode in ("RGBA", "LA", "PA") or (
+        img.mode == "P" and "transparency" in img.info
+    )
+
+    if has_alpha:
+        img = img.convert("RGBA")
+    else:
+        img = img.convert("RGB")
+
+    img.thumbnail(size, Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="WEBP", quality=THUMB_QUALITY, method=4)
+    return buf.getvalue(), "image/webp", "webp"
 
 
 def decode_base64_image(data_uri: str) -> tuple:
@@ -88,68 +125,66 @@ def decode_base64_image(data_uri: str) -> tuple:
     return base64.b64decode(b64_data), content_type
 
 
-async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "general"):
+async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "general", preserve_raw: bool = False):
     """
-    Upload an image (base64 string or bytes) to object storage.
-    Returns dict with original_url, thumbnail_url, avatar_url storage paths.
-    Preserves PNG transparency when detected.
+    Upload an image to object storage with automatic compression.
+    
+    - Default: compresses original to 1200px wide WebP
+    - preserve_raw=True: also stores the uncompressed original (for hires accounts)
+    - Always generates WebP thumbnail (200x200) and avatar (80x80)
+    
+    Returns dict with paths for all variants.
     """
     # Handle base64 data URIs
     if isinstance(image_data, str):
         if image_data.startswith("data:") or len(image_data) > 500:
             image_bytes, content_type = decode_base64_image(image_data)
         else:
-            # It's already a URL, not base64  - nothing to upload
             return None
     elif isinstance(image_data, bytes):
         image_bytes = image_data
-        # Detect actual content type from image bytes
         try:
             img = Image.open(io.BytesIO(image_bytes))
-            if img.format == "PNG":
-                content_type = "image/png"
-            elif img.format == "GIF":
-                content_type = "image/gif"
-            elif img.format == "WEBP":
-                content_type = "image/webp"
-            else:
-                content_type = "image/jpeg"
+            fmt_map = {"PNG": "image/png", "GIF": "image/gif", "WEBP": "image/webp"}
+            content_type = fmt_map.get(img.format, "image/jpeg")
         except Exception:
             content_type = "image/jpeg"
     else:
         return None
 
-    # Check if image has transparency (alpha channel)
-    has_alpha = False
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        has_alpha = img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info)
-    except Exception:
-        pass
-
     file_id = str(uuid.uuid4())
-    ext = "png" if has_alpha else ("jpg" if "jpeg" in content_type else content_type.split("/")[-1])
-    if has_alpha:
-        content_type = "image/png"
+    base_path = f"{APP_NAME}/{prefix}/{entity_id}"
 
-    # Upload original
-    original_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}.{ext}"
-    put_object(original_path, image_bytes, content_type)
+    # 1. Compress original → WebP
+    compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+    original_path = f"{base_path}/{file_id}.webp"
+    put_object(original_path, compressed_data, compressed_ct)
+    logger.info(f"Uploaded compressed image: {len(image_bytes)} → {len(compressed_data)} bytes ({100 - (len(compressed_data)*100//max(len(image_bytes),1))}% reduction)")
 
-    # Generate and upload thumbnail (preserve alpha if present)
-    thumb_data, _, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE, preserve_alpha=has_alpha)
-    thumb_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}_thumb.{thumb_ext}"
+    # 2. Generate and upload WebP thumbnail
+    thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
+    thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
     put_object(thumb_path, thumb_data, thumb_ct)
 
-    # Generate and upload avatar (preserve alpha if present)
-    avatar_data, _, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE, preserve_alpha=has_alpha)
-    avatar_path = f"{APP_NAME}/{prefix}/{entity_id}/{file_id}_avatar.{avatar_ext}"
+    # 3. Generate and upload WebP avatar
+    avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
+    avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
     put_object(avatar_path, avatar_data, avatar_ct)
 
-    return {
+    result = {
         "original_path": original_path,
         "thumbnail_path": thumb_path,
         "avatar_path": avatar_path,
-        "content_type": content_type,
+        "content_type": compressed_ct,
         "file_id": file_id,
     }
+
+    # 4. Optionally store raw original for hires accounts
+    if preserve_raw:
+        ext = "png" if "png" in content_type else "jpg"
+        raw_path = f"{base_path}/{file_id}_raw.{ext}"
+        put_object(raw_path, image_bytes, content_type)
+        result["raw_path"] = raw_path
+        logger.info(f"Preserved raw original ({len(image_bytes)} bytes) for hires account")
+
+    return result

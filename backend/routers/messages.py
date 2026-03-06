@@ -466,49 +466,59 @@ async def send_mms_message(
     # Get the actual conversation ID
     actual_conv_id = str(conv['_id'])
     
-    # Read and store media file
+    # Read and store media file in object storage (not MongoDB)
     media_content = await media.read()
     media_type = media.content_type or 'image/jpeg'
     
-    # Store media in database
-    media_base64 = base64.b64encode(media_content).decode('utf-8')
-    media_data_url = f"data:{media_type};base64,{media_base64}"
+    # Upload to object storage with compression
+    from utils.image_storage import upload_image
+    upload_result = await upload_image(media_content, prefix="mms", entity_id=actual_conv_id)
     
-    media_doc = {
-        "conversation_id": actual_conv_id,
-        "user_id": user_id,
-        "content_type": media_type,
-        "filename": media.filename,
-        "data": media_data_url,
-        "size_bytes": len(media_content),
-        "created_at": datetime.utcnow()
-    }
+    if upload_result:
+        # Use object storage URL (compressed WebP)
+        public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        media_image_url = f"{public_url}/api/images/{upload_result['original_path']}"
+        media_thumb_url = f"{public_url}/api/images/{upload_result['thumbnail_path']}"
+        # Store paths for display
+        display_url = f"/api/images/{upload_result['original_path']}"
+        thumb_url = f"/api/images/{upload_result['thumbnail_path']}"
+    else:
+        # Fallback: store in MongoDB if object storage fails
+        media_base64 = base64.b64encode(media_content).decode('utf-8')
+        media_data_url = f"data:{media_type};base64,{media_base64}"
+        media_doc = {
+            "conversation_id": actual_conv_id,
+            "user_id": user_id,
+            "content_type": media_type,
+            "filename": media.filename,
+            "data": media_data_url,
+            "size_bytes": len(media_content),
+            "created_at": datetime.utcnow()
+        }
+        media_result = await db.media.insert_one(media_doc)
+        media_id = str(media_result.inserted_id)
+        public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        media_image_url = f"{public_url}/api/messages/media/{media_id}"
+        display_url = media_data_url
+        thumb_url = display_url
     
-    media_result = await db.media.insert_one(media_doc)
-    media_id = str(media_result.inserted_id)
-    
-    # Create publicly accessible URL for the media
-    backend_url = "https://app.imonsocial.com"
-    media_url = f"{backend_url}/api/messages/media/{media_id}"
-    
-    # Create message record
+    # Create message record with object storage URLs
     message = {
         "conversation_id": actual_conv_id,
         "content": content,
         "sender": "user",
         "timestamp": datetime.utcnow(),
         "status": "sending",
-        "media_urls": [media_data_url],
-        "media_ids": [media_id],
+        "media_urls": [display_url],
         "has_media": True
     }
     
     result = await db.messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
     
-    # Send via Twilio
-    media_urls = [media_url] if media_url else None
-    sms_result = await send_sms(to_phone, content or "📷", media_urls)
+    # Send via Twilio with public URL
+    media_urls = [media_image_url]
+    sms_result = await send_sms(to_phone, content or "\U0001f4f7", media_urls)
     
     if sms_result.get('success'):
         message['status'] = 'sent'

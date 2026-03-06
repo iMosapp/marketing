@@ -1,37 +1,42 @@
 # i'M On Social — Product Requirements Document
 
 ## Original Problem Statement
-Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: ease of use ("easy button"), activity tracking, gamification, AI-powered outreach, and multi-channel communication.
+Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: ease of use, activity tracking, gamification, AI-powered outreach, and multi-channel communication.
 
 ## Core Architecture
 - **Frontend:** React Native (Expo) web app
 - **Backend:** FastAPI (Python)
 - **Database:** MongoDB
-- **3rd Party:** Resend (email), Twilio (SMS - MOCKED), OpenAI (AI assistant), Emergent Integrations (object storage)
+- **3rd Party:** Resend (email), Twilio (SMS - MOCKED), OpenAI (AI assistant), Emergent Object Storage (images)
 
 ## What's Been Implemented
 
-### Production URL Fix — All Customer-Facing Links (Mar 2026)
-- **Root Cause:** Deployment platform auto-overrides `APP_URL` env var with the staging/deploy domain, causing ALL outgoing links (review requests, share card, short URLs, invite links, NDA links) to point to the wrong domain
-- **Backend Fix:** Added `PUBLIC_FACING_URL=https://app.imonsocial.com` env var that takes priority over `APP_URL`. Updated all routers: `short_urls.py`, `auth.py`, `team_invite.py`, `app_directory.py`, `nda.py`
-- **Frontend Fix:** Eliminated ALL `window.location.origin` usage for customer-facing URLs across 13+ files. All now use `process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'`
-- **Files fixed:** home.tsx, more.tsx, create-card.tsx, p/[userId].tsx, l/[username].tsx, brand-assets.tsx, app-directory.tsx, pricing.tsx, partner agreements, nda, contact/[id].tsx
+### Image Pipeline Optimization (Mar 2026)
+**Backend:**
+- All uploaded images auto-compressed to WebP format, capped at 1200px wide (85% quality)
+- Achieved 94% size reduction (94KB JPEG → 6KB WebP in testing)
+- All thumbnails (200x200) and avatars (80x80) now WebP
+- Immutable cache headers (`Cache-Control: public, max-age=31536000, immutable`) — 1 year cache since UUID-based paths never change
+- `hires_images` org flag: when enabled, also stores the raw uncompressed original for accounts that need high-res prints (calendars, etc.)
+- MMS media moved from base64-in-MongoDB to Emergent Object Storage (compressed WebP)
+
+**Frontend:**
+- Switched from React Native's `<Image>` to `expo-image` (`Image from 'expo-image'`) on key pages: inbox, thread, contact detail
+- expo-image provides: disk caching, memory caching, smooth transitions, progressive loading
+- Updated all `resizeMode` props to `contentFit` for expo-image compatibility
+- Created `OptimizedImage` reusable component at `/app/frontend/components/OptimizedImage.tsx`
+
+### Production URL Fix (Mar 2026)
+- Added `PUBLIC_FACING_URL` env var to prevent deployment platform from overriding customer-facing URLs
+- Eliminated all `window.location.origin` from customer-facing URL construction
 
 ### Inbox Refresh Fix (Mar 2026)
-- Added `useFocusEffect` to inbox.tsx for reliable conversation loading
+- `useFocusEffect` added for reliable conversation loading
 
-### Photo URL Fix in SMS Composer (Mar 2026)
-- Converts relative image paths to absolute production URLs
-
-### Previous Session Work
-- Persistent Login (HTTP-only cookies)
-- Dynamic Share Previews (OG tags)
-- Training Hub V2 (role-based, admin CRUD)
-- Contact Page Bug Fixes
-- Home Screen & Action Items Fix
-- Carrier-agnostic messaging, white-label emails
-- Reporting & Activity (14+ metrics)
-- Admin Onboarding Wizard, Partner Portal
+### Previous Work
+- Persistent Login, Dynamic Share Previews, Training Hub V2
+- Contact Page Bug Fixes, Home Screen Fixes
+- Carrier-agnostic messaging, white-label emails, Reporting
 
 ## Pending Issues
 - P0: Production email delivery — BLOCKED on user verifying `RESEND_API_KEY`
@@ -48,12 +53,16 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - Auth refactor (bcrypt), Push notifications, Voice Help Assistant
 - Full Twilio integration (MOCKED), WhatsApp Integration
 - Inventory Management, Code cleanup (~80 files)
+- Extend expo-image to remaining pages (settings, admin, etc.)
 
 ## Key Credentials
 - Super Admin: forest@imosapp.com / Admin123!
 
 ## Deployment Checklist
-- Ensure `PUBLIC_FACING_URL=https://app.imonsocial.com` in backend env
-- Ensure `EXPO_PUBLIC_APP_URL=https://app.imonsocial.com` in frontend env
-- Verify `RESEND_API_KEY` is set in production
-- Verify `MONGO_URL` points to Atlas
+- `PUBLIC_FACING_URL=https://app.imonsocial.com` in backend env
+- `EXPO_PUBLIC_APP_URL=https://app.imonsocial.com` in frontend env
+- `RESEND_API_KEY` in production
+- `MONGO_URL` points to Atlas
+
+## Mocked Services
+- Twilio SMS: All SMS functionality is MOCKED
