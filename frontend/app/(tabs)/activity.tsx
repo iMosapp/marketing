@@ -10,41 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
-
-const FEED_EVENT_LABELS: Record<string, string> = {
-  email_sent: 'Email Sent',
-  personal_sms: 'Text Sent',
-  digital_card_sent: 'Shared Contact Card',
-  digital_card_shared: 'Shared Contact Card',
-  review_request_sent: 'Review Invite Sent',
-  congrats_card_sent: 'Congrats Card Sent',
-  birthday_card_sent: 'Birthday Card Sent',
-  thank_you_card_sent: 'Thank You Card Sent',
-  thankyou_card_sent: 'Thank You Card Sent',
-  holiday_card_sent: 'Holiday Card Sent',
-  welcome_card_sent: 'Welcome Card Sent',
-  anniversary_card_sent: 'Anniversary Card Sent',
-  vcard_sent: 'Shared vCard',
-  showcase_shared: 'Showcase Shared',
-  link_page_shared: 'Link Page Shared',
-  call_placed: 'Call Placed',
-  customer_reply: 'Customer Reply',
-  congrats_card_viewed: 'Viewed Congrats Card',
-  birthday_card_viewed: 'Viewed Birthday Card',
-  thankyou_card_viewed: 'Viewed Thank You Card',
-  holiday_card_viewed: 'Viewed Holiday Card',
-  congrats_card_download: 'Downloaded Card',
-  congrats_card_share: 'Shared Card',
-  review_submitted: 'Left a Review',
-  review_link_clicked: 'Clicked Review Link',
-  digital_card_viewed: 'Viewed Digital Card',
-  review_page_viewed: 'Viewed Review Page',
-  showcase_viewed: 'Viewed Showcase',
-  link_page_viewed: 'Viewed Link Page',
-  link_clicked: 'Clicked Link',
-  note_updated: 'Note Updated',
-  contact_added: 'Contact Added',
-};
+import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 
 const formatFeedTime = (ts: string) => {
   if (!ts) return '';
@@ -149,7 +115,7 @@ export default function ActivityTab() {
     }
 
     const isInbound = item.is_inbound;
-    const evtLabel = FEED_EVENT_LABELS[item.event_type] || item.title || 'Activity';
+    const evtLabel = getEventLabel(item.event_type) || item.title || 'Activity';
     const photoUri = item.contact?.photo;
 
     return (

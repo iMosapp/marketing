@@ -553,7 +553,11 @@ async def get_dashboard_data(
     emails_sent = msg_map.get("email", 0)
     digital_cards = evt_map.get("digital_card_sent", 0)
     review_invites = evt_map.get("review_request_sent", 0)
-    congrats_cards = evt_map.get("congrats_card_sent", 0)
+    # Count ALL card types, not just congrats
+    congrats_cards = (evt_map.get("congrats_card_sent", 0) + evt_map.get("birthday_card_sent", 0) +
+                      evt_map.get("thank_you_card_sent", 0) + evt_map.get("thankyou_card_sent", 0) +
+                      evt_map.get("holiday_card_sent", 0) + evt_map.get("welcome_card_sent", 0) +
+                      evt_map.get("anniversary_card_sent", 0))
     vcards = evt_map.get("vcard_sent", 0)
     voice_notes = evt_map.get("voice_note", 0)
     link_clicks = evt_map.get("link_click", 0)
@@ -606,7 +610,11 @@ async def get_dashboard_data(
     evt_daily_pipeline = [
         {"$match": {"user_id": {"$in": scope_user_ids}, **date_filter,
                      "event_type": {"$in": ["digital_card_sent", "review_request_sent",
-                                             "congrats_card_sent", "vcard_sent", "voice_note"]}}},
+                                             "congrats_card_sent", "birthday_card_sent",
+                                             "thank_you_card_sent", "thankyou_card_sent",
+                                             "holiday_card_sent", "welcome_card_sent",
+                                             "anniversary_card_sent",
+                                             "vcard_sent", "voice_note"]}}},
         {"$group": {
             "_id": {"date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}},
             "count": {"$sum": 1},
@@ -858,6 +866,12 @@ async def get_activity_report(
             "digital_card_sent": "digital_cards_sent",
             "review_request_sent": "review_invites_sent",
             "congrats_card_sent": "congrats_cards_sent",
+            "birthday_card_sent": "congrats_cards_sent",
+            "thank_you_card_sent": "congrats_cards_sent",
+            "thankyou_card_sent": "congrats_cards_sent",
+            "holiday_card_sent": "congrats_cards_sent",
+            "welcome_card_sent": "congrats_cards_sent",
+            "anniversary_card_sent": "congrats_cards_sent",
             "vcard_sent": "vcards_sent",
         }
         if etype in mapping:

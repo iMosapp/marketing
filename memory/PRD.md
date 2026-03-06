@@ -85,18 +85,15 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - **Frontend changes:** Both `contact/[id].tsx` (composerEventType state) and `thread/[id].tsx` (pendingEventType state) now track and pass event_type through the send API
 - **Result:** Activity feed now accurately shows "Digital Card Shared", "Review Invite Sent", etc. instead of all showing "Congrats Card Sent"
 
-### Centralized Event Type Architecture (Mar 2026) — PERMANENT FIX
-- **Problem:** "Congrats Card Sent" kept resurfacing because event type detection was scattered across 6+ files, each with its own copy of the logic and different bugs. One file would get fixed, another would still produce wrong types.
-- **Solution:** Created `/app/backend/utils/event_types.py` as the **SINGLE SOURCE OF TRUTH**:
-  - `resolve_event_type(content, db, explicit_event_type)` — THE one function for determining event type
-  - `LINK_TYPE_TO_EVENT` — maps short URL link_types to event_types
-  - `EVENT_TYPE_LABELS` — maps event_types to human-readable labels
-  - `get_card_sent_info(card_type)` — returns event_type, label, icon, color for card sends
-  - `get_card_viewed_info(card_type)` — same for card views
-- **Updated consumers:** `messages.py`, `congrats_cards.py`, `contact_events.py`, `short_urls.py` — all import from `utils/event_types.py`
-- **Also fixed:** `short_urls.py` click detection now handles ALL card types (birthday, thank_you, holiday, etc.) instead of only congrats
-- **Migration:** Ran a DB migration to fix existing wrongly-typed events
-- **Frontend:** `create-card.tsx` passes `event_type` via URL params → `thread/[id].tsx` includes it in message payload → backend uses it directly
+### Code Cleanup Sprint: Centralized Event Type Architecture (Mar 2026) — PERMANENT FIX
+- **Problem:** Event type detection scattered across 6+ backend files and 5+ frontend files, each with its own copy. Fixing one left others broken.
+- **Backend centralization:** Created `/app/backend/utils/event_types.py` as SINGLE SOURCE OF TRUTH
+  - Updated ALL consumers: `messages.py`, `congrats_cards.py`, `contact_events.py`, `short_urls.py`, `reports.py`, `leaderboard_v2.py`
+- **Frontend centralization:** Created `/app/frontend/utils/eventTypes.ts` as SINGLE SOURCE OF TRUTH
+  - Updated: `contact/[id].tsx`, `activity.tsx`, `home.tsx`, `NotificationBell.tsx`
+- **Reports/Leaderboard fix:** Both now count ALL card types not just congrats
+- **Regression tests:** 35 pytest tests at `/app/backend/tests/test_event_types.py`
+- **DB migration:** Fixed existing wrongly-typed events
 
 ### Image EXIF Orientation Fix (Mar 2026)
 - Added `ImageOps.exif_transpose()` to both `_compress_image()` and `generate_thumbnail()` in `image_storage.py`

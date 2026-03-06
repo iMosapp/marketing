@@ -147,54 +147,12 @@ function formatDateUTC(dateStr: string, fmt: string = 'MMM d'): string {
 }
 
 
-// ===== EVENT TITLE FALLBACK =====
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  email_sent: 'Email Sent',
-  personal_sms: 'Personal SMS',
-  digital_card_sent: 'Digital Card Shared',
-  review_request_sent: 'Review Invite Sent',
-  congrats_card_sent: 'Congrats Card Sent',
-  birthday_card_sent: 'Birthday Card Sent',
-  thank_you_card_sent: 'Thank You Card Sent',
-  thankyou_card_sent: 'Thank You Card Sent',
-  holiday_card_sent: 'Holiday Card Sent',
-  welcome_card_sent: 'Welcome Card Sent',
-  anniversary_card_sent: 'Anniversary Card Sent',
-  vcard_sent: 'vCard Shared',
-  showcase_shared: 'Showcase Shared',
-  link_page_shared: 'Link Page Shared',
-  call_placed: 'Call Placed',
-  new_contact: 'Contact Created',
-  link_click: 'Link Clicked',
-  link_clicked: 'Link Clicked',
-  voice_note: 'Voice Note',
-  note_updated: 'Note Updated',
-  customer_reply: 'Customer Reply',
-  congrats_card_viewed: 'Viewed Congrats Card',
-  birthday_card_viewed: 'Viewed Birthday Card',
-  thankyou_card_viewed: 'Viewed Thank You Card',
-  holiday_card_viewed: 'Viewed Holiday Card',
-  welcome_card_viewed: 'Viewed Welcome Card',
-  anniversary_card_viewed: 'Viewed Anniversary Card',
-  congrats_card_download: 'Downloaded Congrats Card',
-  birthday_card_download: 'Downloaded Birthday Card',
-  thankyou_card_download: 'Downloaded Thank You Card',
-  holiday_card_download: 'Downloaded Holiday Card',
-  congrats_card_share: 'Shared Congrats Card',
-  birthday_card_share: 'Shared Birthday Card',
-  thankyou_card_share: 'Shared Thank You Card',
-  holiday_card_share: 'Shared Holiday Card',
-  review_submitted: 'Left a Review',
-  review_link_clicked: 'Clicked Review Link',
-  digital_card_viewed: 'Viewed Digital Card',
-  review_page_viewed: 'Viewed Review Page',
-  showcase_viewed: 'Viewed Showcase',
-  link_page_viewed: 'Viewed Link Page',
-};
+// ===== EVENT LABELS — from centralized module =====
+import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 
 function getEventTitle(evt: ContactEvent): string {
   if (evt.title) return evt.title;
-  return EVENT_TYPE_LABELS[evt.event_type] || evt.event_type?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Activity';
+  return getEventLabel(evt.event_type);
 }
 
 // ===== QUICK ACTION CONFIG =====

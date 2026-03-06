@@ -31,6 +31,11 @@ function getNotifIcon(type: string): string {
     case 'digital_card_sent': return 'card';
     case 'review_request_sent': return 'star-half';
     case 'congrats_card_sent': return 'gift';
+    case 'birthday_card_sent': return 'gift';
+    case 'thank_you_card_sent': case 'thankyou_card_sent': return 'thumbs-up';
+    case 'holiday_card_sent': return 'snow';
+    case 'welcome_card_sent': return 'hand-left';
+    case 'anniversary_card_sent': return 'heart';
     case 'email_sent': return 'mail';
     case 'sms_sent': return 'chatbox';
     case 'badge_earned': return 'trophy';

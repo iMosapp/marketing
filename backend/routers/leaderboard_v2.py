@@ -15,9 +15,13 @@ router = APIRouter(prefix="/leaderboard/v2", tags=["Leaderboard V2"])
 
 # Categories tracked for scoring
 CATEGORIES = {
-    "digital_cards": {"events": ["digital_card_sent"], "label": "Digital Cards", "icon": "card"},
+    "digital_cards": {"events": ["digital_card_sent", "digital_card_shared"], "label": "Digital Cards", "icon": "card"},
     "reviews": {"events": ["review_request_sent"], "label": "Reviews", "icon": "star"},
-    "congrats": {"events": ["congrats_card_sent"], "label": "Congrats", "icon": "gift"},
+    "cards": {"events": [
+        "congrats_card_sent", "birthday_card_sent", "thank_you_card_sent",
+        "thankyou_card_sent", "holiday_card_sent", "welcome_card_sent",
+        "anniversary_card_sent"
+    ], "label": "Cards Sent", "icon": "gift"},
     "emails": {"events": ["email_sent"], "label": "Emails", "icon": "mail"},
     "sms": {"events": ["personal_sms", "sms_sent"], "label": "SMS", "icon": "chatbubble"},
     "voice_notes": {"events": ["voice_note"], "label": "Voice Notes", "icon": "mic"},
