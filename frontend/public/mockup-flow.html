@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Quick Action Flow Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif; overflow: hidden; }
+  
+  .phone-frame {
+    width: 390px; height: 844px; margin: 20px auto; background: #111; border-radius: 44px;
+    border: 3px solid #333; overflow: hidden; position: relative;
+  }
+  .status-bar { height: 54px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
+  .status-bar span { font-size: 15px; font-weight: 600; color: #fff; }
+  
+  /* Steps navigation */
+  .step-nav { 
+    position: fixed; bottom: 0; left: 0; right: 0; background: #1a1a1a; 
+    padding: 16px 20px; display: flex; gap: 10px; justify-content: center; z-index: 100;
+    border-top: 1px solid #333;
+  }
+  .step-btn {
+    padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .step-btn.active { background: #C9A962; color: #000; }
+  .step-btn:not(.active) { background: #333; color: #aaa; }
+  .step-btn:hover { opacity: 0.85; }
+  
+  .step-label {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    background: #C9A962; color: #000; font-size: 13px; font-weight: 700;
+    padding: 6px 16px; border-radius: 16px; z-index: 100; white-space: nowrap;
+  }
+  
+  /* Screen containers */
+  .screen { display: none; height: 100%; flex-direction: column; }
+  .screen.active { display: flex; }
+  
+  /* ===== STEP 1: HOME ===== */
+  .home-header { padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .home-header h1 { font-size: 28px; font-weight: 800; color: #fff; }
+  .home-greeting { padding: 0 20px 16px; }
+  .home-greeting p { font-size: 15px; color: #888; }
+  .home-greeting span { color: #C9A962; font-weight: 600; }
+  
+  .tiles-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 0 16px; }
+  .tile {
+    background: #1a1a1a; border-radius: 16px; padding: 18px 12px; text-align: center;
+    border: 1px solid #2a2a2a; cursor: pointer; transition: all 0.15s;
+  }
+  .tile:hover { border-color: #C9A962; transform: scale(1.02); }
+  .tile.highlight { border-color: #C9A962; box-shadow: 0 0 20px rgba(201,169,98,0.15); }
+  .tile-icon { font-size: 28px; margin-bottom: 8px; }
+  .tile-label { font-size: 12px; font-weight: 600; color: #ccc; }
+  
+  .recent-section { padding: 24px 20px 8px; }
+  .recent-title { font-size: 13px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .recent-item { display: flex; align-items: center; padding: 12px 20px; gap: 12px; }
+  .recent-avatar { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; }
+  .recent-info { flex: 1; }
+  .recent-name { font-size: 15px; font-weight: 600; color: #fff; }
+  .recent-detail { font-size: 13px; color: #666; }
+  .recent-time { font-size: 12px; color: #555; }
+  
+  .tab-bar {
+    margin-top: auto; display: flex; border-top: 1px solid #222; padding: 10px 0 28px;
+    background: #111;
+  }
+  .tab { flex: 1; text-align: center; }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 10px; color: #666; margin-top: 2px; }
+  .tab.active .tab-label { color: #C9A962; }
+  
+  /* ===== STEP 2: QUICK SEND EMPTY ===== */
+  .qs-header { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #222; }
+  .qs-back { font-size: 24px; color: #fff; cursor: pointer; padding: 4px; }
+  .qs-title { flex: 1; text-align: center; font-size: 18px; font-weight: 700; color: #fff; }
+  
+  .qs-search-wrap { padding: 16px 16px 8px; }
+  .qs-search {
+    display: flex; align-items: center; background: #1a1a1a; border: 1px solid #333;
+    border-radius: 12px; padding: 12px 14px; gap: 10px;
+  }
+  .qs-search-icon { font-size: 18px; color: #555; }
+  .qs-search-text { font-size: 16px; color: #555; }
+  .qs-search-text.typed { color: #fff; }
+  .qs-cursor { display: inline-block; width: 2px; height: 18px; background: #C9A962; animation: blink 1s infinite; margin-left: 2px; vertical-align: text-bottom; }
+  @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+  
+  .qs-hint { text-align: center; color: #555; font-size: 15px; margin-top: 60px; line-height: 24px; }
+  
+  /* ===== STEP 3: SEARCH RESULTS ===== */
+  .qs-result {
+    display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+    border-bottom: 1px solid #1a1a1a; cursor: pointer; transition: background 0.15s;
+  }
+  .qs-result:hover { background: #1a1a1a; }
+  .qs-result-avatar {
+    width: 44px; height: 44px; border-radius: 14px; display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
+  }
+  .qs-result-info { flex: 1; }
+  .qs-result-name { font-size: 16px; font-weight: 600; color: #fff; }
+  .qs-result-sub { font-size: 13px; color: #666; margin-top: 2px; }
+  .qs-result-arrow { font-size: 16px; color: #444; }
+  
+  .qs-add-new {
+    display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+    border-top: 1px solid #222; margin-top: 4px; cursor: pointer;
+  }
+  .qs-add-new:hover { background: #0a1a0a; }
+  .qs-add-icon { width: 44px; height: 44px; border-radius: 14px; background: rgba(52,199,89,0.12); display: flex; align-items: center; justify-content: center; }
+  .qs-add-text { font-size: 16px; font-weight: 600; color: #34C759; }
+  .qs-add-sub { font-size: 13px; color: #666; }
+  
+  /* ===== STEP 4: PRE-SEND PREVIEW ===== */
+  .preview-header { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #222; }
+  .preview-contact {
+    display: flex; align-items: center; padding: 20px 16px; gap: 14px;
+    background: #1a1a1a; margin: 16px; border-radius: 16px; border: 1px solid #2a2a2a;
+  }
+  .preview-avatar {
+    width: 52px; height: 52px; border-radius: 16px; display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: #fff;
+  }
+  .preview-name { font-size: 18px; font-weight: 700; color: #fff; }
+  .preview-phone { font-size: 14px; color: #888; margin-top: 2px; }
+  
+  .preview-card {
+    margin: 0 16px; background: #1a1a1a; border-radius: 16px; border: 1px solid #2a2a2a; overflow: hidden;
+  }
+  .preview-card-header { padding: 14px 16px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 10px; }
+  .preview-card-icon { font-size: 20px; }
+  .preview-card-label { font-size: 14px; font-weight: 600; color: #C9A962; }
+  .preview-card-body { padding: 16px; }
+  .preview-msg {
+    background: #222; border-radius: 12px; padding: 14px; font-size: 15px;
+    color: #ccc; line-height: 22px;
+  }
+  .preview-link { color: #007AFF; text-decoration: underline; }
+  
+  .preview-channel { margin: 16px; display: flex; gap: 10px; }
+  .channel-btn {
+    flex: 1; padding: 14px; border-radius: 12px; text-align: center;
+    font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #333;
+    transition: all 0.15s;
+  }
+  .channel-btn.active { background: #C9A962; color: #000; border-color: #C9A962; }
+  .channel-btn:not(.active) { background: #1a1a1a; color: #888; }
+  
+  .send-btn {
+    margin: 12px 16px; padding: 16px; border-radius: 14px; background: #C9A962;
+    text-align: center; font-size: 17px; font-weight: 700; color: #000;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .send-btn:hover { opacity: 0.9; transform: scale(0.99); }
+  
+  .or-divider { text-align: center; color: #555; font-size: 13px; padding: 8px 0; }
+  
+  .personal-btn {
+    margin: 0 16px; padding: 14px; border-radius: 14px; background: transparent;
+    text-align: center; font-size: 15px; font-weight: 600; color: #34C759;
+    cursor: pointer; border: 1px solid #34C75940;
+  }
+  
+  /* ===== STEP 5: SENT ===== */
+  .sent-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px; }
+  .sent-check { font-size: 64px; margin-bottom: 20px; }
+  .sent-title { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .sent-sub { font-size: 15px; color: #888; text-align: center; line-height: 22px; }
+  .sent-done {
+    margin-top: 40px; padding: 14px 48px; border-radius: 14px; background: #C9A962;
+    font-size: 16px; font-weight: 700; color: #000; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="step-label" id="stepLabel">Step 1 of 5: Home Screen</div>
+
+<div class="phone-frame">
+  <!-- STEP 1: HOME SCREEN -->
+  <div class="screen active" id="step1">
+    <div class="status-bar"><span>9:41</span></div>
+    <div class="home-header">
+      <h1>Home</h1>
+      <div style="width:36px;height:36px;border-radius:12px;background:#C9A962;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#000;">FW</div>
+    </div>
+    <div class="home-greeting"><p>Good morning, <span>Forest</span></p></div>
+    
+    <div class="tiles-grid">
+      <div class="tile highlight" onclick="goStep(2)">
+        <div class="tile-icon" style="color:#007AFF">&#9998;</div>
+        <div class="tile-label">Share My Card</div>
+      </div>
+      <div class="tile" onclick="goStep(2)">
+        <div class="tile-icon" style="color:#FFD60A">&#9733;</div>
+        <div class="tile-label">Review Link</div>
+      </div>
+      <div class="tile" onclick="goStep(2)">
+        <div class="tile-icon" style="color:#C9A962">&#127873;</div>
+        <div class="tile-label">Send a Card</div>
+      </div>
+      <div class="tile" onclick="goStep(2)">
+        <div class="tile-icon" style="color:#34C759">&#127978;</div>
+        <div class="tile-label">My Showcase</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon" style="color:#32ADE6">&#9742;</div>
+        <div class="tile-label">Keypad</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon" style="color:#AF52DE">&#10010;</div>
+        <div class="tile-label">Add Contact</div>
+      </div>
+    </div>
+    
+    <div class="recent-section"><div class="recent-title">Recent Activity</div></div>
+    <div class="recent-item">
+      <div class="recent-avatar" style="background:#C9A96230;color:#C9A962;">JD</div>
+      <div class="recent-info">
+        <div class="recent-name">John Davis</div>
+        <div class="recent-detail">Birthday Card Sent</div>
+      </div>
+      <div class="recent-time">2m ago</div>
+    </div>
+    <div class="recent-item">
+      <div class="recent-avatar" style="background:#007AFF30;color:#007AFF;">SM</div>
+      <div class="recent-info">
+        <div class="recent-name">Sarah Mitchell</div>
+        <div class="recent-detail">Digital Card Shared</div>
+      </div>
+      <div class="recent-time">15m ago</div>
+    </div>
+    
+    <div class="tab-bar">
+      <div class="tab active"><div class="tab-icon">&#127968;</div><div class="tab-label">Home</div></div>
+      <div class="tab"><div class="tab-icon">&#128172;</div><div class="tab-label">Inbox</div></div>
+      <div class="tab"><div class="tab-icon">&#9889;</div><div class="tab-label">Activity</div></div>
+      <div class="tab"><div class="tab-icon">&#128101;</div><div class="tab-label">Contacts</div></div>
+      <div class="tab"><div class="tab-icon">&#8943;</div><div class="tab-label">More</div></div>
+    </div>
+  </div>
+  
+  <!-- STEP 2: QUICK SEND - EMPTY -->
+  <div class="screen" id="step2">
+    <div class="status-bar"><span>9:41</span></div>
+    <div class="qs-header">
+      <div class="qs-back" onclick="goStep(1)">&larr;</div>
+      <div class="qs-title">Share My Card</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="qs-search-wrap">
+      <div class="qs-search">
+        <span class="qs-search-icon">&#128269;</span>
+        <span class="qs-search-text">Type a name, phone, or email...<span class="qs-cursor"></span></span>
+      </div>
+    </div>
+    <div class="qs-hint">Start typing to find a contact<br>or add a new one</div>
+  </div>
+  
+  <!-- STEP 3: SEARCH RESULTS -->
+  <div class="screen" id="step3">
+    <div class="status-bar"><span>9:41</span></div>
+    <div class="qs-header">
+      <div class="qs-back" onclick="goStep(2)">&larr;</div>
+      <div class="qs-title">Share My Card</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="qs-search-wrap">
+      <div class="qs-search" style="border-color:#C9A962;">
+        <span class="qs-search-icon">&#128269;</span>
+        <span class="qs-search-text typed">John<span class="qs-cursor"></span></span>
+        <span style="font-size:18px;color:#555;cursor:pointer;">&times;</span>
+      </div>
+    </div>
+    
+    <div class="qs-result" onclick="goStep(4)">
+      <div class="qs-result-avatar" style="background:#C9A96220;color:#C9A962;">JD</div>
+      <div class="qs-result-info">
+        <div class="qs-result-name">John Davis</div>
+        <div class="qs-result-sub">801-555-1234</div>
+      </div>
+      <div class="qs-result-arrow">&rsaquo;</div>
+    </div>
+    <div class="qs-result" onclick="goStep(4)">
+      <div class="qs-result-avatar" style="background:#007AFF20;color:#007AFF;">JM</div>
+      <div class="qs-result-info">
+        <div class="qs-result-name">John Miller</div>
+        <div class="qs-result-sub">john.miller@gmail.com</div>
+      </div>
+      <div class="qs-result-arrow">&rsaquo;</div>
+    </div>
+    
+    <div class="qs-add-new" onclick="goStep(4)">
+      <div class="qs-add-icon"><span style="font-size:22px;color:#34C759;">&#10010;</span></div>
+      <div class="qs-result-info">
+        <div class="qs-add-text">Add "John" as new contact</div>
+        <div class="qs-add-sub">Create and send</div>
+      </div>
+      <span style="font-size:20px;color:#34C759;">&#10753;</span>
+    </div>
+  </div>
+  
+  <!-- STEP 4: PRE-SEND PREVIEW -->
+  <div class="screen" id="step4">
+    <div class="status-bar"><span>9:41</span></div>
+    <div class="preview-header">
+      <div class="qs-back" onclick="goStep(3)">&larr;</div>
+      <div class="qs-title">Ready to Send</div>
+      <div style="width:32px"></div>
+    </div>
+    
+    <div class="preview-contact">
+      <div class="preview-avatar" style="background:#C9A96230;">JD</div>
+      <div>
+        <div class="preview-name">John Davis</div>
+        <div class="preview-phone">801-555-1234</div>
+      </div>
+    </div>
+    
+    <div class="preview-card">
+      <div class="preview-card-header">
+        <span class="preview-card-icon">&#9998;</span>
+        <span class="preview-card-label">Digital Business Card</span>
+      </div>
+      <div class="preview-card-body">
+        <div class="preview-msg">
+          Hey John! Here's my digital business card. Save my info and reach out anytime!<br><br>
+          <span class="preview-link">https://imos.app/s/FW4x8k</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="preview-channel">
+      <div class="channel-btn active">&#128172; SMS</div>
+      <div class="channel-btn">&#9993; Email</div>
+    </div>
+    
+    <div class="send-btn" onclick="goStep(5)">Send via SMS</div>
+    
+    <div class="or-divider">or</div>
+    
+    <div class="personal-btn">Send from My Phone</div>
+    <p style="text-align:center;font-size:12px;color:#555;margin-top:8px;">Opens your native texting app with the message ready</p>
+  </div>
+  
+  <!-- STEP 5: SENT SUCCESS -->
+  <div class="screen" id="step5">
+    <div class="status-bar"><span>9:41</span></div>
+    <div class="sent-container">
+      <div class="sent-check" style="color:#34C759;">&#10003;</div>
+      <div class="sent-title">Card Sent!</div>
+      <div class="sent-sub">Your digital business card was sent to<br><strong style="color:#fff;">John Davis</strong> via SMS</div>
+      <div style="margin-top:20px;padding:12px 20px;background:#1a1a1a;border-radius:12px;border:1px solid #222;">
+        <p style="font-size:13px;color:#666;margin-bottom:4px;">Activity logged</p>
+        <p style="font-size:15px;color:#C9A962;font-weight:600;">Digital Card Shared</p>
+      </div>
+      <div class="sent-done" onclick="goStep(1)">Done</div>
+    </div>
+  </div>
+</div>
+
+<div class="step-nav">
+  <button class="step-btn active" onclick="goStep(1)">1. Home</button>
+  <button class="step-btn" onclick="goStep(2)">2. Search</button>
+  <button class="step-btn" onclick="goStep(3)">3. Results</button>
+  <button class="step-btn" onclick="goStep(4)">4. Preview</button>
+  <button class="step-btn" onclick="goStep(5)">5. Sent</button>
+</div>
+
+<script>
+const labels = {
+  1: 'Step 1 of 5: Home Screen -- Tap any quick action tile',
+  2: 'Step 2 of 5: Quick Send -- Clean search, no clutter',
+  3: 'Step 3 of 5: Type a name -- Matches + add new option',
+  4: 'Step 4 of 5: Preview before sending -- Choose SMS or Email',
+  5: 'Step 5 of 5: Confirmation -- Activity logged automatically',
+};
+
+function goStep(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  document.querySelectorAll('.step-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === n - 1);
+  });
+  document.getElementById('stepLabel').textContent = labels[n];
+}
+</script>
+</body>
+</html>
