@@ -255,7 +255,7 @@ export default function ContactDetailScreen() {
     },
   };
   const router = useRouter();
-  const { id, prefill, channel, action, taskId, taskTitle } = useLocalSearchParams();
+  const { id, prefill, channel, action, taskId, taskTitle, event_type: urlEventType } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -399,7 +399,11 @@ export default function ContactDetailScreen() {
       if (channel === 'email') setComposerMode('email');
       else setComposerMode('sms');
     }
-  }, [prefill, channel, taskId]);
+    // Set composer event type from URL param (e.g. returning from card creation)
+    if (urlEventType && typeof urlEventType === 'string') {
+      setComposerEventType(urlEventType);
+    }
+  }, [prefill, channel, taskId, urlEventType]);
 
   // Auto-trigger action from query param (e.g. /contact/123?action=digitalcard)
   useEffect(() => {

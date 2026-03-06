@@ -110,6 +110,7 @@ export default function CreateCardPage() {
         if (customerPhone) qs.set('contact_phone', customerPhone);
         if (customerEmail) qs.set('contact_email', customerEmail);
         qs.set('prefill', prefillMsg);
+        qs.set('event_type', `${cardType}_card_sent`);
         router.replace(`/thread/${returnToThread}?${qs.toString()}` as any);
         return;
       }
@@ -117,7 +118,8 @@ export default function CreateCardPage() {
       // If we came from a contact page, go back and drop the URL in the composer
       if (return_to_contact && for_contact) {
         const prefillMsg = `Hey ${customerName}! ${shareUrl}`;
-        router.replace(`/contact/${for_contact}?prefill=${encodeURIComponent(prefillMsg)}` as any);
+        const evtType = `${cardType}_card_sent`;
+        router.replace(`/contact/${for_contact}?prefill=${encodeURIComponent(prefillMsg)}&event_type=${evtType}` as any);
         return;
       }
 

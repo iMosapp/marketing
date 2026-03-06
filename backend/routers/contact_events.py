@@ -10,6 +10,7 @@ from typing import Optional
 import logging
 
 from routers.database import get_db
+from utils.event_types import get_event_label
 
 def _ts_iso(dt) -> str:
     """Convert a datetime to ISO string with UTC indicator for correct browser parsing."""
@@ -94,10 +95,13 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
         cid = evt.get("contact_id")
         contact_info = contacts_map.get(cid, {"id": cid, "name": "Unknown", "photo": None, "tags": [], "vehicle": ""})
         is_inbound = evt.get("direction") == "inbound" or evt.get("event_type") == "customer_reply"
+        # Always derive title from centralized event type labels (fixes old data with wrong titles)
+        evt_type = evt.get("event_type", "custom")
+        derived_title = get_event_label(evt_type)
         feed_items.append({
             "type": "event",
-            "event_type": evt.get("event_type", "custom"),
-            "title": evt.get("title", "Activity"),
+            "event_type": evt_type,
+            "title": derived_title,
             "description": evt.get("description", ""),
             "icon": evt.get("icon", "flag"),
             "color": evt.get("color", "#8E8E93"),
@@ -163,6 +167,9 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     for e in custom_events:
         if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
             e["timestamp"] = _ts_iso(e["timestamp"])
+        # Always derive title from centralized event type labels (fixes old data with wrong titles)
+        etype = e.get("event_type", "")
+        e["title"] = get_event_label(etype)
         # Ensure full_content is available for rich preview
         if not e.get("full_content"):
             e["full_content"] = e.get("content") or e.get("content_preview") or e.get("description") or ""
@@ -175,21 +182,18 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
             if e.get("photo"):
                 e["has_photo"] = True
                 e.pop("photo", None)  # Don't send base64 in list response
-        # Ensure title exists
-        if not e.get("title"):
-            etype = e.get("event_type", "")
-            if etype == "personal_sms":
-                e["title"] = "Sent Personal SMS"
-                e["icon"] = e.get("icon", "chatbubble")
-                e["color"] = e.get("color", "#34C759")
-                e["category"] = "message"
-            elif etype == "call_placed":
-                e["title"] = e.get("title", "Outbound Call")
-            elif etype == "email_sent":
-                e["title"] = "Sent Email"
-                e["icon"] = e.get("icon", "mail")
-                e["color"] = e.get("color", "#007AFF")
-                e["category"] = "message"
+        # Set icon/color/category for common types that may lack them
+        if etype == "personal_sms":
+            e["icon"] = e.get("icon", "chatbubble")
+            e["color"] = e.get("color", "#34C759")
+            e["category"] = e.get("category", "message")
+        elif etype == "call_placed":
+            e["icon"] = e.get("icon", "call")
+            e["color"] = e.get("color", "#32ADE6")
+        elif etype == "email_sent":
+            e["icon"] = e.get("icon", "mail")
+            e["color"] = e.get("color", "#007AFF")
+            e["category"] = e.get("category", "message")
         # Pull full message body from messages collection if we have a message_id
         if e.get("message_id") and not e.get("full_content"):
             try:
@@ -812,3 +816,94 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
         "needs_confirmation": False,
     }
 
+
+
+@router.post("/admin/fix-event-types")
+async def fix_event_types_migration():
+    """
+    Data migration: Fix historically wrongly-typed contact_events.
+    Scans events that have event_type 'congrats_card_sent' but whose linked
+    short URL or congrats card record indicates a different card type.
+    Also fixes the title field to match the centralized label.
+    """
+    db = get_db()
+    import re
+
+    fixed_count = 0
+    errors = []
+
+    # Strategy 1: Fix events that have a content field containing a congrats card URL
+    # Look up the card_id from the URL and get the actual card_type
+    card_url_re = re.compile(r'/congrats/([A-Za-z0-9\-]{6,36})')
+    
+    wrong_events = await db.contact_events.find(
+        {"event_type": "congrats_card_sent"},
+        {"_id": 1, "content": 1, "content_preview": 1, "description": 1, "metadata": 1}
+    ).to_list(5000)
+
+    for evt in wrong_events:
+        # Try to find a card_id from event content or metadata
+        card_id = None
+        card_type = None
+
+        # Check metadata first
+        if evt.get("metadata") and evt["metadata"].get("card_type"):
+            card_type = evt["metadata"]["card_type"]
+        if evt.get("metadata") and evt["metadata"].get("card_id"):
+            card_id = evt["metadata"]["card_id"]
+
+        # Try to extract card_id from content/description
+        if not card_id:
+            text = evt.get("content") or evt.get("content_preview") or evt.get("description") or ""
+            match = card_url_re.search(text)
+            if match:
+                card_id = match.group(1).split('?')[0]
+
+        # Look up the actual card_type from the congrats_cards collection
+        if card_id and not card_type:
+            try:
+                card = await db.congrats_cards.find_one({"card_id": card_id}, {"card_type": 1})
+                if card:
+                    card_type = card.get("card_type", "congrats")
+            except Exception as e:
+                errors.append(f"DB lookup failed for card_id {card_id}: {e}")
+
+        # If we found a card_type that's NOT congrats, fix the event
+        if card_type and card_type != "congrats":
+            from utils.event_types import get_card_sent_info
+            info = get_card_sent_info(card_type)
+            new_event_type = info["event_type"]
+            new_title = info["label"]
+            
+            await db.contact_events.update_one(
+                {"_id": evt["_id"]},
+                {"$set": {
+                    "event_type": new_event_type,
+                    "title": new_title,
+                    "icon": info.get("icon", "gift"),
+                    "color": info.get("color", "#C9A962"),
+                }}
+            )
+            fixed_count += 1
+
+    # Strategy 2: Fix ALL event titles to match centralized labels
+    # This ensures even correctly-typed events have the right display title
+    all_event_types = await db.contact_events.distinct("event_type")
+    title_fixes = 0
+    for et in all_event_types:
+        correct_label = get_event_label(et)
+        if correct_label and correct_label != et.replace("_", " ").title():
+            # Update all events of this type to have the correct title
+            result = await db.contact_events.update_many(
+                {"event_type": et, "title": {"$ne": correct_label}},
+                {"$set": {"title": correct_label}}
+            )
+            title_fixes += result.modified_count
+
+    return {
+        "success": True,
+        "events_retyped": fixed_count,
+        "titles_fixed": title_fixes,
+        "errors": errors[:10],
+        "message": f"Fixed {fixed_count} wrongly-typed events and {title_fixes} titles."
+    }

@@ -161,7 +161,29 @@ async def resolve_event_type(content: str, db, explicit_event_type: str = None) 
         return 'link_page_shared'
     if '/birthday/' in content:
         return 'birthday_card_sent'
-    if '/congrats/' in content:
+
+    # 3b. /congrats/{card_id} URLs — ALL card types use this prefix, so we MUST
+    #     look up the actual card_type from the DB before defaulting to congrats.
+    _card_id_re = re.compile(r'/congrats/([A-Za-z0-9\-]{6,36})')
+    card_id_match = _card_id_re.search(content)
+    if card_id_match:
+        card_id_val = card_id_match.group(1)
+        # Strip query params if any (e.g. ?ref=xxx)
+        card_id_val = card_id_val.split('?')[0]
+        try:
+            card_doc = await db.congrats_cards.find_one(
+                {"card_id": card_id_val},
+                {"card_type": 1}
+            )
+            if card_doc:
+                actual_card_type = card_doc.get("card_type", "congrats")
+                resolved = CARD_TYPE_SENT_INFO.get(actual_card_type, {}).get("event_type")
+                if resolved:
+                    logger.info(f"[EventType] Card DB lookup: card_id={card_id_val}, card_type={actual_card_type} -> {resolved}")
+                    return resolved
+        except Exception as e:
+            logger.warning(f"[EventType] Card DB lookup failed for {card_id_val}: {e}")
+        # Fallback: if DB lookup fails, still default to congrats
         return 'congrats_card_sent'
 
     # 4. Keyword detection

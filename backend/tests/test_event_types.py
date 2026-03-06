@@ -135,3 +135,45 @@ class TestNoCongratsFallback:
         info = get_card_sent_info("birthday")
         assert info["event_type"] != "congrats_card_sent"
         assert "Congrats" not in info["label"]
+
+
+
+class TestResolveEventTypeURLPatterns:
+    """
+    CRITICAL: All card types share the /congrats/ URL prefix.
+    resolve_event_type() must NOT blindly return congrats_card_sent 
+    just because the URL contains /congrats/.
+    """
+
+    def test_congrats_url_does_not_contain_simple_catch_all(self):
+        """The old bug: '/congrats/' in content → congrats_card_sent for ALL card types."""
+        import re
+        from utils.event_types import _SHORT_CODE_RE
+        
+        # Simulate a birthday card URL  — it uses /congrats/ prefix
+        birthday_url = "https://app.imonsocial.com/congrats/abc123birthday"
+        
+        # The short code regex should NOT match a full card URL
+        assert _SHORT_CODE_RE.search(birthday_url) is None, \
+            "Full card URLs should not match the short code regex"
+
+    def test_card_sent_info_all_types_distinct(self):
+        """Each card type must produce a DISTINCT event_type."""
+        from utils.event_types import CARD_TYPE_SENT_INFO
+        event_types = [info["event_type"] for info in CARD_TYPE_SENT_INFO.values()]
+        # birthday, holiday, etc must not all map to congrats_card_sent
+        assert "birthday_card_sent" in event_types
+        assert "holiday_card_sent" in event_types
+        assert "anniversary_card_sent" in event_types
+        assert "welcome_card_sent" in event_types
+        assert "thank_you_card_sent" in event_types
+
+    def test_get_event_label_returns_correct_labels(self):
+        """Labels must be specific, not all 'Congrats Card Sent'."""
+        assert get_event_label("birthday_card_sent") == "Birthday Card Sent"
+        assert get_event_label("holiday_card_sent") == "Holiday Card Sent"
+        assert get_event_label("anniversary_card_sent") == "Anniversary Card Sent"
+        assert get_event_label("welcome_card_sent") == "Welcome Card Sent"
+        assert get_event_label("thank_you_card_sent") == "Thank You Card Sent"
+        # And congrats should still work
+        assert get_event_label("congrats_card_sent") == "Congrats Card Sent"
