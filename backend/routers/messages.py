@@ -20,66 +20,8 @@ from services.twilio_service import send_sms, get_twilio_status, normalize_phone
 router = APIRouter(prefix="/messages", tags=["Messages"])
 logger = logging.getLogger(__name__)
 
-# ===== SHORT URL → EVENT TYPE MAPPING =====
-_LINK_TYPE_TO_EVENT = {
-    "business_card": "digital_card_sent",
-    "review_request": "review_request_sent",
-    "congrats_card": "congrats_card_sent",
-    "showcase": "showcase_shared",
-    "link_page": "link_page_shared",
-    "vcard": "vcard_sent",
-    "birthday_card": "birthday_card_sent",
-    "thank_you_card": "thank_you_card_sent",
-    "holiday_card": "holiday_card_sent",
-    "welcome_card": "welcome_card_sent",
-    "anniversary_card": "anniversary_card_sent",
-}
-
-_SHORT_CODE_RE = re.compile(r'/api/s/([A-Za-z0-9]+)')
-
-async def _resolve_event_type_from_content(content: str, db) -> str:
-    """Determine the event_type by inspecting message content.
-    
-    If the content contains a short URL (/api/s/<code>), look up its link_type
-    in the short_urls collection for an accurate classification.
-    Falls back to keyword detection for non-short-URL content.
-    """
-    content_lower = content.lower()
-    
-    # 1. Check for short URL and resolve from DB
-    match = _SHORT_CODE_RE.search(content)
-    if match:
-        short_code = match.group(1)
-        doc = await db.short_urls.find_one({"short_code": short_code}, {"link_type": 1})
-        if doc and doc.get("link_type"):
-            resolved = _LINK_TYPE_TO_EVENT.get(doc["link_type"])
-            if resolved:
-                logger.info(f"Resolved event_type={resolved} from short_url link_type={doc['link_type']}")
-                return resolved
-    
-    # 2. Direct URL pattern detection (for non-short-URL messages)
-    if '/card/' in content and '/vcard/' not in content:
-        return 'digital_card_sent'
-    if '/review/' in content:
-        return 'review_request_sent'
-    if '/vcard/' in content:
-        return 'vcard_sent'
-    if '/showcase/' in content:
-        return 'showcase_shared'
-    if '/l/' in content:
-        return 'link_page_shared'
-    if '/congrats/' in content:
-        return 'congrats_card_sent'
-    
-    # 3. Keyword-based detection (last resort)
-    if 'birthday' in content_lower and ('card' in content_lower or 'happy birthday' in content_lower):
-        return 'birthday_card_sent'
-    if 'congrats' in content_lower or 'congratulations' in content_lower:
-        return 'congrats_card_sent'
-    if 'thank' in content_lower and 'card' in content_lower:
-        return 'thank_you_card_sent'
-    
-    return 'personal_sms'
+# Import centralized event type resolution
+from utils.event_types import resolve_event_type, LINK_TYPE_TO_EVENT
 
 # Email validation  - reject "None", "null", empty strings, and non-email values
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -388,7 +330,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             event_type = message_data.event_type
             logger.info(f"Using explicit event_type={event_type} from frontend")
         else:
-            event_type = await _resolve_event_type_from_content(message_data.content, get_db())
+            event_type = await resolve_event_type(message_data.content, get_db())
         
         logger.info(f"Personal SMS logged ({event_type}) for {to_phone}: {message_data.content[:50]}...")
         
@@ -1092,7 +1034,7 @@ async def send_message_simple(user_id: str, message_data: dict):
             event_type = explicit_event_type
             logger.info(f"[PERSONAL SMS] Using explicit event_type={event_type} from frontend")
         else:
-            event_type = await _resolve_event_type_from_content(content, db)
+            event_type = await resolve_event_type(content, db)
         
         logger.info(f"[PERSONAL SMS] Logged ({event_type}) for {to_phone}: {content[:50]}...")
         

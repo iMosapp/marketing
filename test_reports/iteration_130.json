@@ -1,0 +1,94 @@
+{
+  "summary": "Backend testing of centralized event type resolution fix completed. All 11 tests pass. Found and FIXED a critical bug: messages.py was calling undefined function `_resolve_event_type_from_content` instead of the centralized `resolve_event_type` from utils/event_types.py. The fix correctly resolves all card types (birthday_card, thank_you_card, holiday_card, welcome_card, anniversary_card, congrats_card) to their respective event_types in the activity feed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "birthday_card_short_url_resolves": {
+      "status": "PASS",
+      "details": "birthday_card short URL (no explicit event_type) resolves to birthday_card_sent via DB lookup"
+    },
+    "birthday_card_explicit_event_type": {
+      "status": "PASS",
+      "details": "Explicit event_type=birthday_card_sent from frontend is used directly"
+    },
+    "thank_you_card_short_url_resolves": {
+      "status": "PASS",
+      "details": "thank_you_card short URL resolves to thank_you_card_sent via DB lookup"
+    },
+    "holiday_card_short_url_resolves": {
+      "status": "PASS",
+      "details": "holiday_card short URL resolves to holiday_card_sent via DB lookup"
+    },
+    "welcome_card_short_url_resolves": {
+      "status": "PASS",
+      "details": "welcome_card short URL resolves to welcome_card_sent via DB lookup"
+    },
+    "anniversary_card_short_url_resolves": {
+      "status": "PASS",
+      "details": "anniversary_card short URL resolves to anniversary_card_sent via DB lookup"
+    },
+    "congrats_card_short_url_resolves": {
+      "status": "PASS",
+      "details": "congrats_card short URL correctly resolves to congrats_card_sent (control case)"
+    },
+    "regular_sms_resolves_to_personal_sms": {
+      "status": "PASS",
+      "details": "Regular SMS without special content resolves to personal_sms"
+    },
+    "events_endpoint_returns_correct_labels": {
+      "status": "PASS",
+      "details": "GET /api/contacts/{user_id}/{contact_id}/events returns events with correct labels"
+    },
+    "pydantic_endpoint_explicit_event_type": {
+      "status": "PASS",
+      "details": "POST /api/messages/send/{user_id}/{conversation_id} with explicit event_type works correctly"
+    },
+    "all_card_link_types_stored_correctly": {
+      "status": "PASS",
+      "details": "All card link_types (birthday_card, thank_you_card, thankyou_card, holiday_card, welcome_card, anniversary_card, congrats_card) are stored correctly in short_urls collection"
+    }
+  },
+  "bugs_found_and_fixed": {
+    "undefined_function_error": {
+      "location": "/app/backend/routers/messages.py line 1037",
+      "issue": "Code was calling `_resolve_event_type_from_content(content, db)` which doesn't exist",
+      "fix": "Changed to call `resolve_event_type(content, db)` from utils/event_types.py module",
+      "status": "FIXED"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_event_type_centralized_fix.py",
+    "/app/test_reports/pytest/pytest_event_type_centralized_fix.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/routers/messages.py",
+    "/app/backend/tests/test_event_type_centralized_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "N/A (backend-only testing)"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667",
+    "contact_id": "69a0c06f7626f14d125f8c34",
+    "conversation_id": "69aa4ba962d5a949c0d501a4"
+  },
+  "seed_data_creation": "Created test short URLs with all card link_types: birthday_card, thank_you_card, thankyou_card, holiday_card, welcome_card, anniversary_card, congrats_card",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The centralized event type resolution fix is complete. The utils/event_types.py module is the SINGLE SOURCE OF TRUTH for event type resolution. All consumers (messages.py, congrats_cards.py, contact_events.py, short_urls.py) import from this module. Key mappings: birthday_card->birthday_card_sent, thank_you_card->thank_you_card_sent, holiday_card->holiday_card_sent, welcome_card->welcome_card_sent, anniversary_card->anniversary_card_sent, congrats_card->congrats_card_sent. The bug where all cards showed 'Congrats Card Sent' is FIXED.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sends are logged but not actually delivered"
+  }
+}

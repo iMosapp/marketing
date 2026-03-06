@@ -124,20 +124,27 @@ async def get_short_url_stats(short_code: str) -> Optional[dict]:
 
 
 def _detect_event_type(doc: dict) -> tuple:
-    """Determine the event_type, title, icon, color from a short URL doc."""
+    """Determine the event_type, title, icon, color from a short URL doc.
+    Uses centralized event type module.
+    """
+    from utils.event_types import get_card_viewed_info, LINK_TYPE_TO_EVENT, EVENT_TYPE_LABELS
     link_type = doc.get("link_type", "")
     original_url = doc.get("original_url", "")
 
     if link_type == "review_request" or "/review/" in original_url:
         return "review_link_clicked", "Clicked Review Link", "star", "#FFD60A"
-    if link_type == "business_card" or "/p/" in original_url:
+    if link_type == "business_card" or "/p/" in original_url or "/card/" in original_url:
         return "digital_card_viewed", "Viewed Digital Card", "eye", "#007AFF"
-    if "/showcase/" in original_url:
+    if "/showcase/" in original_url or link_type == "showcase":
         return "showcase_viewed", "Viewed Showcase", "eye", "#C9A962"
-    if "/l/" in original_url or "/linkpage/" in original_url:
+    if "/l/" in original_url or "/linkpage/" in original_url or link_type == "link_page":
         return "link_page_viewed", "Viewed Link Page", "eye", "#AF52DE"
-    if link_type == "congrats_card" or "/congrats/" in original_url:
-        return None, None, None, None  # handled by congrats_cards.py
+    # ALL card types (congrats, birthday, thank_you, etc.) are handled by congrats_cards.py
+    card_link_types = {"congrats_card", "birthday_card", "thank_you_card", "thankyou_card",
+                       "holiday_card", "welcome_card", "anniversary_card"}
+    card_url_patterns = ["/congrats/", "/birthday/", "/thankyou/", "/holiday/", "/welcome/", "/anniversary/"]
+    if link_type in card_link_types or any(p in original_url for p in card_url_patterns):
+        return None, None, None, None  # handled by congrats_cards.py view tracking
     return "link_clicked", "Clicked Link", "open", "#007AFF"
 
 

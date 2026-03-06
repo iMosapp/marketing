@@ -287,21 +287,14 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         if ts and hasattr(ts, "isoformat"):
             ts = _ts_iso(ts)
         ct = c.get("card_type", "congrats")
-        card_type_labels = {
-            "congrats": ("Sent Congrats Card", "gift", "#C9A962"),
-            "birthday": ("Sent Birthday Card", "gift", "#FF9500"),
-            "anniversary": ("Sent Anniversary Card", "heart", "#FF2D55"),
-            "holiday": ("Sent Holiday Card", "snow", "#5AC8FA"),
-            "thank_you": ("Sent Thank You Card", "thumbs-up", "#34C759"),
-            "thankyou": ("Sent Thank You Card", "thumbs-up", "#34C759"),
-            "welcome": ("Sent Welcome Card", "hand-left", "#007AFF"),
-        }
-        title, icon, color = card_type_labels.get(ct, (f"Sent {ct.replace('_', ' ').title()} Card", "gift", "#C9A962"))
+        # Use centralized event type info
+        from utils.event_types import get_card_sent_info
+        info = get_card_sent_info(ct)
         events.append({
-            "event_type": f"{ct}_card_sent",
-            "icon": icon,
-            "color": color,
-            "title": title,
+            "event_type": info["event_type"],
+            "icon": info["icon"],
+            "color": info["color"],
+            "title": info["label"],
             "description": c.get("message", "")[:60],
             "full_content": c.get("message", ""),
             "card_id": c.get("card_id"),

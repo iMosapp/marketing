@@ -397,16 +397,11 @@ async def get_congrats_card(card_id: str):
         customer_name = card.get("customer_name")
         card_type = card.get("card_type", "congrats")
         
-        # Build type-specific event info
-        card_type_labels = {
-            "congrats": ("Viewed Congrats Card", "congrats_card_viewed"),
-            "birthday": ("Viewed Birthday Card", "birthday_card_viewed"),
-            "anniversary": ("Viewed Anniversary Card", "anniversary_card_viewed"),
-            "thankyou": ("Viewed Thank You Card", "thankyou_card_viewed"),
-            "welcome": ("Viewed Welcome Card", "welcome_card_viewed"),
-            "holiday": ("Viewed Holiday Card", "holiday_card_viewed"),
-        }
-        title, event_type = card_type_labels.get(card_type, (f"Viewed {card_type.title()} Card", f"{card_type}_card_viewed"))
+        # Use centralized event type resolution
+        from utils.event_types import get_card_viewed_info
+        viewed_info = get_card_viewed_info(card_type)
+        title = viewed_info["label"]
+        event_type = viewed_info["event_type"]
         
         if salesman_id:
             await log_activity_for_customer(
