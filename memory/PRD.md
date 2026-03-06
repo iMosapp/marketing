@@ -85,6 +85,18 @@ Full-stack Relationship Management System (RMS/CRM) for sales teams. Key goals: 
 - **Frontend changes:** Both `contact/[id].tsx` (composerEventType state) and `thread/[id].tsx` (pendingEventType state) now track and pass event_type through the send API
 - **Result:** Activity feed now accurately shows "Digital Card Shared", "Review Invite Sent", etc. instead of all showing "Congrats Card Sent"
 
+### Photo Gallery v2 Rewrite (Mar 2026)
+- **Issues fixed:** 1) Black screen when opening gallery (photos didn't load for legacy contacts), 2) X close button hidden under iOS status bar
+- **New gallery features:**
+  - `resolvePhotoUrl()` helper converts relative image paths (`/api/images/...`) to absolute URLs for native mobile
+  - Full-screen swipeable viewer uses `Dimensions.get('window')` for explicit sizing (fixes FlatList height collapse)
+  - Gallery top bar has iOS safe area padding (`paddingTop: 56` on iOS)
+  - Modern layout: close button (top-left), photo counter (center), upload button (top-right)
+  - Bottom bar: photo label, date, Grid button, Set as Profile button (for non-profile photos)
+  - Thumbnail grid view with type labels
+  - Empty state with "Add Photo" CTA
+- **Files changed:** `frontend/app/contact/[id].tsx` (gallery modal rewrite + resolvePhotoUrl + Dimensions import)
+
 ### Previous Session Work
 - **Persistent Login:** HTTP-only cookies (`imos_session`) for indefinite sessions
 - **Dynamic Share Previews:** Short URL redirector serves dynamic OG tags for branded link previews
