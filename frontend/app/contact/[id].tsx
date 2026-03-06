@@ -415,6 +415,7 @@ export default function ContactDetailScreen() {
   const [composerMessage, setComposerMessage] = useState('');
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
+  const [composerEventType, setComposerEventType] = useState<string | null>(null);
 
   // Populate composer from query param (e.g. returning from create-card or task action item)
   useEffect(() => {
@@ -712,6 +713,7 @@ export default function ContactDetailScreen() {
   const insertReviewLink = async (platformId: string, url: string, platformName: string) => {
     const firstName = contact.first_name || 'there';
     setShowReviewLinks(false);
+    setComposerEventType('review_request_sent');
     try {
       // Create a trackable short URL with contact_id in metadata
       const shortRes = await api.post('/s/create', {
@@ -761,7 +763,8 @@ export default function ContactDetailScreen() {
         reference_id: id as string, metadata: { contact_id: id as string },
       });
       setComposerMessage(`Hey ${firstName}! Here's my digital business card: ${shortRes.data?.short_url || cardUrl}`);
-    } catch { setComposerMessage(`Hey ${firstName}! Here's my digital business card: ${cardUrl}`); }
+      setComposerEventType('digital_card_sent');
+    } catch { setComposerMessage(`Hey ${firstName}! Here's my digital business card: ${cardUrl}`); setComposerEventType('digital_card_sent'); }
   };
 
   const sendVCardLink = () => {
@@ -774,6 +777,7 @@ export default function ContactDetailScreen() {
     setShowLandingPageOptions(false);
     setSelectedCampaign(null);
     setComposerMessage(cardMessage);
+    setComposerEventType('vcard_sent');
   };
 
   const sendShowcaseLink = async () => {
@@ -788,7 +792,8 @@ export default function ContactDetailScreen() {
         reference_id: id as string, metadata: { contact_id: id as string },
       });
       setComposerMessage(`Hey ${firstName}! Check out some of our happy customers: ${shortRes.data?.short_url || showcaseUrl}`);
-    } catch { setComposerMessage(`Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`); }
+      setComposerEventType('showcase_shared');
+    } catch { setComposerMessage(`Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`); setComposerEventType('showcase_shared'); }
   };
 
   const sendLinkPageLink = async () => {
@@ -807,7 +812,8 @@ export default function ContactDetailScreen() {
           });
           setShowBusinessCard(false);
           setComposerMessage(`Hey ${firstName}! Here are all my links: ${shortRes.data?.short_url || url}`);
-        } catch { setShowBusinessCard(false); setComposerMessage(`Hey ${firstName}! Here are all my links: ${url}`); }
+          setComposerEventType('link_page_shared');
+        } catch { setShowBusinessCard(false); setComposerMessage(`Hey ${firstName}! Here are all my links: ${url}`); setComposerEventType('link_page_shared'); }
       } else {
         showSimpleAlert('Not Set Up', 'Set up your Link Page in Settings first');
       }
@@ -1127,11 +1133,13 @@ export default function ContactDetailScreen() {
       
       if (composerMode === 'sms') {
         // For SMS: Use personal SMS flow  - log the message server-side, then open native SMS app
-        await messagesAPI.send(user._id, {
+        const sendPayload: any = {
           conversation_id: conversationId,
           content: messageContent,
           channel: 'sms_personal',
-        });
+        };
+        if (composerEventType) sendPayload.event_type = composerEventType;
+        await messagesAPI.send(user._id, sendPayload);
         
         // Open native SMS app with the message pre-filled
         if (IS_WEB && typeof window !== 'undefined') {
@@ -1145,15 +1153,18 @@ export default function ContactDetailScreen() {
         showToast('Message logged & SMS app opened!');
       } else {
         // Email: send directly via Resend
-        await messagesAPI.send(user._id, {
+        const emailPayload: any = {
           conversation_id: conversationId,
           content: messageContent,
           channel: 'email',
-        });
+        };
+        if (composerEventType) emailPayload.event_type = composerEventType;
+        await messagesAPI.send(user._id, emailPayload);
         showToast('Email sent!');
       }
       
       setComposerMessage('');
+      setComposerEventType(null);
       setSelectedMedia(null);
       setShowAISuggestion(false);
       setAiSuggestion('');

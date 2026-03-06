@@ -360,6 +360,7 @@ class MessageCreate(BaseModel):
     template_type: Optional[str] = None  # review, referral, sold, greeting, follow_up, etc.
     template_name: Optional[str] = None
     channel: Optional[str] = None  # 'sms' or 'email' - defaults to sms
+    event_type: Optional[str] = None  # Explicit event type for activity tracking (e.g., digital_card_sent, review_request_sent)
 
 # Call Models
 class Call(BaseModel):

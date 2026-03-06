@@ -119,7 +119,7 @@ interface Template {
 
 export default function ThreadScreen() {
   const router = useRouter();
-  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill } = useLocalSearchParams();
+  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const flatListRef = useRef<FlatList>(null);
   
@@ -150,6 +150,9 @@ export default function ThreadScreen() {
   const styles = getStyles(colors);
   
   const [message, setMessage] = useState('');
+  const [pendingEventType, setPendingEventType] = useState<string | null>(
+    typeof paramEventType === 'string' ? paramEventType : null
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -795,6 +798,7 @@ export default function ThreadScreen() {
         content: contentToSend,
         channel: 'sms_personal',
       };
+      if (pendingEventType) messagePayload.event_type = pendingEventType;
       if (selectedTemplateInfo) {
         messagePayload.template_id = selectedTemplateInfo.template_id;
         messagePayload.template_type = selectedTemplateInfo.template_type;
@@ -839,6 +843,7 @@ export default function ThreadScreen() {
       }
       
       setSelectedTemplateInfo(null);
+      setPendingEventType(null);
       setSending(false);
       return; // Exit early  - regular await flow won't work since we navigated away
     }
@@ -897,6 +902,7 @@ export default function ThreadScreen() {
         content: contentToSend,
         channel: messageMode,
       };
+      if (pendingEventType) messagePayload.event_type = pendingEventType;
       
       // Include template tracking info if a template was used
       if (selectedTemplateInfo) {
@@ -924,6 +930,7 @@ export default function ThreadScreen() {
       
       // Clear template info after sending
       setSelectedTemplateInfo(null);
+      setPendingEventType(null);
       
       // Reload messages to get the real one from backend
       await loadMessages();
@@ -1012,6 +1019,7 @@ export default function ThreadScreen() {
     setShowReviewLinks(false);
     setShowAttachMenu(false);
     setMessage(reviewMessage);
+    setPendingEventType('review_request_sent');
   };
 
   // Digital Business Card functions
@@ -1053,6 +1061,7 @@ export default function ThreadScreen() {
     setShowLandingPageOptions(false);
     setSelectedCampaign(null);
     setMessage(cardMessage);
+    setPendingEventType('digital_card_sent');
   };
 
   const sendVCardLink = () => {
@@ -1070,6 +1079,7 @@ export default function ThreadScreen() {
     setShowBusinessCard(false);
     setShowLandingPageOptions(false);
     setMessage(cardMessage);
+    setPendingEventType('vcard_sent');
   };
 
   const sendShowcaseLink = () => {
@@ -1081,6 +1091,7 @@ export default function ThreadScreen() {
     const msg = `Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`;
     setShowBusinessCard(false);
     setMessage(msg);
+    setPendingEventType('showcase_shared');
   };
 
   const sendLinkPageLink = async () => {
@@ -1096,6 +1107,7 @@ export default function ThreadScreen() {
         const msg = `Hey ${firstName}! Here are all my links: ${url}`;
         setShowBusinessCard(false);
         setMessage(msg);
+        setPendingEventType('link_page_shared');
       } else {
         Alert.alert('Not Set Up', 'Set up your Link Page in Settings first');
       }

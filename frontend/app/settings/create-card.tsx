@@ -144,6 +144,7 @@ export default function CreateCardPage() {
     if (cEmail) params.set('contact_email', cEmail);
     params.set('mode', mode);
     if (prefillText) params.set('prefill', prefillText);
+    params.set('event_type', `${cardType}_card_sent`);
     const url = `/thread/${contactId}?${params.toString()}`;
     router.push(url as any);
   };

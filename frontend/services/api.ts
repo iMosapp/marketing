@@ -245,7 +245,7 @@ export const messagesAPI = {
     return response.data;
   },
 
-  send: async (userId: string, data: { conversation_id: string; content: string; media_url?: string; channel?: string }) => {
+  send: async (userId: string, data: { conversation_id: string; content: string; media_url?: string; channel?: string; event_type?: string }) => {
     const response = await api.post(`/messages/send/${userId}/${data.conversation_id}`, data);
     return response.data;
   },
