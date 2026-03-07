@@ -67,7 +67,7 @@ export default function ManageShowroom() {
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="manage-showroom-back">
-          <Ionicons name="chevron-back" size={24} color={colors.bg} />
+          <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Edit Showcase</Text>
         <View style={{ width: 32 }} />
