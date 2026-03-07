@@ -24,69 +24,54 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 6. Served via `/api/images/` with ETag + 1-year immutable Cache-Control
 
 ### The "photo_path" pattern:
-- Every document with an image (users, contacts, stores, congrats_cards, customer_feedback) has a `photo_path` field
-- If `photo_path` exists → image is migrated → serve via `/api/images/{photo_path}`
+- Every document with an image has a `photo_path` field (users, contacts, stores, congrats_cards, customer_feedback)
+- If `photo_path` exists → image is migrated → serve via `/api/images/{photo_path}` 
 - If `photo_path` does NOT exist → lazy-migrate on first access → set photo_path → redirect
+- Showcase API returns direct `/api/images/` WebP paths (not intermediary `/api/showcase/photo/` URLs)
 
 ### NEVER DO:
 - Store raw base64 as photo_url for new uploads (use `upload_image()` from `utils/image_storage.py`)
 - Return base64 blobs in API responses (return `/api/images/` URL paths)
-- Set Cache-Control to anything less than 1 year for immutable images
-- Decode base64 from MongoDB on every request (this was the root cause of slow images)
+- Set Cache-Control less than 1 year for immutable images
+- Decode base64 from MongoDB on every request
+- Use duplicate MongoDB query keys like `{"$ne": None, "$ne": ""}` — use `{"$nin": [None, ""]}`
 
 ### ALWAYS DO:
 - Use `upload_image(data, prefix="type", entity_id="id")` for all new image uploads
 - Store `photo_path`, `photo_thumb_path`, `photo_avatar_path` on the document
 - Return `/api/images/{path}` URLs to the frontend
-- Set `Cache-Control: public, max-age=31536000, immutable` on image responses
-
-### Migration:
-- `POST /api/images/migrate-all-base64` — batch migrates all remaining base64 images (super admin only)
-- Safe to run multiple times (skips already-migrated documents)
-- Showcase, feedback, user, store, contact photo endpoints all lazy-migrate on first access
+- Run `POST /api/images/migrate-all-base64` after deployment to catch stragglers
 
 ---
 
 ## What's Been Implemented
 
-### Image Performance Overhaul — COMPLETE (Feb 2026)
-- ALL showcase photo endpoints rewritten with lazy-migration to WebP
-- Profile photo upload now uses image pipeline (not raw base64)
+### Image Performance Overhaul v2 — COMPLETE (Feb 2026)
+- ALL showcase photo endpoints serve optimized WebP via 301 redirects
+- Showcase API returns direct `/api/images/` paths (zero intermediary hops)
+- Profile photo upload uses image pipeline (not raw base64)
 - Contact photo upload/update uses image pipeline
-- Contact gallery returns URL paths (not base64 blobs)
+- Contact gallery returns URL paths (not MB of base64 JSON)
 - Review link clickability fixed (window.location.href vs popup-triggering window.open)
-- Batch migration endpoint created and run (27 images migrated)
-- 1-year immutable caching on all served images
+- Batch migration endpoint with backfill step
+- Fixed Python dict duplicate-key bug (`$ne` → `$nin`) across showcase.py and admin.py
+- 27 images migrated from base64 to WebP, 4 records backfilled
 
 ### Operations Manual v3.0 & PDF Export — COMPLETE (Feb 2026)
-- 26-slide comprehensive manual covering all features
-- PDF Download and Email PDF, super admin only
-
 ### Streamlined Client Onboarding — COMPLETE (Feb 2026)
-- `POST /api/setup-wizard/new-account` creates org + store + primary user
-- 3-step flow at `/onboarding/new-account`
-
 ### Task Engine (Touchpoints) — COMPLETE
 ### Menu Reorganization & Permissions — COMPLETE
 ### Gamification & Leaderboards — COMPLETE
 ### Weekly Power Rankings Email — COMPLETE
 
-### Earlier Completed Features
-- Public REST API & webhooks, soft-delete system, lifecycle scans
-- Carrier-agnostic messaging, white-label emails, comprehensive reporting
-
 ## Prioritized Backlog
-
-### P0
-- (None — current sprint complete)
 
 ### P1
 - Google Places API integration (when user provides key)
 - Permission Roles/Templates (pre-defined role sets)
 - AI-Powered Outreach (contextual follow-up suggestions)
 - Refactor Authentication (bcrypt password hashing)
-- Push Notifications
-- Voice Help Assistant Backend
+- Push Notifications, Voice Help Assistant Backend
 
 ### P2
 - Full Twilio Integration (live), WhatsApp Integration
