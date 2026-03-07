@@ -257,10 +257,37 @@ export default function AdminDashboard() {
         headers: { 'X-User-ID': user?._id },
       });
       const d = res.data;
-      setMigrateResult(`Done! Migrated: ${d.migrated || 0}, Backfilled: ${d.backfilled || 0}, Skipped: ${d.skipped || 0}`);
+      if (d.status === 'started') {
+        setMigrateResult('Migration started... checking progress');
+        // Poll for status
+        const poll = setInterval(async () => {
+          try {
+            const statusRes = await api.get('/images/migrate-status');
+            const s = statusRes.data;
+            if (s.status === 'completed') {
+              clearInterval(poll);
+              const r = s.result || {};
+              const m = r.migrated || {};
+              setMigrateResult(`Done! ${r.total_migrated || 0} images migrated in ${r.elapsed_seconds || 0}s`);
+              setMigrating(false);
+            } else if (s.status === 'failed') {
+              clearInterval(poll);
+              setMigrateResult(`Failed: ${s.result?.error || 'Unknown error'}`);
+              setMigrating(false);
+            } else {
+              const p = s.progress || {};
+              setMigrateResult(`Running... ${p.total || 0} migrated so far (${p.elapsed_seconds || 0}s)`);
+            }
+          } catch { /* keep polling */ }
+        }, 3000);
+      } else if (d.status === 'already_running') {
+        setMigrateResult('Migration already in progress...');
+      } else {
+        setMigrateResult(`Done! Migrated: ${d.migrated || 0}`);
+        setMigrating(false);
+      }
     } catch (e: any) {
       setMigrateResult(`Error: ${e.response?.data?.detail || e.message}`);
-    } finally {
       setMigrating(false);
     }
   };

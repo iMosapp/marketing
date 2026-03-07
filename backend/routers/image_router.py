@@ -7,7 +7,7 @@ Caching strategy:
 3. Cache-Control: immutable (1 year) — browser never re-validates
 4. Images cached on upload → first view is already in RAM
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Header, Request
+from fastapi import APIRouter, HTTPException, UploadFile, File, Header, Request, BackgroundTasks
 from fastapi.responses import Response
 from datetime import datetime, timezone
 import logging
@@ -23,6 +23,26 @@ logger = logging.getLogger(__name__)
 async def cache_stats():
     """Get image cache statistics (admin/debug endpoint)."""
     return get_cache_stats()
+
+
+@router.get("/migrate-status")
+async def get_migration_status():
+    """Get the status of the most recent migration job."""
+    db = get_db()
+    job = await db.migration_jobs.find_one(
+        {"type": "image_migration"},
+        sort=[("started_at", -1)],
+    )
+    if not job:
+        return {"status": "none", "message": "No migration has been run yet."}
+
+    return {
+        "status": job.get("status", "unknown"),
+        "started_at": job.get("started_at").isoformat() if job.get("started_at") else None,
+        "completed_at": job.get("completed_at").isoformat() if job.get("completed_at") else None,
+        "progress": job.get("progress", {}),
+        "result": job.get("result"),
+    }
 
 
 @router.get("/{path:path}")
@@ -175,167 +195,224 @@ async def cleanup_raw_image(path: str):
 
 
 @router.post("/migrate-all-base64")
-async def migrate_all_base64_images(x_user_id: str = Header(None, alias="X-User-ID")):
+async def migrate_all_base64_images(
+    background_tasks: BackgroundTasks,
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
     """
-    Batch migrate ALL base64 images in the database to optimized WebP in object storage.
-    This is a one-time operation — safe to run multiple times (skips already-migrated).
-    Super admin only. Runs synchronously for up to 120s then returns progress.
+    Batch migrate ALL base64 images to optimized WebP.
+    Runs as a background task — returns immediately with status URL.
+    Super admin only. Safe to run multiple times.
     """
     db = get_db()
 
-    # Verify super admin
     from bson import ObjectId as ObjId
     user = await db.users.find_one({"_id": ObjId(x_user_id)}, {"role": 1})
     if not user or user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Super admin only")
 
-    stats = {"users": 0, "stores": 0, "contacts": 0, "congrats": 0, "feedback": 0, "errors": 0}
+    # Check if a migration is already running
+    existing = await db.migration_jobs.find_one({"status": "running"})
+    if existing:
+        return {
+            "status": "already_running",
+            "message": "A migration is already in progress. Check status for updates.",
+            "started_at": existing.get("started_at", "").isoformat() if existing.get("started_at") else None,
+        }
+
+    # Create a job record
     import time
-    start = time.time()
-    MAX_TIME = 100  # seconds — leave buffer before 120s timeout
-
-    # 0. Backfill photo_path from existing /api/images/ URLs (prior migration pattern)
-    backfill_count = 0
-    for coll_name, url_field, path_field in [
-        ("users", "photo_url", "photo_path"),
-        ("stores", "logo_url", "logo_path"),
-        ("contacts", "photo", "photo_path"),
-        ("contacts", "photo_thumbnail", "photo_path"),
-    ]:
-        coll = db[coll_name]
-        docs = await coll.find(
-            {url_field: {"$regex": "^/api/images/"}, path_field: {"$exists": False}},
-            {"_id": 1, url_field: 1}
-        ).to_list(500)
-        for d in docs:
-            path = d[url_field].replace("/api/images/", "")
-            if path:
-                await coll.update_one({"_id": d["_id"]}, {"$set": {path_field: path}})
-                backfill_count += 1
-
-    # 1. Users with base64 photo_url but no photo_path
-    users = await db.users.find(
-        {"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
-        {"_id": 1, "photo_url": 1}
-    ).to_list(200)
-    for u in users:
-        if time.time() - start > MAX_TIME:
-            break
-        try:
-            result = await upload_image(u["photo_url"], prefix="profiles", entity_id=str(u["_id"]))
-            if result:
-                await db.users.update_one({"_id": u["_id"]}, {"$set": {
-                    "photo_path": result["original_path"],
-                    "photo_thumb_path": result["thumbnail_path"],
-                    "photo_avatar_path": result["avatar_path"],
-                    "photo_url": f"/api/images/{result['original_path']}",
-                }})
-                stats["users"] += 1
-        except Exception as e:
-            logger.warning(f"User photo migration failed {u['_id']}: {e}")
-            stats["errors"] += 1
-
-    # 2. Stores with base64 logo_url but no logo_path
-    stores = await db.stores.find(
-        {"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}},
-        {"_id": 1, "logo_url": 1}
-    ).to_list(200)
-    for s in stores:
-        if time.time() - start > MAX_TIME:
-            break
-        try:
-            result = await upload_image(s["logo_url"], prefix="logos", entity_id=str(s["_id"]))
-            if result:
-                await db.stores.update_one({"_id": s["_id"]}, {"$set": {
-                    "logo_path": result["original_path"],
-                    "logo_thumb_path": result["thumbnail_path"],
-                    "logo_avatar_path": result["avatar_path"],
-                }})
-                stats["stores"] += 1
-        except Exception as e:
-            logger.warning(f"Store logo migration failed {s['_id']}: {e}")
-            stats["errors"] += 1
-
-    # 3. Contacts with base64 photo but no photo_path
-    contacts = await db.contacts.find(
-        {"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
-        {"_id": 1, "photo": 1}
-    ).to_list(500)
-    for c in contacts:
-        if time.time() - start > MAX_TIME:
-            break
-        try:
-            result = await upload_image(c["photo"], prefix="contacts", entity_id=str(c["_id"]))
-            if result:
-                await db.contacts.update_one({"_id": c["_id"]}, {"$set": {
-                    "photo_path": result["original_path"],
-                    "photo_thumb_path": result["thumbnail_path"],
-                    "photo_avatar_path": result["avatar_path"],
-                    "photo_thumbnail": f"/api/images/{result['thumbnail_path']}",
-                    "photo_url": f"/api/images/{result['thumbnail_path']}",
-                }})
-                stats["contacts"] += 1
-        except Exception as e:
-            logger.warning(f"Contact photo migration failed {c['_id']}: {e}")
-            stats["errors"] += 1
-
-    # 4. Congrats cards with base64 customer_photo but no photo_path
-    cards = await db.congrats_cards.find(
-        {"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
-        {"_id": 1, "card_id": 1, "customer_photo": 1}
-    ).to_list(500)
-    for card in cards:
-        if time.time() - start > MAX_TIME:
-            break
-        try:
-            cid = card.get("card_id", str(card["_id"]))
-            result = await upload_image(card["customer_photo"], prefix="congrats", entity_id=cid)
-            if result:
-                await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {
-                    "photo_path": result["original_path"],
-                    "photo_thumb_path": result["thumbnail_path"],
-                    "photo_url": f"/api/images/{result['original_path']}",
-                    "photo_thumbnail_url": f"/api/images/{result['thumbnail_path']}",
-                }})
-                stats["congrats"] += 1
-        except Exception as e:
-            logger.warning(f"Congrats photo migration failed {card['_id']}: {e}")
-            stats["errors"] += 1
-
-    # 5. Feedback with base64 purchase_photo_url but no photo_path
-    feedbacks = await db.customer_feedback.find(
-        {"purchase_photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
-        {"_id": 1, "purchase_photo_url": 1}
-    ).to_list(500)
-    for fb in feedbacks:
-        if time.time() - start > MAX_TIME:
-            break
-        try:
-            result = await upload_image(fb["purchase_photo_url"], prefix="feedback", entity_id=str(fb["_id"]))
-            if result:
-                await db.customer_feedback.update_one({"_id": fb["_id"]}, {"$set": {
-                    "photo_path": result["original_path"],
-                    "photo_thumb_path": result["thumbnail_path"],
-                }})
-                stats["feedback"] += 1
-        except Exception as e:
-            logger.warning(f"Feedback photo migration failed {fb['_id']}: {e}")
-            stats["errors"] += 1
-
-    elapsed = round(time.time() - start, 1)
-    total = sum(v for k, v in stats.items() if k != "errors")
-    remaining = {
-        "users": len(users) - stats["users"],
-        "stores": len(stores) - stats["stores"],
-        "contacts": len(contacts) - stats["contacts"],
-        "congrats": len(cards) - stats["congrats"],
-        "feedback": len(feedbacks) - stats["feedback"],
+    job_doc = {
+        "type": "image_migration",
+        "status": "running",
+        "started_at": datetime.now(timezone.utc),
+        "started_by": x_user_id,
+        "progress": {},
+        "result": None,
     }
+    insert_result = await db.migration_jobs.insert_one(job_doc)
+    job_id = str(insert_result.inserted_id)
+
+    # Run in background
+    background_tasks.add_task(_run_migration, job_id)
+
     return {
-        "migrated": stats,
-        "backfilled": backfill_count,
-        "total_migrated": total,
-        "remaining": remaining,
-        "elapsed_seconds": elapsed,
-        "message": f"Migrated {total} images in {elapsed}s. Run again if remaining > 0.",
+        "status": "started",
+        "job_id": job_id,
+        "message": "Migration started in background. Check status at GET /api/images/migrate-status.",
     }
+
+
+async def _run_migration(job_id: str):
+    """Background worker that performs the actual migration."""
+    db = get_db()
+    from bson import ObjectId as ObjId
+    import time
+
+    stats = {"users": 0, "stores": 0, "contacts": 0, "congrats": 0, "feedback": 0, "errors": 0}
+    start = time.time()
+
+    async def _update_progress():
+        elapsed = round(time.time() - start, 1)
+        total = sum(v for k, v in stats.items() if k != "errors")
+        await db.migration_jobs.update_one(
+            {"_id": ObjId(job_id)},
+            {"$set": {"progress": {**stats, "total": total, "elapsed_seconds": elapsed}}},
+        )
+
+    try:
+        # 0. Backfill photo_path from existing /api/images/ URLs
+        backfill_count = 0
+        for coll_name, url_field, path_field in [
+            ("users", "photo_url", "photo_path"),
+            ("stores", "logo_url", "logo_path"),
+            ("contacts", "photo", "photo_path"),
+            ("contacts", "photo_thumbnail", "photo_path"),
+        ]:
+            coll = db[coll_name]
+            docs = await coll.find(
+                {url_field: {"$regex": "^/api/images/"}, path_field: {"$exists": False}},
+                {"_id": 1, url_field: 1}
+            ).to_list(500)
+            for d in docs:
+                path = d[url_field].replace("/api/images/", "")
+                if path:
+                    await coll.update_one({"_id": d["_id"]}, {"$set": {path_field: path}})
+                    backfill_count += 1
+
+        await _update_progress()
+
+        # 1. Users with base64 photo_url but no photo_path
+        users = await db.users.find(
+            {"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
+            {"_id": 1, "photo_url": 1}
+        ).to_list(200)
+        for u in users:
+            try:
+                result = await upload_image(u["photo_url"], prefix="profiles", entity_id=str(u["_id"]))
+                if result:
+                    await db.users.update_one({"_id": u["_id"]}, {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                        "photo_avatar_path": result["avatar_path"],
+                        "photo_url": f"/api/images/{result['original_path']}",
+                    }})
+                    stats["users"] += 1
+            except Exception as e:
+                logger.warning(f"User photo migration failed {u['_id']}: {e}")
+                stats["errors"] += 1
+        await _update_progress()
+
+        # 2. Stores with base64 logo_url but no logo_path
+        stores = await db.stores.find(
+            {"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}},
+            {"_id": 1, "logo_url": 1}
+        ).to_list(200)
+        for s in stores:
+            try:
+                result = await upload_image(s["logo_url"], prefix="logos", entity_id=str(s["_id"]))
+                if result:
+                    await db.stores.update_one({"_id": s["_id"]}, {"$set": {
+                        "logo_path": result["original_path"],
+                        "logo_thumb_path": result["thumbnail_path"],
+                        "logo_avatar_path": result["avatar_path"],
+                    }})
+                    stats["stores"] += 1
+            except Exception as e:
+                logger.warning(f"Store logo migration failed {s['_id']}: {e}")
+                stats["errors"] += 1
+        await _update_progress()
+
+        # 3. Contacts with base64 photo but no photo_path
+        contacts = await db.contacts.find(
+            {"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
+            {"_id": 1, "photo": 1}
+        ).to_list(500)
+        for c in contacts:
+            try:
+                result = await upload_image(c["photo"], prefix="contacts", entity_id=str(c["_id"]))
+                if result:
+                    await db.contacts.update_one({"_id": c["_id"]}, {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                        "photo_avatar_path": result["avatar_path"],
+                        "photo_thumbnail": f"/api/images/{result['thumbnail_path']}",
+                        "photo_url": f"/api/images/{result['thumbnail_path']}",
+                    }})
+                    stats["contacts"] += 1
+            except Exception as e:
+                logger.warning(f"Contact photo migration failed {c['_id']}: {e}")
+                stats["errors"] += 1
+        await _update_progress()
+
+        # 4. Congrats cards with base64 customer_photo but no photo_path
+        cards = await db.congrats_cards.find(
+            {"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
+            {"_id": 1, "card_id": 1, "customer_photo": 1}
+        ).to_list(500)
+        for card in cards:
+            try:
+                cid = card.get("card_id", str(card["_id"]))
+                result = await upload_image(card["customer_photo"], prefix="congrats", entity_id=cid)
+                if result:
+                    await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                        "photo_url": f"/api/images/{result['original_path']}",
+                        "photo_thumbnail_url": f"/api/images/{result['thumbnail_path']}",
+                    }})
+                    stats["congrats"] += 1
+            except Exception as e:
+                logger.warning(f"Congrats photo migration failed {card['_id']}: {e}")
+                stats["errors"] += 1
+        await _update_progress()
+
+        # 5. Feedback with base64 purchase_photo_url but no photo_path
+        feedbacks = await db.customer_feedback.find(
+            {"purchase_photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
+            {"_id": 1, "purchase_photo_url": 1}
+        ).to_list(500)
+        for fb in feedbacks:
+            try:
+                result = await upload_image(fb["purchase_photo_url"], prefix="feedback", entity_id=str(fb["_id"]))
+                if result:
+                    await db.customer_feedback.update_one({"_id": fb["_id"]}, {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                    }})
+                    stats["feedback"] += 1
+            except Exception as e:
+                logger.warning(f"Feedback photo migration failed {fb['_id']}: {e}")
+                stats["errors"] += 1
+
+        elapsed = round(time.time() - start, 1)
+        total = sum(v for k, v in stats.items() if k != "errors")
+        result_data = {
+            "migrated": stats,
+            "backfilled": backfill_count,
+            "total_migrated": total,
+            "elapsed_seconds": elapsed,
+            "message": f"Migrated {total} images in {elapsed}s.",
+        }
+
+        await db.migration_jobs.update_one(
+            {"_id": ObjId(job_id)},
+            {"$set": {
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc),
+                "result": result_data,
+                "progress": {**stats, "total": total, "elapsed_seconds": elapsed},
+            }},
+        )
+        logger.info(f"[Migration] Completed: {result_data['message']}")
+
+    except Exception as e:
+        logger.error(f"[Migration] Failed: {e}")
+        await db.migration_jobs.update_one(
+            {"_id": ObjId(job_id)},
+            {"$set": {
+                "status": "failed",
+                "completed_at": datetime.now(timezone.utc),
+                "result": {"error": str(e)},
+            }},
+        )
