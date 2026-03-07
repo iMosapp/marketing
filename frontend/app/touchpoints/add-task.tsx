@@ -91,7 +91,7 @@ export default function AddTaskScreen() {
         due_date: dueDate.toISOString(),
         type: 'manual',
       });
-      router.back();
+      router.replace('/touchpoints' as any);
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to create task');
     }

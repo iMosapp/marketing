@@ -1,117 +1,74 @@
 # i'M On Social — Product Requirements Document
 
 ## Original Problem Statement
-A full-stack Relationship Management System (RMS) for dealerships. React Native (Expo) frontend, FastAPI backend, MongoDB. The primary goal is stability and reliable event tracking for customer interactions.
+Build a Relationship Management System (RMS) / CRM for automotive sales professionals. The platform has pivoted to a task-driven "Relationship Operating System" where the salesperson's daily workflow is guided by a central task queue called "Today's Touchpoints."
 
 ## Core Architecture
-- **Frontend:** React Native (Expo Router) — Mobile + Web
-- **Backend:** FastAPI (Python) on port 8001
+- **Frontend:** React Native / Expo (web)
+- **Backend:** FastAPI (Python)
 - **Database:** MongoDB Atlas
-- **Object Storage:** Emergent Object Storage (images/media)
+- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI, Emergent Object Storage, Pillow
 
 ## What's Been Implemented
 
-### Sprint 1: Task Engine Backend (March 7, 2026)
-- Built full tasks CRUD API: GET (filtered by today/overdue/upcoming/completed/all), POST (manual), PATCH (complete/snooze/dismiss/edit), DELETE
-- GET /api/tasks/{user_id}/summary returns daily scoreboard: total, completed, pending, overdue, progress_pct, activity counts
-- System task auto-generation: dormant contacts (90+ days), upcoming birthdays (3 days), purchase anniversaries (3 days)
-- Campaign → Task bridge: scheduler creates tasks with suggested_message from campaign steps, with idempotency keys
-- All task completions log a `task_completed` contact_event (closing the loop: campaign → task → event)
-- Added daily scheduled job at 5:30 UTC for system task generation
-- Idempotency: unique partial filter index on idempotency_key prevents duplicate tasks
-- Task schema: user_id, contact_id/name/phone, type, source, title, description, suggested_message, action_type, priority, priority_order, status, due_date, snoozed_until, completed_at, idempotency_key
+### Sprint 1: Task Engine Backend (COMPLETE — Tested)
+- Enhanced `Task` model with full fields (contact, priority, source, campaign, suggested_message, idempotency_key)
+- Full CRUD API at `/api/tasks/{user_id}` with filtering (today, overdue), sorting, summary, performance
+- Scheduler auto-generates tasks from campaigns and system triggers (birthdays, anniversaries, dormant contacts)
+- Idempotent task generation via unique partial index
 
-### Bug Fixes & Dialer Redesign (March 6, 2026)
-- Fixed Thank You Card mislabeling: key was `thank_you` but create-card.tsx expected `thankyou`
-- Fixed black autofill text in dark mode: global CSS now forces white text and dark background on autofilled inputs
-- Redesigned dialer to match iPhone: 80px circular buttons with letter labels (ABC, DEF, etc.), matching contacts appear as you type, backspace button next to green call button, phone number auto-formats as (XXX) XXX-XXXX
+### Sprint 2: "Today's Touchpoints" Frontend UI (COMPLETE — Tested)
+- **Home Screen (`home.tsx`):** New "Your Day" section with Touchpoints tile (mini scoreboard, progress bar, top 3 task previews) and Activity Feed tile
+- **Touchpoints Page (`/touchpoints`):** Horizontally scrolling scoreboard (actions + engagement), progress bar, My Performance card, filter pills (All/Overdue/Campaigns/Birthdays/Follow-ups), task cards with avatars/badges/suggested messages/action buttons (Call/Text/Done/Snooze), FAB for adding tasks
+- **My Performance Page (`/touchpoints/performance`):** Period toggle (Today/Week/Month), summary banner with trend %, Communication/Sharing/Engagement stat grids, Click-Through Breakdown list
+- **Add Task Page (`/touchpoints/add-task`):** Contact picker modal, task title/notes, date/time selector, priority toggles (High/Medium/Low), primary action type (Call/Text/Email/Card/Other), gold Save button
 
-### Thread & Composer Fixes (March 6, 2026)
-- Removed all "new contact" handling from inbox thread (isNewContact, tag picker, contact creation form, photo picker) — contact details should only be managed from the contact page
-- Fixed contact page composer to start as true single line (36px) matching inbox behavior — added numberOfLines={1} and content-aware height reset
-- Added global CSS `textarea { min-height: 0 }` to prevent browser default from inflating textarea height
+### Earlier Completed Features
+- Public REST API & outgoing webhooks
+- Soft-delete user system & data retention policy
+- Automated lifecycle scans (apscheduler)
+- Carrier-agnostic messaging (personal SMS fallback)
+- Centralized & trackable quick actions
+- Comprehensive reporting system with scheduled email delivery
+- White-label branded HTML emails via Resend
+- Quick Send flow overhaul
+- Inbox & Contact page fixes
+- Dialer redesign (iPhone-style)
+- Global CSS fixes (dark mode autofill, focus outlines)
 
-### Quick-Send Flow Rebuilt & Polished (March 6, 2026)
-- All 4 quick action tiles (Share My Card, Review Link, Send a Card, My Showcase) now use a dedicated quick-send page
-- **Visual overhaul:** Form now matches clean Add Contact styling — First/Last name split, card-based grouped inputs with dividers, no blue focus boxes, no yellow backgrounds, no colored borders
-- **Global CSS fix:** Injected browser focus outline suppression and autofill background override in `_layout.tsx`
-- **Corrected send flow:** SMS opens native phone messaging app (carrier-agnostic), Email sends via Resend backend, Copy Link copies to clipboard. All log events before showing confirmation
-- Flow: Enter first/last name + phone/email → duplicate match on phone → preview content with Preview button → choose SMS/Email/Copy Link → send → confirmation → auto-redirect to contact page
-- Send a Card has extra card type picker step (Congrats, Birthday, Holiday, Thank You, Anniversary, Welcome)
-- New contacts auto-created when phone doesn't match existing
-- All activity properly logged with correct event types
+## Prioritized Backlog
 
-### Add Contact Flow Overhaul (March 6, 2026)
-- "Add Contact" from home screen now goes **directly to the New Contact form** — no intermediate search modal
-- **Duplicate detection** on phone/email: as you type, the app checks for existing contacts and shows a match banner
-- **Voice recorder** on the form: record a voice note that gets transcribed and added to the Notes field
-- **Activity feed logging**: creating a new contact now appears in the Activity tab as "New Contact Added"
-- **Contacts tab auto-refreshes** when gaining focus (useFocusEffect) — no manual refresh needed
-- **Referred By picker** is now a full-screen modal with KeyboardAvoidingView — no more keyboard overlap
+### P0
+- ~~Sprint 2: Today's Touchpoints Frontend~~ DONE
+- ~~Sprint 3: Add Task Page~~ DONE
+- Gamification & Leaderboards (user has expressed strong interest)
 
-### Relationship Intel Panel Fix (March 6, 2026)
-- Fixed the Relationship Intel dropdown in the inbox thread view
-- Previously: either covered the whole screen (couldn't scroll) or compressed to one line (unusable)
-- Now: expands to fill space between the intel bar and the text input, hides messages while open, scrollable if content is long
-- Collapses back to show messages when tapped again
+### P1
+- Menu Reorganization
+- AI-Powered Outreach (contextual follow-up suggestions)
+- Refactor Authentication (bcrypt password hashing)
+- Push Notifications
 
-### Critical Bug Fix: Congrats Card Mislabeling (March 6, 2026)
-**Root Cause Identified & Fixed:** ALL card types (Birthday, Holiday, Thank You, Welcome, Anniversary) use the `/congrats/{card_id}` URL prefix. The old `resolve_event_type()` function had a simple pattern match `if '/congrats/' in content: return 'congrats_card_sent'` that caught ALL card types and mislabeled them.
+### P2
+- Full Twilio Integration (live)
+- WhatsApp Integration
+- Training Hub content
+- Inventory Management Module
+- Code cleanup (~80 files)
 
-**Multi-Layer Fix Applied:**
-1. **Backend `resolve_event_type()`** — Now performs a DB lookup on the `congrats_cards` collection to find the actual `card_type` when a `/congrats/` URL is detected, instead of blindly returning `congrats_card_sent`
-2. **Frontend `create-card.tsx`** — Now passes `event_type` parameter when navigating back to contact page or thread after card creation
-3. **Frontend `contact/[id].tsx`** — Now reads `event_type` from URL params and sets `composerEventType` state
-4. **Backend API title derivation** — Master feed and contact events endpoints always derive titles from `get_event_label(event_type)` using the centralized module, never trusting stored titles
-5. **Data migration endpoint** — `POST /api/contacts/admin/fix-event-types` fixes old events in the DB
-6. **45 regression tests pass** (38 unit + 7 API tests)
-
-### Previous Implementations
-- Centralized event type system (`event_types.py` / `eventTypes.ts`)
-- Photo gallery overhaul with EXIF orientation fix
-- Personal SMS fallback (carrier-agnostic messaging)
-- White-label branded emails via Resend
-- Comprehensive activity reporting system
-- Public REST API and webhook system
-- Soft-delete data retention system
-- Automated lifecycle scans via APScheduler
-
-## Key Files
-- `/app/backend/utils/event_types.py` — Single source of truth for ALL event types
-- `/app/frontend/utils/eventTypes.ts` — Frontend event label mapping
-- `/app/frontend/app/quick-send/[action].tsx` — Quick Send flow (all 4 tile types)
-- `/app/frontend/app/_layout.tsx` — Root layout with global CSS injection
-- `/app/backend/routers/contact_events.py` — Activity feed, events, migration endpoint
-- `/app/backend/routers/messages.py` — Message sending with channel routing
-- `/app/backend/routers/congrats_cards.py` — Card creation (all types)
-- `/app/backend/tests/test_event_types.py` — 38 unit regression tests
-- `/app/backend/tests/test_event_types_api.py` — 7 API integration tests
-- `/app/backend/tests/test_quick_send_flow.py` — Quick Send backend tests
-
-## Pending Issues
-- P0: User must deploy latest checkpoint to production and run migration endpoint
-- P0: Production email delivery (user must verify RESEND_API_KEY in production env)
+## Known Issues
+- P1: Production email delivery blocked (user needs to verify RESEND_API_KEY in production)
 - P2: React Hydration Error #418
-- P2: Mobile app tags data sync
+- P2: Mobile tags sync issue
 - P2: Leaderboard toggle not fully tested
-- P2: Reports endpoint 404 with missing date params
+- P2: Admin reports endpoint 404
 
-## Upcoming Tasks (Prioritized Backlog)
-- P0: Gamification & Leaderboards
-- P1: Automated Welcome Emails
-- P1: Quoting System
-- P1: AI-Powered Outreach
-- P1: Password hashing migration (bcrypt)
-- P1: Mobile push notifications
-- P1: Voice Help Assistant Backend
-- P2: Full Twilio Integration (live)
-- P2: WhatsApp Integration
-- P2: Training Hub content
-- P2: Inventory Management Module
-- P2: Code cleanup (~80 files)
+## Key API Endpoints
+- `GET /api/tasks/{user_id}` — Fetch tasks with filters
+- `GET /api/tasks/{user_id}/summary` — Daily scoreboard and progress
+- `GET /api/tasks/{user_id}/performance` — Performance stats by period
+- `POST /api/tasks/{user_id}` — Create manual task
+- `PATCH /api/tasks/{user_id}/{task_id}` — Update task (complete/snooze)
 
-## Credentials
+## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
-
-## 3rd Party Integrations
-- Resend (email), MongoDB Atlas, Twilio (MOCKED), OpenAI, Emergent Object Storage, Pillow
