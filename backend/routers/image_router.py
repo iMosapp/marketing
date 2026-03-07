@@ -197,17 +197,33 @@ async def cleanup_raw_image(path: str):
 @router.post("/migrate-all-base64")
 async def migrate_all_base64_images(
     background_tasks: BackgroundTasks,
+    body: dict = None,
     x_user_id: str = Header(None, alias="X-User-ID"),
 ):
     """
     Batch migrate ALL base64 images to optimized WebP.
     Runs as a background task — returns immediately with status URL.
     Super admin only. Safe to run multiple times.
+    Accepts user_id from body OR X-User-ID header.
     """
     db = get_db()
 
+    # Accept user_id from body or header
+    uid = None
+    if body and body.get("user_id"):
+        uid = body["user_id"]
+    elif x_user_id:
+        uid = x_user_id
+
+    if not uid:
+        raise HTTPException(status_code=400, detail="user_id required (in body or X-User-ID header)")
+
     from bson import ObjectId as ObjId
-    user = await db.users.find_one({"_id": ObjId(x_user_id)}, {"role": 1})
+    try:
+        user = await db.users.find_one({"_id": ObjId(uid)}, {"role": 1})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid user_id format")
+
     if not user or user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Super admin only")
 
@@ -222,7 +238,6 @@ async def migrate_all_base64_images(
                 "message": "A migration is already in progress. Check status for updates.",
             }
         else:
-            # Stale job — mark it as failed and allow a new run
             await db.migration_jobs.update_one(
                 {"_id": existing["_id"]},
                 {"$set": {"status": "failed", "completed_at": datetime.now(timezone.utc),
@@ -230,19 +245,17 @@ async def migrate_all_base64_images(
             )
             logger.warning(f"[Migration] Marked stale job as failed (age: {age_minutes:.0f}m)")
 
-    # Create a job record
     job_doc = {
         "type": "image_migration",
         "status": "running",
         "started_at": datetime.now(timezone.utc),
-        "started_by": x_user_id,
+        "started_by": uid,
         "progress": {},
         "result": None,
     }
     insert_result = await db.migration_jobs.insert_one(job_doc)
     job_id = str(insert_result.inserted_id)
 
-    # Run in background
     background_tasks.add_task(_run_migration, job_id)
 
     return {

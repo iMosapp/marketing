@@ -253,9 +253,7 @@ export default function AdminDashboard() {
     setMigrating(true);
     setMigrateResult(null);
     try {
-      const res = await api.post('/images/migrate-all-base64', {}, {
-        headers: { 'X-User-ID': user?._id },
-      });
+      const res = await api.post('/images/migrate-all-base64', { user_id: user?._id });
       const d = res.data;
       if (d.status === 'started' || d.status === 'already_running') {
         setMigrateResult('Migration running...');
