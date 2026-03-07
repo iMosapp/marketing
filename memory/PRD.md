@@ -41,33 +41,58 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### Migration:
 - `POST /api/images/migrate-all-base64` — batch migrates + backfills (super admin, safe to re-run)
+- Admin Dashboard → Internal Administration → "Migrate All Images" button (super admin only)
 
 ---
 
-## What's Been Implemented (This Session)
+## CRITICAL: Unified Card System — DO NOT REVERT
+
+**ALL card types (congrats, birthday, anniversary, thankyou, welcome, holiday) MUST use `congrats_cards.py`.**
+
+### Architecture:
+- `congrats_cards.py` is the SINGLE router for all card types
+- `auto_create_card(user_id, contact_id, card_type="birthday")` creates cards in `congrats_cards` collection
+- GET endpoints check `congrats_cards` first, then fall back to legacy `birthday_cards` collection
+- `birthday_cards.py` is LEGACY — its router is NOT registered in `server.py`
+- Scheduler, date_triggers, and tags all import from `congrats_cards.auto_create_card`
+
+### NEVER DO:
+- Import from `birthday_cards.py` — always use `congrats_cards.auto_create_card`
+- Create new cards in the `birthday_cards` collection
+- Re-register the `birthday_cards.router` in `server.py`
+
+---
+
+## What's Been Implemented
+
+### Unified Card System (Mar 2026)
+- Consolidated birthday_cards into congrats_cards as single unified system
+- All card types: congrats, birthday, anniversary, thankyou, welcome, holiday
+- Backward-compatible: old birthday cards still accessible via fallback queries
+- All auto-creation triggers updated (scheduler, date_triggers, tags)
+- Frontend birthday page uses unified /api/congrats/card/{cardId} endpoint
+
+### Image Migration Admin Button (Mar 2026)
+- Super admin "Migrate All Images" button in Admin Dashboard → Internal Administration
+- Calls POST /api/images/migrate-all-base64 with loading/success feedback
 
 ### Image Performance — Complete Platform Overhaul (Feb 2026)
-- **Showcase** — All 4 photo endpoints lazy-migrate, API returns direct `/api/images/` paths
-- **Digital Card** — `resolve_user_photo` + `resolve_store_logo` for all public card data
-- **Landing Page** — Same optimized resolvers
-- **Congrats Card** — Upload now uses image pipeline (not base64). GET uses `resolve_card_photo`
-- **Birthday Card** — Creation stores optimized URLs. GET uses optimized resolvers
-- **Profile** — Photo upload uses pipeline. GET uses resolvers
-- **Contact Gallery** — Returns URL paths (not base64 blobs)
-- **Review Link** — Fixed popup blocker (window.location.href)
-- **Batch Migration** — 27 images migrated, 4 backfilled, with auto-backfill step
-- **Shared Helper** — `utils/image_urls.py` centralizes all URL resolution
-- **$nin bug fixed** — Replaced all `{"$ne": None, "$ne": ""}` with `{"$nin": [None, ""]}`
+- Showcase, Digital Card, Congrats/Birthday Card, Landing Page, Profile, Contact Gallery
+- Batch migration endpoint, lazy migration, shared helper, $nin bug fixed
 
 ### Operations Manual v3.0 & PDF Export — COMPLETE
 ### Streamlined Client Onboarding — COMPLETE
 ### Admin Cleanup — Onboarding removed from admin areas
+### Carrier-Agnostic Messaging — Personal SMS fallback
+### Comprehensive Reporting System — Activity metrics with email delivery
+### White-Label Branded Emails — Dynamic HTML templates
 
 ## Prioritized Backlog
 
 ### P1
 - Google Places API (when key available), Permission Roles/Templates
 - AI-Powered Outreach, Auth refactor (bcrypt), Push Notifications
+- Gamification & Leaderboards, Voice Help Assistant
 
 ### P2
 - Full Twilio, WhatsApp, Training Hub, Inventory Module, Code cleanup
