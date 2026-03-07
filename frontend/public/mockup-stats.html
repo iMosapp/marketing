@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>My Performance</title>
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif; color:#fff; max-width:430px; margin:0 auto; min-height:100vh; }
+
+.header { display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid #2C2C2E; position:sticky; top:0; background:#000; z-index:10; }
+.back-btn { color:#C9A962; text-decoration:none; display:flex; align-items:center; padding:4px; margin-right:8px; }
+.back-btn ion-icon { font-size:24px; }
+.header-title { font-size:18px; font-weight:700; flex:1; }
+
+/* Period toggle */
+.period-toggle { display:flex; gap:4px; padding:16px 16px 14px; background:#000; }
+.period-btn { flex:1; padding:8px; border-radius:10px; text-align:center; font-size:13px; font-weight:600; background:#1C1C1E; color:#8E8E93; border:1px solid #2C2C2E; cursor:pointer; }
+.period-btn.active { background:#C9A962; color:#000; border-color:#C9A962; }
+
+/* Summary banner */
+.summary-banner { margin:0 16px 14px; background:#1C1C1E; border-radius:14px; padding:16px; border:1px solid #2C2C2E; display:flex; align-items:center; justify-content:space-between; }
+.summary-left {}
+.summary-num { font-size:32px; font-weight:800; }
+.summary-label { font-size:13px; color:#8E8E93; margin-top:2px; }
+.summary-trend { display:flex; align-items:center; gap:4px; padding:5px 10px; border-radius:12px; }
+.summary-trend ion-icon { font-size:16px; }
+.summary-trend-text { font-size:13px; font-weight:700; }
+
+.section-label { font-size:11px; font-weight:700; color:#48484A; letter-spacing:1.5px; text-transform:uppercase; padding:8px 16px 8px; }
+
+/* Stat grid — matches My Account exactly */
+.stat-grid { display:flex; gap:8px; padding:0 16px 8px; }
+.stat-card { flex:1; background:#1C1C1E; border-radius:12px; padding:12px; text-align:center; border:1px solid #2C2C2E; }
+.stat-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+.stat-icon ion-icon { font-size:18px; }
+.stat-num { font-size:22px; font-weight:700; }
+.stat-label { font-size:10px; color:#636366; font-weight:600; text-transform:uppercase; margin-top:2px; }
+
+/* Engagement section — bigger cards */
+.eng-grid { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 8px; }
+.eng-card { flex:1; min-width:calc(50% - 4px); background:#1C1C1E; border-radius:12px; padding:14px; border:1px solid #2C2C2E; }
+.eng-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.eng-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.eng-icon ion-icon { font-size:16px; }
+.eng-title { font-size:12px; color:#8E8E93; font-weight:600; }
+.eng-num { font-size:26px; font-weight:700; }
+.eng-sub { font-size:11px; color:#636366; margin-top:2px; }
+
+/* Click-through detail */
+.ctr-card { margin:0 16px 8px; background:#1C1C1E; border-radius:14px; border:1px solid #2C2C2E; overflow:hidden; }
+.ctr-row { display:flex; align-items:center; padding:12px 16px; gap:12px; }
+.ctr-row:not(:last-child) { border-bottom:1px solid #2C2C2E; }
+.ctr-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ctr-icon ion-icon { font-size:16px; }
+.ctr-info { flex:1; }
+.ctr-label { font-size:14px; font-weight:600; }
+.ctr-sub { font-size:11px; color:#636366; margin-top:1px; }
+.ctr-num { font-size:18px; font-weight:700; text-align:right; }
+
+.nav-link { display:block; text-align:center; padding:12px; font-size:13px; color:#C9A962; text-decoration:none; }
+.spacer { height:30px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back-btn" href="mockup-touchpoints.html"><ion-icon name="chevron-back"></ion-icon></a>
+  <div class="header-title">My Performance</div>
+</div>
+
+<!-- Period toggle -->
+<div class="period-toggle">
+  <div class="period-btn">Today</div>
+  <div class="period-btn active">This Week</div>
+  <div class="period-btn">This Month</div>
+  <div class="period-btn">Custom</div>
+</div>
+
+<!-- Summary -->
+<div class="summary-banner">
+  <div class="summary-left">
+    <div class="summary-num">147</div>
+    <div class="summary-label">Total Touchpoints</div>
+  </div>
+  <div class="summary-trend" style="background:rgba(52,199,89,0.12)">
+    <ion-icon name="trending-up" style="color:#34C759"></ion-icon>
+    <div class="summary-trend-text" style="color:#34C759">+23%</div>
+  </div>
+</div>
+
+<!-- Communication -->
+<div class="section-label">Communication</div>
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(0,122,255,0.12)"><ion-icon name="chatbubble" style="color:#007AFF"></ion-icon></div>
+    <div class="stat-num">82</div>
+    <div class="stat-label">Texts Sent</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(88,86,214,0.12)"><ion-icon name="mail" style="color:#5856D6"></ion-icon></div>
+    <div class="stat-num">24</div>
+    <div class="stat-label">Emails</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(52,199,89,0.12)"><ion-icon name="call" style="color:#34C759"></ion-icon></div>
+    <div class="stat-num">41</div>
+    <div class="stat-label">Calls</div>
+  </div>
+</div>
+
+<!-- Sharing -->
+<div class="section-label">Sharing</div>
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(201,169,98,0.12)"><ion-icon name="person-circle" style="color:#C9A962"></ion-icon></div>
+    <div class="stat-num">18</div>
+    <div class="stat-label">Cards Shared</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(255,214,10,0.12)"><ion-icon name="star" style="color:#FFD60A"></ion-icon></div>
+    <div class="stat-num">12</div>
+    <div class="stat-label">Reviews</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(255,150,0,0.12)"><ion-icon name="gift" style="color:#FF9500"></ion-icon></div>
+    <div class="stat-num">7</div>
+    <div class="stat-label">Congrats</div>
+  </div>
+</div>
+
+<!-- Engagement — this is the new stuff -->
+<div class="section-label">Engagement & Click-Throughs</div>
+<div class="eng-grid">
+  <div class="eng-card">
+    <div class="eng-header">
+      <div class="eng-icon" style="background:rgba(255,55,95,0.12)"><ion-icon name="finger-print" style="color:#FF375F"></ion-icon></div>
+      <div class="eng-title">Link Clicks</div>
+    </div>
+    <div class="eng-num" style="color:#FF375F">34</div>
+    <div class="eng-sub">People viewing your content</div>
+  </div>
+  <div class="eng-card">
+    <div class="eng-header">
+      <div class="eng-icon" style="background:rgba(175,82,222,0.12)"><ion-icon name="mail-open" style="color:#AF52DE"></ion-icon></div>
+      <div class="eng-title">Email Opens</div>
+    </div>
+    <div class="eng-num" style="color:#AF52DE">18</div>
+    <div class="eng-sub">75% open rate</div>
+  </div>
+  <div class="eng-card">
+    <div class="eng-header">
+      <div class="eng-icon" style="background:rgba(255,150,0,0.12)"><ion-icon name="chatbubble-ellipses" style="color:#FF9500"></ion-icon></div>
+      <div class="eng-title">Replies</div>
+    </div>
+    <div class="eng-num" style="color:#FF9500">9</div>
+    <div class="eng-sub">Customers responding</div>
+  </div>
+  <div class="eng-card">
+    <div class="eng-header">
+      <div class="eng-icon" style="background:rgba(50,173,230,0.12)"><ion-icon name="person-add" style="color:#32ADE6"></ion-icon></div>
+      <div class="eng-title">New Leads</div>
+    </div>
+    <div class="eng-num" style="color:#32ADE6">5</div>
+    <div class="eng-sub">Contacts added this week</div>
+  </div>
+</div>
+
+<!-- Click-through breakdown -->
+<div class="section-label">Click-Through Breakdown</div>
+<div class="ctr-card">
+  <div class="ctr-row">
+    <div class="ctr-icon" style="background:rgba(201,169,98,0.12)"><ion-icon name="card" style="color:#C9A962"></ion-icon></div>
+    <div class="ctr-info">
+      <div class="ctr-label">Digital Card Views</div>
+      <div class="ctr-sub">People who opened your card</div>
+    </div>
+    <div class="ctr-num" style="color:#C9A962">16</div>
+  </div>
+  <div class="ctr-row">
+    <div class="ctr-icon" style="background:rgba(255,214,10,0.12)"><ion-icon name="star" style="color:#FFD60A"></ion-icon></div>
+    <div class="ctr-info">
+      <div class="ctr-label">Review Link Clicks</div>
+      <div class="ctr-sub">People who clicked your review link</div>
+    </div>
+    <div class="ctr-num" style="color:#FFD60A">11</div>
+  </div>
+  <div class="ctr-row">
+    <div class="ctr-icon" style="background:rgba(52,199,89,0.12)"><ion-icon name="storefront" style="color:#34C759"></ion-icon></div>
+    <div class="ctr-info">
+      <div class="ctr-label">Showcase Views</div>
+      <div class="ctr-sub">People browsing your showcase</div>
+    </div>
+    <div class="ctr-num" style="color:#34C759">7</div>
+  </div>
+  <div class="ctr-row">
+    <div class="ctr-icon" style="background:rgba(175,82,222,0.12)"><ion-icon name="link" style="color:#AF52DE"></ion-icon></div>
+    <div class="ctr-info">
+      <div class="ctr-label">Link Page Visits</div>
+      <div class="ctr-sub">Your personal link page views</div>
+    </div>
+    <div class="ctr-num" style="color:#AF52DE">8</div>
+  </div>
+</div>
+
+<a class="nav-link" href="mockup-touchpoints.html">Back to Touchpoints</a>
+<a class="nav-link" href="mockup-home.html">Back to Home</a>
+<div class="spacer"></div>
+</body>
+</html>
