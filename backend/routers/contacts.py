@@ -311,25 +311,34 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     update_dict = contact_data.dict()
     update_dict['updated_at'] = datetime.utcnow()
     
-    # Process photo if it's a new base64 upload → generate thumbnail + high-res
+    # Process photo if it's a new base64 upload → compress to WebP via image pipeline
     photo_val = update_dict.get('photo')
     if photo_val and (photo_val.startswith('data:') or len(photo_val) > 1000):
         try:
-            thumbnail, high_res = await _process_photo(photo_val)
-            update_dict['photo_thumbnail'] = thumbnail
-            update_dict['photo_url'] = thumbnail
-            # Don't store the huge raw base64 in the contacts collection
-            update_dict.pop('photo', None)
-            # Store high-res in separate collection
-            db = get_db()
-            await db.contact_photos.update_one(
-                {"contact_id": contact_id},
-                {"$set": {"contact_id": contact_id, "user_id": user_id, "photo_full": high_res, "updated_at": datetime.utcnow()}},
-                upsert=True
-            )
+            from utils.image_storage import upload_image
+            result = await upload_image(photo_val, prefix="contacts", entity_id=contact_id)
+            if result:
+                update_dict['photo_path'] = result['original_path']
+                update_dict['photo_thumb_path'] = result['thumbnail_path']
+                update_dict['photo_avatar_path'] = result['avatar_path']
+                update_dict['photo_thumbnail'] = f"/api/images/{result['thumbnail_path']}"
+                update_dict['photo_url'] = f"/api/images/{result['thumbnail_path']}"
+                # Don't store the huge raw base64 in the contacts collection
+                update_dict.pop('photo', None)
+            else:
+                # Fallback to old processing
+                thumbnail, high_res = await _process_photo(photo_val)
+                update_dict['photo_thumbnail'] = thumbnail
+                update_dict['photo_url'] = thumbnail
+                update_dict.pop('photo', None)
+                db = get_db()
+                await db.contact_photos.update_one(
+                    {"contact_id": contact_id},
+                    {"$set": {"contact_id": contact_id, "user_id": user_id, "photo_full": high_res, "updated_at": datetime.utcnow()}},
+                    upsert=True
+                )
         except Exception as e:
             logger.error(f"Photo processing during update failed: {e}")
-            # Keep the raw photo as fallback
             update_dict['photo_url'] = photo_val
     
     # Auto-tag based on date fields
@@ -593,18 +602,27 @@ async def upload_contact_photo(user_id: str, contact_id: str, photo_data: dict):
     
     update_fields = {"updated_at": datetime.utcnow()}
     
-    # If it's base64 data, generate a thumbnail
+    # If it's base64 data, compress to WebP via image pipeline
     if photo_url.startswith('data:') or len(photo_url) > 1000:
         try:
-            thumbnail, high_res = await _process_photo(photo_url)
-            update_fields["photo_thumbnail"] = thumbnail  # ~5KB for avatars
-            update_fields["photo_url"] = thumbnail  # Use thumbnail as default
-            # Store high-res in separate collection to keep contacts lightweight
-            await db.contact_photos.update_one(
-                {"contact_id": contact_id},
-                {"$set": {"contact_id": contact_id, "user_id": user_id, "photo_full": high_res, "updated_at": datetime.utcnow()}},
-                upsert=True
-            )
+            from utils.image_storage import upload_image
+            result = await upload_image(photo_url, prefix="contacts", entity_id=contact_id)
+            if result:
+                update_fields["photo_path"] = result["original_path"]
+                update_fields["photo_thumb_path"] = result["thumbnail_path"]
+                update_fields["photo_avatar_path"] = result["avatar_path"]
+                update_fields["photo_thumbnail"] = f"/api/images/{result['thumbnail_path']}"
+                update_fields["photo_url"] = f"/api/images/{result['thumbnail_path']}"
+            else:
+                # Fallback
+                thumbnail, high_res = await _process_photo(photo_url)
+                update_fields["photo_thumbnail"] = thumbnail
+                update_fields["photo_url"] = thumbnail
+                await db.contact_photos.update_one(
+                    {"contact_id": contact_id},
+                    {"$set": {"contact_id": contact_id, "user_id": user_id, "photo_full": high_res, "updated_at": datetime.utcnow()}},
+                    upsert=True
+                )
         except Exception as e:
             logger.error(f"Photo processing failed: {e}")
             update_fields["photo_url"] = photo_url
@@ -724,26 +742,66 @@ async def regenerate_thumbnails():
 
 @router.get("/{user_id}/{contact_id}/photos/all")
 async def get_all_contact_photos(user_id: str, contact_id: str):
-    """Get all photos for a contact with thumbnail + full URLs for fast gallery loading."""
+    """Get all photos for a contact — returns optimized URLs, lazy-migrates base64 to WebP."""
     db = get_db()
     photos = []
 
     try:
         contact = await db.contacts.find_one(
             {"_id": ObjectId(contact_id)},
-            {"photo": 1, "photo_thumbnail": 1, "first_name": 1, "phone": 1}
+            {"photo": 1, "photo_thumbnail": 1, "photo_path": 1, "photo_thumb_path": 1, "first_name": 1, "phone": 1}
         )
     except Exception:
         contact = None
 
-    # 1. Profile photo
-    if contact and contact.get("photo"):
-        photos.append({
-            "type": "profile",
-            "label": "Profile Photo",
-            "url": contact["photo"],
-            "thumbnail_url": contact.get("photo_thumbnail") or contact["photo"],
-        })
+    # 1. Profile photo — use optimized path if available, else lazy-migrate
+    if contact:
+        if contact.get("photo_path"):
+            # Already migrated to object storage
+            photos.append({
+                "type": "profile",
+                "label": "Profile Photo",
+                "url": f"/api/images/{contact['photo_path']}",
+                "thumbnail_url": f"/api/images/{contact.get('photo_thumb_path', contact['photo_path'])}",
+            })
+        elif contact.get("photo") and (contact["photo"].startswith("data:") or len(contact.get("photo", "")) > 500):
+            # Lazy-migrate profile photo to object storage
+            try:
+                from utils.image_storage import upload_image
+                result = await upload_image(contact["photo"], prefix="contacts", entity_id=contact_id)
+                if result:
+                    await db.contacts.update_one(
+                        {"_id": ObjectId(contact_id)},
+                        {"$set": {
+                            "photo_path": result["original_path"],
+                            "photo_thumb_path": result["thumbnail_path"],
+                            "photo_avatar_path": result["avatar_path"],
+                            "photo_thumbnail": f"/api/images/{result['thumbnail_path']}",
+                            "photo_url": f"/api/images/{result['thumbnail_path']}",
+                        }}
+                    )
+                    photos.append({
+                        "type": "profile",
+                        "label": "Profile Photo",
+                        "url": f"/api/images/{result['original_path']}",
+                        "thumbnail_url": f"/api/images/{result['thumbnail_path']}",
+                    })
+            except Exception as e:
+                logger.warning(f"Profile photo migration failed for contact {contact_id}: {e}")
+                # Fallback to base64 thumbnail
+                photos.append({
+                    "type": "profile",
+                    "label": "Profile Photo",
+                    "url": contact.get("photo_thumbnail") or contact["photo"],
+                    "thumbnail_url": contact.get("photo_thumbnail") or contact["photo"],
+                })
+        elif contact.get("photo") and contact["photo"].startswith("/api/images/"):
+            photos.append({
+                "type": "profile",
+                "label": "Profile Photo",
+                "url": contact["photo"],
+                "thumbnail_url": contact.get("photo_thumbnail") or contact["photo"],
+            })
 
     # 2. Congrats card photos
     congrats_filter = {"$or": []}
@@ -757,19 +815,24 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
     if congrats_filter["$or"]:
         congrats = await db.congrats_cards.find(
             congrats_filter,
-            {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1,
-             "photo_url": 1, "photo_thumbnail_url": 1, "_id": 1}
+            {"card_id": 1, "customer_name": 1, "created_at": 1,
+             "photo_path": 1, "photo_thumb_path": 1,
+             "photo_url": 1, "photo_thumbnail_url": 1,
+             "customer_photo": 1, "_id": 1}
         ).sort("created_at", -1).to_list(50)
         for c in congrats:
-            # Use optimized URLs if already migrated to object storage
-            if c.get("photo_url") and c["photo_url"].startswith("/api/images/"):
+            # Priority: migrated path > /api/images URL > lazy-migrate base64
+            if c.get("photo_path"):
+                full_url = f"/api/images/{c['photo_path']}"
+                thumb_url = f"/api/images/{c.get('photo_thumb_path', c['photo_path'])}"
+            elif c.get("photo_url") and c["photo_url"].startswith("/api/images/"):
                 full_url = c["photo_url"]
                 thumb_url = c.get("photo_thumbnail_url") or full_url
             elif c.get("customer_photo") and c["customer_photo"].startswith("/api/images/"):
                 full_url = c["customer_photo"]
                 thumb_url = full_url
-            elif c.get("customer_photo") and c["customer_photo"].startswith("data:"):
-                # Lazy-migrate base64 to object storage for speed
+            elif c.get("customer_photo") and (c["customer_photo"].startswith("data:") or len(c.get("customer_photo", "")) > 500):
+                # Lazy-migrate base64 to object storage
                 try:
                     from utils.image_storage import upload_image
                     result = await upload_image(c["customer_photo"], prefix="congrats", entity_id=contact_id)
@@ -778,7 +841,12 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                         thumb_url = f"/api/images/{result['thumbnail_path']}"
                         await db.congrats_cards.update_one(
                             {"_id": c["_id"]},
-                            {"$set": {"photo_url": full_url, "photo_thumbnail_url": thumb_url}}
+                            {"$set": {
+                                "photo_path": result["original_path"],
+                                "photo_thumb_path": result["thumbnail_path"],
+                                "photo_url": full_url,
+                                "photo_thumbnail_url": thumb_url,
+                            }}
                         )
                     else:
                         full_url = f"/api/showcase/photo/{c.get('card_id')}"
@@ -803,26 +871,31 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
     bday_cards = await db.birthday_cards.find(
         {"contact_id": contact_id},
         {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1,
+         "photo_path": 1, "photo_thumb_path": 1,
          "photo_url": 1, "photo_thumbnail_url": 1, "_id": 1}
     ).sort("created_at", -1).to_list(50)
     for bc in bday_cards:
-        photo = bc.get("customer_photo", "")
-        if bc.get("photo_url") and bc["photo_url"].startswith("/api/images/"):
+        if bc.get("photo_path"):
+            full_url = f"/api/images/{bc['photo_path']}"
+            thumb_url = f"/api/images/{bc.get('photo_thumb_path', bc['photo_path'])}"
+        elif bc.get("photo_url") and bc["photo_url"].startswith("/api/images/"):
             full_url = bc["photo_url"]
             thumb_url = bc.get("photo_thumbnail_url") or full_url
-        elif photo and photo.startswith("/api/images/"):
-            full_url = photo
-            thumb_url = photo
-        elif photo and photo.startswith("data:"):
+        elif bc.get("customer_photo") and (bc["customer_photo"].startswith("data:") or len(bc.get("customer_photo", "")) > 500):
             try:
                 from utils.image_storage import upload_image
-                result = await upload_image(photo, prefix="birthday", entity_id=contact_id)
+                result = await upload_image(bc["customer_photo"], prefix="birthday", entity_id=contact_id)
                 if result:
                     full_url = f"/api/images/{result['original_path']}"
                     thumb_url = f"/api/images/{result['thumbnail_path']}"
                     await db.birthday_cards.update_one(
                         {"_id": bc["_id"]},
-                        {"$set": {"photo_url": full_url, "photo_thumbnail_url": thumb_url}}
+                        {"$set": {
+                            "photo_path": result["original_path"],
+                            "photo_thumb_path": result["thumbnail_path"],
+                            "photo_url": full_url,
+                            "photo_thumbnail_url": thumb_url,
+                        }}
                     )
                 else:
                     full_url = f"/api/birthday/photo/{bc.get('card_id')}"
@@ -830,9 +903,9 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             except Exception:
                 full_url = f"/api/birthday/photo/{bc.get('card_id')}"
                 thumb_url = full_url
-        elif photo and photo.startswith("http"):
-            full_url = photo
-            thumb_url = photo
+        elif bc.get("customer_photo") and bc["customer_photo"].startswith("http"):
+            full_url = bc["customer_photo"]
+            thumb_url = bc["customer_photo"]
         else:
             continue
 

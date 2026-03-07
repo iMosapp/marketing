@@ -474,34 +474,65 @@ async def get_manage_showcase(user_id: str):
 
 @router.get("/photo/{card_id}")
 async def get_showcase_photo(card_id: str):
-    """Serve a congrats card customer photo as an actual image (not base64 JSON)."""
+    """Serve a congrats card customer photo — optimized with lazy migration to WebP."""
     db = get_db()
 
     card = await db.congrats_cards.find_one(
         {"card_id": card_id},
-        {"customer_photo": 1}
+        {"customer_photo": 1, "photo_path": 1, "_id": 1}
     )
-    if not card or not card.get("customer_photo"):
+    if not card:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    photo_data = card["customer_photo"]
+    # Fast path: already migrated to object storage
+    if card.get("photo_path"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(
+            url=f"/api/images/{card['photo_path']}",
+            status_code=301,
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
 
-    # Parse base64 data URI: "data:image/png;base64,iVBOR..."
+    photo_data = card.get("customer_photo")
+    if not photo_data:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Lazy-migrate base64 → WebP in object storage
+    if photo_data.startswith("data:") or len(photo_data) > 500:
+        try:
+            from utils.image_storage import upload_image
+            result = await upload_image(photo_data, prefix="congrats", entity_id=card_id)
+            if result:
+                await db.congrats_cards.update_one(
+                    {"_id": card["_id"]},
+                    {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                        "photo_avatar_path": result["avatar_path"],
+                    }}
+                )
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(
+                    url=f"/api/images/{result['original_path']}",
+                    status_code=301,
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                )
+        except Exception as e:
+            logger.warning(f"Lazy migration failed for card {card_id}: {e}")
+
+    # Fallback: serve raw base64 (should rarely happen)
     if photo_data.startswith("data:"):
         parts = photo_data.split(",", 1)
         if len(parts) == 2:
-            header = parts[0]  # "data:image/png;base64"
-            b64_data = parts[1]
-            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            mime = parts[0].split(":")[1].split(";")[0] if ":" in parts[0] else "image/png"
             try:
-                image_bytes = base64.b64decode(b64_data)
+                image_bytes = base64.b64decode(parts[1])
                 return Response(content=image_bytes, media_type=mime, headers={
-                    "Cache-Control": "public, max-age=86400",
+                    "Cache-Control": "public, max-age=3600",
                 })
             except Exception:
                 raise HTTPException(status_code=500, detail="Failed to decode photo")
 
-    # If it's a URL, redirect to it
     if photo_data.startswith("http"):
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url=photo_data)
@@ -510,7 +541,7 @@ async def get_showcase_photo(card_id: str):
 
 @router.get("/feedback-photo/{feedback_id}")
 async def get_feedback_photo(feedback_id: str):
-    """Serve a customer feedback photo as an actual image."""
+    """Serve a customer feedback photo — optimized with lazy migration."""
     db = get_db()
 
     try:
@@ -520,23 +551,54 @@ async def get_feedback_photo(feedback_id: str):
 
     feedback = await db.customer_feedback.find_one(
         {"_id": oid},
-        {"purchase_photo_url": 1}
+        {"purchase_photo_url": 1, "photo_path": 1}
     )
-    if not feedback or not feedback.get("purchase_photo_url"):
+    if not feedback:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    photo_data = feedback["purchase_photo_url"]
+    # Fast path: already migrated
+    if feedback.get("photo_path"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(
+            url=f"/api/images/{feedback['photo_path']}",
+            status_code=301,
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
+
+    photo_data = feedback.get("purchase_photo_url")
+    if not photo_data:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Lazy-migrate
+    if photo_data.startswith("data:") or len(photo_data) > 500:
+        try:
+            from utils.image_storage import upload_image
+            result = await upload_image(photo_data, prefix="feedback", entity_id=feedback_id)
+            if result:
+                await db.customer_feedback.update_one(
+                    {"_id": oid},
+                    {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                    }}
+                )
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(
+                    url=f"/api/images/{result['original_path']}",
+                    status_code=301,
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                )
+        except Exception as e:
+            logger.warning(f"Lazy migration failed for feedback {feedback_id}: {e}")
 
     if photo_data.startswith("data:"):
         parts = photo_data.split(",", 1)
         if len(parts) == 2:
-            header = parts[0]
-            b64_data = parts[1]
-            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            mime = parts[0].split(":")[1].split(";")[0] if ":" in parts[0] else "image/png"
             try:
-                image_bytes = base64.b64decode(b64_data)
+                image_bytes = base64.b64decode(parts[1])
                 return Response(content=image_bytes, media_type=mime, headers={
-                    "Cache-Control": "public, max-age=86400",
+                    "Cache-Control": "public, max-age=3600",
                 })
             except Exception:
                 raise HTTPException(status_code=500, detail="Failed to decode photo")
@@ -548,23 +610,59 @@ async def get_feedback_photo(feedback_id: str):
 
 @router.get("/user-photo/{user_id}")
 async def get_user_photo(user_id: str):
-    """Serve a user's profile photo as an actual image."""
+    """Serve a user's profile photo — optimized with lazy migration to WebP."""
     db = get_db()
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"photo_url": 1})
-    if not user or not user.get("photo_url"):
+    user = await db.users.find_one(
+        {"_id": ObjectId(user_id)},
+        {"photo_url": 1, "photo_path": 1}
+    )
+    if not user:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    photo_data = user["photo_url"]
+    # Fast path: already migrated
+    if user.get("photo_path"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(
+            url=f"/api/images/{user['photo_path']}",
+            status_code=301,
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
+
+    photo_data = user.get("photo_url")
+    if not photo_data:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Lazy-migrate
+    if photo_data.startswith("data:") or len(photo_data) > 500:
+        try:
+            from utils.image_storage import upload_image
+            result = await upload_image(photo_data, prefix="profiles", entity_id=user_id)
+            if result:
+                await db.users.update_one(
+                    {"_id": ObjectId(user_id)},
+                    {"$set": {
+                        "photo_path": result["original_path"],
+                        "photo_thumb_path": result["thumbnail_path"],
+                        "photo_avatar_path": result["avatar_path"],
+                    }}
+                )
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(
+                    url=f"/api/images/{result['original_path']}",
+                    status_code=301,
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                )
+        except Exception as e:
+            logger.warning(f"Lazy migration failed for user {user_id}: {e}")
+
     if photo_data.startswith("data:"):
         parts = photo_data.split(",", 1)
         if len(parts) == 2:
-            header = parts[0]
-            b64_data = parts[1]
-            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            mime = parts[0].split(":")[1].split(";")[0] if ":" in parts[0] else "image/png"
             try:
-                image_bytes = base64.b64decode(b64_data)
+                image_bytes = base64.b64decode(parts[1])
                 return Response(content=image_bytes, media_type=mime, headers={
-                    "Cache-Control": "public, max-age=86400",
+                    "Cache-Control": "public, max-age=3600",
                 })
             except Exception:
                 raise HTTPException(status_code=500, detail="Failed to decode photo")
@@ -576,23 +674,59 @@ async def get_user_photo(user_id: str):
 
 @router.get("/store-logo/{store_id}")
 async def get_store_logo(store_id: str):
-    """Serve a store's logo as an actual image."""
+    """Serve a store's logo — optimized with lazy migration to WebP."""
     db = get_db()
-    store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"logo_url": 1})
-    if not store or not store.get("logo_url"):
+    store = await db.stores.find_one(
+        {"_id": ObjectId(store_id)},
+        {"logo_url": 1, "logo_path": 1}
+    )
+    if not store:
         raise HTTPException(status_code=404, detail="Logo not found")
 
-    photo_data = store["logo_url"]
+    # Fast path: already migrated
+    if store.get("logo_path"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(
+            url=f"/api/images/{store['logo_path']}",
+            status_code=301,
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
+
+    photo_data = store.get("logo_url")
+    if not photo_data:
+        raise HTTPException(status_code=404, detail="Logo not found")
+
+    # Lazy-migrate
+    if photo_data.startswith("data:") or len(photo_data) > 500:
+        try:
+            from utils.image_storage import upload_image
+            result = await upload_image(photo_data, prefix="logos", entity_id=store_id)
+            if result:
+                await db.stores.update_one(
+                    {"_id": ObjectId(store_id)},
+                    {"$set": {
+                        "logo_path": result["original_path"],
+                        "logo_thumb_path": result["thumbnail_path"],
+                        "logo_avatar_path": result["avatar_path"],
+                    }}
+                )
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(
+                    url=f"/api/images/{result['original_path']}",
+                    status_code=301,
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                )
+        except Exception as e:
+            logger.warning(f"Lazy migration failed for store logo {store_id}: {e}")
+
     if photo_data.startswith("data:"):
         parts = photo_data.split(",", 1)
         if len(parts) == 2:
-            header = parts[0]
-            b64_data = parts[1]
-            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/png"
+            mime = parts[0].split(":")[1].split(";")[0] if ":" in parts[0] else "image/png"
             try:
-                image_bytes = base64.b64decode(b64_data)
+                image_bytes = base64.b64decode(parts[1])
                 return Response(content=image_bytes, media_type=mime, headers={
-                    "Cache-Control": "public, max-age=86400",
+                    "Cache-Control": "public, max-age=3600",
                 })
             except Exception:
                 raise HTTPException(status_code=500, detail="Failed to decode logo")

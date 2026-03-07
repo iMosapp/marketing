@@ -61,7 +61,12 @@ export default function PublicReviewPage() {
     } catch (e) {
       // Don't block the redirect if tracking fails
     }
-    Linking.openURL(url);
+    // Use direct navigation on web to avoid popup blockers
+    if (Platform.OS === 'web') {
+      window.location.href = url;
+    } else {
+      Linking.openURL(url);
+    }
   };
 
   const handleSubmitFeedback = async () => {

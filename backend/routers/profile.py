@@ -143,34 +143,46 @@ async def update_profile(user_id: str, data: dict):
 
 @router.post("/{user_id}/photo")
 async def upload_photo(user_id: str, file: UploadFile = File(...)):
-    """Upload profile photo - stores as base64 data URL for simplicity"""
+    """Upload profile photo - compresses to WebP, generates thumbnails, serves from CDN cache."""
     db = get_db()
     
-    # Validate file type
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    # Read and encode the image
     contents = await file.read()
     
-    # Limit file size (2MB)
-    if len(contents) > 2 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image must be less than 2MB")
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
     
-    # Convert to base64 data URL
-    base64_data = base64.b64encode(contents).decode('utf-8')
-    photo_url = f"data:{file.content_type};base64,{base64_data}"
+    # Use the optimized image pipeline — compress → WebP → thumbnail → avatar → cache
+    from utils.image_storage import upload_image
+    result = await upload_image(contents, prefix="profiles", entity_id=user_id)
+    if not result:
+        raise HTTPException(status_code=500, detail="Image processing failed")
     
-    # Update user
-    result = await db.users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"photo_url": photo_url, "updated_at": datetime.utcnow()}}
-    )
+    original_url = f"/api/images/{result['original_path']}"
+    thumb_url = f"/api/images/{result['thumbnail_path']}"
+    avatar_url = f"/api/images/{result['avatar_path']}"
     
-    if result.modified_count == 0:
+    # Store optimized paths (NOT base64)
+    update = {
+        "photo_url": original_url,
+        "photo_path": result["original_path"],
+        "photo_thumb_path": result["thumbnail_path"],
+        "photo_avatar_path": result["avatar_path"],
+        "updated_at": datetime.utcnow(),
+    }
+    
+    r = await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update})
+    if r.modified_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return {"success": True, "photo_url": photo_url}
+    return {
+        "success": True,
+        "photo_url": original_url,
+        "thumbnail_url": thumb_url,
+        "avatar_url": avatar_url,
+    }
 
 
 @router.post("/{user_id}/generate-bio")
