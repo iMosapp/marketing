@@ -3579,3 +3579,46 @@ async def backfill_all_user_defaults():
         import traceback
         logger.error(f"Backfill error: {traceback.format_exc()}")
         return {"status": "error", "message": str(e)}
+
+
+
+# ============= FEATURE PERMISSIONS =============
+
+@router.get("/permissions/{user_id}")
+async def get_user_permissions(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Get a user's feature permissions (merged with defaults)."""
+    from permissions import merge_permissions
+    requesting = await get_requesting_user(x_user_id)
+    db = get_db()
+    target = await db.users.find_one({"_id": ObjectId(user_id)}, {"feature_permissions": 1, "name": 1, "email": 1, "role": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    perms = merge_permissions(target.get("feature_permissions"))
+    return {
+        "user_id": user_id,
+        "name": target.get("name", ""),
+        "email": target.get("email", ""),
+        "role": target.get("role", "user"),
+        "permissions": perms,
+    }
+
+
+@router.put("/permissions/{user_id}")
+async def update_user_permissions(user_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Update a user's feature permissions. Only admins can call this."""
+    requesting = await get_requesting_user(x_user_id)
+    req_role = requesting.get("role", "user")
+    if req_role not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="Only admins can manage permissions")
+    db = get_db()
+    target = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    permissions = data.get("permissions", {})
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"feature_permissions": permissions, "permissions_updated_at": datetime.utcnow()}}
+    )
+    from permissions import merge_permissions
+    return {"status": "ok", "permissions": merge_permissions(permissions)}

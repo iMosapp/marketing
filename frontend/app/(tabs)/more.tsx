@@ -391,440 +391,130 @@ export default function MoreScreen() {
   const isSuperAdmin = user?.role === 'super_admin';
   const isIndependent = !user?.organization_id;
 
-  // Define all sections with their items
-  const sections: Section[] = [
-    // Tools - Daily use items not on the Home tab
-    {
-      id: 'tools',
-      title: 'Tools',
-      icon: 'apps',
-      color: '#007AFF',
-      defaultExpanded: true,
-      items: [
-        {
-          icon: 'chatbox-ellipses',
-          title: 'Team Chat',
-          subtitle: 'Internal team messaging',
-          onPress: () => router.push('/(tabs)/team'),
-          color: '#5856D6',
-        },
-        {
-          icon: 'checkmark-done',
-          title: 'Tasks & Reminders',
-          subtitle: 'Manage follow-ups',
-          onPress: () => router.push('/tasks'),
-          color: '#34C759',
-        },
-        {
-          icon: 'sparkles',
-          title: 'Ask Jessi',
-          subtitle: 'Your AI assistant',
-          onPress: () => router.push('/jessie'),
-          color: '#C9A962',
-        },
-        {
-          icon: 'school',
-          title: 'Training Hub',
-          subtitle: "Learn how to use i'M On Social",
-          onPress: () => router.push('/training-hub'),
-          color: '#FF9500',
-        },
-      ],
-    },
-    // Campaigns & Outreach
-    {
-      id: 'campaigns',
-      title: 'Campaigns',
-      icon: 'rocket',
-      color: '#FF2D55',
-      items: [
-        {
-          icon: 'chatbubbles',
-          title: 'SMS Campaigns',
-          subtitle: 'Automated SMS follow-ups',
-          onPress: () => router.push('/campaigns'),
-          color: '#FF2D55',
-        },
-        {
-          icon: 'mail',
-          title: 'Email Campaigns',
-          subtitle: 'Automated email follow-ups',
-          onPress: () => router.push('/campaigns/email'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'speedometer',
-          title: 'Campaign Dashboard',
-          subtitle: 'View enrollments',
-          onPress: () => router.push('/campaigns/dashboard'),
-          color: '#5AC8FA',
-        },
-        {
-          icon: 'megaphone',
-          title: 'Broadcast',
-          subtitle: 'Mass messaging',
-          onPress: () => router.push('/broadcast'),
-          color: '#FF9500',
-        },
-        {
-          icon: 'calendar-outline',
-          title: 'Date Triggers',
-          subtitle: 'Birthdays, anniversaries, holidays',
-          onPress: () => router.push('/settings/date-triggers'),
-          color: '#FF9500',
-        },
-      ],
-    },
-    // Reports & Performance
-    {
-      id: 'performance',
-      title: 'Reports',
-      icon: 'stats-chart',
-      color: '#34C759',
-      items: [
-        {
-          icon: 'bar-chart',
-          title: 'Activity Reports',
-          subtitle: 'Activity reports & analytics',
-          onPress: () => router.push('/reports/activity'),
-          color: '#007AFF',
-        },
-        {
-          icon: 'stats-chart',
-          title: 'Analytics',
-          subtitle: 'Performance metrics',
-          onPress: () => router.push('/analytics'),
-          color: '#34C759',
-        },
-        {
-          icon: 'bar-chart',
-          title: 'Email Analytics',
-          subtitle: 'Opens, clicks, engagement',
-          onPress: () => router.push('/settings/email-analytics'),
-          color: '#FF2D55',
-        },
-        {
-          icon: 'trophy',
-          title: 'My Rankings',
-          subtitle: 'Your personal performance',
-          onPress: () => router.push('/admin/my-rankings'),
-          color: '#FFD60A',
-        },
-        {
-          icon: 'podium',
-          title: 'Leaderboard',
-          subtitle: 'Team rankings & performance',
-          onPress: () => router.push('/admin/leaderboard'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'analytics',
-          title: 'Lead Attribution',
-          subtitle: 'Demo requests, sources & referrals',
-          onPress: () => router.push('/admin/lead-tracking'),
-          color: '#C9A962',
-        },
-      ],
-    },
-    // Templates & Branding
-    {
-      id: 'templates',
-      title: 'Templates & Branding',
-      icon: 'color-palette',
-      color: '#AF52DE',
-      items: [
-        {
-          icon: 'document-text',
-          title: 'SMS Templates',
-          subtitle: 'Create SMS templates',
-          onPress: () => router.push('/settings/templates'),
-          color: '#FFD60A',
-        },
-        {
-          icon: 'mail-outline',
-          title: 'Email Templates',
-          subtitle: 'Create email templates',
-          onPress: () => router.push('/settings/email-templates'),
-          color: '#34C759',
-        },
-        {
-          icon: 'color-palette-outline',
-          title: 'Card Templates',
-          subtitle: 'Customize card designs & messages',
-          onPress: () => router.push('/settings/card-templates'),
-          color: '#FF9500',
-        },
-        {
-          icon: 'color-palette',
-          title: 'Brand Kit',
-          subtitle: 'Email branding & colors',
-          onPress: () => router.push('/settings/brand-kit'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'images',
-          title: 'Manage Showcase',
-          subtitle: 'Edit your happy customers page',
-          onPress: () => router.push(`/showroom-manage` as any),
-          color: '#34C759',
-        },
-      ],
-    },
-    // Contacts & Leads
-    {
-      id: 'contacts',
-      title: 'Contacts & Leads',
-      icon: 'people',
-      color: '#5856D6',
-      items: [
-        {
-          icon: 'git-branch',
-          title: 'Lead Sources',
-          subtitle: 'Inbound leads & routing',
-          onPress: () => router.push('/admin/lead-sources'),
-          color: '#5856D6',
-        },
-        {
-          icon: 'pricetags',
-          title: 'Contact Tags',
-          subtitle: 'Organize with tags',
-          onPress: () => router.push('/settings/tags'),
-          color: '#FF9500',
-        },
-        {
-          icon: 'star-outline',
-          title: 'Review Links',
-          subtitle: 'Google, Facebook, Yelp',
-          onPress: () => router.push('/settings/review-links'),
-          color: '#FFD60A',
-        },
-        {
-          icon: 'chatbubbles-outline',
-          title: 'Review Approvals',
-          subtitle: 'Approve customer reviews',
-          onPress: () => router.push('/settings/review-approvals'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'shield-checkmark-outline',
-          title: 'Showcase Approvals',
-          subtitle: 'Approve showcase posts',
-          onPress: () => router.push('/settings/showcase-approvals'),
-          color: '#34C759',
-        },
-        {
-          icon: 'analytics',
-          title: 'Lead Attribution',
-          subtitle: 'Track demo sources & referrals',
-          onPress: () => router.push('/admin/lead-tracking'),
-          color: '#C9A962',
-        },
-      ],
-    },
-    // Settings & Security
-    {
-      id: 'settings',
-      title: 'Settings',
-      icon: 'settings',
-      color: colors.textSecondary,
-      items: [
-        {
-          icon: 'storefront-outline',
-          title: 'Store Profile',
-          subtitle: 'Logo, address, store info',
-          onPress: () => router.push('/settings/store-profile' as any),
-          color: '#34C759',
-        },
-        {
-          icon: 'shield-checkmark',
-          title: 'Security',
-          subtitle: 'Face ID, passwords',
-          onPress: () => router.push('/settings/security'),
-          color: '#FF3B30',
-        },
-        {
-          icon: 'calendar-outline',
-          title: 'Calendar',
-          subtitle: 'Connect calendars',
-          onPress: () => router.push('/settings/calendar'),
-          color: '#007AFF',
-        },
-        {
-          icon: 'git-network',
-          title: 'Integrations',
-          subtitle: 'API keys & webhooks',
-          onPress: () => router.push('/settings/integrations'),
-          color: '#5856D6',
-        },
-        {
-          icon: 'help-circle-outline',
-          title: 'Help Center',
-          subtitle: 'How-to guides & FAQs',
-          onPress: () => router.push('/help' as any),
-          color: '#007AFF',
-        },
-      ],
-    },
-  ];
+  // Feature permissions from user object (merged with defaults on login)
+  const perms = user?.feature_permissions || {};
+  const perm = (section: string, item?: string): boolean => {
+    const sec = perms[section];
+    if (!sec || !sec._enabled) return false;
+    if (!item) return true;
+    return !!sec[item];
+  };
 
-  // Admin section - only for admins
-  const adminSection: Section | null = isAdmin ? {
-    id: 'admin',
-    title: 'Administration',
-    icon: 'shield-checkmark',
-    color: '#FF3B30',
-    items: [
-      {
-        icon: 'rocket-outline',
-        title: 'Client Onboarding',
-        subtitle: 'Step-by-step setup checklist',
-        onPress: () => router.push('/admin/client-onboarding'),
-        color: '#C9A962',
-      },
-      {
-        icon: 'shield-checkmark',
-        title: 'Admin Dashboard',
-        subtitle: 'Overview & activity',
-        onPress: () => router.push('/admin'),
-        color: '#34C759',
-      },
-      {
-        icon: 'color-palette',
-        title: 'Brand Assets',
-        subtitle: 'Logos, images & downloads',
-        onPress: () => router.push('/admin/brand-assets'),
-        color: '#FF9500',
-      },
-      {
-        icon: 'map-outline',
-        title: 'App Directory',
-        subtitle: 'Browse & share pages',
-        onPress: () => router.push('/admin/app-directory'),
-        color: '#5AC8FA',
-      },
-      {
-        icon: 'library',
-        title: 'Company Docs',
-        subtitle: 'Policies, security & training',
-        onPress: () => router.push('/admin/docs'),
-        color: '#5856D6',
-      },
-      {
-        icon: 'person-add',
-        title: 'Invite Team',
-        subtitle: 'Send invitations',
-        onPress: () => router.push('/settings/invite-team'),
-        color: '#C9A962',
-      },
-      // Organizations - super_admin only
-      ...(isSuperAdmin ? [{
-        icon: 'business',
-        title: 'Organizations',
-        subtitle: 'Manage organizations',
-        onPress: () => router.push('/admin/organizations'),
-        color: '#007AFF',
-      }] : []),
-      // Accounts (Stores) - org_admin and above
-      ...(isSuperAdmin || user?.role === 'org_admin' ? [{
-        icon: 'storefront',
-        title: 'Accounts',
-        subtitle: 'Manage store accounts',
-        onPress: () => router.push('/admin/stores'),
-        color: '#34C759',
-      }] : []),
-      // Users - org_admin and above
-      ...(isSuperAdmin || user?.role === 'org_admin' || user?.role === 'store_manager' ? [{
-        icon: 'people',
-        title: 'Users',
-        subtitle: 'Manage team members',
-        onPress: () => router.push('/admin/users'),
-        color: '#FF9500',
-      }] : []),
+  // Helper: build section items filtered by permissions
+  const filterItems = (sectionKey: string, items: (MenuItem & { permKey?: string })[]) =>
+    items.filter(i => !i.permKey || perm(sectionKey, i.permKey));
+
+  // ===== SECTION DEFINITIONS (5 sections + Admin + Settings) =====
+
+  const sections: Section[] = [];
+
+  // 1. MY TOOLS
+  if (perm('my_tools')) {
+    const items = filterItems('my_tools', [
+      { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/touchpoints' as any), color: '#C9A962' },
+      { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
+      { permKey: 'training_hub', icon: 'school', title: 'Training Hub', subtitle: "Learn how to use i'M On Social", onPress: () => router.push('/training-hub'), color: '#FF9500' },
+      { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
+    ]);
+    if (items.length > 0) sections.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF', defaultExpanded: true, items });
+  }
+
+  // 2. CAMPAIGNS
+  if (perm('campaigns')) {
+    const items = filterItems('campaigns', [
+      { permKey: 'campaign_builder', icon: 'chatbubbles', title: 'SMS Campaigns', subtitle: 'Automated SMS follow-ups', onPress: () => router.push('/campaigns'), color: '#FF2D55' },
+      { permKey: 'campaign_builder', icon: 'mail', title: 'Email Campaigns', subtitle: 'Automated email follow-ups', onPress: () => router.push('/campaigns/email'), color: '#AF52DE' },
+      { permKey: 'campaign_dashboard', icon: 'speedometer', title: 'Campaign Dashboard', subtitle: 'View enrollments & stats', onPress: () => router.push('/campaigns/dashboard'), color: '#5AC8FA' },
+      { permKey: 'broadcast', icon: 'megaphone', title: 'Broadcast', subtitle: 'Mass messaging', onPress: () => router.push('/broadcast'), color: '#FF9500' },
+      { permKey: 'date_triggers', icon: 'calendar-outline', title: 'Date Triggers', subtitle: 'Birthdays, anniversaries, holidays', onPress: () => router.push('/settings/date-triggers'), color: '#FF9500' },
+    ]);
+    if (items.length > 0) sections.push({ id: 'campaigns', title: 'Campaigns', icon: 'rocket', color: '#FF2D55', items });
+  }
+
+  // 3. CONTENT
+  if (perm('content')) {
+    const items = filterItems('content', [
+      { permKey: 'sms_templates', icon: 'document-text', title: 'SMS Templates', subtitle: 'Create SMS templates', onPress: () => router.push('/settings/templates'), color: '#FFD60A' },
+      { permKey: 'email_templates', icon: 'mail-outline', title: 'Email Templates', subtitle: 'Create email templates', onPress: () => router.push('/settings/email-templates'), color: '#34C759' },
+      { permKey: 'card_templates', icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Customize card designs & messages', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
+      { permKey: 'manage_showcase', icon: 'images', title: 'Manage Showcase', subtitle: 'Edit your happy customers page', onPress: () => router.push('/showroom-manage' as any), color: '#34C759' },
+    ]);
+    if (items.length > 0) sections.push({ id: 'content', title: 'Content', icon: 'color-palette', color: '#AF52DE', items });
+  }
+
+  // 4. INSIGHTS
+  if (perm('insights')) {
+    const items = filterItems('insights', [
+      { permKey: 'my_performance', icon: 'stats-chart', title: 'My Performance', subtitle: 'Day / Week / Month stats', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
+      { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Activity reports & analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
+      { permKey: 'email_analytics', icon: 'bar-chart', title: 'Email Analytics', subtitle: 'Opens, clicks, engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
+      { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Team rankings & performance', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
+      { permKey: 'lead_attribution', icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests, sources & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+    ]);
+    if (items.length > 0) sections.push({ id: 'insights', title: 'Insights', icon: 'stats-chart', color: '#34C759', items });
+  }
+
+  // 5. ADMIN (role-gated — managers+)
+  if (isAdmin) {
+    const adminItems: MenuItem[] = [
+      // Team Management
+      { icon: 'people', title: 'Users', subtitle: 'Manage team members & permissions', onPress: () => router.push('/admin/users'), color: '#FF9500' },
+      { icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
+      ...(isSuperAdmin ? [{ icon: 'people', title: 'Company Directory', subtitle: 'Team & leaderboards', onPress: () => router.push('/admin/directory'), color: '#AF52DE' }] : []),
+      ...(isSuperAdmin ? [{ icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' }] : []),
+      // Organization
+      { icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address, store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
+      { icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
+      { icon: 'rocket-outline', title: 'Client Onboarding', subtitle: 'Step-by-step setup checklist', onPress: () => router.push('/admin/client-onboarding'), color: '#C9A962' },
+      { icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'Overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
+      // Content Moderation
+      { icon: 'chatbubbles-outline', title: 'Review Approvals', subtitle: 'Approve customer reviews', onPress: () => router.push('/settings/review-approvals'), color: '#AF52DE' },
+      { icon: 'shield-checkmark-outline', title: 'Showcase Approvals', subtitle: 'Approve showcase posts', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
+      { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook, Yelp', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
+      { icon: 'pricetags', title: 'Contact Tags', subtitle: 'Organize with tags', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
+      { icon: 'git-branch', title: 'Lead Sources', subtitle: 'Inbound leads & routing', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
+      // Integrations & API
+      { icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
+      // Super Admin Only
       ...(isSuperAdmin ? [
-        {
-          icon: 'person',
-          title: 'Individuals',
-          subtitle: 'Independent users',
-          onPress: () => router.push('/admin/individuals'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'person-add',
-          title: 'Pending Users',
-          subtitle: 'Approve new signups',
-          onPress: () => router.push('/admin/pending-users'),
-          color: '#FF3B30',
-          badge: pendingUsersCount,
-        },
-        {
-          icon: 'document-text',
-          title: 'Partner Agreements',
-          subtitle: 'Reseller contracts',
-          onPress: () => router.push('/admin/partner-agreements'),
-          color: '#FF9500',
-        },
-        {
-          icon: 'color-palette',
-          title: 'White Label Partners',
-          subtitle: 'Manage branded partners',
-          onPress: () => router.push('/admin/white-label'),
-          color: '#E87722',
-        },
-        {
-          icon: 'people',
-          title: 'Company Directory',
-          subtitle: 'Team & leaderboards',
-          onPress: () => router.push('/admin/directory'),
-          color: '#AF52DE',
-        },
-        {
-          icon: 'mail',
-          title: 'Shared Inboxes',
-          subtitle: 'Phone number users',
-          onPress: () => router.push('/admin/shared-inboxes'),
-          color: '#007AFF',
-        },
-        {
-          icon: 'swap-horizontal',
-          title: 'Bulk Transfer',
-          subtitle: 'Transfer contacts',
-          onPress: () => router.push('/admin/bulk-transfer'),
-          color: '#FF3B30',
-        },
-        {
-          icon: 'call',
-          title: 'Phone Assignments',
-          subtitle: 'Twilio numbers',
-          onPress: () => router.push('/admin/phone-assignments'),
-          color: '#32ADE6',
-        },
-        {
-          icon: 'documents',
-          title: 'View Quotes',
-          subtitle: 'Subscription quotes',
-          onPress: () => router.push('/admin/quotes'),
-          color: '#30B0C7',
-        },
-        {
-          icon: 'receipt',
-          title: 'Create Quote',
-          subtitle: 'Generate quotes',
-          onPress: () => router.push('/admin/create-quote'),
-          color: '#34C759',
-        },
-        {
-          icon: 'ticket',
-          title: 'Discount Codes',
-          subtitle: 'Manage discounts',
-          onPress: () => router.push('/admin/discount-codes'),
-          color: '#5856D6',
-        },
+        { icon: 'business', title: 'Organizations', subtitle: 'Manage organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },
       ] : []),
-    ],
-  } : null;
+      ...(isSuperAdmin || user?.role === 'org_admin' ? [
+        { icon: 'storefront', title: 'Accounts', subtitle: 'Manage store accounts', onPress: () => router.push('/admin/stores'), color: '#34C759' },
+      ] : []),
+      ...(isSuperAdmin ? [
+        { icon: 'person', title: 'Individuals', subtitle: 'Independent users', onPress: () => router.push('/admin/individuals'), color: '#AF52DE' },
+        { icon: 'person-add', title: 'Pending Users', subtitle: 'Approve new signups', onPress: () => router.push('/admin/pending-users'), color: '#FF3B30', badge: pendingUsersCount },
+        { icon: 'document-text', title: 'Partner Agreements', subtitle: 'Reseller contracts', onPress: () => router.push('/admin/partner-agreements'), color: '#FF9500' },
+        { icon: 'color-palette', title: 'White Label Partners', subtitle: 'Manage branded partners', onPress: () => router.push('/admin/white-label'), color: '#E87722' },
+        { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
+        { icon: 'call', title: 'Phone Assignments', subtitle: 'Twilio numbers', onPress: () => router.push('/admin/phone-assignments'), color: '#32ADE6' },
+        { icon: 'documents', title: 'View Quotes', subtitle: 'Subscription quotes', onPress: () => router.push('/admin/quotes'), color: '#30B0C7' },
+        { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate quotes', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
+        { icon: 'ticket', title: 'Discount Codes', subtitle: 'Manage discounts', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
+        { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },
+        { icon: 'library', title: 'Company Docs', subtitle: 'Policies, security & training', onPress: () => router.push('/admin/docs'), color: '#5856D6' },
+        { icon: 'color-palette', title: 'Brand Assets', subtitle: 'Logos, images & downloads', onPress: () => router.push('/admin/brand-assets'), color: '#FF9500' },
+      ] : []),
+    ];
+    sections.push({ id: 'admin', title: 'Administration', icon: 'shield-checkmark', color: '#FF3B30', items: adminItems });
+  }
 
-  // Combine all sections
-  const allSections = adminSection ? [adminSection, ...sections] : sections;
+  // 6. SETTINGS (always visible, simplified)
+  sections.push({
+    id: 'settings',
+    title: 'Settings',
+    icon: 'settings',
+    color: colors.textSecondary,
+    items: [
+      { icon: 'shield-checkmark', title: 'Security', subtitle: 'Face ID, passwords', onPress: () => router.push('/settings/security'), color: '#FF3B30' },
+      { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
+      { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },
+    ],
+  });
+
+  // allSections is now just 'sections' since admin is inline
+  const allSections = sections;
 
   const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity

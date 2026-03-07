@@ -485,6 +485,16 @@ export default function UserDetailScreen() {
               </>
             )}
           </TouchableOpacity>
+
+          {/* Manage Permissions Button */}
+          <TouchableOpacity 
+            style={[styles.impersonateButton, { marginTop: 8, borderColor: '#AF52DE40' }]}
+            onPress={() => router.push(`/admin/users/permissions/${id}` as any)}
+            data-testid="manage-permissions-btn"
+          >
+            <Ionicons name="toggle-outline" size={20} color="#AF52DE" />
+            <Text style={[styles.impersonateButtonText, { color: '#AF52DE' }]}>Manage Permissions</Text>
+          </TouchableOpacity>
         </View>
         
         {/* Profile Completeness */}

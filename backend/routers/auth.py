@@ -330,6 +330,10 @@ async def login(credentials: dict):
     except Exception as e:
         logger.warning(f"Lifecycle login hook error: {e}")
 
+    # Merge feature permissions with defaults
+    from permissions import merge_permissions
+    user['feature_permissions'] = merge_permissions(user.get('feature_permissions'))
+
     response_data = {
         "token": f"mock_token_{user['_id']}",
         "user": user
