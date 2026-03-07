@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Home Screen Mockup</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif; color:#fff; max-width:430px; margin:0 auto; min-height:100vh; }
+.header { padding:16px 20px 12px; }
+.greeting { font-size:14px; color:#8E8E93; font-weight:500; }
+.name { font-size:28px; font-weight:700; margin-top:2px; }
+.quick-tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:0 16px 16px; }
+.tile { background:#1C1C1E; border-radius:16px; padding:16px 12px; text-align:center; border:1px solid #2C2C2E; }
+.tile-icon { width:44px; height:44px; border-radius:14px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.tile-label { font-size:12px; font-weight:600; color:#ccc; }
+
+.section-label { font-size:11px; font-weight:700; color:#8E8E93; letter-spacing:1.5px; text-transform:uppercase; padding:16px 20px 8px; }
+
+/* NEW: Today's Touchpoints tile */
+.touchpoints-tile {
+  margin:0 16px 16px; background:#1C1C1E; border-radius:16px; padding:16px 18px;
+  border:1px solid #2C2C2E; cursor:pointer; text-decoration:none; display:block;
+  transition: transform 0.15s;
+}
+.touchpoints-tile:active { transform:scale(0.98); }
+.tp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.tp-title { font-size:18px; font-weight:700; color:#fff; }
+.tp-badge { background:rgba(201,169,98,0.15); color:#C9A962; font-size:12px; font-weight:700; padding:4px 10px; border-radius:8px; }
+.tp-stats { display:flex; gap:12px; margin-bottom:14px; }
+.tp-stat { flex:1; text-align:center; background:#111; border-radius:10px; padding:10px 4px; }
+.tp-stat-num { font-size:22px; font-weight:700; color:#fff; }
+.tp-stat-label { font-size:10px; color:#8E8E93; font-weight:600; margin-top:2px; }
+.tp-progress { background:#2C2C2E; border-radius:6px; height:8px; margin-bottom:10px; overflow:hidden; }
+.tp-progress-fill { height:100%; background:linear-gradient(90deg,#C9A962,#E8D5A3); border-radius:6px; width:42%; }
+.tp-progress-label { font-size:12px; color:#8E8E93; text-align:center; }
+.tp-preview { margin-top:14px; border-top:1px solid #2C2C2E; padding-top:12px; }
+.tp-preview-item { display:flex; align-items:center; gap:10px; padding:6px 0; }
+.tp-dot { width:8px; height:8px; border-radius:4px; flex-shrink:0; }
+.tp-preview-text { font-size:13px; color:#ccc; flex:1; }
+.tp-preview-badge { font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; }
+.tp-arrow { color:#8E8E93; font-size:18px; }
+
+/* Recent Activity tile (smaller, secondary) */
+.activity-tile {
+  margin:0 16px 16px; background:#1C1C1E; border-radius:16px; padding:14px 18px;
+  border:1px solid #2C2C2E; cursor:pointer; text-decoration:none; display:flex;
+  align-items:center; gap:14px;
+}
+.activity-icon { width:40px; height:40px; border-radius:12px; background:rgba(0,122,255,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.activity-info { flex:1; }
+.activity-title { font-size:15px; font-weight:600; color:#fff; }
+.activity-sub { font-size:12px; color:#8E8E93; margin-top:2px; }
+
+.nav-hint { text-align:center; padding:20px; font-size:13px; color:#C9A962; }
+.nav-hint a { color:#C9A962; text-decoration:underline; }
+
+.tab-bar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:#1C1C1E; border-top:1px solid #2C2C2E; display:flex; padding:8px 0 24px; }
+.tab { flex:1; text-align:center; font-size:10px; color:#8E8E93; padding-top:6px; }
+.tab.active { color:#C9A962; }
+.tab-icon { font-size:20px; margin-bottom:2px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="greeting">Good morning</div>
+  <div class="name">Forest Ward</div>
+</div>
+
+<div class="section-label">Quick Actions</div>
+<div class="quick-tiles">
+  <div class="tile">
+    <div class="tile-icon" style="background:rgba(0,122,255,0.12)">💼</div>
+    <div class="tile-label">Share My Card</div>
+  </div>
+  <div class="tile">
+    <div class="tile-icon" style="background:rgba(255,214,10,0.12)">⭐</div>
+    <div class="tile-label">Review Link</div>
+  </div>
+  <div class="tile">
+    <div class="tile-icon" style="background:rgba(52,199,89,0.12)">🏬</div>
+    <div class="tile-label">My Showcase</div>
+  </div>
+  <div class="tile">
+    <div class="tile-icon" style="background:rgba(201,169,98,0.12)">🎁</div>
+    <div class="tile-label">Send a Card</div>
+  </div>
+  <div class="tile">
+    <div class="tile-icon" style="background:rgba(175,82,222,0.12)">👥</div>
+    <div class="tile-label">Add Contact</div>
+  </div>
+  <div class="tile">
+    <div class="tile-icon" style="background:rgba(255,69,58,0.12)">📊</div>
+    <div class="tile-label">My Stats</div>
+  </div>
+</div>
+
+<div class="section-label">Your Day</div>
+
+<!-- TODAY'S TOUCHPOINTS — Main tile that opens dedicated page -->
+<a class="touchpoints-tile" href="mockup-touchpoints.html">
+  <div class="tp-header">
+    <div class="tp-title">Today's Touchpoints</div>
+    <div class="tp-badge">5 pending</div>
+  </div>
+  <div class="tp-stats">
+    <div class="tp-stat">
+      <div class="tp-stat-num">14</div>
+      <div class="tp-stat-label">Calls</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num">22</div>
+      <div class="tp-stat-label">Texts</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num">6</div>
+      <div class="tp-stat-label">Emails</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num">3</div>
+      <div class="tp-stat-label">Cards</div>
+    </div>
+  </div>
+  <div class="tp-progress"><div class="tp-progress-fill"></div></div>
+  <div class="tp-progress-label">5 of 12 touchpoints completed today</div>
+
+  <!-- Preview of top 3 tasks -->
+  <div class="tp-preview">
+    <div class="tp-preview-item">
+      <div class="tp-dot" style="background:#FF3B30"></div>
+      <div class="tp-preview-text">Call Jason — Missed call yesterday</div>
+      <div class="tp-preview-badge" style="background:rgba(255,59,48,0.12);color:#FF3B30">High</div>
+    </div>
+    <div class="tp-preview-item">
+      <div class="tp-dot" style="background:#C9A962"></div>
+      <div class="tp-preview-text">Send review request to Amy</div>
+      <div class="tp-preview-badge" style="background:rgba(201,169,98,0.12);color:#C9A962">Campaign</div>
+    </div>
+    <div class="tp-preview-item">
+      <div class="tp-dot" style="background:#34C759"></div>
+      <div class="tp-preview-text">Birthday today: Mike Johnson</div>
+      <div class="tp-preview-badge" style="background:rgba(52,199,89,0.12);color:#34C759">Birthday</div>
+    </div>
+  </div>
+</a>
+
+<!-- ACTIVITY — Demoted to a smaller tile -->
+<a class="activity-tile" href="mockup-activity.html">
+  <div class="activity-icon">📋</div>
+  <div class="activity-info">
+    <div class="activity-title">Activity Feed</div>
+    <div class="activity-sub">47 events this week</div>
+  </div>
+  <div class="tp-arrow">›</div>
+</a>
+
+<div class="nav-hint">
+  👆 Tap "Today's Touchpoints" to see the <a href="mockup-touchpoints.html">full page</a>
+</div>
+
+<div style="height:80px"></div>
+<div class="tab-bar">
+  <div class="tab active"><div class="tab-icon">🏠</div>Home</div>
+  <div class="tab"><div class="tab-icon">👤</div>Contacts</div>
+  <div class="tab"><div class="tab-icon">📊</div>Activity</div>
+  <div class="tab"><div class="tab-icon">💬</div>Inbox</div>
+  <div class="tab"><div class="tab-icon">☰</div>Menu</div>
+</div>
+</body>
+</html>
