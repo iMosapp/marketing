@@ -52,6 +52,8 @@ async def get_profile(user_id: str):
         "salesperson_id": user_id
     }).sort("created_at", -1).to_list(50)
     
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
+    
     return {
         "user": {
             "id": str(user["_id"]),
@@ -59,7 +61,7 @@ async def get_profile(user_id: str):
             "email": user.get("email", ""),
             "phone": user.get("phone", ""),
             "title": user.get("title", "Sales Professional"),
-            "photo_url": user.get("photo_url"),
+            "photo_url": resolve_user_photo(user),
             "bio": user.get("persona", {}).get("bio", ""),
             "hobbies": user.get("persona", {}).get("hobbies", []),
             "family_info": user.get("persona", {}).get("family_info", ""),
@@ -72,7 +74,7 @@ async def get_profile(user_id: str):
         "store": {
             "id": str(store["_id"]) if store else None,
             "name": store.get("name") if store else None,
-            "logo_url": store.get("logo_url") if store else None,
+            "logo_url": resolve_store_logo(store),
         } if store else None,
         "testimonials": [
             {

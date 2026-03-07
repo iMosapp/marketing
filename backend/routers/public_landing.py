@@ -60,6 +60,8 @@ async def get_landing_page_data(user_id: str):
     # Get persona data
     persona = user.get("persona", {})
     
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
+    
     return {
         "user": {
             "id": str(user["_id"]),
@@ -67,7 +69,7 @@ async def get_landing_page_data(user_id: str):
             "email": user.get("email", ""),
             "phone": user.get("phone", ""),
             "title": user.get("title", "Sales Professional"),
-            "photo_url": user.get("photo_url"),
+            "photo_url": resolve_user_photo(user),
             "bio": persona.get("bio", ""),
             "hobbies": persona.get("hobbies", []),
             "family_info": persona.get("family_info", ""),
@@ -80,7 +82,7 @@ async def get_landing_page_data(user_id: str):
         "store": {
             "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
-            "logo_url": store.get("logo_url") if store else None,
+            "logo_url": resolve_store_logo(store),
             "primary_color": store.get("primary_color", "#C9A962") if store else "#C9A962",
             "phone": store.get("phone") if store else None,
             "address": store.get("address") if store else None,

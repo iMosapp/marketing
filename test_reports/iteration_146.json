@@ -1,0 +1,103 @@
+{
+  "summary": "Backend Testing Complete for Public Image URL Optimization. 10/10 tests passed. All public-facing endpoints (digital card, landing page, showcase, profile, store card, congrats/birthday cards) return optimized WebP image URLs instead of base64. Fixed MongoDB projection bug in GET /api/card/store/{store_slug}.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "GET_api_card_data_user_id": {
+      "status": "PASS",
+      "details": "Returns optimized photo_url and logo_url as /api/images/*.webp paths"
+    },
+    "GET_api_p_data_user_id_landing_page": {
+      "status": "PASS",
+      "details": "Returns optimized photo_url and logo_url as /api/images/*.webp paths"
+    },
+    "GET_api_showcase_user_user_id": {
+      "status": "PASS",
+      "details": "Returns all image URLs as /api/images/ paths - 11/11 entries with photos verified"
+    },
+    "GET_api_profile_user_id": {
+      "status": "PASS",
+      "details": "Returns optimized photo_url and logo_url as /api/images/*.webp paths"
+    },
+    "GET_api_card_store_store_slug": {
+      "status": "PASS",
+      "details": "Fixed MongoDB projection bug. Now returns optimized team member photos and store logo"
+    },
+    "GET_api_congrats_card_card_id": {
+      "status": "PASS",
+      "details": "Returns optimized customer_photo URL (/api/images/ or /api/showcase/ fallback)"
+    },
+    "GET_api_birthday_card_card_id": {
+      "status": "PASS",
+      "details": "Returns optimized customer_photo and salesman photo URLs"
+    },
+    "POST_api_images_migrate_all_base64_backfill": {
+      "status": "PASS",
+      "details": "Includes 'backfilled' count in response for records with /api/images/ URLs"
+    },
+    "GET_api_showcase_store_store_id": {
+      "status": "PASS",
+      "details": "Returns optimized logo_url and team photo URLs"
+    },
+    "no_python_dict_duplicate_key_bug": {
+      "status": "PASS",
+      "details": "Showcase.py uses $nin pattern instead of duplicate $ne keys"
+    }
+  },
+  "bugs_fixed": [
+    {
+      "file": "/app/backend/routers/digital_card.py",
+      "issue": "MongoDB projection bug mixing inclusion and exclusion operators",
+      "fix": "Changed from {\"password\": 0, \"_id\": 1, \"name\": 1...} to pure inclusion projection {\"_id\": 1, \"name\": 1, \"photo_path\": 1...}",
+      "line": 418
+    }
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_public_image_urls.py",
+    "/app/test_reports/pytest/pytest_public_image_urls.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All 6 public-facing endpoints verified to return zero base64 image data",
+    "Image URLs follow valid patterns: /api/images/ (optimized), /api/showcase/* (lazy-migration fallback), or short http URLs",
+    "Lazy-migration endpoints (/api/showcase/photo/, /api/showcase/user-photo/) correctly return 301 redirects to WebP paths",
+    "New photo uploads (congrats card creation) go through the image pipeline - returns photo_path",
+    "resolve_user_photo, resolve_store_logo, resolve_card_photo helper functions centralized in utils/image_urls.py"
+  ],
+  "updated_files": [
+    "/app/backend/routers/digital_card.py",
+    "/app/backend/tests/test_public_image_urls.py"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 tests passed)",
+    "frontend": "N/A (backend only testing requested)"
+  },
+  "test_credentials": {
+    "super_admin": {
+      "email": "forest@imosapp.com",
+      "password": "Admin123!",
+      "user_id": "69a0b7095fddcede09591667"
+    },
+    "store_slug": "imos-demo"
+  },
+  "seed_data_creation": "None - used existing data",
+  "verified_image_url_patterns": {
+    "user_photo": "/api/images/imos/users/69a0b7095fddcede09591667/bd9f4cc8-af81-4ca4-8de9-8b0226ee86ce.webp",
+    "store_logo": "/api/images/imos/logos/69a0b7095fddcede09591668/fc3f1bde-fec0-44a5-aeb9-98e5502a6648.webp",
+    "congrats_photo": "/api/images/imos/congrats/f59a7377-afa/3ab483d6-a01e-4388-b2c4-9c0188fca13f.webp",
+    "lazy_migration_pattern": "/api/showcase/photo/{card_id} → 301 → /api/images/*.webp"
+  },
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All public-facing image endpoints verified. MongoDB projection bug in digital_card.py fixed. All image URLs use /api/images/ WebP paths or /api/showcase/* lazy-migration fallbacks. No base64 data returned in any response.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED"
+  }
+}

@@ -45,14 +45,15 @@ def create_circular_mask(size):
 
 
 async def _get_contact_photo(db, contact) -> Optional[str]:
-    """Get the best available photo for a contact."""
-    # Priority: photo_thumbnail > photo_url > congrats card photo
-    if contact.get("photo_thumbnail"):
-        return contact["photo_thumbnail"]
-    if contact.get("photo_url"):
-        return contact["photo_url"]
+    """Get the best available photo for a contact — always returns optimized URL."""
+    from utils.image_urls import resolve_contact_photo
+    
+    # First check if contact already has an optimized photo
+    url = resolve_contact_photo(contact)
+    if url:
+        return url
 
-    # Check for a congrats card photo
+    # Check for a congrats card photo (with photo_path)
     user_id = contact.get("user_id")
     phone = contact.get("phone", "")
     if phone:
@@ -61,13 +62,13 @@ async def _get_contact_photo(db, contact) -> Optional[str]:
             {"salesman_id": user_id, "customer_phone": {"$regex": normalized}},
             sort=[("created_at", -1)],
         )
-        if card and card.get("customer_photo"):
-            return card["customer_photo"]
-
-    # Check contact_photos collection
-    contact_photo = await db.contact_photos.find_one({"contact_id": str(contact["_id"])})
-    if contact_photo and contact_photo.get("photo_full"):
-        return contact_photo["photo_full"]
+        if card:
+            if card.get("photo_path"):
+                return f"/api/images/{card['photo_path']}"
+            if card.get("customer_photo") and card["customer_photo"].startswith("/api/images/"):
+                return card["customer_photo"]
+            if card.get("customer_photo") and card.get("card_id"):
+                return f"/api/showcase/photo/{card['card_id']}"
 
     return None
 
@@ -119,19 +120,21 @@ async def auto_create_birthday_card(
         # Get store accent color for branding consistency
         store_accent = store.get("primary_color", BIRTHDAY_DEFAULTS["accent_color"]) if store else BIRTHDAY_DEFAULTS["accent_color"]
 
+        from utils.image_urls import resolve_user_photo, resolve_store_logo
+        
         card_doc = {
             "card_id": card_id,
             "card_type": "birthday",
             "salesman_id": user_id,
             "contact_id": contact_id,
             "salesman_name": user.get("name", ""),
-            "salesman_photo": user.get("photo_url"),
+            "salesman_photo": resolve_user_photo(user),
             "salesman_title": user.get("title", "Sales Professional"),
             "salesman_phone": user.get("phone"),
             "salesman_email": user.get("email"),
             "store_id": store_id,
             "store_name": store.get("name") if store else None,
-            "store_logo": store.get("logo_url") if store else None,
+            "store_logo": resolve_store_logo(store),
             "customer_name": customer_name,
             "customer_phone": contact.get("phone"),
             "customer_photo": photo_url,
@@ -251,6 +254,8 @@ async def create_birthday_card_manual(
                     {"$set": {"photo_url": photo_url, "photo_source": "birthday_card"}},
                 )
 
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
+    
     store_accent = store.get("primary_color", BIRTHDAY_DEFAULTS["accent_color"]) if store else BIRTHDAY_DEFAULTS["accent_color"]
     card_id = str(uuid.uuid4())[:12]
 
@@ -259,13 +264,13 @@ async def create_birthday_card_manual(
         "card_type": "birthday",
         "salesman_id": salesman_id,
         "salesman_name": user.get("name", ""),
-        "salesman_photo": user.get("photo_url"),
+        "salesman_photo": resolve_user_photo(user),
         "salesman_title": user.get("title", "Sales Professional"),
         "salesman_phone": user.get("phone"),
         "salesman_email": user.get("email"),
         "store_id": store_id,
         "store_name": store.get("name") if store else None,
-        "store_logo": store.get("logo_url") if store else None,
+        "store_logo": resolve_store_logo(store),
         "customer_name": customer_name,
         "customer_phone": customer_phone,
         "customer_photo": photo_url,
@@ -324,26 +329,38 @@ async def get_birthday_card(card_id: str):
     message = message.replace("{customer_name}", card.get("customer_name", ""))
     message = message.replace("{salesman_name}", card.get("salesman_name", ""))
 
+    from utils.image_urls import resolve_card_photo
+    
+    # Use optimized image URLs (never return raw base64)
+    customer_photo = resolve_card_photo(card)
+    # For salesman/store embedded in the card, use stored URL if already optimized
+    salesman_photo = card.get("salesman_photo")
+    if salesman_photo and not salesman_photo.startswith("/api/") and not salesman_photo.startswith("http"):
+        salesman_photo = f"/api/showcase/user-photo/{card.get('salesman_id')}" if card.get("salesman_id") else None
+    store_logo = card.get("store_logo")
+    if store_logo and not store_logo.startswith("/api/") and not store_logo.startswith("http"):
+        store_logo = f"/api/showcase/store-logo/{card.get('store_id')}" if card.get("store_id") else None
+
     return {
         "card_id": card_id,
         "card_type": "birthday",
         "salesman_id": card.get("salesman_id"),
         "customer_name": card.get("customer_name"),
-        "customer_photo": card.get("customer_photo"),
+        "customer_photo": customer_photo,
         "headline": card.get("headline", BIRTHDAY_DEFAULTS["headline"]),
         "message": message,
         "custom_message": card.get("custom_message"),
         "footer_text": card.get("footer_text"),
         "salesman": {
             "name": card.get("salesman_name"),
-            "photo": card.get("salesman_photo"),
+            "photo": salesman_photo,
             "title": card.get("salesman_title"),
             "phone": card.get("salesman_phone"),
             "email": card.get("salesman_email"),
         } if card.get("show_salesman") else None,
         "store": {
             "name": card.get("store_name"),
-            "logo": card.get("store_logo"),
+            "logo": store_logo,
         } if card.get("show_store_logo") and card.get("store_name") else None,
         "style": {
             "background_color": card.get("background_color", BIRTHDAY_DEFAULTS["background_color"]),

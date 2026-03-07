@@ -243,13 +243,30 @@ async def create_congrats_card(
             if template:
                 is_fallback_template = True
     
-    # Process photo
+    # Process photo — compress to WebP via image pipeline
     contents = await photo.read()
     if len(contents) > 10 * 1024 * 1024:  # 10MB limit
         raise HTTPException(status_code=400, detail="Image must be less than 10MB")
     
-    base64_data = base64.b64encode(contents).decode('utf-8')
-    photo_url = f"data:{photo.content_type};base64,{base64_data}"
+    # Generate unique card ID first (needed for image path)
+    card_id = str(uuid.uuid4())[:12]
+    
+    # Upload via optimized pipeline
+    from utils.image_storage import upload_image
+    img_result = await upload_image(contents, prefix="congrats", entity_id=card_id)
+    
+    if img_result:
+        optimized_photo_url = f"/api/images/{img_result['original_path']}"
+        photo_thumb_url = f"/api/images/{img_result['thumbnail_path']}"
+        photo_path = img_result["original_path"]
+        photo_thumb_path = img_result["thumbnail_path"]
+    else:
+        # Fallback: store as base64 (should be rare)
+        base64_data = base64.b64encode(contents).decode('utf-8')
+        optimized_photo_url = f"data:{photo.content_type};base64,{base64_data}"
+        photo_thumb_url = optimized_photo_url
+        photo_path = None
+        photo_thumb_path = None
     
     # Update contact's avatar if contact exists (by phone number)
     contact_updated = False
@@ -269,57 +286,42 @@ async def create_congrats_card(
             "user_id": salesman_id
         })
         
-        if contact and not contact.get("photo_thumbnail"):
-            # Generate thumbnail + high-res from the congrats card photo
-            try:
-                from routers.contacts import _process_photo
-                thumbnail, high_res = await _process_photo(photo_url)
+        if contact and not contact.get("photo_path"):
+            # Use the same optimized image for the contact avatar
+            if img_result:
                 await db.contacts.update_one(
                     {"_id": contact["_id"]},
                     {"$set": {
-                        "photo_thumbnail": thumbnail,
-                        "photo_url": thumbnail,
+                        "photo_path": img_result["original_path"],
+                        "photo_thumb_path": img_result["thumbnail_path"],
+                        "photo_avatar_path": img_result["avatar_path"],
+                        "photo_thumbnail": photo_thumb_url,
+                        "photo_url": photo_thumb_url,
                         "photo_source": card_type
                     }}
-                )
-                # Store full-res separately
-                await db.contact_photos.update_one(
-                    {"contact_id": str(contact["_id"])},
-                    {"$set": {
-                        "contact_id": str(contact["_id"]),
-                        "user_id": salesman_id,
-                        "photo_full": high_res,
-                        "updated_at": datetime.utcnow()
-                    }},
-                    upsert=True
-                )
-            except Exception as e:
-                # Fallback: store original as photo_url
-                await db.contacts.update_one(
-                    {"_id": contact["_id"]},
-                    {"$set": {"photo_url": photo_url, "photo_source": card_type}}
                 )
             contact_updated = True
             print(f"[CongratsCard] Updated contact {contact.get('first_name', '')} {contact.get('last_name', '')} avatar from congrats card photo")
     
-    # Generate unique card ID
-    card_id = str(uuid.uuid4())[:12]
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
     
     # Build card document
     card_doc = {
         "card_id": card_id,
         "salesman_id": salesman_id,
         "salesman_name": salesman.get("name", ""),
-        "salesman_photo": salesman.get("photo_url"),
+        "salesman_photo": resolve_user_photo(salesman),
         "salesman_title": salesman.get("title", "Sales Professional"),
         "salesman_phone": salesman.get("phone"),
         "salesman_email": salesman.get("email"),
         "store_id": store_id,
         "store_name": store.get("name") if store else None,
-        "store_logo": store.get("logo_url") if store else None,
+        "store_logo": resolve_store_logo(store),
         "customer_name": customer_name,
         "customer_phone": customer_phone,
-        "customer_photo": photo_url,
+        "customer_photo": optimized_photo_url,
+        "photo_path": photo_path,
+        "photo_thumb_path": photo_thumb_path,
         "custom_message": custom_message,
         "card_type": card_type,
         # Template settings - use type defaults for headline/message when using a fallback generic template
@@ -426,25 +428,30 @@ async def get_congrats_card(card_id: str):
     if "{salesman_name}" in message:
         message = message.replace("{salesman_name}", card.get("salesman_name", ""))
     
+    from utils.image_urls import resolve_card_photo, resolve_user_photo, resolve_store_logo
+    
+    # Use optimized image URLs
+    card_photo = resolve_card_photo(card)
+    
     return {
         "card_id": card_id,
         "salesman_id": card.get("salesman_id"),
         "customer_name": card.get("customer_name"),
-        "customer_photo": card.get("customer_photo"),
+        "customer_photo": card_photo,
         "headline": card.get("headline", "Thank You!"),
         "message": message,
         "custom_message": card.get("custom_message"),
         "footer_text": card.get("footer_text"),
         "salesman": {
             "name": card.get("salesman_name"),
-            "photo": card.get("salesman_photo"),
+            "photo": card.get("salesman_photo") if card.get("salesman_photo", "").startswith("/api/") else resolve_user_photo({"photo_path": None, "photo_url": card.get("salesman_photo"), "_id": card.get("salesman_id")}),
             "title": card.get("salesman_title"),
             "phone": card.get("salesman_phone"),
             "email": card.get("salesman_email"),
         } if card.get("show_salesman") else None,
         "store": {
             "name": card.get("store_name"),
-            "logo": card.get("store_logo"),
+            "logo": card.get("store_logo") if card.get("store_logo", "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
         } if card.get("show_store_logo") and card.get("store_name") else None,
         "style": {
             "background_color": card.get("background_color", "#1A1A1A"),

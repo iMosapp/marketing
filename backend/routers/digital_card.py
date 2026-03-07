@@ -118,6 +118,8 @@ async def get_card_data(user_id: str):
         except Exception:
             pass
 
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
+    
     result = {
         "user": {
             "id": str(user["_id"]),
@@ -125,14 +127,14 @@ async def get_card_data(user_id: str):
             "email": user.get("email", ""),
             "phone": user.get("phone", ""),
             "title": user.get("title", "Sales Professional"),
-            "photo_url": user.get("photo_url"),
+            "photo_url": resolve_user_photo(user),
             "bio": user.get("persona", {}).get("bio", ""),
             "social_links": user.get("social_links", {}),
         },
         "store": {
             "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
-            "logo_url": get_safe_logo(store) if store else None,
+            "logo_url": resolve_store_logo(store),
             "primary_color": store.get("primary_color", "#007AFF") if store else "#007AFF",
             "phone": store.get("phone") if store else None,
             "address": store.get("address") if store else None,
@@ -410,16 +412,19 @@ async def get_store_card_data(store_slug: str):
         })
 
     # Get team members to display
+    # Note: MongoDB projection must be all inclusions or all exclusions (except _id)
     team_members = await db.users.find({
         "store_id": store_id,
         "status": "active"
-    }, {"password": 0, "_id": 1, "name": 1, "title": 1, "photo_url": 1}).to_list(20)
+    }, {"_id": 1, "name": 1, "title": 1, "photo_url": 1, "photo_path": 1, "photo_avatar_path": 1}).to_list(20)
+
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
 
     formatted_team = [{
         "id": str(m["_id"]),
         "name": m.get("name", ""),
         "title": m.get("title", ""),
-        "photo_url": m.get("photo_url"),
+        "photo_url": resolve_user_photo(m),
     } for m in team_members]
 
     return {
@@ -427,7 +432,7 @@ async def get_store_card_data(store_slug: str):
             "id": store_id,
             "name": store.get("name", ""),
             "slug": store.get("slug", ""),
-            "logo_url": get_safe_logo(brand_kit) or get_safe_logo(store) or "",
+            "logo_url": resolve_store_logo(brand_kit) or resolve_store_logo(store) or "",
             "cover_image_url": store.get("cover_image_url") if store.get("cover_image_url") and len(store.get("cover_image_url", "")) < 500 else "",
             "primary_color": brand_kit.get("primary_color") or store.get("primary_color", "#007AFF"),
             "phone": store.get("phone"),
