@@ -211,17 +211,26 @@ async def migrate_all_base64_images(
     if not user or user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Super admin only")
 
-    # Check if a migration is already running
+    # Check if a migration is already running (with 5-minute staleness check)
     existing = await db.migration_jobs.find_one({"status": "running"})
     if existing:
-        return {
-            "status": "already_running",
-            "message": "A migration is already in progress. Check status for updates.",
-            "started_at": existing.get("started_at", "").isoformat() if existing.get("started_at") else None,
-        }
+        started = existing.get("started_at")
+        age_minutes = (datetime.now(timezone.utc) - started).total_seconds() / 60 if started else 999
+        if age_minutes < 5:
+            return {
+                "status": "already_running",
+                "message": "A migration is already in progress. Check status for updates.",
+            }
+        else:
+            # Stale job — mark it as failed and allow a new run
+            await db.migration_jobs.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {"status": "failed", "completed_at": datetime.now(timezone.utc),
+                          "result": {"error": f"Timed out after {age_minutes:.0f} minutes"}}},
+            )
+            logger.warning(f"[Migration] Marked stale job as failed (age: {age_minutes:.0f}m)")
 
     # Create a job record
-    import time
     job_doc = {
         "type": "image_migration",
         "status": "running",

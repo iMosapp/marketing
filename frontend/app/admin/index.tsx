@@ -257,33 +257,42 @@ export default function AdminDashboard() {
         headers: { 'X-User-ID': user?._id },
       });
       const d = res.data;
-      if (d.status === 'started') {
-        setMigrateResult('Migration started... checking progress');
-        // Poll for status
+      if (d.status === 'started' || d.status === 'already_running') {
+        setMigrateResult('Migration running...');
+        let attempts = 0;
+        const maxAttempts = 40; // 2 minutes max polling
         const poll = setInterval(async () => {
+          attempts++;
           try {
             const statusRes = await api.get('/images/migrate-status');
             const s = statusRes.data;
             if (s.status === 'completed') {
               clearInterval(poll);
               const r = s.result || {};
-              const m = r.migrated || {};
-              setMigrateResult(`Done! ${r.total_migrated || 0} images migrated in ${r.elapsed_seconds || 0}s`);
+              setMigrateResult(`Done! ${r.total_migrated || 0} migrated in ${r.elapsed_seconds || 0}s`);
               setMigrating(false);
             } else if (s.status === 'failed') {
               clearInterval(poll);
               setMigrateResult(`Failed: ${s.result?.error || 'Unknown error'}`);
               setMigrating(false);
+            } else if (attempts >= maxAttempts) {
+              clearInterval(poll);
+              setMigrateResult('Timed out waiting. Tap again to retry.');
+              setMigrating(false);
             } else {
               const p = s.progress || {};
-              setMigrateResult(`Running... ${p.total || 0} migrated so far (${p.elapsed_seconds || 0}s)`);
+              setMigrateResult(`Running... ${p.total || 0} done (${p.elapsed_seconds || 0}s)`);
             }
-          } catch { /* keep polling */ }
+          } catch {
+            if (attempts >= maxAttempts) {
+              clearInterval(poll);
+              setMigrateResult('Lost connection. Tap again to check.');
+              setMigrating(false);
+            }
+          }
         }, 3000);
-      } else if (d.status === 'already_running') {
-        setMigrateResult('Migration already in progress...');
       } else {
-        setMigrateResult(`Done! Migrated: ${d.migrated || 0}`);
+        setMigrateResult('Migration complete!');
         setMigrating(false);
       }
     } catch (e: any) {
