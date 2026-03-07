@@ -329,6 +329,7 @@ export default function HomeScreen() {
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [taskSummary, setTaskSummary] = useState<any>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   // Modals
@@ -356,14 +357,14 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?._id) { loadRecentActivity(); loadPendingTasks(); loadStoreSlug(); }
+      if (user?._id) { loadRecentActivity(); loadPendingTasks(); loadTaskSummary(); loadStoreSlug(); }
     }, [user?._id])
   );
 
   // Auto-refresh activity feed and tasks every 30 seconds
   useEffect(() => {
     if (!user?._id) return;
-    const interval = setInterval(() => { loadRecentActivity(); loadPendingTasks(); }, 30000);
+    const interval = setInterval(() => { loadRecentActivity(); loadPendingTasks(); loadTaskSummary(); }, 30000);
     return () => clearInterval(interval);
   }, [user?._id]);
 
@@ -408,12 +409,20 @@ export default function HomeScreen() {
     if (!user?._id) return;
     try {
       setLoadingTasks(true);
-      const res = await api.get(`/tasks/${user._id}?completed=false`);
+      const res = await api.get(`/tasks/${user._id}?filter=today`);
       const tasks = Array.isArray(res.data) ? res.data : [];
-      // Sort by due_date ascending (most urgent first), then limit to 5
-      const sorted = tasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()).slice(0, 5);
+      // Sort by priority_order ascending, then due_date
+      const sorted = tasks.sort((a: any, b: any) => (a.priority_order || 3) - (b.priority_order || 3) || new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
       setPendingTasks(sorted);
     } catch {} finally { setLoadingTasks(false); }
+  };
+
+  const loadTaskSummary = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await api.get(`/tasks/${user._id}/summary`);
+      setTaskSummary(res.data);
+    } catch {}
   };
 
   const completeTask = async (taskId: string) => {
@@ -614,112 +623,101 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* ===== ACTION ITEMS (Pending Tasks) ===== */}
-        {pendingTasks.length > 0 && (
-          <View style={styles.activitySection} data-testid="action-items-section">
-            <View style={styles.activityHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Action Items</Text>
-              <TouchableOpacity onPress={() => router.push('/tasks' as any)} data-testid="view-all-tasks">
-                <Text style={[styles.viewAll, { color: colors.accent }]}>View All</Text>
-              </TouchableOpacity>
+        {/* ===== YOUR DAY SECTION ===== */}
+        <View style={styles.activitySection} data-testid="your-day-section">
+          <View style={styles.activityHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Day</Text>
+          </View>
+
+          {/* Today's Touchpoints Tile */}
+          <TouchableOpacity
+            onPress={() => router.push('/touchpoints' as any)}
+            activeOpacity={0.85}
+            style={{ backgroundColor: colors.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 12 }}
+            data-testid="touchpoints-tile"
+          >
+            {/* Title row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(201,169,98,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="checkbox-outline" size={22} color={colors.accent} />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Today's Touchpoints</Text>
+              </View>
+              <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
+              </View>
             </View>
-            {pendingTasks.map((task, idx) => {
+
+            {/* Mini Scoreboard */}
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+              {[
+                { label: 'CALLS', color: '#007AFF', val: taskSummary?.activity?.calls || 0 },
+                { label: 'TEXTS', color: '#34C759', val: taskSummary?.activity?.texts || 0 },
+                { label: 'EMAILS', color: '#5AC8FA', val: taskSummary?.activity?.emails || 0 },
+                { label: 'CARDS', color: '#C9A962', val: taskSummary?.activity?.cards || 0 },
+                { label: 'REVIEWS', color: '#FFD60A', val: taskSummary?.activity?.reviews || 0 },
+              ].map(s => (
+                <View key={s.label} style={{ flex: 1, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2 }}>
+                  <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{s.val}</Text>
+                  <Text style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5, marginTop: 1 }}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Progress */}
+            <View style={{ backgroundColor: colors.border, borderRadius: 5, height: 6, overflow: 'hidden', marginBottom: 6 }}>
+              <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${taskSummary?.progress_pct || 0}%` }} />
+            </View>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 12 }}>
+              {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} touchpoints completed
+            </Text>
+
+            {/* Top 3 task previews */}
+            {pendingTasks.slice(0, 3).map((task, idx) => {
               const ti = getTaskIcon(task);
-              const taskId = task._id || task.id;
               const dueDate = task.due_date ? new Date(task.due_date) : null;
-              const isOverdue = dueDate && dueDate.getTime() < Date.now();
+              const isOverdue = dueDate && dueDate.getTime() < Date.now() && new Date().setHours(0,0,0,0) > dueDate.getTime();
+              const badgeLabel = isOverdue ? 'High' : task.source === 'campaign' ? 'Campaign' : task.type === 'birthday' ? 'Birthday' : task.type === 'anniversary' ? 'Anniversary' : task.priority === 'high' ? 'High' : '';
+              const badgeColor = isOverdue ? '#FF3B30' : task.source === 'campaign' ? '#AF52DE' : task.type === 'birthday' ? '#34C759' : task.priority === 'high' ? '#FF9500' : '#8E8E93';
               return (
-                <TouchableOpacity
-                  key={taskId || idx}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    if (task.contact_id) {
-                      const params: any = {};
-                      // Always prefill with the task description (the message to send)
-                      if (task.description) params.prefill = task.description;
-                      if (task.channel) params.channel = task.channel;
-                      // Pass task context so contact page shows what to do
-                      params.taskId = taskId;
-                      params.taskTitle = task.title || '';
-                      const qs = new URLSearchParams(params).toString();
-                      router.push(`/contact/${task.contact_id}${qs ? '?' + qs : ''}` as any);
-                    } else {
-                      // No contact — navigate to tasks page
-                      router.push('/tasks' as any);
-                    }
-                  }}
-                  style={[styles.taskItem, { backgroundColor: colors.card, borderColor: isOverdue ? '#FF3B3044' : colors.border }]}
-                  data-testid={`task-item-${idx}`}
-                >
-                  <View style={[styles.activityIconWrap, { backgroundColor: `${ti.color}18` }]}>
-                    <Ionicons name={ti.icon as any} size={20} color={ti.color} />
+                <View key={task._id || idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `${ti.color}18`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={ti.icon as any} size={14} color={ti.color} />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.activityMsg, { color: colors.text }]} numberOfLines={1}>{task.title}</Text>
-                    <Text style={[styles.activityTime, { color: isOverdue ? '#FF3B30' : colors.textTertiary }]}>
-                      {isOverdue ? 'Overdue' : dueDate ? getRelativeTime(task.due_date) : ''}
-                      {task.campaign_name ? ` \u00B7 ${task.campaign_name}` : ''}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={(e) => { e.stopPropagation(); completeTask(taskId); }}
-                    style={styles.taskDoneBtn}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    data-testid={`task-done-${idx}`}
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={26} color="#34C759" />
-                  </TouchableOpacity>
-                </TouchableOpacity>
+                  <Text style={{ fontSize: 13, color: '#ccc', flex: 1 }} numberOfLines={1}>{task.title}</Text>
+                  {badgeLabel ? (
+                    <View style={{ backgroundColor: `${badgeColor}18`, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '600', color: badgeColor }}>{badgeLabel}</Text>
+                    </View>
+                  ) : null}
+                </View>
               );
             })}
-          </View>
-        )}
-        {loadingTasks && pendingTasks.length === 0 && (
-          <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 10 }} />
-        )}
+            {pendingTasks.length === 0 && !loadingTasks && (
+              <Text style={{ fontSize: 13, color: colors.textTertiary, textAlign: 'center', paddingVertical: 8 }}>No touchpoints for today</Text>
+            )}
+            {loadingTasks && pendingTasks.length === 0 && (
+              <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 4 }} />
+            )}
+          </TouchableOpacity>
 
-        {/* ===== RECENT ACTIVITY ===== */}
-        <View style={styles.activitySection}>
-          <View style={styles.activityHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
-            <TouchableOpacity onPress={() => router.push('/admin/activity-feed' as any)} data-testid="view-all-activity">
-              <Text style={[styles.viewAll, { color: colors.accent }]}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {loadingActivity ? (
-            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
-          ) : recentActivity.length === 0 ? (
-            <View style={[styles.emptyActivity, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="pulse-outline" size={32} color={colors.textTertiary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No recent activity yet. Start by sharing your card or adding a contact!</Text>
+          {/* Activity Feed tile — demoted to smaller card */}
+          <TouchableOpacity
+            onPress={() => router.push('/admin/activity-feed' as any)}
+            activeOpacity={0.85}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
+            data-testid="activity-feed-tile"
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,122,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="pulse-outline" size={20} color="#007AFF" />
             </View>
-          ) : (
-            recentActivity.map((item, idx) => {
-              const fallback = getActivityIcon(item.type);
-              const icon = item.icon || fallback.icon;
-              const color = item.color || fallback.color;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    if (item.entity_id) {
-                      router.push(`/contact/${item.entity_id}` as any);
-                    }
-                  }}
-                  style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  data-testid={`activity-item-${idx}`}
-                >
-                  <View style={[styles.activityIconWrap, { backgroundColor: `${color}18` }]}><Ionicons name={icon as any} size={22} color={color} /></View>
-                  <View style={styles.activityContent}>
-                    <Text style={[styles.activityMsg, { color: colors.text }]} numberOfLines={1}>{item.message}</Text>
-                    <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.timestamp ? getRelativeTime(item.timestamp) : ''}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                </TouchableOpacity>
-              );
-            })
-          )}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Activity Feed</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{recentActivity.length > 0 ? `${recentActivity.length} recent events` : 'No recent activity'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#48484A" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

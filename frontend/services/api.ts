@@ -410,6 +410,21 @@ export const tasksAPI = {
     return response.data;
   },
 
+  getFiltered: async (userId: string, filter: string = 'today', limit: number = 50) => {
+    const response = await api.get(`/tasks/${userId}`, { params: { filter, limit } });
+    return response.data;
+  },
+
+  getSummary: async (userId: string) => {
+    const response = await api.get(`/tasks/${userId}/summary`);
+    return response.data;
+  },
+
+  getPerformance: async (userId: string, period: string = 'week') => {
+    const response = await api.get(`/tasks/${userId}/performance`, { params: { period } });
+    return response.data;
+  },
+
   create: async (userId: string, data: any) => {
     const response = await api.post(`/tasks/${userId}`, data);
     return response.data;
@@ -417,6 +432,11 @@ export const tasksAPI = {
 
   update: async (userId: string, taskId: string, data: any) => {
     const response = await api.put(`/tasks/${userId}/${taskId}`, data);
+    return response.data;
+  },
+
+  patchTask: async (userId: string, taskId: string, data: any) => {
+    const response = await api.patch(`/tasks/${userId}/${taskId}`, data);
     return response.data;
   },
 

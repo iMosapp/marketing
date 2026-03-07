@@ -313,6 +313,72 @@ async def delete_task(user_id: str, task_id: str):
     return {"success": True}
 
 
+@router.get("/{user_id}/performance")
+async def get_performance(user_id: str, period: str = "week"):
+    """Performance stats for My Performance page. period: today, week, month"""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if period == "today":
+        start = today_start
+    elif period == "month":
+        start = today_start - timedelta(days=30)
+    else:
+        start = today_start - timedelta(days=7)
+
+    match = {"user_id": user_id, "timestamp": {"$gte": start, "$lt": now}}
+
+    # Aggregate events by type
+    pipeline = [
+        {"$match": match},
+        {"$group": {"_id": "$event_type", "count": {"$sum": 1}}},
+    ]
+    activity = {}
+    for r in await db.contact_events.aggregate(pipeline).to_list(100):
+        activity[r["_id"]] = r["count"]
+
+    # Previous period for trend
+    prev_start = start - (now - start)
+    prev_match = {"user_id": user_id, "timestamp": {"$gte": prev_start, "$lt": start}}
+    prev_total = await db.contact_events.count_documents(prev_match)
+    curr_total = await db.contact_events.count_documents(match)
+    trend_pct = round(((curr_total - prev_total) / max(prev_total, 1)) * 100) if prev_total else 0
+
+    # New contacts added
+    new_leads = await db.contacts.count_documents({
+        "$or": [{"user_id": user_id}, {"created_by": user_id}],
+        "created_at": {"$gte": start, "$lt": now},
+    })
+
+    return {
+        "total_touchpoints": curr_total,
+        "trend_pct": trend_pct,
+        "communication": {
+            "texts": activity.get("sms_sent", 0),
+            "emails": activity.get("email_sent", 0),
+            "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
+        },
+        "sharing": {
+            "cards": sum(v for k, v in activity.items() if "card_shared" in k or "card_sent" in k or "digital_card" in k),
+            "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
+            "congrats": sum(v for k, v in activity.items() if "congrats" in k or "birthday_card" in k or "holiday_card" in k or "welcome_card" in k or "anniversary_card" in k or "thankyou_card" in k or "thank_you_card" in k),
+        },
+        "engagement": {
+            "link_clicks": activity.get("link_clicked", 0) + activity.get("card_viewed", 0),
+            "email_opens": activity.get("email_opened", 0),
+            "replies": activity.get("reply_received", 0) + activity.get("sms_received", 0),
+            "new_leads": new_leads,
+        },
+        "click_through": {
+            "digital_card_views": activity.get("digital_card_viewed", 0) + activity.get("card_viewed", 0),
+            "review_link_clicks": activity.get("review_link_clicked", 0),
+            "showcase_views": activity.get("showcase_viewed", 0) + activity.get("showroom_viewed", 0),
+            "link_page_visits": activity.get("link_page_viewed", 0),
+        },
+    }
+
+
 @router.post("/{user_id}/generate-system-tasks")
 async def generate_system_tasks(user_id: str):
     """
