@@ -11,6 +11,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
+### Streamlined Client Onboarding — COMPLETE (Feb 2026)
+- Backend: `POST /api/setup-wizard/new-account` creates org + store + primary user in one call
+- Temp password generated, user role set to `store_manager` with `needs_password_change=True`
+- Store-level and user-level defaults (templates, campaigns, tags) auto-seeded
+- Frontend: 3-step flow (Search → Details → Success) at `/onboarding/new-account`
+- Business search via Nominatim (OpenStreetMap), swappable to Google Places later
+- Success screen displays login credentials with copy-to-clipboard
+- Entry points: My Account page, More menu (Administration), Admin Dashboard hero button
+- Old admin links updated to point to the new consolidated flow
+
 ### Task Engine (Sprint 1-3) — COMPLETE
 - Backend: Full CRUD API, auto-generation from campaigns/system triggers, idempotent scheduling
 - Frontend: Today's Touchpoints page, My Performance page, Add Task form
@@ -31,10 +41,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### Weekly Power Rankings Email — COMPLETE
 - Branded HTML email sent to all team members every Monday at 9 AM UTC
-- Shows: your rank, rank movement (up/down arrows), level, streak, points
-- Includes: gold/silver/bronze podium, full rankings list, "Almost There" section for users close to leveling up
-- Manual trigger via "Send Rankings" button on leaderboard page or `POST /api/admin/send-power-rankings`
-- Scheduled via APScheduler CronTrigger (weekly)
+- Shows: your rank, rank movement, level, streak, points
+- Includes: podium, full rankings list, "Almost There" section
+- Manual trigger + scheduled via APScheduler CronTrigger
 
 ### Earlier Completed Features
 - Public REST API & outgoing webhooks
@@ -42,28 +51,36 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Automated lifecycle scans, carrier-agnostic messaging
 - White-label branded HTML emails via Resend
 - Quick Send flow, Dialer redesign
+- Comprehensive reporting system with scheduled email delivery
 
 ## Prioritized Backlog
 
+### P0
+- (None — current sprint complete)
+
 ### P1
+- Google Places API integration (when user provides a key)
+- Permission Roles/Templates (pre-defined role sets)
 - AI-Powered Outreach (contextual follow-up suggestions)
 - Refactor Authentication (bcrypt password hashing)
 - Push Notifications
-- Progressive Feature Exposure (phased UI unlocking)
+- Voice Help Assistant Backend
 
 ### P2
 - Full Twilio Integration (live), WhatsApp Integration
 - Training Hub content, Inventory Management Module
 - Code cleanup (~80 files)
+- Obsolete onboarding files cleanup (`admin/client-onboarding.tsx`, `admin/onboarding-settings.tsx`)
 
 ## Known Issues
-- P1: Production email delivery blocked (user needs to verify RESEND_API_KEY)
+- P1: Production email delivery blocked (user needs to verify RESEND_API_KEY in production env)
 - P2: React Hydration Error #418, Mobile tags sync
 
 ## Key API Endpoints
+- New Account: `POST /api/setup-wizard/new-account`
 - Tasks: `GET/POST /api/tasks/{user_id}`, `PATCH /api/tasks/{user_id}/{task_id}`
 - Permissions: `GET/PUT /api/admin/permissions/{user_id}`
-- Leaderboard: `GET /api/leaderboard/v2/store|org|global/{user_id}` (params: period, category)
+- Leaderboard: `GET /api/leaderboard/v2/store|org|global/{user_id}`
 - Power Rankings: `POST /api/admin/send-power-rankings`
 
 ## Test Credentials
