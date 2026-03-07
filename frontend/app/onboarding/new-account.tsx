@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, FlatList,
+  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import * as Clipboard from 'expo-clipboard';
 
 const PLANS = [
   { id: 'starter', name: 'Starter', price: '$49/mo', desc: '1-5 users', color: '#007AFF' },
@@ -39,7 +40,6 @@ interface PlaceResult {
 async function searchBusinesses(query: string): Promise<PlaceResult[]> {
   if (query.length < 3) return [];
   try {
-    // Using Nominatim (OpenStreetMap) — free, no API key
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=8&countrycodes=us`;
     const res = await fetch(url, { headers: { 'User-Agent': 'IMOnSocial/1.0' } });
     const data = await res.json();
@@ -61,6 +61,13 @@ async function searchBusinesses(query: string): Promise<PlaceResult[]> {
   } catch {
     return [];
   }
+}
+
+interface SuccessData {
+  business_name: string;
+  contact_name: string;
+  contact_email: string;
+  temp_password: string;
 }
 
 export default function NewAccountScreen() {
@@ -93,7 +100,9 @@ export default function NewAccountScreen() {
   // Plan & submit
   const [plan, setPlan] = useState('pro');
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<'search' | 'details'>('search');
+  const [step, setStep] = useState<'search' | 'details' | 'success'>('search');
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
@@ -132,47 +141,67 @@ export default function NewAccountScreen() {
 
     setSubmitting(true);
     try {
-      const res = await api.post('/setup-wizard/clients', {
-        client_name: businessName.trim(),
+      const res = await api.post('/setup-wizard/new-account', {
+        business_name: businessName.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zip: zip.trim(),
+        phone: phone.trim(),
+        website: website.trim(),
+        industry,
+        contact_name: contactName.trim(),
         contact_email: contactEmail.trim(),
         contact_phone: contactPhone.trim(),
+        plan,
+        place_id: selectedPlace?.place_id || '',
+        lat: selectedPlace?.lat || '',
+        lon: selectedPlace?.lon || '',
+        verified_source: selectedPlace ? 'openstreetmap' : 'manual',
       }, { headers: { 'X-User-ID': user._id } });
 
-      const clientId = res.data?._id || res.data?.id;
-      if (clientId) {
-        // Save the detailed info as step_data
-        await api.put(`/setup-wizard/clients/${clientId}`, {
-          step_data: {
-            business: {
-              name: businessName, address, city, state, zip,
-              phone, website, industry,
-              place_id: selectedPlace?.place_id || '',
-              lat: selectedPlace?.lat || '',
-              lon: selectedPlace?.lon || '',
-              verified_source: selectedPlace ? 'openstreetmap' : 'manual',
-            },
-            contact: { name: contactName, email: contactEmail, phone: contactPhone },
-            plan,
-          },
-        }, { headers: { 'X-User-ID': user._id } });
-      }
-
-      showSimpleAlert('Account Created', `${businessName} has been added! The onboarding checklist is ready.`);
-      router.replace('/admin/client-onboarding' as any);
+      setSuccessData({
+        business_name: res.data.business_name,
+        contact_name: res.data.contact_name,
+        contact_email: res.data.contact_email,
+        temp_password: res.data.temp_password,
+      });
+      setStep('success');
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to create account');
     }
     setSubmitting(false);
   };
 
+  const copyPassword = async () => {
+    if (!successData?.temp_password) return;
+    try {
+      await Clipboard.setStringAsync(successData.temp_password);
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
+    } catch {
+      showSimpleAlert('Copied', successData.temp_password);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-        <TouchableOpacity onPress={() => step === 'details' ? setStep('search') : router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="new-account-back">
-          <Ionicons name="chevron-back" size={24} color={colors.accent} />
+        <TouchableOpacity
+          onPress={() => {
+            if (step === 'details') setStep('search');
+            else if (step === 'success') router.back();
+            else router.back();
+          }}
+          style={{ padding: 4, marginRight: 8 }}
+          data-testid="new-account-back"
+        >
+          <Ionicons name={step === 'success' ? 'close' : 'chevron-back'} size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>Sign Up New Account</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>
+          {step === 'success' ? 'Account Created' : 'Sign Up New Account'}
+        </Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -247,7 +276,7 @@ export default function NewAccountScreen() {
               </View>
             )}
           </>
-        ) : (
+        ) : step === 'details' ? (
           <>
             {/* Verified source badge */}
             {selectedPlace && (
@@ -334,6 +363,59 @@ export default function NewAccountScreen() {
             </TouchableOpacity>
             <Text style={{ fontSize: 12, color: '#48484A', textAlign: 'center', padding: 8 }}>This will create the account and start the onboarding checklist</Text>
           </>
+        ) : (
+          /* ── Success Screen ── */
+          <View style={{ paddingHorizontal: 16, paddingTop: 32, alignItems: 'center' }}>
+            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(52,199,89,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Ionicons name="checkmark-circle" size={48} color="#34C759" />
+            </View>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center' }}>Account Created!</Text>
+            <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 8, paddingHorizontal: 16 }}>
+              {successData?.business_name} has been set up and is ready to go.
+            </Text>
+
+            {/* Credentials Card */}
+            <View style={{ width: '100%', marginTop: 24, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+              <View style={{ padding: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, marginBottom: 12 }}>LOGIN CREDENTIALS</Text>
+                <View style={{ gap: 10 }}>
+                  <View>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Name</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-name">{successData?.contact_name}</Text>
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Email</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-email">{successData?.contact_email || 'Not provided'}</Text>
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Temporary Password</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#C9A962', fontFamily: 'monospace' }} data-testid="success-temp-password">{successData?.temp_password}</Text>
+                      <TouchableOpacity onPress={copyPassword} data-testid="copy-password-btn">
+                        <Ionicons name={copiedPassword ? 'checkmark' : 'copy-outline'} size={18} color={copiedPassword ? '#34C759' : colors.accent} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+              <View style={{ padding: 16, backgroundColor: 'rgba(255,149,0,0.06)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="information-circle" size={16} color="#FF9500" />
+                  <Text style={{ fontSize: 12, color: '#FF9500', fontWeight: '600' }}>Share these credentials with the account owner</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ width: '100%', marginTop: 24, padding: 16, borderRadius: 14, backgroundColor: colors.accent, alignItems: 'center' }}
+              activeOpacity={0.8}
+              data-testid="success-done-btn"
+            >
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>

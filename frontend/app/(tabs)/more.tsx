@@ -465,7 +465,7 @@ export default function MoreScreen() {
       // Organization
       { icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address, store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
       { icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
-      { icon: 'rocket-outline', title: 'Client Onboarding', subtitle: 'Step-by-step setup checklist', onPress: () => router.push('/admin/client-onboarding'), color: '#C9A962' },
+      { icon: 'rocket-outline', title: 'New Account Setup', subtitle: 'Onboard a new client', onPress: () => router.push('/onboarding/new-account' as any), color: '#C9A962' },
       { icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'Overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
       // Content Moderation
       { icon: 'chatbubbles-outline', title: 'Review Approvals', subtitle: 'Approve customer reviews', onPress: () => router.push('/settings/review-approvals'), color: '#AF52DE' },

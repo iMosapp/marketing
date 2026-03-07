@@ -529,8 +529,8 @@ export default function AdminDashboard() {
           {
             icon: 'rocket',
             title: 'Onboard New Account',
-            subtitle: 'Guided setup wizard',
-            onPress: () => router.push('/admin/setup-wizard' as any),
+            subtitle: 'Quick account setup',
+            onPress: () => router.push('/onboarding/new-account' as any),
             color: '#C9A962',
           },
           {
@@ -870,7 +870,7 @@ export default function AdminDashboard() {
               flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
               backgroundColor: '#C9A962', borderRadius: 16, padding: 18,
             }}
-            onPress={() => router.push('/admin/setup-wizard' as any)}
+            onPress={() => router.push('/onboarding/new-account' as any)}
             activeOpacity={0.8}
             data-testid="onboard-new-account-btn"
           >
