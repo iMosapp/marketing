@@ -8,6 +8,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI } from '../../services/api';
+import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 
 const IS_WEB = Platform.OS === 'web';
@@ -112,27 +113,65 @@ export default function TouchpointsScreen() {
     } catch { showSimpleAlert('Error', 'Failed to snooze task'); }
   };
 
-  const handleCall = (task: any) => {
+  const handleCall = async (task: any) => {
     const phone = task.contact_phone;
     if (!phone) { showSimpleAlert('No Number', 'No phone number available.'); return; }
     const url = `tel:${phone.replace(/[^\d+]/g, '')}`;
     IS_WEB ? (window.location.href = url) : Linking.openURL(url);
+    // Auto-complete after initiating the call
+    completeTask(task._id);
   };
 
-  const handleText = (task: any) => {
+  const handleText = async (task: any) => {
+    const phone = task.contact_phone;
+    if (!phone) { showSimpleAlert('No Number', 'No phone number for this contact.'); return; }
+
+    // Build query params for the contact page composer
+    const params: any = {};
+    if (task.suggested_message) params.prefill = task.suggested_message;
+    params.taskId = task._id;
+
+    // If we already have a contact_id, go directly to their page
     if (task.contact_id) {
-      const params: any = {};
-      if (task.suggested_message) params.prefill = task.suggested_message;
-      params.taskId = task._id;
       const qs = new URLSearchParams(params).toString();
-      router.push(`/contact/${task.contact_id}${qs ? '?' + qs : ''}` as any);
-    } else {
-      const phone = task.contact_phone;
-      if (phone) {
-        const url = `sms:${phone.replace(/[^\d+]/g, '')}`;
-        IS_WEB ? (window.location.href = url) : Linking.openURL(url);
-      }
+      router.push(`/contact/${task.contact_id}?${qs}` as any);
+      return;
     }
+
+    // No contact_id — look up by phone number first
+    try {
+      const res = await api.get(`/contacts/${user!._id}/check-duplicate`, { params: { phone } });
+      const matches = res.data?.matches || [];
+      if (matches.length > 0) {
+        // Found the contact — navigate to their page
+        const qs = new URLSearchParams(params).toString();
+        router.push(`/contact/${matches[0].id}?${qs}` as any);
+        return;
+      }
+    } catch {}
+
+    // Contact not in CRM — use personal SMS fallback: log via API then open native SMS
+    try {
+      await api.post(`/messages/send/${user!._id}`, {
+        content: task.suggested_message || '',
+        channel: 'sms_personal',
+        contact_phone: phone,
+        contact_name: task.contact_name || '',
+      });
+    } catch {}
+    // Open native SMS app with message pre-filled
+    if (IS_WEB && typeof window !== 'undefined') {
+      const ua = window.navigator.userAgent.toLowerCase();
+      const isIos = /iphone|ipad|ipod/.test(ua);
+      const sep = isIos ? '&' : '?';
+      const smsUrl = `sms:${encodeURIComponent(phone)}${sep}body=${encodeURIComponent(task.suggested_message || '')}`;
+      window.open(smsUrl, '_self');
+    } else {
+      const smsUrl = `sms:${phone.replace(/[^\d+]/g, '')}`;
+      Linking.openURL(smsUrl);
+    }
+    // Auto-complete the task
+    completeTask(task._id);
   };
 
   // Filter tasks client-side

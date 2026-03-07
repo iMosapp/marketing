@@ -1237,6 +1237,13 @@ export default function ContactDetailScreen() {
       setAiSuggestion('');
       // Refresh events to show the new message in the feed
       loadEvents();
+      
+      // Auto-complete the task if this send came from a Touchpoints task card
+      if (taskId && typeof taskId === 'string' && user?._id) {
+        try {
+          await api.patch(`/tasks/${user._id}/${taskId}`, { action: 'complete' });
+        } catch {}
+      }
     } catch (e: any) {
       showSimpleAlert('Send Failed', e?.response?.data?.detail || 'Could not send message');
     } finally {
