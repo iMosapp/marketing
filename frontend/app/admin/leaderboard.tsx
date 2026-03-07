@@ -58,6 +58,18 @@ export default function LeaderboardScreen() {
   const top3 = leaderboard.slice(0, 3);
   const rest = leaderboard.slice(3);
 
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin';
+
+  const sendPowerRankings = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await api.post('/admin/send-power-rankings', {}, { headers: { 'X-User-ID': user._id } });
+      alert(`Power Rankings sent! ${res.data.emails_sent} emails delivered.`);
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Failed to send');
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       {/* Header */}
@@ -66,6 +78,12 @@ export default function LeaderboardScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
         <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>Leaderboard</Text>
+        {isAdmin && (
+          <TouchableOpacity onPress={sendPowerRankings} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(201,169,98,0.12)' }} data-testid="send-rankings-btn">
+            <Ionicons name="mail-outline" size={16} color={colors.accent} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.accent }}>Send Rankings</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>

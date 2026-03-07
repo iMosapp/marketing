@@ -636,6 +636,18 @@ async def generate_daily_system_tasks():
         logger.error(f"[Scheduler] Fatal error in system task gen: {e}")
 
 
+async def send_weekly_power_rankings_job():
+    """Weekly job to send power rankings emails to all teams."""
+    from routers.database import get_db
+    from services.power_rankings import send_weekly_power_rankings
+    db = get_db()
+    try:
+        count = await send_weekly_power_rankings(db)
+        logger.info(f"[Scheduler] Power Rankings: sent {count} emails")
+    except Exception as e:
+        logger.error(f"[Scheduler] Power Rankings error: {e}")
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -687,8 +699,17 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
+    # Weekly Monday at 9 AM UTC - send power rankings emails
+    scheduler.add_job(
+        send_weekly_power_rankings_job,
+        CronTrigger(day_of_week='mon', hour=9, minute=0),
+        id="weekly_power_rankings",
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 5 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
+    logger.info("[Scheduler] Started with 6 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC)")
 
 
 def stop_scheduler():

@@ -3622,3 +3622,15 @@ async def update_user_permissions(user_id: str, data: dict, x_user_id: str = Hea
     )
     from permissions import merge_permissions
     return {"status": "ok", "permissions": merge_permissions(permissions)}
+
+
+@router.post("/send-power-rankings")
+async def trigger_power_rankings(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Manually trigger the weekly Power Rankings email. Admin only."""
+    requesting = await get_requesting_user(x_user_id)
+    if requesting.get("role") not in ("super_admin", "org_admin"):
+        raise HTTPException(status_code=403, detail="Admin only")
+    db = get_db()
+    from services.power_rankings import send_weekly_power_rankings
+    count = await send_weekly_power_rankings(db)
+    return {"status": "ok", "emails_sent": count}

@@ -21,36 +21,29 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Menu cleaned from 8 → 6 sections: My Tools, Campaigns, Content, Insights, Administration, Settings
 - Feature Permissions: section-level master toggles + individual item overrides
 - Progressive defaults (core ON, advanced OFF for new users)
-- Permission hierarchy: Super Admin > Org Admin > Store Manager
 - Permissions UI at `/admin/users/permissions/{id}`
-- My Account page cleaned up (removed Quick Actions grid + My Activity dashboard)
 
 ### Gamification & Leaderboards — COMPLETE
-- **3-tier leaderboards**: My Team (users in store), My Org (stores in org), Global (anonymized, privacy-gated)
-- **Level system**: Rookie (0-50) → Hustler (51-200) → Closer (201-500) → All-Star (501-1000) → Legend (1001+)
-- **Streaks**: Consecutive days of task completion, displayed on rank card
-- **"You vs Average"**: Shows how you stack up against team average
-- **7 scoring categories**: Digital Cards, Reviews, Cards Sent, Emails, SMS, Calls, Tasks Done
-- **Podium display**: Gold/Silver/Bronze for top 3 with avatars
-- **Period filters**: This Week / This Month / All Time
-- **Category sorting**: Re-sort leaderboard by any scoring category
-- **Privacy controls**: Org `leaderboard_visible` flag gates global visibility
+- 3-tier leaderboards: My Team, My Org, Global (anonymized, privacy-gated)
+- Level system: Rookie → Hustler → Closer → All-Star → Legend
+- Streaks, "You vs Average", category sorting, podium, period filters
+- 7 scoring categories: Digital Cards, Reviews, Cards Sent, Emails, SMS, Calls, Tasks Done
+
+### Weekly Power Rankings Email — COMPLETE
+- Branded HTML email sent to all team members every Monday at 9 AM UTC
+- Shows: your rank, rank movement (up/down arrows), level, streak, points
+- Includes: gold/silver/bronze podium, full rankings list, "Almost There" section for users close to leveling up
+- Manual trigger via "Send Rankings" button on leaderboard page or `POST /api/admin/send-power-rankings`
+- Scheduled via APScheduler CronTrigger (weekly)
 
 ### Earlier Completed Features
 - Public REST API & outgoing webhooks
 - Soft-delete user system & data retention policy
-- Automated lifecycle scans (apscheduler)
-- Carrier-agnostic messaging (personal SMS fallback)
+- Automated lifecycle scans, carrier-agnostic messaging
 - White-label branded HTML emails via Resend
-- Quick Send flow overhaul, Dialer redesign
+- Quick Send flow, Dialer redesign
 
 ## Prioritized Backlog
-
-### P0
-- ~~Task Engine~~ DONE
-- ~~Menu Reorganization~~ DONE
-- ~~Feature Permissions~~ DONE
-- ~~Gamification & Leaderboards~~ DONE
 
 ### P1
 - AI-Powered Outreach (contextual follow-up suggestions)
@@ -59,28 +52,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Progressive Feature Exposure (phased UI unlocking)
 
 ### P2
-- Full Twilio Integration (live)
-- WhatsApp Integration
-- Training Hub content
-- Inventory Management Module
+- Full Twilio Integration (live), WhatsApp Integration
+- Training Hub content, Inventory Management Module
 - Code cleanup (~80 files)
 
 ## Known Issues
 - P1: Production email delivery blocked (user needs to verify RESEND_API_KEY)
-- P2: React Hydration Error #418
-- P2: Mobile tags sync issue
+- P2: React Hydration Error #418, Mobile tags sync
 
 ## Key API Endpoints
-- Tasks: `GET/POST /api/tasks/{user_id}`, `PATCH /api/tasks/{user_id}/{task_id}`, `GET .../summary`, `GET .../performance`
+- Tasks: `GET/POST /api/tasks/{user_id}`, `PATCH /api/tasks/{user_id}/{task_id}`
 - Permissions: `GET/PUT /api/admin/permissions/{user_id}`
-- Leaderboard: `GET /api/leaderboard/v2/store/{user_id}`, `.../org/{user_id}`, `.../global/{user_id}` — params: period, category
-
-## Key Files
-- `/app/backend/routers/leaderboard_v2.py` — Gamification engine with levels, streaks, tiers
-- `/app/backend/permissions.py` — Permission defaults and merge logic
-- `/app/frontend/app/admin/leaderboard.tsx` — Leaderboard UI with podium, tiers, rank card
-- `/app/frontend/app/touchpoints/` — Touchpoints, Performance, Add Task pages
-- `/app/frontend/app/(tabs)/more.tsx` — Reorganized menu with permission filtering
+- Leaderboard: `GET /api/leaderboard/v2/store|org|global/{user_id}` (params: period, category)
+- Power Rankings: `POST /api/admin/send-power-rankings`
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
