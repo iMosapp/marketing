@@ -539,6 +539,24 @@ export default function MyAccountScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Sign Up New Account */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.installBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push('/onboarding/new-account' as any)}
+            data-testid="sign-up-new-account"
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#FF2D5520' }]}>
+              <Ionicons name="storefront-outline" size={22} color="#FF2D55" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuTitle, { color: colors.text }]}>Sign Up New Account</Text>
+              <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>Onboard a new store or business</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
         {/* Profile & AI Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Profile & AI</Text>
