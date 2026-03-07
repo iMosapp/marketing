@@ -11,6 +11,16 @@ A full-stack Relationship Management System (RMS) for dealerships. React Native 
 
 ## What's Been Implemented
 
+### Sprint 1: Task Engine Backend (March 7, 2026)
+- Built full tasks CRUD API: GET (filtered by today/overdue/upcoming/completed/all), POST (manual), PATCH (complete/snooze/dismiss/edit), DELETE
+- GET /api/tasks/{user_id}/summary returns daily scoreboard: total, completed, pending, overdue, progress_pct, activity counts
+- System task auto-generation: dormant contacts (90+ days), upcoming birthdays (3 days), purchase anniversaries (3 days)
+- Campaign → Task bridge: scheduler creates tasks with suggested_message from campaign steps, with idempotency keys
+- All task completions log a `task_completed` contact_event (closing the loop: campaign → task → event)
+- Added daily scheduled job at 5:30 UTC for system task generation
+- Idempotency: unique partial filter index on idempotency_key prevents duplicate tasks
+- Task schema: user_id, contact_id/name/phone, type, source, title, description, suggested_message, action_type, priority, priority_order, status, due_date, snoozed_until, completed_at, idempotency_key
+
 ### Bug Fixes & Dialer Redesign (March 6, 2026)
 - Fixed Thank You Card mislabeling: key was `thank_you` but create-card.tsx expected `thankyou`
 - Fixed black autofill text in dark mode: global CSS now forces white text and dark background on autofilled inputs
