@@ -1,8 +1,10 @@
 """
-Congrats Cards Router - Creates shareable thank you/congrats cards for customers
+Unified Cards Router - Creates shareable cards for customers
+Handles ALL card types: congrats, birthday, anniversary, thankyou, welcome, holiday.
 Features:
 - Store-level card templates with customizable messages
 - Individual card creation with customer photo and name
+- Auto-creation from scheduler/tag triggers (birthday, anniversary, etc.)
 - Public shareable landing page with download and social sharing
 - Image generation for easy saving/sharing
 """
@@ -13,12 +15,15 @@ from datetime import datetime, timezone
 from typing import Optional
 import base64
 import uuid
+import re
 import io
+import logging
 from PIL import Image, ImageDraw, ImageFont
 from routers.database import get_db
 from routers.short_urls import create_short_url, get_short_url_base
 
 router = APIRouter(prefix="/congrats", tags=["congrats-cards"])
+logger = logging.getLogger(__name__)
 
 # ===== Card Type Defaults =====
 CARD_TYPE_DEFAULTS = {
@@ -69,6 +74,136 @@ CARD_TYPE_DEFAULTS = {
 
 def _get_type_defaults(card_type: str) -> dict:
     return CARD_TYPE_DEFAULTS.get(card_type, CARD_TYPE_DEFAULTS["congrats"])
+
+
+async def _get_contact_photo(db, contact) -> Optional[str]:
+    """Get the best available photo for a contact - returns optimized URL."""
+    from utils.image_urls import resolve_contact_photo
+    url = resolve_contact_photo(contact)
+    if url:
+        return url
+    phone = contact.get("phone", "")
+    if phone:
+        normalized = re.sub(r'\D', '', phone)[-10:]
+        card = await db.congrats_cards.find_one(
+            {"salesman_id": contact.get("user_id"), "customer_phone": {"$regex": normalized}},
+            sort=[("created_at", -1)],
+        )
+        if card:
+            if card.get("photo_path"):
+                return f"/api/images/{card['photo_path']}"
+            if card.get("customer_photo") and card["customer_photo"].startswith("/api/images/"):
+                return card["customer_photo"]
+    return None
+
+
+async def auto_create_card(
+    user_id: str,
+    contact_id: str,
+    card_type: str = "birthday",
+    custom_message: Optional[str] = None,
+) -> Optional[dict]:
+    """
+    Auto-create a card for a contact. Called by scheduler or tag trigger.
+    Stores in the unified congrats_cards collection.
+    Returns card info dict or None if creation fails.
+    """
+    db = get_db()
+    defaults = _get_type_defaults(card_type)
+
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return None
+
+        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+        if not contact:
+            return None
+
+        # Check if we already created a card for this contact today
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        existing = await db.congrats_cards.find_one({
+            "salesman_id": user_id,
+            "contact_id": contact_id,
+            "card_type": card_type,
+            "created_at": {"$gte": today_start},
+        })
+        if existing:
+            logger.info(f"[Cards] {card_type} card already exists for contact {contact_id} today")
+            return {"card_id": existing["card_id"], "already_exists": True}
+
+        store = None
+        store_id = user.get("store_id")
+        if store_id:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+
+        photo_url = await _get_contact_photo(db, contact)
+        customer_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or "Friend"
+        card_id = str(uuid.uuid4())[:12]
+        store_accent = store.get("primary_color", defaults["accent_color"]) if store else defaults["accent_color"]
+
+        from utils.image_urls import resolve_user_photo, resolve_store_logo
+
+        card_doc = {
+            "card_id": card_id,
+            "card_type": card_type,
+            "salesman_id": user_id,
+            "contact_id": contact_id,
+            "salesman_name": user.get("name", ""),
+            "salesman_photo": resolve_user_photo(user),
+            "salesman_title": user.get("title", "Sales Professional"),
+            "salesman_phone": user.get("phone"),
+            "salesman_email": user.get("email"),
+            "store_id": store_id,
+            "store_name": store.get("name") if store else None,
+            "store_logo": resolve_store_logo(store),
+            "customer_name": customer_name,
+            "customer_phone": contact.get("phone"),
+            "customer_photo": photo_url,
+            "custom_message": custom_message,
+            "headline": defaults["headline"],
+            "message": defaults["message"],
+            "footer_text": "",
+            "show_salesman": True,
+            "show_store_logo": True,
+            "background_color": defaults["background_color"],
+            "accent_color": store_accent,
+            "text_color": defaults["text_color"],
+            "views": 0,
+            "downloads": 0,
+            "shares": 0,
+            "auto_generated": True,
+            "showcase_approved": False,
+            "created_at": datetime.now(timezone.utc),
+        }
+
+        await db.congrats_cards.insert_one(card_doc)
+
+        base_url = get_short_url_base()
+        full_url = f"{base_url}/congrats/{card_id}"
+        short_result = await create_short_url(
+            original_url=full_url,
+            link_type=f"{card_type}_card",
+            reference_id=card_id,
+            user_id=user_id,
+            metadata={"customer_name": customer_name, "card_type": card_type},
+        )
+        await db.congrats_cards.update_one(
+            {"card_id": card_id},
+            {"$set": {"short_url": short_result["short_url"]}},
+        )
+
+        logger.info(f"[Cards] Created {card_type} card {card_id} for {customer_name}")
+        return {
+            "card_id": card_id,
+            "card_url": full_url,
+            "short_url": short_result["short_url"],
+            "customer_name": customer_name,
+        }
+
+    except Exception as e:
+        logger.error(f"[Cards] Failed to create {card_type} card: {e}")
+        return None
 
 
 @router.get("/template/{store_id}")
@@ -376,20 +511,29 @@ async def create_congrats_card(
 @router.get("/card/{card_id}")
 async def get_congrats_card(card_id: str):
     """
-    Get congrats card data for the public landing page
+    Get card data for the public landing page.
+    Checks congrats_cards first, then falls back to legacy birthday_cards collection.
     """
     db = get_db()
     
     card = await db.congrats_cards.find_one({"card_id": card_id})
     
+    # Fallback: check legacy birthday_cards collection for old cards
+    if not card:
+        card = await db.birthday_cards.find_one({"card_id": card_id})
+        if card:
+            # Track views in the legacy collection
+            await db.birthday_cards.update_one({"card_id": card_id}, {"$inc": {"views": 1}})
+    
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
     
-    # Increment view count
-    await db.congrats_cards.update_one(
-        {"card_id": card_id},
-        {"$inc": {"views": 1}}
-    )
+    # Increment view count (only for congrats_cards - legacy already incremented above)
+    if await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1}):
+        await db.congrats_cards.update_one(
+            {"card_id": card_id},
+            {"$inc": {"views": 1}}
+        )
     
     # Log activity: customer viewed their card (specific to card type)
     try:
@@ -465,7 +609,7 @@ async def get_congrats_card(card_id: str):
 @router.post("/card/{card_id}/track")
 async def track_card_action(card_id: str, data: dict):
     """
-    Track downloads and shares
+    Track downloads and shares (checks both collections for backward compat)
     """
     db = get_db()
     
@@ -475,14 +619,16 @@ async def track_card_action(card_id: str, data: dict):
     
     field = "downloads" if action == "download" else "shares"
     
-    await db.congrats_cards.update_one(
-        {"card_id": card_id},
-        {"$inc": {field: 1}}
-    )
+    # Try congrats_cards first, then legacy birthday_cards
+    result = await db.congrats_cards.update_one({"card_id": card_id}, {"$inc": {field: 1}})
+    if result.matched_count == 0:
+        await db.birthday_cards.update_one({"card_id": card_id}, {"$inc": {field: 1}})
     
     # Log activity: customer downloaded/shared their card
     try:
         card = await db.congrats_cards.find_one({"card_id": card_id}, {"salesman_id": 1, "customer_phone": 1, "customer_name": 1, "card_type": 1})
+        if not card:
+            card = await db.birthday_cards.find_one({"card_id": card_id}, {"salesman_id": 1, "customer_phone": 1, "customer_name": 1, "card_type": 1})
         if card and card.get("salesman_id"):
             from utils.contact_activity import log_activity_for_customer
             action_label = "Downloaded" if action == "download" else "Shared"
@@ -535,11 +681,13 @@ def create_circular_mask(size):
 async def get_card_image(card_id: str):
     """
     Generate a clean, social-media-ready card image.
-    Compact layout  - just the card: headline, photo, name, message, sender.
+    Checks both collections for backward compat.
     """
     db = get_db()
     
     card = await db.congrats_cards.find_one({"card_id": card_id})
+    if not card:
+        card = await db.birthday_cards.find_one({"card_id": card_id})
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
     
@@ -674,11 +822,10 @@ async def get_card_image(card_id: str):
     img.save(img_bytes, format='PNG', quality=95)
     img_bytes.seek(0)
     
-    # Track download
-    await db.congrats_cards.update_one(
-        {"card_id": card_id},
-        {"$inc": {"downloads": 1}}
-    )
+    # Track download (try both collections)
+    result = await db.congrats_cards.update_one({"card_id": card_id}, {"$inc": {"downloads": 1}})
+    if result.matched_count == 0:
+        await db.birthday_cards.update_one({"card_id": card_id}, {"$inc": {"downloads": 1}})
     
     return Response(
         content=img_bytes.getvalue(),
@@ -691,22 +838,29 @@ async def get_card_image(card_id: str):
 
 
 @router.get("/history/{salesman_id}")
-async def get_card_history(salesman_id: str, limit: int = 20):
+async def get_card_history(salesman_id: str, limit: int = 20, card_type: str = None):
     """
-    Get congrats card history for a salesman
+    Get card history for a salesman. Merges both collections for full history.
     """
     db = get_db()
     
-    cards = await db.congrats_cards.find(
-        {"salesman_id": salesman_id}
-    ).sort("created_at", -1).limit(limit).to_list(limit)
+    query = {"salesman_id": salesman_id}
+    if card_type:
+        query["card_type"] = card_type
+    
+    congrats = await db.congrats_cards.find(query).sort("created_at", -1).limit(limit).to_list(limit)
+    legacy = await db.birthday_cards.find({"salesman_id": salesman_id}).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    all_cards = congrats + legacy
+    all_cards.sort(key=lambda c: c.get("created_at") or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     
     return [{
         "card_id": c["card_id"],
+        "card_type": c.get("card_type", "congrats"),
         "customer_name": c.get("customer_name"),
         "customer_phone": c.get("customer_phone"),
         "views": c.get("views", 0),
         "downloads": c.get("downloads", 0),
         "shares": c.get("shares", 0),
         "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,
-    } for c in cards]
+    } for c in all_cards[:limit]]

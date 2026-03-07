@@ -393,9 +393,9 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
     if tag_name.lower() in ("birthday", "happy birthday", "bday"):
         import asyncio
         try:
-            from routers.birthday_cards import auto_create_birthday_card
+            from routers.congrats_cards import auto_create_card
             for cid in contact_ids:
-                asyncio.create_task(auto_create_birthday_card(user_id, cid))
+                asyncio.create_task(auto_create_card(user_id, cid, card_type="birthday"))
         except Exception as e:
             logger.warning(f"Birthday card auto-create failed: {e}")
 

@@ -181,6 +181,8 @@ export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('all');
   const [activities, setActivities] = useState<any[]>([]);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['customers', 'data']));
+  const [migrating, setMigrating] = useState(false);
+  const [migrateResult, setMigrateResult] = useState<string | null>(null);
   
   // Role checks
   const isSuperAdmin = user?.role === 'super_admin';
@@ -245,6 +247,22 @@ export default function AdminDashboard() {
     setRefreshing(true);
     await loadAllStats();
     setRefreshing(false);
+  };
+  
+  const handleMigrateImages = async () => {
+    setMigrating(true);
+    setMigrateResult(null);
+    try {
+      const res = await api.post('/images/migrate-all-base64', {}, {
+        headers: { 'X-User-ID': user?._id },
+      });
+      const d = res.data;
+      setMigrateResult(`Done! Migrated: ${d.migrated || 0}, Backfilled: ${d.backfilled || 0}, Skipped: ${d.skipped || 0}`);
+    } catch (e: any) {
+      setMigrateResult(`Error: ${e.response?.data?.detail || e.message}`);
+    } finally {
+      setMigrating(false);
+    }
   };
   
   const toggleSection = (sectionId: string) => {
@@ -602,6 +620,13 @@ export default function AdminDashboard() {
             subtitle: 'Transfer contacts',
             onPress: () => router.push('/admin/bulk-transfer'),
             color: '#FF3B30',
+          },
+          {
+            icon: 'images',
+            title: 'Migrate All Images',
+            subtitle: migrating ? 'Migrating...' : (migrateResult || 'Convert base64 to WebP'),
+            onPress: handleMigrateImages,
+            color: '#5AC8FA',
           },
         ],
       });

@@ -237,13 +237,13 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
             # Auto-create a birthday card if this is a birthday trigger
             if trigger_type == "birthday" and config.get("include_birthday_card", True):
                 try:
-                    from routers.birthday_cards import auto_create_birthday_card
-                    bday_result = await auto_create_birthday_card(user_id, contact_id, custom_message=None)
+                    from routers.congrats_cards import auto_create_card
+                    bday_result = await auto_create_card(user_id, contact_id, card_type="birthday")
                     if bday_result and bday_result.get("short_url"):
                         message += f"\n\nView your birthday card: {bday_result['short_url']}"
                         logger.info(f"[Scheduler] Birthday card created for {contact_name}: {bday_result.get('card_id')}")
                     elif bday_result and bday_result.get("already_exists"):
-                        existing_card = await db.birthday_cards.find_one(
+                        existing_card = await db.congrats_cards.find_one(
                             {"card_id": bday_result["card_id"]}, {"short_url": 1}
                         )
                         if existing_card and existing_card.get("short_url"):

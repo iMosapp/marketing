@@ -59,7 +59,8 @@ export default function BirthdayCardPage() {
   const loadCard = async () => {
     if (!cardId) return;
     try {
-      const res = await api.get(`/birthday/card/${cardId}`);
+      // Use the unified congrats endpoint (handles both new and legacy birthday cards)
+      const res = await api.get(`/congrats/card/${cardId}`);
       setCard(res.data);
     } catch (e: any) {
       setError(e.response?.data?.detail || 'Card not found');
@@ -78,11 +79,11 @@ export default function BirthdayCardPage() {
     } else {
       Share.share({ message: url });
     }
-    api.post(`/birthday/card/${cardId}/track`, { action: 'share' }).catch(() => {});
+    api.post(`/congrats/card/${cardId}/track`, { action: 'share' }).catch(() => {});
   };
 
   const handleDownload = () => {
-    const imageUrl = `${api.defaults.baseURL}/birthday/card/${cardId}/image`;
+    const imageUrl = `${api.defaults.baseURL}/congrats/card/${cardId}/image`;
     if (IS_WEB) {
       const a = document.createElement('a');
       a.href = imageUrl;
