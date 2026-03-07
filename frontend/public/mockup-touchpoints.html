@@ -4,299 +4,282 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Today's Touchpoints</title>
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif; color:#fff; max-width:430px; margin:0 auto; min-height:100vh; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif; color:#fff; max-width:430px; margin:0 auto; min-height:100vh; }
 
-.header { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid #1C1C1E; position:sticky; top:0; background:#000; z-index:10; }
-.back { font-size:24px; color:#C9A962; text-decoration:none; padding:4px 8px; margin-right:8px; }
+/* Header — sticky, matches app */
+.header { display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid #2C2C2E; position:sticky; top:0; background:#000; z-index:10; }
+.back-btn { color:#C9A962; text-decoration:none; display:flex; align-items:center; padding:4px; margin-right:8px; }
+.back-btn ion-icon { font-size:24px; }
 .header-title { font-size:18px; font-weight:700; flex:1; }
-.header-action { font-size:13px; color:#C9A962; font-weight:600; cursor:pointer; }
+.header-add { color:#C9A962; display:flex; align-items:center; padding:4px; }
+.header-add ion-icon { font-size:24px; }
 
 /* Scoreboard */
-.scoreboard { display:flex; gap:8px; padding:16px; }
-.score-card { flex:1; background:#1C1C1E; border-radius:12px; padding:12px 8px; text-align:center; border:1px solid #2C2C2E; }
-.score-num { font-size:24px; font-weight:700; }
-.score-label { font-size:10px; color:#8E8E93; font-weight:600; margin-top:2px; text-transform:uppercase; }
+.scoreboard { display:flex; gap:6px; padding:16px 16px 12px; }
+.score-card { flex:1; background:#1C1C1E; border-radius:12px; padding:10px 4px; text-align:center; border:1px solid #2C2C2E; }
+.score-num { font-size:22px; font-weight:700; }
+.score-label { font-size:9px; color:#8E8E93; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-top:1px; }
 
 /* Progress */
-.progress-section { padding:0 16px 16px; }
-.progress-bar { background:#2C2C2E; border-radius:6px; height:10px; overflow:hidden; margin-bottom:6px; }
-.progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,#C9A962,#E8D5A3); transition:width 0.5s; }
-.progress-text { font-size:13px; color:#8E8E93; text-align:center; }
+.progress-wrap { padding:0 16px 14px; }
+.progress-bar { background:#2C2C2E; border-radius:5px; height:8px; overflow:hidden; margin-bottom:6px; }
+.progress-fill { height:100%; background:#C9A962; border-radius:5px; }
+.progress-text { font-size:12px; color:#8E8E93; text-align:center; }
 
-/* Filter tabs */
-.filters { display:flex; gap:8px; padding:0 16px 12px; overflow-x:auto; }
-.filter-pill { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#1C1C1E; color:#8E8E93; border:1px solid #2C2C2E; white-space:nowrap; cursor:pointer; }
-.filter-pill.active { background:rgba(201,169,98,0.12); color:#C9A962; border-color:#C9A962; }
+/* Filters */
+.filters { display:flex; gap:8px; padding:0 16px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.filters::-webkit-scrollbar { display:none; }
+.filter { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#1C1C1E; color:#8E8E93; border:1px solid #2C2C2E; white-space:nowrap; cursor:pointer; }
+.filter.active { background:rgba(201,169,98,0.1); color:#C9A962; border-color:rgba(201,169,98,0.4); }
 
-.section-label { font-size:11px; font-weight:700; color:#8E8E93; letter-spacing:1.5px; text-transform:uppercase; padding:8px 20px 8px; }
+/* Section label */
+.section-label { font-size:11px; font-weight:700; color:#48484A; letter-spacing:1.5px; text-transform:uppercase; padding:8px 16px 6px; }
 
-/* Task cards */
-.task-card {
-  margin:0 16px 10px; background:#1C1C1E; border-radius:14px; border:1px solid #2C2C2E;
-  overflow:hidden; transition:transform 0.15s;
-}
-.task-card:active { transform:scale(0.98); }
+/* Task card — matches app card style */
+.task-card { margin:0 16px 10px; background:#1C1C1E; border-radius:14px; border:1px solid #2C2C2E; overflow:hidden; }
 .task-card.overdue { border-left:3px solid #FF3B30; }
-.task-card.high { border-left:3px solid #FF9500; }
+.task-card.high-pri { border-left:3px solid #FF9500; }
 
-.task-top { display:flex; align-items:flex-start; padding:14px 14px 10px; gap:12px; }
-.task-avatar { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0; }
-.task-info { flex:1; min-width:0; }
-.task-name { font-size:16px; font-weight:700; color:#fff; }
-.task-title { font-size:14px; color:#ccc; margin-top:2px; }
-.task-meta { display:flex; gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap; }
-.task-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
-.task-time { font-size:11px; color:#8E8E93; }
+.task-top { display:flex; align-items:flex-start; padding:14px; gap:12px; }
+.task-avatar { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0; }
+.task-body { flex:1; min-width:0; }
+.task-name { font-size:15px; font-weight:700; }
+.task-desc { font-size:13px; color:#AEAEB2; margin-top:2px; }
+.task-meta { display:flex; gap:6px; margin-top:6px; align-items:center; flex-wrap:wrap; }
+.badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.task-time { font-size:11px; color:#636366; }
 
-.task-message { padding:0 14px 12px; }
-.task-message-box { background:#111; border-radius:10px; padding:10px 12px; }
-.task-message-label { font-size:10px; color:#8E8E93; font-weight:600; text-transform:uppercase; margin-bottom:4px; }
-.task-message-text { font-size:13px; color:#aaa; line-height:1.4; }
+/* Suggested message */
+.task-msg { padding:0 14px 12px; }
+.task-msg-box { background:rgba(255,255,255,0.04); border-radius:10px; padding:10px 12px; }
+.task-msg-label { font-size:10px; color:#636366; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; }
+.task-msg-text { font-size:13px; color:#8E8E93; line-height:1.4; }
 
+/* Task action buttons — matches app border-top style */
 .task-actions { display:flex; border-top:1px solid #2C2C2E; }
-.task-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:12px; font-size:13px; font-weight:600; cursor:pointer; border:none; background:none; }
+.task-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding:11px 4px; font-size:12px; font-weight:600; cursor:pointer; background:none; border:none; text-decoration:none; }
 .task-btn:not(:last-child) { border-right:1px solid #2C2C2E; }
-.task-btn.text-btn { color:#34C759; }
-.task-btn.call-btn { color:#007AFF; }
-.task-btn.done-btn { color:#C9A962; }
-.task-btn.snooze-btn { color:#8E8E93; }
+.task-btn ion-icon { font-size:16px; }
 
-/* Floating Add button */
-.fab { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:28px; background:#C9A962; display:flex; align-items:center; justify-content:center; font-size:28px; color:#000; box-shadow:0 4px 16px rgba(201,169,98,0.4); cursor:pointer; z-index:10; }
-.fab:active { transform:scale(0.92); }
+/* FAB */
+.fab { position:fixed; bottom:24px; right:24px; width:52px; height:52px; border-radius:26px; background:#C9A962; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(201,169,98,0.3); cursor:pointer; z-index:10; text-decoration:none; }
+.fab:active { transform:scale(0.9); }
+.fab ion-icon { font-size:26px; color:#000; }
 
-.empty-state { text-align:center; padding:60px 32px; }
-.empty-icon { font-size:48px; margin-bottom:16px; }
-.empty-title { font-size:20px; font-weight:700; margin-bottom:8px; }
-.empty-sub { font-size:14px; color:#8E8E93; line-height:1.5; }
-
-.nav-link { display:block; text-align:center; padding:16px; font-size:13px; color:#C9A962; text-decoration:none; }
+.nav-link { display:block; text-align:center; padding:12px; font-size:13px; color:#C9A962; text-decoration:none; }
+.spacer { height:40px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <a class="back" href="mockup-home.html">‹</a>
+  <a class="back-btn" href="mockup-home.html"><ion-icon name="chevron-back"></ion-icon></a>
   <div class="header-title">Today's Touchpoints</div>
-  <div class="header-action">Filter</div>
+  <a class="header-add" href="mockup-add-task.html"><ion-icon name="add-circle-outline"></ion-icon></a>
 </div>
 
 <!-- Scoreboard -->
 <div class="scoreboard">
-  <div class="score-card">
-    <div class="score-num" style="color:#007AFF">14</div>
-    <div class="score-label">Calls</div>
-  </div>
-  <div class="score-card">
-    <div class="score-num" style="color:#34C759">22</div>
-    <div class="score-label">Texts</div>
-  </div>
-  <div class="score-card">
-    <div class="score-num" style="color:#5AC8FA">6</div>
-    <div class="score-label">Emails</div>
-  </div>
-  <div class="score-card">
-    <div class="score-num" style="color:#C9A962">3</div>
-    <div class="score-label">Cards</div>
-  </div>
-  <div class="score-card">
-    <div class="score-num" style="color:#FFD60A">2</div>
-    <div class="score-label">Reviews</div>
-  </div>
+  <div class="score-card"><div class="score-num" style="color:#007AFF">14</div><div class="score-label">Calls</div></div>
+  <div class="score-card"><div class="score-num" style="color:#34C759">22</div><div class="score-label">Texts</div></div>
+  <div class="score-card"><div class="score-num" style="color:#5AC8FA">6</div><div class="score-label">Emails</div></div>
+  <div class="score-card"><div class="score-num" style="color:#C9A962">3</div><div class="score-label">Cards</div></div>
+  <div class="score-card"><div class="score-num" style="color:#FFD60A">2</div><div class="score-label">Reviews</div></div>
 </div>
 
 <!-- Progress -->
-<div class="progress-section">
+<div class="progress-wrap">
   <div class="progress-bar"><div class="progress-fill" style="width:42%"></div></div>
-  <div class="progress-text">5 of 12 touchpoints completed today</div>
+  <div class="progress-text">5 of 12 touchpoints completed</div>
 </div>
 
-<!-- Filter pills -->
+<!-- Filters -->
 <div class="filters">
-  <div class="filter-pill active">All (7)</div>
-  <div class="filter-pill">Overdue (1)</div>
-  <div class="filter-pill">Campaigns (3)</div>
-  <div class="filter-pill">Birthdays (1)</div>
-  <div class="filter-pill">Follow-ups (2)</div>
+  <div class="filter active">All (7)</div>
+  <div class="filter">Overdue (1)</div>
+  <div class="filter">Campaigns (3)</div>
+  <div class="filter">Birthdays (1)</div>
+  <div class="filter">Follow-ups (2)</div>
 </div>
 
 <!-- OVERDUE -->
 <div class="section-label">Overdue</div>
 <div class="task-card overdue">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(255,59,48,0.15);color:#FF3B30;">JM</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(255,59,48,0.12);color:#FF3B30;">JM</div>
+    <div class="task-body">
       <div class="task-name">Jason Mitchell</div>
-      <div class="task-title">Missed call — needs callback</div>
+      <div class="task-desc">Missed call — needs callback</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(255,59,48,0.12);color:#FF3B30">Overdue</div>
-        <div class="task-badge" style="background:rgba(201,169,98,0.12);color:#C9A962">Post-Sale Follow Up</div>
+        <div class="badge" style="background:rgba(255,59,48,0.12);color:#FF3B30">Overdue</div>
+        <div class="badge" style="background:rgba(175,82,222,0.12);color:#AF52DE">Post-Sale Follow Up</div>
         <div class="task-time">Due yesterday</div>
       </div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn call-btn">📞 Call</div>
-    <div class="task-btn text-btn">💬 Text</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#007AFF"><ion-icon name="call"></ion-icon> Call</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Text</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon> Snooze</div>
   </div>
 </div>
 
 <!-- TODAY -->
 <div class="section-label">Today</div>
 
-<!-- Campaign task with suggested message -->
-<div class="task-card high">
+<!-- Campaign task -->
+<div class="task-card high-pri">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(201,169,98,0.15);color:#C9A962;">AW</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(201,169,98,0.12);color:#C9A962;">AW</div>
+    <div class="task-body">
       <div class="task-name">Amy Walker</div>
-      <div class="task-title">3-Day Post-Sale: Send review request</div>
+      <div class="task-desc">3-Day Post-Sale: Send review request</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(201,169,98,0.12);color:#C9A962">Campaign</div>
-        <div class="task-badge" style="background:rgba(255,150,0,0.12);color:#FF9500">High</div>
+        <div class="badge" style="background:rgba(175,82,222,0.12);color:#AF52DE">Campaign</div>
+        <div class="badge" style="background:rgba(255,150,0,0.12);color:#FF9500">High</div>
         <div class="task-time">Due today</div>
       </div>
     </div>
   </div>
-  <div class="task-message">
-    <div class="task-message-box">
-      <div class="task-message-label">Suggested Message</div>
-      <div class="task-message-text">Hey Amy! Congrats again on the new ride! If you have a sec, a quick review would mean the world to us: [review_link]</div>
+  <div class="task-msg">
+    <div class="task-msg-box">
+      <div class="task-msg-label">Suggested Message</div>
+      <div class="task-msg-text">Hey Amy! Congrats again on the new ride! If you have a sec, a quick review would mean the world to us: [review_link]</div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn text-btn">💬 Send Text</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Send Text</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon> Snooze</div>
   </div>
 </div>
 
-<!-- Birthday task -->
+<!-- Birthday -->
 <div class="task-card">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(52,199,89,0.15);color:#34C759;">MJ</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(52,199,89,0.12);color:#34C759;">MJ</div>
+    <div class="task-body">
       <div class="task-name">Mike Johnson</div>
-      <div class="task-title">Birthday today! Send a personal message</div>
+      <div class="task-desc">Birthday today! Send a personal message</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(52,199,89,0.12);color:#34C759">Birthday</div>
+        <div class="badge" style="background:rgba(201,169,98,0.12);color:#C9A962">Birthday</div>
         <div class="task-time">Due today</div>
       </div>
     </div>
   </div>
-  <div class="task-message">
-    <div class="task-message-box">
-      <div class="task-message-label">Suggested Message</div>
-      <div class="task-message-text">Happy Birthday, Mike! Hope you have an amazing day! 🎉</div>
+  <div class="task-msg">
+    <div class="task-msg-box">
+      <div class="task-msg-label">Suggested Message</div>
+      <div class="task-msg-text">Happy Birthday, Mike! Hope you have an amazing day!</div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn text-btn">💬 Send Text</div>
-    <div class="task-btn call-btn">📞 Call</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Text</div>
+    <div class="task-btn" style="color:#007AFF"><ion-icon name="call"></ion-icon> Call</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon></div>
   </div>
 </div>
 
-<!-- Dormant contact task -->
+<!-- Dormant -->
 <div class="task-card">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(175,82,222,0.15);color:#AF52DE;">BW</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(175,82,222,0.12);color:#AF52DE;">BW</div>
+    <div class="task-body">
       <div class="task-name">Bridger Ward</div>
-      <div class="task-title">Reconnect — 94 days since last contact</div>
+      <div class="task-desc">Reconnect — 94 days since last contact</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(175,82,222,0.12);color:#AF52DE">System</div>
-        <div class="task-badge" style="background:rgba(142,142,147,0.12);color:#8E8E93">Medium</div>
+        <div class="badge" style="background:rgba(142,142,147,0.12);color:#8E8E93">System</div>
+        <div class="badge" style="background:rgba(142,142,147,0.12);color:#8E8E93">Medium</div>
       </div>
     </div>
   </div>
-  <div class="task-message">
-    <div class="task-message-box">
-      <div class="task-message-label">Suggested Message</div>
-      <div class="task-message-text">Hey Bridger! It's been a while — just wanted to check in and see how things are going. Hope all is well!</div>
+  <div class="task-msg">
+    <div class="task-msg-box">
+      <div class="task-msg-label">Suggested Message</div>
+      <div class="task-msg-text">Hey Bridger! It's been a while — just wanted to check in and see how things are going!</div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn text-btn">💬 Text</div>
-    <div class="task-btn call-btn">📞 Call</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Text</div>
+    <div class="task-btn" style="color:#007AFF"><ion-icon name="call"></ion-icon> Call</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon></div>
   </div>
 </div>
 
-<!-- Campaign task - email -->
+<!-- Campaign 2 -->
 <div class="task-card">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(90,200,250,0.15);color:#5AC8FA;">TS</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(90,200,250,0.12);color:#5AC8FA;">TS</div>
+    <div class="task-body">
       <div class="task-name">Tracy Smith</div>
-      <div class="task-title">7-Day Follow-Up: Check satisfaction</div>
+      <div class="task-desc">7-Day Follow-Up: Check satisfaction</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(201,169,98,0.12);color:#C9A962">Campaign</div>
+        <div class="badge" style="background:rgba(175,82,222,0.12);color:#AF52DE">Campaign</div>
         <div class="task-time">Due today</div>
       </div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn text-btn">💬 Text</div>
-    <div class="task-btn call-btn">📞 Call</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Text</div>
+    <div class="task-btn" style="color:#007AFF"><ion-icon name="call"></ion-icon> Call</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon></div>
   </div>
 </div>
 
 <!-- Manual task -->
 <div class="task-card">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(255,214,10,0.15);color:#FFD60A;">KL</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(255,214,10,0.12);color:#FFD60A;">KL</div>
+    <div class="task-body">
       <div class="task-name">Karen Lee</div>
-      <div class="task-title">Follow up about trade-in value</div>
+      <div class="task-desc">Follow up about trade-in value</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(142,142,147,0.12);color:#8E8E93">Manual</div>
+        <div class="badge" style="background:rgba(142,142,147,0.12);color:#8E8E93">Manual</div>
         <div class="task-time">Added by you</div>
       </div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn call-btn">📞 Call</div>
-    <div class="task-btn text-btn">💬 Text</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#007AFF"><ion-icon name="call"></ion-icon> Call</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Text</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon></div>
   </div>
 </div>
 
 <!-- Anniversary -->
 <div class="task-card">
   <div class="task-top">
-    <div class="task-avatar" style="background:rgba(255,45,85,0.15);color:#FF2D55;">DP</div>
-    <div class="task-info">
+    <div class="task-avatar" style="background:rgba(255,45,85,0.12);color:#FF2D55;">DP</div>
+    <div class="task-body">
       <div class="task-name">Dave Peterson</div>
-      <div class="task-title">2-Year Purchase Anniversary tomorrow</div>
+      <div class="task-desc">2-Year Purchase Anniversary tomorrow</div>
       <div class="task-meta">
-        <div class="task-badge" style="background:rgba(255,45,85,0.12);color:#FF2D55">Anniversary</div>
+        <div class="badge" style="background:rgba(255,45,85,0.12);color:#FF2D55">Anniversary</div>
         <div class="task-time">Due tomorrow</div>
       </div>
     </div>
   </div>
   <div class="task-actions">
-    <div class="task-btn text-btn">💬 Text</div>
-    <div class="task-btn done-btn">✓ Done</div>
-    <div class="task-btn snooze-btn">⏰</div>
+    <div class="task-btn" style="color:#34C759"><ion-icon name="chatbubble"></ion-icon> Text</div>
+    <div class="task-btn" style="color:#C9A962"><ion-icon name="checkmark-circle"></ion-icon> Done</div>
+    <div class="task-btn" style="color:#8E8E93"><ion-icon name="time-outline"></ion-icon></div>
   </div>
 </div>
 
-<!-- FAB for manual task -->
-<a class="fab" href="mockup-add-task.html" title="Add Task">+</a>
+<a class="fab" href="mockup-add-task.html"><ion-icon name="add"></ion-icon></a>
 
-<a class="nav-link" href="mockup-home.html">← Back to Home Mockup</a>
-<a class="nav-link" href="mockup-add-task.html">See "Add Task" mockup →</a>
+<a class="nav-link" href="mockup-home.html">Back to Home</a>
+<a class="nav-link" href="mockup-add-task.html">See Add Task</a>
+<div class="spacer"></div>
 
-<div style="height:80px"></div>
 </body>
 </html>

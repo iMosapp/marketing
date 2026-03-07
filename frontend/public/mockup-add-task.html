@@ -4,72 +4,75 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Add Task</title>
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif; color:#fff; max-width:430px; margin:0 auto; min-height:100vh; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif; color:#fff; max-width:430px; margin:0 auto; min-height:100vh; }
 
-.header { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid #1C1C1E; }
-.back { font-size:24px; color:#C9A962; text-decoration:none; padding:4px 8px; margin-right:8px; }
+.header { display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid #2C2C2E; }
+.back-btn { color:#C9A962; text-decoration:none; display:flex; align-items:center; padding:4px; margin-right:8px; }
+.back-btn ion-icon { font-size:24px; }
 .header-title { font-size:18px; font-weight:700; flex:1; }
 
-.section-label { font-size:11px; font-weight:700; color:#8E8E93; letter-spacing:1.5px; text-transform:uppercase; padding:20px 20px 8px; }
+.section-label { font-size:11px; font-weight:700; color:#48484A; letter-spacing:1.5px; text-transform:uppercase; padding:20px 16px 8px; }
 
-/* Card-grouped form (matches Add Contact style) */
+/* Card form — matches Add Contact exactly */
 .form-card { background:#1C1C1E; border-radius:12px; margin:0 16px 12px; border:1px solid #2C2C2E; overflow:hidden; }
-.form-input { padding:14px 16px; font-size:16px; color:#fff; border:none; background:none; width:100%; outline:none; }
+.form-input { display:block; width:100%; padding:14px 16px; font-size:16px; color:#fff; background:none; border:none; outline:none; font-family:inherit; }
 .form-input::placeholder { color:#48484A; }
 .form-divider { height:1px; background:#2C2C2E; margin-left:16px; }
+
 .form-row { display:flex; align-items:center; padding:12px 16px; gap:10px; }
-.form-row-icon { font-size:18px; width:28px; text-align:center; flex-shrink:0; }
-.form-row-input { flex:1; font-size:16px; color:#fff; background:none; border:none; outline:none; }
-.form-row-input::placeholder { color:#48484A; }
+.form-row ion-icon { font-size:20px; flex-shrink:0; width:28px; text-align:center; }
+.form-row-text { flex:1; font-size:16px; }
+.form-row-action { font-size:13px; color:#C9A962; font-weight:600; }
+
+/* Contact card */
+.contact-row { display:flex; align-items:center; gap:12px; padding:14px 16px; }
+.contact-avatar { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; background:rgba(201,169,98,0.12); color:#C9A962; }
+.contact-info { flex:1; }
+.contact-name { font-size:15px; font-weight:600; }
+.contact-phone { font-size:12px; color:#8E8E93; margin-top:1px; }
 
 /* Priority toggle */
 .priority-row { display:flex; gap:8px; padding:12px 16px; }
-.priority-btn { flex:1; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:600; cursor:pointer; border:1px solid #2C2C2E; background:#111; color:#8E8E93; }
-.priority-btn.active-high { background:rgba(255,59,48,0.12); color:#FF3B30; border-color:#FF3B30; }
-.priority-btn.active-med { background:rgba(255,150,0,0.12); color:#FF9500; border-color:#FF9500; }
-.priority-btn.active-low { background:rgba(142,142,147,0.12); color:#8E8E93; border-color:#48484A; }
+.pri-btn { flex:1; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:600; border:1px solid #2C2C2E; background:rgba(255,255,255,0.03); color:#636366; cursor:pointer; }
+.pri-btn.sel-high { background:rgba(255,59,48,0.1); color:#FF3B30; border-color:rgba(255,59,48,0.3); }
+.pri-btn.sel-med { background:rgba(255,150,0,0.1); color:#FF9500; border-color:rgba(255,150,0,0.3); }
+.pri-btn.sel-low { background:rgba(142,142,147,0.08); color:#8E8E93; border-color:#3A3A3C; }
 
 /* Action type */
 .action-row { display:flex; gap:8px; padding:12px 16px; }
-.action-btn { flex:1; padding:10px 8px; border-radius:10px; text-align:center; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #2C2C2E; background:#111; color:#8E8E93; }
-.action-btn.active { background:rgba(201,169,98,0.12); color:#C9A962; border-color:#C9A962; }
-.action-icon { font-size:18px; margin-bottom:2px; }
-
-/* Contact picker */
-.contact-pick { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; }
-.contact-avatar { width:40px; height:40px; border-radius:12px; background:rgba(201,169,98,0.15); display:flex; align-items:center; justify-content:center; color:#C9A962; font-weight:700; font-size:14px; }
-.contact-info { flex:1; }
-.contact-name { font-size:15px; font-weight:600; }
-.contact-phone { font-size:12px; color:#8E8E93; }
-.contact-change { font-size:13px; color:#C9A962; font-weight:600; }
+.act-btn { flex:1; padding:10px 4px; border-radius:10px; text-align:center; font-size:11px; font-weight:600; border:1px solid #2C2C2E; background:rgba(255,255,255,0.03); color:#636366; cursor:pointer; }
+.act-btn ion-icon { font-size:20px; display:block; margin:0 auto 3px; }
+.act-btn.active { background:rgba(201,169,98,0.1); color:#C9A962; border-color:rgba(201,169,98,0.3); }
 
 /* Save button */
-.save-btn { margin:20px 16px; padding:16px; border-radius:14px; background:#C9A962; text-align:center; font-size:17px; font-weight:700; color:#000; cursor:pointer; }
+.save-btn { margin:24px 16px 8px; padding:16px; border-radius:14px; background:#C9A962; text-align:center; font-size:17px; font-weight:700; color:#000; cursor:pointer; }
 .save-btn:active { opacity:0.8; }
+.hint { font-size:12px; color:#48484A; text-align:center; padding:8px 16px; }
 
-.note { padding:8px 20px; font-size:12px; color:#48484A; text-align:center; line-height:1.4; }
-.nav-link { display:block; text-align:center; padding:16px; font-size:13px; color:#C9A962; text-decoration:none; }
+.nav-link { display:block; text-align:center; padding:12px; font-size:13px; color:#C9A962; text-decoration:none; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <a class="back" href="mockup-touchpoints.html">‹</a>
+  <a class="back-btn" href="mockup-touchpoints.html"><ion-icon name="chevron-back"></ion-icon></a>
   <div class="header-title">Add Task</div>
 </div>
 
 <!-- Contact -->
 <div class="section-label">Contact</div>
 <div class="form-card">
-  <div class="contact-pick">
+  <div class="contact-row">
     <div class="contact-avatar">BW</div>
     <div class="contact-info">
       <div class="contact-name">Bridger Ward</div>
       <div class="contact-phone">(801) 634-9122</div>
     </div>
-    <div class="contact-change">Change</div>
+    <div class="form-row-action">Change</div>
   </div>
 </div>
 
@@ -78,22 +81,22 @@ body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro','H
 <div class="form-card">
   <input class="form-input" type="text" placeholder="What needs to be done?" value="Follow up about trade-in value">
   <div class="form-divider"></div>
-  <input class="form-input" type="text" placeholder="Notes (optional)" value="" style="font-size:14px; color:#8E8E93;">
+  <input class="form-input" type="text" placeholder="Notes (optional)" style="font-size:14px;">
 </div>
 
 <!-- When -->
 <div class="section-label">When</div>
 <div class="form-card">
   <div class="form-row">
-    <div class="form-row-icon">📅</div>
-    <div style="flex:1; font-size:16px; color:#fff;">Tomorrow, Mar 8</div>
-    <div style="font-size:13px; color:#C9A962; font-weight:600;">Change</div>
+    <ion-icon name="calendar-outline" style="color:#C9A962;"></ion-icon>
+    <div class="form-row-text">Tomorrow, Mar 8</div>
+    <div class="form-row-action">Change</div>
   </div>
   <div class="form-divider"></div>
   <div class="form-row">
-    <div class="form-row-icon">🕐</div>
-    <div style="flex:1; font-size:16px; color:#fff;">9:00 AM</div>
-    <div style="font-size:13px; color:#C9A962; font-weight:600;">Change</div>
+    <ion-icon name="time-outline" style="color:#C9A962;"></ion-icon>
+    <div class="form-row-text">9:00 AM</div>
+    <div class="form-row-action">Change</div>
   </div>
 </div>
 
@@ -101,9 +104,9 @@ body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro','H
 <div class="section-label">Priority</div>
 <div class="form-card">
   <div class="priority-row">
-    <div class="priority-btn active-high">High</div>
-    <div class="priority-btn active-med" style="background:#111; color:#8E8E93; border-color:#2C2C2E;">Medium</div>
-    <div class="priority-btn active-low" style="background:#111; color:#8E8E93; border-color:#2C2C2E;">Low</div>
+    <div class="pri-btn sel-high">High</div>
+    <div class="pri-btn">Medium</div>
+    <div class="pri-btn">Low</div>
   </div>
 </div>
 
@@ -111,35 +114,19 @@ body { background:#000; font-family:-apple-system,BlinkMacSystemFont,'SF Pro','H
 <div class="section-label">Primary Action</div>
 <div class="form-card">
   <div class="action-row">
-    <div class="action-btn active">
-      <div class="action-icon">📞</div>
-      Call
-    </div>
-    <div class="action-btn">
-      <div class="action-icon">💬</div>
-      Text
-    </div>
-    <div class="action-btn">
-      <div class="action-icon">✉️</div>
-      Email
-    </div>
-    <div class="action-btn">
-      <div class="action-icon">🎁</div>
-      Card
-    </div>
-    <div class="action-btn">
-      <div class="action-icon">📝</div>
-      Other
-    </div>
+    <div class="act-btn active"><ion-icon name="call"></ion-icon>Call</div>
+    <div class="act-btn"><ion-icon name="chatbubble"></ion-icon>Text</div>
+    <div class="act-btn"><ion-icon name="mail"></ion-icon>Email</div>
+    <div class="act-btn"><ion-icon name="gift"></ion-icon>Card</div>
+    <div class="act-btn"><ion-icon name="create-outline"></ion-icon>Other</div>
   </div>
 </div>
 
 <div class="save-btn">Save Task</div>
+<div class="hint">Task will appear in Today's Touchpoints on the due date</div>
 
-<div class="note">Task will appear in Today's Touchpoints on the due date</div>
-
-<a class="nav-link" href="mockup-touchpoints.html">← Back to Touchpoints</a>
-<a class="nav-link" href="mockup-home.html">← Back to Home</a>
+<a class="nav-link" href="mockup-touchpoints.html">Back to Touchpoints</a>
+<a class="nav-link" href="mockup-home.html">Back to Home</a>
 
 </body>
 </html>
