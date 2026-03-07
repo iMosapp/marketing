@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Animated,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +35,11 @@ export default function DocViewerScreen() {
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showActions, setShowActions] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const scrollRef = useRef<ScrollView>(null);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -84,6 +90,50 @@ export default function DocViewerScreen() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!id || !user?._id) return;
+    setPdfLoading(true);
+    try {
+      const url = `/api/docs/${id}/export-pdf`;
+      if (Platform.OS === 'web') {
+        const response = await fetch(url, {
+          headers: { 'X-User-ID': user._id },
+        });
+        if (!response.ok) throw new Error('Download failed');
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `${doc?.slug || 'document'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (e) {
+      console.error('PDF download failed:', e);
+    }
+    setPdfLoading(false);
+    setShowActions(false);
+  };
+
+  const handleEmailPDF = async () => {
+    if (!id || !user?._id) return;
+    setEmailSending(true);
+    try {
+      const headers = { 'X-User-ID': user._id };
+      const res = await api.post(`/docs/${id}/email-pdf`, {}, { headers });
+      if (res.data?.success) {
+        alert(res.data.message || 'PDF sent to your email!');
+      }
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || 'Failed to send email';
+      alert(msg);
+    }
+    setEmailSending(false);
+    setShowActions(false);
+  };
+
   const jumpToSlide = (index: number) => {
     setCurrentSlide(index);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -130,8 +180,47 @@ export default function DocViewerScreen() {
             {currentSlide + 1} of {doc.slides?.length || 0}
           </Text>
         </View>
-        <View style={{ width: 40 }} />
+        {isSuperAdmin ? (
+          <TouchableOpacity
+            onPress={() => setShowActions(!showActions)}
+            style={{ padding: 4, width: 40, alignItems: 'flex-end' }}
+            data-testid="doc-actions-btn"
+          >
+            <Ionicons name="ellipsis-vertical" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
+
+      {/* Super Admin Actions Dropdown */}
+      {showActions && isSuperAdmin && (
+        <View style={{
+          position: 'absolute', top: 56, right: 16, zIndex: 100,
+          backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border || '#2A2A2A',
+          shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12,
+          overflow: 'hidden', minWidth: 200,
+        }}>
+          <TouchableOpacity
+            onPress={handleDownloadPDF}
+            disabled={pdfLoading}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border || '#2A2A2A' }}
+            data-testid="doc-download-pdf-btn"
+          >
+            {pdfLoading ? <ActivityIndicator size="small" color="#007AFF" /> : <Ionicons name="download-outline" size={18} color="#007AFF" />}
+            <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>Download PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleEmailPDF}
+            disabled={emailSending}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16 }}
+            data-testid="doc-email-pdf-btn"
+          >
+            {emailSending ? <ActivityIndicator size="small" color="#34C759" /> : <Ionicons name="mail-outline" size={18} color="#34C759" />}
+            <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>Send PDF via Email</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
