@@ -460,20 +460,28 @@ class Task(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user_id: str
     contact_id: Optional[str] = None
-    type: str  # callback, follow_up, appointment, campaign_send, date_trigger
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    type: str  # callback, follow_up, appointment, campaign_send, date_trigger, birthday, anniversary, manual
     title: str
     description: str = ""
-    due_date: datetime
+    suggested_message: Optional[str] = None
+    action_type: Optional[str] = "manual"  # call, text, email, card, review_request, manual
+    due_date: Optional[datetime] = None
     priority: str = "medium"  # low, medium, high
-    completed: bool = False
-    source: Optional[str] = None  # campaign, date_trigger
+    priority_order: int = 2  # 1=high, 2=medium, 3=low (for sorting)
+    status: str = "pending"  # pending, completed, snoozed, dismissed
+    completed: bool = False  # Legacy compat
+    completed_at: Optional[datetime] = None
+    snoozed_until: Optional[datetime] = None
+    source: Optional[str] = None  # campaign, date_trigger, system, manual
     campaign_id: Optional[str] = None
     campaign_name: Optional[str] = None
     pending_send_id: Optional[str] = None
     channel: Optional[str] = None  # sms, email
     trigger_type: Optional[str] = None  # birthday, anniversary, etc.
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
+    idempotency_key: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
@@ -483,12 +491,15 @@ class Task(BaseModel):
 
 class TaskCreate(BaseModel):
     contact_id: Optional[str] = None
-    type: str
+    contact_name: Optional[str] = None
+    type: str = "manual"
     title: str
     description: str = ""
-    due_date: datetime
-    priority: str = "medium"  # low, medium, high
-    completed: bool = False
+    suggested_message: Optional[str] = None
+    action_type: Optional[str] = "manual"
+    due_date: Optional[datetime] = None
+    priority: str = "medium"
+    channel: Optional[str] = None
 
 
 # Message Template Models

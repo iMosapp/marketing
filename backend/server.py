@@ -603,6 +603,8 @@ async def startup_event():
                     db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
+                    db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),
+                    db.tasks.create_index("idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
                 ), timeout=15)
                 logger.info("Database indexes created/verified")
             except asyncio.TimeoutError:

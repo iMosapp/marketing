@@ -485,11 +485,17 @@ async def process_pending_campaign_steps():
                     await db.tasks.insert_one({
                         "user_id": user_id,
                         "contact_id": contact_id,
+                        "contact_name": enrollment.get("contact_name", ""),
+                        "contact_phone": enrollment.get("contact_phone", ""),
                         "type": "campaign_send",
                         "title": task_title,
                         "description": task_desc,
+                        "suggested_message": message_content,
+                        "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
                         "due_date": now,
                         "priority": "high",
+                        "priority_order": 1,
+                        "status": "pending",
                         "completed": False,
                         "source": "campaign",
                         "campaign_id": enrollment["campaign_id"],
@@ -497,6 +503,7 @@ async def process_pending_campaign_steps():
                         "pending_send_id": str(pending_result.inserted_id),
                         "channel": channel,
                         "created_at": now,
+                        "idempotency_key": f"campaign_{enrollment['campaign_id']}_{contact_id}_{current_step}",
                     })
 
                     # Create a notification (bell alert)
@@ -598,6 +605,37 @@ async def process_pending_campaign_steps():
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [str(e)])[-20:]
 
 
+async def generate_daily_system_tasks():
+    """Daily job: generate system tasks (dormant contacts, birthdays, anniversaries) for all active users."""
+    from routers.database import get_db
+    logger.info("[Scheduler] Generating daily system tasks...")
+    db = get_db()
+    if db is None:
+        return
+
+    try:
+        # Get all active users
+        users = await db.users.find(
+            {"is_active": True, "status": {"$ne": "deactivated"}},
+            {"_id": 1}
+        ).to_list(1000)
+
+        total_created = 0
+        for u in users:
+            uid = str(u["_id"])
+            try:
+                from routers.tasks import generate_system_tasks
+                result = await generate_system_tasks(uid)
+                total_created += result.get("created", 0) if isinstance(result, dict) else 0
+            except Exception as e:
+                logger.error(f"[Scheduler] System task gen failed for {uid}: {e}")
+
+        _scheduler_state["last_system_tasks_run"] = datetime.now(timezone.utc).isoformat()
+        logger.info(f"[Scheduler] System tasks: {total_created} created for {len(users)} users")
+    except Exception as e:
+        logger.error(f"[Scheduler] Fatal error in system task gen: {e}")
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -640,8 +678,17 @@ def start_scheduler():
         misfire_grace_time=300,
     )
 
+    # Daily at 5:30 AM UTC - generate system tasks (dormant contacts, birthdays, anniversaries)
+    scheduler.add_job(
+        generate_daily_system_tasks,
+        CronTrigger(hour=5, minute=30),
+        id="daily_system_tasks",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 4 jobs: daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
+    logger.info("[Scheduler] Started with 5 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m)")
 
 
 def stop_scheduler():
