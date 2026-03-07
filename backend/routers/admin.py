@@ -2270,19 +2270,19 @@ async def get_phone_assignments_summary():
     """Get a summary of all phone number assignments"""
     # Get users with phone numbers
     users_with_phones = await get_db().users.find(
-        {"mvpline_number": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"mvpline_number": {"$exists": True, "$nin": [None, ""]}},
         {"name": 1, "email": 1, "mvpline_number": 1}
     ).limit(500).to_list(500)
     
     # Get shared inboxes with phone numbers
     shared_inboxes = await get_db().shared_inboxes.find(
-        {"phone_number": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"phone_number": {"$exists": True, "$nin": [None, ""]}},
         {"name": 1, "phone_number": 1, "assigned_users": 1}
     ).limit(500).to_list(500)
     
     # Get stores with phone numbers
     stores = await get_db().stores.find(
-        {"twilio_phone_number": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"twilio_phone_number": {"$exists": True, "$nin": [None, ""]}},
         {"name": 1, "twilio_phone_number": 1}
     ).limit(500).to_list(500)
     

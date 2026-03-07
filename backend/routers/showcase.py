@@ -52,22 +52,28 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
         {"customer_photo": 0, "salesman_photo": 0}
     ).sort("created_at", -1).to_list(500)
 
-    # Track which cards actually have photos (we set a flag during card creation)
-    # Re-check by querying just the _id and existence of customer_photo
-    card_ids_with_photos = set()
+    # Track which cards have photos AND get their optimized paths if migrated
+    card_photo_map = {}  # card_id_str -> photo_url
     if cards:
         card_obj_ids = [c["_id"] for c in cards]
+        # Fix: use $nin instead of duplicate $ne keys (Python dict bug)
         photo_check = await db.congrats_cards.find(
-            {"_id": {"$in": card_obj_ids}, "customer_photo": {"$exists": True, "$ne": None, "$ne": ""}},
-            {"_id": 1}
+            {"_id": {"$in": card_obj_ids}, "customer_photo": {"$exists": True, "$nin": [None, ""]}},
+            {"_id": 1, "card_id": 1, "photo_path": 1, "photo_thumb_path": 1}
         ).to_list(500)
-        card_ids_with_photos = {str(c["_id"]) for c in photo_check}
+        for pc in photo_check:
+            cid = str(pc["_id"])
+            # Use optimized WebP path if migrated, otherwise fallback to photo endpoint
+            if pc.get("photo_path"):
+                card_photo_map[cid] = f"/api/images/{pc['photo_path']}"
+            else:
+                card_photo_map[cid] = f"/api/showcase/photo/{pc.get('card_id', cid)}"
 
-    # Fetch approved reviews
+    # Fetch approved reviews (include photo_path for optimized image serving)
     reviews = await db.customer_feedback.find({
         **feedback_filter,
         "approved": True,
-    }).sort("created_at", -1).to_list(500)
+    }, {"photo_path": 1, "purchase_photo_url": 1, "customer_phone": 1, "customer_name": 1, "rating": 1, "text_review": 1, "created_at": 1, "salesperson_id": 1}).sort("created_at", -1).to_list(500)
 
     # Build lookup maps for reviews by normalized phone and by name
     reviews_by_phone = {}
@@ -89,13 +95,14 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
             continue
 
         card_id = card.get("card_id", str(card["_id"]))
-        has_customer_photo = str(card["_id"]) in card_ids_with_photos
+        card_obj_str = str(card["_id"])
+        photo_url = card_photo_map.get(card_obj_str)
 
         entry = {
             "id": card_id,
             "type": "delivery",
             "customer_name": card.get("customer_name", "Happy Customer"),
-            "customer_photo": f"/api/showcase/photo/{card_id}" if has_customer_photo else None,
+            "customer_photo": photo_url,
             "card_id": card_id,
             "salesman_id": card.get("salesman_id"),
             "salesman_name": card.get("salesman_name"),
@@ -130,12 +137,19 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
                     break
 
         if matched_review:
+            # Use optimized path for feedback photo if migrated
+            feedback_photo = None
+            if matched_review.get("photo_path"):
+                feedback_photo = f"/api/images/{matched_review['photo_path']}"
+            elif matched_review.get("purchase_photo_url"):
+                feedback_photo = f"/api/showcase/feedback-photo/{str(matched_review['_id'])}"
+
             entry["review"] = {
                 "id": str(matched_review["_id"]),
                 "rating": matched_review.get("rating", 5),
                 "text": matched_review.get("text_review", ""),
                 "customer_name": matched_review.get("customer_name"),
-                "photo_url": f"/api/showcase/feedback-photo/{str(matched_review['_id'])}" if matched_review.get("purchase_photo_url") else None,
+                "photo_url": feedback_photo,
                 "created_at": matched_review.get("created_at").isoformat() if matched_review.get("created_at") else None,
             }
 
@@ -145,6 +159,13 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
     for r in reviews:
         rid = str(r["_id"])
         if rid not in matched_review_ids:
+            # Use optimized path for feedback photo
+            fb_photo = None
+            if r.get("photo_path"):
+                fb_photo = f"/api/images/{r['photo_path']}"
+            elif r.get("purchase_photo_url"):
+                fb_photo = f"/api/showcase/feedback-photo/{rid}"
+
             entries.append({
                 "id": rid,
                 "type": "review_only",
@@ -161,7 +182,7 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
                     "rating": r.get("rating", 5),
                     "text": r.get("text_review", ""),
                     "customer_name": r.get("customer_name"),
-                    "photo_url": f"/api/showcase/feedback-photo/{rid}" if r.get("purchase_photo_url") else None,
+                    "photo_url": fb_photo,
                     "created_at": r.get("created_at").isoformat() if r.get("created_at") else None,
                 },
             })
@@ -218,14 +239,32 @@ async def get_user_showcase(user_id: str):
     except Exception as e:
         print(f"[Showcase] Failed to log view activity: {e}")
 
-    # Check if user has a photo (without loading the full blob)
-    has_photo = await db.users.count_documents({"_id": ObjectId(user_id), "photo_url": {"$exists": True, "$ne": None, "$ne": ""}})
+    # Check if user has a photo — use optimized path if migrated
+    user_photo_doc = await db.users.find_one(
+        {"_id": ObjectId(user_id), "photo_url": {"$exists": True, "$nin": [None, ""]}},
+        {"photo_path": 1, "photo_thumb_path": 1}
+    )
+    if user_photo_doc and user_photo_doc.get("photo_path"):
+        user_photo_url = f"/api/images/{user_photo_doc['photo_path']}"
+    elif user_photo_doc:
+        user_photo_url = f"/api/showcase/user-photo/{user_id}"
+    else:
+        user_photo_url = None
 
     store = None
+    store_logo_url = None
     if user.get("store_id"):
         store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"logo_url": 0})
-        # Check if store has a logo
-        has_logo = await db.stores.count_documents({"_id": ObjectId(user["store_id"]), "logo_url": {"$exists": True, "$ne": None, "$ne": ""}}) if store else 0
+        # Check if store has a logo — use optimized path if migrated
+        if store:
+            store_logo_doc = await db.stores.find_one(
+                {"_id": ObjectId(user["store_id"]), "logo_url": {"$exists": True, "$nin": [None, ""]}},
+                {"logo_path": 1, "logo_thumb_path": 1}
+            )
+            if store_logo_doc and store_logo_doc.get("logo_path"):
+                store_logo_url = f"/api/images/{store_logo_doc['logo_path']}"
+            elif store_logo_doc:
+                store_logo_url = f"/api/showcase/store-logo/{user.get('store_id')}"
 
     entries = await _build_showcase_entries(
         db,
@@ -238,13 +277,13 @@ async def get_user_showcase(user_id: str):
             "id": str(user["_id"]),
             "name": user.get("name", ""),
             "title": user.get("title", "Sales Professional"),
-            "photo_url": f"/api/showcase/user-photo/{user_id}" if has_photo else None,
+            "photo_url": user_photo_url,
             "phone": user.get("phone"),
         },
         "store": {
             "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
-            "logo_url": f"/api/showcase/store-logo/{user.get('store_id')}" if store and has_logo else None,
+            "logo_url": store_logo_url,
             "primary_color": store.get("primary_color", "#C9A962") if store else "#C9A962",
         } if store else None,
         "entries": entries,
@@ -262,7 +301,17 @@ async def get_store_showcase(store_id: str):
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
 
-    has_logo = await db.stores.count_documents({"_id": ObjectId(store_id), "logo_url": {"$exists": True, "$ne": None, "$ne": ""}})
+    # Use optimized logo path if migrated
+    store_logo_doc = await db.stores.find_one(
+        {"_id": ObjectId(store_id), "logo_url": {"$exists": True, "$nin": [None, ""]}},
+        {"logo_path": 1}
+    )
+    if store_logo_doc and store_logo_doc.get("logo_path"):
+        store_logo_url = f"/api/images/{store_logo_doc['logo_path']}"
+    elif store_logo_doc:
+        store_logo_url = f"/api/showcase/store-logo/{store_id}"
+    else:
+        store_logo_url = None
 
     # Get all users in this store
     users = await db.users.find({"store_id": store_id}, {"password": 0, "photo_url": 0}).to_list(200)
@@ -281,7 +330,7 @@ async def get_store_showcase(store_id: str):
         "store": {
             "id": str(store["_id"]),
             "name": store.get("name", ""),
-            "logo_url": f"/api/showcase/store-logo/{store_id}" if has_logo else None,
+            "logo_url": store_logo_url,
             "primary_color": store.get("primary_color", "#C9A962"),
         },
         "team": [{"id": str(u["_id"]), "name": u.get("name", ""), "photo_url": f"/api/showcase/user-photo/{str(u['_id'])}"} for u in users],
@@ -406,15 +455,20 @@ async def get_pending_showcase_entries(user_id: str):
         {"customer_photo": 0, "salesman_photo": 0}
     ).sort("created_at", -1).to_list(100)
 
-    # Check which have photos
-    card_ids_with_photos = set()
+    # Check which have photos — use optimized paths when available
+    card_photo_map = {}
     if cards:
         card_obj_ids = [c["_id"] for c in cards]
         photo_check = await db.congrats_cards.find(
-            {"_id": {"$in": card_obj_ids}, "customer_photo": {"$exists": True, "$ne": None, "$ne": ""}},
-            {"_id": 1}
+            {"_id": {"$in": card_obj_ids}, "customer_photo": {"$exists": True, "$nin": [None, ""]}},
+            {"_id": 1, "card_id": 1, "photo_path": 1}
         ).to_list(100)
-        card_ids_with_photos = {str(c["_id"]) for c in photo_check}
+        for pc in photo_check:
+            cid = str(pc["_id"])
+            if pc.get("photo_path"):
+                card_photo_map[cid] = f"/api/images/{pc['photo_path']}"
+            else:
+                card_photo_map[cid] = f"/api/showcase/photo/{pc.get('card_id', cid)}"
 
     return [{
         "card_id": c.get("card_id", str(c["_id"])),
@@ -422,7 +476,7 @@ async def get_pending_showcase_entries(user_id: str):
         "customer_phone": c.get("customer_phone"),
         "salesman_name": c.get("salesman_name"),
         "salesman_id": c.get("salesman_id"),
-        "customer_photo": f"/api/showcase/photo/{c.get('card_id', str(c['_id']))}" if str(c["_id"]) in card_ids_with_photos else None,
+        "customer_photo": card_photo_map.get(str(c["_id"])),
         "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,
     } for c in cards]
 

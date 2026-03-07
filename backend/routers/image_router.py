@@ -194,6 +194,25 @@ async def migrate_all_base64_images(x_user_id: str = Header(None, alias="X-User-
     start = time.time()
     MAX_TIME = 100  # seconds — leave buffer before 120s timeout
 
+    # 0. Backfill photo_path from existing /api/images/ URLs (prior migration pattern)
+    backfill_count = 0
+    for coll_name, url_field, path_field in [
+        ("users", "photo_url", "photo_path"),
+        ("stores", "logo_url", "logo_path"),
+        ("contacts", "photo", "photo_path"),
+        ("contacts", "photo_thumbnail", "photo_path"),
+    ]:
+        coll = db[coll_name]
+        docs = await coll.find(
+            {url_field: {"$regex": "^/api/images/"}, path_field: {"$exists": False}},
+            {"_id": 1, url_field: 1}
+        ).to_list(500)
+        for d in docs:
+            path = d[url_field].replace("/api/images/", "")
+            if path:
+                await coll.update_one({"_id": d["_id"]}, {"$set": {path_field: path}})
+                backfill_count += 1
+
     # 1. Users with base64 photo_url but no photo_path
     users = await db.users.find(
         {"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}},
@@ -314,6 +333,7 @@ async def migrate_all_base64_images(x_user_id: str = Header(None, alias="X-User-
     }
     return {
         "migrated": stats,
+        "backfilled": backfill_count,
         "total_migrated": total,
         "remaining": remaining,
         "elapsed_seconds": elapsed,
