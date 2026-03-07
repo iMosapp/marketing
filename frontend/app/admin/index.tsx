@@ -527,13 +527,6 @@ export default function AdminDashboard() {
         color: '#FF3B30',
         items: [
           {
-            icon: 'rocket',
-            title: 'Onboard New Account',
-            subtitle: 'Quick account setup',
-            onPress: () => router.push('/onboarding/new-account' as any),
-            color: '#C9A962',
-          },
-          {
             icon: 'people-circle',
             title: 'Partner Portal',
             subtitle: 'View as partner/reseller',
@@ -862,31 +855,6 @@ export default function AdminDashboard() {
           </View>
         )}
         
-        {/* Onboard New Account - Hero Action */}
-        {isSuperAdmin && (
-          <TouchableOpacity
-            style={{
-              marginHorizontal: 16, marginBottom: 16,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-              backgroundColor: '#C9A962', borderRadius: 16, padding: 18,
-            }}
-            onPress={() => router.push('/onboarding/new-account' as any)}
-            activeOpacity={0.8}
-            data-testid="onboard-new-account-btn"
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="rocket" size={24} color="#000" />
-              </View>
-              <View>
-                <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Onboard New Account</Text>
-                <Text style={{ fontSize: 13, color: 'rgba(0,0,0,0.6)', marginTop: 2 }}>Set up org, team & credentials</Text>
-              </View>
-            </View>
-            <Ionicons name="arrow-forward" size={22} color="#000" />
-          </TouchableOpacity>
-        )}
-
         {/* Time Filter - show above data section */}
         {(isSuperAdmin || isOrgAdmin || isStoreManager) && (
           <View style={styles.filterRow}>
