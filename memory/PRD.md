@@ -9,37 +9,67 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Database:** MongoDB Atlas
 - **Integrations:** Resend (email), Twilio (MOCKED), OpenAI, Emergent Object Storage, Pillow, Nominatim
 
+---
+
+## CRITICAL: Image Pipeline Rules — DO NOT REVERT
+
+**ALL images in the platform MUST go through the optimized pipeline in `utils/image_storage.py`.**
+
+### How it works:
+1. Raw image → compressed to WebP (max 1200px, 85% quality)
+2. Thumbnail generated (200x200 WebP, 80% quality)
+3. Avatar generated (80x80 WebP, 80% quality)
+4. All 3 versions uploaded to Emergent object storage
+5. All 3 versions cached in in-memory LRU cache (200MB)
+6. Served via `/api/images/` with ETag + 1-year immutable Cache-Control
+
+### The "photo_path" pattern:
+- Every document with an image (users, contacts, stores, congrats_cards, customer_feedback) has a `photo_path` field
+- If `photo_path` exists → image is migrated → serve via `/api/images/{photo_path}`
+- If `photo_path` does NOT exist → lazy-migrate on first access → set photo_path → redirect
+
+### NEVER DO:
+- Store raw base64 as photo_url for new uploads (use `upload_image()` from `utils/image_storage.py`)
+- Return base64 blobs in API responses (return `/api/images/` URL paths)
+- Set Cache-Control to anything less than 1 year for immutable images
+- Decode base64 from MongoDB on every request (this was the root cause of slow images)
+
+### ALWAYS DO:
+- Use `upload_image(data, prefix="type", entity_id="id")` for all new image uploads
+- Store `photo_path`, `photo_thumb_path`, `photo_avatar_path` on the document
+- Return `/api/images/{path}` URLs to the frontend
+- Set `Cache-Control: public, max-age=31536000, immutable` on image responses
+
+### Migration:
+- `POST /api/images/migrate-all-base64` — batch migrates all remaining base64 images (super admin only)
+- Safe to run multiple times (skips already-migrated documents)
+- Showcase, feedback, user, store, contact photo endpoints all lazy-migrate on first access
+
+---
+
 ## What's Been Implemented
 
+### Image Performance Overhaul — COMPLETE (Feb 2026)
+- ALL showcase photo endpoints rewritten with lazy-migration to WebP
+- Profile photo upload now uses image pipeline (not raw base64)
+- Contact photo upload/update uses image pipeline
+- Contact gallery returns URL paths (not base64 blobs)
+- Review link clickability fixed (window.location.href vs popup-triggering window.open)
+- Batch migration endpoint created and run (27 images migrated)
+- 1-year immutable caching on all served images
+
 ### Operations Manual v3.0 & PDF Export — COMPLETE (Feb 2026)
-- Updated "i'M On Social Platform Complete Operations Manual" to v3.0 with 26 comprehensive slides
-- Covers ALL features: Touchpoints, Permissions, Gamification, Leaderboards, Power Rankings, Client Onboarding, API, Webhooks, etc.
-- PDF Export: `GET /api/docs/{id}/export-pdf` generates branded A4 PDF with proper formatting
-- Email PDF: `POST /api/docs/{id}/email-pdf` sends PDF as email attachment via Resend
-- Both PDF features are super admin only (HTTP 403 for other roles)
-- Frontend doc viewer has a three-dot action menu for super admins with Download/Email options
+- 26-slide comprehensive manual covering all features
+- PDF Download and Email PDF, super admin only
 
 ### Streamlined Client Onboarding — COMPLETE (Feb 2026)
-- Backend: `POST /api/setup-wizard/new-account` creates org + store + primary user
-- Frontend: 3-step flow (Search → Details → Success) at `/onboarding/new-account`
-- Business search via Nominatim, success screen with temp credentials + copy button
-- Old admin onboarding links cleaned up — flow lives exclusively under My Account
+- `POST /api/setup-wizard/new-account` creates org + store + primary user
+- 3-step flow at `/onboarding/new-account`
 
 ### Task Engine (Touchpoints) — COMPLETE
-- Backend: Full CRUD API, auto-generation, idempotent scheduling
-- Frontend: Today's Touchpoints page, My Performance page, Add Task form
-- Unified Text flow with auto-complete tasks
-
 ### Menu Reorganization & Permissions — COMPLETE
-- 5 permission-gated sections: My Tools, Campaigns, Content, Insights, Administration
-- Backend permissions system with admin UI at `/admin/users/permissions/{id}`
-
 ### Gamification & Leaderboards — COMPLETE
-- 3-tier leaderboards: My Team, My Org, Global
-- Level system, streaks, "You vs Average", category sorting, podium
-
 ### Weekly Power Rankings Email — COMPLETE
-- Branded HTML email every Monday at 9 AM UTC via APScheduler
 
 ### Earlier Completed Features
 - Public REST API & webhooks, soft-delete system, lifecycle scans
@@ -69,4 +99,3 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
-- Operations Manual Doc ID: `69a2296073da8ea96c918d75`
