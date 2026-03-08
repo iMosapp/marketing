@@ -253,28 +253,27 @@ export default function AdminDashboard() {
     setMigrating(true);
     setMigrateResult('Starting...');
     let totalProcessed = 0;
-    let hasMore = true;
+    let lastRemaining = 999;
     
-    while (hasMore) {
+    for (let i = 0; i < 100; i++) {
       try {
         const res = await api.post('/images/migrate-now', { user_id: user?._id });
         const d = res.data;
         if (d.status === 'error') {
           setMigrateResult(`Error: ${d.detail}`);
-          setMigrating(false);
-          return;
+          break;
         }
         totalProcessed += (d.processed || 0);
         const remaining = d.remaining || 0;
         if (d.processed === 0 || remaining === 0) {
-          hasMore = false;
           setMigrateResult(`Done! ${totalProcessed} images migrated.`);
-        } else {
-          setMigrateResult(`Migrating... ${totalProcessed} done, ${remaining} left`);
+          break;
         }
+        lastRemaining = remaining;
+        setMigrateResult(`${totalProcessed} done, ${remaining} left...`);
       } catch (e: any) {
-        setMigrateResult(`Error: ${e.message}`);
-        hasMore = false;
+        setMigrateResult(`Paused at ${totalProcessed}. Tap again to continue.`);
+        break;
       }
     }
     setMigrating(false);

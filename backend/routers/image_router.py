@@ -301,7 +301,7 @@ async def migrate_now(request: Request):
     import asyncio
     processed = 0
     errors = []
-    BATCH = 3  # Process 3 images per call to stay under proxy timeout
+    BATCH = 1  # Process 1 image per call — safe for memory-constrained servers
 
     # Process users
     for u in await db.users.find({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo_url": 1}).to_list(BATCH):
@@ -358,25 +358,34 @@ async def migrate_now(request: Request):
 
 def _sync_upload(image_data: str, prefix: str, entity_id: str):
     """Synchronous image upload — safe to call from asyncio.to_thread."""
+    import gc
     if not image_data or not image_data.startswith("data:"):
         return None
-    image_bytes, content_type = decode_base64_image(image_data)
-    file_id = str(uuid.uuid4())
-    base_path = f"{APP_NAME}/{prefix}/{entity_id}"
+    try:
+        image_bytes, content_type = decode_base64_image(image_data)
+        file_id = str(uuid.uuid4())
+        base_path = f"{APP_NAME}/{prefix}/{entity_id}"
 
-    compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
-    original_path = f"{base_path}/{file_id}.webp"
-    put_object(original_path, compressed_data, compressed_ct)
+        compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+        original_path = f"{base_path}/{file_id}.webp"
+        put_object(original_path, compressed_data, compressed_ct)
 
-    thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
-    thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
-    put_object(thumb_path, thumb_data, thumb_ct)
+        thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
+        thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
+        put_object(thumb_path, thumb_data, thumb_ct)
 
-    avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
-    avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
-    put_object(avatar_path, avatar_data, avatar_ct)
+        avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
+        avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
+        put_object(avatar_path, avatar_data, avatar_ct)
 
-    return {"original_path": original_path, "thumbnail_path": thumb_path, "avatar_path": avatar_path}
+        # Free memory immediately
+        del image_bytes, compressed_data, thumb_data, avatar_data
+        gc.collect()
+
+        return {"original_path": original_path, "thumbnail_path": thumb_path, "avatar_path": avatar_path}
+    except Exception as e:
+        gc.collect()
+        raise e
 
 
 async def _run_migration(job_id: str):
