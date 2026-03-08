@@ -1,0 +1,80 @@
+{
+  "summary": "Card Analytics Dashboard feature testing complete. Backend: 16/16 tests passed - GET /api/reports/card-analytics/{user_id} endpoint returns valid data with summary (KPIs, trend percentages, averages), card_type_breakdown (6 types), top_cards (sorted by engagement), daily_trend, and per_user breakdown (including card_types and vs_avg comparisons). Frontend: All UI sections render correctly - Header with back button, period selector (7D/14D/30D/90D/1Y), hero KPIs, averages, card type breakdown, daily activity chart, top performing cards table. Card Analytics link exists in /analytics Detailed Reports section.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "data-testid attributes",
+        "issue": "React Native for Web does not render data-testid attributes to DOM elements. The attributes are defined in code but don't appear in rendered HTML.",
+        "affected_selectors": ["[data-testid='card-analytics-back-btn']", "[data-testid='card-period-*']", "[data-testid='card-hero-kpis']", "[data-testid='card-type-breakdown']", "[data-testid='card-daily-trend']", "[data-testid='top-cards-table']", "[data-testid='team-card-performance']"],
+        "priority": "LOW - UI works correctly, only affects automated testing selectors"
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_card_analytics.py",
+    "/app/test_reports/pytest/pytest_card_analytics.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VERIFIED: Backend GET /api/reports/card-analytics/{user_id} at line 1327 returns all required fields",
+    "VERIFIED: summary includes total_cards, total_views, total_downloads, total_shares, cards_trend_pct, views_trend_pct, avg_views_per_card, avg_downloads_per_card",
+    "VERIFIED: card_type_breakdown array contains card_type, count, views, downloads, shares per type (6 types found: birthday, congrats, thankyou, holiday, anniversary, welcome)",
+    "VERIFIED: top_cards sorted by engagement score (views + downloads*2 + shares*3) in descending order",
+    "VERIFIED: daily_trend array contains date, cards, views, downloads, shares per day",
+    "VERIFIED: per_user array includes card_types breakdown and vs_avg_cards comparison for managers",
+    "VERIFIED: scope='organization' returned for super_admin user (69a0b7095fddcede09591667)",
+    "VERIFIED: days parameter works for all values (7, 14, 30, 90, 365)",
+    "VERIFIED: Frontend cards.tsx at line 99 has back button with data-testid",
+    "VERIFIED: Frontend cards.tsx at line 117 has period selector chips with data-testid",
+    "VERIFIED: Frontend cards.tsx at line 129 has hero KPI section with data-testid",
+    "VERIFIED: Card Analytics link added to /analytics/index.tsx in Detailed Reports section (line 311-316)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_card_analytics.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% - All UI components render correctly"
+  },
+  "test_credentials": "forest@imosapp.com / Admin123! (Super Admin, user_id: 69a0b7095fddcede09591667)",
+  "seed_data_creation": "Used existing test data - 33 cards across 6 types with views/downloads/shares metrics",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Card Analytics Dashboard is fully functional. Backend API returns real data from congrats_cards collection. Frontend page at /analytics/cards renders all sections. Period selector changes API call parameter. Card Analytics link in main /analytics page navigates correctly. Note: data-testid attributes don't render in DOM due to React Native Web behavior - use text selectors for automation.",
+  "features_tested": {
+    "backend_api": {
+      "GET /api/reports/card-analytics/{user_id}": {
+        "parameters_tested": ["days=7", "days=14", "days=30", "days=90", "days=365"],
+        "response_structure": {
+          "scope": "organization/store/personal based on user role",
+          "summary": "KPIs including totals and trends",
+          "card_type_breakdown": "Array of {card_type, count, views, downloads, shares}",
+          "top_cards": "Array sorted by engagement score",
+          "daily_trend": "Array of daily metrics",
+          "per_user": "Array of per-user breakdown with card_types and vs_avg"
+        }
+      }
+    },
+    "frontend_verified": {
+      "Page load": "Renders correctly at /analytics/cards",
+      "Header": "Shows 'Card Analytics' with scope and period",
+      "Back button": "Present and functional",
+      "Period selector": "7D/14D/30D/90D/1Y chips work correctly",
+      "Hero KPIs": "Cards Created, Total Views, Downloads, Shares with trend badges",
+      "Averages": "Avg Views/Card and Avg Downloads/Card displayed",
+      "Card type breakdown": "Bar charts for each of 6 card types with icons/colors",
+      "Daily activity chart": "Bar chart showing daily cards created",
+      "Top performing cards": "Table with rank, customer, type, rep, views, DL, shares, score",
+      "Navigation from /analytics": "Card Analytics link in Detailed Reports section works"
+    }
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS won't actually send"
+  }
+}

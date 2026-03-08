@@ -309,6 +309,7 @@ export default function AnalyticsDashboard() {
           <Text style={styles.sectionTitle}>Detailed Reports</Text>
           <View style={styles.linkGrid}>
             {[
+              { title: 'Card Analytics', icon: 'gift', color: '#C9A962', route: '/analytics/cards' },
               { title: 'Activity Report', icon: 'pulse', color: '#34C759', route: '/reports/activity' },
               { title: 'Messaging', icon: 'chatbubbles', color: '#007AFF', route: '/reports/messaging' },
               { title: 'Campaigns', icon: 'megaphone', color: '#FF9500', route: '/reports/campaigns' },

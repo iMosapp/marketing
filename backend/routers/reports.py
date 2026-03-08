@@ -1321,3 +1321,269 @@ async def get_user_activity(
             "new_contacts": new_contacts,
         },
     }
+
+
+
+@router.get("/card-analytics/{user_id}")
+async def get_card_analytics(
+    user_id: str,
+    days: int = Query(30, ge=1, le=365),
+):
+    """
+    Card analytics endpoint — views, downloads, shares broken down by card type,
+    top-performing cards, daily trends, and per-salesperson breakdown.
+    Role-aware: admins/managers see team data, users see personal.
+    """
+    db = get_db()
+    from datetime import timezone as tz
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    role = user.get("role", "user")
+    store_id = user.get("store_id")
+    org_id = user.get("organization_id") or user.get("org_id")
+
+    now = datetime.now(tz.utc)
+    start = now - timedelta(days=days)
+    prev_start = start - timedelta(days=days)
+
+    # Determine scope
+    is_admin = role in ("super_admin", "org_admin")
+    is_manager = role in ("super_admin", "org_admin", "store_manager")
+
+    if is_admin:
+        user_filter = {}
+        scope = "organization"
+    elif role == "store_manager":
+        user_filter = {"store_id": store_id} if store_id else {"salesman_id": user_id}
+        scope = "store"
+    else:
+        user_filter = {"salesman_id": user_id}
+        scope = "personal"
+
+    # Get users in scope
+    if scope == "personal":
+        scope_user_ids = [user_id]
+        user_name_map = {user_id: user.get("name", "Unknown")}
+    else:
+        db_filter = {}
+        if scope == "store" and store_id:
+            db_filter = {"store_id": store_id, "status": {"$ne": "deactivated"}}
+        elif scope == "organization":
+            db_filter = {"status": {"$ne": "deactivated"}}
+        scope_users = await db.users.find(db_filter, {"_id": 1, "name": 1}).to_list(500)
+        scope_user_ids = [str(u["_id"]) for u in scope_users]
+        user_name_map = {str(u["_id"]): u.get("name", "Unknown") for u in scope_users}
+
+    base_match = {
+        "salesman_id": {"$in": scope_user_ids},
+        "created_at": {"$gte": start, "$lte": now},
+    }
+    prev_match = {
+        "salesman_id": {"$in": scope_user_ids},
+        "created_at": {"$gte": prev_start, "$lt": start},
+    }
+
+    # ===== 1. SUMMARY BY CARD TYPE =====
+    type_pipeline = [
+        {"$match": base_match},
+        {"$group": {
+            "_id": {"$ifNull": ["$card_type", "congrats"]},
+            "count": {"$sum": 1},
+            "views": {"$sum": {"$ifNull": ["$views", 0]}},
+            "downloads": {"$sum": {"$ifNull": ["$downloads", 0]}},
+            "shares": {"$sum": {"$ifNull": ["$shares", 0]}},
+        }},
+        {"$sort": {"count": -1}},
+    ]
+    type_results = await db.congrats_cards.aggregate(type_pipeline).to_list(20)
+
+    card_type_breakdown = []
+    total_cards = 0
+    total_views = 0
+    total_downloads = 0
+    total_shares = 0
+    for t in type_results:
+        card_type_breakdown.append({
+            "card_type": t["_id"],
+            "count": t["count"],
+            "views": t["views"],
+            "downloads": t["downloads"],
+            "shares": t["shares"],
+        })
+        total_cards += t["count"]
+        total_views += t["views"]
+        total_downloads += t["downloads"]
+        total_shares += t["shares"]
+
+    # Previous period totals for trend
+    prev_pipeline = [
+        {"$match": prev_match},
+        {"$group": {
+            "_id": None,
+            "count": {"$sum": 1},
+            "views": {"$sum": {"$ifNull": ["$views", 0]}},
+        }},
+    ]
+    prev_results = await db.congrats_cards.aggregate(prev_pipeline).to_list(1)
+    prev_cards = prev_results[0]["count"] if prev_results else 0
+    prev_views = prev_results[0]["views"] if prev_results else 0
+    cards_trend = round(((total_cards - prev_cards) / prev_cards * 100) if prev_cards else 0, 1)
+    views_trend = round(((total_views - prev_views) / prev_views * 100) if prev_views else 0, 1)
+
+    # ===== 2. TOP PERFORMING CARDS =====
+    top_pipeline = [
+        {"$match": base_match},
+        {"$addFields": {
+            "engagement": {"$add": [
+                {"$ifNull": ["$views", 0]},
+                {"$multiply": [{"$ifNull": ["$downloads", 0]}, 2]},
+                {"$multiply": [{"$ifNull": ["$shares", 0]}, 3]},
+            ]}
+        }},
+        {"$sort": {"engagement": -1}},
+        {"$limit": 10},
+        {"$project": {
+            "_id": 0,
+            "card_id": 1,
+            "card_type": {"$ifNull": ["$card_type", "congrats"]},
+            "customer_name": 1,
+            "salesman_name": 1,
+            "salesman_id": 1,
+            "views": {"$ifNull": ["$views", 0]},
+            "downloads": {"$ifNull": ["$downloads", 0]},
+            "shares": {"$ifNull": ["$shares", 0]},
+            "engagement": 1,
+            "created_at": 1,
+        }},
+    ]
+    top_cards = await db.congrats_cards.aggregate(top_pipeline).to_list(10)
+    for card in top_cards:
+        if "created_at" in card and card["created_at"]:
+            card["created_at"] = card["created_at"].isoformat()
+
+    # ===== 3. DAILY TREND =====
+    daily_pipeline = [
+        {"$match": base_match},
+        {"$group": {
+            "_id": {
+                "date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                "card_type": {"$ifNull": ["$card_type", "congrats"]},
+            },
+            "count": {"$sum": 1},
+            "views": {"$sum": {"$ifNull": ["$views", 0]}},
+            "downloads": {"$sum": {"$ifNull": ["$downloads", 0]}},
+            "shares": {"$sum": {"$ifNull": ["$shares", 0]}},
+        }},
+        {"$sort": {"_id.date": 1}},
+    ]
+    daily_raw = await db.congrats_cards.aggregate(daily_pipeline).to_list(2000)
+
+    # Aggregate daily data
+    daily_map = {}
+    for d in daily_raw:
+        date_key = d["_id"]["date"]
+        if date_key not in daily_map:
+            daily_map[date_key] = {"date": date_key, "cards": 0, "views": 0, "downloads": 0, "shares": 0}
+        daily_map[date_key]["cards"] += d["count"]
+        daily_map[date_key]["views"] += d["views"]
+        daily_map[date_key]["downloads"] += d["downloads"]
+        daily_map[date_key]["shares"] += d["shares"]
+    daily_trend = sorted(daily_map.values(), key=lambda x: x["date"])
+
+    # ===== 4. PER-SALESPERSON BREAKDOWN (managers only) =====
+    per_user = []
+    if is_manager:
+        user_pipeline = [
+            {"$match": base_match},
+            {"$group": {
+                "_id": "$salesman_id",
+                "cards": {"$sum": 1},
+                "views": {"$sum": {"$ifNull": ["$views", 0]}},
+                "downloads": {"$sum": {"$ifNull": ["$downloads", 0]}},
+                "shares": {"$sum": {"$ifNull": ["$shares", 0]}},
+            }},
+            {"$sort": {"cards": -1}},
+        ]
+        user_results = await db.congrats_cards.aggregate(user_pipeline).to_list(200)
+
+        # Also get per-user card type breakdown
+        user_type_pipeline = [
+            {"$match": base_match},
+            {"$group": {
+                "_id": {"user": "$salesman_id", "type": {"$ifNull": ["$card_type", "congrats"]}},
+                "count": {"$sum": 1},
+            }},
+        ]
+        user_type_raw = await db.congrats_cards.aggregate(user_type_pipeline).to_list(2000)
+        user_type_map = {}
+        for ut in user_type_raw:
+            uid = ut["_id"]["user"]
+            ctype = ut["_id"]["type"]
+            if uid not in user_type_map:
+                user_type_map[uid] = {}
+            user_type_map[uid][ctype] = ut["count"]
+
+        # Compute store averages for comparison
+        store_avg_cards = round(sum(r["cards"] for r in user_results) / max(len(user_results), 1), 1)
+        store_avg_views = round(sum(r["views"] for r in user_results) / max(len(user_results), 1), 1)
+
+        for r in user_results:
+            uid = r["_id"]
+            per_user.append({
+                "user_id": uid,
+                "name": user_name_map.get(uid, "Unknown"),
+                "cards": r["cards"],
+                "views": r["views"],
+                "downloads": r["downloads"],
+                "shares": r["shares"],
+                "engagement": r["views"] + r["downloads"] * 2 + r["shares"] * 3,
+                "card_types": user_type_map.get(uid, {}),
+                "vs_avg_cards": round(r["cards"] - store_avg_cards, 1),
+                "vs_avg_views": round(r["views"] - store_avg_views, 1),
+            })
+    else:
+        # Personal user — just their own type breakdown
+        personal_type_pipeline = [
+            {"$match": base_match},
+            {"$group": {
+                "_id": {"$ifNull": ["$card_type", "congrats"]},
+                "count": {"$sum": 1},
+            }},
+        ]
+        personal_type_raw = await db.congrats_cards.aggregate(personal_type_pipeline).to_list(20)
+        personal_types = {pt["_id"]: pt["count"] for pt in personal_type_raw}
+
+        per_user.append({
+            "user_id": user_id,
+            "name": user.get("name", "Unknown"),
+            "cards": total_cards,
+            "views": total_views,
+            "downloads": total_downloads,
+            "shares": total_shares,
+            "engagement": total_views + total_downloads * 2 + total_shares * 3,
+            "card_types": personal_types,
+            "vs_avg_cards": 0,
+            "vs_avg_views": 0,
+        })
+
+    return {
+        "scope": scope,
+        "days": days,
+        "summary": {
+            "total_cards": total_cards,
+            "total_views": total_views,
+            "total_downloads": total_downloads,
+            "total_shares": total_shares,
+            "cards_trend_pct": cards_trend,
+            "views_trend_pct": views_trend,
+            "avg_views_per_card": round(total_views / max(total_cards, 1), 1),
+            "avg_downloads_per_card": round(total_downloads / max(total_cards, 1), 1),
+        },
+        "card_type_breakdown": card_type_breakdown,
+        "top_cards": top_cards,
+        "daily_trend": daily_trend,
+        "per_user": per_user,
+    }
