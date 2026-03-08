@@ -25,6 +25,38 @@ from routers.short_urls import create_short_url, get_short_url_base
 router = APIRouter(prefix="/congrats", tags=["congrats-cards"])
 logger = logging.getLogger(__name__)
 
+
+def _sync_upload_bytes(image_bytes: bytes, prefix: str, entity_id: str):
+    """
+    Synchronous image upload from raw bytes.
+    Runs in asyncio.to_thread to avoid blocking the event loop.
+    """
+    import gc
+    from utils.image_storage import (
+        _compress_image, generate_thumbnail, put_object,
+        ORIGINAL_MAX_WIDTH, WEBP_QUALITY, THUMBNAIL_SIZE, AVATAR_SIZE, APP_NAME,
+    )
+
+    file_id = str(uuid.uuid4())
+    base_path = f"{APP_NAME}/{prefix}/{entity_id}"
+
+    compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+    original_path = f"{base_path}/{file_id}.webp"
+    put_object(original_path, compressed_data, compressed_ct)
+
+    thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
+    thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
+    put_object(thumb_path, thumb_data, thumb_ct)
+
+    avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
+    avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
+    put_object(avatar_path, avatar_data, avatar_ct)
+
+    del compressed_data, thumb_data, avatar_data
+    gc.collect()
+
+    return {"original_path": original_path, "thumbnail_path": thumb_path, "avatar_path": avatar_path}
+
 # ===== Card Type Defaults =====
 CARD_TYPE_DEFAULTS = {
     "congrats": {
@@ -386,9 +418,15 @@ async def create_congrats_card(
     # Generate unique card ID first (needed for image path)
     card_id = str(uuid.uuid4())[:12]
     
-    # Upload via optimized pipeline
-    from utils.image_storage import upload_image
-    img_result = await upload_image(contents, prefix="congrats", entity_id=card_id)
+    # Upload via optimized pipeline (run in thread to avoid blocking event loop)
+    import asyncio
+    try:
+        img_result = await asyncio.to_thread(
+            _sync_upload_bytes, contents, "congrats", card_id
+        )
+    except Exception as e:
+        logger.warning(f"[CongratsCard] Image upload failed, using base64 fallback: {e}")
+        img_result = None
     
     if img_result:
         optimized_photo_url = f"/api/images/{img_result['original_path']}"
