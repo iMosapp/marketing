@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 const CATEGORIES = [
   { key: 'all', label: 'All', icon: 'apps' },
+  { key: 'engagement', label: 'Engagement', icon: 'flame' },
   { key: 'leads', label: 'Leads', icon: 'person-add' },
   { key: 'tasks', label: 'Tasks', icon: 'checkbox' },
   { key: 'messages', label: 'Messages', icon: 'chatbubble' },
@@ -35,6 +36,7 @@ function getNotifIcon(type: string): string {
     congrats_card_sent: 'gift', email_sent: 'mail', sms_sent: 'chatbox',
     badge_earned: 'trophy',
     campaign_send: 'megaphone',
+    engagement_signal: 'flame',
   };
   return map[type] || 'notifications';
 }
@@ -48,6 +50,7 @@ function getNotifColor(type: string): string {
     email_sent: '#30D158', sms_sent: '#34C759', badge_earned: '#FFD60A',
     digital_card_sent: '#5856D6', review_request_sent: '#FFD60A',
     congrats_card_sent: '#FF2D55',
+    engagement_signal: '#FF3B30',
     campaign_send: '#FF9500',
   };
   return map[type] || colors.textSecondary;

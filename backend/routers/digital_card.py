@@ -172,6 +172,18 @@ async def track_card_save(
         "created_at": datetime.utcnow()
     }
     await db.card_events.insert_one(event)
+
+    # Fire engagement signal — "Customer saved your contact"
+    try:
+        from routers.engagement_signals import record_signal
+        await record_signal(
+            signal_type="contact_saved",
+            user_id=user_id,
+            contact_id=contact_id,
+            metadata={"source": "digital_card"},
+        )
+    except Exception:
+        pass
     
     # If campaign_id provided, enroll the contact
     if campaign_id and contact_id:

@@ -602,6 +602,20 @@ async def get_congrats_card(card_id: str):
             )
     except Exception as e:
         print(f"[CongratsCard] Failed to log card view activity: {e}")
+
+    # Fire engagement signal for real-time notification
+    try:
+        from routers.engagement_signals import record_signal
+        contact_id = card.get("contact_id")
+        await record_signal(
+            signal_type="card_viewed",
+            user_id=card.get("salesman_id", ""),
+            contact_id=contact_id,
+            contact_name=card.get("customer_name"),
+            metadata={"card_id": card_id, "card_type": card.get("card_type", "congrats")},
+        )
+    except Exception as e:
+        logger.debug(f"Engagement signal failed: {e}")
     
     # Format the message with customer name
     message = card.get("message", "")
@@ -686,6 +700,21 @@ async def track_card_action(card_id: str, data: dict):
             )
     except Exception as e:
         print(f"[CongratsCard] Failed to log {action} activity: {e}")
+
+    # Fire engagement signal
+    try:
+        from routers.engagement_signals import record_signal
+        signal_type = "card_downloaded" if action == "download" else "card_shared"
+        if card and card.get("salesman_id"):
+            await record_signal(
+                signal_type=signal_type,
+                user_id=card["salesman_id"],
+                contact_id=str(card["_id"]) if card.get("contact_id") else None,
+                contact_name=card.get("customer_name"),
+                metadata={"card_id": card_id, "action": action},
+            )
+    except Exception:
+        pass
     
     return {"success": True}
 

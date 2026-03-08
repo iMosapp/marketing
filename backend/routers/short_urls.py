@@ -209,6 +209,28 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
         "timestamp": datetime.utcnow(),
     })
 
+    # Fire engagement signal for real-time notification
+    try:
+        from routers.engagement_signals import record_signal
+        link_type = doc.get("link_type", "link")
+        signal_map = {
+            "review": "review_link_clicked",
+            "review_invite": "review_link_clicked",
+            "digital_card": "digital_card_viewed",
+            "showcase": "showcase_viewed",
+            "link_page": "link_page_viewed",
+        }
+        signal_type = signal_map.get(link_type, "link_clicked")
+        await record_signal(
+            signal_type=signal_type,
+            user_id=user_id,
+            contact_id=contact_id,
+            contact_name=contact_name,
+            metadata={"short_code": short_code, "link_type": link_type},
+        )
+    except Exception:
+        pass
+
 
 @router.get("/{short_code}")
 async def redirect_short_url(short_code: str, request: Request):

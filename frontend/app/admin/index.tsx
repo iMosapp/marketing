@@ -494,6 +494,13 @@ export default function AdminDashboard() {
     if (isSuperAdmin || isOrgAdmin || isStoreManager) {
       const toolItems: MenuItem[] = [
         {
+          icon: 'flame',
+          title: 'Hot Leads',
+          subtitle: 'Customers engaging right now',
+          onPress: () => router.push('/admin/hot-leads'),
+          color: '#FF3B30',
+        },
+        {
           icon: 'trophy',
           title: 'Leaderboards',
           subtitle: isStoreManager ? 'My team rankings' : 'Performance rankings',

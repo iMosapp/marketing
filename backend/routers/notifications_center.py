@@ -254,6 +254,43 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Pending campaign sends: {e}")
 
+    # 8. ENGAGEMENT SIGNALS — Real-time customer engagement alerts
+    try:
+        from datetime import timedelta as td
+        cutoff = datetime.now(timezone.utc) - td(hours=48)
+        eng_signals = list(db.notifications.find({
+            "type": "engagement_signal",
+            "user_id": user_id,
+            "created_at": {"$gte": cutoff},
+        }).sort("created_at", -1).limit(20))
+        for sig in eng_signals:
+            is_return = sig.get("is_return_visit", False)
+            view_count = sig.get("view_count", 1)
+            contact_id = sig.get("contact_id", "")
+            priority = 0 if is_return else 1  # Return visits are highest priority
+            if view_count >= 3:
+                priority = 0  # Repeat viewers are hot leads
+            notifications.append({
+                "id": f"eng_{sig['_id']}",
+                "type": "engagement_signal",
+                "category": "engagement",
+                "priority": priority,
+                "title": sig.get("title", "Customer engaged"),
+                "body": sig.get("message", ""),
+                "icon": sig.get("icon", "eye"),
+                "color": sig.get("color", "#007AFF"),
+                "link": f"/contact/{contact_id}" if contact_id else None,
+                "contact_name": sig.get("contact_name"),
+                "contact_id": contact_id,
+                "is_return_visit": is_return,
+                "view_count": view_count,
+                "timestamp": _ts(sig.get("created_at")),
+                "read": sig.get("read", False),
+                "source": "engagement",
+            })
+    except Exception as e:
+        logger.debug(f"Engagement signals: {e}")
+
     # Count categories before filtering
     category_counts = {}
     for n in notifications:
