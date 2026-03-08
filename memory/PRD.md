@@ -1,7 +1,7 @@
 # i'M On Social — Product Requirements Document
 
 ## Original Problem Statement
-Build a Relationship Management System (RMS) / CRM for automotive sales professionals.
+Build a Relationship Management System (RMS) / CRM for automotive sales professionals. The vision: AI-powered, human-to-human relationship building where every follow-up is deliberate, meaningful, and personal. Salespeople record voice memos, and the system extracts personal details (family, interests, vehicle info) to power AI-generated campaign messages that nurture long-term relationships for repeat and referral business.
 
 ## Core Architecture
 - **Frontend:** React Native / Expo (web)
@@ -24,63 +24,67 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### AI-Powered Outreach + Sold Campaign Intelligence (Mar 2026) — LATEST
-**The system that makes every follow-up deliberate, meaningful, and personal.**
+### Voice Memo Intelligence + Campaign Config + Full AI Pipeline (Mar 2026) — LATEST
 
-1. **Relationship Intelligence Engine** (`services/relationship_intel.py`)
-   - Compiles ALL data: contact profile, engagement signals, conversation history, campaign messages, voice notes
-   - Calculates: relationship health (strong/warm/cooling/cold), engagement score, response pattern, milestones
-   - Outputs both AI context (for prompt engineering) and human summary (for salesperson visibility)
+1. **Voice Memo Intelligence Extraction** (`services/voice_intel.py`)
+   - When a voice note is recorded, AI automatically extracts: spouse name, kids, interests, occupation, vehicle details, trade-in, purchase context, pets, neighborhood, referral potential, communication preference
+   - Auto-triggers on voice note save (fire-and-forget async task in `voice_notes.py`)
+   - Extracted details merge into contact's `personal_details` field (existing data preserved, new data supplements)
+   - Contact event logged for activity feed visibility
 
-2. **AI-Powered Campaign Messages** (upgraded `ai_campaigns.py`)
-   - `get_contact_context()` now uses the full Relationship Intelligence Engine
-   - Campaign message prompts include: engagement signals, previous messages (no repeats), relationship health, response patterns
-   - Prompt instructions adapt tone based on relationship health: strong = casual, cooling = warmer
+2. **Enhanced Contact Profile** (in `contacts.py`)
+   - `GET /contacts/{user_id}/{contact_id}/personal-details` — View extracted details
+   - `PATCH /contacts/{user_id}/{contact_id}/personal-details` — Manual edits (override AI)
+   - `POST /contacts/{user_id}/{contact_id}/re-extract` — Re-run extraction on all voice notes
+   - Frontend: `PersonalIntelSection` component on contact detail page shows all personal intel
 
-3. **Sold Tag Auto-Enrollment** (in `tags.py`)
-   - When "Sold" tag is applied: AI generates 2 personalized follow-up suggestions + auto-enrolls contact in Sold Follow-Up campaign
-   - Campaign auto-created from template if it doesn't exist (`ai_enabled: true`)
-   - Enrollment has `trigger_type: sold_tag, auto_enrolled: true`
+3. **Campaign Configuration System** (`routers/campaign_config.py`)
+   - **Message modes:** `ai_suggested` (AI crafts every message), `template` (hard-coded), `hybrid` (per-step)
+   - **AI tone:** casual, warm, professional
+   - **Data sources:** Toggle voice memo intel and engagement signals
+   - **Delivery:** Review before send, auto-send (disabled until Twilio), auto-enroll on tag
+   - **Hierarchy:** Org baseline → Store (primary) → User override (with permission)
+   - Frontend: `/campaign-config` settings page with radio options, switches, level selector
 
-4. **Relationship Intelligence in Tasks** (upgraded `scheduler.py`)
-   - Campaign pending sends include `relationship_brief` field
-   - Tasks include `ai_generated` and `relationship_brief` for salesperson visibility
+4. **Relationship Intelligence Engine** (upgraded `services/relationship_intel.py`)
+   - Now includes personal details from voice memos in both AI context and human summary
+   - AI prompt includes: spouse name, kids, interests, vehicle details, referral potential
+   - Human summary shows: "Personal: Spouse: Sarah / Kids: Jake, Emma / Interests: fly fishing"
 
-5. **Timezone-Aware Scheduling**
-   - Browser timezone auto-detected on login (stored on user doc)
-   - AI outreach tasks scheduled for 9 AM next morning in user's timezone
-   - Campaign steps randomized between 10-12 PM user's local time
+5. **Campaign Message Generation** (upgraded)
+   - Scheduler checks campaign config for message_mode before generating
+   - `ai_suggested` mode overrides to always use AI, `template` mode forces templates
+   - AI messages reference personal details for deeply personalized touchpoints
 
-6. **Frontend: AI Outreach Dashboard** (`/ai-outreach`)
-   - 4 tabs: Campaign (pending sends), AI Suggestions, Accepted, Dismissed
-   - `RelBriefCard` component shows: health badge, engagement score, last contact, response pattern, milestones
-   - Campaign tab: message preview, Copy, Mark as Sent, step context
-   - Tap to load full relationship intelligence per contact
-
-### Engagement Intelligence System (Mar 2026)
-- Real-time tracking, "Hot Leads" dashboard, notification integration
+### AI-Powered Outreach + Sold Campaign Intelligence (Mar 2026)
+- "Sold" tag triggers: AI suggestions (2 options) + auto campaign enrollment
+- Relationship intelligence feeds into every campaign message
+- Timezone-aware scheduling (9 AM next morning)
+- Frontend `/ai-outreach` with 4 tabs: Campaign, AI Suggestions, Accepted, Dismissed
 
 ### Previous Features
-- Gamification & Leaderboards, Image Performance Overhaul, Unified Card System
+- Engagement Intelligence, Hot Leads Dashboard
+- Gamification & Leaderboards, Image Performance Overhaul
 - Operations Manual, Carrier-Agnostic Messaging, Reporting System
 - White-Label Emails, Public REST API & Webhooks
-- Centralized & Trackable Actions, Personal SMS Fallback
 
 ---
 
 ## Key API Endpoints
-- `POST /api/tags/{user_id}/assign` — Triggers AI outreach + auto campaign enrollment on "Sold"
-- `GET /api/ai-outreach/suggestions/{user_id}` — AI suggestion records
-- `POST /api/ai-outreach/suggestions/{id}/accept` — Accept → creates task
-- `GET /api/ai-outreach/relationship-brief/{user_id}/{contact_id}` — Full relationship intel
-- `GET /api/campaigns/{user_id}/pending-sends` — Campaign messages with relationship briefs
-- `POST /api/ai-campaigns/generate-message/{user_id}/{contact_id}` — AI message generation
+- `POST /api/tags/{user_id}/assign` — Triggers AI outreach + campaign auto-enrollment on "Sold"
+- `GET /api/contacts/{user_id}/{contact_id}/personal-details` — Voice memo extracted details
+- `PATCH /api/contacts/{user_id}/{contact_id}/personal-details` — Manual edit details
+- `POST /api/contacts/{user_id}/{contact_id}/re-extract` — Re-extract from all voice notes
+- `GET /api/campaign-config/effective/{user_id}` — Resolved campaign config
+- `PUT /api/campaign-config/{level}/{entity_id}` — Set config (org/store/user)
+- `GET /api/ai-outreach/relationship-brief/{user_id}/{contact_id}` — Full intel with personal details
 
 ## Key DB Collections
-- `ai_outreach` — AI-generated suggestions with status tracking
-- `campaign_enrollments` — Campaign enrollment with trigger_type and auto_enrolled fields
-- `campaign_pending_sends` — Now includes relationship_brief, ai_generated, step_context
+- `contacts.personal_details` — Structured personal data from voice memos
+- `campaign_configs` — Hierarchical campaign configuration (level + entity_id)
+- `ai_outreach` — AI-generated suggestions
 - `engagement_signals` — Real-time customer interaction tracking
+- `voice_notes` — Now has `intelligence_extracted` and `extracted_fields` flags
 
 ---
 
@@ -91,11 +95,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Auth refactor (bcrypt)
 - Push Notifications
 - Voice Help Assistant
-- Manager Feature (team-wide engagement dashboard)
+- Manager Feature for Engagement Intelligence
 - Google Places API Integration
 
 ### P2
-- Full Twilio, WhatsApp, Training Hub, Inventory Module
+- Full Twilio Integration (enables auto_send)
+- WhatsApp, Training Hub, Inventory Module
 - Delete legacy `birthday_cards.py`
 
 ## Known Issues
