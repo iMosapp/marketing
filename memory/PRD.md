@@ -62,6 +62,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Timezone-aware scheduling (9 AM next morning)
 - Frontend `/ai-outreach` with 4 tabs: Campaign, AI Suggestions, Accepted, Dismissed
 
+### Card Labeling Bug Fix (Mar 8, 2026)
+- **BUG FIXED:** All card types (Birthday, Holiday, Thank You, etc.) sent from the inbox were incorrectly labeled as "Congrats Card"
+- **Root cause:** Hardcoded labels, faulty `.includes('congrats')` detection, and no mechanism to pass card type during creation
+- **Fix:** Added card type selector (6 types: Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday) to creation modal, passes `card_type` to backend, message rendering now uses `event_type` field for dynamic label/icon/color
+- **Backend:** `POST /api/congrats/create` now accepts `card_type` parameter; messages store explicit `event_type` (e.g., `birthday_card_sent`)
+- **Frontend:** Dynamic modal title, preview text, and thread message rendering based on card type
+- **Tested:** 9/9 backend tests passed, all frontend flows verified
+
 ### Permission Templates + Template Delete Bug Fix + Touchpoint Totals Fix (Mar 8, 2026)
 1. **Permission Templates System** (`routers/permission_templates.py`)
    - Full CRUD API: Create, Read, Update, Delete custom permission templates
