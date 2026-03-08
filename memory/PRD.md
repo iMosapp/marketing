@@ -62,7 +62,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Timezone-aware scheduling (9 AM next morning)
 - Frontend `/ai-outreach` with 4 tabs: Campaign, AI Suggestions, Accepted, Dismissed
 
-### Permission Templates + Template Delete Bug Fix (Mar 8, 2026)
+### Permission Templates + Template Delete Bug Fix + Touchpoint Totals Fix (Mar 8, 2026)
 1. **Permission Templates System** (`routers/permission_templates.py`)
    - Full CRUD API: Create, Read, Update, Delete custom permission templates
    - 4 prebuilt templates: Sales Rep, Senior Rep, Sales Manager, Org Admin
@@ -73,6 +73,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - Fixed: `Alert.alert` on web degrades to `window.alert` without callback buttons
    - Now uses `window.confirm()` on web platform for delete confirmations
 3. **Cleanup:** Deleted obsolete `birthday_cards.py` router file
+4. **Touchpoint Totals Bug Fix** (`routers/tasks.py` summary endpoint)
+   - Fixed: SMS sent, emails sent, calls placed, cards shared, and reviews sent were NOT counted in `total_today` / `completed_today`
+   - Root cause: Summary only counted items from `tasks` collection, not `contact_events` activity
+   - Fix: Activity touchpoints (SMS, email, calls, cards, reviews) now add to both `total_today` and `completed_today`
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard

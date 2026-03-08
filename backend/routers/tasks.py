@@ -188,12 +188,24 @@ async def get_task_summary(user_id: str):
     # Cards sent (only outbound actions, not views)
     cards_sent = sum(v for k, v in activity.items() if ("card_sent" in k or "card_shared" in k or "digital_card_shared" in k or "congrats" in k or "birthday_card_sent" in k or "thankyou_card" in k or "welcome_card" in k or "anniversary_card" in k or "holiday_card" in k))
 
+    # Activities are completed touchpoints (user already performed the action)
+    activity_touchpoints = (
+        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) +
+        activity.get("email_sent", 0) +
+        activity.get("call_placed", 0) +
+        cards_sent +
+        activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0)
+    )
+
+    combined_total = total_today + activity_touchpoints
+    combined_completed = completed_today + activity_touchpoints
+
     return {
-        "total_today": total_today,
-        "completed_today": completed_today,
+        "total_today": combined_total,
+        "completed_today": combined_completed,
         "pending_today": pending,
         "overdue": overdue,
-        "progress_pct": round((completed_today / max(total_today, 1)) * 100),
+        "progress_pct": round((combined_completed / max(combined_total, 1)) * 100),
         "activity": {
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
             "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0),
