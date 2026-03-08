@@ -45,6 +45,23 @@ async def get_migration_status():
     }
 
 
+@router.get("/migrate-check")
+async def migrate_check():
+    """
+    Instant health check — counts images needing migration. No auth needed.
+    If this works, your deployment is current.
+    """
+    db = get_db()
+    counts = {
+        "users": await db.users.count_documents({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}),
+        "stores": await db.stores.count_documents({"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}}),
+        "contacts": await db.contacts.count_documents({"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}),
+        "congrats": await db.congrats_cards.count_documents({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}),
+    }
+    counts["total"] = sum(counts.values())
+    return {"status": "ok", "version": "v3", "needs_migration": counts}
+
+
 @router.get("/{path:path}")
 async def serve_image(path: str, request: Request):
     """Serve an image with CDN-like caching behavior.
@@ -240,8 +257,8 @@ async def migrate_all_base64_images(request: Request, background_tasks: Backgrou
 @router.post("/migrate-now")
 async def migrate_now(request: Request):
     """
-    Simple synchronous migration — no background tasks needed.
-    Fallback if /migrate-all-base64 doesn't work on your server.
+    Kicks off migration using asyncio.create_task — returns instantly.
+    Check results at GET /api/images/migrate-check
     """
     db = get_db()
     try:
@@ -261,37 +278,38 @@ async def migrate_now(request: Request):
     if not user or user.get("role") != "super_admin":
         return {"status": "error", "detail": "Super admin only"}
 
-    import time
-    stats = {"users": 0, "stores": 0, "contacts": 0, "congrats": 0, "errors": 0}
-    start = time.time()
+    import asyncio
+    asyncio.create_task(_run_migrate_simple())
+    return {"status": "started", "message": "Migration running. Check /api/images/migrate-check to see remaining count."}
 
+
+async def _run_migrate_simple():
+    """Fire-and-forget migration task."""
+    db = get_db()
     try:
         for u in await db.users.find({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo_url": 1}).to_list(200):
             try:
                 r = await upload_image(u["photo_url"], prefix="profiles", entity_id=str(u["_id"]))
                 if r:
                     await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"], "photo_url": f"/api/images/{r['original_path']}"}})
-                    stats["users"] += 1
-            except Exception:
-                stats["errors"] += 1
+            except Exception as e:
+                logger.warning(f"[Migrate] user {u['_id']}: {e}")
 
         for s in await db.stores.find({"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}}, {"_id": 1, "logo_url": 1}).to_list(200):
             try:
                 r = await upload_image(s["logo_url"], prefix="logos", entity_id=str(s["_id"]))
                 if r:
                     await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": r["original_path"], "logo_thumb_path": r["thumbnail_path"], "logo_avatar_path": r["avatar_path"]}})
-                    stats["stores"] += 1
-            except Exception:
-                stats["errors"] += 1
+            except Exception as e:
+                logger.warning(f"[Migrate] store {s['_id']}: {e}")
 
         for c in await db.contacts.find({"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo": 1}).to_list(500):
             try:
                 r = await upload_image(c["photo"], prefix="contacts", entity_id=str(c["_id"]))
                 if r:
                     await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"]}})
-                    stats["contacts"] += 1
-            except Exception:
-                stats["errors"] += 1
+            except Exception as e:
+                logger.warning(f"[Migrate] contact {c['_id']}: {e}")
 
         for card in await db.congrats_cards.find({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "card_id": 1, "customer_photo": 1}).to_list(500):
             try:
@@ -299,14 +317,12 @@ async def migrate_now(request: Request):
                 r = await upload_image(card["customer_photo"], prefix="congrats", entity_id=cid)
                 if r:
                     await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"]}})
-                    stats["congrats"] += 1
-            except Exception:
-                stats["errors"] += 1
+            except Exception as e:
+                logger.warning(f"[Migrate] card {card['_id']}: {e}")
 
-        total = stats["users"] + stats["stores"] + stats["contacts"] + stats["congrats"]
-        return {"status": "completed", "migrated": stats, "total": total, "seconds": round(time.time() - start, 1)}
+        logger.info("[Migrate] Background migration complete")
     except Exception as e:
-        return {"status": "error", "detail": str(e), "partial": stats}
+        logger.error(f"[Migrate] Background migration failed: {e}")
 
 
 async def _run_migration(job_id: str):

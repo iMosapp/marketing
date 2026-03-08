@@ -253,19 +253,34 @@ export default function AdminDashboard() {
     setMigrating(true);
     setMigrateResult(null);
     try {
-      // Use the simple synchronous endpoint (more reliable across hosts)
       const res = await api.post('/images/migrate-now', { user_id: user?._id });
       const d = res.data;
-      if (d.status === 'completed') {
-        setMigrateResult(`Done! ${d.total || 0} images migrated in ${d.seconds || 0}s`);
-      } else if (d.status === 'error') {
-        setMigrateResult(`Error: ${d.detail}`);
+      if (d.status === 'started') {
+        setMigrateResult('Migration running in background...');
+        // Poll migrate-check to see remaining count go down
+        let attempts = 0;
+        const poll = setInterval(async () => {
+          attempts++;
+          try {
+            const check = await api.get('/images/migrate-check');
+            const remaining = check.data?.needs_migration?.total || 0;
+            if (remaining === 0 || attempts >= 20) {
+              clearInterval(poll);
+              setMigrateResult(remaining === 0 ? 'Done! All images migrated.' : `${remaining} images remaining. Tap again if needed.`);
+              setMigrating(false);
+            } else {
+              setMigrateResult(`Processing... ${remaining} images remaining`);
+            }
+          } catch {
+            if (attempts >= 20) { clearInterval(poll); setMigrating(false); setMigrateResult('Check complete. Tap again to verify.'); }
+          }
+        }, 5000);
       } else {
-        setMigrateResult(JSON.stringify(d));
+        setMigrateResult(d.detail || d.message || 'Done');
+        setMigrating(false);
       }
     } catch (e: any) {
       setMigrateResult(`Error: ${e.response?.data?.detail || e.message}`);
-    } finally {
       setMigrating(false);
     }
   };
