@@ -188,7 +188,7 @@ export function NotificationBell() {
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                  onPress={() => { setOpen(false); router.push('/notifications' as any); }}
+                  onPress={() => { setOpen(false); router.push('/(tabs)/notifications' as any); }}
                   data-testid="view-all-notifications-btn"
                 >
                   <Text style={[styles.markAll, { color: colors.textSecondary }]}>View All</Text>

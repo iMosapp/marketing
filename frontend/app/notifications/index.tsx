@@ -53,7 +53,7 @@ function getNotifColor(type: string): string {
     engagement_signal: '#FF3B30',
     campaign_send: '#FF9500',
   };
-  return map[type] || colors.textSecondary;
+  return map[type] || '#8E8E93';
 }
 
 function formatTime(isoString: string) {
