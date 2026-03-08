@@ -509,6 +509,13 @@ export default function AdminDashboard() {
           color: '#C9A962',
         },
         {
+          icon: 'key',
+          title: 'Permission Templates',
+          subtitle: 'Role presets & feature access control',
+          onPress: () => router.push('/permission-templates'),
+          color: '#5856D6',
+        },
+        {
           icon: 'flame',
           title: 'Hot Leads',
           subtitle: 'Customers engaging right now',

@@ -837,3 +837,48 @@ export const leaderboardAPI = {
     return response.data;
   },
 };
+
+// ============= PERMISSION TEMPLATES API =============
+export const permissionTemplatesAPI = {
+  list: async (storeId?: string, orgId?: string) => {
+    const params = new URLSearchParams();
+    if (storeId) params.append('store_id', storeId);
+    if (orgId) params.append('org_id', orgId);
+    const response = await api.get(`/permission-templates/?${params}`);
+    return response.data;
+  },
+
+  get: async (templateId: string) => {
+    const response = await api.get(`/permission-templates/${templateId}`);
+    return response.data;
+  },
+
+  create: async (data: any, userId: string) => {
+    const response = await api.post('/permission-templates/', data, {
+      headers: { 'X-User-ID': userId },
+    });
+    return response.data;
+  },
+
+  update: async (templateId: string, data: any, userId: string) => {
+    const response = await api.put(`/permission-templates/${templateId}`, data, {
+      headers: { 'X-User-ID': userId },
+    });
+    return response.data;
+  },
+
+  delete: async (templateId: string, userId: string) => {
+    const response = await api.delete(`/permission-templates/${templateId}`, {
+      headers: { 'X-User-ID': userId },
+    });
+    return response.data;
+  },
+
+  apply: async (templateId: string, targetUserId: string, requestingUserId: string) => {
+    const response = await api.post(`/permission-templates/${templateId}/apply/${targetUserId}`, {}, {
+      headers: { 'X-User-ID': requestingUserId },
+    });
+    return response.data;
+  },
+};
+

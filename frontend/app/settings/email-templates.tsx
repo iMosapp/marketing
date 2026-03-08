@@ -136,32 +136,44 @@ export default function EmailTemplatesSettings() {
     }
   };
 
-  const handleDelete = (template: EmailTemplate) => {
+  const handleDelete = async (template: EmailTemplate) => {
     if (template.is_default) {
-      Alert.alert('Cannot Delete', 'Default templates cannot be deleted');
+      if (Platform.OS === 'web') {
+        window.alert('Default templates cannot be deleted');
+      } else {
+        Alert.alert('Cannot Delete', 'Default templates cannot be deleted');
+      }
       return;
     }
 
-    Alert.alert(
-      'Delete Template',
-      `Are you sure you want to delete "${template.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              await emailAPI.deleteTemplate(user!._id, template._id);
-              loadTemplates();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete template');
-            }
-          },
-        },
-      ]
-    );
+    const doDelete = async () => {
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        await emailAPI.deleteTemplate(user!._id, template._id);
+        loadTemplates();
+      } catch (error) {
+        if (Platform.OS === 'web') {
+          window.alert('Failed to delete template');
+        } else {
+          Alert.alert('Error', 'Failed to delete template');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${template.name}"?`)) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Template',
+        `Are you sure you want to delete "${template.name}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   };
 
   const getCategoryInfo = (categoryId: string) => {
