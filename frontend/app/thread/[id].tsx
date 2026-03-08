@@ -2519,9 +2519,9 @@ export default function ThreadScreen() {
                 
                 {/* Preview Info */}
                 <View style={styles.congratsPreviewBox}>
-                  <Ionicons name="gift" size={24} color="#C9A962" />
+                  <Ionicons name={(CARD_TYPES.find(ct => ct.key === selectedCardType) || CARD_TYPES[0]).icon as any} size={24} color={(CARD_TYPES.find(ct => ct.key === selectedCardType) || CARD_TYPES[0]).color} />
                   <Text style={styles.congratsPreviewText}>
-                    Your customer will receive a beautiful branded thank you card they can download and share on social media!
+                    Your customer will receive a beautiful branded {(CARD_TYPES.find(ct => ct.key === selectedCardType) || CARD_TYPES[0]).label.toLowerCase()} card they can download and share on social media!
                   </Text>
                 </View>
 
