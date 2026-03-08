@@ -83,6 +83,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Frontend:** Dynamic modal title, preview text, and thread message rendering based on card type
 - **Tested:** 9/9 backend tests passed, all frontend flows verified
 
+### Contact Stats Bar Bug Fix (Mar 8, 2026)
+- **BUG FIXED:** Campaigns and Referrals counters on the contact card stats bar were always showing 0
+- **Root cause 1 (Campaigns):** Two enrollment systems exist — `campaigns.py` stores `user_id`, `campaign_lifecycle.py` stores `salesman_id`. The stats query only filtered by `user_id`, missing lifecycle enrollments.
+- **Root cause 2 (Referrals):** Stats displayed `contact.referral_count` (a manually-maintained counter) instead of dynamically counting contacts with `referred_by` matching the contact.
+- **Fix:** Stats endpoint (`/api/contacts/{user_id}/{contact_id}/stats`) now queries campaign_enrollments by `contact_id` only (catches both field naming conventions), and dynamically counts referrals from the contacts collection.
+- **Frontend:** Updated ContactStats interface and display to use `stats.referral_count` from API.
+- **Tested:** 6/6 backend + frontend tests passed
+
 ### Digital Card Labeling Bug Fix (Mar 8, 2026)
 - **BUG FIXED:** Digital business card messages with historical `congrats_card_sent` event_type were incorrectly labeled as "Congrats Card"
 - **Root cause:** 3 issues: (1) `contentLower` referenced before definition, (2) `isDigitalCard=true` did not prevent congrats fallback, (3) display priority checked congrats before digital card
