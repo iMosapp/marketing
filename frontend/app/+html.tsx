@@ -4,7 +4,7 @@ import type { PropsWithChildren } from "react";
 
 export default function Root({ children }: PropsWithChildren) {
   return (
-    <html lang="en" style={{ height: "100%", backgroundColor: "#000000" }}>
+    <html lang="en" style={{ height: "100%", backgroundColor: "#000000" }} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -25,7 +25,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="i'M On Social" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#007AFF" />
+        <meta name="theme-color" content="#000000" />
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
@@ -56,6 +56,7 @@ export default function Root({ children }: PropsWithChildren) {
         />
       </head>
       <body
+        suppressHydrationWarning
         style={{
           margin: 0,
           height: "100%",

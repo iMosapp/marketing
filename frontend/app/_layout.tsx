@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -66,16 +66,21 @@ export default function RootLayout() {
   const loadAuth = useAuthStore((state) => state.loadAuth);
   const loadTheme = useThemeStore((state) => state.loadTheme);
   const colors = useThemeStore((state) => state.colors);
+  const [mounted, setMounted] = useState(false);
   
   usePWAMetaTags();
   
   useEffect(() => {
     loadAuth();
     loadTheme();
+    setMounted(true);
   }, []);
   
+  // Use SSR-safe default (#000000) until client hydration is complete
+  const bgColor = mounted ? colors.bg : '#000000';
+  
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
       <SafeAreaProvider>
         <ToastProvider>
           <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
