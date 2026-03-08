@@ -169,7 +169,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - WhatsApp, Training Hub, Inventory Module
 
 ## Known Issues
-- P1: Production email blocked (user: verify RESEND_API_KEY)
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
 
