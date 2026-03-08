@@ -411,7 +411,7 @@ export default function MoreScreen() {
   // 1. MY TOOLS
   if (perm('my_tools')) {
     const items = filterItems('my_tools', [
-      { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/touchpoints' as any), color: '#C9A962' },
+      { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/(tabs)/touchpoints' as any), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
       { permKey: 'training_hub', icon: 'school', title: 'Training Hub', subtitle: "Learn how to use i'M On Social", onPress: () => router.push('/training-hub'), color: '#FF9500' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },

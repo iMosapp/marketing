@@ -497,7 +497,7 @@ export default function AdminDashboard() {
           icon: 'sparkles',
           title: 'AI Follow-ups',
           subtitle: 'AI-powered outreach suggestions',
-          onPress: () => router.push('/ai-outreach'),
+          onPress: () => router.push('/(tabs)/ai-outreach' as any),
           color: '#AF52DE',
           badge: 0,  // Will be updated with pending count
         },
@@ -541,7 +541,7 @@ export default function AdminDashboard() {
           icon: 'pulse',
           title: 'Activity Feed',
           subtitle: isStoreManager ? 'My team activity' : 'Recent team activity',
-          onPress: () => router.push('/admin/activity-feed'),
+          onPress: () => router.push('/(tabs)/activity-feed' as any),
           color: '#5AC8FA',
         },
         {

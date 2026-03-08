@@ -631,7 +631,7 @@ export default function HomeScreen() {
 
           {/* Today's Touchpoints Tile */}
           <TouchableOpacity
-            onPress={() => router.push('/touchpoints' as any)}
+            onPress={() => router.push('/(tabs)/touchpoints' as any)}
             activeOpacity={0.85}
             style={{ backgroundColor: colors.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 12 }}
             data-testid="touchpoints-tile"
@@ -705,7 +705,7 @@ export default function HomeScreen() {
 
           {/* Activity Feed tile — demoted to smaller card */}
           <TouchableOpacity
-            onPress={() => router.push('/admin/activity-feed' as any)}
+            onPress={() => router.push('/(tabs)/activity-feed' as any)}
             activeOpacity={0.85}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
             data-testid="activity-feed-tile"
@@ -722,7 +722,7 @@ export default function HomeScreen() {
 
           {/* AI Follow-ups tile */}
           <TouchableOpacity
-            onPress={() => router.push('/ai-outreach' as any)}
+            onPress={() => router.push('/(tabs)/ai-outreach' as any)}
             activeOpacity={0.85}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border, marginTop: 12 }}
             data-testid="ai-outreach-tile"
