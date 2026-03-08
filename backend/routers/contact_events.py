@@ -194,6 +194,30 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
             e["icon"] = e.get("icon", "mail")
             e["color"] = e.get("color", "#007AFF")
             e["category"] = e.get("category", "message")
+        elif etype == "email_failed":
+            e["icon"] = e.get("icon", "mail")
+            e["color"] = e.get("color", "#FF3B30")
+            e["category"] = e.get("category", "message")
+        elif etype == "sms_sent":
+            e["icon"] = e.get("icon", "chatbubble")
+            e["color"] = e.get("color", "#34C759")
+            e["category"] = e.get("category", "message")
+        elif etype == "sms_failed":
+            e["icon"] = e.get("icon", "chatbubble")
+            e["color"] = e.get("color", "#FF3B30")
+            e["category"] = e.get("category", "message")
+        elif etype == "task_created":
+            e["icon"] = e.get("icon", "checkbox-outline")
+            e["color"] = e.get("color", "#FF9500")
+            e["category"] = e.get("category", "task")
+        elif etype == "task_completed":
+            e["icon"] = e.get("icon", "checkmark-circle")
+            e["color"] = e.get("color", "#34C759")
+            e["category"] = e.get("category", "task")
+        elif etype == "lead_reassigned":
+            e["icon"] = e.get("icon", "swap-horizontal")
+            e["color"] = e.get("color", "#C9A962")
+            e["category"] = e.get("category", "system")
         # Pull full message body from messages collection if we have a message_id
         if e.get("message_id") and not e.get("full_content"):
             try:

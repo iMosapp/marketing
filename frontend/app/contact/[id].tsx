@@ -2899,6 +2899,27 @@ export default function ContactDetailScreen() {
                 </View>
               ) : null}
 
+              {/* Task Context Banner — shows when navigating from a task notification */}
+              {taskTitle ? (
+                <View style={s.taskBanner} data-testid="task-context-banner">
+                  <View style={s.taskBannerIcon}>
+                    <Ionicons name="alert-circle" size={20} color="#FF9500" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.taskBannerLabel}>Pending Task</Text>
+                    <Text style={s.taskBannerTitle}>{decodeURIComponent(taskTitle as string)}</Text>
+                    {prefill ? <Text style={s.taskBannerDesc} numberOfLines={2}>{decodeURIComponent(prefill as string)}</Text> : null}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => router.setParams({ taskTitle: '', taskId: '', prefill: '' })}
+                    style={s.taskBannerClose}
+                    data-testid="task-banner-dismiss"
+                  >
+                    <Ionicons name="close" size={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
               {/* Relationship Feed (Activity) */}
               <View style={[s.section, { paddingTop: 0 }]} data-testid="activity-feed">
                 <View style={s.sectionHeaderRow}>
@@ -4514,6 +4535,45 @@ const getS = (colors: any) => StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+
+  // Task context banner
+  taskBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 14,
+    backgroundColor: '#FF950012',
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF9500',
+  },
+  taskBannerIcon: {
+    marginTop: 2,
+  },
+  taskBannerLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FF9500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  taskBannerTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 2,
+  },
+  taskBannerDesc: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  taskBannerClose: {
+    padding: 4,
   },
 
   // Sticky action bar → replaced by Composer

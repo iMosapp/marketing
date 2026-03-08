@@ -308,7 +308,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     position: 'absolute',
     top: IS_WEB ? 60 : 48,
     right: IS_WEB ? 16 : 0,
-    width: 380,
+    width: IS_WEB ? Math.min(380, (typeof window !== 'undefined' ? window.innerWidth : 380) - 32) : '100%',
+    maxWidth: 380,
     maxHeight: 520,
     backgroundColor: colors.card,
     borderRadius: 16,
@@ -425,6 +426,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
     marginTop: 1,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   itemTime: {
     fontSize: 11,

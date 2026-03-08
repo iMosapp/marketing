@@ -280,6 +280,24 @@ async def create_task(user_id: str, task_data: dict):
     result = await db.tasks.insert_one(task)
     task["_id"] = str(result.inserted_id)
     logger.info(f"Manual task created: '{title}' for user {user_id}")
+
+    # Log as contact_event so it appears in the contact's activity timeline
+    if contact_id:
+        await db.contact_events.insert_one({
+            "contact_id": contact_id,
+            "user_id": user_id,
+            "event_type": "task_created",
+            "channel": "system",
+            "content_preview": title,
+            "metadata": {
+                "task_id": task["_id"],
+                "description": task_data.get("description", ""),
+                "priority": priority,
+                "due_date": due_date.isoformat() if due_date else None,
+            },
+            "timestamp": datetime.now(timezone.utc),
+        })
+
     return _serialize(task)
 
 

@@ -65,6 +65,10 @@ EVENT_TYPE_LABELS = {
     "review_submitted": "Left a Review",
     "showcase_viewed": "Viewed Showcase",
     "link_page_viewed": "Viewed Link Page",
+    "task_created": "Task Created",
+    "task_completed": "Task Completed",
+    "lead_reassigned": "Lead Reassigned",
+    "sms_failed": "SMS Failed",
 }
 
 # ===== card_type field → event_type and display info =====

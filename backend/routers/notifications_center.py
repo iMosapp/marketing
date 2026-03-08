@@ -101,16 +101,19 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
         for t in overdue:
             contact_id = t.get("contact_id", "")
             desc = t.get("description", "")
+            title = t.get("title", "Follow up")
+            task_id = str(t["_id"])
             import urllib.parse
             prefill = urllib.parse.quote(desc[:500]) if desc else ""
-            link = f"/contact/{contact_id}?prefill={prefill}" if contact_id else None
+            task_title_enc = urllib.parse.quote(title[:200])
+            link = f"/contact/{contact_id}?taskId={task_id}&taskTitle={task_title_enc}&prefill={prefill}" if contact_id else None
             notifications.append({
                 "id": f"task_{t['_id']}",
                 "type": "task_overdue",
                 "category": "tasks",
                 "priority": 1,
                 "title": "Overdue Task",
-                "body": t.get("title", "Follow up"),
+                "body": title,
                 "link": link,
                 "contact_id": contact_id,
                 "timestamp": _ts(t.get("due_date")),
@@ -131,15 +134,18 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
         for t in upcoming:
             contact_id = t.get("contact_id", "")
             desc = t.get("description", "")
+            title = t.get("title", "Follow up")
+            task_id = str(t["_id"])
             prefill = urllib.parse.quote(desc[:500]) if desc else ""
-            link = f"/contact/{contact_id}?prefill={prefill}" if contact_id else None
+            task_title_enc = urllib.parse.quote(title[:200])
+            link = f"/contact/{contact_id}?taskId={task_id}&taskTitle={task_title_enc}&prefill={prefill}" if contact_id else None
             notifications.append({
                 "id": f"task_soon_{t['_id']}",
                 "type": "task_due_soon",
                 "category": "tasks",
                 "priority": 2,
                 "title": "Task Due Soon",
-                "body": t.get("title", "Follow up"),
+                "body": title,
                 "link": link,
                 "contact_id": contact_id,
                 "timestamp": _ts(t.get("due_date")),
