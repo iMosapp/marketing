@@ -71,6 +71,7 @@ interface ContactStats {
   broadcasts: number;
   custom_events: number;
   link_clicks: number;
+  referral_count: number;
   created_at: string | null;
 }
 
@@ -367,7 +368,7 @@ export default function ContactDetailScreen() {
   const [events, setEvents] = useState<ContactEvent[]>([]);
   const [stats, setStats] = useState<ContactStats>({
     total_touchpoints: 0, messages_sent: 0, campaigns: 0,
-    cards_sent: 0, broadcasts: 0, custom_events: 0, link_clicks: 0, created_at: null,
+    cards_sent: 0, broadcasts: 0, custom_events: 0, link_clicks: 0, referral_count: 0, created_at: null,
   });
   const [eventsLoading, setEventsLoading] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Record<number, boolean>>({});
@@ -2446,7 +2447,7 @@ export default function ContactDetailScreen() {
                 </View>
                 <Text style={s.heroStatDot}>·</Text>
                 <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{contact.referral_count}</Text>
+                  <Text style={s.heroStatVal}>{stats.referral_count ?? contact.referral_count}</Text>
                   <Text style={s.heroStatLbl}>refs</Text>
                 </View>
               </View>

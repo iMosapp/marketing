@@ -384,19 +384,20 @@ async def get_contact_stats(user_id: str, contact_id: str):
             {"conversation_id": str(conv["_id"]), "sender": "user"}
         )
 
-    # Count campaign enrollments
+    # Count campaign enrollments — match on contact_id with ANY user field
+    # (campaigns.py uses "user_id", campaign_lifecycle.py uses "salesman_id")
     campaign_count = await db.campaign_enrollments.count_documents(
-        {"contact_id": contact_id, "user_id": user_id}
+        {"contact_id": contact_id}
     )
 
     # Count congrats cards
     card_count = await db.congrats_cards_sent.count_documents(
-        {"contact_id": contact_id, "user_id": user_id}
+        {"contact_id": contact_id}
     )
 
     # Count broadcasts
     broadcast_count = await db.broadcast_recipients.count_documents(
-        {"contact_id": contact_id, "user_id": user_id}
+        {"contact_id": contact_id}
     )
 
     # Count custom events
@@ -413,6 +414,16 @@ async def get_contact_stats(user_id: str, contact_id: str):
     link_clicks = await db.contact_events.count_documents(
         {"contact_id": contact_id, "event_type": {"$in": click_event_types}}
     )
+
+    # Count referrals dynamically — contacts whose referred_by equals this contact
+    referral_count = 0
+    try:
+        oid_str = str(contact_id)
+        referral_count = await db.contacts.count_documents(
+            {"$or": [{"referred_by": oid_str}, {"referred_by": contact_id}], "status": {"$ne": "hidden"}}
+        )
+    except Exception:
+        pass
 
     # Get contact created_at for "time in system"
     contact = None
@@ -437,6 +448,7 @@ async def get_contact_stats(user_id: str, contact_id: str):
         "broadcasts": broadcast_count,
         "custom_events": custom_count,
         "link_clicks": link_clicks,
+        "referral_count": referral_count,
         "created_at": created_at,
     }
 

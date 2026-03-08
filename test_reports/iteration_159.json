@@ -1,0 +1,60 @@
+{
+  "summary": "Contact Stats Bug Fix VERIFIED. The 'Campaigns' and 'Referrals' counters in the contact card stats bar now correctly display their values. Backend fix in /app/backend/routers/contact_events.py: 1) Campaign count query no longer filters by user_id, so enrollments with salesman_id (from campaign_lifecycle.py) are now counted. 2) Dynamic referral_count added by querying contacts where referred_by matches contact_id. Frontend fix in /app/frontend/app/contact/[id].tsx: Added referral_count to ContactStats interface and displays stats.referral_count ?? contact.referral_count.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_contact_stats_referral_campaign_fix.py",
+    "/app/test_reports/pytest/pytest_contact_stats_bugfix.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VERIFIED: contact_events.py line 389-391 - Campaign query now only filters by contact_id, NOT user_id - fixes salesman_id enrollment counting",
+    "VERIFIED: contact_events.py lines 419-425 - Added dynamic referral_count calculation by querying contacts with referred_by matching contact_id",
+    "VERIFIED: contact_events.py line 451 - referral_count included in stats response",
+    "VERIFIED: Frontend [id].tsx line 74 - ContactStats interface includes referral_count: number",
+    "VERIFIED: Frontend [id].tsx line 371 - Default stats state includes referral_count: 0",
+    "VERIFIED: Frontend [id].tsx line 2450 - Stats bar displays stats.referral_count ?? contact.referral_count for 'refs' counter"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_contact_stats_referral_campaign_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% (6/6 tests passed)",
+    "frontend": "100% - Stats bar correctly displays cmpn and refs counters"
+  },
+  "test_credentials": "forest@imosapp.com / Admin123! (Super Admin)",
+  "seed_data_creation": "Created test contacts with referred_by relationships and campaign enrollments with both user_id and salesman_id patterns to verify fix handles both enrollment field naming conventions",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Contact stats bug fix verified. Test contact: 69a0c06f7626f14d125f8c34 (Forest Ward) - shows stats with 162 tchs, 59 msgs, 4 clks, 1 cmpn, 0 refs. The fix ensures: 1) Campaign count includes enrollments with either user_id or salesman_id fields, 2) Referral count is dynamically calculated from contacts.referred_by, not stale contact.referral_count field.",
+  "bug_fix_verification": {
+    "issue": "Contact card stats bar showed 0 for 'Campaigns' and 'Referrals' counters even when contact had campaign enrollments and referrals",
+    "root_causes": [
+      "1. Campaign enrollments from campaign_lifecycle.py use 'salesman_id' field, but stats query filtered by 'user_id' - so those enrollments weren't counted",
+      "2. Referrals displayed stale contact.referral_count field instead of dynamically counting contacts with referred_by matching"
+    ],
+    "fix_locations": [
+      "/app/backend/routers/contact_events.py lines 389-391 (campaign query fix)",
+      "/app/backend/routers/contact_events.py lines 419-425 (dynamic referral_count)",
+      "/app/frontend/app/contact/[id].tsx line 74, 371, 2450 (frontend interface and display)"
+    ],
+    "test_scenarios_verified": [
+      {"scenario": "Campaign count with user_id enrollment", "expected": "Counted", "result": "PASS"},
+      {"scenario": "Campaign count with salesman_id enrollment", "expected": "Counted", "result": "PASS"},
+      {"scenario": "Referral count dynamic calculation", "expected": "Counts contacts with referred_by", "result": "PASS"},
+      {"scenario": "Stats endpoint returns referral_count field", "expected": "Present in response", "result": "PASS"},
+      {"scenario": "Frontend displays cmpn counter", "expected": "Visible in stats bar", "result": "PASS (showed '1 cmpn')"},
+      {"scenario": "Frontend displays refs counter", "expected": "Visible in stats bar", "result": "PASS (showed '0 refs')"}
+    ]
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS won't actually send"
+  }
+}
