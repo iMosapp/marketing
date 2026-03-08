@@ -522,10 +522,10 @@ export default function HomeScreen() {
           visible: true,
           title: 'Share My Card',
           subtitle: 'Choose how to share your digital card',
-          url: `${baseUrl}/p/${userId}`,
-          text: `Check out my digital business card: ${baseUrl}/p/${userId}`,
+          url: `${baseUrl}/card/${userId}`,
+          text: `Check out my digital business card: ${baseUrl}/card/${userId}`,
           showPreview: true,
-          previewUrl: `${baseUrl}/p/${userId}`,
+          previewUrl: `${baseUrl}/card/${userId}`,
           showQR: true,
           eventType: 'digital_card_shared',
         });

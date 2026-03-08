@@ -841,6 +841,24 @@ export default function ContactDetailScreen() {
     } catch { setComposerMessage(`Hey ${firstName}! Check out some of our happy customers: ${showcaseUrl}`); setComposerEventType('showcase_shared'); }
   };
 
+
+  const sendLandingPageLink = async () => {
+    if (!user?._id) return;
+    const baseUrl = 'https://app.imonsocial.com';
+    const landingUrl = `${baseUrl}/p/${user._id}`;
+    const firstName = contact.first_name || 'there';
+    setShowBusinessCard(false);
+    setShowLandingPageOptions(false);
+    try {
+      const shortRes = await api.post('/s/create', {
+        original_url: landingUrl, link_type: 'landing_page', user_id: user._id,
+        reference_id: id as string, metadata: { contact_id: id as string },
+      });
+      setComposerMessage(`Hey ${firstName}! Check out my page: ${shortRes.data?.short_url || landingUrl}`);
+      setComposerEventType('landing_page_shared');
+    } catch { setComposerMessage(`Hey ${firstName}! Check out my page: ${landingUrl}`); setComposerEventType('landing_page_shared'); }
+  };
+
   const sendLinkPageLink = async () => {
     if (!user?._id) return;
     const baseUrl = 'https://app.imonsocial.com';
@@ -3770,11 +3788,21 @@ export default function ContactDetailScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity style={s.shareOptionCard} onPress={sendBusinessCardLink} data-testid="share-landing-btn">
                   <View style={s.shareOptionIcon}>
-                    <Ionicons name="globe-outline" size={28} color="#007AFF" />
+                    <Ionicons name="card-outline" size={28} color="#007AFF" />
+                  </View>
+                  <View style={s.shareOptionContent}>
+                    <Text style={s.shareOptionTitle}>Share Digital Card</Text>
+                    <Text style={s.shareOptionDesc}>Send your sleek digital business card</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.shareOptionCard} onPress={sendLandingPageLink} data-testid="share-landingpage-btn">
+                  <View style={s.shareOptionIcon}>
+                    <Ionicons name="globe-outline" size={28} color="#5856D6" />
                   </View>
                   <View style={s.shareOptionContent}>
                     <Text style={s.shareOptionTitle}>Share Landing Page</Text>
-                    <Text style={s.shareOptionDesc}>Send your full digital card with socials, bio & more</Text>
+                    <Text style={s.shareOptionDesc}>Send your full profile with bio, socials & more</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>

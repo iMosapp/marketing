@@ -20,7 +20,7 @@ const ACTION_CONFIG: Record<string, {
   digitalcard: {
     title: 'Share My Card', icon: 'card-outline', color: '#007AFF',
     previewTitle: 'Digital Business Card',
-    getUrl: (uid) => `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/p/${uid}`,
+    getUrl: (uid) => `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${uid}`,
     getMessage: (name, url) => `Hey ${name}! Here's my digital business card. Save my info and reach out anytime! ${url}`,
     eventType: 'digital_card_shared',
   },

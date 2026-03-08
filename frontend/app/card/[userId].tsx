@@ -596,18 +596,23 @@ export default function DigitalCardPage() {
           {/* Share Contact Button - Below Card */}
           <TouchableOpacity
             style={[styles.saveButton, saved && styles.saveButtonSaved]}
-            onPress={() => setShowShareModal(true)}
+            onPress={isOwner ? () => setShowShareModal(true) : handleSaveContact}
             disabled={saving}
             data-testid="share-contact-btn"
           >
             {saved ? (
               <>
                 <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>Contact Shared!</Text>
+                <Text style={styles.saveButtonText}>{isOwner ? 'Contact Shared!' : 'Contact Saved!'}</Text>
+              </>
+            ) : saving ? (
+              <>
+                <ActivityIndicator size="small" color="#1A1A1A" />
+                <Text style={styles.saveButtonText}>Saving...</Text>
               </>
             ) : (
               <>
-                <Ionicons name="share-social" size={22} color="#1A1A1A" />
+                <Ionicons name={isOwner ? "share-social" : "download-outline"} size={22} color="#1A1A1A" />
                 <Text style={styles.saveButtonText}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
               </>
             )}
