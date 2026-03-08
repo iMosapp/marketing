@@ -204,5 +204,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Voice-to-Task:** New task page (`/tasks/new`) includes voice recording button. Speaks task → transcribed via Whisper → AI (gpt-4o-mini) extracts title, type, priority, due date, and due time. Backend endpoint: `POST /api/voice/parse-task`.
 - **Tested:** 11/11 backend tests passed, all frontend features verified.
 
+### Unified Add Contact Flow (Mar 8, 2026)
+- **UNIFIED:** The "+" button on the Contacts page now navigates to `/contact/new` (same as Home page's "Add Contact" tile), replacing the previous custom inline modal
+- **Animation fix:** Removed the old modal-based add contact flow that caused a "jumping" animation glitch on open
+- **Cleanup:** Removed modal state variables, modal JSX, and 80+ lines of modal styles from `contacts.tsx`
+- **Tested:** 8/8 frontend tests passed
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
