@@ -131,6 +131,7 @@ async def get_relationship_brief(user_id: str, contact_id: str):
             "human_summary": brief["human_summary"],
             "days_since_sale": brief.get("days_since_sale"),
             "days_known": brief.get("days_known"),
+            "personal_details": brief.get("personal_details", {}),
         }
     except Exception as e:
         logger.error(f"Failed to build relationship brief: {e}")

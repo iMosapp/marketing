@@ -143,6 +143,15 @@ async def create_voice_note(
     except Exception as e:
         logger.error(f"Failed to log voice note event: {e}")
 
+    # 5. Auto-extract personal details from transcript using AI (fire-and-forget)
+    if transcript and len(transcript.strip()) >= 10:
+        import asyncio
+        try:
+            from services.voice_intel import process_voice_note_intelligence
+            asyncio.create_task(process_voice_note_intelligence(user_id, contact_id, transcript, note_id))
+        except Exception as e:
+            logger.warning(f"Voice intelligence extraction trigger failed: {e}")
+
     return {
         "id": note_id,
         "audio_url": audio_url,

@@ -57,10 +57,15 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         "notes": contact.get("notes", ""),
         "vehicle_interest": contact.get("vehicle_interest", ""),
         "vehicle_purchased": contact.get("vehicle_purchased", ""),
+        "vehicle": contact.get("vehicle", ""),
         "date_sold": str(contact.get("date_sold", "")) if contact.get("date_sold") else "",
         "lead_source": contact.get("lead_source", ""),
         "birthday": str(contact.get("birthday", "")) if contact.get("birthday") else "",
     }
+
+    # === PERSONAL DETAILS (from voice memo intelligence) ===
+    personal = contact.get("personal_details", {})
+    brief["personal_details"] = personal
 
     # === RELATIONSHIP TIMELINE ===
     created_at = contact.get("created_at")
@@ -259,12 +264,49 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
     if brief["milestones"]:
         ai_parts.append(f"\nMILESTONES: {' | '.join(brief['milestones'])}")
 
-    vehicle = contact.get("vehicle_purchased") or contact.get("vehicle_interest") or ""
+    vehicle = contact.get("vehicle_purchased") or contact.get("vehicle_interest") or contact.get("vehicle", "")
     if vehicle:
         ai_parts.append(f"Vehicle: {vehicle}")
 
     if contact.get("notes"):
         ai_parts.append(f"Notes: {contact['notes'][:300]}")
+
+    # === PERSONAL DETAILS FROM VOICE MEMOS (the magic) ===
+    if personal:
+        ai_parts.append("\nPERSONAL DETAILS (from voice memos — use these to make messages personal):")
+        if personal.get("spouse_name"):
+            ai_parts.append(f"  Spouse: {personal['spouse_name']}")
+            if personal.get("spouse_details"):
+                ai_parts.append(f"    Details: {personal['spouse_details']}")
+        if personal.get("kids"):
+            kids_str = ", ".join(
+                [f"{k['name']}" + (f" ({k.get('details', '')})" if k.get('details') else "") for k in personal["kids"]]
+            )
+            ai_parts.append(f"  Kids: {kids_str}")
+        if personal.get("interests"):
+            ai_parts.append(f"  Interests: {', '.join(personal['interests'])}")
+        if personal.get("occupation"):
+            ai_parts.append(f"  Occupation: {personal['occupation']}")
+        if personal.get("employer"):
+            ai_parts.append(f"  Employer: {personal['employer']}")
+        if personal.get("vehicle_details"):
+            ai_parts.append(f"  Vehicle details: {personal['vehicle_details']}")
+        if personal.get("vehicle_color"):
+            ai_parts.append(f"  Vehicle color: {personal['vehicle_color']}")
+        if personal.get("trade_in"):
+            ai_parts.append(f"  Trade-in: {personal['trade_in']}")
+        if personal.get("purchase_context"):
+            ai_parts.append(f"  Why they bought: {personal['purchase_context']}")
+        if personal.get("pets"):
+            ai_parts.append(f"  Pets: {personal['pets']}")
+        if personal.get("neighborhood"):
+            ai_parts.append(f"  Area: {personal['neighborhood']}")
+        if personal.get("personal_notes"):
+            ai_parts.append(f"  Notes: {personal['personal_notes']}")
+        if personal.get("referral_potential"):
+            ai_parts.append(f"  Referral potential: {personal['referral_potential']}")
+        if personal.get("communication_preference"):
+            ai_parts.append(f"  Prefers: {personal['communication_preference']}")
 
     if brief["previous_campaign_messages"]:
         ai_parts.append("\nPREVIOUS MESSAGES IN THIS CAMPAIGN (DO NOT repeat these):")
@@ -309,6 +351,22 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
             human_parts.append(f"Last contact: {brief['last_interaction_days']} days ago")
 
     human_parts.append(f"Responsiveness: {brief['response_pattern'].replace('_', ' ').title()}")
+
+    # Add key personal details to human summary
+    if personal:
+        personal_bits = []
+        if personal.get("spouse_name"):
+            personal_bits.append(f"Spouse: {personal['spouse_name']}")
+        if personal.get("kids"):
+            kid_names = [k.get("name", "") for k in personal["kids"] if k.get("name")]
+            if kid_names:
+                personal_bits.append(f"Kids: {', '.join(kid_names)}")
+        if personal.get("interests"):
+            personal_bits.append(f"Interests: {', '.join(personal['interests'][:3])}")
+        if personal.get("vehicle_purchased"):
+            personal_bits.append(f"Purchased: {personal['vehicle_purchased']}")
+        if personal_bits:
+            human_parts.append(f"Personal: {' / '.join(personal_bits)}")
 
     brief["human_summary"] = " | ".join(human_parts)
 

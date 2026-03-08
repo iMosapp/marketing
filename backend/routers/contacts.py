@@ -456,6 +456,71 @@ async def toggle_automation(user_id: str, contact_id: str, data: dict = Body(...
     return {"field": field, "enabled": enabled, "disabled_automations": disabled}
 
 
+@router.get("/{user_id}/{contact_id}/personal-details")
+async def get_personal_details(user_id: str, contact_id: str):
+    """Get the AI-extracted personal details for a contact."""
+    db = get_db()
+    contact = await db.contacts.find_one(
+        {"_id": ObjectId(contact_id)},
+        {"personal_details": 1, "vehicle": 1, "notes": 1}
+    )
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    details = contact.get("personal_details", {})
+    return {
+        "personal_details": details,
+        "vehicle": contact.get("vehicle", ""),
+        "has_details": len(details) > 0,
+    }
+
+
+@router.patch("/{user_id}/{contact_id}/personal-details")
+async def update_personal_details(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Manually update personal details for a contact. Merges with existing."""
+    db = get_db()
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"personal_details": 1})
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    existing = contact.get("personal_details", {})
+    # Manual edits override AI extractions
+    merged = {**existing, **data.get("personal_details", {})}
+
+    # Remove null/empty values from manual edits
+    merged = {k: v for k, v in merged.items() if v is not None and v != "" and v != []}
+
+    await db.contacts.update_one(
+        {"_id": ObjectId(contact_id)},
+        {"$set": {"personal_details": merged, "updated_at": datetime.now(timezone.utc)}}
+    )
+
+    return {"personal_details": merged}
+
+
+@router.post("/{user_id}/{contact_id}/re-extract")
+async def re_extract_intelligence(user_id: str, contact_id: str):
+    """Re-run AI extraction on all voice notes for this contact."""
+    db = get_db()
+    notes = await db.voice_notes.find(
+        {"contact_id": contact_id, "user_id": user_id, "transcript": {"$ne": ""}},
+        {"_id": 1, "transcript": 1}
+    ).to_list(50)
+
+    if not notes:
+        return {"message": "No voice notes with transcripts found", "extracted": 0}
+
+    from services.voice_intel import process_voice_note_intelligence
+    count = 0
+    for note in notes:
+        transcript = note.get("transcript", "")
+        if transcript and len(transcript.strip()) >= 10:
+            await process_voice_note_intelligence(user_id, contact_id, transcript, str(note["_id"]))
+            count += 1
+
+    return {"message": f"Re-extracted intelligence from {count} voice notes", "extracted": count}
+
+
 @router.patch("/{user_id}/{contact_id}/tags")
 async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(...)):
     """Update tags on a contact without requiring the full contact payload."""

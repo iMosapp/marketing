@@ -502,6 +502,13 @@ export default function AdminDashboard() {
           badge: 0,  // Will be updated with pending count
         },
         {
+          icon: 'settings',
+          title: 'Campaign Settings',
+          subtitle: 'AI vs template mode, tone, data sources',
+          onPress: () => router.push('/campaign-config'),
+          color: '#C9A962',
+        },
+        {
           icon: 'flame',
           title: 'Hot Leads',
           subtitle: 'Customers engaging right now',
