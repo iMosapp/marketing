@@ -23,8 +23,8 @@ CATEGORIES = {
         "thankyou_card_sent", "holiday_card_sent", "welcome_card_sent",
         "anniversary_card_sent"
     ], "label": "Cards Sent", "icon": "gift"},
-    "emails": {"events": ["email_sent"], "label": "Emails", "icon": "mail"},
-    "sms": {"events": ["personal_sms", "sms_sent"], "label": "SMS", "icon": "chatbubble"},
+    "emails": {"events": ["email_sent", "email_failed"], "label": "Emails", "icon": "mail"},
+    "sms": {"events": ["personal_sms", "sms_personal", "sms_sent", "sms_failed"], "label": "SMS", "icon": "chatbubble"},
     "calls": {"events": ["call_placed", "call_received"], "label": "Calls", "icon": "call"},
     "tasks": {"events": ["__tasks__"], "label": "Tasks Done", "icon": "checkbox"},
 }

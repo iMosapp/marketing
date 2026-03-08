@@ -1,0 +1,69 @@
+{
+  "summary": "Tested Touchpoint/Activity Tracking Bug Fixes - All 14 backend tests passed. Verified SMS, Email, and Personal SMS channels now create contact_events correctly. Fixed minor inconsistencies in engagement_signals.py and leaderboard_v2.py to include email_failed in counts.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_touchpoint_tracking_bugfixes.py",
+    "/app/test_reports/pytest/pytest_touchpoint_tracking_bugfixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VERIFIED: messages.py correctly creates contact_events for Twilio SMS (sms_sent/sms_failed) at lines 411-430 and 1135-1154",
+    "VERIFIED: messages.py correctly creates contact_events for personal SMS (personal_sms) at lines 378-390 and 1104-1113", 
+    "VERIFIED: messages.py correctly creates contact_events for email (email_sent/email_failed) at lines 344-358 and 1069-1082",
+    "VERIFIED: tasks.py summary counts personal_sms, sms_personal, sms_sent, sms_failed for texts (line 211)",
+    "VERIFIED: tasks.py summary counts email_sent AND email_failed for emails (line 212)",
+    "VERIFIED: tasks.py cards_sent excludes _viewed events, only counts _card_sent and card_shared (line 189)",
+    "VERIFIED: leaderboard_v2.py CATEGORIES includes sms_failed in sms events (line 27)",
+    "FIXED: Added email_failed to leaderboard_v2.py CATEGORIES emails events (line 26)",
+    "FIXED: Added email_failed to engagement_signals.py team_stats emails count (line 390)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_touchpoint_tracking_bugfixes.py",
+    "/app/backend/routers/engagement_signals.py",
+    "/app/backend/routers/leaderboard_v2.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "N/A - backend only testing requested"
+  },
+  "test_credentials": "forest@imosapp.com / Admin123! (user_id: 69a0b7095fddcede09591667)",
+  "seed_data_creation": "Test contact created and cleaned up via fixtures",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All touchpoint tracking bug fixes verified working. The key event_types for counting are: personal_sms (from resolve_event_type), sms_sent/sms_failed (Twilio), email_sent/email_failed (Resend), congrats_card_sent (explicit), call_placed. The summary endpoint at /api/tasks/{user_id}/summary now correctly totals all activity types. Test file at /app/backend/tests/test_touchpoint_tracking_bugfixes.py can be reused for regression testing.",
+  "features_tested": {
+    "POST /api/messages/send/{user_id} with channel=sms": "Creates contact_event with event_type=sms_sent or sms_failed",
+    "POST /api/messages/send/{user_id} with channel=sms_personal": "Creates contact_event with event_type=personal_sms", 
+    "POST /api/messages/send/{user_id} with channel=email": "Creates contact_event with event_type=email_sent or email_failed",
+    "POST /api/messages/send/{user_id} with explicit event_type": "Uses the explicit event_type (e.g., congrats_card_sent)",
+    "GET /api/tasks/{user_id}/summary activity.texts": "Counts personal_sms + sms_personal + sms_sent + sms_failed",
+    "GET /api/tasks/{user_id}/summary activity.emails": "Counts email_sent + email_failed",
+    "GET /api/tasks/{user_id}/summary activity.cards": "Only counts _card_sent and card_shared, NOT _viewed events",
+    "GET /api/tasks/{user_id}/performance": "Same consistent counting logic as summary",
+    "POST /api/contacts/{user_id}/{contact_id}/events with call_placed": "Creates call_placed contact_event"
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sends may fail but contact_events are still created",
+    "Resend Email": "MOCKED - Email sends fail in preview (domain not verified) but email_failed events are created"
+  },
+  "bug_fixes_applied_during_testing": [
+    {
+      "file": "/app/backend/routers/engagement_signals.py",
+      "line": 390,
+      "fix": "Added email_failed to emails count in team_stats for consistency with tasks.py"
+    },
+    {
+      "file": "/app/backend/routers/leaderboard_v2.py", 
+      "line": 26,
+      "fix": "Added email_failed to CATEGORIES emails events for consistency with tasks.py"
+    }
+  ]
+}

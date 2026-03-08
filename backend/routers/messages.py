@@ -3,7 +3,7 @@ Messages router - handles conversations and messages
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Response
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 import logging
 import random
@@ -229,8 +229,8 @@ async def create_conversation(user_id: str, data: dict):
         "unread": False,
         "unread_count": 0,
         "needs_assistance": False,
-        "created_at": datetime.utcnow(),
-        "last_message_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc),
+        "last_message_at": datetime.now(timezone.utc)
     }
     
     result = await get_db().conversations.insert_one(conv)
@@ -266,7 +266,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
         "sender": "user",
         "sender_id": user_id,
         "user_id": user_id,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(timezone.utc),
         "status": "sending",
         "media_urls": []
     }
@@ -354,7 +354,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "recipient": contact_email,
                 "status": message['status'],
                 "error": message.get('error'),
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(timezone.utc),
             })
     elif channel == 'sms_personal':
         # User sending from their personal phone  - just log it, no Twilio needed
@@ -385,7 +385,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "channel": "sms_personal",
                 "message_id": message['_id'],
                 "content_preview": message_data.content[:100],
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(timezone.utc),
             }
             await get_db().contact_events.insert_one(event_doc)
     elif to_phone:
@@ -407,6 +407,27 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             {"_id": ObjectId(message['_id'])},
             {"$set": {"status": message['status'], "twilio_sid": sms_result.get('message_sid')}}
         )
+
+        # Log contact event for Twilio SMS
+        contact_id = conv.get('contact_id')
+        if contact_id:
+            sms_event_type = "sms_sent" if message['status'] == 'sent' else "sms_failed"
+            if message_data.event_type:
+                sms_event_type = message_data.event_type
+            else:
+                resolved = await resolve_event_type(message_data.content, get_db())
+                if resolved != 'personal_sms':
+                    sms_event_type = resolved
+            await get_db().contact_events.insert_one({
+                "contact_id": str(contact_id),
+                "user_id": user_id,
+                "event_type": sms_event_type,
+                "channel": "sms",
+                "message_id": message['_id'],
+                "content_preview": message_data.content[:100],
+                "status": message['status'],
+                "timestamp": datetime.now(timezone.utc),
+            })
     else:
         message['status'] = 'sent'
         logger.warning(f"No phone number for conversation {conversation_id}")
@@ -414,7 +435,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Update conversation
     await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
-        {"$set": {"last_message_at": datetime.utcnow()}}
+        {"$set": {"last_message_at": datetime.now(timezone.utc)}}
     )
     
     # Track stat
@@ -459,8 +480,8 @@ async def send_mms_message(
                     "status": "active",
                     "ai_enabled": False,
                     "ai_mode": "suggest",
-                    "created_at": datetime.utcnow(),
-                    "last_message_at": datetime.utcnow()
+                    "created_at": datetime.now(timezone.utc),
+                    "last_message_at": datetime.now(timezone.utc)
                 }
                 result = await db.conversations.insert_one(conv)
                 conv['_id'] = result.inserted_id
@@ -520,7 +541,7 @@ async def send_mms_message(
             "filename": media.filename,
             "data": media_data_url,
             "size_bytes": len(media_content),
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
         media_result = await db.media.insert_one(media_doc)
         media_id = str(media_result.inserted_id)
@@ -534,7 +555,7 @@ async def send_mms_message(
         "conversation_id": actual_conv_id,
         "content": content,
         "sender": "user",
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(timezone.utc),
         "status": "sending",
         "media_urls": [display_url],
         "has_media": True
@@ -565,7 +586,7 @@ async def send_mms_message(
     # Update conversation
     await db.conversations.update_one(
         {"_id": conv['_id']},
-        {"$set": {"last_message_at": datetime.utcnow()}}
+        {"$set": {"last_message_at": datetime.now(timezone.utc)}}
     )
     
     await increment_user_stat(user_id, "messages_sent")
@@ -608,7 +629,7 @@ async def archive_conversation(conversation_id: str):
     """Archive a conversation"""
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
-        {"$set": {"status": "archived", "archived_at": datetime.utcnow()}}
+        {"$set": {"status": "archived", "archived_at": datetime.now(timezone.utc)}}
     )
     
     if result.matched_count == 0:
@@ -688,7 +709,7 @@ async def bulk_archive_conversations(data: dict):
     
     result = await get_db().conversations.update_many(
         {"_id": {"$in": object_ids}},
-        {"$set": {"status": "archived", "archived_at": datetime.utcnow()}}
+        {"$set": {"status": "archived", "archived_at": datetime.now(timezone.utc)}}
     )
     
     return {
@@ -923,8 +944,8 @@ async def send_message_simple(user_id: str, message_data: dict):
                 "status": "active",
                 "ai_enabled": False,
                 "ai_mode": "suggest",
-                "created_at": datetime.utcnow(),
-                "last_message_at": datetime.utcnow()
+                "created_at": datetime.now(timezone.utc),
+                "last_message_at": datetime.now(timezone.utc)
             }
             result = await db.conversations.insert_one(conv)
             conversation_id = str(result.inserted_id)
@@ -956,7 +977,7 @@ async def send_message_simple(user_id: str, message_data: dict):
         "sender": "user",
         "sender_id": user_id,
         "user_id": user_id,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(timezone.utc),
         "status": "sending",
         "direction": "outbound",
         "channel": channel,
@@ -1056,7 +1077,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 "content_preview": content[:100],
                 "status": message['status'],
                 "error": message.get('error'),
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(timezone.utc),
             })
             logger.info(f"[EMAIL-FLOW] Logged contact event: {event_type}")
     
@@ -1088,7 +1109,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 "channel": "sms_personal",
                 "message_id": message_id,
                 "content_preview": content[:100],
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(timezone.utc),
             })
     
     else:
@@ -1110,6 +1131,27 @@ async def send_message_simple(user_id: str, message_data: dict):
                 {"$set": {"status": message['status'], "channel": "sms",
                           "twilio_sid": sms_result.get('message_sid')}}
             )
+
+            # Log contact event for Twilio SMS
+            if conv.get('contact_id'):
+                sms_event_type = "sms_sent" if message['status'] == 'sent' else "sms_failed"
+                explicit_et = message_data.get('event_type')
+                if explicit_et:
+                    sms_event_type = explicit_et
+                else:
+                    resolved = await resolve_event_type(content, db)
+                    if resolved != 'personal_sms':
+                        sms_event_type = resolved
+                await db.contact_events.insert_one({
+                    "contact_id": str(conv['contact_id']),
+                    "user_id": user_id,
+                    "event_type": sms_event_type,
+                    "channel": "sms",
+                    "message_id": message_id,
+                    "content_preview": content[:100],
+                    "status": message['status'],
+                    "timestamp": datetime.now(timezone.utc),
+                })
         else:
             message['status'] = 'failed'
             message['error'] = 'No phone number for contact'
@@ -1121,7 +1163,7 @@ async def send_message_simple(user_id: str, message_data: dict):
     # Update conversation
     await db.conversations.update_one(
         {"_id": ObjectId(conversation_id)},
-        {"$set": {"last_message_at": datetime.utcnow()}}
+        {"$set": {"last_message_at": datetime.now(timezone.utc)}}
     )
     
     # Track stat
@@ -1358,8 +1400,8 @@ async def twilio_inbound_webhook(request: Request):
                 "source": "inbound_sms",
                 "tags": ["inbound"],
                 "notes": f"Auto-created from inbound SMS to {inbox_name}",
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
             }
             
             # Add shared inbox reference if applicable
@@ -1396,8 +1438,8 @@ async def twilio_inbound_webhook(request: Request):
                 "inbox_type": inbox_type,  # Track which inbox this belongs to
                 "inbox_id": inbox_id,
                 "inbox_name": inbox_name,
-                "created_at": datetime.utcnow(),
-                "last_message_at": datetime.utcnow()
+                "created_at": datetime.now(timezone.utc),
+                "last_message_at": datetime.now(timezone.utc)
             }
             result = await db.conversations.insert_one(conversation)
             conversation["_id"] = result.inserted_id
@@ -1407,7 +1449,7 @@ async def twilio_inbound_webhook(request: Request):
             await db.conversations.update_one(
                 {"_id": conversation["_id"]},
                 {
-                    "$set": {"last_message_at": datetime.utcnow(), "unread": True},
+                    "$set": {"last_message_at": datetime.now(timezone.utc), "unread": True},
                     "$inc": {"unread_count": 1}
                 }
             )
@@ -1420,7 +1462,7 @@ async def twilio_inbound_webhook(request: Request):
             "conversation_id": conversation_id,
             "content": body,
             "sender": "contact",  # This is from the contact, not the user
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "status": "received",
             "twilio_sid": message_sid,
             "media_urls": media_urls,
@@ -1459,7 +1501,7 @@ async def twilio_inbound_webhook(request: Request):
                 "contact_name": contact_name,
                 "contact_phone": from_phone,
                 "read": False,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             await db.notifications.insert_one(notif)
             

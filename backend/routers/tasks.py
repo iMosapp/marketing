@@ -185,13 +185,13 @@ async def get_task_summary(user_id: str):
         activity.get("sms_received", 0)
     )
 
-    # Cards sent (only outbound actions, not views)
-    cards_sent = sum(v for k, v in activity.items() if ("card_sent" in k or "card_shared" in k or "digital_card_shared" in k or "congrats" in k or "birthday_card_sent" in k or "thankyou_card" in k or "welcome_card" in k or "anniversary_card" in k or "holiday_card" in k))
+    # Cards sent (only outbound SEND actions — exclude customer views/downloads/shares)
+    cards_sent = sum(v for k, v in activity.items() if k and ("_card_sent" in k or "card_shared" in k or "digital_card_shared" in k))
 
     # Activities are completed touchpoints (user already performed the action)
     activity_touchpoints = (
-        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) +
-        activity.get("email_sent", 0) +
+        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
+        activity.get("email_sent", 0) + activity.get("email_failed", 0) +
         activity.get("call_placed", 0) +
         cards_sent +
         activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0)
@@ -208,8 +208,8 @@ async def get_task_summary(user_id: str):
         "progress_pct": round((combined_completed / max(combined_total, 1)) * 100),
         "activity": {
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
-            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0),
-            "emails": activity.get("email_sent", 0),
+            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),
+            "emails": activity.get("email_sent", 0) + activity.get("email_failed", 0),
             "cards": cards_sent,
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
             "clicks": total_clicks,
@@ -435,10 +435,10 @@ async def get_performance(user_id: str, period: str = "week"):
     })
 
     total_touchpoints = (
-        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) +
-        activity.get("email_sent", 0) +
+        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
+        activity.get("email_sent", 0) + activity.get("email_failed", 0) +
         activity.get("call_placed", 0) + activity.get("call_received", 0) +
-        sum(v for k, v in activity.items() if "card_shared" in k or "card_sent" in k or "digital_card_shared" in k or "congrats" in k or "birthday_card" in k or "thankyou_card" in k or "welcome_card" in k or "anniversary_card" in k or "holiday_card" in k) +
+        sum(v for k, v in activity.items() if k and ("_card_sent" in k or "card_shared" in k or "digital_card_shared" in k)) +
         activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0) +
         eng_total
     )
@@ -447,14 +447,14 @@ async def get_performance(user_id: str, period: str = "week"):
         "total_touchpoints": total_touchpoints,
         "trend_pct": trend_pct,
         "communication": {
-            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0),
-            "emails": activity.get("email_sent", 0),
+            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),
+            "emails": activity.get("email_sent", 0) + activity.get("email_failed", 0),
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
         },
         "sharing": {
-            "cards": sum(v for k, v in activity.items() if "card_shared" in k or "card_sent" in k or "digital_card_shared" in k),
+            "cards": sum(v for k, v in activity.items() if k and ("_card_sent" in k or "card_shared" in k or "digital_card_shared" in k)),
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
-            "congrats": sum(v for k, v in activity.items() if "congrats" in k or "birthday_card" in k or "holiday_card" in k or "welcome_card" in k or "anniversary_card" in k or "thankyou_card" in k or "thank_you_card" in k),
+            "congrats": sum(v for k, v in activity.items() if k and ("_card_sent" in k) and k != "digital_card_sent" and k != "vcard_sent"),
         },
         "engagement": {
             "link_clicks": activity.get("link_clicked", 0) + activity.get("card_viewed", 0) + eng_signals.get("link_clicked", 0) + eng_signals.get("card_viewed", 0) + eng_signals.get("digital_card_viewed", 0) + eng_signals.get("showcase_viewed", 0) + eng_signals.get("link_page_viewed", 0) + eng_signals.get("review_link_clicked", 0),
