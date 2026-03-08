@@ -246,6 +246,15 @@ export default function ThreadScreen() {
   const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
   const [showCardTypePicker, setShowCardTypePicker] = useState(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [selectedCardType, setSelectedCardType] = useState('congrats');
+  const CARD_TYPES = [
+    { key: 'congrats', label: 'Congrats', icon: 'trophy', color: '#C9A962' },
+    { key: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF2D55' },
+    { key: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#AF52DE' },
+    { key: 'thankyou', label: 'Thank You', icon: 'thumbs-up', color: '#34C759' },
+    { key: 'welcome', label: 'Welcome', icon: 'hand-left', color: '#007AFF' },
+    { key: 'holiday', label: 'Holiday', icon: 'snow', color: '#5AC8FA' },
+  ];
 
   // Relationship Intel state
   const [intelData, setIntelData] = useState<any>(null);
@@ -1055,6 +1064,7 @@ export default function ThreadScreen() {
       formData.append('salesman_id', user._id);
       formData.append('customer_name', congratsCustomerName.trim());
       formData.append('customer_phone', contact_phone as string || '');
+      formData.append('card_type', selectedCardType);
       if (congratsCustomMessage.trim()) {
         formData.append('custom_message', congratsCustomMessage.trim());
       }
@@ -1118,8 +1128,18 @@ export default function ThreadScreen() {
         
         // Insert message with both the image and short link
         const firstName = congratsCustomerName.split(' ')[0];
-        const cardMessage = `Hey ${firstName}! 🎉 Congrats on your new purchase! We made this special thank you card just for you:\n\n${cardUrl}\n\nDownload & share it! Leave us a review if you loved your experience!`;
+        const cardTypeInfo = CARD_TYPES.find(ct => ct.key === selectedCardType) || CARD_TYPES[0];
+        const cardMessages: Record<string, string> = {
+          congrats: `Hey ${firstName}! Congrats on your new purchase! We made this special card just for you:\n\n${cardUrl}\n\nDownload & share it!`,
+          birthday: `Happy Birthday, ${firstName}! We made a special birthday card just for you:\n\n${cardUrl}\n\nHave an amazing day!`,
+          anniversary: `Happy Anniversary, ${firstName}! Celebrating this milestone with a special card:\n\n${cardUrl}\n\nHere's to many more!`,
+          thankyou: `Hey ${firstName}! Just wanted to say thank you! We made this card for you:\n\n${cardUrl}\n\nWe appreciate you!`,
+          welcome: `Welcome, ${firstName}! So glad to have you with us! Here's a special welcome card:\n\n${cardUrl}`,
+          holiday: `Happy Holidays, ${firstName}! We made a special card for you:\n\n${cardUrl}\n\nWishing you all the best!`,
+        };
+        const cardMessage = cardMessages[selectedCardType] || cardMessages.congrats;
         
+        setPendingEventType(`${selectedCardType}_card_sent`);
         setMessage(cardMessage);
         
         // Reset state
@@ -1140,7 +1160,7 @@ export default function ThreadScreen() {
         const photoUpdateMsg = response.data.contact_photo_updated 
           ? "\n\nContact's profile photo has been updated!"
           : "";
-        showSimpleAlert('Card Created!', `The congrats card link has been added to your message. Hit send to share it!${photoUpdateMsg}${tagMsg}`);
+        showSimpleAlert('Card Created!', `Your ${cardTypeInfo.label.toLowerCase()} card link has been added to your message. Hit send to share it!${photoUpdateMsg}${tagMsg}`);
       }
     } catch (error: any) {
       // Error haptic feedback
@@ -1162,6 +1182,7 @@ export default function ThreadScreen() {
     setCongratsCustomerName('');
     setCongratsCustomMessage('');
     setCongratsSelectedTags([]);
+    setSelectedCardType('congrats');
   };
 
   const openCongratsModal = async () => {
@@ -1479,17 +1500,47 @@ export default function ThreadScreen() {
     
     // Detect rich content types
     const content = item.content || '';
-    const isReviewLink = content.includes('/review/') || content.toLowerCase().includes('review link');
-    const isCongratsCard = content.toLowerCase().includes('congrats') || content.toLowerCase().includes('congratulations');
-    const isDigitalCard = content.includes('/card/') || content.toLowerCase().includes('digital card');
+    const eventType = (item as any).event_type || '';
+    const isReviewLink = content.includes('/review/') || content.toLowerCase().includes('review link') || eventType.includes('review');
+    const isDigitalCard = content.includes('/card/') || content.toLowerCase().includes('digital card') || eventType === 'digital_card_shared';
+    
+    // Detect card type from event_type first, then fall back to URL/content analysis
+    let detectedCardType = '';
+    if (eventType.includes('_card_sent') || eventType.includes('_card_shared')) {
+      detectedCardType = eventType.replace('_card_sent', '').replace('_card_shared', '');
+    } else if (content.includes('/congrats/')) {
+      // Parse card type from URL or content keywords
+      if (content.toLowerCase().includes('happy birthday')) detectedCardType = 'birthday';
+      else if (content.toLowerCase().includes('happy anniversary')) detectedCardType = 'anniversary';
+      else if (content.toLowerCase().includes('thank you') || content.toLowerCase().includes('thankyou')) detectedCardType = 'thankyou';
+      else if (content.toLowerCase().includes('welcome')) detectedCardType = 'welcome';
+      else if (content.toLowerCase().includes('happy holiday') || content.toLowerCase().includes('happy holidays')) detectedCardType = 'holiday';
+      else detectedCardType = 'congrats';
+    } else if (content.toLowerCase().includes('congrats') || content.toLowerCase().includes('congratulations')) {
+      detectedCardType = 'congrats';
+    }
+    const isCongratsCard = detectedCardType !== '';
     const isRichContent = isReviewLink || isCongratsCard || isDigitalCard;
+    
+    // Card type display config
+    const CARD_DISPLAY: Record<string, { icon: string; color: string; label: string }> = {
+      congrats: { icon: 'trophy', color: '#C9A962', label: 'Congrats Card' },
+      birthday: { icon: 'gift', color: '#FF2D55', label: 'Birthday Card' },
+      anniversary: { icon: 'heart', color: '#AF52DE', label: 'Anniversary Card' },
+      thankyou: { icon: 'thumbs-up', color: '#34C759', label: 'Thank You Card' },
+      welcome: { icon: 'hand-left', color: '#007AFF', label: 'Welcome Card' },
+      holiday: { icon: 'snow', color: '#5AC8FA', label: 'Holiday Card' },
+    };
     
     // Choose icon and color for rich content
     let richIcon = 'chatbubble';
     let richColor = '#007AFF';
     let richLabel = 'Message';
     if (isReviewLink) { richIcon = 'star'; richColor = '#FFD60A'; richLabel = 'Review Link'; }
-    else if (isCongratsCard) { richIcon = 'gift'; richColor = '#C9A962'; richLabel = 'Congrats Card'; }
+    else if (isCongratsCard) {
+      const cardDisplay = CARD_DISPLAY[detectedCardType] || CARD_DISPLAY.congrats;
+      richIcon = cardDisplay.icon; richColor = cardDisplay.color; richLabel = cardDisplay.label;
+    }
     else if (isDigitalCard) { richIcon = 'card'; richColor = '#5856D6'; richLabel = 'Digital Card'; }
     
     return (
@@ -2393,7 +2444,7 @@ export default function ThreadScreen() {
             <View style={styles.congratsModal} onStartShouldSetResponder={() => true}>
               <View style={styles.modalHeader}>
                 <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Create Congrats Card</Text>
+                <Text style={styles.modalTitle}>Create {(CARD_TYPES.find(ct => ct.key === selectedCardType) || CARD_TYPES[0]).label} Card</Text>
               </View>
               
               <ScrollView 
@@ -2402,6 +2453,27 @@ export default function ThreadScreen() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
+                {/* Card Type Selector */}
+                <Text style={styles.congratsLabel}>Card Type</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {CARD_TYPES.map(ct => (
+                      <TouchableOpacity
+                        key={ct.key}
+                        style={[
+                          styles.cardTypeChip,
+                          selectedCardType === ct.key && { backgroundColor: ct.color, borderColor: ct.color },
+                        ]}
+                        onPress={() => setSelectedCardType(ct.key)}
+                        data-testid={`card-type-${ct.key}`}
+                      >
+                        <Ionicons name={ct.icon as any} size={14} color={selectedCardType === ct.key ? '#FFF' : ct.color} />
+                        <Text style={[styles.cardTypeChipText, selectedCardType === ct.key && { color: '#FFF' }]}>{ct.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+
                 {/* Photo Upload */}
                 <TouchableOpacity
                   style={styles.congratsPhotoUpload}
@@ -3663,6 +3735,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 8,
     marginTop: 8,
+  },
+  cardTypeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.elevated,
+    backgroundColor: colors.elevated,
+  },
+  cardTypeChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   congratsInput: {
     backgroundColor: colors.elevated,
