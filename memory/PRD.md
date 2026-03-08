@@ -182,6 +182,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Fix:** Short URL redirect handler now appends `&cid=<contact_id>` (from stored metadata) to the redirect URL. All 4 tracking pages (review, digital card, showcase, link page) now accept an optional `cid` query parameter and use it directly, falling back to the legacy heuristic only for old links without the parameter.
 - **Files changed:** `short_urls.py` (redirect + og-image handler reordered), `public_review.py`, `digital_card.py`, `showcase.py`, `linkpage.py`
 
+
+### Share Card/Landing Page URL & Label Fixes (Mar 8, 2026)
+- **Home screen "Share My Card":** Changed URL from `/p/` (landing page) → `/card/` (digital business card)
+- **Contact page "Share Your Stuff":** Renamed mislabeled "Share Landing Page" → **"Share Digital Card"** (shares `/card/`), added new **"Share Landing Page"** tile (shares `/p/`)
+- **Digital card visitor "Save My Contact":** Now directly downloads VCF file — no modal. Owner still sees "Share My Contact" with full sharing options.
+- **Tested:** All 7 features verified.
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
