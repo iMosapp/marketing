@@ -61,8 +61,10 @@ def build_default_social_links(user_social_links: dict) -> dict:
 
 
 @router.get("/public/{username}")
-async def get_public_link_page(username: str):
-    """Public endpoint  - returns the link page data for display."""
+async def get_public_link_page(username: str, cid: str = None):
+    """Public endpoint  - returns the link page data for display.
+    cid = contact ID (optional, for accurate tracking)
+    """
     db = get_db()
     username = username.lower().strip()
 
@@ -78,47 +80,50 @@ async def get_public_link_page(username: str):
         {"$inc": {"views": 1}}
     )
 
-    # Log view event for the most recent contact who was sent this link
+    # Log view event — use cid (contact_id) directly if provided
     try:
         user_id = page.get("user_id")
         if user_id:
             from utils.contact_activity import log_customer_activity
             from datetime import timedelta
-            # Find the most recent message from this user that contained a link page URL
-            msg = await db.messages.find_one(
-                {"user_id": user_id, "sender": "user",
-                 "$or": [
-                     {"content": {"$regex": f"/l/{username}", "$options": "i"}},
-                     {"content": {"$regex": "link_page_shared|linkpage", "$options": "i"}},
-                 ]},
-                {"conversation_id": 1},
-                sort=[("created_at", -1)],
-            )
-            if msg and msg.get("conversation_id"):
-                conv = await db.conversations.find_one(
-                    {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
-                    {"contact_id": 1},
+            contact_id = cid
+
+            if not contact_id:
+                msg = await db.messages.find_one(
+                    {"user_id": user_id, "sender": "user",
+                     "$or": [
+                         {"content": {"$regex": f"/l/{username}", "$options": "i"}},
+                         {"content": {"$regex": "link_page_shared|linkpage", "$options": "i"}},
+                     ]},
+                    {"conversation_id": 1},
+                    sort=[("created_at", -1)],
                 )
-                if conv and conv.get("contact_id"):
-                    contact_id = str(conv["contact_id"])
-                    # Dedupe: skip if already logged in the last hour
-                    recent = await db.contact_events.find_one({
-                        "contact_id": contact_id,
-                        "event_type": "link_page_viewed",
-                        "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
-                    })
-                    if not recent:
-                        await log_customer_activity(
-                            user_id=user_id,
-                            contact_id=contact_id,
-                            event_type="link_page_viewed",
-                            title="Viewed Link Page",
-                            description="Contact opened your link page",
-                            icon="eye",
-                            color="#AF52DE",
-                            category="customer_activity",
-                            metadata={"username": username, "views": page.get("views", 0) + 1},
-                        )
+                if msg and msg.get("conversation_id"):
+                    conv = await db.conversations.find_one(
+                        {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
+                        {"contact_id": 1},
+                    )
+                    if conv and conv.get("contact_id"):
+                        contact_id = str(conv["contact_id"])
+
+            if contact_id:
+                recent = await db.contact_events.find_one({
+                    "contact_id": contact_id,
+                    "event_type": "link_page_viewed",
+                    "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
+                })
+                if not recent:
+                    await log_customer_activity(
+                        user_id=user_id,
+                        contact_id=contact_id,
+                        event_type="link_page_viewed",
+                        title="Viewed Link Page",
+                        description="Contact opened your link page",
+                        icon="eye",
+                        color="#AF52DE",
+                        category="customer_activity",
+                        metadata={"username": username, "contact_id": contact_id, "views": page.get("views", 0) + 1},
+                    )
     except Exception as e:
         print(f"[LinkPage] Failed to log view activity: {e}")
 

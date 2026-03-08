@@ -25,9 +25,10 @@ router = APIRouter(prefix="/card", tags=["digital-card"])
 
 
 @router.get("/data/{user_id}")
-async def get_card_data(user_id: str):
+async def get_card_data(user_id: str, cid: str = None):
     """
     Get salesperson's digital card data for public display
+    cid = contact ID (optional, for accurate tracking — passed by short URL redirect)
     """
     db = get_db()
     
@@ -42,43 +43,49 @@ async def get_card_data(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Log view event for the most recent contact who was sent this digital card
+    # Log view event — use cid (contact_id) directly if provided
     try:
         from utils.contact_activity import log_customer_activity
         from datetime import timedelta
-        msg = await db.messages.find_one(
-            {"user_id": user_id, "sender": "user",
-             "$or": [
-                 {"content": {"$regex": f"/p/{user_id}", "$options": "i"}},
-                 {"content": {"$regex": "/card/", "$options": "i"}},
-             ]},
-            {"conversation_id": 1},
-            sort=[("created_at", -1)],
-        )
-        if msg and msg.get("conversation_id"):
-            conv = await db.conversations.find_one(
-                {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
-                {"contact_id": 1},
+        contact_id = cid  # Prefer the explicit contact_id from the short URL
+
+        if not contact_id:
+            # Legacy fallback: guess from the most recent message
+            msg = await db.messages.find_one(
+                {"user_id": user_id, "sender": "user",
+                 "$or": [
+                     {"content": {"$regex": f"/p/{user_id}", "$options": "i"}},
+                     {"content": {"$regex": "/card/", "$options": "i"}},
+                 ]},
+                {"conversation_id": 1},
+                sort=[("created_at", -1)],
             )
-            if conv and conv.get("contact_id"):
-                contact_id = str(conv["contact_id"])
-                recent = await db.contact_events.find_one({
-                    "contact_id": contact_id,
-                    "event_type": "digital_card_viewed",
-                    "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
-                })
-                if not recent:
-                    await log_customer_activity(
-                        user_id=user_id,
-                        contact_id=contact_id,
-                        event_type="digital_card_viewed",
-                        title="Viewed Digital Card",
-                        description="Contact opened your digital card",
-                        icon="eye",
-                        color="#007AFF",
-                        category="customer_activity",
-                        metadata={"user_id": user_id},
-                    )
+            if msg and msg.get("conversation_id"):
+                conv = await db.conversations.find_one(
+                    {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
+                    {"contact_id": 1},
+                )
+                if conv and conv.get("contact_id"):
+                    contact_id = str(conv["contact_id"])
+
+        if contact_id:
+            recent = await db.contact_events.find_one({
+                "contact_id": contact_id,
+                "event_type": "digital_card_viewed",
+                "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
+            })
+            if not recent:
+                await log_customer_activity(
+                    user_id=user_id,
+                    contact_id=contact_id,
+                    event_type="digital_card_viewed",
+                    title="Viewed Digital Card",
+                    description="Contact opened your digital card",
+                    icon="eye",
+                    color="#007AFF",
+                    category="customer_activity",
+                    metadata={"user_id": user_id, "contact_id": contact_id},
+                )
     except Exception as e:
         print(f"[DigitalCard] Failed to log view activity: {e}")
 

@@ -191,51 +191,58 @@ async def _build_showcase_entries(db, query_filter: dict, feedback_filter: dict,
 
 
 @router.get("/user/{user_id}")
-async def get_user_showcase(user_id: str):
-    """Public endpoint: Get showcase data for a salesperson."""
+async def get_user_showcase(user_id: str, cid: str = None):
+    """Public endpoint: Get showcase data for a salesperson.
+    cid = contact ID (optional, for accurate tracking)
+    """
     db = get_db()
 
     user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0, "photo_url": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Log view event for the most recent contact who was sent this showcase
+    # Log view event — use cid (contact_id) directly if provided
     try:
         from utils.contact_activity import log_customer_activity
         from datetime import timedelta
-        msg = await db.messages.find_one(
-            {"user_id": user_id, "sender": "user",
-             "$or": [
-                 {"content": {"$regex": f"/showcase/", "$options": "i"}},
-                 {"content": {"$regex": "showcase", "$options": "i"}},
-             ]},
-            {"conversation_id": 1},
-            sort=[("created_at", -1)],
-        )
-        if msg and msg.get("conversation_id"):
-            conv = await db.conversations.find_one(
-                {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
-                {"contact_id": 1},
+        contact_id = cid
+
+        if not contact_id:
+            msg = await db.messages.find_one(
+                {"user_id": user_id, "sender": "user",
+                 "$or": [
+                     {"content": {"$regex": f"/showcase/", "$options": "i"}},
+                     {"content": {"$regex": "showcase", "$options": "i"}},
+                 ]},
+                {"conversation_id": 1},
+                sort=[("created_at", -1)],
             )
-            if conv and conv.get("contact_id"):
-                contact_id = str(conv["contact_id"])
-                recent = await db.contact_events.find_one({
-                    "contact_id": contact_id,
-                    "event_type": "showcase_viewed",
-                    "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
-                })
-                if not recent:
-                    await log_customer_activity(
-                        user_id=user_id,
-                        contact_id=contact_id,
-                        event_type="showcase_viewed",
-                        title="Viewed Showcase",
-                        description="Contact opened your showcase page",
-                        icon="eye",
-                        color="#C9A962",
-                        category="customer_activity",
-                        metadata={"user_id": user_id},
-                    )
+            if msg and msg.get("conversation_id"):
+                conv = await db.conversations.find_one(
+                    {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
+                    {"contact_id": 1},
+                )
+                if conv and conv.get("contact_id"):
+                    contact_id = str(conv["contact_id"])
+
+        if contact_id:
+            recent = await db.contact_events.find_one({
+                "contact_id": contact_id,
+                "event_type": "showcase_viewed",
+                "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
+            })
+            if not recent:
+                await log_customer_activity(
+                    user_id=user_id,
+                    contact_id=contact_id,
+                    event_type="showcase_viewed",
+                    title="Viewed Showcase",
+                    description="Contact opened your showcase page",
+                    icon="eye",
+                    color="#C9A962",
+                    category="customer_activity",
+                    metadata={"user_id": user_id, "contact_id": contact_id},
+                )
     except Exception as e:
         print(f"[Showcase] Failed to log view activity: {e}")
 

@@ -176,6 +176,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Full Twilio Integration (enables auto_send)
 - WhatsApp, Training Hub, Inventory Module
 
+### Contact Tracking Misattribution Fix (Mar 8, 2026)
+- **BUG FIXED:** When a link (review invite, digital card, showcase, link page) was clicked, the system attributed the view to the WRONG contact — it guessed from the "most recent message" instead of tracking the specific contact the link was sent to.
+- **Root cause:** All tracking pages (public_review.py, digital_card.py, showcase.py, linkpage.py) used a heuristic that looked up the most recent message containing the link type → found the conversation → got the contact_id. If a user sent the same link to multiple contacts, the view was always attributed to the most recent one.
+- **Fix:** Short URL redirect handler now appends `&cid=<contact_id>` (from stored metadata) to the redirect URL. All 4 tracking pages (review, digital card, showcase, link page) now accept an optional `cid` query parameter and use it directly, falling back to the legacy heuristic only for old links without the parameter.
+- **Files changed:** `short_urls.py` (redirect + og-image handler reordered), `public_review.py`, `digital_card.py`, `showcase.py`, `linkpage.py`
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

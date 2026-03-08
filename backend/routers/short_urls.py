@@ -235,6 +235,51 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
         pass
 
 
+@router.get("/og-image/{user_id}")
+async def get_og_image(user_id: str):
+    """Serve a store logo composited onto a white background for OG previews."""
+    db = get_db()
+    og_image_url = None
+    try:
+        user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+        if user_doc and user_doc.get("store_id"):
+            store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"logo_url": 1, "logo_avatar_url": 1})
+            if store:
+                og_image_url = store.get("logo_url") or store.get("logo_avatar_url")
+    except Exception:
+        pass
+
+    if not og_image_url or og_image_url.startswith("data:"):
+        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
+        if os.path.exists(static_path):
+            with open(static_path, "rb") as f:
+                return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+        raise HTTPException(status_code=404, detail="OG image not found")
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(og_image_url)
+            resp.raise_for_status()
+        logo = Image.open(BytesIO(resp.content)).convert("RGBA")
+        size = (512, 512)
+        white_bg = Image.new("RGB", size, (255, 255, 255))
+        logo.thumbnail(size, Image.LANCZOS)
+        x = (size[0] - logo.width) // 2
+        y = (size[1] - logo.height) // 2
+        white_bg.paste(logo, (x, y), logo)
+        buf = BytesIO()
+        white_bg.save(buf, format="PNG", quality=95)
+        buf.seek(0)
+        return Response(content=buf.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+    except Exception:
+        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
+        if os.path.exists(static_path):
+            with open(static_path, "rb") as f:
+                return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+        raise HTTPException(status_code=500, detail="Failed to generate OG image")
+
+
+
 @router.get("/{short_code}")
 async def redirect_short_url(short_code: str, request: Request):
     """
@@ -271,58 +316,6 @@ async def redirect_short_url(short_code: str, request: Request):
     }
     await db.short_url_clicks.insert_one(click_log)
 
-
-@router.get("/og-image/{user_id}")
-async def get_og_image(user_id: str):
-    """Serve a store logo composited onto a white background for OG previews."""
-    db = get_db()
-    og_image_url = None
-    try:
-        user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
-        if user_doc and user_doc.get("store_id"):
-            store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"logo_url": 1, "logo_avatar_url": 1})
-            if store:
-                og_image_url = store.get("logo_url") or store.get("logo_avatar_url")
-    except Exception:
-        pass
-
-    if not og_image_url or og_image_url.startswith("data:"):
-        # Fallback: serve the static og-image.png
-        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
-        if os.path.exists(static_path):
-            with open(static_path, "rb") as f:
-                return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
-        raise HTTPException(status_code=404, detail="OG image not found")
-
-    # Fetch the remote logo and composite onto white background
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(og_image_url)
-            resp.raise_for_status()
-        logo = Image.open(BytesIO(resp.content)).convert("RGBA")
-        # Create 512x512 white background
-        size = (512, 512)
-        white_bg = Image.new("RGB", size, (255, 255, 255))
-        # Resize logo to fit
-        logo.thumbnail(size, Image.LANCZOS)
-        # Center the logo on white background
-        x = (size[0] - logo.width) // 2
-        y = (size[1] - logo.height) // 2
-        white_bg.paste(logo, (x, y), logo)
-        buf = BytesIO()
-        white_bg.save(buf, format="PNG", quality=95)
-        buf.seek(0)
-        return Response(content=buf.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
-    except Exception:
-        # Fallback to static image
-        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
-        if os.path.exists(static_path):
-            with open(static_path, "rb") as f:
-                return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
-        raise HTTPException(status_code=500, detail="Failed to generate OG image")
-
-
-
     # Log a contact_event so the click appears in the activity feed
     try:
         await _log_link_click_event(db, doc, short_code)
@@ -339,6 +332,10 @@ async def get_og_image(user_id: str):
         "bot", "crawler", "spider", "preview",
     ])
 
+    # Get contact_id from metadata for tracking
+    doc_metadata = doc.get("metadata") or {}
+    cid = doc_metadata.get("contact_id") or doc.get("reference_id")
+
     if is_crawler:
         # Serve HTML with dynamic OG tags using the store's branding
         og_title = "Check this out!"
@@ -346,6 +343,11 @@ async def get_og_image(user_id: str):
         og_image = ""
         link_type = doc.get("link_type", "")
         user_id = doc.get("user_id")
+        # Build the redirect URL with contact_id for tracking
+        redirect_url = original_url
+        if cid and cid not in redirect_url:
+            separator = "&" if "?" in redirect_url else "?"
+            redirect_url = f"{redirect_url}{separator}cid={cid}"
 
         if user_id:
             try:
@@ -364,7 +366,7 @@ async def get_og_image(user_id: str):
                         else:
                             og_title = store_name or "Check this out!"
                             og_description = f"Shared by {user_name}" if user_name else ""
-                        # Use the white-background OG image endpoint to prevent transparency issues in iMessage
+                        # Use the white-background OG image endpoint
                         base_url = str(request.base_url).rstrip("/")
                         og_image = f"{base_url}/api/s/og-image/{user_id}"
             except Exception:
@@ -388,11 +390,15 @@ async def get_og_image(user_id: str):
 {og_image_tags}
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta http-equiv="refresh" content="0;url={original_url}" />
-</head><body><a href="{original_url}">Continue</a></body></html>"""
+<meta http-equiv="refresh" content="0;url={redirect_url}" />
+</head><body><a href="{redirect_url}">Continue</a></body></html>"""
         return HTMLResponse(content=html)
 
     # Regular redirect for normal browsers
+    # Append contact_id to the redirect URL so tracking pages know exactly who clicked
+    if cid and cid not in original_url:
+        separator = "&" if "?" in original_url else "?"
+        original_url = f"{original_url}{separator}cid={cid}"
     return RedirectResponse(url=original_url, status_code=302)
 
 
