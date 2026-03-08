@@ -62,6 +62,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Timezone-aware scheduling (9 AM next morning)
 - Frontend `/ai-outreach` with 4 tabs: Campaign, AI Suggestions, Accepted, Dismissed
 
+### Card Analytics Dashboard (Mar 8, 2026)
+- **NEW:** Comprehensive card analytics page at `/analytics/cards` accessible from the main Analytics dashboard
+- **Summary KPIs:** Total cards created, views, downloads, shares with trend percentages vs previous period
+- **Card Type Breakdown:** Bar chart visualization of all 6 card types (Congrats, Birthday, Anniversary, Thank You, Welcome, Holiday) with per-type views/downloads/shares
+- **Daily Trend Chart:** Bar chart showing daily card creation activity over selected period
+- **Top Performing Cards:** Ranked table sorted by engagement score (views + downloads×2 + shares×3)
+- **Team Performance (Managers):** Per-salesperson breakdown with card counts, engagement scores, and vs-average comparison badges
+- **Personal Card Mix (Salespeople):** Percentage breakdown of card types used
+- **Date Filtering:** 7D, 14D, 30D, 90D, 1Y period selectors
+- **Role-Aware:** Super admins see org-wide, store managers see store-wide, salespeople see personal
+- **Backend:** `GET /api/reports/card-analytics/{user_id}` — MongoDB aggregation pipeline
+- **Tested:** 16/16 backend tests passed, all frontend sections verified
+
 ### Card Labeling Bug Fix (Mar 8, 2026)
 - **BUG FIXED:** All card types (Birthday, Holiday, Thank You, etc.) sent from the inbox were incorrectly labeled as "Congrats Card"
 - **Root cause:** Hardcoded labels, faulty `.includes('congrats')` detection, and no mechanism to pass card type during creation
