@@ -166,10 +166,6 @@ export default function DigitalCardPage() {
   const handleSaveContact = async () => {
     setSaving(true);
     try {
-      // Get vCard data
-      const vcardResponse = await api.get(`/card/vcard/${userId}`);
-      const { vcard, filename } = vcardResponse.data;
-
       // Track the save + enroll in campaign if specified
       await api.post(`/card/save/${userId}`, {
         contact_id: contact,
@@ -177,18 +173,14 @@ export default function DigitalCardPage() {
       });
 
       if (Platform.OS === 'web') {
-        // Web: Download as file
-        const blob = new Blob([vcard], { type: 'text/vcard' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Direct navigation to VCF URL — iOS Safari will open the native
+        // "Add to Contacts" dialog, Android/desktop will download the file.
+        // Blob downloads do NOT trigger the native contact import on iOS.
+        window.location.href = `/api/card/vcard/${userId}`;
       } else {
         // Native: Save and share using new Expo File System API
+        const vcardResponse = await api.get(`/card/vcard/${userId}`);
+        const { vcard, filename } = vcardResponse.data;
         const file = new ExpoFile(Paths.document, filename);
         await file.write(vcard);
         
