@@ -345,7 +345,7 @@ async def redirect_short_url(short_code: str, request: Request):
         user_id = doc.get("user_id")
         # Build the redirect URL with contact_id for tracking
         redirect_url = original_url
-        if cid and cid not in redirect_url:
+        if cid and f"cid={cid}" not in redirect_url:
             separator = "&" if "?" in redirect_url else "?"
             redirect_url = f"{redirect_url}{separator}cid={cid}"
 
@@ -396,7 +396,7 @@ async def redirect_short_url(short_code: str, request: Request):
 
     # Regular redirect for normal browsers
     # Append contact_id to the redirect URL so tracking pages know exactly who clicked
-    if cid and cid not in original_url:
+    if cid and f"cid={cid}" not in original_url:
         separator = "&" if "?" in original_url else "?"
         original_url = f"{original_url}{separator}cid={cid}"
     return RedirectResponse(url=original_url, status_code=302)

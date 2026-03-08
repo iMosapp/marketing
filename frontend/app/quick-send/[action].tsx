@@ -210,16 +210,40 @@ export default function QuickSendPage() {
       }
       setNewContactId(contactId);
 
+      // Create a trackable short URL with contact_id so click attribution is correct
+      let finalMessage = messageText;
+      if (contactId && shareUrl && actionKey !== 'congrats') {
+        try {
+          const shortRes = await api.post('/s/create', {
+            original_url: shareUrl,
+            link_type: config.eventType === 'review_invite_sent' ? 'review_request'
+              : config.eventType === 'digital_card_shared' ? 'business_card'
+              : config.eventType === 'showcase_shared' ? 'showcase' : 'link',
+            user_id: userId,
+            reference_id: contactId,
+            metadata: { contact_id: contactId },
+          });
+          const trackableUrl = shortRes.data?.short_url;
+          if (trackableUrl) {
+            // Replace the raw URL in the message with the trackable short URL
+            finalMessage = messageText.replace(shareUrl, trackableUrl);
+          }
+        } catch (e) {
+          // Fallback: use the raw URL if short URL creation fails
+          console.warn('Short URL creation failed, using raw URL:', e);
+        }
+      }
+
       if (sendMethod === 'copy') {
         // Copy to clipboard
         if (IS_WEB && navigator.clipboard) {
-          await navigator.clipboard.writeText(messageText);
+          await navigator.clipboard.writeText(finalMessage);
         }
         // Log the event
         await api.post(`/contacts/${userId}/${contactId}/find-or-create-and-log`, {
           event_type: config.eventType,
           channel: 'link_copy',
-          content: messageText,
+          content: finalMessage,
         }).catch(() => {});
 
         setStep('done');
@@ -232,13 +256,13 @@ export default function QuickSendPage() {
         // Log the event server-side first
         await api.post(`/messages/send/${userId}`, {
           contact_id: contactId,
-          content: messageText,
+          content: finalMessage,
           channel: 'sms_personal',
           event_type: config.eventType,
         }).catch(() => {});
 
         // Open native SMS app with pre-populated message
-        openNativeSMS(phone, messageText);
+        openNativeSMS(phone, finalMessage);
 
         // Show confirmation after a brief delay (to let SMS app open)
         setTimeout(() => {
@@ -254,7 +278,7 @@ export default function QuickSendPage() {
           // Send email via backend (Resend)
           await api.post(`/messages/send/${userId}`, {
             contact_id: contactId,
-            content: messageText,
+            content: finalMessage,
             channel: 'email',
             to_email: email,
             event_type: config.eventType,
