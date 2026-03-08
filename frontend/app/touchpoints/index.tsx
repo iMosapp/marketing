@@ -201,7 +201,7 @@ export default function TouchpointsScreen() {
   const scoreValues: Record<string, number> = {
     calls: act.calls || 0, texts: act.texts || 0, emails: act.emails || 0,
     cards: act.cards || 0, reviews: act.reviews || 0,
-    clicks: 0, opens: 0, replies: 0, new_leads: 0,
+    clicks: act.clicks || 0, opens: act.opens || 0, replies: act.replies || 0, new_leads: act.new_leads || 0,
   };
 
   return (

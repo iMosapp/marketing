@@ -656,7 +656,8 @@ export default function HomeScreen() {
                 { label: 'TEXTS', color: '#34C759', val: taskSummary?.activity?.texts || 0 },
                 { label: 'EMAILS', color: '#5AC8FA', val: taskSummary?.activity?.emails || 0 },
                 { label: 'CARDS', color: '#C9A962', val: taskSummary?.activity?.cards || 0 },
-                { label: 'REVIEWS', color: '#FFD60A', val: taskSummary?.activity?.reviews || 0 },
+                { label: 'CLICKS', color: '#FF375F', val: taskSummary?.activity?.clicks || 0 },
+                { label: 'LEADS', color: '#32ADE6', val: taskSummary?.activity?.new_leads || 0 },
               ].map(s => (
                 <View key={s.label} style={{ flex: 1, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2 }}>
                   <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{s.val}</Text>

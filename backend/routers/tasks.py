@@ -142,6 +142,52 @@ async def get_task_summary(user_id: str):
     except Exception:
         pass
 
+    # Today's engagement signals (card views, link clicks, showcase views, etc.)
+    engagement = {}
+    try:
+        eng_pipeline = [
+            {"$match": {"user_id": user_id, "created_at": {"$gte": today_start, "$lt": today_end}}},
+            {"$group": {"_id": "$signal_type", "count": {"$sum": 1}}},
+        ]
+        for r in await db.engagement_signals.aggregate(eng_pipeline).to_list(50):
+            engagement[r["_id"]] = r["count"]
+    except Exception:
+        pass
+
+    # New leads today
+    new_leads = 0
+    try:
+        new_leads = await db.contacts.count_documents({
+            "$or": [{"user_id": user_id}, {"created_by": user_id}],
+            "created_at": {"$gte": today_start, "$lt": today_end},
+        })
+    except Exception:
+        pass
+
+    # Aggregate engagement clicks/opens
+    total_clicks = (
+        engagement.get("card_viewed", 0) +
+        engagement.get("digital_card_viewed", 0) +
+        engagement.get("link_clicked", 0) +
+        engagement.get("review_link_clicked", 0) +
+        engagement.get("showcase_viewed", 0) +
+        engagement.get("link_page_viewed", 0) +
+        activity.get("link_clicked", 0) +
+        activity.get("card_viewed", 0) +
+        activity.get("showcase_viewed", 0)
+    )
+    total_opens = (
+        engagement.get("contact_saved", 0) +
+        activity.get("email_opened", 0)
+    )
+    total_replies = (
+        activity.get("reply_received", 0) +
+        activity.get("sms_received", 0)
+    )
+
+    # Cards sent (only outbound actions, not views)
+    cards_sent = sum(v for k, v in activity.items() if ("card_sent" in k or "card_shared" in k or "digital_card_shared" in k or "congrats" in k or "birthday_card_sent" in k or "thankyou_card" in k or "welcome_card" in k or "anniversary_card" in k or "holiday_card" in k))
+
     return {
         "total_today": total_today,
         "completed_today": completed_today,
@@ -150,10 +196,14 @@ async def get_task_summary(user_id: str):
         "progress_pct": round((completed_today / max(total_today, 1)) * 100),
         "activity": {
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
-            "texts": activity.get("sms_sent", 0),
+            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0),
             "emails": activity.get("email_sent", 0),
-            "cards": sum(v for k, v in activity.items() if "card" in k),
-            "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0),
+            "cards": cards_sent,
+            "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
+            "clicks": total_clicks,
+            "opens": total_opens,
+            "replies": total_replies,
+            "new_leads": new_leads,
         },
     }
 
@@ -338,11 +388,32 @@ async def get_performance(user_id: str, period: str = "week"):
     for r in await db.contact_events.aggregate(pipeline).to_list(100):
         activity[r["_id"]] = r["count"]
 
+    # Also aggregate engagement_signals for the same period
+    eng_match = {"user_id": user_id, "created_at": {"$gte": start, "$lt": now}}
+    eng_pipeline = [
+        {"$match": eng_match},
+        {"$group": {"_id": "$signal_type", "count": {"$sum": 1}}},
+    ]
+    eng_signals = {}
+    try:
+        for r in await db.engagement_signals.aggregate(eng_pipeline).to_list(100):
+            eng_signals[r["_id"]] = r["count"]
+    except Exception:
+        pass
+
     # Previous period for trend
     prev_start = start - (now - start)
     prev_match = {"user_id": user_id, "timestamp": {"$gte": prev_start, "$lt": start}}
     prev_total = await db.contact_events.count_documents(prev_match)
     curr_total = await db.contact_events.count_documents(match)
+    # Include engagement signals in total
+    eng_total = sum(eng_signals.values())
+    curr_total += eng_total
+    try:
+        prev_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": prev_start, "$lt": start}})
+        prev_total += prev_eng
+    except Exception:
+        pass
     trend_pct = round(((curr_total - prev_total) / max(prev_total, 1)) * 100) if prev_total else 0
 
     # New contacts added
@@ -351,30 +422,39 @@ async def get_performance(user_id: str, period: str = "week"):
         "created_at": {"$gte": start, "$lt": now},
     })
 
+    total_touchpoints = (
+        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) +
+        activity.get("email_sent", 0) +
+        activity.get("call_placed", 0) + activity.get("call_received", 0) +
+        sum(v for k, v in activity.items() if "card_shared" in k or "card_sent" in k or "digital_card_shared" in k or "congrats" in k or "birthday_card" in k or "thankyou_card" in k or "welcome_card" in k or "anniversary_card" in k or "holiday_card" in k) +
+        activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0) +
+        eng_total
+    )
+
     return {
-        "total_touchpoints": curr_total,
+        "total_touchpoints": total_touchpoints,
         "trend_pct": trend_pct,
         "communication": {
-            "texts": activity.get("sms_sent", 0),
+            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0),
             "emails": activity.get("email_sent", 0),
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
         },
         "sharing": {
-            "cards": sum(v for k, v in activity.items() if "card_shared" in k or "card_sent" in k or "digital_card" in k),
+            "cards": sum(v for k, v in activity.items() if "card_shared" in k or "card_sent" in k or "digital_card_shared" in k),
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
             "congrats": sum(v for k, v in activity.items() if "congrats" in k or "birthday_card" in k or "holiday_card" in k or "welcome_card" in k or "anniversary_card" in k or "thankyou_card" in k or "thank_you_card" in k),
         },
         "engagement": {
-            "link_clicks": activity.get("link_clicked", 0) + activity.get("card_viewed", 0),
+            "link_clicks": activity.get("link_clicked", 0) + activity.get("card_viewed", 0) + eng_signals.get("link_clicked", 0) + eng_signals.get("card_viewed", 0) + eng_signals.get("digital_card_viewed", 0) + eng_signals.get("showcase_viewed", 0) + eng_signals.get("link_page_viewed", 0) + eng_signals.get("review_link_clicked", 0),
             "email_opens": activity.get("email_opened", 0),
             "replies": activity.get("reply_received", 0) + activity.get("sms_received", 0),
             "new_leads": new_leads,
         },
         "click_through": {
-            "digital_card_views": activity.get("digital_card_viewed", 0) + activity.get("card_viewed", 0),
-            "review_link_clicks": activity.get("review_link_clicked", 0),
-            "showcase_views": activity.get("showcase_viewed", 0) + activity.get("showroom_viewed", 0),
-            "link_page_visits": activity.get("link_page_viewed", 0),
+            "digital_card_views": activity.get("digital_card_viewed", 0) + activity.get("card_viewed", 0) + eng_signals.get("card_viewed", 0) + eng_signals.get("digital_card_viewed", 0),
+            "review_link_clicks": activity.get("review_link_clicked", 0) + eng_signals.get("review_link_clicked", 0),
+            "showcase_views": activity.get("showcase_viewed", 0) + activity.get("showroom_viewed", 0) + eng_signals.get("showcase_viewed", 0),
+            "link_page_visits": activity.get("link_page_viewed", 0) + eng_signals.get("link_page_viewed", 0),
         },
     }
 
