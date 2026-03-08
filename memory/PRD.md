@@ -138,6 +138,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - **Task context banner:** Clicking a task notification navigates to the contact page with an orange "Pending Task" banner showing the task title + description
    - **Event icons:** Added proper icon/color mappings for task_created, task_completed, sms_sent, sms_failed, email_failed, lead_reassigned
 
+### Unified Add Contact + Review Tracking Fix + Native Dialer (Mar 9, 2026)
+1. **Unified Add Contact Flow** — The `+` button on the Contacts page now navigates to `/contact/new` (same form as Home page), replacing the old modal. Removed modal state, JSX, and 80+ lines of styles.
+2. **Review Link Tracking Fix (Home Page)** — Quick-send from Home page now creates trackable short URLs with `contact_id` metadata, fixing misattribution where link clicks were attributed to the wrong contact (e.g., Bridger Ward instead of actual recipient).
+3. **Short URL `cid` Dedup Fix** — Backend `short_urls.py` redirect handler had a bug where `cid not in original_url` matched the salesperson ID in the `sp=` parameter, skipping the `cid` append. Fixed to check `f"cid={cid}" not in original_url`.
+4. **VCF Save Contact Fix** — Digital card's "Save My Contact" button now navigates directly to the VCF URL (`/api/card/vcard/{userId}`) instead of using JavaScript blob download. This triggers iOS Safari's native "Add to Contacts" dialog.
+5. **Native iPhone Dialer** — Completely redesigned the dialer to match iOS native keypad: pure black background, dark grey circular buttons (#333) with letter labels, large auto-formatted number display, contact matching as you type (name + formatted phone), green call button center, backspace (right of call, only when digits entered), long-press backspace to clear all.
+
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard
 - Gamification & Leaderboards, Image Performance Overhaul

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList,
-  Platform, Linking,
+  View, Text, TouchableOpacity, Platform, Linking, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,9 +9,12 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI } from '../../services/api';
-import api from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
+const { width: SCREEN_W } = Dimensions.get('window');
+const PAD_SIDE = Math.min(SCREEN_W, 420);
+const BTN_SIZE = Math.min(Math.floor((PAD_SIDE - 80) / 3), 80);
+const BTN_GAP = Math.floor((PAD_SIDE - 64 - BTN_SIZE * 3) / 2);
 
 const DIAL_KEYS: { num: string; letters: string }[] = [
   { num: '1', letters: '' },
@@ -52,7 +54,7 @@ export default function DialerScreen() {
     return contacts.filter(c => {
       const cDigits = (c.phone || '').replace(/\D/g, '');
       return cDigits.includes(digits);
-    }).slice(0, 3);
+    }).slice(0, 5);
   }, [phoneNumber, contacts]);
 
   const handleDialPress = (num: string) => {
@@ -108,84 +110,135 @@ export default function DialerScreen() {
   // Restricted access for pending users
   if (isPending) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#FF950020', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <Ionicons name="lock-closed" size={48} color="#FF9500" />
           </View>
-          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Access Pending</Text>
-          <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 32 }}>
-            Your account is being reviewed. You'll have full access to calls once configured.
+          <Text style={{ fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 12 }}>Access Pending</Text>
+          <Text style={{ fontSize: 16, color: '#8E8E93', textAlign: 'center', lineHeight: 24 }}>
+            Your account is being reviewed. You'll have full access once configured.
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Format number for display (like iPhone: groups of 3)
+  // Format number for display — iOS style
   const formatDisplay = (num: string) => {
     const d = num.replace(/\D/g, '');
     if (d.length <= 3) return d;
     if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
-    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6, 10)}`;
+    if (d.length <= 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+    return `+${d.slice(0, d.length - 10)} (${d.slice(-10, -7)}) ${d.slice(-7, -4)}-${d.slice(-4)}`;
   };
 
+  // Format phone for contact match display
+  const formatPhone = (p: string) => {
+    const d = (p || '').replace(/\D/g, '');
+    if (d.length === 11 && d[0] === '1') return `(${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+    return p;
+  };
+
+  // Truncate name for compact display
+  const truncName = (c: any) => {
+    const full = `${c.first_name || ''} ${c.last_name || ''}`.trim();
+    return full.length > 14 ? full.slice(0, 12) + '...' : full;
+  };
+
+  const showMatches = matchingContacts.length > 0 && phoneNumber.length >= 3;
+  const visibleMatches = matchingContacts.slice(0, 2);
+  const moreCount = matchingContacts.length - 2;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} data-testid="dialer-screen">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']} data-testid="dialer-screen">
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        {/* Number Display */}
-        <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, minHeight: 60 }}>
-          <Text
-            style={{ fontSize: phoneNumber.length > 10 ? 32 : 40, fontWeight: '300', color: colors.text, letterSpacing: 2 }}
-            numberOfLines={1} adjustsFontSizeToFit
-            data-testid="dialer-number-display"
-          >
-            {phoneNumber ? formatDisplay(phoneNumber) : '\u00A0'}
-          </Text>
+
+        {/* ─── Number Display ─── */}
+        <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingBottom: 4, minHeight: 56 }}>
+          {phoneNumber ? (
+            <Text
+              style={{
+                fontSize: phoneNumber.length > 10 ? 34 : 42,
+                fontWeight: '200',
+                color: '#FFF',
+                letterSpacing: 1.5,
+                fontVariant: ['tabular-nums'],
+              }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              data-testid="dialer-number-display"
+            >
+              {formatDisplay(phoneNumber)}
+            </Text>
+          ) : (
+            <Text style={{ fontSize: 42, fontWeight: '200', color: '#FFF', opacity: 0 }}>{'\u00A0'}</Text>
+          )}
         </View>
 
-        {/* Matching Contacts */}
-        {matchingContacts.length > 0 && (
-          <View style={{ marginHorizontal: 24, marginTop: 8, marginBottom: 4, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }} data-testid="dialer-matches">
-            {matchingContacts.map((c, i) => (
+        {/* ─── Contact Matches ─── */}
+        {showMatches && (
+          <View style={{
+            marginHorizontal: 32, marginBottom: 6, backgroundColor: '#1C1C1E',
+            borderRadius: 10, overflow: 'hidden',
+          }} data-testid="dialer-matches">
+            {visibleMatches.map((c: any, i: number) => (
               <TouchableOpacity
                 key={c._id}
-                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: colors.border }}
-                onPress={() => { setPhoneNumber(c.phone || ''); }}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  paddingHorizontal: 12, paddingVertical: 9,
+                  borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: '#38383A',
+                }}
+                onPress={() => { setPhoneNumber(c.phone || ''); handleCall(c.phone); }}
+                activeOpacity={0.6}
                 data-testid={`dialer-match-${i}`}
               >
-                <Ionicons name="person-circle-outline" size={22} color={colors.textSecondary} style={{ marginRight: 10 }} />
-                <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text, flex: 1 }} numberOfLines={1}>
-                  {c.first_name} {c.last_name || ''}
+                <Ionicons name="person-circle" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: '400', color: '#FFF', marginRight: 6 }} numberOfLines={1}>
+                  {truncName(c)}
                 </Text>
-                <Text style={{ fontSize: 14, color: colors.textSecondary, marginLeft: 8 }}>
-                  {c.phone}
+                <Text style={{ fontSize: 15, color: '#8E8E93', flex: 1 }} numberOfLines={1}>
+                  {formatPhone(c.phone)}
                 </Text>
               </TouchableOpacity>
             ))}
+            {moreCount > 0 && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: 12, paddingVertical: 8,
+                borderTopWidth: 0.5, borderTopColor: '#38383A',
+              }}>
+                <Ionicons name="search" size={16} color="#8E8E93" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 14, color: '#8E8E93' }}>
+                  {moreCount} More Result{moreCount > 1 ? 's' : ''}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
-        {/* Dial Pad */}
-        <View style={{ paddingHorizontal: 32, paddingTop: 12, paddingBottom: 8 }}>
+        {/* ─── Dial Pad ─── */}
+        <View style={{ alignSelf: 'center', width: PAD_SIDE, paddingHorizontal: 32, paddingTop: 8, paddingBottom: 4 }}>
           {[0, 1, 2, 3].map(row => (
             <View key={row} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
               {DIAL_KEYS.slice(row * 3, row * 3 + 3).map(key => (
                 <TouchableOpacity
                   key={key.num}
                   style={{
-                    width: 80, height: 80, borderRadius: 40,
-                    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
+                    width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
+                    backgroundColor: '#333333', alignItems: 'center', justifyContent: 'center',
                   }}
                   onPress={() => handleDialPress(key.num)}
-                  activeOpacity={0.6}
+                  activeOpacity={0.5}
                   data-testid={`dial-${key.num === '*' ? 'star' : key.num === '#' ? 'hash' : key.num}`}
                 >
-                  <Text style={{ fontSize: 32, fontWeight: '300', color: colors.text, lineHeight: 36 }}>
+                  <Text style={{ fontSize: 30, fontWeight: '400', color: '#FFF', lineHeight: 34 }}>
                     {key.num}
                   </Text>
                   {key.letters ? (
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 2, marginTop: -2 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1.5, marginTop: -1 }}>
                       {key.letters}
                     </Text>
                   ) : null}
@@ -194,34 +247,41 @@ export default function DialerScreen() {
             </View>
           ))}
 
-          {/* Bottom Row: empty | Call | Backspace */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-            <View style={{ width: 80, height: 80 }} />
+          {/* ─── Bottom Row: [empty] | Call | Backspace ─── */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+            <View style={{ width: BTN_SIZE, height: BTN_SIZE }} />
             <TouchableOpacity
               style={{
-                width: 80, height: 80, borderRadius: 40,
+                width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
                 backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center',
-                opacity: phoneNumber ? 1 : 0.5,
+                opacity: phoneNumber ? 1 : 0.4,
               }}
               onPress={() => handleCall()}
               disabled={!phoneNumber}
               data-testid="dialer-call-btn"
             >
-              <Ionicons name="call" size={34} color="#FFF" />
+              <Ionicons name="call" size={32} color="#FFF" />
             </TouchableOpacity>
             {phoneNumber ? (
               <TouchableOpacity
-                style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' }}
+                style={{
+                  width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
                 onPress={handleBackspace}
+                onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setPhoneNumber(''); }}
                 data-testid="dialer-backspace-btn"
               >
-                <Ionicons name="backspace-outline" size={28} color={colors.text} />
+                <Ionicons name="backspace-outline" size={26} color="#FFF" />
               </TouchableOpacity>
             ) : (
-              <View style={{ width: 80, height: 80 }} />
+              <View style={{ width: BTN_SIZE, height: BTN_SIZE }} />
             )}
           </View>
         </View>
+
+        {/* Bottom spacer */}
+        <View style={{ height: 8 }} />
       </View>
     </SafeAreaView>
   );
