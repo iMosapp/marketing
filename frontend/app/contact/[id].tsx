@@ -356,7 +356,7 @@ export default function ContactDetailScreen() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const recordingTimerRef = React.useRef<any>(null);
   const scrollRef = React.useRef<ScrollView>(null);
-  const MAX_RECORDING_SECONDS = 120;
+  const MAX_RECORDING_SECONDS = 300;
 
   // AI Relationship Intel
   const [intelData, setIntelData] = useState<any>(null);

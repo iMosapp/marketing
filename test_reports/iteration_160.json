@@ -1,0 +1,70 @@
+{
+  "summary": "Three features tested: 1) Voice-to-Task: POST /api/voice/parse-task endpoint correctly extracts task details (title, type, priority, due_date, due_time) from natural language - ALL 6 TESTS PASSED. 2) Contact search with email: Backend search query includes email field at line 231, frontend filters include email at lines 56, 480, 486 - ALL 5 TESTS PASSED. 3) Voice recorder MAX_RECORDING_SECONDS changed from 120 to 300 (5 minutes) verified at line 359.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_voice_task_contact_search.py",
+    "/app/test_reports/pytest/pytest_voice_task_contact_search.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VERIFIED: /app/backend/routers/voice.py lines 168-240 - parse-task endpoint correctly uses LlmChat with gpt-4o-mini to extract task fields",
+    "VERIFIED: /app/backend/routers/contacts.py line 231 - Backend search includes email field in OR conditions",
+    "VERIFIED: /app/frontend/app/(tabs)/home.tsx lines 56, 480, 486 - Home screen contact filters include email search",
+    "VERIFIED: /app/frontend/app/tasks/new.tsx line 232 - voice-start-btn data-testid is present",
+    "VERIFIED: /app/frontend/app/tasks/new.tsx line 384 - Contact search modal placeholder says 'Search by name, phone, or email...'",
+    "VERIFIED: /app/frontend/app/contact/[id].tsx line 359 - MAX_RECORDING_SECONDS = 300 (5 minutes)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_voice_task_contact_search.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% - All features verified in code and UI screenshots"
+  },
+  "test_credentials": "forest@imosapp.com / Admin123! (Super Admin)",
+  "seed_data_creation": "Created test contacts with unique emails for email search verification",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Voice-to-Task feature fully implemented. The /api/voice/parse-task endpoint takes {text: string} and returns TaskParseResponse with title, description, type (callback/follow_up/appointment/other), priority (low/medium/high), due_date (ISO), due_time (HH:MM). AI extracts these from natural language using gpt-4o-mini. Contact search now includes email in both backend query and frontend filter functions.",
+  "feature_verification": {
+    "voice_to_task": {
+      "endpoint": "POST /api/voice/parse-task",
+      "input": {"text": "natural language task description"},
+      "output": {"title": "string", "description": "string", "type": "callback|follow_up|appointment|other", "priority": "low|medium|high", "due_date": "ISO date or null", "due_time": "HH:MM or null", "success": "boolean"},
+      "test_results": [
+        {"input": "call John next Tuesday at 2pm about warranty", "expected_type": "callback", "result": "PASS"},
+        {"input": "follow up with Sarah this Friday, high priority", "expected_type": "follow_up", "expected_priority": "high", "result": "PASS"},
+        {"input": "schedule meeting with Mike tomorrow at 3pm", "expected_type": "appointment", "expected_time": "15:00", "result": "PASS"}
+      ]
+    },
+    "contact_email_search": {
+      "backend_location": "/app/backend/routers/contacts.py line 231",
+      "frontend_locations": [
+        "/app/frontend/app/(tabs)/home.tsx lines 56, 480, 486",
+        "/app/frontend/app/tasks/new.tsx line 149"
+      ],
+      "test_results": [
+        {"scenario": "Create contact with unique email", "result": "PASS"},
+        {"scenario": "Search by email domain portion", "result": "PASS"},
+        {"scenario": "Search by full email", "result": "PASS"}
+      ]
+    },
+    "voice_recorder_5_minutes": {
+      "location": "/app/frontend/app/contact/[id].tsx line 359",
+      "old_value": 120,
+      "new_value": 300,
+      "result": "VERIFIED"
+    }
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS won't actually send"
+  }
+}

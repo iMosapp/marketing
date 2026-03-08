@@ -165,6 +165,83 @@ async def transcribe_audio(
         )
 
 
+class TaskParseRequest(BaseModel):
+    text: str
+
+class TaskParseResponse(BaseModel):
+    title: str
+    description: str = ""
+    type: str = "other"
+    priority: str = "medium"
+    due_date: str | None = None
+    due_time: str | None = None
+    success: bool = True
+
+
+@router.post("/parse-task", response_model=TaskParseResponse)
+async def parse_task_from_voice(data: TaskParseRequest):
+    """Use AI to extract task details from transcribed voice input."""
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+    if not emergent_key:
+        # Fallback: just use the text as the title
+        return TaskParseResponse(title=data.text[:200], description=data.text)
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        today = datetime.now().strftime("%A, %B %d, %Y")
+        prompt = f"""Extract task details from this voice input. Today is {today}.
+
+Voice input: "{data.text}"
+
+Return ONLY a valid JSON object with these fields:
+- "title": A concise task title (max 80 chars)
+- "description": Any additional details mentioned
+- "type": One of "callback", "follow_up", "appointment", "other"
+- "priority": One of "low", "medium", "high"
+- "due_date": ISO date string (YYYY-MM-DD) if a date was mentioned, null otherwise
+- "due_time": Time in HH:MM 24h format if mentioned, null otherwise
+
+Rules:
+- If they say "call back" or "call", type is "callback"
+- If they say "follow up" or "check in", type is "follow_up"
+- If they say "meeting" or "appointment", type is "appointment"
+- If they say "urgent" or "ASAP", priority is "high"
+- "tomorrow" means the day after today
+- "next Tuesday" means the next occurrence of that day
+- If no date mentioned, due_date should be null
+
+Return ONLY the JSON, no explanation."""
+
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=f"task-parse-{datetime.now().isoformat()}",
+            system_message="You are a task extraction assistant. Return only valid JSON.",
+        ).with_model("openai", "gpt-4o-mini")
+        response = await chat.send_message(UserMessage(text=prompt))
+
+        import json
+        # Clean response - strip markdown code fences if present
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+        parsed = json.loads(cleaned)
+
+        return TaskParseResponse(
+            title=parsed.get("title", data.text[:200]),
+            description=parsed.get("description", ""),
+            type=parsed.get("type", "other"),
+            priority=parsed.get("priority", "medium"),
+            due_date=parsed.get("due_date"),
+            due_time=parsed.get("due_time"),
+            success=True,
+        )
+    except Exception as e:
+        logger.error(f"Task parse error: {e}")
+        return TaskParseResponse(title=data.text[:200], description=data.text, success=True)
+
+
+
+
 @router.get("/status")
 async def voice_status():
     """Check if voice transcription is available"""

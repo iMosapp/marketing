@@ -53,7 +53,7 @@ function ContactActionModal({
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase();
     if (!q) return true;
-    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q);
+    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q) || `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().includes(q);
   });
 
   // VCF file upload handler
@@ -477,13 +477,13 @@ export default function HomeScreen() {
   const filteredActionContacts = actionContacts.filter(c => {
     const q = actionSearch.toLowerCase();
     if (!q) return true;
-    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q);
+    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q) || `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().includes(q);
   });
 
   const filteredCardContacts = cardContacts.filter(c => {
     const q = cardSearch.toLowerCase();
     if (!q) return true;
-    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q);
+    return (c.first_name || '').toLowerCase().includes(q) || (c.last_name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q) || `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().includes(q);
   });
 
   const handleCardTypeSelect = (cardKey: string) => {
