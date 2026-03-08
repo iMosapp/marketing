@@ -62,6 +62,18 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Timezone-aware scheduling (9 AM next morning)
 - Frontend `/ai-outreach` with 4 tabs: Campaign, AI Suggestions, Accepted, Dismissed
 
+### Permission Templates + Template Delete Bug Fix (Mar 8, 2026)
+1. **Permission Templates System** (`routers/permission_templates.py`)
+   - Full CRUD API: Create, Read, Update, Delete custom permission templates
+   - 4 prebuilt templates: Sales Rep, Senior Rep, Sales Manager, Org Admin
+   - Apply template to user: sets role + feature permissions in one click
+   - Frontend: `/permission-templates` management page with create/edit modal, permission toggles, apply-to-user flow
+   - Navigation: Added to admin Tools section
+2. **Template Delete Bug Fix** (SMS + Email templates)
+   - Fixed: `Alert.alert` on web degrades to `window.alert` without callback buttons
+   - Now uses `window.confirm()` on web platform for delete confirmations
+3. **Cleanup:** Deleted obsolete `birthday_cards.py` router file
+
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard
 - Gamification & Leaderboards, Image Performance Overhaul
@@ -91,7 +103,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Prioritized Backlog
 
 ### P1
-- Permission Roles/Templates
 - Auth refactor (bcrypt)
 - Push Notifications
 - Voice Help Assistant
@@ -101,7 +112,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### P2
 - Full Twilio Integration (enables auto_send)
 - WhatsApp, Training Hub, Inventory Module
-- Delete legacy `birthday_cards.py`
 
 ## Known Issues
 - P1: Production email blocked (user: verify RESEND_API_KEY)
