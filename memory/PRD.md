@@ -15,51 +15,74 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - ALL images use `utils/image_storage.py` + `utils/image_urls.py` resolvers
 - WebP format, served via `/api/images/` with immutable caching
 - All uploads use `asyncio.to_thread()` to prevent 520 timeouts
-- Migration: `/api/images/migrate-now` (1 image/call, marks oversized as skipped)
 
 ## CRITICAL: Unified Card System — DO NOT REVERT
 - ALL card types use `congrats_cards.py` only
 - `birthday_cards.py` is LEGACY — NOT registered in server.py
-- `auto_create_card()` for all auto-creation triggers
 
 ---
 
 ## What's Been Implemented
 
-### AI-Powered Outreach (Mar 2026) — NEW
-- **Trigger:** When "Sold" tag is applied to a contact, AI generates 2 personalized follow-up messages
-- **AI Engine:** OpenAI GPT-5.2 via emergentintegrations (`EMERGENT_LLM_KEY`)
-- **Context Gathering:** Pulls contact info, conversation history, engagement signals, salesperson & dealership details
-- **Scheduling:** Tasks scheduled for next morning (9 AM) in user's auto-detected timezone
-- **Timezone Detection:** Browser timezone sent on login, stored on user document
-- **Frontend:** `/ai-outreach` page with Pending/Accepted/Dismissed tabs, suggestion cards with accept/dismiss actions
-- **Navigation:** Accessible from Home page tile and Admin Tools section
-- **Key Files:** `services/ai_outreach_service.py`, `routers/ai_outreach.py`, hook in `routers/tags.py`
-- **DB Collection:** `ai_outreach` — stores suggestions with status tracking
+### AI-Powered Outreach + Sold Campaign Intelligence (Mar 2026) — LATEST
+**The system that makes every follow-up deliberate, meaningful, and personal.**
+
+1. **Relationship Intelligence Engine** (`services/relationship_intel.py`)
+   - Compiles ALL data: contact profile, engagement signals, conversation history, campaign messages, voice notes
+   - Calculates: relationship health (strong/warm/cooling/cold), engagement score, response pattern, milestones
+   - Outputs both AI context (for prompt engineering) and human summary (for salesperson visibility)
+
+2. **AI-Powered Campaign Messages** (upgraded `ai_campaigns.py`)
+   - `get_contact_context()` now uses the full Relationship Intelligence Engine
+   - Campaign message prompts include: engagement signals, previous messages (no repeats), relationship health, response patterns
+   - Prompt instructions adapt tone based on relationship health: strong = casual, cooling = warmer
+
+3. **Sold Tag Auto-Enrollment** (in `tags.py`)
+   - When "Sold" tag is applied: AI generates 2 personalized follow-up suggestions + auto-enrolls contact in Sold Follow-Up campaign
+   - Campaign auto-created from template if it doesn't exist (`ai_enabled: true`)
+   - Enrollment has `trigger_type: sold_tag, auto_enrolled: true`
+
+4. **Relationship Intelligence in Tasks** (upgraded `scheduler.py`)
+   - Campaign pending sends include `relationship_brief` field
+   - Tasks include `ai_generated` and `relationship_brief` for salesperson visibility
+
+5. **Timezone-Aware Scheduling**
+   - Browser timezone auto-detected on login (stored on user doc)
+   - AI outreach tasks scheduled for 9 AM next morning in user's timezone
+   - Campaign steps randomized between 10-12 PM user's local time
+
+6. **Frontend: AI Outreach Dashboard** (`/ai-outreach`)
+   - 4 tabs: Campaign (pending sends), AI Suggestions, Accepted, Dismissed
+   - `RelBriefCard` component shows: health badge, engagement score, last contact, response pattern, milestones
+   - Campaign tab: message preview, Copy, Mark as Sent, step context
+   - Tap to load full relationship intelligence per contact
 
 ### Engagement Intelligence System (Mar 2026)
-- Real-time "Customer Just Looked At Your Card" notifications
-- "Second Look" detection — flags return visits after 30+ minutes
-- 5-minute deduplication
-- Hot Leads Dashboard (`/admin/hot-leads`) with heat scoring
-- Notification integration
+- Real-time tracking, "Hot Leads" dashboard, notification integration
 
-### Leaderboard Visibility Toggle Fix (Mar 2026)
-- User-level opt-in/out works across all leaderboard tiers
+### Previous Features
+- Gamification & Leaderboards, Image Performance Overhaul, Unified Card System
+- Operations Manual, Carrier-Agnostic Messaging, Reporting System
+- White-Label Emails, Public REST API & Webhooks
+- Centralized & Trackable Actions, Personal SMS Fallback
 
-### Card System & Image Fixes (Mar 2026)
-- Unified card system, image migration tool
-- Card creation 520 fix, digital card text overlap fix, card preview shape fix
+---
 
-### Image Performance Overhaul (Feb 2026)
-- All public pages optimized, batch migration, lazy migration
+## Key API Endpoints
+- `POST /api/tags/{user_id}/assign` — Triggers AI outreach + auto campaign enrollment on "Sold"
+- `GET /api/ai-outreach/suggestions/{user_id}` — AI suggestion records
+- `POST /api/ai-outreach/suggestions/{id}/accept` — Accept → creates task
+- `GET /api/ai-outreach/relationship-brief/{user_id}/{contact_id}` — Full relationship intel
+- `GET /api/campaigns/{user_id}/pending-sends` — Campaign messages with relationship briefs
+- `POST /api/ai-campaigns/generate-message/{user_id}/{contact_id}` — AI message generation
 
-### Other Completed Features
-- Operations Manual v3.0 & PDF Export
-- Client Onboarding, Carrier-Agnostic Messaging
-- Reporting System, White-Label Emails
-- Public REST API & Webhooks
-- Gamification & Leaderboards (scoring, levels, badges, streaks)
+## Key DB Collections
+- `ai_outreach` — AI-generated suggestions with status tracking
+- `campaign_enrollments` — Campaign enrollment with trigger_type and auto_enrolled fields
+- `campaign_pending_sends` — Now includes relationship_brief, ai_generated, step_context
+- `engagement_signals` — Real-time customer interaction tracking
+
+---
 
 ## Prioritized Backlog
 
@@ -72,7 +95,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Google Places API Integration
 
 ### P2
-- Full Twilio, WhatsApp, Training Hub, Inventory Module, Code cleanup
+- Full Twilio, WhatsApp, Training Hub, Inventory Module
 - Delete legacy `birthday_cards.py`
 
 ## Known Issues
