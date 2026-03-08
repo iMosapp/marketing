@@ -481,8 +481,8 @@ const getS = (colors: any) => StyleSheet.create({
   // Preview
   previewCard: { backgroundColor: '#1A1A1A', borderRadius: 20, padding: 30, width: '100%', maxWidth: 380, alignItems: 'center', marginTop: 20, borderWidth: 1, borderColor: colors.surface },
   previewHeadline: { fontSize: 32, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
-  previewPhotoRing: { borderWidth: 4, borderRadius: 80, padding: 4, marginBottom: 16 },
-  previewPhoto: { width: 140, height: 140, borderRadius: 70 },
+  previewPhotoRing: { borderWidth: 4, borderRadius: 20, padding: 4, marginBottom: 16 },
+  previewPhoto: { width: 140, height: 140, borderRadius: 16 },
   previewName: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 12, textAlign: 'center' },
   previewMessage: { fontSize: 15, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 22, marginBottom: 12 },
   previewCustomBox: { borderLeftWidth: 3, paddingLeft: 14, paddingVertical: 6, width: '100%', marginBottom: 16 },
