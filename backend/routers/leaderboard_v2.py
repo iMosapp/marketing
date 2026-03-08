@@ -181,19 +181,22 @@ async def _get_streak(user_id: str) -> int:
 
 def _rank_users(user_docs: list, scores: dict, category: str = "total") -> list:
     """Rank users by a category score, assign badges."""
+    from utils.image_urls import resolve_user_photo
     ranked = []
     for u in user_docs:
         uid = str(u["_id"])
         user_scores = scores.get(uid, {cat: 0 for cat in CATEGORIES})
         user_scores.setdefault("total", sum(v for k, v in user_scores.items() if k != "total"))
         sort_val = user_scores.get(category, user_scores.get("total", 0))
+        visible = u.get("settings", {}).get("leaderboard_visible", True)
         ranked.append({
             "user_id": uid,
             "name": u.get("name", "Unknown"),
             "role": u.get("role", ""),
-            "photo": u.get("photo_thumbnail") or u.get("photo_url"),
+            "photo": resolve_user_photo(u),
             "scores": {k: v for k, v in user_scores.items()},
             "sort_score": sort_val,
+            "visible": visible,
         })
     ranked.sort(key=lambda x: x["sort_score"], reverse=True)
     for i, entry in enumerate(ranked):
@@ -237,6 +240,13 @@ async def store_leaderboard(
     date_filter = _build_date_filter_v2(period, month, year)
     scores = await _aggregate_user_scores(user_ids, date_filter)
     ranked = _rank_users(users, scores, category)
+
+    # Filter out users who opted out (but always show the requesting user)
+    ranked = [e for e in ranked if e["user_id"] == user_id or e.get("visible", True)]
+    # Re-rank after filtering
+    for i, e in enumerate(ranked):
+        e["rank"] = i + 1
+        e["badge"] = BADGE_THRESHOLDS.get(i + 1)
 
     # Your stats
     your_scores = scores.get(user_id, {cat: 0 for cat in CATEGORIES})
@@ -388,6 +398,13 @@ async def global_leaderboard(
     date_filter = _build_date_filter_v2(period, month, year)
     scores = await _aggregate_user_scores(user_ids, date_filter)
     ranked = _rank_users(users, scores, category)
+
+    # Filter out users who opted out (but always show the requesting user)
+    ranked = [e for e in ranked if e["user_id"] == user_id or e.get("visible", True)]
+    # Re-rank after filtering
+    for i, e in enumerate(ranked):
+        e["rank"] = i + 1
+        e["badge"] = BADGE_THRESHOLDS.get(i + 1)
 
     # Anonymize — only show initials and level
     for entry in ranked:

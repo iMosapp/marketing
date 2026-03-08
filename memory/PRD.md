@@ -25,23 +25,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - If `photo_path` exists → serve `/api/images/{photo_path}` (instant)
 - If not → lazy-migrate on first access → set photo_path → redirect
 
-### Centralized resolvers (`utils/image_urls.py`):
-- `resolve_user_photo(user)` — profile photos
-- `resolve_store_logo(store)` — store logos
-- `resolve_card_photo(card)` — congrats/birthday card photos
-- `resolve_contact_photo(contact)` — contact avatars
-- `resolve_feedback_photo(feedback)` — review photos
+### Image Upload on Production:
+- All image uploads MUST use `asyncio.to_thread()` to run synchronous upload code in a thread pool
+- This prevents event loop blocking that causes 520 proxy timeouts
+- Use `_sync_upload_bytes()` helper in congrats_cards.py as a reference pattern
+- Migration endpoint processes 1 image per call with gc.collect() after each
 
 ### NEVER DO:
 - Store raw base64 as photo_url (use `upload_image()`)
 - Return base64 in API responses (use resolvers)
 - Use `user.get("photo_url")` directly in responses — always use `resolve_user_photo(user)`
-- Use `store.get("logo_url")` directly — always use `resolve_store_logo(store)`
 - Use duplicate MongoDB keys: `{"$ne": None, "$ne": ""}` — use `{"$nin": [None, ""]}`
-
-### Migration:
-- `POST /api/images/migrate-all-base64` — batch migrates + backfills (super admin, safe to re-run)
-- Admin Dashboard → Internal Administration → "Migrate All Images" button (super admin only)
 
 ---
 
@@ -49,50 +43,62 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 **ALL card types (congrats, birthday, anniversary, thankyou, welcome, holiday) MUST use `congrats_cards.py`.**
 
-### Architecture:
-- `congrats_cards.py` is the SINGLE router for all card types
 - `auto_create_card(user_id, contact_id, card_type="birthday")` creates cards in `congrats_cards` collection
 - GET endpoints check `congrats_cards` first, then fall back to legacy `birthday_cards` collection
 - `birthday_cards.py` is LEGACY — its router is NOT registered in `server.py`
-- Scheduler, date_triggers, and tags all import from `congrats_cards.auto_create_card`
-
-### NEVER DO:
-- Import from `birthday_cards.py` — always use `congrats_cards.auto_create_card`
-- Create new cards in the `birthday_cards` collection
-- Re-register the `birthday_cards.router` in `server.py`
 
 ---
 
 ## What's Been Implemented
 
+### Leaderboard Visibility Toggle Fix (Mar 2026)
+- Toggle now respects user-level `settings.leaderboard_visible` across all tiers
+- Opted-out users hidden from others but can see their own rank
+- Re-ranking after filtering (no gaps)
+- Profile photos use optimized WebP pipeline
+
+### Card Preview Photo Shape Fix (Mar 2026)
+- Preview now uses rounded square (borderRadius: 20/16) to match delivered card
+
+### Digital Card Text Overlap Fix (Mar 2026)
+- Removed "Tap corner for QR code" text that overlapped social icons
+- Tightened photo/spacing to fit all content cleanly
+
+### Card Creation 520 Fix (Mar 2026)
+- Image upload in congrats card creation now uses asyncio.to_thread
+- Prevents event loop blocking on production
+
+### Image Migration Tool (Mar 2026)
+- `/api/images/migrate-now` — processes 1 image per call via thread pool
+- `/api/images/migrate-check` — instant count of remaining images
+- Skips oversized images (>3MB) and marks failed ones to prevent retry crashes
+- Admin Dashboard button loops automatically
+
 ### Unified Card System (Mar 2026)
-- Consolidated birthday_cards into congrats_cards as single unified system
-- All card types: congrats, birthday, anniversary, thankyou, welcome, holiday
-- Backward-compatible: old birthday cards still accessible via fallback queries
+- Consolidated birthday_cards into congrats_cards
 - All auto-creation triggers updated (scheduler, date_triggers, tags)
-- Frontend birthday page uses unified /api/congrats/card/{cardId} endpoint
 
-### Image Migration Admin Button (Mar 2026)
-- Super admin "Migrate All Images" button in Admin Dashboard → Internal Administration
-- Calls POST /api/images/migrate-all-base64 with loading/success feedback
+### Image Performance Overhaul (Feb 2026)
+- All public pages optimized (Showcase, Cards, Digital Card, etc.)
+- Batch migration endpoint, lazy migration, $nin bug fixed
 
-### Image Performance — Complete Platform Overhaul (Feb 2026)
-- Showcase, Digital Card, Congrats/Birthday Card, Landing Page, Profile, Contact Gallery
-- Batch migration endpoint, lazy migration, shared helper, $nin bug fixed
-
-### Operations Manual v3.0 & PDF Export — COMPLETE
-### Streamlined Client Onboarding — COMPLETE
-### Admin Cleanup — Onboarding removed from admin areas
-### Carrier-Agnostic Messaging — Personal SMS fallback
-### Comprehensive Reporting System — Activity metrics with email delivery
-### White-Label Branded Emails — Dynamic HTML templates
+### Other Completed Features
+- Operations Manual v3.0 & PDF Export
+- Streamlined Client Onboarding
+- Carrier-Agnostic Messaging (Personal SMS fallback)
+- Comprehensive Reporting System
+- White-Label Branded Emails
+- Public REST API & Webhook System
 
 ## Prioritized Backlog
 
 ### P1
-- Google Places API (when key available), Permission Roles/Templates
-- AI-Powered Outreach, Auth refactor (bcrypt), Push Notifications
-- Gamification & Leaderboards, Voice Help Assistant
+- AI-Powered Outreach (auto-suggest on `sold` tag)
+- Permission Roles/Templates
+- Auth refactor (bcrypt)
+- Push Notifications
+- Voice Help Assistant
+- Google Places API (when key available)
 
 ### P2
 - Full Twilio, WhatsApp, Training Hub, Inventory Module, Code cleanup
