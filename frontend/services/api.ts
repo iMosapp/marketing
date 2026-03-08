@@ -880,5 +880,10 @@ export const permissionTemplatesAPI = {
     });
     return response.data;
   },
+
+  getAuditLog: async (limit: number = 50) => {
+    const response = await api.get(`/permission-templates/audit-log?limit=${limit}`);
+    return response.data;
+  },
 };
 

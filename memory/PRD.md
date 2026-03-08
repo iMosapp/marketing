@@ -77,6 +77,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - Fixed: SMS sent, emails sent, calls placed, cards shared, and reviews sent were NOT counted in `total_today` / `completed_today`
    - Root cause: Summary only counted items from `tasks` collection, not `contact_events` activity
    - Fix: Activity touchpoints (SMS, email, calls, cards, reviews) now add to both `total_today` and `completed_today`
+5. **Template Audit Log** (`permission_audit_log` collection)
+   - Tracks all permission template actions: created, edited, deleted, applied
+   - Logs actor name, template name, target user (for applies), role changes, changed fields (for edits)
+   - `GET /api/permission-templates/audit-log` endpoint returns recent entries
+   - Frontend: "Activity Log" button on Permission Templates page opens a modal with timestamped entries
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard

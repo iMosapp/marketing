@@ -135,6 +135,11 @@ export default function PermissionTemplatesPage() {
   // Detail view
   const [viewTemplate, setViewTemplate] = useState<Template | null>(null);
 
+  // Audit log
+  const [auditLog, setAuditLog] = useState<any[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [showAuditLog, setShowAuditLog] = useState(false);
+
   const loadTemplates = useCallback(async () => {
     try {
       setLoading(true);
@@ -161,6 +166,18 @@ export default function PermissionTemplatesPage() {
       console.error('Failed to load users:', err);
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const loadAuditLog = async () => {
+    try {
+      setLoadingAudit(true);
+      const data = await permissionTemplatesAPI.getAuditLog(50);
+      setAuditLog(data.entries || []);
+    } catch (err) {
+      console.error('Failed to load audit log:', err);
+    } finally {
+      setLoadingAudit(false);
     }
   };
 
@@ -530,6 +547,92 @@ export default function PermissionTemplatesPage() {
     </WebModal>
   );
 
+  // ─── Audit Log Modal ───
+  const getActionIcon = (action: string): { icon: string; color: string } => {
+    switch (action) {
+      case 'applied': return { icon: 'person-add', color: '#34C759' };
+      case 'created': return { icon: 'add-circle', color: '#007AFF' };
+      case 'edited': return { icon: 'create', color: '#FF9500' };
+      case 'deleted': return { icon: 'trash', color: '#FF3B30' };
+      default: return { icon: 'ellipse', color: '#8E8E93' };
+    }
+  };
+
+  const formatTimeAgo = (ts: string) => {
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(ts).toLocaleDateString();
+  };
+
+  const getActionDescription = (entry: any): string => {
+    const { action, actor_name, template_name, details } = entry;
+    const actor = actor_name || 'Someone';
+    switch (action) {
+      case 'applied':
+        return `${actor} applied "${template_name}" to ${details?.target_user_name || 'a user'}${details?.previous_role && details?.new_role ? ` (${details.previous_role} → ${details.new_role})` : ''}`;
+      case 'created':
+        return `${actor} created template "${template_name}"`;
+      case 'edited':
+        return `${actor} edited "${template_name}"${details?.fields_changed?.length ? ` (${details.fields_changed.join(', ')})` : ''}`;
+      case 'deleted':
+        return `${actor} deleted template "${template_name}"`;
+      default:
+        return `${actor} performed ${action} on "${template_name}"`;
+    }
+  };
+
+  const renderAuditLog = () => (
+    <WebModal visible={showAuditLog} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={s.modal}>
+        <View style={s.modalHeader}>
+          <TouchableOpacity onPress={() => setShowAuditLog(false)} data-testid="audit-close-btn">
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={s.modalTitle}>Activity Log</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        {loadingAudit ? (
+          <View style={s.centerLoader}><ActivityIndicator size="large" color="#C9A962" /></View>
+        ) : auditLog.length === 0 ? (
+          <View style={s.centerLoader}>
+            <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
+            <Text style={[s.emptyText, { marginTop: 12 }]}>No activity yet</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 4, paddingHorizontal: 40 }}>
+              Activity will appear here when templates are created, edited, deleted, or applied to users.
+            </Text>
+          </View>
+        ) : (
+          <ScrollView style={s.modalBody}>
+            {auditLog.map((entry, idx) => {
+              const ai = getActionIcon(entry.action);
+              return (
+                <View key={idx} style={s.auditEntry} data-testid={`audit-entry-${idx}`}>
+                  <View style={[s.auditIconWrap, { backgroundColor: ai.color + '18' }]}>
+                    <Ionicons name={ai.icon as any} size={16} color={ai.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.auditDesc}>{getActionDescription(entry)}</Text>
+                    <Text style={s.auditTime}>{formatTimeAgo(entry.timestamp)}</Text>
+                  </View>
+                  <View style={[s.auditActionBadge, { backgroundColor: ai.color + '18' }]}>
+                    <Text style={[s.auditActionText, { color: ai.color }]}>{entry.action}</Text>
+                  </View>
+                </View>
+              );
+            })}
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        )}
+      </SafeAreaView>
+    </WebModal>
+  );
+
   // ─── Main List ───
   if (loading) {
     return (
@@ -636,12 +739,25 @@ export default function PermissionTemplatesPage() {
             );
           })
         )}
+
+        {/* Activity Log Button */}
+        <TouchableOpacity
+          style={s.auditLogBtn}
+          onPress={() => { setShowAuditLog(true); loadAuditLog(); }}
+          data-testid="audit-log-btn"
+        >
+          <Ionicons name="time-outline" size={20} color="#C9A962" />
+          <Text style={s.auditLogBtnText}>Activity Log</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
       {renderEditor()}
       {renderDetailView()}
       {renderApplyModal()}
+      {renderAuditLog()}
     </SafeAreaView>
   );
 }
@@ -750,4 +866,23 @@ const getStyles = (colors: any) => StyleSheet.create({
   userEmail: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   userCurrentTemplate: { fontSize: 11, color: '#C9A962', marginTop: 2, fontStyle: 'italic' },
   emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontSize: 15 },
+
+  // Audit log button
+  auditLogBtn: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
+    borderRadius: 12, padding: 14, marginTop: 24, gap: 10,
+    borderWidth: 1, borderColor: 'rgba(201,169,98,0.2)',
+  },
+  auditLogBtnText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+
+  // Audit log entries
+  auditEntry: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
+    borderRadius: 12, padding: 12, marginBottom: 8, gap: 10,
+  },
+  auditIconWrap: { width: 34, height: 34, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  auditDesc: { fontSize: 13, color: colors.text, lineHeight: 18 },
+  auditTime: { fontSize: 11, color: colors.textSecondary, marginTop: 3 },
+  auditActionBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  auditActionText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
 });

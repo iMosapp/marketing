@@ -14,6 +14,23 @@ from permissions import DEFAULT_PERMISSIONS, merge_permissions
 router = APIRouter(prefix="/permission-templates", tags=["Permission Templates"])
 logger = logging.getLogger(__name__)
 
+
+async def _log_audit(action: str, actor_id: str, actor_name: str, template_name: str, details: dict | None = None):
+    """Write an entry to permission_audit_log."""
+    db = get_db()
+    entry = {
+        "action": action,
+        "actor_id": actor_id,
+        "actor_name": actor_name,
+        "template_name": template_name,
+        "details": details or {},
+        "timestamp": datetime.now(timezone.utc),
+    }
+    try:
+        await db.permission_audit_log.insert_one(entry)
+    except Exception as e:
+        logger.warning(f"Failed to write audit log: {e}")
+
 # Pre-built templates
 PREBUILT_TEMPLATES = [
     {
@@ -102,6 +119,22 @@ async def list_templates(store_id: str = None, org_id: str = None):
     return {"templates": templates}
 
 
+@router.get("/audit-log")
+async def get_audit_log(limit: int = 50):
+    """Get recent permission template audit log entries."""
+    db = get_db()
+    entries = await db.permission_audit_log.find(
+        {}, {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+
+    for e in entries:
+        ts = e.get("timestamp")
+        if ts and hasattr(ts, "isoformat"):
+            e["timestamp"] = ts.isoformat() + "Z"
+
+    return {"entries": entries}
+
+
 @router.get("/{template_id}")
 async def get_template(template_id: str):
     """Get a specific template by ID."""
@@ -161,6 +194,9 @@ async def create_template(data: dict, x_user_id: str = Header(None, alias="X-Use
     del template["updated_at"]
 
     logger.info(f"Permission template created: {name} by {x_user_id}")
+    await _log_audit("created", x_user_id, requesting.get("name", ""), name, {
+        "template_id": template["id"], "role": template["role"],
+    })
     return template
 
 
@@ -188,6 +224,9 @@ async def update_template(template_id: str, data: dict, x_user_id: str = Header(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Template not found")
 
+    await _log_audit("edited", x_user_id, requesting.get("name", ""), data.get("name", template_id), {
+        "template_id": template_id, "fields_changed": [f for f in ("name", "description", "role", "icon", "color", "permissions") if f in data],
+    })
     return {"message": "Template updated"}
 
 
@@ -203,10 +242,17 @@ async def delete_template(template_id: str, x_user_id: str = Header(None, alias=
         raise HTTPException(status_code=403, detail="Only admins can delete templates")
 
     db = get_db()
+    # Fetch template name before deleting
+    doc = await db.permission_templates.find_one({"_id": ObjectId(template_id)}, {"name": 1})
+    tpl_name = doc.get("name", template_id) if doc else template_id
+
     result = await db.permission_templates.delete_one({"_id": ObjectId(template_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Template not found")
 
+    await _log_audit("deleted", x_user_id, requesting.get("name", ""), tpl_name, {
+        "template_id": template_id,
+    })
     return {"message": "Template deleted"}
 
 
@@ -256,6 +302,13 @@ async def apply_template(template_id: str, user_id: str, x_user_id: str = Header
     )
 
     logger.info(f"Permission template '{template.get('name')}' applied to user {user_id} by {x_user_id}")
+    await _log_audit("applied", x_user_id, requesting.get("name", ""), template.get("name", ""), {
+        "template_id": template_id,
+        "target_user_id": user_id,
+        "target_user_name": target.get("name", ""),
+        "previous_role": target.get("role", ""),
+        "new_role": new_role,
+    })
     return {
         "message": f"Template '{template.get('name')}' applied",
         "user_id": user_id,
