@@ -195,74 +195,118 @@ async def cleanup_raw_image(path: str):
 
 
 @router.post("/migrate-all-base64")
-async def migrate_all_base64_images(
-    background_tasks: BackgroundTasks,
-    body: dict = None,
-    x_user_id: str = Header(None, alias="X-User-ID"),
-):
-    """
-    Batch migrate ALL base64 images to optimized WebP.
-    Runs as a background task — returns immediately with status URL.
-    Super admin only. Safe to run multiple times.
-    Accepts user_id from body OR X-User-ID header.
-    """
+async def migrate_all_base64_images(request: Request, background_tasks: BackgroundTasks):
+    """Background migration. Super admin only."""
     db = get_db()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
 
-    # Accept user_id from body or header
-    uid = None
-    if body and body.get("user_id"):
-        uid = body["user_id"]
-    elif x_user_id:
-        uid = x_user_id
-
+    uid = body.get("user_id") or request.headers.get("x-user-id")
     if not uid:
-        raise HTTPException(status_code=400, detail="user_id required (in body or X-User-ID header)")
+        return {"status": "error", "detail": "Send JSON: {\"user_id\": \"your_id\"}"}
 
     from bson import ObjectId as ObjId
     try:
         user = await db.users.find_one({"_id": ObjId(uid)}, {"role": 1})
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid user_id format")
-
+        return {"status": "error", "detail": "Invalid user_id"}
     if not user or user.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Super admin only")
+        return {"status": "error", "detail": "Super admin only"}
 
-    # Check if a migration is already running (with 5-minute staleness check)
     existing = await db.migration_jobs.find_one({"status": "running"})
     if existing:
         started = existing.get("started_at")
         age_minutes = (datetime.now(timezone.utc) - started).total_seconds() / 60 if started else 999
         if age_minutes < 5:
-            return {
-                "status": "already_running",
-                "message": "A migration is already in progress. Check status for updates.",
-            }
-        else:
-            await db.migration_jobs.update_one(
-                {"_id": existing["_id"]},
-                {"$set": {"status": "failed", "completed_at": datetime.now(timezone.utc),
-                          "result": {"error": f"Timed out after {age_minutes:.0f} minutes"}}},
-            )
-            logger.warning(f"[Migration] Marked stale job as failed (age: {age_minutes:.0f}m)")
+            return {"status": "already_running", "message": "Migration already in progress."}
+        await db.migration_jobs.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {"status": "failed", "completed_at": datetime.now(timezone.utc)}},
+        )
 
     job_doc = {
-        "type": "image_migration",
-        "status": "running",
-        "started_at": datetime.now(timezone.utc),
-        "started_by": uid,
-        "progress": {},
-        "result": None,
+        "type": "image_migration", "status": "running",
+        "started_at": datetime.now(timezone.utc), "started_by": uid,
+        "progress": {}, "result": None,
     }
     insert_result = await db.migration_jobs.insert_one(job_doc)
     job_id = str(insert_result.inserted_id)
-
     background_tasks.add_task(_run_migration, job_id)
+    return {"status": "started", "job_id": job_id}
 
-    return {
-        "status": "started",
-        "job_id": job_id,
-        "message": "Migration started in background. Check status at GET /api/images/migrate-status.",
-    }
+
+@router.post("/migrate-now")
+async def migrate_now(request: Request):
+    """
+    Simple synchronous migration — no background tasks needed.
+    Fallback if /migrate-all-base64 doesn't work on your server.
+    """
+    db = get_db()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    uid = body.get("user_id")
+    if not uid:
+        return {"status": "error", "detail": "Send JSON body with user_id"}
+
+    from bson import ObjectId as ObjId
+    try:
+        user = await db.users.find_one({"_id": ObjId(uid)}, {"role": 1})
+    except Exception:
+        return {"status": "error", "detail": "Invalid user_id"}
+    if not user or user.get("role") != "super_admin":
+        return {"status": "error", "detail": "Super admin only"}
+
+    import time
+    stats = {"users": 0, "stores": 0, "contacts": 0, "congrats": 0, "errors": 0}
+    start = time.time()
+
+    try:
+        for u in await db.users.find({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo_url": 1}).to_list(200):
+            try:
+                r = await upload_image(u["photo_url"], prefix="profiles", entity_id=str(u["_id"]))
+                if r:
+                    await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"], "photo_url": f"/api/images/{r['original_path']}"}})
+                    stats["users"] += 1
+            except Exception:
+                stats["errors"] += 1
+
+        for s in await db.stores.find({"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}}, {"_id": 1, "logo_url": 1}).to_list(200):
+            try:
+                r = await upload_image(s["logo_url"], prefix="logos", entity_id=str(s["_id"]))
+                if r:
+                    await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": r["original_path"], "logo_thumb_path": r["thumbnail_path"], "logo_avatar_path": r["avatar_path"]}})
+                    stats["stores"] += 1
+            except Exception:
+                stats["errors"] += 1
+
+        for c in await db.contacts.find({"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo": 1}).to_list(500):
+            try:
+                r = await upload_image(c["photo"], prefix="contacts", entity_id=str(c["_id"]))
+                if r:
+                    await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"]}})
+                    stats["contacts"] += 1
+            except Exception:
+                stats["errors"] += 1
+
+        for card in await db.congrats_cards.find({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "card_id": 1, "customer_photo": 1}).to_list(500):
+            try:
+                cid = card.get("card_id", str(card["_id"]))
+                r = await upload_image(card["customer_photo"], prefix="congrats", entity_id=cid)
+                if r:
+                    await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"]}})
+                    stats["congrats"] += 1
+            except Exception:
+                stats["errors"] += 1
+
+        total = stats["users"] + stats["stores"] + stats["contacts"] + stats["congrats"]
+        return {"status": "completed", "migrated": stats, "total": total, "seconds": round(time.time() - start, 1)}
+    except Exception as e:
+        return {"status": "error", "detail": str(e), "partial": stats}
 
 
 async def _run_migration(job_id: str):

@@ -253,48 +253,19 @@ export default function AdminDashboard() {
     setMigrating(true);
     setMigrateResult(null);
     try {
-      const res = await api.post('/images/migrate-all-base64', { user_id: user?._id });
+      // Use the simple synchronous endpoint (more reliable across hosts)
+      const res = await api.post('/images/migrate-now', { user_id: user?._id });
       const d = res.data;
-      if (d.status === 'started' || d.status === 'already_running') {
-        setMigrateResult('Migration running...');
-        let attempts = 0;
-        const maxAttempts = 40; // 2 minutes max polling
-        const poll = setInterval(async () => {
-          attempts++;
-          try {
-            const statusRes = await api.get('/images/migrate-status');
-            const s = statusRes.data;
-            if (s.status === 'completed') {
-              clearInterval(poll);
-              const r = s.result || {};
-              setMigrateResult(`Done! ${r.total_migrated || 0} migrated in ${r.elapsed_seconds || 0}s`);
-              setMigrating(false);
-            } else if (s.status === 'failed') {
-              clearInterval(poll);
-              setMigrateResult(`Failed: ${s.result?.error || 'Unknown error'}`);
-              setMigrating(false);
-            } else if (attempts >= maxAttempts) {
-              clearInterval(poll);
-              setMigrateResult('Timed out waiting. Tap again to retry.');
-              setMigrating(false);
-            } else {
-              const p = s.progress || {};
-              setMigrateResult(`Running... ${p.total || 0} done (${p.elapsed_seconds || 0}s)`);
-            }
-          } catch {
-            if (attempts >= maxAttempts) {
-              clearInterval(poll);
-              setMigrateResult('Lost connection. Tap again to check.');
-              setMigrating(false);
-            }
-          }
-        }, 3000);
+      if (d.status === 'completed') {
+        setMigrateResult(`Done! ${d.total || 0} images migrated in ${d.seconds || 0}s`);
+      } else if (d.status === 'error') {
+        setMigrateResult(`Error: ${d.detail}`);
       } else {
-        setMigrateResult('Migration complete!');
-        setMigrating(false);
+        setMigrateResult(JSON.stringify(d));
       }
     } catch (e: any) {
       setMigrateResult(`Error: ${e.response?.data?.detail || e.message}`);
+    } finally {
       setMigrating(false);
     }
   };
