@@ -183,6 +183,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes
+- **OG Image / iMessage Link Preview Fix:** Created white-background OG image (`og-image.png`) and added `/api/s/og-image/{user_id}` endpoint that composites store logos onto white. All link previews now guaranteed to have WHITE background instead of showing transparency artifacts (red/brown tint)
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`

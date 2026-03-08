@@ -16,10 +16,10 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Open Graph / iMessage Link Previews */}
         <meta property="og:title" content="i'M On Social" />
         <meta property="og:description" content="Your all-in-one relationship management system" />
-        <meta property="og:image" content="/logo512.png" />
+        <meta property="og:image" content="/og-image.png" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:image" content="/logo512.png" />
+        <meta name="twitter:image" content="/og-image.png" />
         {/* PWA  - must be in static HTML for iOS standalone mode */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
