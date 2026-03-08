@@ -90,6 +90,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - Team activity breakdown per rep (calls, texts, emails, cards)
    - Lead reassignment modal with team member search (org-owned leads only)
    - 30-second auto-refresh, period filters (Today, 48h, 7 Days)
+7. **CRITICAL: Full Touchpoint Tracking Audit & Fix** (Mar 8, 2026)
+   - **BUG 1 FIXED:** Twilio SMS sends created NO contact_events — `sms_sent` was never logged. Now logs `sms_sent`/`sms_failed` in BOTH message endpoints.
+   - **BUG 2 FIXED:** `cards_sent` counter matched `"congrats"` broadly, catching customer views (e.g., `congrats_card_viewed`). Now only matches `*_card_sent` and `*card_shared`.
+   - **BUG 3 FIXED:** Event type mismatch: `resolve_event_type()` returns `personal_sms` but summary only counted `sms_personal`. Now counts BOTH.
+   - **BUG 4 FIXED:** Failed email/SMS attempts (`email_failed`, `sms_failed`) were not counted as activity touchpoints. Now included.
+   - **Consistency:** Fixed leaderboard and team engagement endpoints to match the same counting logic.
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard
