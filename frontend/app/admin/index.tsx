@@ -494,6 +494,14 @@ export default function AdminDashboard() {
     if (isSuperAdmin || isOrgAdmin || isStoreManager) {
       const toolItems: MenuItem[] = [
         {
+          icon: 'sparkles',
+          title: 'AI Follow-ups',
+          subtitle: 'AI-powered outreach suggestions',
+          onPress: () => router.push('/ai-outreach'),
+          color: '#AF52DE',
+          badge: 0,  // Will be updated with pending count
+        },
+        {
           icon: 'flame',
           title: 'Hot Leads',
           subtitle: 'Customers engaging right now',

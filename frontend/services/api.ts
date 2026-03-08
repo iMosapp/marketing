@@ -80,7 +80,12 @@ export const authAPI = {
   },
 
   login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
+    // Auto-detect user timezone for scheduling features
+    let timezone: string | undefined;
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {}
+    const response = await api.post('/auth/login', { email, password, timezone });
     return response.data;
   },
 

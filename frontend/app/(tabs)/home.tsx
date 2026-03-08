@@ -718,6 +718,23 @@ export default function HomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={18} color="#48484A" />
           </TouchableOpacity>
+
+          {/* AI Follow-ups tile */}
+          <TouchableOpacity
+            onPress={() => router.push('/ai-outreach' as any)}
+            activeOpacity={0.85}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border, marginTop: 12 }}
+            data-testid="ai-outreach-tile"
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(175,82,222,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="sparkles-outline" size={20} color="#AF52DE" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>AI Follow-ups</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Smart outreach when you close deals</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#48484A" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

@@ -399,6 +399,19 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
         except Exception as e:
             logger.warning(f"Birthday card auto-create failed: {e}")
 
+    # Trigger AI-powered outreach when "sold" tag is applied
+    if tag_name.lower() in ("sold", "sold!"):
+        import asyncio
+        try:
+            from services.ai_outreach_service import create_outreach_record
+            for cid in contact_ids:
+                # Get contact name for the record
+                contact = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1})
+                cname = f"{(contact or {}).get('first_name', '')} {(contact or {}).get('last_name', '')}".strip() or "Customer"
+                asyncio.create_task(create_outreach_record(user_id, cid, cname))
+        except Exception as e:
+            logger.warning(f"AI outreach trigger failed: {e}")
+
     return {"message": f"Tag assigned to {result.modified_count} contacts"}
 
 

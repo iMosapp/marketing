@@ -323,6 +323,18 @@ async def login(credentials: dict):
     except Exception as e:
         logger.warning(f"Error resolving partner branding: {e}")
 
+    # Store user timezone if provided (auto-detected from browser)
+    client_timezone = credentials.get('timezone')
+    if client_timezone:
+        try:
+            await get_db().users.update_one(
+                {"_id": ObjectId(user['_id'])},
+                {"$set": {"timezone": client_timezone}}
+            )
+            user['timezone'] = client_timezone
+        except Exception as e:
+            logger.warning(f"Timezone update error: {e}")
+
     # Track login for lifecycle tagging
     try:
         from .user_lifecycle import on_user_login
