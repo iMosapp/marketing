@@ -309,10 +309,13 @@ async def migrate_now(request: Request):
             break
         try:
             r = await asyncio.to_thread(lambda doc=u: _sync_upload(doc["photo_url"], "profiles", str(doc["_id"])))
-            if r:
+            if r and r.get("skipped"):
+                await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": "skipped_too_large"}})
+            elif r:
                 await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"], "photo_url": f"/api/images/{r['original_path']}"}})
                 processed += 1
         except Exception as e:
+            await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": f"error:{str(e)[:50]}"}})
             errors.append(f"user {u['_id']}: {str(e)[:80]}")
 
     # Process stores
@@ -321,10 +324,13 @@ async def migrate_now(request: Request):
             break
         try:
             r = await asyncio.to_thread(lambda doc=s: _sync_upload(doc["logo_url"], "logos", str(doc["_id"])))
-            if r:
+            if r and r.get("skipped"):
+                await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": "skipped_too_large"}})
+            elif r:
                 await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": r["original_path"], "logo_thumb_path": r["thumbnail_path"], "logo_avatar_path": r["avatar_path"]}})
                 processed += 1
         except Exception as e:
+            await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": f"error:{str(e)[:50]}"}})
             errors.append(f"store {s['_id']}: {str(e)[:80]}")
 
     # Process contacts
@@ -333,10 +339,13 @@ async def migrate_now(request: Request):
             break
         try:
             r = await asyncio.to_thread(lambda doc=c: _sync_upload(doc["photo"], "contacts", str(doc["_id"])))
-            if r:
+            if r and r.get("skipped"):
+                await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": "skipped_too_large"}})
+            elif r:
                 await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"]}})
                 processed += 1
         except Exception as e:
+            await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": f"error:{str(e)[:50]}"}})
             errors.append(f"contact {c['_id']}: {str(e)[:80]}")
 
     # Process congrats cards — load ONE AT A TIME (base64 can be huge)
@@ -346,10 +355,16 @@ async def migrate_now(request: Request):
         try:
             cid = card.get("card_id", str(card["_id"]))
             r = await asyncio.to_thread(lambda doc=card, cid=cid: _sync_upload(doc["customer_photo"], "congrats", cid))
-            if r:
+            if r and r.get("skipped"):
+                # Mark as skipped so it's not retried
+                await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": "skipped_too_large"}})
+                errors.append(f"card {cid}: skipped (image too large)")
+            elif r:
                 await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"]}})
                 processed += 1
         except Exception as e:
+            # Mark as error so it's not retried and doesn't crash server again
+            await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": f"error:{str(e)[:50]}"}})
             errors.append(f"card {card.get('card_id', card['_id'])}: {str(e)[:80]}")
 
     remaining = await db.congrats_cards.count_documents({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}})
@@ -363,6 +378,12 @@ def _sync_upload(image_data: str, prefix: str, entity_id: str):
         return None
     try:
         image_bytes, content_type = decode_base64_image(image_data)
+        
+        # Safety: skip images > 3MB decoded — they'll OOM the server
+        if len(image_bytes) > 3 * 1024 * 1024:
+            logger.warning(f"[Migrate] Skipping oversized image ({len(image_bytes)//1024}KB) for {prefix}/{entity_id}")
+            return {"skipped": True, "reason": "too_large"}
+        
         file_id = str(uuid.uuid4())
         base_path = f"{APP_NAME}/{prefix}/{entity_id}"
 
@@ -376,9 +397,8 @@ def _sync_upload(image_data: str, prefix: str, entity_id: str):
 
         avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
         avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
-        put_object(avatar_path, avatar_data, avatar_ct)
+        put_object(avatar_path, avatar_data, avatar_ext)
 
-        # Free memory immediately
         del image_bytes, compressed_data, thumb_data, avatar_data
         gc.collect()
 
