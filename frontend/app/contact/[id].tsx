@@ -322,6 +322,7 @@ export default function ContactDetailScreen() {
     first_name: '', last_name: '', phone: '', email: '',
     photo: null as string | null, photo_thumbnail: null as string | null,
     notes: '', vehicle: '', tags: [] as string[],
+    occupation: '', employer: '',
     referred_by: null as string | null, referred_by_name: null as string | null,
     referral_notes: '', referral_count: 0,
     birthday: null as Date | null, anniversary: null as Date | null,
@@ -537,6 +538,7 @@ export default function ContactDetailScreen() {
         photo_thumbnail: data.photo_thumbnail || null,
         notes: data.notes || '', vehicle: data.vehicle || '',
         tags: data.tags || [],
+        occupation: data.occupation || '', employer: data.employer || '',
         referred_by: data.referred_by || null,
         referred_by_name: data.referred_by_name || null,
         referral_notes: data.referral_notes || '',
@@ -2384,6 +2386,12 @@ export default function ContactDetailScreen() {
                       <Text style={s.heroMetaText}>{[contact.address_city, contact.address_state].filter(Boolean).join(', ')}</Text>
                     </View>
                   ) : null}
+                  {(contact.occupation || contact.employer) ? (
+                    <View style={s.heroMetaItem}>
+                      <Ionicons name="briefcase-outline" size={11} color={colors.textTertiary} />
+                      <Text style={s.heroMetaText}>{[contact.occupation, contact.employer].filter(Boolean).join(' at ')}</Text>
+                    </View>
+                  ) : null}
                   {!isNewContact && (
                     <View style={s.heroMetaItem}>
                       <Ionicons name="time-outline" size={11} color={colors.textTertiary} />
@@ -2647,6 +2655,21 @@ export default function ContactDetailScreen() {
                       <Text style={s.inputLabel}>Vehicle</Text>
                       <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor={colors.textTertiary}
                         value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
+                    </View>
+                  </View>
+
+                  {/* Employment Section */}
+                  <View style={s.section}>
+                    <Text style={s.sectionHeader}>Employment</Text>
+                    <View style={s.inputGroup}>
+                      <Text style={s.inputLabel}>Job Title / Occupation</Text>
+                      <TextInput style={s.input} placeholder="e.g., Senior Manager" placeholderTextColor={colors.textTertiary}
+                        value={contact.occupation} onChangeText={t => setContact({ ...contact, occupation: t })} data-testid="input-occupation" />
+                    </View>
+                    <View style={s.inputGroup}>
+                      <Text style={s.inputLabel}>Employer / Company</Text>
+                      <TextInput style={s.input} placeholder="e.g., Goldman Sachs" placeholderTextColor={colors.textTertiary}
+                        value={contact.employer} onChangeText={t => setContact({ ...contact, employer: t })} data-testid="input-employer" />
                     </View>
                   </View>
 

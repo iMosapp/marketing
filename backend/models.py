@@ -240,6 +240,9 @@ class Contact(BaseModel):
     tags: List[str] = []
     notes: str = ""
     vehicle: Optional[str] = None
+    occupation: Optional[str] = None
+    employer: Optional[str] = None
+    personal_details: Dict[str, Any] = {}
     
     # Important dates
     birthday: Optional[datetime] = None
@@ -300,6 +303,8 @@ class ContactCreate(BaseModel):
     tags: List[str] = []
     notes: str = ""
     vehicle: Optional[str] = None
+    occupation: Optional[str] = None
+    employer: Optional[str] = None
     
     # Important dates
     birthday: Optional[datetime] = None

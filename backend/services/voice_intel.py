@@ -145,6 +145,16 @@ async def merge_personal_details(contact_id: str, new_details: dict):
         if not existing_vehicle:
             update_fields["vehicle"] = new_details["vehicle_purchased"]
 
+    if new_details.get("occupation"):
+        existing_occ = (contact or {}).get("occupation", "") or ""
+        if not existing_occ:
+            update_fields["occupation"] = new_details["occupation"]
+
+    if new_details.get("employer"):
+        existing_emp = (contact or {}).get("employer", "") or ""
+        if not existing_emp:
+            update_fields["employer"] = new_details["employer"]
+
     await db.contacts.update_one(
         {"_id": ObjectId(contact_id)},
         {"$set": update_fields}
