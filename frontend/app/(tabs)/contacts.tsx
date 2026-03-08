@@ -12,7 +12,6 @@ import {
   ScrollView,
   Platform,
   Linking,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,13 +43,7 @@ export default function ContactsScreen() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   
-  // Add Contact Modal state
-  const [showAddContactModal, setShowAddContactModal] = useState(false);
-  const [newContactFirstName, setNewContactFirstName] = useState('');
-  const [newContactLastName, setNewContactLastName] = useState('');
-  const [newContactPhone, setNewContactPhone] = useState('');
-  const [newContactEmail, setNewContactEmail] = useState('');
-  const [savingContact, setSavingContact] = useState(false);
+  // Add Contact navigation (unified with home page)
   
   // Selection & Delete state
   const [selectMode, setSelectMode] = useState(false);
@@ -189,60 +182,8 @@ export default function ContactsScreen() {
   };
   
   // Handle adding a new contact - create via API then navigate to thread
-  const handleAddNewContact = async () => {
-    if (!newContactPhone.trim()) {
-      showSimpleAlert('Phone Required', 'Please enter a phone number');
-      return;
-    }
-    
-    // Format phone number
-    let phone = newContactPhone.trim();
-    if (!phone.startsWith('+')) {
-      phone = '+1' + phone.replace(/\D/g, '');
-    }
-    
-    const firstName = newContactFirstName.trim() || phone;
-    const lastName = newContactLastName.trim();
-    
-    setSavingContact(true);
-    try {
-      await contactsAPI.create(user._id, {
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone,
-        email: newContactEmail.trim().toLowerCase() || undefined,
-      });
-      
-      setShowAddContactModal(false);
-      setNewContactFirstName('');
-      setNewContactLastName('');
-      setNewContactPhone('');
-      setNewContactEmail('');
-      
-      // Refresh contacts list
-      loadContacts();
-      
-      // Navigate to thread
-      router.push({
-        pathname: `/thread/${phone}`,
-        params: {
-          contact_name: `${firstName} ${lastName}`.trim(),
-          contact_phone: phone,
-        }
-      });
-    } catch (err: any) {
-      showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to save contact');
-    } finally {
-      setSavingContact(false);
-    }
-  };
-
-  const resetAddContactModal = () => {
-    setShowAddContactModal(false);
-    setNewContactFirstName('');
-    setNewContactLastName('');
-    setNewContactPhone('');
-    setNewContactEmail('');
+  const handleAddNewContact = () => {
+    router.push('/contact/new' as any);
   };
 
   // Toggle contact selection
@@ -494,9 +435,10 @@ export default function ContactsScreen() {
               <Ionicons name="download-outline" size={26} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
-              onPress={() => setShowAddContactModal(true)}
+              onPress={handleAddNewContact}
               accessibilityRole="button"
               accessibilityLabel="Add new contact"
+              data-testid="add-contact-btn"
             >
               <Ionicons name="add-circle" size={32} color="#007AFF" />
             </TouchableOpacity>
@@ -613,112 +555,6 @@ export default function ContactsScreen() {
         />
       )}
       
-      {/* Add Contact Modal */}
-      <Modal
-        visible={showAddContactModal}
-        transparent
-        animationType="fade"
-        onRequestClose={resetAddContactModal}
-      >
-        <View style={styles.addContactModalOverlay}>
-          <View style={[styles.addContactModalContent, { backgroundColor: colors.modalBg }]}>
-            <View style={styles.addContactModalHeader}>
-              <Text style={[styles.addContactModalTitle, { color: colors.text }]}>Add New Contact</Text>
-              <TouchableOpacity onPress={resetAddContactModal}>
-                <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={[styles.addContactModalSubtitle, { color: colors.textSecondary }]}>
-              Fill in their details while you're with them
-            </Text>
-            
-            <View style={{ gap: 10 }}>
-              <View style={styles.addContactNameRow}>
-                <View style={[styles.addContactInputContainer, { flex: 1, backgroundColor: colors.surface || colors.card }]}>
-                  <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
-                  <TextInput
-                    style={styles.addContactInput}
-                    placeholder="First name"
-                    placeholderTextColor="#6E6E73"
-                    value={newContactFirstName}
-                    onChangeText={setNewContactFirstName}
-                    autoCapitalize="words"
-                    autoFocus
-                    data-testid="new-contact-first-name-input"
-                  />
-                </View>
-                <View style={[styles.addContactInputContainer, { flex: 1 }]}>
-                  <TextInput
-                    style={styles.addContactInput}
-                    placeholder="Last name"
-                    placeholderTextColor="#6E6E73"
-                    value={newContactLastName}
-                    onChangeText={setNewContactLastName}
-                    autoCapitalize="words"
-                    data-testid="new-contact-last-name-input"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.addContactInputContainer}>
-                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
-                <TextInput
-                  style={styles.addContactInput}
-                  placeholder="Phone number"
-                  placeholderTextColor="#6E6E73"
-                  value={newContactPhone}
-                  onChangeText={setNewContactPhone}
-                  keyboardType="phone-pad"
-                  data-testid="new-contact-phone-input"
-                />
-              </View>
-
-              <View style={styles.addContactInputContainer}>
-                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
-                <TextInput
-                  style={styles.addContactInput}
-                  placeholder="Email (optional)"
-                  placeholderTextColor="#6E6E73"
-                  value={newContactEmail}
-                  onChangeText={setNewContactEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  data-testid="new-contact-email-input"
-                />
-              </View>
-            </View>
-            
-            <View style={styles.addContactModalActions}>
-              <TouchableOpacity 
-                style={styles.addContactCancelBtn}
-                onPress={resetAddContactModal}
-              >
-                <Text style={styles.addContactCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.addContactContinueBtn,
-                  !newContactPhone.trim() && styles.addContactContinueBtnDisabled
-                ]}
-                onPress={handleAddNewContact}
-                disabled={!newContactPhone.trim() || savingContact}
-                data-testid="new-contact-save-btn"
-              >
-                {savingContact ? (
-                  <ActivityIndicator size="small" color={colors.text} />
-                ) : (
-                  <>
-                    <Text style={styles.addContactContinueText}>Save & Message</Text>
-                    <Ionicons name="chatbubble-outline" size={16} color={colors.text} />
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -972,92 +808,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
-  // Add Contact Modal Styles
-  addContactModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  addContactModalContent: {
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-  },
-  addContactModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  addContactModalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  addContactModalSubtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  addContactInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 10,
-  },
-  addContactNameRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  addContactInput: {
-    flex: 1,
-    fontSize: 17,
-  },
-  addContactHint: {
-    fontSize: 12,
-    color: '#6E6E73',
-    marginTop: 12,
-    lineHeight: 18,
-  },
-  addContactModalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  addContactCancelBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  addContactCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  addContactContinueBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
-    gap: 6,
-  },
-  addContactContinueBtnDisabled: {
-    opacity: 0.5,
-  },
-  addContactContinueText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-
   // View toggle
   viewToggle: {
     flexDirection: 'row',
