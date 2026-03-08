@@ -62,6 +62,20 @@ async def migrate_check():
     return {"status": "ok", "version": "v3", "needs_migration": counts}
 
 
+@router.get("/migrate-log")
+async def migrate_log():
+    """See the result and errors from the last migration run."""
+    db = get_db()
+    job = await db.migration_jobs.find_one(
+        {"type": "simple_migrate"},
+        sort=[("started_at", -1)],
+        projection={"_id": 0},
+    )
+    if not job:
+        return {"status": "none", "message": "No migration has been run yet."}
+    return job
+
+
 @router.get("/{path:path}")
 async def serve_image(path: str, request: Request):
     """Serve an image with CDN-like caching behavior.
@@ -284,32 +298,38 @@ async def migrate_now(request: Request):
 
 
 async def _run_migrate_simple():
-    """Fire-and-forget migration task."""
+    """Fire-and-forget migration task. Logs progress to migration_jobs collection."""
     db = get_db()
+    log = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat(), "processed": 0, "errors": [], "type": "simple_migrate"}
+    await db.migration_jobs.insert_one(dict(log))
+
     try:
         for u in await db.users.find({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo_url": 1}).to_list(200):
             try:
                 r = await upload_image(u["photo_url"], prefix="profiles", entity_id=str(u["_id"]))
                 if r:
                     await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"], "photo_url": f"/api/images/{r['original_path']}"}})
+                    log["processed"] += 1
             except Exception as e:
-                logger.warning(f"[Migrate] user {u['_id']}: {e}")
+                log["errors"].append(f"user {u['_id']}: {str(e)[:100]}")
 
         for s in await db.stores.find({"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}}, {"_id": 1, "logo_url": 1}).to_list(200):
             try:
                 r = await upload_image(s["logo_url"], prefix="logos", entity_id=str(s["_id"]))
                 if r:
                     await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": r["original_path"], "logo_thumb_path": r["thumbnail_path"], "logo_avatar_path": r["avatar_path"]}})
+                    log["processed"] += 1
             except Exception as e:
-                logger.warning(f"[Migrate] store {s['_id']}: {e}")
+                log["errors"].append(f"store {s['_id']}: {str(e)[:100]}")
 
         for c in await db.contacts.find({"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo": 1}).to_list(500):
             try:
                 r = await upload_image(c["photo"], prefix="contacts", entity_id=str(c["_id"]))
                 if r:
                     await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"]}})
+                    log["processed"] += 1
             except Exception as e:
-                logger.warning(f"[Migrate] contact {c['_id']}: {e}")
+                log["errors"].append(f"contact {c['_id']}: {str(e)[:100]}")
 
         for card in await db.congrats_cards.find({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "card_id": 1, "customer_photo": 1}).to_list(500):
             try:
@@ -317,12 +337,22 @@ async def _run_migrate_simple():
                 r = await upload_image(card["customer_photo"], prefix="congrats", entity_id=cid)
                 if r:
                     await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"]}})
+                    log["processed"] += 1
             except Exception as e:
-                logger.warning(f"[Migrate] card {card['_id']}: {e}")
+                log["errors"].append(f"card {cid}: {str(e)[:100]}")
 
-        logger.info("[Migrate] Background migration complete")
+        log["status"] = "completed"
     except Exception as e:
-        logger.error(f"[Migrate] Background migration failed: {e}")
+        log["status"] = "failed"
+        log["errors"].append(f"FATAL: {str(e)[:200]}")
+
+    log["completed_at"] = datetime.now(timezone.utc).isoformat()
+    await db.migration_jobs.update_one(
+        {"type": "simple_migrate", "status": "running"},
+        {"$set": log},
+        upsert=True,
+    )
+    logger.info(f"[Migrate] Done: processed={log['processed']}, errors={len(log['errors'])}")
 
 
 async def _run_migration(job_id: str):
