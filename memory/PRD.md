@@ -7,7 +7,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Frontend:** React Native / Expo (web)
 - **Backend:** FastAPI (Python)
 - **Database:** MongoDB Atlas
-- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI, Emergent Object Storage, Pillow
+- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI (GPT-5.2 via emergentintegrations), Emergent Object Storage, Pillow
 
 ---
 
@@ -26,29 +26,30 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Engagement Intelligence System (Mar 2026) — NEW
-- **Real-time "Customer Just Looked At Your Card" notifications**
-- Records signals when customers: view cards, download cards, share cards, click links, save contacts, view digital cards, view showcases, click review links
-- **"Second Look" detection** — flags return visits after 30+ minutes
-- **5-minute deduplication** — same person, same action, same session = 1 signal
-- **Hot Leads Dashboard** (`/admin/hot-leads`) with:
-  - Heat scoring (signals x return visits x variety)
-  - Hot Leads tab (contacts sorted by engagement)
-  - Activity Feed tab (raw signal timeline)
-  - Time filters: Today / 48 Hours / 7 Days
-  - Quick text action (opens SMS)
-  - Auto-refresh every 30 seconds
-- **Notification integration** — engagement signals appear in notification center
-- **Hooked into:** congrats_cards (view/download/share), short_urls (all link clicks), digital_card (contact saves)
+### AI-Powered Outreach (Mar 2026) — NEW
+- **Trigger:** When "Sold" tag is applied to a contact, AI generates 2 personalized follow-up messages
+- **AI Engine:** OpenAI GPT-5.2 via emergentintegrations (`EMERGENT_LLM_KEY`)
+- **Context Gathering:** Pulls contact info, conversation history, engagement signals, salesperson & dealership details
+- **Scheduling:** Tasks scheduled for next morning (9 AM) in user's auto-detected timezone
+- **Timezone Detection:** Browser timezone sent on login, stored on user document
+- **Frontend:** `/ai-outreach` page with Pending/Accepted/Dismissed tabs, suggestion cards with accept/dismiss actions
+- **Navigation:** Accessible from Home page tile and Admin Tools section
+- **Key Files:** `services/ai_outreach_service.py`, `routers/ai_outreach.py`, hook in `routers/tags.py`
+- **DB Collection:** `ai_outreach` — stores suggestions with status tracking
+
+### Engagement Intelligence System (Mar 2026)
+- Real-time "Customer Just Looked At Your Card" notifications
+- "Second Look" detection — flags return visits after 30+ minutes
+- 5-minute deduplication
+- Hot Leads Dashboard (`/admin/hot-leads`) with heat scoring
+- Notification integration
 
 ### Leaderboard Visibility Toggle Fix (Mar 2026)
 - User-level opt-in/out works across all leaderboard tiers
-- Re-ranking after filtering, optimized photo URLs
 
 ### Card System & Image Fixes (Mar 2026)
 - Unified card system, image migration tool
-- Card creation 520 fix (asyncio.to_thread)
-- Digital card text overlap fix, card preview shape fix
+- Card creation 520 fix, digital card text overlap fix, card preview shape fix
 
 ### Image Performance Overhaul (Feb 2026)
 - All public pages optimized, batch migration, lazy migration
@@ -63,15 +64,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Prioritized Backlog
 
 ### P1
-- AI-Powered Outreach (auto-suggest on `sold` tag)
 - Permission Roles/Templates
 - Auth refactor (bcrypt)
 - Push Notifications
 - Voice Help Assistant
 - Manager Feature (team-wide engagement dashboard)
+- Google Places API Integration
 
 ### P2
 - Full Twilio, WhatsApp, Training Hub, Inventory Module, Code cleanup
+- Delete legacy `birthday_cards.py`
 
 ## Known Issues
 - P1: Production email blocked (user: verify RESEND_API_KEY)
