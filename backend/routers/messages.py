@@ -194,7 +194,10 @@ async def get_conversation(user_id: str, conversation_id: str):
         "media_urls": m.get('media_urls', []),
         "ai_generated": m.get('ai_generated', False),
         "intent_detected": m.get('intent_detected'),
-        "direction": m.get('direction', 'outbound')
+        "direction": m.get('direction', 'outbound'),
+        "event_type": m.get('event_type', ''),
+        "card_type": m.get('card_type', ''),
+        "channel": m.get('channel', '')
     } for m in messages]
     
     return conv
@@ -900,6 +903,8 @@ async def get_thread_messages(conversation_id: str):
         "ai_generated": m.get('ai_generated', False),
         "intent_detected": m.get('intent_detected'),
         "channel": m.get('channel'),
+        "event_type": m.get('event_type', ''),
+        "card_type": m.get('card_type', ''),
         "has_media": m.get('has_media', False),
         "media_urls": m.get('media_urls', [])
     } for m in messages]
@@ -1126,22 +1131,26 @@ async def send_message_simple(user_id: str, message_data: dict):
                 message['error'] = sms_result.get('error')
                 logger.error(f"[SMS] Failed to {to_phone}: {sms_result.get('error')}")
             
+            # Resolve event type BEFORE updating the message doc
+            sms_event_type = "sms_sent" if message['status'] == 'sent' else "sms_failed"
+            explicit_et = message_data.get('event_type')
+            if explicit_et:
+                sms_event_type = explicit_et
+            else:
+                resolved = await resolve_event_type(content, db)
+                if resolved != 'personal_sms':
+                    sms_event_type = resolved
+
             await db.messages.update_one(
                 {"_id": ObjectId(message_id)},
                 {"$set": {"status": message['status'], "channel": "sms",
-                          "twilio_sid": sms_result.get('message_sid')}}
+                          "twilio_sid": sms_result.get('message_sid'),
+                          "event_type": sms_event_type}}
             )
+            message['event_type'] = sms_event_type
 
             # Log contact event for Twilio SMS
             if conv.get('contact_id'):
-                sms_event_type = "sms_sent" if message['status'] == 'sent' else "sms_failed"
-                explicit_et = message_data.get('event_type')
-                if explicit_et:
-                    sms_event_type = explicit_et
-                else:
-                    resolved = await resolve_event_type(content, db)
-                    if resolved != 'personal_sms':
-                        sms_event_type = resolved
                 await db.contact_events.insert_one({
                     "contact_id": str(conv['contact_id']),
                     "user_id": user_id,
@@ -1177,6 +1186,7 @@ async def send_message_simple(user_id: str, message_data: dict):
         "timestamp": message["timestamp"].isoformat(),
         "status": message['status'],
         "channel": channel,
+        "event_type": message.get('event_type', ''),
         "resend_id": message.get('resend_id'),
         "error": message.get('error')
     }

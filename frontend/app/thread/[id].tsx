@@ -1506,17 +1506,32 @@ export default function ThreadScreen() {
     
     // Detect card type from event_type first, then fall back to URL/content analysis
     let detectedCardType = '';
+    const contentLower = content.toLowerCase();
+    const KNOWN_CARD_TYPES = ['congrats', 'birthday', 'anniversary', 'thankyou', 'welcome', 'holiday'];
+    
+    // Helper: detect card type from message text content
+    const detectFromContent = (text: string): string => {
+      if (text.includes('holiday card') || text.includes('happy holiday')) return 'holiday';
+      if (text.includes('birthday card') || text.includes('happy birthday')) return 'birthday';
+      if (text.includes('anniversary card') || text.includes('happy anniversary')) return 'anniversary';
+      if (text.includes('thank you card') || text.includes('thankyou card')) return 'thankyou';
+      if (text.includes('welcome card')) return 'welcome';
+      return '';
+    };
+    
     if (eventType.includes('_card_sent') || eventType.includes('_card_shared')) {
-      detectedCardType = eventType.replace('_card_sent', '').replace('_card_shared', '');
+      const typeFromEvent = eventType.replace('_card_sent', '').replace('_card_shared', '');
+      if (KNOWN_CARD_TYPES.includes(typeFromEvent) && typeFromEvent !== 'congrats') {
+        // Specific card type like birthday_card_sent — trust it
+        detectedCardType = typeFromEvent;
+      } else if (typeFromEvent === 'congrats') {
+        // Generic congrats_card_sent — check content for the REAL type
+        detectedCardType = detectFromContent(contentLower) || 'congrats';
+      }
+      // digital_card_sent/shared and other non-card types fall through (detectedCardType stays '')
     } else if (content.includes('/congrats/')) {
-      // Parse card type from URL or content keywords
-      if (content.toLowerCase().includes('happy birthday')) detectedCardType = 'birthday';
-      else if (content.toLowerCase().includes('happy anniversary')) detectedCardType = 'anniversary';
-      else if (content.toLowerCase().includes('thank you') || content.toLowerCase().includes('thankyou')) detectedCardType = 'thankyou';
-      else if (content.toLowerCase().includes('welcome')) detectedCardType = 'welcome';
-      else if (content.toLowerCase().includes('happy holiday') || content.toLowerCase().includes('happy holidays')) detectedCardType = 'holiday';
-      else detectedCardType = 'congrats';
-    } else if (content.toLowerCase().includes('congrats') || content.toLowerCase().includes('congratulations')) {
+      detectedCardType = detectFromContent(contentLower) || 'congrats';
+    } else if (contentLower.includes('congrats') || contentLower.includes('congratulations')) {
       detectedCardType = 'congrats';
     }
     const isCongratsCard = detectedCardType !== '';
