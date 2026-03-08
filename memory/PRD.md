@@ -83,6 +83,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Frontend:** Dynamic modal title, preview text, and thread message rendering based on card type
 - **Tested:** 9/9 backend tests passed, all frontend flows verified
 
+### Digital Card Labeling Bug Fix (Mar 8, 2026)
+- **BUG FIXED:** Digital business card messages with historical `congrats_card_sent` event_type were incorrectly labeled as "Congrats Card"
+- **Root cause:** 3 issues: (1) `contentLower` referenced before definition, (2) `isDigitalCard=true` did not prevent congrats fallback, (3) display priority checked congrats before digital card
+- **Fix in** `/app/frontend/app/thread/[id].tsx`: (1) Moved `contentLower` before `isDigitalCard`, (2) Added `!isDigitalCard` guards to prevent congrats label on digital card content, (3) Swapped display priority: `isDigitalCard` now checked BEFORE `isCongratsCard`
+- **Enhanced detection:** Now catches `/card/`, `/p/`, "digital card", "digital business card", "save my contact", and both `digital_card_sent` and `digital_card_shared` event_types
+- **Tested:** 8/8 backend tests passed, all 7 card label scenarios verified via frontend
+
 ### Permission Templates + Template Delete Bug Fix + Touchpoint Totals Fix (Mar 8, 2026)
 1. **Permission Templates System** (`routers/permission_templates.py`)
    - Full CRUD API: Create, Read, Update, Delete custom permission templates
@@ -163,7 +170,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## Known Issues
 - P1: Production email blocked (user: verify RESEND_API_KEY)
-- P2: React Hydration Error #418, Mobile tags sync
+- P2: Mobile tags sync
+- P2: Leaderboard toggle not fully tested
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
