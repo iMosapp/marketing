@@ -185,5 +185,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes
 - **OG Image / iMessage Link Preview Fix:** Created white-background OG image (`og-image.png`) and added `/api/s/og-image/{user_id}` endpoint that composites store logos onto white. All link previews now guaranteed to have WHITE background instead of showing transparency artifacts (red/brown tint)
 
+### Smart Contact Search + Voice-to-Task (Mar 8, 2026)
+- **Smart Contact Search:** All 6 home screen tiles and card sending now search by first name, last name, phone number, AND email. Backend `/api/contacts/{user_id}` also includes email in search query.
+- **Voice Recorder 5 Minutes:** Contact page voice recorder max length increased from 2 minutes to 5 minutes.
+- **Voice-to-Task:** New task page (`/tasks/new`) includes voice recording button. Speaks task → transcribed via Whisper → AI (gpt-4o-mini) extracts title, type, priority, due date, and due time. Backend endpoint: `POST /api/voice/parse-task`.
+- **Tested:** 11/11 backend tests passed, all frontend features verified.
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
