@@ -1501,12 +1501,12 @@ export default function ThreadScreen() {
     // Detect rich content types
     const content = item.content || '';
     const eventType = (item as any).event_type || '';
-    const isReviewLink = content.includes('/review/') || content.toLowerCase().includes('review link') || eventType.includes('review');
-    const isDigitalCard = content.includes('/card/') || content.toLowerCase().includes('digital card') || eventType === 'digital_card_shared';
+    const contentLower = content.toLowerCase();
+    const isReviewLink = content.includes('/review/') || contentLower.includes('review link') || eventType.includes('review');
+    const isDigitalCard = content.includes('/card/') || content.includes('/p/') || contentLower.includes('digital card') || contentLower.includes('digital business card') || contentLower.includes('save my contact') || eventType === 'digital_card_shared' || eventType === 'digital_card_sent';
     
     // Detect card type from event_type first, then fall back to URL/content analysis
     let detectedCardType = '';
-    const contentLower = content.toLowerCase();
     const KNOWN_CARD_TYPES = ['congrats', 'birthday', 'anniversary', 'thankyou', 'welcome', 'holiday'];
     
     // Helper: detect card type from message text content
@@ -1526,12 +1526,17 @@ export default function ThreadScreen() {
         detectedCardType = typeFromEvent;
       } else if (typeFromEvent === 'congrats') {
         // Generic congrats_card_sent — check content for the REAL type
-        detectedCardType = detectFromContent(contentLower) || 'congrats';
+        // If this is actually a digital card, don't mislabel it as congrats
+        if (!isDigitalCard) {
+          detectedCardType = detectFromContent(contentLower) || 'congrats';
+        }
       }
       // digital_card_sent/shared and other non-card types fall through (detectedCardType stays '')
     } else if (content.includes('/congrats/')) {
-      detectedCardType = detectFromContent(contentLower) || 'congrats';
-    } else if (contentLower.includes('congrats') || contentLower.includes('congratulations')) {
+      if (!isDigitalCard) {
+        detectedCardType = detectFromContent(contentLower) || 'congrats';
+      }
+    } else if (!isDigitalCard && (contentLower.includes('congrats') || contentLower.includes('congratulations'))) {
       detectedCardType = 'congrats';
     }
     const isCongratsCard = detectedCardType !== '';
@@ -1552,11 +1557,11 @@ export default function ThreadScreen() {
     let richColor = '#007AFF';
     let richLabel = 'Message';
     if (isReviewLink) { richIcon = 'star'; richColor = '#FFD60A'; richLabel = 'Review Link'; }
+    else if (isDigitalCard) { richIcon = 'card'; richColor = '#5856D6'; richLabel = 'Digital Card'; }
     else if (isCongratsCard) {
       const cardDisplay = CARD_DISPLAY[detectedCardType] || CARD_DISPLAY.congrats;
       richIcon = cardDisplay.icon; richColor = cardDisplay.color; richLabel = cardDisplay.label;
     }
-    else if (isDigitalCard) { richIcon = 'card'; richColor = '#5856D6'; richLabel = 'Digital Card'; }
     
     return (
       <View
