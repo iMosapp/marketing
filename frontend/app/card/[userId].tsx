@@ -540,9 +540,6 @@ export default function DigitalCardPage() {
                   })}
                 </View>
               )}
-
-              {/* Tap to flip hint */}
-              <Text style={styles.flipHint}>Tap corner for QR code</Text>
             </Animated.View>
 
             {/* Back of Card - QR Code */}
@@ -593,9 +590,6 @@ export default function DigitalCardPage() {
                   <Text style={styles.qrActionText}>Download</Text>
                 </TouchableOpacity>
               </View>
-
-              {/* Tap to flip hint */}
-              <Text style={styles.flipHint}>Tap corner to flip back</Text>
             </Animated.View>
           </View>
 
@@ -1128,19 +1122,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   photoContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   photo: {
-    width: 180,
-    height: 180,
-    borderRadius: 24,
+    width: 160,
+    height: 160,
+    borderRadius: 20,
     borderWidth: 3,
     borderColor: '#C9A962',
   },
   photoPlaceholder: {
-    width: 180,
-    height: 180,
-    borderRadius: 24,
+    width: 160,
+    height: 160,
+    borderRadius: 20,
     backgroundColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1171,7 +1165,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 2,
     backgroundColor: '#C9A962',
-    marginVertical: 16,
+    marginVertical: 10,
     borderRadius: 1,
   },
   contactRow: {
