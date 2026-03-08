@@ -96,6 +96,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - **BUG 3 FIXED:** Event type mismatch: `resolve_event_type()` returns `personal_sms` but summary only counted `sms_personal`. Now counts BOTH.
    - **BUG 4 FIXED:** Failed email/SMS attempts (`email_failed`, `sms_failed`) were not counted as activity touchpoints. Now included.
    - **Consistency:** Fixed leaderboard and team engagement endpoints to match the same counting logic.
+8. **Notifications + Task Context Fixes** (Mar 8, 2026)
+   - **Mobile responsiveness:** NotificationBell dropdown now scales to viewport width (maxWidth: 380, min 32px margin)
+   - **Task timeline events:** Creating a task for a contact now logs a `task_created` contact_event visible in the contact's activity feed
+   - **Task context banner:** Clicking a task notification navigates to the contact page with an orange "Pending Task" banner showing the task title + description
+   - **Event icons:** Added proper icon/color mappings for task_created, task_completed, sms_sent, sms_failed, email_failed, lead_reassigned
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard
