@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
-  Alert,
   ActivityIndicator,
   Platform,
   Image,
@@ -24,6 +23,7 @@ import { campaignsAPI } from '../../services/api';
 import api from '../../services/api';
 import { format, parse } from 'date-fns';
 import { useToast } from '../../components/common/Toast';
+import { showAlert, showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 interface SequenceStep {
@@ -130,7 +130,7 @@ const { showToast } = useToast();
       
     } catch (error) {
       console.error('Failed to load campaign:', error);
-      Alert.alert('Error', 'Failed to load campaign');
+      showSimpleAlert('Error', 'Failed to load campaign');
     } finally {
       setLoading(false);
     }
@@ -183,7 +183,7 @@ const { showToast } = useToast();
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow access to your photo library.');
+        showSimpleAlert('Permission Required', 'Please allow access to your photo library.');
         return;
       }
       
@@ -230,7 +230,7 @@ const { showToast } = useToast();
       }
     } catch (error) {
       console.error('Error picking media:', error);
-      Alert.alert('Error', 'Failed to select image.');
+      showSimpleAlert('Error', 'Failed to select image.');
     } finally {
       setUploadingMedia(null);
     }
@@ -263,17 +263,17 @@ const { showToast } = useToast();
   
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a campaign name');
+      showSimpleAlert('Error', 'Please enter a campaign name');
       return;
     }
     
     if (sequences.some(s => s.actionType === 'message' && !s.message.trim())) {
-      Alert.alert('Error', 'Please fill in all message templates');
+      showSimpleAlert('Error', 'Please fill in all message templates');
       return;
     }
     
     if (sequences.some(s => s.actionType === 'send_card' && !s.cardType)) {
-      Alert.alert('Error', 'Please select a card type for all card steps');
+      showSimpleAlert('Error', 'Please select a card type for all card steps');
       return;
     }
     
@@ -301,14 +301,14 @@ const { showToast } = useToast();
       
     } catch (error) {
       console.error('Failed to save campaign:', error);
-      Alert.alert('Error', 'Failed to save changes');
+      showSimpleAlert('Error', 'Failed to save changes');
     } finally {
       setSaving(false);
     }
   };
   
   const handleDelete = () => {
-    Alert.alert(
+    showAlert(
       'Delete Campaign',
       `Are you sure you want to delete "${name}"? This will also remove all enrollments.`,
       [
@@ -323,7 +323,7 @@ const { showToast } = useToast();
               router.back();
             } catch (error) {
               console.error('Failed to delete campaign:', error);
-              Alert.alert('Error', 'Failed to delete campaign');
+              showSimpleAlert('Error', 'Failed to delete campaign');
             } finally {
               setDeleting(false);
             }
