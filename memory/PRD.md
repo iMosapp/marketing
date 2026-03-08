@@ -82,6 +82,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - Logs actor name, template name, target user (for applies), role changes, changed fields (for edits)
    - `GET /api/permission-templates/audit-log` endpoint returns recent entries
    - Frontend: "Activity Log" button on Permission Templates page opens a modal with timestamped entries
+6. **Manager Team Engagement Intelligence** (NEW)
+   - `GET /api/engagement/team-hot-leads/{manager_id}` — aggregates hot leads across all team members in the manager's store/org
+   - `POST /api/engagement/reassign-lead` — reassign org-owned leads to different reps (personal contacts blocked)
+   - Frontend: `/admin/team-engagement` page with 3 tabs (Alerts 3+, Hot Leads, Team Activity)
+   - Summary cards (hot leads count, alert count, total actions, engagement signals)
+   - Team activity breakdown per rep (calls, texts, emails, cards)
+   - Lead reassignment modal with team member search (org-owned leads only)
+   - 30-second auto-refresh, period filters (Today, 48h, 7 Days)
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard
@@ -115,7 +123,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Auth refactor (bcrypt)
 - Push Notifications
 - Voice Help Assistant
-- Manager Feature for Engagement Intelligence
 - Google Places API Integration
 
 ### P2

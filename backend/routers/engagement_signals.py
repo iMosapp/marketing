@@ -242,7 +242,10 @@ async def get_signals(user_id: str, limit: int = 50):
 async def _get_team_user_ids(manager_id: str) -> list[str]:
     """Get user IDs for everyone on the manager's team (same store/org)."""
     db = get_db()
-    manager = await db.users.find_one({"_id": ObjectId(manager_id)}, {"store_id": 1, "store_ids": 1, "organization_id": 1, "role": 1})
+    try:
+        manager = await db.users.find_one({"_id": ObjectId(manager_id)}, {"store_id": 1, "store_ids": 1, "organization_id": 1, "role": 1})
+    except Exception:
+        return []
     if not manager:
         return []
 
