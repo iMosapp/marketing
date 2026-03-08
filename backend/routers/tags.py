@@ -412,6 +412,82 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
         except Exception as e:
             logger.warning(f"AI outreach trigger failed: {e}")
 
+        # Auto-enroll in the Sold Follow-Up campaign
+        try:
+            from routers.campaigns import PREBUILT_TEMPLATES, calculate_next_send_date
+
+            # Find or create the sold campaign for this user
+            sold_template = next((t for t in PREBUILT_TEMPLATES if t["id"] == "sold_followup"), None)
+            if sold_template:
+                base_filter = await get_data_filter(user_id)
+                existing_campaign = await db.campaigns.find_one({
+                    "$and": [base_filter, {"type": "sold_followup", "active": True}]
+                })
+
+                if not existing_campaign:
+                    # Create the campaign from template
+                    campaign_doc = {
+                        "user_id": user_id,
+                        "name": sold_template["name"],
+                        "description": sold_template["description"],
+                        "type": sold_template["type"],
+                        "trigger_tag": sold_template["trigger_tag"],
+                        "icon": sold_template["icon"],
+                        "color": sold_template["color"],
+                        "delivery_mode": sold_template["delivery_mode"],
+                        "ai_enabled": sold_template["ai_enabled"],
+                        "sequences": sold_template["sequences"],
+                        "active": True,
+                        "created_at": datetime.utcnow(),
+                        "auto_created": True,
+                    }
+                    camp_result = await db.campaigns.insert_one(campaign_doc)
+                    campaign_id = str(camp_result.inserted_id)
+                    logger.info(f"Auto-created Sold Follow-Up campaign: {campaign_id}")
+                else:
+                    campaign_id = str(existing_campaign["_id"])
+                    sold_template = existing_campaign  # Use user's customized version
+
+                # Enroll each contact
+                sequences = (existing_campaign or sold_template).get("sequences", [])
+                for cid in contact_ids:
+                    # Check if already enrolled
+                    already = await db.campaign_enrollments.find_one({
+                        "campaign_id": campaign_id,
+                        "contact_id": cid,
+                        "status": "active",
+                    })
+                    if already:
+                        continue
+
+                    contact = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1, "phone": 1})
+                    if not contact:
+                        continue
+
+                    cname = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+                    first_step = sequences[0] if sequences else None
+                    next_send = calculate_next_send_date(first_step) if first_step else datetime.utcnow()
+
+                    enrollment = {
+                        "user_id": user_id,
+                        "campaign_id": campaign_id,
+                        "contact_id": cid,
+                        "contact_name": cname,
+                        "contact_phone": contact.get("phone", ""),
+                        "current_step": 1,
+                        "total_steps": len(sequences),
+                        "status": "active",
+                        "enrolled_at": datetime.utcnow(),
+                        "next_send_at": next_send,
+                        "messages_sent": [],
+                        "trigger_type": "sold_tag",
+                        "auto_enrolled": True,
+                    }
+                    await db.campaign_enrollments.insert_one(enrollment)
+                    logger.info(f"Auto-enrolled {cname} in Sold Follow-Up campaign")
+        except Exception as e:
+            logger.warning(f"Sold campaign auto-enrollment failed: {e}")
+
     return {"message": f"Tag assigned to {result.modified_count} contacts"}
 
 

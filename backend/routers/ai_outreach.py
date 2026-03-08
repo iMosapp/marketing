@@ -111,3 +111,27 @@ async def get_outreach_stats(user_id: str):
         "dismissed": dismissed,
         "total": pending + accepted + dismissed,
     }
+
+
+@router.get("/relationship-brief/{user_id}/{contact_id}")
+async def get_relationship_brief(user_id: str, contact_id: str):
+    """Get the full relationship intelligence brief for a contact."""
+    from services.relationship_intel import build_relationship_brief
+    try:
+        brief = await build_relationship_brief(user_id, contact_id)
+        return {
+            "contact_name": brief["contact"].get("name", ""),
+            "relationship_health": brief["relationship_health"],
+            "engagement_score": brief["engagement_score"],
+            "response_pattern": brief["response_pattern"],
+            "last_interaction_days": brief["last_interaction_days"],
+            "milestones": brief["milestones"],
+            "engagement_signals": brief["engagement_signals"][:5],
+            "previous_campaign_messages": brief["previous_campaign_messages"][:5],
+            "human_summary": brief["human_summary"],
+            "days_since_sale": brief.get("days_since_sale"),
+            "days_known": brief.get("days_known"),
+        }
+    except Exception as e:
+        logger.error(f"Failed to build relationship brief: {e}")
+        raise HTTPException(status_code=500, detail="Failed to build relationship brief")

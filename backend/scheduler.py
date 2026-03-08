@@ -417,6 +417,15 @@ async def process_pending_campaign_steps():
                     except Exception as e:
                         logger.warning(f"[Scheduler] AI generation failed, using template: {e}")
 
+                # Build relationship intelligence brief for the task
+                relationship_brief = ""
+                try:
+                    from services.relationship_intel import build_relationship_brief
+                    brief = await build_relationship_brief(user_id, contact_id)
+                    relationship_brief = brief.get("human_summary", "")
+                except Exception as e:
+                    logger.warning(f"[Scheduler] Relationship intel failed: {e}")
+
                 if not message_content:
                     message_content = f"Hi {enrollment.get('contact_name', 'there')}!"
 
@@ -467,6 +476,9 @@ async def process_pending_campaign_steps():
                         "channel": channel,
                         "message": message_content,
                         "media_urls": step.get("media_urls", []),
+                        "relationship_brief": relationship_brief,
+                        "ai_generated": bool(ai_generated),
+                        "step_context": step.get("step_context", ""),
                         "status": "pending",
                         "created_at": now,
                     })
@@ -491,6 +503,8 @@ async def process_pending_campaign_steps():
                         "title": task_title,
                         "description": task_desc,
                         "suggested_message": message_content,
+                        "relationship_brief": relationship_brief,
+                        "ai_generated": bool(ai_generated),
                         "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
                         "due_date": now,
                         "priority": "high",

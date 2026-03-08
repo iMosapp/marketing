@@ -206,59 +206,25 @@ async def build_clone_system_prompt(user_id: str) -> str:
 
 
 async def get_contact_context(user_id: str, contact_id: str) -> str:
-    """Build a context summary of the contact's history for AI message generation."""
-    db = get_db()
-
-    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
-    if not contact:
-        return "No contact information available."
-
-    first_name = contact.get("first_name", "")
-    last_name = contact.get("last_name", "")
-    name = f"{first_name} {last_name}".strip() or "the customer"
-
-    parts = [f"Customer name: {name}"]
-
-    if contact.get("phone"):
-        parts.append(f"Phone: {contact['phone']}")
-    if contact.get("email"):
-        parts.append(f"Email: {contact['email']}")
-    if contact.get("tags"):
-        parts.append(f"Tags: {', '.join(contact['tags'])}")
-    if contact.get("notes"):
-        parts.append(f"Notes: {contact['notes'][:300]}")
-    if contact.get("vehicle_interest"):
-        parts.append(f"Vehicle interest: {contact['vehicle_interest']}")
-    if contact.get("date_sold"):
-        parts.append(f"Sold date: {contact['date_sold']}")
-
-    # Recent activity (last 10 events)
-    events = await db.contact_events.find(
-        {"contact_id": contact_id, "user_id": user_id}
-    ).sort("timestamp", -1).limit(10).to_list(10)
-
-    if events:
-        parts.append("\nRecent activity:")
-        for ev in events:
-            ev_type = ev.get("event_type", "").replace("_", " ").title()
-            desc = ev.get("description", "")
-            ts = ev.get("timestamp")
-            ts_str = ts.strftime("%b %d") if isinstance(ts, datetime) else ""
-            parts.append(f"- {ts_str}: {ev_type}{': ' + desc[:100] if desc else ''}")
-
-    # Recent messages (last 5)
-    messages = await db.messages.find(
-        {"contact_id": contact_id}
-    ).sort("timestamp", -1).limit(5).to_list(5)
-
-    if messages:
-        parts.append("\nRecent messages:")
-        for msg in messages:
-            sender = "Me" if msg.get("sender") == "user" else name
-            content = msg.get("content", "")[:150]
-            parts.append(f"- {sender}: {content}")
-
-    return "\n".join(parts)
+    """Build a rich context summary using the Relationship Intelligence engine."""
+    try:
+        from services.relationship_intel import build_relationship_brief
+        brief = await build_relationship_brief(user_id, contact_id)
+        return brief.get("ai_context", "No contact information available.")
+    except Exception as e:
+        logger.warning(f"Relationship intel failed, falling back to basic context: {e}")
+        # Fallback to basic context
+        db = get_db()
+        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+        if not contact:
+            return "No contact information available."
+        name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+        parts = [f"Customer name: {name}"]
+        if contact.get("tags"):
+            parts.append(f"Tags: {', '.join(contact['tags'])}")
+        if contact.get("notes"):
+            parts.append(f"Notes: {contact['notes'][:300]}")
+        return "\n".join(parts)
 
 
 @router.post("/generate-message/{user_id}/{contact_id}")
@@ -292,14 +258,22 @@ async def generate_campaign_message(user_id: str, contact_id: str, data: dict):
 
 Campaign: {campaign_name}
 Step context: {step_context}
-{f'Use this template as a starting point but personalize it: {template_hint}' if template_hint else 'Create a fresh, personalized message.'}
+{f'Use this template as inspiration but make it PERSONAL using the relationship intel below: {template_hint}' if template_hint else 'Create a fresh, personalized message.'}
 
 {format_hint}
 
-Customer context:
+CRITICAL RULES:
+- This message must feel like it was written by a real human who KNOWS this customer
+- Reference specific things from the relationship intelligence (engagement, milestones, previous conversations)
+- DO NOT repeat anything from previous campaign messages listed below
+- Build on the relationship narrative — this is the next chapter, not a standalone message
+- If the customer has been engaging (viewing cards, clicking links), subtly acknowledge their interest
+- If the relationship is cooling, be warmer and more personal to re-engage
+- Match the tone to the relationship health: strong = casual/friendly, cooling = warmer/more effort
+
 {contact_context}
 
-Write ONLY the message text. No quotes, no explanation. Make it sound like it's coming from me personally."""
+Write ONLY the message text. No quotes, no explanation. Make it sound like it's coming from me personally — someone who genuinely cares about this customer."""
 
     emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not emergent_key:
