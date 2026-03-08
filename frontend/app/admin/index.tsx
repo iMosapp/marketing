@@ -523,6 +523,14 @@ export default function AdminDashboard() {
           color: '#FF3B30',
         },
         {
+          icon: 'people-circle',
+          title: 'Team Engagement',
+          subtitle: 'Hot leads across your entire team',
+          onPress: () => router.push('/admin/team-engagement'),
+          color: '#C9A962',
+          managerOnly: true,
+        },
+        {
           icon: 'trophy',
           title: 'Leaderboards',
           subtitle: isStoreManager ? 'My team rankings' : 'Performance rankings',
