@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 
 interface Suggestion {
   message: string;
@@ -73,38 +74,38 @@ function HealthBadge({ health }: { health: string }) {
   );
 }
 
-function RelBriefCard({ brief, contactId }: { brief: RelBrief; contactId: string }) {
+function RelBriefCard({ brief, contactId, colors }: { brief: RelBrief; contactId: string; colors: any }) {
   return (
-    <View style={styles.briefCard} data-testid={`rel-brief-${contactId}`}>
+    <View style={[styles.briefCard, { backgroundColor: colors.cardAlt, borderColor: `rgba(201,169,98,0.15)` }]} data-testid={`rel-brief-${contactId}`}>
       <View style={styles.briefHeader}>
         <Ionicons name="analytics" size={14} color="#C9A962" />
-        <Text style={styles.briefTitle}>Relationship Intelligence</Text>
+        <Text style={[styles.briefTitle]}>Relationship Intelligence</Text>
         <HealthBadge health={brief.relationship_health} />
       </View>
       <View style={styles.briefMetrics}>
         <View style={styles.briefMetric}>
-          <Text style={styles.briefMetricValue}>{brief.engagement_score}</Text>
-          <Text style={styles.briefMetricLabel}>Engagement</Text>
+          <Text style={[styles.briefMetricValue, { color: colors.text }]}>{brief.engagement_score}</Text>
+          <Text style={[styles.briefMetricLabel, { color: colors.textTertiary }]}>Engagement</Text>
         </View>
         <View style={styles.briefMetric}>
-          <Text style={styles.briefMetricValue}>
+          <Text style={[styles.briefMetricValue, { color: colors.text }]}>
             {brief.last_interaction_days !== null ? (brief.last_interaction_days === 0 ? 'Today' : `${brief.last_interaction_days}d`) : '--'}
           </Text>
-          <Text style={styles.briefMetricLabel}>Last Contact</Text>
+          <Text style={[styles.briefMetricLabel, { color: colors.textTertiary }]}>Last Contact</Text>
         </View>
         <View style={styles.briefMetric}>
-          <Text style={styles.briefMetricValue}>{brief.response_pattern.replace('_', ' ').split(' ')[0]}</Text>
-          <Text style={styles.briefMetricLabel}>Response</Text>
+          <Text style={[styles.briefMetricValue, { color: colors.text }]}>{brief.response_pattern.replace('_', ' ').split(' ')[0]}</Text>
+          <Text style={[styles.briefMetricLabel, { color: colors.textTertiary }]}>Response</Text>
         </View>
         {brief.days_since_sale != null && (
           <View style={styles.briefMetric}>
-            <Text style={styles.briefMetricValue}>{brief.days_since_sale}d</Text>
-            <Text style={styles.briefMetricLabel}>Since Sale</Text>
+            <Text style={[styles.briefMetricValue, { color: colors.text }]}>{brief.days_since_sale}d</Text>
+            <Text style={[styles.briefMetricLabel, { color: colors.textTertiary }]}>Since Sale</Text>
           </View>
         )}
       </View>
       {brief.milestones.length > 0 && (
-        <Text style={styles.briefMilestone}>{brief.milestones[brief.milestones.length - 1]}</Text>
+        <Text style={[styles.briefMilestone, { color: colors.textSecondary }]}>{brief.milestones[brief.milestones.length - 1]}</Text>
       )}
     </View>
   );
@@ -112,6 +113,7 @@ function RelBriefCard({ brief, contactId }: { brief: RelBrief; contactId: string
 
 export default function AIOutreachPage() {
   const user = useAuthStore((s: any) => s.user);
+  const { colors } = useThemeStore();
   const router = useRouter();
   const [records, setRecords] = useState<OutreachRecord[]>([]);
   const [pendingSends, setPendingSends] = useState<PendingSend[]>([]);
@@ -200,15 +202,15 @@ export default function AIOutreachPage() {
   ];
 
   return (
-    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#C9A962" />}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#C9A962" />}>
       {/* Header */}
       <View style={styles.header} data-testid="ai-outreach-header">
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="ai-outreach-back-btn">
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.surface }]} data-testid="ai-outreach-back-btn">
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>AI Outreach</Text>
-          <Text style={styles.subtitle}>Relationship-powered follow-ups</Text>
+          <Text style={[styles.title, { color: colors.text }]}>AI Outreach</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Relationship-powered follow-ups</Text>
         </View>
         <View style={styles.statsBadge} data-testid="ai-outreach-pending-badge">
           <Ionicons name="sparkles" size={16} color="#AF52DE" />
@@ -217,24 +219,24 @@ export default function AIOutreachPage() {
       </View>
 
       {/* How it works */}
-      <View style={styles.infoCard} data-testid="ai-outreach-info-card">
+      <View style={[styles.infoCard, { backgroundColor: `rgba(201,169,98,0.08)`, borderColor: `rgba(201,169,98,0.2)` }]} data-testid="ai-outreach-info-card">
         <Ionicons name="flash" size={18} color="#C9A962" />
-        <Text style={styles.infoText}>
+        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
           Every message is crafted using real relationship data — engagement signals, conversation history, and milestone context. Tag a customer "Sold" and the AI builds a personalized follow-up journey.
         </Text>
       </View>
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
-        <View style={styles.tabRow} data-testid="ai-outreach-tabs">
+        <View style={[styles.tabRow, { backgroundColor: colors.card }]} data-testid="ai-outreach-tabs">
           {tabs.map((t) => (
             <TouchableOpacity
               key={t.key}
-              style={[styles.tab, tab === t.key && styles.tabActive]}
+              style={[styles.tab, tab === t.key && [styles.tabActive, { backgroundColor: colors.surface }]]}
               onPress={() => setTab(t.key)}
               data-testid={`ai-outreach-tab-${t.key}`}
             >
-              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
+              <Text style={[styles.tabText, { color: colors.textSecondary }, tab === t.key && { color: colors.text }]}>
                 {t.label} ({t.count})
               </Text>
             </TouchableOpacity>
@@ -249,21 +251,21 @@ export default function AIOutreachPage() {
         /* CAMPAIGN PENDING SENDS — The Magic View */
         pendingSends.length === 0 ? (
           <View style={styles.emptyState} data-testid="ai-outreach-empty">
-            <Ionicons name="rocket" size={48} color="#555" />
-            <Text style={styles.emptyTitle}>No campaign messages pending</Text>
-            <Text style={styles.emptySubtitle}>When you tag a contact as "Sold", they'll automatically enter a personalized follow-up journey.</Text>
+            <Ionicons name="rocket" size={48} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No campaign messages pending</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>When you tag a contact as "Sold", they'll automatically enter a personalized follow-up journey.</Text>
           </View>
         ) : (
           pendingSends.map((ps) => (
-            <View key={ps._id} style={styles.card} data-testid={`campaign-send-${ps._id}`}>
-              <View style={styles.cardHeader}>
+            <View key={ps._id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`campaign-send-${ps._id}`}>
+              <View style={[styles.cardHeader, { borderBottomColor: colors.border }]}>
                 <View style={styles.contactRow}>
                   <View style={[styles.avatar, { backgroundColor: '#34C759' }]}>
                     <Ionicons name="person" size={18} color="#FFF" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.contactName}>{ps.contact_name}</Text>
-                    <Text style={styles.cardTime}>
+                    <Text style={[styles.contactName, { color: colors.text }]}>{ps.contact_name}</Text>
+                    <Text style={[styles.cardTime, { color: colors.textSecondary }]}>
                       {ps.campaign_name} — Step {ps.step}
                     </Text>
                   </View>
@@ -282,35 +284,35 @@ export default function AIOutreachPage() {
 
               {/* Relationship Brief */}
               {briefs[ps.contact_id] ? (
-                <RelBriefCard brief={briefs[ps.contact_id]} contactId={ps.contact_id} />
+                <RelBriefCard brief={briefs[ps.contact_id]} contactId={ps.contact_id} colors={colors} />
               ) : ps.relationship_brief ? (
-                <View style={styles.inlineBrief}>
+                <View style={[styles.inlineBrief, { backgroundColor: colors.cardAlt }]}>
                   <Ionicons name="analytics" size={12} color="#C9A962" />
-                  <Text style={styles.inlineBriefText}>{ps.relationship_brief}</Text>
+                  <Text style={[styles.inlineBriefText, { color: colors.textTertiary }]}>{ps.relationship_brief}</Text>
                   <TouchableOpacity onPress={() => loadBrief(ps.contact_id)} data-testid={`load-brief-${ps.contact_id}`}>
                     <Text style={styles.expandLink}>Details</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity style={styles.inlineBrief} onPress={() => loadBrief(ps.contact_id)} data-testid={`load-brief-${ps.contact_id}`}>
-                  <Ionicons name="analytics-outline" size={12} color="#666" />
-                  <Text style={styles.inlineBriefText}>Tap to load relationship intelligence</Text>
+                <TouchableOpacity style={[styles.inlineBrief, { backgroundColor: colors.cardAlt }]} onPress={() => loadBrief(ps.contact_id)} data-testid={`load-brief-${ps.contact_id}`}>
+                  <Ionicons name="analytics-outline" size={12} color={colors.textTertiary} />
+                  <Text style={[styles.inlineBriefText, { color: colors.textTertiary }]}>Tap to load relationship intelligence</Text>
                   {loadingBrief === ps.contact_id && <ActivityIndicator size="small" color="#C9A962" />}
                 </TouchableOpacity>
               )}
 
               {/* Step Context */}
               {ps.step_context && (
-                <View style={styles.contextRow}>
+                <View style={[styles.contextRow, { backgroundColor: 'rgba(255,149,0,0.06)' }]}>
                   <Ionicons name="bulb" size={12} color="#FF9500" />
-                  <Text style={styles.contextText}>{ps.step_context}</Text>
+                  <Text style={[styles.contextText, { color: colors.textSecondary }]}>{ps.step_context}</Text>
                 </View>
               )}
 
               {/* Message */}
-              <View style={styles.messageBox}>
-                <Text style={styles.messageLabel}>Message to send:</Text>
-                <Text style={styles.messageContent}>"{ps.message}"</Text>
+              <View style={[styles.messageBox, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}>
+                <Text style={[styles.messageLabel, { color: colors.textTertiary }]}>Message to send:</Text>
+                <Text style={[styles.messageContent, { color: colors.text }]}>"{ps.message}"</Text>
               </View>
 
               {/* Actions */}
@@ -341,26 +343,26 @@ export default function AIOutreachPage() {
         )
       ) : records.length === 0 ? (
         <View style={styles.emptyState} data-testid="ai-outreach-empty">
-          <Ionicons name={tab === 'pending' ? 'sparkles' : tab === 'accepted' ? 'checkmark-circle' : 'close-circle'} size={48} color="#555" />
-          <Text style={styles.emptyTitle}>
+          <Ionicons name={tab === 'pending' ? 'sparkles' : tab === 'accepted' ? 'checkmark-circle' : 'close-circle'} size={48} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
             {tab === 'pending' ? 'No pending suggestions' : tab === 'accepted' ? 'No accepted suggestions yet' : 'Nothing dismissed'}
           </Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
             {tab === 'pending' ? 'Tag a customer as "Sold" to generate AI follow-ups!' : 'Your history will appear here.'}
           </Text>
         </View>
       ) : (
         /* AI SUGGESTIONS VIEW */
         records.map((record) => (
-          <View key={record._id} style={styles.card} data-testid={`ai-outreach-card-${record._id}`}>
-            <View style={styles.cardHeader}>
+          <View key={record._id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`ai-outreach-card-${record._id}`}>
+            <View style={[styles.cardHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.contactRow}>
                 <View style={styles.avatar}>
                   <Ionicons name="person" size={18} color="#FFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.contactName}>{record.contact_name}</Text>
-                  <Text style={styles.cardTime}>
+                  <Text style={[styles.contactName, { color: colors.text }]}>{record.contact_name}</Text>
+                  <Text style={[styles.cardTime, { color: colors.textSecondary }]}>
                     {record.status === 'pending' ? `Scheduled for ${formatTime(record.scheduled_for)}` : `Created ${formatTime(record.created_at)}`}
                   </Text>
                 </View>
@@ -381,11 +383,11 @@ export default function AIOutreachPage() {
 
             {/* Inline relationship brief */}
             {briefs[record.contact_id] ? (
-              <RelBriefCard brief={briefs[record.contact_id]} contactId={record.contact_id} />
+              <RelBriefCard brief={briefs[record.contact_id]} contactId={record.contact_id} colors={colors} />
             ) : (
-              <TouchableOpacity style={styles.inlineBrief} onPress={() => loadBrief(record.contact_id)} data-testid={`load-brief-${record.contact_id}`}>
-                <Ionicons name="analytics-outline" size={12} color="#666" />
-                <Text style={styles.inlineBriefText}>Tap to view relationship intelligence</Text>
+              <TouchableOpacity style={[styles.inlineBrief, { backgroundColor: colors.cardAlt }]} onPress={() => loadBrief(record.contact_id)} data-testid={`load-brief-${record.contact_id}`}>
+                <Ionicons name="analytics-outline" size={12} color={colors.textTertiary} />
+                <Text style={[styles.inlineBriefText, { color: colors.textTertiary }]}>Tap to view relationship intelligence</Text>
                 {loadingBrief === record.contact_id && <ActivityIndicator size="small" color="#C9A962" />}
               </TouchableOpacity>
             )}
@@ -393,7 +395,7 @@ export default function AIOutreachPage() {
             {record.suggestions.map((sug, i) => (
               <View
                 key={i}
-                style={[styles.suggestionCard, record.status === 'accepted' && record.accepted_index === i && styles.suggestionChosen]}
+                style={[styles.suggestionCard, { backgroundColor: colors.cardAlt, borderColor: colors.border }, record.status === 'accepted' && record.accepted_index === i && styles.suggestionChosen]}
                 data-testid={`suggestion-${record._id}-${i}`}
               >
                 <View style={styles.suggestionHeader}>
@@ -405,8 +407,8 @@ export default function AIOutreachPage() {
                     <Ionicons name="checkmark-circle" size={16} color="#34C759" />
                   )}
                 </View>
-                <Text style={styles.msgText}>"{sug.message}"</Text>
-                <Text style={styles.reasonText}>{sug.best_time_reason}</Text>
+                <Text style={[styles.msgText, { color: colors.text }]}>"{sug.message}"</Text>
+                <Text style={[styles.reasonText, { color: colors.textTertiary }]}>{sug.best_time_reason}</Text>
                 {record.status === 'pending' && (
                   <TouchableOpacity
                     style={styles.acceptBtn}
@@ -427,8 +429,8 @@ export default function AIOutreachPage() {
               </View>
             ))}
             {record.status === 'pending' && (
-              <TouchableOpacity style={styles.dismissBtn} onPress={() => handleDismiss(record._id)} data-testid={`dismiss-btn-${record._id}`}>
-                <Text style={styles.dismissText}>Dismiss</Text>
+              <TouchableOpacity style={[styles.dismissBtn, { borderTopColor: colors.border }]} onPress={() => handleDismiss(record._id)} data-testid={`dismiss-btn-${record._id}`}>
+                <Text style={[styles.dismissText, { color: colors.textSecondary }]}>Dismiss</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -439,59 +441,60 @@ export default function AIOutreachPage() {
   );
 }
 
+import { StyleSheet } from 'react-native';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 60, gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-  title: { color: '#FFF', fontSize: 22, fontWeight: '700' },
-  subtitle: { color: '#8E8E93', fontSize: 13, marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '700' },
+  subtitle: { fontSize: 13, marginTop: 2 },
   statsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(175,82,222,0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
   statsText: { color: '#AF52DE', fontSize: 12, fontWeight: '600' },
-  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 16, marginBottom: 16, padding: 14, backgroundColor: 'rgba(201,169,98,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(201,169,98,0.2)' },
-  infoText: { color: '#AAA', fontSize: 13, lineHeight: 18, flex: 1 },
+  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1 },
+  infoText: { fontSize: 13, lineHeight: 18, flex: 1 },
   tabScroll: { marginBottom: 16, paddingHorizontal: 16 },
-  tabRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 3, gap: 2 },
+  tabRow: { flexDirection: 'row', borderRadius: 10, padding: 3, gap: 2 },
   tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
-  tabActive: { backgroundColor: '#333' },
-  tabText: { color: '#8E8E93', fontSize: 12, fontWeight: '600' },
-  tabTextActive: { color: '#FFF' },
+  tabActive: {},
+  tabText: { fontSize: 12, fontWeight: '600' },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
-  emptyTitle: { color: '#888', fontSize: 16, fontWeight: '600' },
-  emptySubtitle: { color: '#555', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 },
-  card: { marginHorizontal: 16, marginBottom: 16, backgroundColor: '#111', borderRadius: 14, borderWidth: 1, borderColor: '#222', overflow: 'hidden' },
-  cardHeader: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#1A1A1A' },
+  emptyTitle: { fontSize: 16, fontWeight: '600' },
+  emptySubtitle: { fontSize: 13, textAlign: 'center', paddingHorizontal: 40 },
+  card: { marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
+  cardHeader: { padding: 16, borderBottomWidth: 1 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#AF52DE', justifyContent: 'center', alignItems: 'center' },
-  contactName: { color: '#FFF', fontSize: 15, fontWeight: '600' },
-  cardTime: { color: '#8E8E93', fontSize: 12, marginTop: 2 },
+  contactName: { fontSize: 15, fontWeight: '600' },
+  cardTime: { fontSize: 12, marginTop: 2 },
   aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(175,82,222,0.15)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
   aiBadgeText: { color: '#AF52DE', fontSize: 10, fontWeight: '700' },
   channelBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 11, fontWeight: '600' },
   // Relationship Brief
-  briefCard: { margin: 12, marginBottom: 4, padding: 12, backgroundColor: '#0D0D0D', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(201,169,98,0.15)' },
+  briefCard: { margin: 12, marginBottom: 4, padding: 12, borderRadius: 10, borderWidth: 1 },
   briefHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   briefTitle: { color: '#C9A962', fontSize: 11, fontWeight: '700', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
   briefMetrics: { flexDirection: 'row', gap: 16, marginBottom: 6 },
   briefMetric: { alignItems: 'center' },
-  briefMetricValue: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  briefMetricLabel: { color: '#666', fontSize: 9, marginTop: 2, textTransform: 'uppercase' },
-  briefMilestone: { color: '#8E8E93', fontSize: 11, marginTop: 4, fontStyle: 'italic' },
+  briefMetricValue: { fontSize: 15, fontWeight: '700' },
+  briefMetricLabel: { fontSize: 9, marginTop: 2, textTransform: 'uppercase' },
+  briefMilestone: { fontSize: 11, marginTop: 4, fontStyle: 'italic' },
   healthBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   healthDot: { width: 6, height: 6, borderRadius: 3 },
   healthText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
   // Inline Brief
-  inlineBrief: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: 12, marginTop: 8, marginBottom: 4, padding: 8, backgroundColor: '#0D0D0D', borderRadius: 8 },
-  inlineBriefText: { color: '#666', fontSize: 11, flex: 1 },
+  inlineBrief: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: 12, marginTop: 8, marginBottom: 4, padding: 8, borderRadius: 8 },
+  inlineBriefText: { fontSize: 11, flex: 1 },
   expandLink: { color: '#C9A962', fontSize: 11, fontWeight: '600' },
   // Context
-  contextRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginHorizontal: 12, marginTop: 8, padding: 8, backgroundColor: 'rgba(255,149,0,0.06)', borderRadius: 8 },
-  contextText: { color: '#999', fontSize: 11, lineHeight: 15, flex: 1 },
+  contextRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginHorizontal: 12, marginTop: 8, padding: 8, borderRadius: 8 },
+  contextText: { fontSize: 11, lineHeight: 15, flex: 1 },
   // Message
-  messageBox: { margin: 12, padding: 12, backgroundColor: '#1A1A1A', borderRadius: 10, borderWidth: 1, borderColor: '#2A2A2A' },
-  messageLabel: { color: '#666', fontSize: 10, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  messageContent: { color: '#E0E0E0', fontSize: 14, lineHeight: 20, fontStyle: 'italic' },
+  messageBox: { margin: 12, padding: 12, borderRadius: 10, borderWidth: 1 },
+  messageLabel: { fontSize: 10, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  messageContent: { fontSize: 14, lineHeight: 20, fontStyle: 'italic' },
   // Actions
   actionRow: { flexDirection: 'row', gap: 8, margin: 12, marginTop: 4 },
   sendBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, backgroundColor: '#C9A962', borderRadius: 8 },
@@ -499,15 +502,15 @@ const styles = StyleSheet.create({
   copyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: 'rgba(201,169,98,0.1)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(201,169,98,0.3)' },
   copyBtnText: { color: '#C9A962', fontSize: 13, fontWeight: '600' },
   // Suggestions
-  suggestionCard: { margin: 12, marginBottom: 4, padding: 14, backgroundColor: '#1A1A1A', borderRadius: 10, borderWidth: 1, borderColor: '#2A2A2A' },
+  suggestionCard: { margin: 12, marginBottom: 4, padding: 14, borderRadius: 10, borderWidth: 1 },
   suggestionChosen: { borderColor: 'rgba(52,199,89,0.4)', backgroundColor: 'rgba(52,199,89,0.05)' },
   suggestionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   approachBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(201,169,98,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   approachText: { color: '#C9A962', fontSize: 11, fontWeight: '600' },
-  msgText: { color: '#E0E0E0', fontSize: 14, lineHeight: 20, fontStyle: 'italic', marginBottom: 6 },
-  reasonText: { color: '#666', fontSize: 11, lineHeight: 15 },
+  msgText: { fontSize: 14, lineHeight: 20, fontStyle: 'italic', marginBottom: 6 },
+  reasonText: { fontSize: 11, lineHeight: 15 },
   acceptBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 10, backgroundColor: '#C9A962', borderRadius: 8 },
   acceptBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
-  dismissBtn: { alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#1A1A1A' },
-  dismissText: { color: '#8E8E93', fontSize: 13 },
+  dismissBtn: { alignItems: 'center', paddingVertical: 12, borderTopWidth: 1 },
+  dismissText: { fontSize: 13 },
 });

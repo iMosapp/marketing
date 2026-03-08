@@ -4643,8 +4643,8 @@ const getS = (colors: any) => StyleSheet.create({
   },
   // AI Suggestion bubble
   aiSuggestionBubble: {
-    backgroundColor: '#1A2E1A', borderRadius: 14,
-    padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#34C75930',
+    backgroundColor: `${colors.success}08`, borderRadius: 14,
+    padding: 12, marginBottom: 8, borderWidth: 1.5, borderColor: `${colors.success}40`,
   },
   aiSuggestionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
@@ -4653,7 +4653,7 @@ const getS = (colors: any) => StyleSheet.create({
     fontSize: 12, fontWeight: '700', color: '#34C759', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   aiSuggestionText: {
-    fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginBottom: 10,
+    fontSize: 14, color: colors.text, lineHeight: 20, marginBottom: 10,
   },
   aiSuggestionActions: {
     flexDirection: 'row', gap: 8, justifyContent: 'flex-end',

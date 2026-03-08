@@ -180,5 +180,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
 
+## Recent UI Fixes (Mar 8, 2026)
+- **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
+- **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
