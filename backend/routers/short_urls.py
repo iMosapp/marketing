@@ -298,7 +298,7 @@ async def redirect_short_url(short_code: str, request: Request):
                 if user_doc and user_doc.get("store_id"):
                     store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"name": 1, "logo_url": 1, "logo_avatar_url": 1})
                     if store:
-                        og_image = store.get("logo_avatar_url") or store.get("logo_url") or ""
+                        og_image = store.get("logo_url") or store.get("logo_avatar_url") or ""
                         store_name = store.get("name", "")
                         user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
                         if link_type == "business_card":
@@ -318,15 +318,26 @@ async def redirect_short_url(short_code: str, request: Request):
         # Filter out base64 images (too large for OG tags)
         if og_image and og_image.startswith("data:"):
             og_image = ""
+        
+        # Ensure OG image is an absolute URL (crawlers need this)
+        if og_image and not og_image.startswith("http"):
+            # Get the request's base URL to build absolute path
+            base_url = str(request.base_url).rstrip("/")
+            og_image = f"{base_url}{og_image}"
 
         from fastapi.responses import HTMLResponse
+        og_image_tags = ""
+        if og_image:
+            og_image_tags = f"""<meta property="og:image" content="{og_image}" />
+<meta property="og:image:width" content="500" />
+<meta property="og:image:height" content="500" />"""
         html = f"""<!DOCTYPE html>
 <html><head>
 <meta property="og:title" content="{og_title}" />
 <meta property="og:description" content="{og_description}" />
-{f'<meta property="og:image" content="{og_image}" />' if og_image else ''}
+{og_image_tags}
 <meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
+<meta name="twitter:card" content="summary_large_image" />
 <meta http-equiv="refresh" content="0;url={original_url}" />
 </head><body><a href="{original_url}">Continue</a></body></html>"""
         return HTMLResponse(content=html)
