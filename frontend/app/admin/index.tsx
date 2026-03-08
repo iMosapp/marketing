@@ -251,38 +251,33 @@ export default function AdminDashboard() {
   
   const handleMigrateImages = async () => {
     setMigrating(true);
-    setMigrateResult(null);
-    try {
-      const res = await api.post('/images/migrate-now', { user_id: user?._id });
-      const d = res.data;
-      if (d.status === 'started') {
-        setMigrateResult('Migration running in background...');
-        // Poll migrate-check to see remaining count go down
-        let attempts = 0;
-        const poll = setInterval(async () => {
-          attempts++;
-          try {
-            const check = await api.get('/images/migrate-check');
-            const remaining = check.data?.needs_migration?.total || 0;
-            if (remaining === 0 || attempts >= 20) {
-              clearInterval(poll);
-              setMigrateResult(remaining === 0 ? 'Done! All images migrated.' : `${remaining} images remaining. Tap again if needed.`);
-              setMigrating(false);
-            } else {
-              setMigrateResult(`Processing... ${remaining} images remaining`);
-            }
-          } catch {
-            if (attempts >= 20) { clearInterval(poll); setMigrating(false); setMigrateResult('Check complete. Tap again to verify.'); }
-          }
-        }, 5000);
-      } else {
-        setMigrateResult(d.detail || d.message || 'Done');
-        setMigrating(false);
+    setMigrateResult('Starting...');
+    let totalProcessed = 0;
+    let hasMore = true;
+    
+    while (hasMore) {
+      try {
+        const res = await api.post('/images/migrate-now', { user_id: user?._id });
+        const d = res.data;
+        if (d.status === 'error') {
+          setMigrateResult(`Error: ${d.detail}`);
+          setMigrating(false);
+          return;
+        }
+        totalProcessed += (d.processed || 0);
+        const remaining = d.remaining || 0;
+        if (d.processed === 0 || remaining === 0) {
+          hasMore = false;
+          setMigrateResult(`Done! ${totalProcessed} images migrated.`);
+        } else {
+          setMigrateResult(`Migrating... ${totalProcessed} done, ${remaining} left`);
+        }
+      } catch (e: any) {
+        setMigrateResult(`Error: ${e.message}`);
+        hasMore = false;
       }
-    } catch (e: any) {
-      setMigrateResult(`Error: ${e.response?.data?.detail || e.message}`);
-      setMigrating(false);
     }
+    setMigrating(false);
   };
   
   const toggleSection = (sectionId: string) => {

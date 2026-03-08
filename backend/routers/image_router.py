@@ -13,7 +13,12 @@ from datetime import datetime, timezone
 import logging
 
 from routers.database import get_db
-from utils.image_storage import upload_image, get_object, make_etag, get_cache_stats
+from utils.image_storage import (
+    upload_image, get_object, make_etag, get_cache_stats,
+    decode_base64_image, _compress_image, generate_thumbnail, put_object,
+    ORIGINAL_MAX_WIDTH, WEBP_QUALITY, THUMBNAIL_SIZE, AVATAR_SIZE, APP_NAME,
+)
+import uuid
 
 router = APIRouter(prefix="/images", tags=["Images"])
 logger = logging.getLogger(__name__)
@@ -271,8 +276,9 @@ async def migrate_all_base64_images(request: Request, background_tasks: Backgrou
 @router.post("/migrate-now")
 async def migrate_now(request: Request):
     """
-    Kicks off migration using asyncio.create_task — returns instantly.
-    Check results at GET /api/images/migrate-check
+    Processes ONE batch of images per call (up to 5 at a time).
+    Call repeatedly until migrate-check shows total: 0.
+    No background tasks — runs inline with proper timeout handling.
     """
     db = get_db()
     try:
@@ -293,66 +299,84 @@ async def migrate_now(request: Request):
         return {"status": "error", "detail": "Super admin only"}
 
     import asyncio
-    asyncio.create_task(_run_migrate_simple())
-    return {"status": "started", "message": "Migration running. Check /api/images/migrate-check to see remaining count."}
+    processed = 0
+    errors = []
+    BATCH = 3  # Process 3 images per call to stay under proxy timeout
+
+    # Process users
+    for u in await db.users.find({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo_url": 1}).to_list(BATCH):
+        if processed >= BATCH:
+            break
+        try:
+            r = await asyncio.to_thread(lambda doc=u: _sync_upload(doc["photo_url"], "profiles", str(doc["_id"])))
+            if r:
+                await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"], "photo_url": f"/api/images/{r['original_path']}"}})
+                processed += 1
+        except Exception as e:
+            errors.append(f"user {u['_id']}: {str(e)[:80]}")
+
+    # Process stores
+    for s in await db.stores.find({"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}}, {"_id": 1, "logo_url": 1}).to_list(BATCH):
+        if processed >= BATCH:
+            break
+        try:
+            r = await asyncio.to_thread(lambda doc=s: _sync_upload(doc["logo_url"], "logos", str(doc["_id"])))
+            if r:
+                await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": r["original_path"], "logo_thumb_path": r["thumbnail_path"], "logo_avatar_path": r["avatar_path"]}})
+                processed += 1
+        except Exception as e:
+            errors.append(f"store {s['_id']}: {str(e)[:80]}")
+
+    # Process contacts
+    for c in await db.contacts.find({"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo": 1}).to_list(BATCH):
+        if processed >= BATCH:
+            break
+        try:
+            r = await asyncio.to_thread(lambda doc=c: _sync_upload(doc["photo"], "contacts", str(doc["_id"])))
+            if r:
+                await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"]}})
+                processed += 1
+        except Exception as e:
+            errors.append(f"contact {c['_id']}: {str(e)[:80]}")
+
+    # Process congrats cards — load ONE AT A TIME (base64 can be huge)
+    for card in await db.congrats_cards.find({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "card_id": 1, "customer_photo": 1}).to_list(BATCH):
+        if processed >= BATCH:
+            break
+        try:
+            cid = card.get("card_id", str(card["_id"]))
+            r = await asyncio.to_thread(lambda doc=card, cid=cid: _sync_upload(doc["customer_photo"], "congrats", cid))
+            if r:
+                await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"]}})
+                processed += 1
+        except Exception as e:
+            errors.append(f"card {card.get('card_id', card['_id'])}: {str(e)[:80]}")
+
+    remaining = await db.congrats_cards.count_documents({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}})
+    return {"status": "ok", "processed": processed, "errors": errors, "remaining": remaining}
 
 
-async def _run_migrate_simple():
-    """Fire-and-forget migration task. Logs progress to migration_jobs collection."""
-    db = get_db()
-    log = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat(), "processed": 0, "errors": [], "type": "simple_migrate"}
-    await db.migration_jobs.insert_one(dict(log))
+def _sync_upload(image_data: str, prefix: str, entity_id: str):
+    """Synchronous image upload — safe to call from asyncio.to_thread."""
+    if not image_data or not image_data.startswith("data:"):
+        return None
+    image_bytes, content_type = decode_base64_image(image_data)
+    file_id = str(uuid.uuid4())
+    base_path = f"{APP_NAME}/{prefix}/{entity_id}"
 
-    try:
-        for u in await db.users.find({"photo_url": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo_url": 1}).to_list(200):
-            try:
-                r = await upload_image(u["photo_url"], prefix="profiles", entity_id=str(u["_id"]))
-                if r:
-                    await db.users.update_one({"_id": u["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"], "photo_url": f"/api/images/{r['original_path']}"}})
-                    log["processed"] += 1
-            except Exception as e:
-                log["errors"].append(f"user {u['_id']}: {str(e)[:100]}")
+    compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+    original_path = f"{base_path}/{file_id}.webp"
+    put_object(original_path, compressed_data, compressed_ct)
 
-        for s in await db.stores.find({"logo_url": {"$regex": "^data:"}, "logo_path": {"$exists": False}}, {"_id": 1, "logo_url": 1}).to_list(200):
-            try:
-                r = await upload_image(s["logo_url"], prefix="logos", entity_id=str(s["_id"]))
-                if r:
-                    await db.stores.update_one({"_id": s["_id"]}, {"$set": {"logo_path": r["original_path"], "logo_thumb_path": r["thumbnail_path"], "logo_avatar_path": r["avatar_path"]}})
-                    log["processed"] += 1
-            except Exception as e:
-                log["errors"].append(f"store {s['_id']}: {str(e)[:100]}")
+    thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
+    thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
+    put_object(thumb_path, thumb_data, thumb_ct)
 
-        for c in await db.contacts.find({"photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "photo": 1}).to_list(500):
-            try:
-                r = await upload_image(c["photo"], prefix="contacts", entity_id=str(c["_id"]))
-                if r:
-                    await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"], "photo_avatar_path": r["avatar_path"]}})
-                    log["processed"] += 1
-            except Exception as e:
-                log["errors"].append(f"contact {c['_id']}: {str(e)[:100]}")
+    avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
+    avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
+    put_object(avatar_path, avatar_data, avatar_ct)
 
-        for card in await db.congrats_cards.find({"customer_photo": {"$regex": "^data:"}, "photo_path": {"$exists": False}}, {"_id": 1, "card_id": 1, "customer_photo": 1}).to_list(500):
-            try:
-                cid = card.get("card_id", str(card["_id"]))
-                r = await upload_image(card["customer_photo"], prefix="congrats", entity_id=cid)
-                if r:
-                    await db.congrats_cards.update_one({"_id": card["_id"]}, {"$set": {"photo_path": r["original_path"], "photo_thumb_path": r["thumbnail_path"]}})
-                    log["processed"] += 1
-            except Exception as e:
-                log["errors"].append(f"card {cid}: {str(e)[:100]}")
-
-        log["status"] = "completed"
-    except Exception as e:
-        log["status"] = "failed"
-        log["errors"].append(f"FATAL: {str(e)[:200]}")
-
-    log["completed_at"] = datetime.now(timezone.utc).isoformat()
-    await db.migration_jobs.update_one(
-        {"type": "simple_migrate", "status": "running"},
-        {"$set": log},
-        upsert=True,
-    )
-    logger.info(f"[Migrate] Done: processed={log['processed']}, errors={len(log['errors'])}")
+    return {"original_path": original_path, "thumbnail_path": thumb_path, "avatar_path": avatar_path}
 
 
 async def _run_migration(job_id: str):
