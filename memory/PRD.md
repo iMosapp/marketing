@@ -256,6 +256,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Tag normalization:** Tag names with spaces ("Review Sent") now correctly match template trigger_tags with underscores ("review_sent").
 - **Tested:** 14/14 backend tests passed (iteration 168)
 
+### Personal Best Tracking + Web Push Notifications (Mar 9, 2026)
+- **Personal bests:** Performance page now shows Best Day (with date), Best Week, and Today's count side by side. Today tile shows "X to beat" when below personal best, or "NEW RECORD!" when above.
+- **Web Push Notifications:** Service Worker (`sw-push.js`) registered for push notifications. Backend stores subscriptions via VAPID keys. Milestone notifications fire on: streak milestones (7, 14, 21, 30, 60, 90 days), level ups (Rookie → Legend), and new personal bests. Notifications tracked in `user_milestones` collection to avoid duplicates.
+- **Push subscription CRUD:** `POST /api/push/subscribe/{userId}`, `DELETE /api/push/unsubscribe/{userId}`, `GET /api/push/vapid-key`
+- **Tested:** 16/16 backend tests + all frontend UI tests passed (iteration 169)
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
