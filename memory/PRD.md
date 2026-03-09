@@ -289,6 +289,26 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - Frontend API calls updated to pass `period` parameter
    - Backend already supported `period` parameter — no backend changes needed
 
+### CRM Timeline Export (Mar 9, 2026)
+1. **Public Activity Timeline Links:**
+   - Each contact gets a unique, secure URL: `/timeline/{uuid-token}`
+   - No login required — the token IS the security (like Google Docs "anyone with link")
+   - Shows: store branding, contact info + tags, stats bar (activities, notes, customer since), full activity timeline grouped by date with icons
+   - Backend: `/app/backend/routers/crm_timeline.py` — token generation, public timeline, PIN verification, settings
+   - Frontend: `/app/frontend/app/timeline/[token].tsx` — clean read-only timeline page
+2. **Optional Store-Level PIN Protection:**
+   - Toggle in Settings > Integrations > RMS tab
+   - 4-8 digit PIN, auto-generated when enabled
+   - PIN verified once per session (stored in localStorage), then transparent
+   - PIN sessions stored in `crm_pin_sessions` collection
+3. **Copy CRM Link Button:**
+   - Added to contact detail "Share Your Stuff" modal as "CRM Timeline Link" with gold "Copy" button
+   - Generates token on first copy, marks contact as `crm_link_copied_at`
+4. **CRM Link Filter on Contacts:**
+   - Three filter tabs: All | CRM Linked | Not in CRM
+   - Uses `crm_link_copied_at` field on contact model
+5. **Export Stats:** `GET /api/crm/export-stats/{user_id}` returns total/linked/not_linked counts
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
