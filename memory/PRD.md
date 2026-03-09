@@ -234,6 +234,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - All performance tiles are now clickable — tapping opens a detail modal with recent activity (contact name, event type, timestamp), and tapping a contact navigates to their detail page
   - New backend endpoint: `GET /api/tasks/{user_id}/performance/detail?category=texts&period=week` returns recent events for a category
 
+### Event Tracking Fix — All Send Paths (Mar 9, 2026)
+- **Root cause:** Quick-send flows were calling `/messages/send/{userId}` (missing conversation_id → 404 silently caught) so no `contact_event` was created → no performance dashboard credit
+- **Fixed files:** `quick-send/[action].tsx` (3 send methods: SMS, email, copy), `thread/[id].tsx` (personal SMS fetch URL), `touchpoints/index.tsx` (fallback send), `more.tsx` (showcase + birthday shares)
+- **Fix:** All send paths now route through `/contacts/{userId}/{contactId}/events` (same collection performance dashboard queries) or `find-or-create-and-log` for flows without a contact yet
+- **Tested:** 11/11 backend tests + all frontend tests passed (iteration 166)
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
