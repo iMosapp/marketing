@@ -269,7 +269,7 @@ export default function MoreScreen() {
     } catch {}
   };
 
-  const handleShowroomViaSMS = () => {
+  const handleShowroomViaSMS = async () => {
     const url = getShowroomUrl();
     const name = shareRecipientName.trim();
     const phone = shareRecipientPhone.trim();
@@ -279,25 +279,42 @@ export default function MoreScreen() {
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = smsUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(smsUrl); }
+    // Log event
+    if (user?._id && phone) {
+      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        phone, name: name || phone,
+        event_type: 'showroom_shared', event_title: 'Showcase Shared',
+        event_description: 'Shared showcase via SMS', event_icon: 'storefront', event_color: '#34C759',
+      }).catch(() => {});
+    }
     setShowShowroomShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };
 
-  const handleShowroomViaEmail = () => {
+  const handleShowroomViaEmail = async () => {
     const url = getShowroomUrl();
     const subject = 'Check Out Our Happy Customers!';
     const body = `Hi!\n\nTake a look at what our customers are saying:\n\n${url}\n\nThank you!`;
     const email = shareRecipientEmail.trim();
+    const name = shareRecipientName.trim();
     const mailto = email ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = mailto; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(mailto); }
+    // Log event
+    if (user?._id && email) {
+      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        email, name: name || email,
+        event_type: 'showroom_shared', event_title: 'Showcase Shared',
+        event_description: 'Shared showcase via email', event_icon: 'storefront', event_color: '#34C759',
+      }).catch(() => {});
+    }
     setShowShowroomShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };
 
   // ===== Birthday Card Share Helpers =====
-  const handleBirthdayViaSMS = () => {
+  const handleBirthdayViaSMS = async () => {
     const phone = shareRecipientPhone.trim();
     const name = shareRecipientName.trim();
     const greeting = name ? `Happy Birthday ${name}! ` : 'Happy Birthday! ';
@@ -306,11 +323,19 @@ export default function MoreScreen() {
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = smsUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(smsUrl); }
+    // Log event
+    if (user?._id && phone) {
+      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        phone, name: name || phone,
+        event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
+        event_description: `Sent birthday greeting to ${name || phone}`, event_icon: 'gift', event_color: '#FF9500',
+      }).catch(() => {});
+    }
     setShowBirthdayShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };
 
-  const handleBirthdayViaEmail = () => {
+  const handleBirthdayViaEmail = async () => {
     const subject = 'Happy Birthday from Us!';
     const name = shareRecipientName.trim();
     const body = name
@@ -321,6 +346,14 @@ export default function MoreScreen() {
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = mailto; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(mailto); }
+    // Log event
+    if (user?._id && email) {
+      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        email, name: name || email,
+        event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
+        event_description: `Sent birthday greeting to ${name || email}`, event_icon: 'gift', event_color: '#FF9500',
+      }).catch(() => {});
+    }
     setShowBirthdayShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };

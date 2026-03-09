@@ -664,7 +664,7 @@ export default function ThreadScreen() {
       // even when the browser navigates away to the native SMS app
       const apiBase = Platform.OS === 'web' ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
       try {
-        fetch(`${apiBase}/messages/send/${user._id}`, {
+        fetch(`${apiBase}/messages/send/${user._id}/${convId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(messagePayload),

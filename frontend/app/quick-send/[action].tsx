@@ -239,12 +239,18 @@ export default function QuickSendPage() {
         if (IS_WEB && navigator.clipboard) {
           await navigator.clipboard.writeText(finalMessage);
         }
-        // Log the event
-        await api.post(`/contacts/${userId}/${contactId}/find-or-create-and-log`, {
-          event_type: config.eventType,
-          channel: 'link_copy',
-          content: finalMessage,
-        }).catch(() => {});
+        // Log the event via contact event endpoint
+        if (contactId) {
+          await api.post(`/contacts/${userId}/${contactId}/events`, {
+            event_type: config.eventType,
+            title: config.previewTitle,
+            description: `Shared via copy link`,
+            channel: 'link_copy',
+            category: 'outreach',
+            icon: config.icon,
+            color: config.color,
+          }).catch(() => {});
+        }
 
         setStep('done');
         setTimeout(() => {
@@ -254,12 +260,17 @@ export default function QuickSendPage() {
 
       } else if (sendMethod === 'sms') {
         // Log the event server-side first
-        await api.post(`/messages/send/${userId}`, {
-          contact_id: contactId,
-          content: finalMessage,
-          channel: 'sms_personal',
-          event_type: config.eventType,
-        }).catch(() => {});
+        if (contactId) {
+          await api.post(`/contacts/${userId}/${contactId}/events`, {
+            event_type: config.eventType,
+            title: config.previewTitle,
+            description: `Sent via personal SMS to ${firstName}`,
+            channel: 'sms_personal',
+            category: 'outreach',
+            icon: 'chatbubble',
+            color: '#007AFF',
+          }).catch(() => {});
+        }
 
         // Open native SMS app with pre-populated message
         openNativeSMS(phone, finalMessage);
@@ -275,14 +286,35 @@ export default function QuickSendPage() {
 
       } else if (sendMethod === 'email') {
         if (email) {
-          // Send email via backend (Resend)
-          await api.post(`/messages/send/${userId}`, {
-            contact_id: contactId,
-            content: finalMessage,
-            channel: 'email',
-            to_email: email,
-            event_type: config.eventType,
-          });
+          // Log the event and send email via backend
+          if (contactId) {
+            await api.post(`/contacts/${userId}/${contactId}/events`, {
+              event_type: config.eventType,
+              title: config.previewTitle,
+              description: `Sent via email to ${firstName}`,
+              channel: 'email',
+              category: 'outreach',
+              icon: 'mail',
+              color: '#AF52DE',
+            }).catch(() => {});
+          }
+          // Also try to send via Resend if conversation exists
+          try {
+            const convRes = await api.post(`/messages/conversations/${userId}`, {
+              contact_id: contactId,
+              contact_phone: phone,
+            });
+            const convId = convRes.data?._id;
+            if (convId) {
+              await api.post(`/messages/send/${userId}/${convId}`, {
+                conversation_id: convId,
+                content: finalMessage,
+                channel: 'email',
+                to_email: email,
+                event_type: config.eventType,
+              });
+            }
+          } catch {}
         }
         setStep('done');
         setTimeout(() => {

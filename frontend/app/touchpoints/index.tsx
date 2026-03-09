@@ -150,13 +150,16 @@ export default function TouchpointsScreen() {
       }
     } catch {}
 
-    // Contact not in CRM — use personal SMS fallback: log via API then open native SMS
+    // Contact not in CRM — create contact via find-or-create, then log the event
     try {
-      await api.post(`/messages/send/${user!._id}`, {
-        content: task.suggested_message || '',
-        channel: 'sms_personal',
-        contact_phone: phone,
-        contact_name: task.contact_name || '',
+      const createRes = await api.post(`/contacts/${user!._id}/find-or-create-and-log`, {
+        phone,
+        name: task.contact_name || phone,
+        event_type: 'sms_sent',
+        event_title: 'SMS Sent',
+        event_description: `Texted ${task.contact_name || phone}`,
+        event_icon: 'chatbubble',
+        event_color: '#007AFF',
       });
     } catch {}
     // Open native SMS app with message pre-filled
