@@ -2737,9 +2737,30 @@ async def remove_user_from_store(user_id: str, data: dict):
 
 
 @router.put("/hierarchy/users/{user_id}/role")
-async def update_user_role(user_id: str, data: dict):
+async def update_user_role(user_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
     """Update a user's role"""
+    requesting = await get_requesting_user(x_user_id)
+    if not requesting:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    req_role = requesting.get("role", "user")
+    if req_role not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="Only admins can change user roles")
+
     role = data.get("role")
+    valid_roles = ["user", "account_manager", "store_manager", "org_admin", "super_admin"]
+    if not role or role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}")
+
+    db = get_db()
+    target = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"role": role, "role_updated_at": datetime.utcnow()}}
+    )
+    return {"status": "ok", "role": role}
 
 
 # ============= DATA ENDPOINTS =============
