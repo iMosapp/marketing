@@ -372,6 +372,21 @@ async def redirect_short_url(short_code: str, request: Request):
             except Exception:
                 pass
 
+        # For congrats/card links, use the card image as OG image
+        ref_id = doc.get("reference_id", "")
+        if link_type in ("congrats_card", "card", "congrats") and ref_id:
+            base_url = str(request.base_url).rstrip("/")
+            og_image = f"{base_url}/api/congrats/card/{ref_id}/image"
+            card_doc = await db.congrats_cards.find_one({"card_id": ref_id})
+            if not card_doc:
+                card_doc = await db.birthday_cards.find_one({"card_id": ref_id})
+            if card_doc:
+                cust = card_doc.get("customer_name", "")
+                headline = card_doc.get("headline", "")
+                sname = card_doc.get("store_name", "")
+                og_title = f"{headline}" if headline else "You've received a card!"
+                og_description = f"For {cust} from {sname}" if cust and sname else f"For {cust}" if cust else ""
+
         # Fallback: use the static white-background OG image
         if not og_image:
             base_url = str(request.base_url).rstrip("/")
@@ -380,9 +395,11 @@ async def redirect_short_url(short_code: str, request: Request):
         from fastapi.responses import HTMLResponse
         og_image_tags = ""
         if og_image:
+            # Card images are 1080x1350, others are 500x500
+            img_w, img_h = ("1080", "1350") if "/congrats/card/" in og_image else ("500", "500")
             og_image_tags = f"""<meta property="og:image" content="{og_image}" />
-<meta property="og:image:width" content="500" />
-<meta property="og:image:height" content="500" />"""
+<meta property="og:image:width" content="{img_w}" />
+<meta property="og:image:height" content="{img_h}" />"""
         html = f"""<!DOCTYPE html>
 <html><head>
 <meta property="og:title" content="{og_title}" />

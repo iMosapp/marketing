@@ -748,101 +748,186 @@ def create_circular_mask(size):
 @router.get("/card/{card_id}/image")
 async def get_card_image(card_id: str):
     """
-    Generate a clean, social-media-ready card image.
-    Checks both collections for backward compat.
+    Generate a premium, social-media-ready card image with embedded tracking.
+    Includes store logo, QR code with tracked short URL, and branded footer.
+    1080x1350 (4:5 portrait — optimal for Instagram/Facebook).
     """
+    import qrcode
+    import os
     db = get_db()
-    
+    app_url = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+
     card = await db.congrats_cards.find_one({"card_id": card_id})
     if not card:
         card = await db.birthday_cards.find_one({"card_id": card_id})
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
-    
-    # Social-friendly dimensions (4:5 portrait, ideal for Instagram/FB)
-    width = 1080
-    height = 1350
-    
-    # Get colors
-    bg_color = hex_to_rgb(card.get("background_color", "#1A1A1A"))
-    accent_color = hex_to_rgb(card.get("accent_color", "#C9A962"))
-    text_color = hex_to_rgb(card.get("text_color", "#FFFFFF"))
-    
-    # Create image
-    img = Image.new('RGB', (width, height), bg_color)
+
+    # ---------- dimensions & colors ----------
+    W, H = 1080, 1350
+    bg_hex = card.get("background_color", "#111111")
+    accent_hex = card.get("accent_color", "#C9A962")
+    text_hex = card.get("text_color", "#FFFFFF")
+    bg = hex_to_rgb(bg_hex)
+    accent = hex_to_rgb(accent_hex)
+    txt = hex_to_rgb(text_hex)
+    dim_txt = tuple(min(255, c + 60) for c in bg)  # subtle secondary text
+
+    img = Image.new('RGB', (W, H), bg)
     draw = ImageDraw.Draw(img)
-    
-    # Load fonts
-    try:
-        font_headline = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 64)
-        font_name = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
-        font_message = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
-        font_salesman = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
-    except Exception:
-        font_headline = font_name = font_message = font_salesman = font_small = ImageFont.load_default()
-    
-    # Subtle accent border at top
-    draw.rectangle([0, 0, width, 6], fill=accent_color)
-    
-    y = 80
-    
-    # Headline
-    headline = card.get("headline", "Congratulations!")
-    bbox = draw.textbbox((0, 0), headline, font=font_headline)
-    tw = bbox[2] - bbox[0]
-    draw.text(((width - tw) // 2, y), headline, fill=accent_color, font=font_headline)
-    y += 100
-    
-    # Customer photo (large, centered, circular with accent ring)
-    customer_photo_data = card.get("customer_photo", "")
-    photo_size = 380
-    photo_x = (width - photo_size) // 2
-    
-    if customer_photo_data and customer_photo_data.startswith("data:"):
+
+    # ---------- fonts ----------
+    def load_font(bold=False, size=40):
+        name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
         try:
-            base64_str = customer_photo_data.split(",")[1]
-            photo_bytes = base64.b64decode(base64_str)
-            customer_photo = Image.open(io.BytesIO(photo_bytes)).convert("RGBA")
-            min_dim = min(customer_photo.size)
-            left = (customer_photo.width - min_dim) // 2
-            top = (customer_photo.height - min_dim) // 2
-            customer_photo = customer_photo.crop((left, top, left + min_dim, top + min_dim))
-            customer_photo = customer_photo.resize((photo_size, photo_size), Image.Resampling.LANCZOS)
-            mask = create_circular_mask(photo_size)
-            # Accent ring
-            ring = photo_size + 16
-            rx = (width - ring) // 2
-            draw.ellipse([rx, y - 8, rx + ring, y + ring - 8], fill=accent_color)
-            img.paste(customer_photo.convert("RGB"), (photo_x, y), mask)
+            return ImageFont.truetype(f"/usr/share/fonts/truetype/dejavu/{name}", size)
         except Exception:
-            draw.ellipse([photo_x, y, photo_x + photo_size, y + photo_size], outline=accent_color, width=6)
+            return ImageFont.load_default()
+
+    f_logo     = load_font(True, 22)
+    f_headline = load_font(True, 58)
+    f_name     = load_font(True, 44)
+    f_msg      = load_font(False, 28)
+    f_sender   = load_font(True, 26)
+    f_title    = load_font(False, 22)
+    f_url      = load_font(True, 20)
+    f_footer   = load_font(False, 18)
+
+    # ---------- accent bar at top ----------
+    draw.rectangle([0, 0, W, 8], fill=accent)
+
+    y = 40
+
+    # ---------- store logo ----------
+    store_logo_loaded = False
+    store_name = card.get("store_name", "")
+    salesman_id = card.get("salesman_id")
+
+    if salesman_id:
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(salesman_id)}, {"store_id": 1})
+            if user_doc and user_doc.get("store_id"):
+                try:
+                    store_doc = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])})
+                except Exception:
+                    store_doc = await db.stores.find_one({"_id": user_doc["store_id"]})
+                if store_doc:
+                    store_name = store_doc.get("name", store_name)
+                    logo_url = store_doc.get("logo_url", "")
+                    if logo_url:
+                        try:
+                            import httpx
+                            full_url = f"{app_url}{logo_url}" if logo_url.startswith("/") else logo_url
+                            async with httpx.AsyncClient() as client:
+                                resp = await client.get(full_url, timeout=5)
+                                if resp.status_code == 200:
+                                    logo_img = Image.open(io.BytesIO(resp.content)).convert("RGBA")
+                                    # Scale to max 200w x 60h
+                                    lw, lh = logo_img.size
+                                    scale = min(200 / lw, 60 / lh, 1.0)
+                                    logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.Resampling.LANCZOS)
+                                    lw, lh = logo_img.size
+                                    lx = (W - lw) // 2
+                                    # Paste with alpha
+                                    img.paste(logo_img, (lx, y), logo_img if logo_img.mode == 'RGBA' else None)
+                                    y += lh + 12
+                                    store_logo_loaded = True
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+
+    # Store name (if no logo, or always show below logo)
+    if store_name:
+        bbox = draw.textbbox((0, 0), store_name, font=f_logo)
+        tw = bbox[2] - bbox[0]
+        draw.text(((W - tw) // 2, y), store_name, fill=dim_txt, font=f_logo)
+        y += 40
     else:
-        draw.ellipse([photo_x, y, photo_x + photo_size, y + photo_size], outline=accent_color, width=6)
-    
-    y += photo_size + 40
-    
-    # Customer name
-    customer_name = card.get("customer_name", "Customer")
-    bbox = draw.textbbox((0, 0), customer_name, font=font_name)
+        y += 20
+
+    # ---------- thin accent line ----------
+    line_w = 120
+    draw.rectangle([(W - line_w) // 2, y, (W + line_w) // 2, y + 3], fill=accent)
+    y += 30
+
+    # ---------- headline ----------
+    headline = card.get("headline", "Congratulations!")
+    bbox = draw.textbbox((0, 0), headline, font=f_headline)
     tw = bbox[2] - bbox[0]
-    draw.text(((width - tw) // 2, y), customer_name, fill=text_color, font=font_name)
-    y += 70
-    
-    # Message (word-wrapped, max 3 lines)
+    draw.text(((W - tw) // 2, y), headline, fill=accent, font=f_headline)
+    y += 85
+
+    # ---------- customer photo ----------
+    customer_photo_data = card.get("customer_photo", "")
+    photo_size = 320
+    photo_x = (W - photo_size) // 2
+
+    photo_loaded = False
+    if customer_photo_data:
+        try:
+            if customer_photo_data.startswith("data:"):
+                b64 = customer_photo_data.split(",")[1]
+                photo_bytes = base64.b64decode(b64)
+            elif customer_photo_data.startswith("/api/") or customer_photo_data.startswith("http"):
+                import httpx
+                full = f"{app_url}{customer_photo_data}" if customer_photo_data.startswith("/") else customer_photo_data
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(full, timeout=5)
+                    photo_bytes = resp.content if resp.status_code == 200 else None
+            else:
+                photo_bytes = None
+
+            if photo_bytes:
+                cphoto = Image.open(io.BytesIO(photo_bytes)).convert("RGBA")
+                mn = min(cphoto.size)
+                left = (cphoto.width - mn) // 2
+                top = (cphoto.height - mn) // 2
+                cphoto = cphoto.crop((left, top, left + mn, top + mn))
+                cphoto = cphoto.resize((photo_size, photo_size), Image.Resampling.LANCZOS)
+                mask = create_circular_mask(photo_size)
+                # accent ring
+                ring = photo_size + 12
+                rx = (W - ring) // 2
+                draw.ellipse([rx, y - 6, rx + ring, y + ring - 6], fill=accent)
+                img.paste(cphoto.convert("RGB"), (photo_x, y), mask)
+                photo_loaded = True
+        except Exception:
+            pass
+
+    if not photo_loaded:
+        # placeholder circle
+        draw.ellipse([photo_x, y, photo_x + photo_size, y + photo_size], outline=accent, width=4)
+        # initials
+        cname = card.get("customer_name", "?")
+        initials = "".join(w[0].upper() for w in cname.split()[:2])
+        fi = load_font(True, 80)
+        bbox = draw.textbbox((0, 0), initials, font=fi)
+        iw, ih = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text((photo_x + (photo_size - iw) // 2, y + (photo_size - ih) // 2 - 10), initials, fill=accent, font=fi)
+
+    y += photo_size + 30
+
+    # ---------- customer name ----------
+    customer_name = card.get("customer_name", "Customer")
+    bbox = draw.textbbox((0, 0), customer_name, font=f_name)
+    tw = bbox[2] - bbox[0]
+    draw.text(((W - tw) // 2, y), customer_name, fill=txt, font=f_name)
+    y += 60
+
+    # ---------- message (word-wrapped) ----------
     message = card.get("message", "Thank you for choosing us!")
     message = message.replace("{customer_name}", customer_name).replace("{name}", customer_name)
     if "{salesman_name}" in message:
         message = message.replace("{salesman_name}", card.get("salesman_name", ""))
-    
-    max_text_w = width - 140
-    words = message.split()
+
+    max_tw = W - 160
     lines = []
     cur = ""
-    for w in words:
+    for w in message.split():
         test = f"{cur} {w}".strip()
-        bbox = draw.textbbox((0, 0), test, font=font_message)
-        if bbox[2] - bbox[0] <= max_text_w:
+        bbox = draw.textbbox((0, 0), test, font=f_msg)
+        if bbox[2] - bbox[0] <= max_tw:
             cur = test
         else:
             if cur:
@@ -850,51 +935,93 @@ async def get_card_image(card_id: str):
             cur = w
     if cur:
         lines.append(cur)
-    lines = lines[:4]  # Max 4 lines
-    
+    lines = lines[:5]
+
     for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font_message)
+        bbox = draw.textbbox((0, 0), line, font=f_msg)
         tw = bbox[2] - bbox[0]
-        draw.text(((width - tw) // 2, y), line, fill=text_color, font=font_message)
-        y += 42
-    
-    # Accent divider
-    y += 20
-    dw = 80
-    dx = (width - dw) // 2
-    draw.rounded_rectangle([dx, y, dx + dw, y + 4], radius=2, fill=accent_color)
-    y += 40
-    
-    # Sender info
+        draw.text(((W - tw) // 2, y), line, fill=txt, font=f_msg)
+        y += 38
+    y += 15
+
+    # ---------- accent divider ----------
+    draw.rectangle([(W - 80) // 2, y, (W + 80) // 2, y + 3], fill=accent)
+    y += 25
+
+    # ---------- sender info ----------
     if card.get("show_salesman"):
-        name = card.get("salesman_name", "")
-        title = card.get("salesman_title", "")
-        store = card.get("store_name", "")
-        if name:
-            bbox = draw.textbbox((0, 0), name, font=font_salesman)
+        sname = card.get("salesman_name", "")
+        stitle = card.get("salesman_title", "")
+        if sname:
+            bbox = draw.textbbox((0, 0), sname, font=f_sender)
             tw = bbox[2] - bbox[0]
-            draw.text(((width - tw) // 2, y), name, fill=text_color, font=font_salesman)
-            y += 38
-        if title:
-            bbox = draw.textbbox((0, 0), title, font=font_small)
-            tw = bbox[2] - bbox[0]
-            draw.text(((width - tw) // 2, y), title, fill=accent_color, font=font_small)
+            draw.text(((W - tw) // 2, y), sname, fill=txt, font=f_sender)
             y += 34
-        if store:
-            bbox = draw.textbbox((0, 0), store, font=font_small)
+        if stitle:
+            bbox = draw.textbbox((0, 0), stitle, font=f_title)
             tw = bbox[2] - bbox[0]
-            draw.text(((width - tw) // 2, y), store, fill=(142, 142, 147), font=font_small)
-    
-    # Save to bytes
+            draw.text(((W - tw) // 2, y), stitle, fill=accent, font=f_title)
+            y += 30
+        if store_name:
+            bbox = draw.textbbox((0, 0), store_name, font=f_title)
+            tw = bbox[2] - bbox[0]
+            draw.text(((W - tw) // 2, y), store_name, fill=dim_txt, font=f_title)
+            y += 30
+
+    # ========== TRACKING FOOTER (QR + short URL) ==========
+    short_url = card.get("short_url", "")
+    share_url = short_url or f"{app_url}/congrats/{card_id}"
+
+    # Bottom section background
+    footer_top = H - 180
+    draw.rectangle([0, footer_top, W, H], fill=tuple(max(0, c - 15) for c in bg))
+    draw.rectangle([0, footer_top, W, footer_top + 2], fill=accent)
+
+    # QR code (left side)
+    try:
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=4, border=2)
+        qr.add_data(share_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color=accent_hex, back_color=bg_hex).convert("RGB")
+        qr_size = 130
+        qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.LANCZOS)
+        qr_x = 60
+        qr_y = footer_top + 25
+        img.paste(qr_img, (qr_x, qr_y))
+    except Exception:
+        qr_size = 0
+        qr_x = 60
+
+    # URL text (right of QR)
+    url_x = qr_x + qr_size + 30 if qr_size else 60
+    url_y = footer_top + 40
+
+    # Display a clean version of the URL
+    display_url = share_url.replace("https://", "").replace("http://", "")
+    if len(display_url) > 40:
+        display_url = display_url[:40] + "..."
+    draw.text((url_x, url_y), "Scan or visit:", fill=dim_txt, font=f_footer)
+    draw.text((url_x, url_y + 28), display_url, fill=accent, font=f_url)
+
+    # Powered by
+    powered = "i'M On Social"
+    bbox = draw.textbbox((0, 0), powered, font=f_footer)
+    tw = bbox[2] - bbox[0]
+    draw.text((url_x, url_y + 65), powered, fill=dim_txt, font=f_footer)
+
+    # Bottom accent bar
+    draw.rectangle([0, H - 8, W, H], fill=accent)
+
+    # ---------- save ----------
     img_bytes = io.BytesIO()
     img.save(img_bytes, format='PNG', quality=95)
     img_bytes.seek(0)
-    
-    # Track download (try both collections)
+
+    # Track download
     result = await db.congrats_cards.update_one({"card_id": card_id}, {"$inc": {"downloads": 1}})
     if result.matched_count == 0:
         await db.birthday_cards.update_one({"card_id": card_id}, {"$inc": {"downloads": 1}})
-    
+
     return Response(
         content=img_bytes.getvalue(),
         media_type="image/png",

@@ -216,6 +216,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 - **Brand Kit Logo Upload:** Added direct file upload to the Brand Kit page (`/settings/brand-kit`). Users can now upload a logo directly instead of only pasting a URL. The uploaded logo is synced to the store's `logo_url` field on save. Also fixed relative logo URLs in email templates by resolving them to absolute URLs using `APP_URL`.
 
+- **Digital Card Sharing Redesign (Mar 9, 2026):**
+  - Upgraded server-generated card image (Pillow): now includes store logo, QR code with tracked short URL, branded footer, accent bars, and clean typography
+  - QR code + printed short URL are baked INTO the image — so even when shared as a photo (camera roll → Instagram), the tracking chain survives
+  - Added OG meta tags to short URL handler for congrats cards — social platforms (Facebook, iMessage, Twitter) now show the full card image as a rich preview
+  - Fixed share flow to always use tracked short URL (was using `window.location.href`)
+  - Added Web Share API support for "Save Card" button — triggers native share sheet on mobile for direct camera roll save
+  - Instagram share now downloads the card image first, then instructs user to post from gallery
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

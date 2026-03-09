@@ -133,11 +133,25 @@ export default function CongratsCardPage() {
   };
 
   const handleDownload = async () => {
+    await trackAction('download');
     const imageUrl = `${api.defaults.baseURL}/congrats/card/${cardId}/image`;
+    
     if (Platform.OS === 'web') {
+      // Try Web Share API first (works on mobile browsers for "Save Image" to camera roll)
+      try {
+        const resp = await fetch(imageUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], `card-${cardId}.png`, { type: 'image/png' });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: cardData?.headline || 'Card' });
+          return;
+        }
+      } catch {}
+      
+      // Fallback: direct download
       const a = document.createElement('a');
       a.href = imageUrl;
-      a.download = `congrats-${cardId}.png`;
+      a.download = `card-${cardId}.png`;
       a.target = '_self';
       document.body.appendChild(a);
       a.click();
@@ -150,11 +164,11 @@ export default function CongratsCardPage() {
   const handleShare = async (platform?: string) => {
     await trackAction('share');
     
-    const shareUrl = Platform.OS === 'web' 
-      ? window.location.href 
-      : `https://app.imonsocial.com/congrats/${cardId}`;
+    // Always use the tracked short URL for sharing
+    const shareUrl = cardData?.short_url || 
+      (Platform.OS === 'web' ? window.location.href : `https://app.imonsocial.com/congrats/${cardId}`);
     
-    const shareText = `Check out my thank you card from ${cardData?.salesman?.name || 'my salesperson'}! ${cardData?.headline}`;
+    const shareText = `${cardData?.headline || 'Check this out!'} — from ${cardData?.salesman?.name || cardData?.store_name || 'us'}`;
     
     if (platform) {
       let url = '';
@@ -169,7 +183,9 @@ export default function CongratsCardPage() {
           url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
           break;
         case 'instagram':
-          alert('To share on Instagram:\n\n1. Take a screenshot of this card\n2. Open Instagram and create a new post or story\n3. Select the screenshot from your gallery');
+          // Download the card image first, then instruct to share
+          await handleDownload();
+          alert('Card saved! Now open Instagram, create a new post or story, and select the card from your gallery.');
           return;
       }
       // Use native share sheet if available, otherwise open in same window
