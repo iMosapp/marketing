@@ -1,22 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Image,
+  ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
-import api from '../../services/api';
-
 import { useThemeStore } from '../../store/themeStore';
+import api from '../../services/api';
+import { showAlert, showSimpleAlert } from '../../services/alert';
+
 interface PendingEntry {
   card_id: string;
   customer_name: string;
@@ -27,7 +21,7 @@ interface PendingEntry {
   created_at: string | null;
 }
 
-export default function ShowroomApprovalsScreen() {
+export default function ShowcaseApprovalsScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
@@ -35,7 +29,8 @@ export default function ShowroomApprovalsScreen() {
   const [entries, setEntries] = useState<PendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [processing, setProcessing] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,7 +44,7 @@ export default function ShowroomApprovalsScreen() {
       const res = await api.get(`/showcase/pending/${user._id}`);
       setEntries(res.data);
     } catch (e) {
-      console.error('Error fetching pending showroom entries:', e);
+      console.error('Error fetching pending entries:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -57,20 +52,22 @@ export default function ShowroomApprovalsScreen() {
   };
 
   const handleApprove = async (cardId: string) => {
-    setProcessing(cardId);
+    setProcessingId(cardId);
+    setProcessingAction('approve');
     try {
       await api.post(`/showcase/entry/${cardId}/approve`);
       setEntries(prev => prev.filter(e => e.card_id !== cardId));
-      Alert.alert('Approved', 'Entry is now visible in the showcase.');
+      showSimpleAlert('Approved', 'Entry is now visible on the showcase.');
     } catch {
-      Alert.alert('Error', 'Failed to approve entry.');
+      showSimpleAlert('Error', 'Failed to approve entry. Please try again.');
     } finally {
-      setProcessing(null);
+      setProcessingId(null);
+      setProcessingAction(null);
     }
   };
 
-  const handleReject = async (cardId: string) => {
-    Alert.alert(
+  const handleReject = (cardId: string) => {
+    showAlert(
       'Reject Entry',
       'Are you sure? This entry will be hidden from the showcase.',
       [
@@ -79,15 +76,17 @@ export default function ShowroomApprovalsScreen() {
           text: 'Reject',
           style: 'destructive',
           onPress: async () => {
-            setProcessing(cardId);
+            setProcessingId(cardId);
+            setProcessingAction('reject');
             try {
               await api.post(`/showcase/entry/${cardId}/reject`);
               setEntries(prev => prev.filter(e => e.card_id !== cardId));
-              Alert.alert('Rejected', 'Entry has been hidden.');
+              showSimpleAlert('Rejected', 'Entry has been hidden from the showcase.');
             } catch {
-              Alert.alert('Error', 'Failed to reject entry.');
+              showSimpleAlert('Error', 'Failed to reject entry. Please try again.');
             } finally {
-              setProcessing(null);
+              setProcessingId(null);
+              setProcessingAction(null);
             }
           },
         },
@@ -115,7 +114,7 @@ export default function ShowroomApprovalsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="showroom-approvals-back">
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="showcase-approvals-back">
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Showcase Approvals</Text>
@@ -137,56 +136,59 @@ export default function ShowroomApprovalsScreen() {
         ) : (
           <>
             <Text style={styles.sectionTitle}>{entries.length} Pending Post{entries.length !== 1 ? 's' : ''}</Text>
-            {entries.map((entry) => (
-              <View key={entry.card_id} style={styles.entryCard} data-testid={`pending-entry-${entry.card_id}`}>
-                {entry.customer_photo && (
-                  <Image source={{ uri: entry.customer_photo }} style={styles.entryPhoto} resizeMode="cover" />
-                )}
-                <View style={styles.entryInfo}>
-                  <Text style={styles.customerName}>{entry.customer_name}</Text>
-                  {entry.salesman_name && (
-                    <Text style={styles.salesmanName}>by {entry.salesman_name}</Text>
+            {entries.map((entry) => {
+              const isProcessing = processingId === entry.card_id;
+              return (
+                <View key={entry.card_id} style={styles.entryCard} data-testid={`pending-entry-${entry.card_id}`}>
+                  {entry.customer_photo && (
+                    <Image source={{ uri: entry.customer_photo }} style={styles.entryPhoto} resizeMode="cover" />
                   )}
-                  {entry.created_at && (
-                    <Text style={styles.dateText}>{formatDate(entry.created_at)}</Text>
-                  )}
-                </View>
-
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={styles.rejectButton}
-                    onPress={() => handleReject(entry.card_id)}
-                    disabled={processing === entry.card_id}
-                    data-testid={`reject-entry-${entry.card_id}`}
-                  >
-                    {processing === entry.card_id ? (
-                      <ActivityIndicator size="small" color="#FF3B30" />
-                    ) : (
-                      <>
-                        <Ionicons name="close" size={20} color="#FF3B30" />
-                        <Text style={styles.rejectButtonText}>Reject</Text>
-                      </>
+                  <View style={styles.entryInfo}>
+                    <Text style={styles.customerName}>{entry.customer_name}</Text>
+                    {entry.salesman_name && (
+                      <Text style={styles.salesmanName}>by {entry.salesman_name}</Text>
                     )}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.approveButton}
-                    onPress={() => handleApprove(entry.card_id)}
-                    disabled={processing === entry.card_id}
-                    data-testid={`approve-entry-${entry.card_id}`}
-                  >
-                    {processing === entry.card_id ? (
-                      <ActivityIndicator size="small" color={colors.text} />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark" size={20} color={colors.text} />
-                        <Text style={styles.approveButtonText}>Approve</Text>
-                      </>
+                    {entry.created_at && (
+                      <Text style={styles.dateText}>{formatDate(entry.created_at)}</Text>
                     )}
-                  </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={styles.rejectButton}
+                      onPress={() => handleReject(entry.card_id)}
+                      disabled={isProcessing}
+                      data-testid={`reject-entry-${entry.card_id}`}
+                    >
+                      {isProcessing && processingAction === 'reject' ? (
+                        <ActivityIndicator size="small" color="#FF3B30" />
+                      ) : (
+                        <>
+                          <Ionicons name="close" size={20} color="#FF3B30" />
+                          <Text style={styles.rejectButtonText}>Reject</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.approveButton}
+                      onPress={() => handleApprove(entry.card_id)}
+                      disabled={isProcessing}
+                      data-testid={`approve-entry-${entry.card_id}`}
+                    >
+                      {isProcessing && processingAction === 'approve' ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark" size={20} color="#FFF" />
+                          <Text style={styles.approveButtonText}>Approve</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </>
         )}
         <View style={{ height: 40 }} />
@@ -225,5 +227,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#34C759', paddingVertical: 12, borderRadius: 10, gap: 6,
   },
-  approveButtonText: { fontSize: 15, fontWeight: '600', color: colors.text },
+  approveButtonText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
 });
