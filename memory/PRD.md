@@ -182,8 +182,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Prioritized Backlog
 
 ### P1
-- Auth refactor (bcrypt)
-- Push Notifications
 - Voice Help Assistant
 - Google Places API Integration
 
@@ -271,6 +269,25 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Links → `/l/{username}` (link page with all social links)
 - **Rationale:** Keep customers in the salesperson's ecosystem; store link removed to prevent leads going to other reps. Call/Text/Email still accessible via the My Card page (one tap from salesman name).
 - **Link Page username:** Fetched via `/api/linkpage/user/{userId}` on card load; Links button hidden if no username configured.
+
+### Auth Refactor + Persistent Sessions + Push Notifications + Leaderboard Enhancement (Mar 9, 2026)
+1. **Auth Refactor (bcrypt):**
+   - All passwords now hashed with bcrypt (signup, change-password, reset-password, admin user creation, setup wizard)
+   - Login uses `verify_password()` which supports both bcrypt hashes and legacy plain-text (auto-upgrades to bcrypt on successful login)
+   - Migration script at `/app/backend/migrations/hash_passwords.py` — already run on all 123 existing users
+   - Helper functions `hash_password()` and `verify_password()` in `auth.py`, imported by `admin.py` and `setup_wizard.py`
+2. **Persistent Sessions:**
+   - Already implemented: `imos_session` cookie with 10-year expiry set on login
+   - Frontend `loadAuth()` first checks localStorage, then falls back to cookie restoration via `GET /api/auth/me`
+   - Users stay logged in until explicit logout
+3. **Push Notifications on Event Creation:**
+   - `_quick_milestone_check()` helper in `contact_events.py` — calculates today's event count, streak, best day, and level
+   - Fired as `asyncio.create_task()` (fire-and-forget) after each event insertion in `contact_events.py` and `messages.py`
+   - Calls `check_and_notify_milestones()` from `push_notifications.py` which is idempotent
+4. **Leaderboard Period Filters:**
+   - Replaced old month/year selectors with period tabs: This Week | This Month | All Time
+   - Frontend API calls updated to pass `period` parameter
+   - Backend already supported `period` parameter — no backend changes needed
 
 ## Known Issues
 - P2: Mobile tags sync
