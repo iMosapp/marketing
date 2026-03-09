@@ -3826,6 +3826,36 @@ export default function ContactDetailScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
+
+                {/* CRM Timeline Link */}
+                <View style={[s.shareOptionCard, { borderTopWidth: 1, borderTopColor: colors.surface, marginTop: 8, paddingTop: 16 }]}>
+                  <View style={[s.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
+                    <Ionicons name="open-outline" size={28} color="#C9A962" />
+                  </View>
+                  <View style={[s.shareOptionContent, { flex: 1 }]}>
+                    <Text style={s.shareOptionTitle}>CRM Timeline Link</Text>
+                    <Text style={s.shareOptionDesc}>Copy a live activity link for your CRM</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#C9A962', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
+                    onPress={async () => {
+                      try {
+                        const res = await api.post(`/crm/timeline-token/${user._id}/${contact._id}`);
+                        const link = `${api.defaults.baseURL?.replace('/api', '')}/timeline/${res.data.token}`;
+                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                          await navigator.clipboard.writeText(link);
+                        }
+                        await api.post(`/crm/mark-copied/${user._id}/${contact._id}`);
+                        showSimpleAlert('CRM Link Copied!', 'Paste this into your CRM. It stays up-to-date automatically.');
+                      } catch (e) {
+                        showSimpleAlert('Error', 'Could not generate CRM link');
+                      }
+                    }}
+                    data-testid="copy-crm-link-btn"
+                  >
+                    <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Copy</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
               {showLandingPageOptions && (
                 <View style={s.landingPageOptions}>

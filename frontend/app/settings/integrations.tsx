@@ -58,6 +58,11 @@ const { showToast } = useToast();
   const [providers, setProviders] = useState<{ crm: Record<string, Provider>; dms: Record<string, Provider> }>({ crm: {}, dms: {} });
   const [connections, setConnections] = useState<any[]>([]);
   
+  // CRM Timeline PIN Settings
+  const [crmPinEnabled, setCrmPinEnabled] = useState(false);
+  const [crmPin, setCrmPin] = useState('');
+  const [savingPin, setSavingPin] = useState(false);
+  
   const [docsSection, setDocsSection] = useState('getting-started');
 
   const APP_URL = 'https://app.imonsocial.com';
@@ -195,6 +200,13 @@ const { showToast } = useToast();
       setWebhookEvents(eventsRes.data);
       setProviders(providersRes.data);
       setConnections(connectionsRes.data);
+      
+      // Load CRM PIN settings
+      try {
+        const pinRes = await api.get(`/crm/pin-settings/${user.store_id}`);
+        setCrmPinEnabled(pinRes.data?.crm_pin_enabled ?? false);
+        setCrmPin(pinRes.data?.crm_pin ?? '');
+      } catch {}
     } catch (error) {
       console.error('Error loading integrations:', error);
     } finally {
@@ -382,6 +394,109 @@ const { showToast } = useToast();
           </View>
         ))
       )}
+    </View>
+  );
+
+
+  const renderCrmTimelineSettings = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>CRM Timeline Export</Text>
+      <Text style={styles.sectionSubtitle}>
+        Generate live activity links for each contact that can be pasted into any CRM
+      </Text>
+
+      <View style={[styles.connectionCard, { marginTop: 16 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.connectionName, { fontSize: 15 }]}>PIN Protection</Text>
+            <Text style={[styles.sectionSubtitle, { marginTop: 2, marginBottom: 0 }]}>
+              Require a store PIN to view timeline links
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={{
+              width: 52, height: 30, borderRadius: 15,
+              backgroundColor: crmPinEnabled ? '#34C759' : '#3A3A3C',
+              justifyContent: 'center',
+              paddingHorizontal: 2,
+            }}
+            onPress={async () => {
+              const newVal = !crmPinEnabled;
+              setCrmPinEnabled(newVal);
+              if (!user?.store_id) return;
+              try {
+                const payload: any = { crm_pin_enabled: newVal };
+                if (newVal && !crmPin) {
+                  const autoPin = String(Math.floor(1000 + Math.random() * 9000));
+                  setCrmPin(autoPin);
+                  payload.crm_pin = autoPin;
+                }
+                await api.put(`/crm/pin-settings/${user.store_id}`, payload);
+                showToast(newVal ? 'PIN protection enabled' : 'PIN protection disabled', 'success');
+              } catch {
+                setCrmPinEnabled(!newVal);
+              }
+            }}
+            data-testid="crm-pin-toggle"
+          >
+            <View style={{
+              width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFF',
+              transform: [{ translateX: crmPinEnabled ? 22 : 0 }],
+            }} />
+          </TouchableOpacity>
+        </View>
+
+        {crmPinEnabled && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
+            <TextInput
+              style={[styles.input, { flex: 1, letterSpacing: 4, fontSize: 18, textAlign: 'center' }]}
+              value={crmPin}
+              onChangeText={(t: string) => setCrmPin(t.replace(/\D/g, '').slice(0, 8))}
+              placeholder="4-8 digit PIN"
+              placeholderTextColor="#666"
+              keyboardType="number-pad"
+              maxLength={8}
+              data-testid="crm-pin-input-settings"
+            />
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#C9A962', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
+                opacity: savingPin ? 0.5 : 1,
+              }}
+              onPress={async () => {
+                if (!user?.store_id || !crmPin || crmPin.length < 4) {
+                  showToast('PIN must be 4-8 digits', 'error');
+                  return;
+                }
+                setSavingPin(true);
+                try {
+                  await api.put(`/crm/pin-settings/${user.store_id}`, { crm_pin: crmPin, crm_pin_enabled: true });
+                  showToast('PIN saved', 'success');
+                } catch {
+                  showToast('Failed to save PIN', 'error');
+                } finally {
+                  setSavingPin(false);
+                }
+              }}
+              disabled={savingPin}
+              data-testid="crm-pin-save"
+            >
+              <Text style={{ color: '#000', fontWeight: '700', fontSize: 14 }}>
+                {savingPin ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      <View style={[styles.connectionCard, { marginTop: 12, backgroundColor: '#1C1C1E' }]}>
+        <Ionicons name="information-circle-outline" size={20} color="#C9A962" style={{ marginBottom: 8 }} />
+        <Text style={[styles.sectionSubtitle, { marginBottom: 0 }]}>
+          Each contact gets a unique link you can copy from their profile under "Share Your Stuff". 
+          Paste it into your CRM and it stays up-to-date automatically. Use the Contacts tab to filter 
+          which contacts have been linked vs. not yet.
+        </Text>
+      </View>
     </View>
   );
 
@@ -808,7 +923,12 @@ const { showToast } = useToast();
       <ScrollView style={styles.content}>
         {activeTab === 'api-keys' && renderApiKeysTab()}
         {activeTab === 'webhooks' && renderWebhooksTab()}
-        {activeTab === 'crm' && renderProvidersTab('crm')}
+        {activeTab === 'crm' && (
+          <>
+            {renderProvidersTab('crm')}
+            {renderCrmTimelineSettings()}
+          </>
+        )}
         {activeTab === 'dms' && renderProvidersTab('dms')}
         {activeTab === 'docs' && renderDocsTab()}
       </ScrollView>

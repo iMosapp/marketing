@@ -285,6 +285,10 @@ class Contact(BaseModel):
     # Automation control
     disabled_automations: List[str] = []  # List of disabled automation types: birthday, anniversary, sold_date
     
+    # CRM Timeline Export
+    crm_link_token: Optional[str] = None  # Unique token for public timeline access
+    crm_link_copied_at: Optional[datetime] = None  # When the CRM link was first copied
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

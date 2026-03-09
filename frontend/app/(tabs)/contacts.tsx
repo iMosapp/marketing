@@ -42,6 +42,7 @@ export default function ContactsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked'>('all');
   
   // Add Contact navigation (unified with home page)
   
@@ -232,13 +233,19 @@ export default function ContactsScreen() {
     );
   };
   
-  // Filter contacts by selected tag - memoized
-  const filteredContacts = useMemo(() => 
-    selectedTag 
-      ? contacts.filter(c => c.tags && c.tags.includes(selectedTag))
-      : contacts,
-    [contacts, selectedTag]
-  );
+  // Filter contacts by selected tag and CRM link status - memoized
+  const filteredContacts = useMemo(() => {
+    let result = contacts;
+    if (selectedTag) {
+      result = result.filter(c => c.tags && c.tags.includes(selectedTag));
+    }
+    if (crmFilter === 'linked') {
+      result = result.filter(c => c.crm_link_copied_at);
+    } else if (crmFilter === 'not_linked') {
+      result = result.filter(c => !c.crm_link_copied_at);
+    }
+    return result;
+  }, [contacts, selectedTag, crmFilter]);
 
   const handleTagFilter = (tagName: string | null) => {
     setSelectedTag(tagName === selectedTag ? null : tagName);
@@ -515,6 +522,28 @@ export default function ContactsScreen() {
           </ScrollView>
         </View>
       )}
+
+      {/* CRM Link Filter */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
+        {(['all', 'linked', 'not_linked'] as const).map(f => (
+          <TouchableOpacity
+            key={f}
+            style={{
+              paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
+              backgroundColor: crmFilter === f ? '#C9A962' : colors.card,
+            }}
+            onPress={() => setCrmFilter(crmFilter === f ? 'all' : f)}
+            data-testid={`crm-filter-${f}`}
+          >
+            <Text style={{
+              fontSize: 12, fontWeight: '600',
+              color: crmFilter === f ? '#000' : colors.textSecondary,
+            }}>
+              {f === 'all' ? 'All' : f === 'linked' ? 'CRM Linked' : 'Not in CRM'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       
       {loading ? (
         <View style={styles.loadingContainer}>
