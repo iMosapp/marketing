@@ -342,6 +342,13 @@ export default function AdminDashboard() {
           onPress: () => router.push('/admin/individuals'),
           color: '#AF52DE',
         });
+        customerItems.push({
+          icon: 'rocket',
+          title: 'Onboard New Account',
+          subtitle: 'Setup wizard for new orgs & teams',
+          onPress: () => router.push('/admin/setup-wizard' as any),
+          color: '#FF2D55',
+        });
       }
       
       sections.push({
@@ -650,13 +657,6 @@ export default function AdminDashboard() {
             subtitle: 'Manage quotes & proposals',
             onPress: () => router.push('/admin/quotes'),
             color: '#007AFF',
-          },
-          {
-            icon: 'settings',
-            title: 'Onboarding Settings',
-            subtitle: 'Branding & automation',
-            onPress: () => router.push('/admin/setup-wizard' as any),
-            color: '#FF2D55',
           },
           {
             icon: 'mail',

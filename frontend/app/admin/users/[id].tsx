@@ -985,7 +985,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   changeRoleButton: {
     marginLeft: 8,
-    padding: 4,
+    padding: 10,
   },
   statusRow: {
     flexDirection: 'row',

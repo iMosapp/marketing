@@ -207,6 +207,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Recent Fixes (Mar 9, 2026)
 - **Login Autofill Styling Fix:** Added CSS rules targeting `:-webkit-autofill` pseudo-class in `+html.tsx` to prevent browser autofill from showing black/yellow backgrounds on input fields. Uses `transition: background-color 5000s` approach for universal light/dark theme compatibility.
 - **Setup Wizard Keyboard Dismissal Fix:** Root cause was `getS(colors)` creating a new StyleSheet on every re-render, invalidating all `useMemo` component wrappers (`SectionCard`, `Label`, `StepHeader`, `BtnRow`), causing React to unmount/remount TextInputs. Fixed by memoizing styles: `const s = useMemo(() => getS(colors), [colors])`.
+- **Admin Users List Crash Fix (P0):** `GET /api/admin/hierarchy/users` was crashing with 500 error because some users have non-ObjectId `organization_id` values like `'org_001'`. Added `safe_objectid()` helper function to gracefully handle invalid ObjectIds across all admin endpoints. Also applied to `/api/admin/organizations` and `/api/admin/stores` list endpoints.
+- **Role Change Now Works:** With the users list endpoint fixed, the entire flow works: list users → click user → click pencil → select new role → save.
+- **Setup Wizard Relocated:** Moved "Onboard New Account" from the buried "Internal Administration" section to the top-level "Customer Infrastructure" section for faster access.
+- **Role Edit Touch Target:** Increased pencil icon touch target from 4px to 10px padding for easier tapping.
 
 ## Known Issues
 - P2: Mobile tags sync
