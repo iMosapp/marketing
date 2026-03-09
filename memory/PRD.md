@@ -214,6 +214,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 - **User Delete Bug Fixed:** `useToast` was imported but never called as a hook in `/app/frontend/app/admin/users/[id].tsx`, making `showToast` undefined. After a successful backend delete, `showToast('User deleted')` threw a TypeError, caught by the catch block which showed "Failed to delete user". Added `const { showToast } = useToast()`. This also fixes toast errors for ALL other operations on that page (toggle status, role change, store assignment, etc.).
 
+- **Brand Kit Logo Upload:** Added direct file upload to the Brand Kit page (`/settings/brand-kit`). Users can now upload a logo directly instead of only pasting a URL. The uploaded logo is synced to the store's `logo_url` field on save. Also fixed relative logo URLs in email templates by resolving them to absolute URLs using `APP_URL`.
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

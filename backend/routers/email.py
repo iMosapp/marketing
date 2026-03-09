@@ -170,10 +170,16 @@ DEFAULT_EMAIL_TEMPLATES = [
 
 def get_brand_wrapper(brand_kit: dict = None) -> tuple:
     """Returns header and footer HTML based on brand kit"""
+    import os
+    app_url = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+    
     if not brand_kit:
         brand_kit = {}
     
     logo_url = brand_kit.get("logo_url", "")
+    # Resolve relative URLs to absolute for email rendering
+    if logo_url and logo_url.startswith("/"):
+        logo_url = f"{app_url}{logo_url}"
     primary_color = brand_kit.get("primary_color", "#007AFF")
     company_name = brand_kit.get("company_name", "")
     tagline = brand_kit.get("tagline", "")

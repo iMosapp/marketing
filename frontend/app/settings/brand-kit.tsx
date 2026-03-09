@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { emailAPI } from '../../services/api';
+import api, { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 
@@ -34,6 +34,7 @@ export default function BrandKitSettings() {
 const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   
   // Brand kit fields
   const [logoUrl, setLogoUrl] = useState('');
@@ -102,6 +103,13 @@ const { showToast } = useToast();
         footer_text: footerText,
         social_links: socialLinks,
       });
+
+      // Also sync logo_url to the store so emails pick it up
+      if (logoUrl && user?.store_id) {
+        try {
+          await api.put(`/admin/stores/${user.store_id}`, { logo_url: logoUrl });
+        } catch {}
+      }
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Brand kit saved successfully!');
@@ -112,6 +120,35 @@ const { showToast } = useToast();
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleUploadLogo = async () => {
+    if (Platform.OS !== 'web') return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setLogoUploading(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const storeId = user?.store_id;
+        const endpoint = storeId
+          ? `/admin/stores/${storeId}/upload-logo`
+          : `/admin/organizations/${user?.organization_id}/upload-logo`;
+        const res = await api.post(endpoint, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const url = res.data.logo_url || '';
+        setLogoUrl(url);
+        showToast('Logo uploaded!');
+      } catch {
+        Alert.alert('Error', 'Failed to upload logo');
+      } finally {
+        setLogoUploading(false);
+      }
+    };
+    input.click();
   };
 
   const ColorPicker = ({ 
@@ -209,9 +246,32 @@ const { showToast } = useToast();
           </View>
         </View>
 
-        {/* Logo URL */}
+        {/* Logo */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Logo URL</Text>
+          <Text style={styles.inputLabel}>Logo</Text>
+          {logoUrl ? (
+            <View style={{ alignItems: 'center', marginBottom: 12 }}>
+              <Image source={{ uri: logoUrl }} style={{ width: 160, height: 60, resizeMode: 'contain', borderRadius: 8 }} />
+            </View>
+          ) : null}
+          <TouchableOpacity
+            style={[styles.uploadButton, { borderColor: colors.border }]}
+            onPress={handleUploadLogo}
+            disabled={logoUploading}
+            data-testid="upload-logo-btn"
+          >
+            {logoUploading ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <>
+                <Ionicons name="cloud-upload-outline" size={20} color={colors.text} />
+                <Text style={[styles.uploadButtonText, { color: colors.text }]}>
+                  {logoUrl ? 'Change Logo' : 'Upload Logo'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+          <Text style={[styles.inputHelper, { color: colors.textSecondary }]}>Or paste a URL:</Text>
           <TextInput
             style={styles.input}
             placeholder="https://example.com/logo.png"
@@ -468,6 +528,25 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginBottom: 8,
+  },
+  uploadButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  inputHelper: {
+    fontSize: 12,
+    marginBottom: 6,
   },
   
   // Color Picker

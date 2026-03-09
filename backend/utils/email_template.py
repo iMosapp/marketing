@@ -43,6 +43,14 @@ async def get_brand_context(db, user_id: str) -> dict:
                 brand["social_links"] = store.get("social_links", {})
                 addr_parts = [store.get("address", ""), store.get("city", ""), store.get("state", "")]
                 brand["footer_text"] = ", ".join(p for p in addr_parts if p)
+                # Check store-level email_brand_kit overrides
+                sebk = store.get("email_brand_kit", {})
+                if sebk.get("logo_url"):
+                    brand["logo_url"] = sebk["logo_url"]
+                if sebk.get("primary_color"):
+                    brand["primary_color"] = sebk["primary_color"]
+                if sebk.get("footer_text"):
+                    brand["footer_text"] = sebk["footer_text"]
 
         # Get org branding (may override store)
         org_id = user.get("org_id") or user.get("organization_id")
@@ -103,9 +111,15 @@ async def get_brand_context(db, user_id: str) -> dict:
 
 def build_branded_email(content: str, brand: dict, contact_name: str = "") -> str:
     """Build a white-label HTML email with full branding."""
+    import os
+    app_url = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+    
     pc = brand["primary_color"]
     ac = brand.get("accent_color", "#C9A962")
     logo = brand.get("logo_url", "")
+    # Resolve relative URLs to absolute for email rendering
+    if logo and logo.startswith("/"):
+        logo = f"{app_url}{logo}"
     store = brand.get("store_name", "")
     sender = brand.get("sender_name", "")
     social = brand.get("social_links", {})
