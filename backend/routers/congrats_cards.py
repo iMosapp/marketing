@@ -633,6 +633,7 @@ async def get_congrats_card(card_id: str):
         "card_id": card_id,
         "salesman_id": card.get("salesman_id"),
         "customer_name": card.get("customer_name"),
+        "customer_phone": card.get("customer_phone"),
         "customer_photo": card_photo,
         "headline": card.get("headline", "Thank You!"),
         "message": message,

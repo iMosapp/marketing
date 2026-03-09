@@ -144,6 +144,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 3. **Short URL `cid` Dedup Fix** — Backend `short_urls.py` redirect handler had a bug where `cid not in original_url` matched the salesperson ID in the `sp=` parameter, skipping the `cid` append. Fixed to check `f"cid={cid}" not in original_url`.
 4. **VCF Save Contact Fix** — Digital card's "Save My Contact" button now navigates directly to the VCF URL (`/api/card/vcard/{userId}`) instead of using JavaScript blob download. This triggers iOS Safari's native "Add to Contacts" dialog.
 5. **Native iPhone Dialer** — Completely redesigned the dialer to match iOS native keypad: pure black background, dark grey circular buttons (#333) with letter labels, large auto-formatted number display, contact matching as you type (name + formatted phone), green call button center, backspace (right of call, only when digits entered), long-press backspace to clear all.
+6. **Showcase Opt-In / Media Release System** — New customer consent flow for showcase and social media featuring:
+   - New page `/opt-in/{cardId}` with toggle options: Showcase Page, Social Media (Instagram/TikTok/Facebook), Include Photo
+   - "Want to be featured?" banner on congrats/thank-you cards (only for first-time, one-time per customer)
+   - Backend: `POST /api/opt-in/submit/{card_id}` saves consent, `GET /api/opt-in/check-consent` checks one-time status
+   - **Salesperson approval required** — customer consent does NOT auto-approve for showcase; salesperson must manually approve
+   - Consent stored in `showcase_consents` collection with phone-based deduplication
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard

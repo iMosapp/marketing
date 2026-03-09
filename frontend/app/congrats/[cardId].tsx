@@ -59,10 +59,26 @@ export default function CongratsCardPage() {
   const [reviewText, setReviewText] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [hasExistingConsent, setHasExistingConsent] = useState(false); // show banner by default, hide after consent check
 
   useEffect(() => {
     loadCardData();
   }, [cardId]);
+
+  // Check if customer already opted in (one-time consent)
+  useEffect(() => {
+    if (!cardData?.salesman_id) return;
+    const checkConsent = async () => {
+      try {
+        const phone = (cardData as any)?.customer_phone || '';
+        const res = await api.get(`/opt-in/check-consent?salesman_id=${cardData.salesman_id}&customer_phone=${encodeURIComponent(phone)}`);
+        setHasExistingConsent(res.data?.has_consent ?? false);
+      } catch {
+        // If check fails, show the banner (safe default)
+      }
+    };
+    checkConsent();
+  }, [cardData?.salesman_id]);
 
   const loadCardData = async () => {
     try {
@@ -413,21 +429,23 @@ export default function CongratsCardPage() {
         )}
       </View>
 
-      {/* Refer a Friend */}
-      <TouchableOpacity
-        style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
-        onPress={() => {
-          router.push(`/opt-in/${cardId}` as any);
-        }}
-        data-testid="congrats-opt-in-btn"
-      >
-        <Ionicons name="star" size={20} color={style?.accent_color || '#C9A962'} />
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={styles.referralTitle}>Want to be featured?</Text>
-          <Text style={[styles.referralSub, { color: style?.accent_color || '#C9A962' }]}>Opt in to appear on {cardData.salesman?.name?.split(' ')[0] || 'our'}'s showcase &amp; social media</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={style?.accent_color || '#C9A962'} />
-      </TouchableOpacity>
+      {/* Opt-in CTA — only show if customer hasn't already consented */}
+      {cardData.salesman_id && !hasExistingConsent && (
+        <TouchableOpacity
+          style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
+          onPress={() => {
+            router.push(`/opt-in/${cardId}` as any);
+          }}
+          data-testid="congrats-opt-in-btn"
+        >
+          <Ionicons name="star" size={20} color={style?.accent_color || '#C9A962'} />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.referralTitle}>Want to be featured?</Text>
+            <Text style={[styles.referralSub, { color: style?.accent_color || '#C9A962' }]}>Opt in to appear on {cardData.salesman?.name?.split(' ')[0] || 'our'}'s showcase &amp; social media</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={style?.accent_color || '#C9A962'} />
+        </TouchableOpacity>
+      )}
 
       {/* Refer a Friend */}
       <TouchableOpacity

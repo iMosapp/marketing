@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from datetime import datetime, timezone
 import logging
+import re
 
 from routers.database import get_db
 
@@ -70,7 +71,7 @@ async def submit_consent(card_id: str, data: dict):
     """Save or update the customer's media release consent."""
     db = get_db()
 
-    card = await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1, "salesman_id": 1, "store_id": 1, "customer_name": 1})
+    card = await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1, "salesman_id": 1, "store_id": 1, "customer_name": 1, "customer_phone": 1})
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
 
@@ -79,12 +80,18 @@ async def submit_consent(card_id: str, data: dict):
     include_photo = data.get("include_photo", False)
     customer_name = data.get("customer_name", card.get("customer_name", ""))
 
+    # Normalize customer phone for future one-time consent lookups
+    customer_phone = card.get("customer_phone", "")
+    phone_digits = re.sub(r'\D', '', customer_phone) if customer_phone else ""
+    phone_suffix = phone_digits[-10:] if len(phone_digits) >= 10 else phone_digits
+
     consent_doc = {
         "card_id": card_id,
         "card_obj_id": str(card["_id"]),
         "salesman_id": card.get("salesman_id"),
         "store_id": card.get("store_id"),
         "customer_name": customer_name,
+        "customer_phone_suffix": phone_suffix,
         "showcase": showcase,
         "social_media": social_media,
         "include_photo": include_photo,
@@ -99,17 +106,42 @@ async def submit_consent(card_id: str, data: dict):
         upsert=True,
     )
 
-    # If customer opted into showcase, auto-approve the card for showcase display
-    if showcase:
+    # If customer opted into showcase, mark consent on the card but do NOT auto-approve.
+    # The salesperson must manually approve from their showcase management panel.
+    if showcase or social_media:
         await db.congrats_cards.update_one(
             {"card_id": card_id},
             {"$set": {
-                "showcase_approved": True,
                 "customer_consent": True,
                 "consent_date": datetime.now(timezone.utc).isoformat(),
+                "consent_showcase": showcase,
                 "consent_social_media": social_media,
                 "consent_include_photo": include_photo,
+                # showcase_approved stays False — salesperson approves later
             }}
         )
 
     return {"status": "ok", "message": "Consent saved successfully"}
+
+
+
+@router.get("/check-consent")
+async def check_existing_consent(salesman_id: str, customer_phone: str = ""):
+    """Check if a customer has already opted in for any card from this salesperson.
+    Used to hide the 'Want to be featured?' banner after first opt-in."""
+    db = get_db()
+
+    if not customer_phone:
+        return {"has_consent": False}
+
+    # Normalize phone to last 10 digits
+    digits = re.sub(r'\D', '', customer_phone)
+    suffix = digits[-10:] if len(digits) >= 10 else digits
+
+    # Look for any consent record matching this salesperson + customer phone
+    existing = await db.showcase_consents.find_one({
+        "salesman_id": salesman_id,
+        "customer_phone_suffix": suffix,
+    })
+
+    return {"has_consent": bool(existing)}
