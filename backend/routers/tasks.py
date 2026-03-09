@@ -452,11 +452,24 @@ async def get_performance(user_id: str, period: str = "week"):
         "created_at": {"$gte": start, "$lt": now},
     })
 
+    # Daily scorecard: today vs yesterday (always calculated regardless of period filter)
+    yesterday_start = today_start - timedelta(days=1)
+    today_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": today_start, "$lt": now}})
+    yesterday_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": yesterday_start, "$lt": today_start}})
+    try:
+        today_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": today_start, "$lt": now}})
+        yesterday_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": yesterday_start, "$lt": today_start}})
+        today_events += today_eng
+        yesterday_events += yesterday_eng
+    except Exception:
+        pass
+
     total_touchpoints = (
         activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
         activity.get("email_sent", 0) + activity.get("email_failed", 0) +
         activity.get("call_placed", 0) + activity.get("call_received", 0) +
         activity.get("digital_card_shared", 0) + activity.get("card_shared", 0) + activity.get("digital_card_sent", 0) +
+        activity.get("showroom_shared", 0) +
         activity.get("congrats_card_sent", 0) + activity.get("birthday_card_sent", 0) + activity.get("holiday_card_sent", 0) + activity.get("thank_you_card_sent", 0) + activity.get("anniversary_card_sent", 0) +
         activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0) +
         eng_total
@@ -465,6 +478,11 @@ async def get_performance(user_id: str, period: str = "week"):
     return {
         "total_touchpoints": total_touchpoints,
         "trend_pct": trend_pct,
+        "scorecard": {
+            "today": today_events,
+            "yesterday": yesterday_events,
+            "diff": today_events - yesterday_events,
+        },
         "communication": {
             "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),
             "emails": activity.get("email_sent", 0) + activity.get("email_failed", 0),
@@ -474,6 +492,7 @@ async def get_performance(user_id: str, period: str = "week"):
             "my_card": activity.get("digital_card_shared", 0) + activity.get("card_shared", 0) + activity.get("digital_card_sent", 0),
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
             "card_shares": activity.get("congrats_card_sent", 0) + activity.get("birthday_card_sent", 0) + activity.get("holiday_card_sent", 0) + activity.get("thank_you_card_sent", 0) + activity.get("anniversary_card_sent", 0),
+            "showcase": activity.get("showroom_shared", 0),
         },
         "engagement": {
             "link_clicks": activity.get("link_clicked", 0) + activity.get("card_viewed", 0) + eng_signals.get("link_clicked", 0) + eng_signals.get("card_viewed", 0) + eng_signals.get("digital_card_viewed", 0) + eng_signals.get("showcase_viewed", 0) + eng_signals.get("link_page_viewed", 0) + eng_signals.get("review_link_clicked", 0),
@@ -498,9 +517,23 @@ EVENT_CATEGORY_MAP = {
     "my_card": ["digital_card_shared", "card_shared", "digital_card_sent"],
     "reviews": ["review_invite_sent", "review_shared", "review_request_sent"],
     "card_shares": ["congrats_card_sent", "birthday_card_sent", "holiday_card_sent", "thank_you_card_sent", "anniversary_card_sent"],
+    "showcase": ["showroom_shared"],
     "link_clicks": ["link_clicked", "card_viewed"],
     "email_opens": ["email_opened"],
     "replies": ["reply_received", "sms_received"],
+    "digital_card_views": ["digital_card_viewed", "card_viewed"],
+    "review_link_clicks": ["review_link_clicked"],
+    "showcase_views": ["showcase_viewed", "showroom_viewed"],
+    "link_page_visits": ["link_page_viewed"],
+}
+
+# Engagement signal types that map to detail categories (from engagement_signals collection)
+ENGAGEMENT_CATEGORY_MAP = {
+    "link_clicks": ["link_clicked", "card_viewed", "digital_card_viewed", "showcase_viewed", "link_page_viewed", "review_link_clicked"],
+    "digital_card_views": ["card_viewed", "digital_card_viewed"],
+    "review_link_clicks": ["review_link_clicked"],
+    "showcase_views": ["showcase_viewed"],
+    "link_page_visits": ["link_page_viewed"],
 }
 
 @router.get("/{user_id}/performance/detail")
@@ -517,6 +550,27 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
         start = today_start - timedelta(days=7)
 
     event_types = EVENT_CATEGORY_MAP.get(category, [])
+
+    # Special case: new_leads — pull from contacts collection
+    if category == "new_leads":
+        contacts = await db.contacts.find(
+            {
+                "$or": [{"user_id": user_id}, {"created_by": user_id}],
+                "created_at": {"$gte": start, "$lt": now},
+            },
+            {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "created_at": 1, "source": 1},
+        ).sort("created_at", -1).limit(50).to_list(50)
+        events = []
+        for c in contacts:
+            events.append({
+                "event_type": "new_lead",
+                "contact_name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or c.get("phone", "Unknown"),
+                "contact_id": str(c["_id"]),
+                "content": f"Added via {c.get('source', 'manual')}",
+                "timestamp": c["created_at"].isoformat() if c.get("created_at") else None,
+            })
+        return {"events": events, "count": len(events)}
+
     if not event_types:
         return {"events": []}
 
@@ -524,6 +578,25 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
         {"user_id": user_id, "event_type": {"$in": event_types}, "timestamp": {"$gte": start}},
         {"_id": 0, "event_type": 1, "channel": 1, "content": 1, "contact_id": 1, "contact_name": 1, "timestamp": 1}
     ).sort("timestamp", -1).limit(50).to_list(50)
+
+    # Also pull from engagement_signals for click-through categories
+    eng_types = ENGAGEMENT_CATEGORY_MAP.get(category, [])
+    if eng_types:
+        try:
+            eng_events = await db.engagement_signals.find(
+                {"user_id": user_id, "signal_type": {"$in": eng_types}, "created_at": {"$gte": start}},
+                {"_id": 0, "signal_type": 1, "contact_id": 1, "contact_name": 1, "created_at": 1, "metadata": 1},
+            ).sort("created_at", -1).limit(50).to_list(50)
+            for e in eng_events:
+                events.append({
+                    "event_type": e.get("signal_type", ""),
+                    "contact_name": e.get("contact_name", "Anonymous"),
+                    "contact_id": e.get("contact_id", ""),
+                    "content": e.get("metadata", {}).get("source", "") if isinstance(e.get("metadata"), dict) else "",
+                    "timestamp": e["created_at"].isoformat() if e.get("created_at") else None,
+                })
+        except Exception:
+            pass
 
     # Enrich with contact names if missing
     contact_ids = [e.get("contact_id") for e in events if e.get("contact_id") and not e.get("contact_name")]
@@ -536,7 +609,7 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
                 e["contact_name"] = contacts.get(e["contact_id"], "Unknown")
 
     for e in events:
-        if e.get("timestamp"):
+        if e.get("timestamp") and hasattr(e["timestamp"], 'isoformat'):
             e["timestamp"] = e["timestamp"].isoformat()
 
     return {"events": events, "count": len(events)}
