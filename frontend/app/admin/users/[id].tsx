@@ -298,13 +298,36 @@ export default function UserDetailScreen() {
   const handleDeleteUser = () => {
     if (!user) return;
     showConfirm(
-      'Delete User',
-      `Delete "${user.name}"? All their data will be permanently removed.`,
+      'Deactivate User',
+      `Deactivate "${user.name}"? They will be soft-deleted with a 6-month grace period.`,
       async () => {
         setActionLoading(true);
         try {
           await api.delete(`/admin/users/${id}`);
-          showToast('User deleted');
+          showToast('User deactivated');
+          router.back();
+        } catch (error: any) {
+          showSimpleAlert('Error', error.response?.data?.detail || 'Failed to deactivate user');
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      undefined,
+      'Deactivate',
+      'Cancel'
+    );
+  };
+
+  const handleHardDelete = () => {
+    if (!user) return;
+    showConfirm(
+      'Permanently Delete',
+      `This will PERMANENTLY remove "${user.name}" from the system. Their contacts will be kept but unassigned. This cannot be undone.`,
+      async () => {
+        setActionLoading(true);
+        try {
+          await api.delete(`/admin/users/${id}/hard`);
+          showToast('User permanently deleted');
           router.back();
         } catch (error: any) {
           showSimpleAlert('Error', error.response?.data?.detail || 'Failed to delete user');
@@ -313,7 +336,7 @@ export default function UserDetailScreen() {
         }
       },
       undefined,
-      'Delete',
+      'Delete Forever',
       'Cancel'
     );
   };
@@ -695,13 +718,24 @@ export default function UserDetailScreen() {
             style={styles.deleteButton}
             onPress={handleDeleteUser}
             disabled={actionLoading}
+            data-testid="deactivate-user-btn"
+          >
+            <Ionicons name="close-circle-outline" size={20} color="#FF9500" />
+            <Text style={[styles.deleteButtonText, { color: '#FF9500' }]}>Deactivate User</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.deleteButton, { marginTop: 10 }]}
+            onPress={handleHardDelete}
+            disabled={actionLoading}
+            data-testid="hard-delete-user-btn"
           >
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-            <Text style={styles.deleteButtonText}>Delete User</Text>
+            <Text style={styles.deleteButtonText}>Permanently Delete</Text>
           </TouchableOpacity>
           
           <Text style={styles.dangerWarning}>
-            This will permanently delete the user and all their data. This action cannot be undone.
+            Deactivate keeps the user in the system (recoverable). Permanently Delete removes them entirely — contacts are kept but unassigned.
           </Text>
         </View>
         

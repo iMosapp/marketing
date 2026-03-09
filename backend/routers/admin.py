@@ -1113,7 +1113,37 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
     }
 
 
-@router.post("/users/{user_id}/convert-to-individual")
+@router.delete("/users/{user_id}/hard")
+async def hard_delete_user(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
+    """Permanently delete a user from the system. Super admin only.
+    Contacts are kept and reassigned to 'unassigned'."""
+    requesting_user = await get_requesting_user(x_user_id)
+    if not requesting_user or requesting_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super admins can hard delete")
+
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Reassign their contacts to 'unassigned' so data is preserved
+    contacts_updated = await db.contacts.update_many(
+        {"user_id": user_id},
+        {"$set": {"original_user_id": user_id, "user_id": "unassigned", "user_deactivated": True}}
+    )
+
+    # Remove archived contacts for this user
+    await db.archived_contacts.delete_many({"original_user_id": user_id})
+
+    # Delete the user document
+    await db.users.delete_one({"_id": ObjectId(user_id)})
+
+    logger.info(f"User {user_id} ({user.get('name')}) hard deleted by {x_user_id}. {contacts_updated.modified_count} contacts reassigned.")
+
+    return {
+        "message": "User permanently deleted",
+        "contacts_reassigned": contacts_updated.modified_count,
+    }
 async def convert_to_individual(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
     """Convert a deactivated org user to an individual account with their personal data.
     Restores archived personal contacts and strips org association."""
