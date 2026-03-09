@@ -3840,12 +3840,12 @@ export default function ContactDetailScreen() {
                     style={{ backgroundColor: '#C9A962', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
                     onPress={async () => {
                       try {
-                        const res = await api.post(`/crm/timeline-token/${user._id}/${contact._id}`);
+                        const res = await api.post(`/crm/timeline-token/${user._id}/${id}`);
                         const link = `${api.defaults.baseURL?.replace('/api', '')}/timeline/${res.data.token}`;
                         if (typeof navigator !== 'undefined' && navigator.clipboard) {
                           await navigator.clipboard.writeText(link);
                         }
-                        await api.post(`/crm/mark-copied/${user._id}/${contact._id}`);
+                        await api.post(`/crm/mark-copied/${user._id}/${id}`);
                         showSimpleAlert('CRM Link Copied!', 'Paste this into your CRM. It stays up-to-date automatically.');
                       } catch (e) {
                         showSimpleAlert('Error', 'Could not generate CRM link');
