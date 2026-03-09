@@ -575,6 +575,58 @@ async def create_congrats_card(
                     for tag_name in applied_tags:
                         await auto_enroll_contacts_in_campaign(salesman_id, tag_name, [contact_id])
     
+    # Auto-apply "Recent" tag to the contact (if contact found by phone)
+    recent_tag_applied = False
+    if customer_phone:
+        try:
+            normalized_phone = customer_phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+            contact = await db.contacts.find_one({
+                "$or": [
+                    {"phone": customer_phone},
+                    {"phone": {"$regex": normalized_phone[-10:] if len(normalized_phone) >= 10 else normalized_phone}},
+                ],
+                "user_id": salesman_id,
+            })
+            if contact:
+                # Ensure "Recent" tag exists for this org/user
+                user_doc = await db.users.find_one({"_id": ObjectId(salesman_id)}, {"organization_id": 1})
+                org_id = user_doc.get("organization_id") if user_doc else None
+                if org_id:
+                    existing_tag = await db.tags.find_one({"org_id": org_id, "name": "Recent"})
+                else:
+                    existing_tag = await db.tags.find_one({"user_id": salesman_id, "name": "Recent"})
+                if not existing_tag:
+                    await db.tags.insert_one({
+                        "name": "Recent",
+                        "color": "#5856D6",
+                        "status": "approved",
+                        "system_tag": True,
+                        "org_id": org_id or "",
+                        "user_id": salesman_id,
+                        "created_at": datetime.utcnow(),
+                    })
+
+                # Apply "Recent" tag if not already present
+                res = await db.contacts.update_one(
+                    {"_id": contact["_id"], "tags": {"$ne": "Recent"}},
+                    {
+                        "$push": {"tags": "Recent"},
+                        "$set": {"tag_timestamps.Recent": datetime.utcnow()},
+                    },
+                )
+                if res.modified_count > 0:
+                    recent_tag_applied = True
+                    if "Recent" not in applied_tags:
+                        applied_tags.append("Recent")
+                else:
+                    # Tag already present — refresh the timestamp
+                    await db.contacts.update_one(
+                        {"_id": contact["_id"]},
+                        {"$set": {"tag_timestamps.Recent": datetime.utcnow()}},
+                    )
+        except Exception as e:
+            logger.warning(f"Auto-apply 'Recent' tag failed: {e}")
+
     return {
         "success": True,
         "card_id": card_id,
@@ -583,6 +635,7 @@ async def create_congrats_card(
         "message": "Congrats card created!",
         "contact_photo_updated": contact_updated,
         "tags_applied": applied_tags,
+        "recent_tag_auto_applied": recent_tag_applied,
     }
 
 

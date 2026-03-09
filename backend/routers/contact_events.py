@@ -283,7 +283,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
             "event_type": "campaign_enrolled",
             "icon": "rocket",
             "color": "#AF52DE",
-            "title": f"Enrolled in Campaign",
+            "title": "Enrolled in Campaign",
             "description": campaign_name,
             "timestamp": ts,
             "category": "campaign",
@@ -297,7 +297,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
                 "event_type": "campaign_message_sent",
                 "icon": "megaphone",
                 "color": "#FF9500",
-                "title": f"Campaign Message Sent",
+                "title": "Campaign Message Sent",
                 "description": f"{campaign_name} - Step {msg.get('step', '?')}",
                 "full_content": msg.get("body") or msg.get("message") or f"{campaign_name} - Step {msg.get('step', '?')}",
                 "channel": msg.get("channel", "sms"),
@@ -555,7 +555,7 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                     "priority": "high",
                     "icon": "gift",
                     "color": "#FF9500",
-                    "title": f"Birthday coming up!",
+                    "title": "Birthday coming up!",
                     "description": f"{name}'s birthday is {'today' if days_until == 0 else f'in {days_until} day' + ('s' if days_until > 1 else '')}",
                     "suggested_message": f"Happy Birthday, {name}! Hope you have an amazing day! - Sent with care from your friends at the dealership",
                     "action": "congrats",
@@ -576,7 +576,7 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                     "priority": "high",
                     "icon": "heart",
                     "color": "#FF2D55",
-                    "title": f"Anniversary coming up!",
+                    "title": "Anniversary coming up!",
                     "description": f"{name}'s anniversary is {'today' if days_until == 0 else f'in {days_until} day' + ('s' if days_until > 1 else '')}",
                     "suggested_message": f"Happy Anniversary, {name}! Wishing you and your family all the best! Hope you're still loving the ride.",
                     "action": "sms",
@@ -617,7 +617,7 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                 "priority": "medium",
                 "icon": "time",
                 "color": "#FF9F0A",
-                "title": f"Time to reconnect",
+                "title": "Time to reconnect",
                 "description": f"It's been {days_since_contact} days since your last touchpoint with {name}",
                 "suggested_message": f"Hey {name}! Just checking in  - haven't connected in a while. Hope everything's going great! Let me know if there's anything you need.",
                 "action": "sms",
@@ -823,6 +823,36 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
         new_contact["_id"] = result.inserted_id
         contact = new_contact
         created = True
+
+        # Backfill photo from recent card if available
+        if phone:
+            try:
+                normalized = "".join(c for c in phone if c.isdigit())
+                suffix = normalized[-10:] if len(normalized) >= 10 else normalized
+                recent_card = await db.congrats_cards.find_one(
+                    {
+                        "salesman_id": user_id,
+                        "customer_phone": {"$regex": suffix},
+                        "photo_path": {"$exists": True, "$ne": None},
+                    },
+                    sort=[("created_at", -1)],
+                )
+                if recent_card and recent_card.get("photo_path"):
+                    photo_update = {
+                        "photo_path": recent_card["photo_path"],
+                        "photo_source": recent_card.get("card_type", "congrats"),
+                    }
+                    if recent_card.get("photo_thumb_path"):
+                        photo_update["photo_thumb_path"] = recent_card["photo_thumb_path"]
+                        thumb_url = f"/api/images/{recent_card['photo_thumb_path']}"
+                        photo_update["photo_thumbnail"] = thumb_url
+                        photo_update["photo_url"] = thumb_url
+                    await db.contacts.update_one(
+                        {"_id": contact["_id"]}, {"$set": photo_update}
+                    )
+                    logger.info(f"[find-or-create] Backfilled photo from card onto new contact {first_name} {last_name}")
+            except Exception as e:
+                logger.warning(f"[find-or-create] Photo backfill failed: {e}")
 
     contact_id = str(contact["_id"])
 

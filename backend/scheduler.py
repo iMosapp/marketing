@@ -6,6 +6,7 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timezone, timedelta
+from bson import ObjectId
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -682,6 +683,48 @@ async def send_weekly_power_rankings_job():
         logger.error(f"[Scheduler] Power Rankings error: {e}")
 
 
+async def expire_recent_tags():
+    """Daily job: remove 'Recent' tag from contacts where it was applied more than 14 days ago."""
+    logger.info("[Scheduler] Starting Recent tag expiry scan...")
+    try:
+        from routers.database import get_db
+        db = get_db()
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=14)
+
+        # Find contacts with 'Recent' tag applied before the cutoff
+        expired = await db.contacts.find(
+            {
+                "tags": "Recent",
+                "$or": [
+                    {"tag_timestamps.Recent": {"$lt": cutoff}},
+                    # If no timestamp recorded, use created_at as fallback
+                    {"tag_timestamps.Recent": {"$exists": False}, "created_at": {"$lt": cutoff}},
+                ],
+            },
+            {"_id": 1, "first_name": 1, "last_name": 1},
+        ).to_list(5000)
+
+        removed = 0
+        for c in expired:
+            await db.contacts.update_one(
+                {"_id": c["_id"]},
+                {
+                    "$pull": {"tags": "Recent"},
+                    "$unset": {"tag_timestamps.Recent": ""},
+                },
+            )
+            removed += 1
+
+        _scheduler_state["last_recent_tag_expiry_run"] = datetime.now(timezone.utc).isoformat()
+        _scheduler_state["recent_tag_expiry_results"] = {"removed": removed, "ran_at": datetime.now(timezone.utc).isoformat()}
+        logger.info(f"[Scheduler] Recent tag expiry complete: removed from {removed} contacts")
+    except Exception as e:
+        msg = f"[Scheduler] Error in Recent tag expiry: {e}"
+        logger.error(msg)
+        _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -742,8 +785,17 @@ def start_scheduler():
         misfire_grace_time=7200,
     )
 
+    # Daily at 4 AM UTC - expire "Recent" tags older than 14 days
+    scheduler.add_job(
+        expire_recent_tags,
+        CronTrigger(hour=4, minute=0),
+        id="daily_recent_tag_expiry",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 6 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC)")
+    logger.info("[Scheduler] Started with 7 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC)")
 
 
 def stop_scheduler():
