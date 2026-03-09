@@ -32,7 +32,7 @@ function usePWAMetaTags() {
 
     ensureMeta('apple-mobile-web-app-capable', 'yes');
     ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
-    ensureMeta('apple-mobile-web-app-title', "i'M On Social");
+    ensureMeta('apple-mobile-web-app-title', 'On Social');
     ensureMeta('mobile-web-app-capable', 'yes');
     ensureMeta('theme-color', '#000000');
     ensureLink('manifest', '/manifest.json');

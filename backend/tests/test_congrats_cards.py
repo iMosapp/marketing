@@ -11,7 +11,7 @@ import requests
 import os
 import base64
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://engagement-hub-69.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com').rstrip('/')
 SALESMAN_ID = "699907444a076891982fab35"  # Super Admin user ID from test credentials
 
 # Test card ID that was pre-created by main agent

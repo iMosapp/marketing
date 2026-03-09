@@ -237,6 +237,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
+- P2: React Hydration Error #418
 
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
@@ -254,6 +255,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Animation fix:** Removed the old modal-based add contact flow that caused a "jumping" animation glitch on open
 - **Cleanup:** Removed modal state variables, modal JSX, and 80+ lines of modal styles from `contacts.tsx`
 - **Tested:** 8/8 frontend tests passed
+
+### Favicon & PWA Branding Fix (Mar 9, 2026)
+- **Favicon:** Regenerated all favicon/icon files (favicon.ico, favicon-16/32.png, apple-touch-icon, logo192, logo512, android-chrome icons) with **rounded corners** on the white tile background — corners are now transparent instead of sharp square
+- **PWA Home Screen Label:** Changed manifest `short_name` from "iMOs" to "On Social" — when users "Add to Home Screen", the tile label now reads "On Social"
+- **Meta Tags:** Updated `apple-mobile-web-app-title` to "On Social" in both `index.html` and `_layout.tsx`
+- **Icon link tags:** Added explicit PNG favicon links (`favicon-32x32.png`, `favicon-16x16.png`) for better browser compatibility
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`

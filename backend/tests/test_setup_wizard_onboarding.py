@@ -7,7 +7,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://engagement-hub-69.preview.emergentagent.com")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://rms-polish.preview.emergentagent.com")
 # Super admin credentials for testing
 SUPER_ADMIN_USER_ID = "69a0b7095fddcede09591667"
 

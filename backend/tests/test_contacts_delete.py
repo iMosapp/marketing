@@ -6,7 +6,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://engagement-hub-69.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com').rstrip('/')
 TEST_USER_ID = "699907444a076891982fab35"
 
 class TestContactsDeleteAPI:

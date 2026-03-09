@@ -18,7 +18,7 @@ import os
 import io
 from PIL import Image
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://engagement-hub-69.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com')
 USER_ID = "69a0b7095fddcede09591667"  # Super Admin forest@imosapp.com
 
 # Create a simple test image
