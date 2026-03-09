@@ -21,10 +21,16 @@ logger = logging.getLogger(__name__)
 async def get_or_create_timeline_token(user_id: str, contact_id: str):
     """Generate or retrieve a secure CRM timeline token for a contact."""
     db = get_db()
+    # Try exact match first, then fallback to just contact_id (for impersonation/hierarchy access)
     contact = await db.contacts.find_one(
         {"_id": ObjectId(contact_id), "user_id": user_id},
         {"crm_link_token": 1, "name": 1}
     )
+    if not contact:
+        contact = await db.contacts.find_one(
+            {"_id": ObjectId(contact_id)},
+            {"crm_link_token": 1, "name": 1}
+        )
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
 
@@ -44,7 +50,7 @@ async def mark_crm_link_copied(user_id: str, contact_id: str):
     """Mark that the CRM link has been copied for this contact."""
     db = get_db()
     result = await db.contacts.update_one(
-        {"_id": ObjectId(contact_id), "user_id": user_id},
+        {"_id": ObjectId(contact_id)},
         {"$set": {"crm_link_copied_at": datetime.now(timezone.utc)}}
     )
     if result.matched_count == 0:

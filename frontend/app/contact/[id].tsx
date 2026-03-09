@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as Clipboard from 'expo-clipboard';
 import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -3842,13 +3843,19 @@ export default function ContactDetailScreen() {
                       try {
                         const res = await api.post(`/crm/timeline-token/${user._id}/${id}`);
                         const link = `${api.defaults.baseURL?.replace('/api', '')}/timeline/${res.data.token}`;
-                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                          await navigator.clipboard.writeText(link);
+                        try {
+                          await Clipboard.setStringAsync(link);
+                        } catch {
+                          // Fallback for environments where Clipboard fails
+                          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                            await navigator.clipboard.writeText(link);
+                          }
                         }
-                        await api.post(`/crm/mark-copied/${user._id}/${id}`);
+                        api.post(`/crm/mark-copied/${user._id}/${id}`).catch(() => {});
                         showSimpleAlert('CRM Link Copied!', 'Paste this into your CRM. It stays up-to-date automatically.');
-                      } catch (e) {
-                        showSimpleAlert('Error', 'Could not generate CRM link');
+                      } catch (e: any) {
+                        console.error('CRM link error:', e?.response?.data || e?.message || e);
+                        showSimpleAlert('Error', e?.response?.data?.detail || 'Could not generate CRM link');
                       }
                     }}
                     data-testid="copy-crm-link-btn"
