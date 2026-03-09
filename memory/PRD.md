@@ -212,6 +212,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Setup Wizard Relocated:** Moved "Onboard New Account" from the buried "Internal Administration" section to the top-level "Customer Infrastructure" section for faster access.
 - **Role Edit Touch Target:** Increased pencil icon touch target from 4px to 10px padding for easier tapping.
 
+- **User Delete Bug Fixed:** `useToast` was imported but never called as a hook in `/app/frontend/app/admin/users/[id].tsx`, making `showToast` undefined. After a successful backend delete, `showToast('User deleted')` threw a TypeError, caught by the catch block which showed "Failed to delete user". Added `const { showToast } = useToast()`. This also fixes toast errors for ALL other operations on that page (toggle status, role change, store assignment, etc.).
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

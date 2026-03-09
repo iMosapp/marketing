@@ -92,6 +92,7 @@ export default function UserDetailScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { showToast } = useToast();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
