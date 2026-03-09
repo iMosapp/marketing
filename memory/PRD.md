@@ -240,6 +240,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Fix:** All send paths now route through `/contacts/{userId}/{contactId}/events` (same collection performance dashboard queries) or `find-or-create-and-log` for flows without a contact yet
 - **Tested:** 11/11 backend tests + all frontend tests passed (iteration 166)
 
+### Performance Scorecard + Clickable Tiles (Mar 9, 2026)
+- **Daily Scorecard:** Added hero card at top of performance page showing today's touchpoints vs yesterday, trend arrow (green up / red down), and motivational message. Always shows today's data regardless of period filter.
+- **All tiles clickable:** Every tile in Communication, Sharing, Engagement, and Click-Through Breakdown sections now opens a detail modal showing individual events attributed to that category. Each event shows contact name, event label, timestamp, and navigates to the contact profile on tap.
+- **New "Showcase" tile:** Added under Sharing section counting `showroom_shared` events.
+- **New Leads clickable:** Now opens detail showing recently added contacts with source info.
+- **Click-Through details:** All 4 rows (Digital Card Views, Review Link Clicks, Showcase Views, Link Page Visits) now pull from both `contact_events` AND `engagement_signals` collections.
+- **Tested:** 15/15 backend tests + all frontend UI tests passed (iteration 167)
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
