@@ -444,6 +444,14 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Track stat
     await increment_user_stat(user_id, "messages_sent")
     
+    # Fire-and-forget milestone check for push notifications
+    try:
+        import asyncio as _aio
+        from routers.contact_events import _quick_milestone_check
+        _aio.create_task(_quick_milestone_check(user_id))
+    except Exception:
+        pass
+    
     return message
 
 

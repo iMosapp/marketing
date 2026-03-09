@@ -21,6 +21,61 @@ def _ts_iso(dt) -> str:
         s += 'Z'
     return s
 
+
+async def _quick_milestone_check(user_id: str):
+    """Lightweight milestone check fired after each event. Non-blocking."""
+    try:
+        db = get_db()
+        from datetime import timedelta
+        now = datetime.now(timezone.utc)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Count today's events
+        today_count = await db.contact_events.count_documents({
+            "user_id": user_id,
+            "timestamp": {"$gte": today_start},
+        })
+
+        # Quick streak calculation (check last 60 days)
+        streak = 0
+        for day_offset in range(60):
+            day = today_start - timedelta(days=day_offset)
+            day_end = day + timedelta(days=1)
+            c = await db.contact_events.count_documents({
+                "user_id": user_id,
+                "timestamp": {"$gte": day, "$lt": day_end},
+            })
+            if c >= 5:
+                streak += 1
+            elif day_offset > 0:
+                break
+
+        # Best day (simple max)
+        pipeline = [
+            {"$match": {"user_id": user_id}},
+            {"$group": {
+                "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+                "count": {"$sum": 1},
+            }},
+            {"$sort": {"count": -1}},
+            {"$limit": 1},
+        ]
+        best_result = await db.contact_events.aggregate(pipeline).to_list(1)
+        best_day = best_result[0]["count"] if best_result else 0
+
+        # Level
+        total = await db.contact_events.count_documents({"user_id": user_id})
+        levels = [(0, "Rookie"), (100, "Hustler"), (500, "Closer"), (1500, "All-Star"), (5000, "Legend")]
+        level_title = "Rookie"
+        for threshold, name in levels:
+            if total >= threshold:
+                level_title = name
+
+        from routers.push_notifications import check_and_notify_milestones
+        await check_and_notify_milestones(user_id, streak, level_title, today_count, best_day)
+    except Exception as e:
+        logger.debug(f"Quick milestone check failed for {user_id}: {e}")
+
 router = APIRouter(prefix="/contacts", tags=["Contact Events"])
 logger = logging.getLogger(__name__)
 
@@ -473,6 +528,10 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     event.pop("_id", None)
     if hasattr(event["timestamp"], "isoformat"):
         event["timestamp"] = _ts_iso(event["timestamp"])
+
+    # Fire-and-forget milestone check for push notifications
+    import asyncio as _aio
+    _aio.create_task(_quick_milestone_check(user_id))
 
     return event
 

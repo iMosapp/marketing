@@ -11,9 +11,23 @@ import os
 import httpx
 import resend
 import asyncio
+import bcrypt
 
 from models import User, UserCreate, UserPersona
 from routers.database import get_db
+
+
+def hash_password(plain: str) -> str:
+    """Hash a password with bcrypt."""
+    return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain: str, stored: str) -> bool:
+    """Verify a password against a stored hash (or plain-text for legacy users)."""
+    if stored.startswith("$2b$") or stored.startswith("$2a$"):
+        return bcrypt.checkpw(plain.encode("utf-8"), stored.encode("utf-8"))
+    # Legacy plain-text comparison
+    return plain == stored
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
@@ -149,6 +163,7 @@ async def signup(user_data: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_dict = user_data.dict()
+    user_dict['password'] = hash_password(user_dict['password'])
     user_dict['created_at'] = datetime.utcnow()
     user_dict['updated_at'] = datetime.utcnow()
     user_dict['onboarding_complete'] = False
@@ -236,8 +251,17 @@ async def login(credentials: dict):
     password = credentials.get('password')
     
     user = await get_db().users.find_one({"email": email})
-    if not user or user.get('password') != password:
+    if not user or not verify_password(password, user.get('password', '')):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Auto-upgrade legacy plain-text passwords to bcrypt
+    stored_pw = user.get('password', '')
+    if not (stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")):
+        hashed = hash_password(password)
+        await get_db().users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"password": hashed}}
+        )
     
     user['_id'] = str(user['_id'])
     # Remove password from response
@@ -510,7 +534,7 @@ async def reset_password(data: dict):
     # Update password
     result = await get_db().users.update_one(
         {"email": email},
-        {"$set": {"password": new_password}}
+        {"$set": {"password": hash_password(new_password)}}
     )
     
     if result.modified_count == 0:
@@ -544,14 +568,14 @@ async def change_password(data: dict):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if user.get('password') != current_password:
+    if not verify_password(current_password, user.get('password', '')):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     
     # Update password and clear needs_password_change flag
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
         {"$set": {
-            "password": new_password, 
+            "password": hash_password(new_password), 
             "needs_password_change": False,
             "updated_at": datetime.utcnow()
         }}
@@ -577,7 +601,7 @@ async def admin_password_reset(data: dict):
     
     result = await get_db().users.update_one(
         {"email": email},
-        {"$set": {"password": new_password, "status": "active", "is_active": True}}
+        {"$set": {"password": hash_password(new_password), "status": "active", "is_active": True}}
     )
     
     if result.matched_count == 0:

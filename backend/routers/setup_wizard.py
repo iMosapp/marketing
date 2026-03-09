@@ -8,6 +8,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 from bson import ObjectId
 from routers.database import get_db
+from routers.auth import hash_password
 import secrets
 import logging
 
@@ -133,7 +134,7 @@ async def bulk_invite_team_members(data: BulkInviteRequest, x_user_id: str = Hea
                 "name": member.name.strip(),
                 "email": email,
                 "phone": phone,
-                "password": temp_password,
+                "password": hash_password(temp_password),
                 "role": member.role,
                 "organization_id": org_id,
                 "store_id": data.store_id,
@@ -396,7 +397,7 @@ async def create_new_account(
         "name": data.contact_name.strip(),
         "email": contact_email or f"{org_slug}-admin@placeholder.local",
         "phone": contact_phone_e164,
-        "password": temp_password,
+        "password": hash_password(temp_password),
         "role": "store_manager",
         "organization_id": org_id,
         "store_id": store_id,

@@ -10,6 +10,11 @@ import { leaderboardAPI } from '../../services/api';
 
 import { useThemeStore } from '../../store/themeStore';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const PERIODS = [
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'all', label: 'All Time' },
+];
 const LEVELS = [
   { key: 'store', label: 'My Store', icon: 'storefront' },
   { key: 'org', label: 'All Stores', icon: 'business' },
@@ -32,8 +37,7 @@ export default function LeaderboardPage() {
   const [user, setUser] = useState<any>(null);
   const [level, setLevel] = useState('store');
   const [category, setCategory] = useState('total');
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [period, setPeriod] = useState('month');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
@@ -47,16 +51,16 @@ export default function LeaderboardPage() {
     setLoading(true);
     try {
       let result;
-      if (level === 'store') result = await leaderboardAPI.getStore(user._id, month, year, category);
-      else if (level === 'org') result = await leaderboardAPI.getOrg(user._id, month, year, category);
-      else result = await leaderboardAPI.getGlobal(user._id, month, year, category);
+      if (level === 'store') result = await leaderboardAPI.getStore(user._id, undefined, undefined, category, period);
+      else if (level === 'org') result = await leaderboardAPI.getOrg(user._id, undefined, undefined, category, period);
+      else result = await leaderboardAPI.getGlobal(user._id, undefined, undefined, category, period);
       setData(result);
     } catch (e) {
       console.error('Leaderboard load error:', e);
     } finally {
       setLoading(false);
     }
-  }, [user, level, category, month, year]);
+  }, [user, level, category, period]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -72,15 +76,6 @@ export default function LeaderboardPage() {
     if (badge === 'silver') return 'medal-outline';
     if (badge === 'bronze') return 'ribbon';
     return '';
-  };
-
-  const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear(year - 1); }
-    else setMonth(month - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear(year + 1); }
-    else setMonth(month + 1);
   };
 
   const renderEntry = (entry: any, index: number) => {
@@ -193,15 +188,18 @@ export default function LeaderboardPage() {
         ))}
       </View>
 
-      {/* Month Selector */}
+      {/* Period Selector */}
       <View style={s.monthRow}>
-        <TouchableOpacity onPress={prevMonth} style={s.monthArrow}>
-          <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
-        <Text style={s.monthText}>{MONTHS[month - 1]} {year}</Text>
-        <TouchableOpacity onPress={nextMonth} style={s.monthArrow}>
-          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        {PERIODS.map(p => (
+          <TouchableOpacity
+            key={p.key}
+            style={[s.periodTab, period === p.key && s.periodTabActive]}
+            onPress={() => { setPeriod(p.key); setExpanded({}); }}
+            data-testid={`lb-period-${p.key}`}
+          >
+            <Text style={[s.periodText, period === p.key && s.periodTextActive]}>{p.label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Category Pills */}
@@ -271,10 +269,12 @@ const getS = (colors: any) => StyleSheet.create({
   levelTabActive: { backgroundColor: '#C9A96220', borderWidth: 1, borderColor: '#C9A96250' },
   levelText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   levelTextActive: { color: '#C9A962' },
-  // Month
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 10 },
-  monthArrow: { padding: 4 },
-  monthText: { fontSize: 15, fontWeight: '700', color: colors.text },
+  // Period tabs
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10, paddingHorizontal: 16 },
+  periodTab: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 8, backgroundColor: colors.card },
+  periodTabActive: { backgroundColor: '#C9A96220', borderWidth: 1, borderColor: '#C9A96250' },
+  periodText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  periodTextActive: { color: '#C9A962', fontWeight: '700' },
   // Category pills
   catScroll: { maxHeight: 44, marginBottom: 8 },
   catRow: { paddingHorizontal: 16, gap: 8 },

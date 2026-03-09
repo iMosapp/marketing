@@ -25,6 +25,8 @@ from routers.rbac import (
     ROLE_HIERARCHY
 )
 
+from routers.auth import hash_password
+
 router = APIRouter(prefix="/admin", tags=["Admin"])
 logger = logging.getLogger(__name__)
 
@@ -759,7 +761,7 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     
     user_dict = {
         "email": email,
-        "password": temp_password,
+        "password": hash_password(temp_password),
         "name": name,
         "phone": phone,
         "role": user_role,
@@ -2003,16 +2005,14 @@ async def create_individual(
         raise HTTPException(status_code=400, detail="Email already exists")
     
     # Create individual user
-    import bcrypt
     password = individual_data.get('password', 'Individual123!')
-    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     new_individual = {
         "email": individual_data['email'],
         "name": individual_data['name'],
         "phone": individual_data.get('phone', ''),
         "title": individual_data.get('title', ''),
-        "password": hashed,
+        "password": hash_password(password),
         "role": "user",
         "is_individual": True,
         "is_active": True,

@@ -812,27 +812,30 @@ export default api;
 
 // Leaderboard API
 export const leaderboardAPI = {
-  getStore: async (userId: string, month?: number, year?: number, category?: string) => {
+  getStore: async (userId: string, month?: number, year?: number, category?: string, period?: string) => {
     const params = new URLSearchParams();
     if (month) params.append('month', String(month));
     if (year) params.append('year', String(year));
     if (category) params.append('category', category);
+    if (period) params.append('period', period);
     const response = await api.get(`/leaderboard/v2/store/${userId}?${params}`);
     return response.data;
   },
-  getOrg: async (userId: string, month?: number, year?: number, category?: string) => {
+  getOrg: async (userId: string, month?: number, year?: number, category?: string, period?: string) => {
     const params = new URLSearchParams();
     if (month) params.append('month', String(month));
     if (year) params.append('year', String(year));
     if (category) params.append('category', category);
+    if (period) params.append('period', period);
     const response = await api.get(`/leaderboard/v2/org/${userId}?${params}`);
     return response.data;
   },
-  getGlobal: async (userId: string, month?: number, year?: number, category?: string) => {
+  getGlobal: async (userId: string, month?: number, year?: number, category?: string, period?: string) => {
     const params = new URLSearchParams();
     if (month) params.append('month', String(month));
     if (year) params.append('year', String(year));
     if (category) params.append('category', category);
+    if (period) params.append('period', period);
     const response = await api.get(`/leaderboard/v2/global/${userId}?${params}`);
     return response.data;
   },
