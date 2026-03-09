@@ -47,7 +47,7 @@ interface CongratsCardData {
 }
 
 export default function CongratsCardPage() {
-  const { cardId } = useLocalSearchParams();
+  const { cardId, preview } = useLocalSearchParams();
   const router = useRouter();
   const [cardData, setCardData] = useState<CongratsCardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function CongratsCardPage() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewName, setReviewName] = useState('');
   const [reviewText, setReviewText] = useState('');
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(preview === 'reviewed');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [hasExistingConsent, setHasExistingConsent] = useState(false); // show banner by default, hide after consent check
 
@@ -84,6 +84,13 @@ export default function CongratsCardPage() {
     try {
       const response = await api.get(`/congrats/card/${cardId}`);
       setCardData(response.data);
+      // Pre-fetch store slug for the review link
+      if (response.data?.salesman_id) {
+        try {
+          const userResp = await api.get(`/auth/user/${response.data.salesman_id}`);
+          setStoreSlug(userResp.data?.store?.slug || null);
+        } catch {}
+      }
     } catch (err: any) {
       console.error('Error loading card:', err);
       setError(err.response?.data?.detail || 'Card not found');
