@@ -71,7 +71,8 @@ export default function PerformanceScreen() {
       congrats_card_sent: 'Congrats card', birthday_card_sent: 'Birthday card', holiday_card_sent: 'Holiday card',
       thank_you_card_sent: 'Thank you card', anniversary_card_sent: 'Anniversary card',
       showroom_shared: 'Showcase shared',
-      link_clicked: 'Link clicked', card_viewed: 'Card viewed', digital_card_viewed: 'Card viewed',
+      link_clicked: 'Link clicked', card_viewed: 'Card viewed', digital_card_viewed: 'Business card viewed',
+      congrats_card_viewed: 'Congrats card viewed', birthday_card_viewed: 'Birthday card viewed', holiday_card_viewed: 'Holiday card viewed',
       review_link_clicked: 'Review link clicked', showcase_viewed: 'Showcase viewed', showroom_viewed: 'Showcase viewed',
       link_page_viewed: 'Link page viewed', email_opened: 'Email opened',
       reply_received: 'Reply received', sms_received: 'Text received',
@@ -172,7 +173,8 @@ export default function PerformanceScreen() {
 
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}>CLICK-THROUGH BREAKDOWN</Text>
             <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
-              <CtrRow icon="card" iconColor="#C9A962" iconBg="rgba(201,169,98,0.12)" label="Digital Card Views" sub="People who opened your card" value={data.click_through?.digital_card_views || 0} valueColor="#C9A962" onPress={() => openDetail('Digital Card Views', 'digital_card_views')} colors={colors} />
+              <CtrRow icon="person-circle" iconColor="#C9A962" iconBg="rgba(201,169,98,0.12)" label="My Card Views" sub="People who opened your business card" value={data.click_through?.my_card_views || 0} valueColor="#C9A962" onPress={() => openDetail('My Card Views', 'my_card_views')} colors={colors} />
+              <CtrRow icon="camera" iconColor="#FF9500" iconBg="rgba(255,150,0,0.12)" label="Customer Card Views" sub="People who opened cards you created" value={data.click_through?.customer_card_views || 0} valueColor="#FF9500" onPress={() => openDetail('Customer Card Views', 'customer_card_views')} colors={colors} />
               <CtrRow icon="star" iconColor="#FFD60A" iconBg="rgba(255,214,10,0.12)" label="Review Link Clicks" sub="People who clicked your review link" value={data.click_through?.review_link_clicks || 0} valueColor="#FFD60A" onPress={() => openDetail('Review Link Clicks', 'review_link_clicks')} colors={colors} />
               <CtrRow icon="storefront" iconColor="#34C759" iconBg="rgba(52,199,89,0.12)" label="Showcase Views" sub="People browsing your showcase" value={data.click_through?.showcase_views || 0} valueColor="#34C759" onPress={() => openDetail('Showcase Views', 'showcase_views')} colors={colors} />
               <CtrRow icon="link" iconColor="#AF52DE" iconBg="rgba(175,82,222,0.12)" label="Link Page Visits" sub="Your personal link page views" value={data.click_through?.link_page_visits || 0} valueColor="#AF52DE" onPress={() => openDetail('Link Page Visits', 'link_page_visits')} colors={colors} last />

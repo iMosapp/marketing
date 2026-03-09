@@ -245,7 +245,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **All tiles clickable:** Every tile in Communication, Sharing, Engagement, and Click-Through Breakdown sections now opens a detail modal showing individual events attributed to that category. Each event shows contact name, event label, timestamp, and navigates to the contact profile on tap.
 - **New "Showcase" tile:** Added under Sharing section counting `showroom_shared` events.
 - **New Leads clickable:** Now opens detail showing recently added contacts with source info.
-- **Click-Through details:** All 4 rows (Digital Card Views, Review Link Clicks, Showcase Views, Link Page Visits) now pull from both `contact_events` AND `engagement_signals` collections.
+- **Separated card views:** Click-Through Breakdown now has "My Card Views" (personal digital business card) and "Customer Card Views" (congrats, birthday, holiday cards combined) as separate tiles.
 - **Tested:** 15/15 backend tests + all frontend UI tests passed (iteration 167)
 
 ## Known Issues
