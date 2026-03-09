@@ -206,6 +206,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## Recent Fixes (Mar 9, 2026)
 - **Login Autofill Styling Fix:** Added CSS rules targeting `:-webkit-autofill` pseudo-class in `+html.tsx` to prevent browser autofill from showing black/yellow backgrounds on input fields. Uses `transition: background-color 5000s` approach for universal light/dark theme compatibility.
+- **Setup Wizard Keyboard Dismissal Fix:** Root cause was `getS(colors)` creating a new StyleSheet on every re-render, invalidating all `useMemo` component wrappers (`SectionCard`, `Label`, `StepHeader`, `BtnRow`), causing React to unmount/remount TextInputs. Fixed by memoizing styles: `const s = useMemo(() => getS(colors), [colors])`.
 
 ## Known Issues
 - P2: Mobile tags sync

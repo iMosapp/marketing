@@ -55,7 +55,7 @@ const genPassword = () => 'Welcome' + Math.floor(1000 + Math.random() * 9000) + 
 
 export default function SetupWizardScreen() {
   const { colors } = useThemeStore();
-  const s = getS(colors);
+  const s = useMemo(() => getS(colors), [colors]);
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
