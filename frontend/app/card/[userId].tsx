@@ -59,7 +59,7 @@ const SOCIAL_PLATFORMS = [
 
 export default function DigitalCardPage() {
   const router = useRouter();
-  const { userId, campaign, contact } = useLocalSearchParams();
+  const { userId, campaign, contact, preview } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [cardData, setCardData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,7 @@ export default function DigitalCardPage() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackName, setFeedbackName] = useState('');
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(preview === 'reviewed');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -639,41 +639,65 @@ export default function DigitalCardPage() {
             </TouchableOpacity>
           </View>
 
-          {/* Leave a Review — Prominent placement right after quick actions */}
+          {/* Leave a Review — Two-step: internal first, then nudge to Google */}
           <View style={styles.section}>
-            <TouchableOpacity 
-              style={styles.reviewCTABanner}
-              onPress={() => { if (!feedbackSubmitted) setShowReviewForm(!showReviewForm); }}
-              data-testid="leave-review-cta"
-            >
-              <Ionicons name="star" size={22} color="#FFD60A" />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.reviewCTABannerTitle}>{feedbackSubmitted ? 'Thank you for your review!' : 'Had a great experience?'}</Text>
-                <Text style={styles.reviewCTABannerSub}>{feedbackSubmitted ? 'Your feedback means a lot.' : 'Tap to leave a review'}</Text>
-              </View>
-              {!feedbackSubmitted && <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={20} color="#C9A962" />}
-            </TouchableOpacity>
-
-            {showReviewForm && !feedbackSubmitted && (
-              <View style={styles.feedbackCard}>
-                <Text style={styles.feedbackLabel}>How was your experience?</Text>
-                <View style={styles.starRow} data-testid="feedback-stars">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <TouchableOpacity key={star} onPress={() => setFeedbackRating(star)} data-testid={`star-${star}`}>
-                      <Ionicons name={star <= feedbackRating ? 'star' : 'star-outline'} size={36} color={star <= feedbackRating ? '#FFD60A' : '#3A3A3C'} />
-                    </TouchableOpacity>
-                  ))}
+            {feedbackSubmitted ? (
+              /* After internal review: nudge toward public/Google review */
+              <TouchableOpacity 
+                style={[styles.reviewCTABanner, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
+                onPress={() => {
+                  const slug = cardData?.store?.slug;
+                  if (slug) {
+                    router.push(`/review/${slug}?sp=${userId}` as any);
+                  }
+                }}
+                data-testid="online-review-cta"
+              >
+                <Ionicons name="globe-outline" size={22} color="#34C759" />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.reviewCTABannerTitle}>Thanks! Want to share it online?</Text>
+                  <Text style={[styles.reviewCTABannerSub, { color: '#34C759' }]}>Leave a Google review — it means the world</Text>
                 </View>
-                {feedbackRating > 0 && (
-                  <>
-                    <TextInput style={styles.feedbackInput} placeholder="Your name (optional)" placeholderTextColor="#6E6E73" value={feedbackName} onChangeText={setFeedbackName} data-testid="feedback-name" />
-                    <TextInput style={[styles.feedbackInput, styles.feedbackTextArea]} placeholder="Tell us about your experience..." placeholderTextColor="#6E6E73" value={feedbackText} onChangeText={setFeedbackText} multiline numberOfLines={3} data-testid="feedback-text" />
-                    <TouchableOpacity style={styles.feedbackSubmitBtn} onPress={handleSubmitFeedback} disabled={submittingFeedback} data-testid="feedback-submit">
-                      {submittingFeedback ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.feedbackSubmitText}>Submit Review</Text>}
-                    </TouchableOpacity>
-                  </>
+                <Ionicons name="open-outline" size={20} color="#34C759" />
+              </TouchableOpacity>
+            ) : (
+              /* Before review: show internal review form */
+              <>
+                <TouchableOpacity 
+                  style={styles.reviewCTABanner}
+                  onPress={() => setShowReviewForm(!showReviewForm)}
+                  data-testid="leave-review-cta"
+                >
+                  <Ionicons name="star" size={22} color="#FFD60A" />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.reviewCTABannerTitle}>Had a great experience?</Text>
+                    <Text style={styles.reviewCTABannerSub}>Tap to leave a review</Text>
+                  </View>
+                  <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={20} color="#C9A962" />
+                </TouchableOpacity>
+
+                {showReviewForm && (
+                  <View style={styles.feedbackCard}>
+                    <Text style={styles.feedbackLabel}>How was your experience?</Text>
+                    <View style={styles.starRow} data-testid="feedback-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <TouchableOpacity key={star} onPress={() => setFeedbackRating(star)} data-testid={`star-${star}`}>
+                          <Ionicons name={star <= feedbackRating ? 'star' : 'star-outline'} size={36} color={star <= feedbackRating ? '#FFD60A' : '#3A3A3C'} />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {feedbackRating > 0 && (
+                      <>
+                        <TextInput style={styles.feedbackInput} placeholder="Your name (optional)" placeholderTextColor="#6E6E73" value={feedbackName} onChangeText={setFeedbackName} data-testid="feedback-name" />
+                        <TextInput style={[styles.feedbackInput, styles.feedbackTextArea]} placeholder="Tell us about your experience..." placeholderTextColor="#6E6E73" value={feedbackText} onChangeText={setFeedbackText} multiline numberOfLines={3} data-testid="feedback-text" />
+                        <TouchableOpacity style={styles.feedbackSubmitBtn} onPress={handleSubmitFeedback} disabled={submittingFeedback} data-testid="feedback-submit">
+                          {submittingFeedback ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.feedbackSubmitText}>Submit Review</Text>}
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
                 )}
-              </View>
+              </>
             )}
           </View>
 
