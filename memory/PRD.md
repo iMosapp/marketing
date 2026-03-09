@@ -270,5 +270,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Card creation backend:** `POST /api/congrats/create` accepts optional `tags` (JSON array) and `skip_campaign` Form parameters.
 - **Tested:** 13/13 backend tests passed, all frontend UI tests passed.
 
+### Auto "Recent" Tag + Photo Backfill (Mar 9, 2026)
+- **Auto "Recent" tag:** Every card creation automatically applies a "Recent" tag to the contact with a `tag_timestamps.Recent` timestamp. Tag is auto-created as a system tag (color: #5856D6) if it doesn't exist.
+- **Photo → Avatar backfill:** When a NEW contact is created via `find-or-create-and-log` (during card sharing), the system looks for a recent card matching that phone and backfills the photo as the contact's avatar.
+- **Scheduler: 14-day expiry:** New daily job `daily_recent_tag_expiry` runs at 4 AM UTC. Removes "Recent" tag from contacts where it was applied >14 days ago.
+- **Tested:** 11/11 backend tests passed (iteration 165).
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
