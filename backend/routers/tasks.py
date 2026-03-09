@@ -464,6 +464,26 @@ async def get_performance(user_id: str, period: str = "week"):
     except Exception:
         pass
 
+    # Streak: consecutive days with 5+ touchpoints (looking back up to 90 days)
+    STREAK_THRESHOLD = 5
+    streak = 0
+    # Count today toward streak if already at threshold
+    if today_events >= STREAK_THRESHOLD:
+        streak = 1
+    # Walk backwards from yesterday
+    for days_ago in range(1, 91):
+        day_start = today_start - timedelta(days=days_ago)
+        day_end = day_start + timedelta(days=1)
+        day_count = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": day_start, "$lt": day_end}})
+        try:
+            day_count += await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": day_start, "$lt": day_end}})
+        except Exception:
+            pass
+        if day_count >= STREAK_THRESHOLD:
+            streak += 1
+        else:
+            break
+
     total_touchpoints = (
         activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
         activity.get("email_sent", 0) + activity.get("email_failed", 0) +
@@ -482,6 +502,8 @@ async def get_performance(user_id: str, period: str = "week"):
             "today": today_events,
             "yesterday": yesterday_events,
             "diff": today_events - yesterday_events,
+            "streak": streak,
+            "streak_threshold": STREAK_THRESHOLD,
         },
         "communication": {
             "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),

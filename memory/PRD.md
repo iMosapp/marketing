@@ -246,6 +246,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **New "Showcase" tile:** Added under Sharing section counting `showroom_shared` events.
 - **New Leads clickable:** Now opens detail showing recently added contacts with source info.
 - **Separated card views:** Click-Through Breakdown now has "My Card Views" (personal digital business card) and "Customer Card Views" (congrats, birthday, holiday cards combined) as separate tiles.
+- **Streak counter:** Tracks consecutive days with 5+ touchpoints. Shows flame icon, day count, "ON FIRE" badge at 7+ days, and contextual message ("Today counts! Keep going!" or "Need X more to keep it alive").
 - **Tested:** 15/15 backend tests + all frontend UI tests passed (iteration 167)
 
 ## Known Issues

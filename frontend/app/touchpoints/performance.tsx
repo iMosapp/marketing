@@ -126,6 +126,21 @@ export default function PerformanceScreen() {
                     <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>vs yesterday ({sc.yesterday})</Text>
                   </View>
                 </View>
+                {/* Streak Counter */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: scUp ? 'rgba(52,199,89,0.2)' : 'rgba(255,59,48,0.2)' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="flame" size={18} color={sc.streak > 0 ? '#FF9500' : colors.textTertiary} />
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: sc.streak > 0 ? '#FF9500' : colors.textTertiary }}>
+                      {sc.streak > 0 ? `${sc.streak}-day streak` : 'No active streak'}
+                    </Text>
+                    {sc.streak >= 7 && <Text style={{ fontSize: 11, color: '#FF9500', fontWeight: '700', backgroundColor: 'rgba(255,150,0,0.12)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' }}>ON FIRE</Text>}
+                  </View>
+                  <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+                    {sc.streak > 0
+                      ? sc.today >= (sc.streak_threshold || 5) ? "Today counts! Keep going!" : `Need ${(sc.streak_threshold || 5) - sc.today} more to keep it alive`
+                      : `Get ${sc.streak_threshold || 5}+ touchpoints to start`}
+                  </Text>
+                </View>
                 <Text style={{ fontSize: 12, color: scUp ? '#34C759' : '#FF9500', fontWeight: '500', marginTop: 8 }}>
                   {sc.today === 0 ? "No touchpoints yet today — let's get started!" : scDiff > 0 ? "Great work! You're ahead of yesterday. Keep it up!" : scDiff === 0 ? "On pace with yesterday. Push for more!" : "Behind yesterday's pace. Time to make some moves!"}
                 </Text>
