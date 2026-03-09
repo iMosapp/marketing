@@ -146,10 +146,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 5. **Native iPhone Dialer** — Completely redesigned the dialer to match iOS native keypad: pure black background, dark grey circular buttons (#333) with letter labels, large auto-formatted number display, contact matching as you type (name + formatted phone), green call button center, backspace (right of call, only when digits entered), long-press backspace to clear all.
 6. **Showcase Opt-In / Media Release System** — New customer consent flow for showcase and social media featuring:
    - New page `/opt-in/{cardId}` with toggle options: Showcase Page, Social Media (Instagram/TikTok/Facebook), Include Photo
-   - "Want to be featured?" banner on congrats/thank-you cards (only for first-time, one-time per customer)
+   - "Want to be featured?" banner on congrats/thank-you cards (one-time per customer: opt-IN hides forever, "No thanks" keeps showing persistently)
    - Backend: `POST /api/opt-in/submit/{card_id}` saves consent, `GET /api/opt-in/check-consent` checks one-time status
    - **Salesperson approval required** — customer consent does NOT auto-approve for showcase; salesperson must manually approve
    - Consent stored in `showcase_consents` collection with phone-based deduplication
+7. **Digital Card Cleanup** — Removed redundant phone/email text from card face (Call/Text/Email/QR buttons already handle that). Card now flows: Photo → Name → Title → Store → Social Icons → Save My Contact → Call/Text/Email/QR
+8. **Two-Step Review Flow (All Cards)** — Internal "Had a great experience?" star rating + text review → after submit, transforms to green banner: "Thanks! Want to share it online? Leave a Google review — it means the world" → links to public review page. Implemented on both digital business card (`/card/{userId}`) and congrats cards (`/congrats/{cardId}`)
 
 ### Previous Features
 - Engagement Intelligence, Hot Leads Dashboard

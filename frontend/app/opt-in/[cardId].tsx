@@ -222,7 +222,7 @@ export default function OptInPage() {
       </TouchableOpacity>
 
       {/* Decline */}
-      <TouchableOpacity style={{ marginTop: 16, paddingVertical: 12 }}>
+      <TouchableOpacity style={{ marginTop: 16, paddingVertical: 12 }} onPress={() => router.back()}>
         <Text style={{ color: '#6E6E73', fontSize: 15 }}>No thanks, maybe later</Text>
       </TouchableOpacity>
 
