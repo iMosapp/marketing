@@ -417,6 +417,22 @@ export default function CongratsCardPage() {
       <TouchableOpacity
         style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
         onPress={() => {
+          router.push(`/opt-in/${cardId}` as any);
+        }}
+        data-testid="congrats-opt-in-btn"
+      >
+        <Ionicons name="star" size={20} color={style?.accent_color || '#C9A962'} />
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={styles.referralTitle}>Want to be featured?</Text>
+          <Text style={[styles.referralSub, { color: style?.accent_color || '#C9A962' }]}>Opt in to appear on {cardData.salesman?.name?.split(' ')[0] || 'our'}'s showcase &amp; social media</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={style?.accent_color || '#C9A962'} />
+      </TouchableOpacity>
+
+      {/* Refer a Friend */}
+      <TouchableOpacity
+        style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
+        onPress={() => {
           const shareText = `Check out ${cardData.salesman?.name || 'this amazing person'}! ${typeof window !== 'undefined' ? window.location.href : ''}`;
           if (Platform.OS === 'web') {
             if (typeof navigator !== 'undefined' && navigator.share) {
