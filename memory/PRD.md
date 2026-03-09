@@ -262,5 +262,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Meta Tags:** Updated `apple-mobile-web-app-title` to "On Social" in both `index.html` and `_layout.tsx`
 - **Icon link tags:** Added explicit PNG favicon links (`favicon-32x32.png`, `favicon-16x16.png`) for better browser compatibility
 
+### Generic Tag → Campaign Engine (Phase 1) (Mar 9, 2026)
+- **Generic auto-enrollment:** Replaced hardcoded "sold"-only campaign enrollment with a generic engine. ANY tag that matches a campaign's `trigger_tag` now auto-creates the campaign (from prebuilt templates) and enrolls the contact. Works for: `sold`, `be_back`, `service_due`, `referral`, `vip`.
+- **Skip campaign toggle:** `POST /api/tags/{user_id}/assign` now accepts `skip_campaign: true` to apply a tag WITHOUT triggering campaign enrollment. Default is false (campaigns trigger).
+- **Tag picker in card creation:** The create card page (`/settings/create-card`) now shows all available tags as selectable colored chips. Users pick tags during card creation → tags applied to contact → campaign auto-enrolls.
+- **Campaign toggle UI:** When tags are selected, a "Start follow-up campaign" toggle appears (default ON, green). Users can turn it off to apply tags without campaigns.
+- **Card creation backend:** `POST /api/congrats/create` accepts optional `tags` (JSON array) and `skip_campaign` Form parameters.
+- **Tested:** 13/13 backend tests passed, all frontend UI tests passed.
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
