@@ -110,13 +110,13 @@ export default function DialerScreen() {
   // Restricted access for pending users
   if (isPending) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#FF950020', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <Ionicons name="lock-closed" size={48} color="#FF9500" />
           </View>
-          <Text style={{ fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 12 }}>Access Pending</Text>
-          <Text style={{ fontSize: 16, color: '#8E8E93', textAlign: 'center', lineHeight: 24 }}>
+          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Access Pending</Text>
+          <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 }}>
             Your account is being reviewed. You'll have full access once configured.
           </Text>
         </View>
@@ -152,7 +152,7 @@ export default function DialerScreen() {
   const moreCount = matchingContacts.length - 2;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']} data-testid="dialer-screen">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} data-testid="dialer-screen">
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
 
         {/* ─── Number Display ─── */}
@@ -162,7 +162,7 @@ export default function DialerScreen() {
               style={{
                 fontSize: phoneNumber.length > 10 ? 34 : 42,
                 fontWeight: '200',
-                color: '#FFF',
+                color: colors.text,
                 letterSpacing: 1.5,
                 fontVariant: ['tabular-nums'],
               }}
@@ -173,14 +173,14 @@ export default function DialerScreen() {
               {formatDisplay(phoneNumber)}
             </Text>
           ) : (
-            <Text style={{ fontSize: 42, fontWeight: '200', color: '#FFF', opacity: 0 }}>{'\u00A0'}</Text>
+            <Text style={{ fontSize: 42, fontWeight: '200', color: colors.text, opacity: 0 }}>{'\u00A0'}</Text>
           )}
         </View>
 
         {/* ─── Contact Matches ─── */}
         {showMatches && (
           <View style={{
-            marginHorizontal: 32, marginBottom: 6, backgroundColor: '#1C1C1E',
+            marginHorizontal: 32, marginBottom: 6, backgroundColor: colors.card,
             borderRadius: 10, overflow: 'hidden',
           }} data-testid="dialer-matches">
             {visibleMatches.map((c: any, i: number) => (
@@ -189,17 +189,17 @@ export default function DialerScreen() {
                 style={{
                   flexDirection: 'row', alignItems: 'center',
                   paddingHorizontal: 12, paddingVertical: 9,
-                  borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: '#38383A',
+                  borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border,
                 }}
                 onPress={() => { setPhoneNumber(c.phone || ''); handleCall(c.phone); }}
                 activeOpacity={0.6}
                 data-testid={`dialer-match-${i}`}
               >
-                <Ionicons name="person-circle" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 15, fontWeight: '400', color: '#FFF', marginRight: 6 }} numberOfLines={1}>
+                <Ionicons name="person-circle" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
                   {truncName(c)}
                 </Text>
-                <Text style={{ fontSize: 15, color: '#8E8E93', flex: 1 }} numberOfLines={1}>
+                <Text style={{ fontSize: 15, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>
                   {formatPhone(c.phone)}
                 </Text>
               </TouchableOpacity>
@@ -208,10 +208,10 @@ export default function DialerScreen() {
               <View style={{
                 flexDirection: 'row', alignItems: 'center',
                 paddingHorizontal: 12, paddingVertical: 8,
-                borderTopWidth: 0.5, borderTopColor: '#38383A',
+                borderTopWidth: 0.5, borderTopColor: colors.border,
               }}>
-                <Ionicons name="search" size={16} color="#8E8E93" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 14, color: '#8E8E93' }}>
+                <Ionicons name="search" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                   {moreCount} More Result{moreCount > 1 ? 's' : ''}
                 </Text>
               </View>
@@ -228,17 +228,17 @@ export default function DialerScreen() {
                   key={key.num}
                   style={{
                     width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
-                    backgroundColor: '#333333', alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
                   }}
                   onPress={() => handleDialPress(key.num)}
                   activeOpacity={0.5}
                   data-testid={`dial-${key.num === '*' ? 'star' : key.num === '#' ? 'hash' : key.num}`}
                 >
-                  <Text style={{ fontSize: 30, fontWeight: '400', color: '#FFF', lineHeight: 34 }}>
+                  <Text style={{ fontSize: 30, fontWeight: '400', color: colors.text, lineHeight: 34 }}>
                     {key.num}
                   </Text>
                   {key.letters ? (
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1.5, marginTop: -1 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>
                       {key.letters}
                     </Text>
                   ) : null}
@@ -272,7 +272,7 @@ export default function DialerScreen() {
                 onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setPhoneNumber(''); }}
                 data-testid="dialer-backspace-btn"
               >
-                <Ionicons name="backspace-outline" size={26} color="#FFF" />
+                <Ionicons name="backspace-outline" size={26} color={colors.text} />
               </TouchableOpacity>
             ) : (
               <View style={{ width: BTN_SIZE, height: BTN_SIZE }} />

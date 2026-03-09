@@ -167,13 +167,13 @@ function ContactActionModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
-      <SafeAreaView style={[{ flex: 1, backgroundColor: initialMode === 'keypad' ? '#000' : colors.bg }]} edges={['top']}>
+      <SafeAreaView style={[{ flex: 1, backgroundColor: colors.bg }]} edges={['top']}>
         {/* Clean header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: initialMode === 'keypad' ? 0 : 0.5, borderBottomColor: colors.border, backgroundColor: initialMode === 'keypad' ? '#000' : 'transparent' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
           <TouchableOpacity onPress={onClose} style={{ padding: 4 }} data-testid="close-action-modal">
-            <Ionicons name="chevron-back" size={24} color={initialMode === 'keypad' ? '#FFF' : colors.text} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: initialMode === 'keypad' ? '#FFF' : colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Keypad' : 'Add Contact'}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Keypad' : 'Add Contact'}</Text>
           <View style={{ width: 32 }} />
         </View>
 
@@ -262,15 +262,15 @@ function ContactActionModal({
           </View>
         ) : (
           /* ─── KEYPAD: iOS-native style dial pad + contact matching ─── */
-          <View style={{ flex: 1, backgroundColor: '#000' }}>
+          <View style={{ flex: 1, backgroundColor: colors.bg }}>
             {/* Number Display */}
             <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingVertical: 8, minHeight: 52 }}>
               {dialNumber ? (
-                <Text style={{ fontSize: dialNumber.length > 10 ? 30 : 38, fontWeight: '200', color: '#FFF', letterSpacing: 1.5, fontVariant: ['tabular-nums'] as any }} numberOfLines={1} adjustsFontSizeToFit>
+                <Text style={{ fontSize: dialNumber.length > 10 ? 30 : 38, fontWeight: '200', color: colors.text, letterSpacing: 1.5, fontVariant: ['tabular-nums'] as any }} numberOfLines={1} adjustsFontSizeToFit>
                   {(() => { const d = dialNumber.replace(/\D/g, ''); if (d.length <= 3) return d; if (d.length <= 6) return `${d.slice(0,3)}-${d.slice(3)}`; if (d.length <= 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return `+${d.slice(0,d.length-10)} (${d.slice(-10,-7)}) ${d.slice(-7,-4)}-${d.slice(-4)}`; })()}
                 </Text>
               ) : (
-                <Text style={{ fontSize: 38, fontWeight: '200', color: '#FFF', opacity: 0 }}>{'\u00A0'}</Text>
+                <Text style={{ fontSize: 38, fontWeight: '200', color: colors.text, opacity: 0 }}>{'\u00A0'}</Text>
               )}
             </View>
 
@@ -281,20 +281,20 @@ function ContactActionModal({
               if (matches.length === 0) return null;
               const fmtPhone = (p: string) => { const d = (p||'').replace(/\D/g,''); if (d.length===11&&d[0]==='1') return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`; if (d.length===10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return p; };
               return (
-                <View style={{ marginHorizontal: 24, marginBottom: 6, backgroundColor: '#1C1C1E', borderRadius: 10, overflow: 'hidden' }}>
+                <View style={{ marginHorizontal: 24, marginBottom: 6, backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden' }}>
                   {matches.slice(0, 2).map((item: any, i: number) => (
-                    <TouchableOpacity key={item._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: '#38383A' }} onPress={() => logAndDial(item.phone, item)}>
-                      <Ionicons name="person-circle" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
-                      <Text style={{ fontSize: 15, fontWeight: '400', color: '#FFF', marginRight: 6 }} numberOfLines={1}>
+                    <TouchableOpacity key={item._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }} onPress={() => logAndDial(item.phone, item)}>
+                      <Ionicons name="person-circle" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                      <Text style={{ fontSize: 15, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
                         {`${item.first_name || ''} ${item.last_name || ''}`.trim().length > 14 ? `${item.first_name || ''} ${item.last_name || ''}`.trim().slice(0,12)+'...' : `${item.first_name || ''} ${item.last_name || ''}`.trim()}
                       </Text>
-                      <Text style={{ fontSize: 15, color: '#8E8E93', flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
+                      <Text style={{ fontSize: 15, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
                     </TouchableOpacity>
                   ))}
                   {matches.length > 2 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: '#38383A' }}>
-                      <Ionicons name="search" size={16} color="#8E8E93" style={{ marginRight: 8 }} />
-                      <Text style={{ fontSize: 14, color: '#8E8E93' }}>{matches.length - 2} More Result{matches.length - 2 > 1 ? 's' : ''}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: colors.border }}>
+                      <Ionicons name="search" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                      <Text style={{ fontSize: 14, color: colors.textSecondary }}>{matches.length - 2} More Result{matches.length - 2 > 1 ? 's' : ''}</Text>
                     </View>
                   )}
                 </View>
@@ -306,9 +306,9 @@ function ContactActionModal({
               {[['1','','2','ABC','3','DEF'],['4','GHI','5','JKL','6','MNO'],['7','PQRS','8','TUV','9','WXYZ'],['*','',  '0','+','#','']].map((row, ri) => (
                 <View key={ri} style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 }}>
                   {[0, 2, 4].map(ci => (
-                    <TouchableOpacity key={row[ci]} style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: '#333333', alignItems: 'center', justifyContent: 'center' }} onPress={() => setDialNumber(d => d + row[ci])}>
-                      <Text style={{ fontSize: 30, fontWeight: '400', color: '#FFF', lineHeight: 34 }}>{row[ci]}</Text>
-                      {row[ci+1] ? <Text style={{ fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1.5, marginTop: -1 }}>{row[ci+1]}</Text> : null}
+                    <TouchableOpacity key={row[ci]} style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }} onPress={() => setDialNumber(d => d + row[ci])}>
+                      <Text style={{ fontSize: 30, fontWeight: '400', color: colors.text, lineHeight: 34 }}>{row[ci]}</Text>
+                      {row[ci+1] ? <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>{row[ci+1]}</Text> : null}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -322,7 +322,7 @@ function ContactActionModal({
                 </TouchableOpacity>
                 {dialNumber ? (
                   <TouchableOpacity style={{ width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' }} onPress={() => setDialNumber(d => d.slice(0, -1))} onLongPress={() => setDialNumber('')}>
-                    <Ionicons name="backspace-outline" size={26} color="#FFF" />
+                    <Ionicons name="backspace-outline" size={26} color={colors.text} />
                   </TouchableOpacity>
                 ) : (
                   <View style={{ width: 76, height: 76 }} />
