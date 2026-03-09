@@ -90,6 +90,10 @@ export default function CongratsCardPage() {
           const userResp = await api.get(`/auth/user/${response.data.salesman_id}`);
           setStoreSlug(userResp.data?.store?.slug || null);
         } catch {}
+        try {
+          const lpResp = await api.get(`/linkpage/user/${response.data.salesman_id}`);
+          setLinkPageUsername(lpResp.data?.username || null);
+        } catch {}
       }
     } catch (err: any) {
       console.error('Error loading card:', err);
@@ -108,6 +112,7 @@ export default function CongratsCardPage() {
   };
 
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const [linkPageUsername, setLinkPageUsername] = useState<string | null>(null);
 
   const handleSubmitReview = async () => {
     if (reviewRating === 0 || !cardData?.salesman_id) return;
@@ -314,15 +319,12 @@ export default function CongratsCardPage() {
         <View style={styles.quickLinksSection}>
           {/* Quick Links  - under salesman info */}
           {reviewSubmitted ? (
-            /* After internal review: nudge toward public/Google review */
+            /* After internal review: nudge toward public/online review page */
             <TouchableOpacity
               style={[styles.reviewCTA, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
               onPress={() => {
-                const googleUrl = cardData.store?.google_review_url;
-                if (googleUrl) {
-                  Linking.openURL(googleUrl);
-                } else if (storeSlug) {
-                  router.push(`/review/${storeSlug}?sp=${cardData.salesman_id}` as any);
+                if (storeSlug) {
+                  Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/review/${storeSlug}?sp=${cardData.salesman_id}`);
                 }
               }}
               data-testid="card-online-review-btn"
@@ -330,7 +332,7 @@ export default function CongratsCardPage() {
               <Ionicons name="globe-outline" size={22} color="#34C759" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.reviewCTATitle}>Thanks! Want to share it online?</Text>
-                <Text style={[styles.reviewCTASubtitle, { color: '#34C759' }]}>Leave a Google review — it means the world</Text>
+                <Text style={[styles.reviewCTASubtitle, { color: '#34C759' }]}>Leave an online review — it means the world</Text>
               </View>
               <Ionicons name="open-outline" size={18} color="#34C759" />
             </TouchableOpacity>
@@ -374,7 +376,7 @@ export default function CongratsCardPage() {
             </>
           )}
 
-          {/* Quick link row — all on one line */}
+          {/* Quick link row — mirrors the composer's "Share Your Stuff" (minus VCF) */}
           <View style={styles.quickLinksRow}>
             <TouchableOpacity
               style={styles.quickLinkItem}
@@ -389,47 +391,34 @@ export default function CongratsCardPage() {
 
             <TouchableOpacity
               style={styles.quickLinkItem}
-              onPress={() => router.push(`/showcase/${cardData.salesman_id}` as any)}
-              data-testid="card-view-showcase-btn"
+              onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/p/${cardData.salesman_id}`)}
+              data-testid="card-view-landing-btn"
             >
-              <Ionicons name="storefront-outline" size={18} color={style.accent_color} />
-              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Showcase</Text>
+              <Ionicons name="globe-outline" size={18} color={style.accent_color} />
+              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>My Page</Text>
             </TouchableOpacity>
 
             <View style={styles.quickLinkDivider} />
 
-            {cardData.salesman?.phone && (
-              <>
-                <TouchableOpacity
-                  style={styles.quickLinkItem}
-                  onPress={() => Linking.openURL(`tel:${cardData.salesman?.phone}`)}
-                  data-testid="card-call-btn"
-                >
-                  <Ionicons name="call-outline" size={18} color={style.accent_color} />
-                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Call</Text>
-                </TouchableOpacity>
-                <View style={styles.quickLinkDivider} />
-                <TouchableOpacity
-                  style={styles.quickLinkItem}
-                  onPress={() => Linking.openURL(`sms:${cardData.salesman?.phone}`)}
-                  data-testid="card-text-btn"
-                >
-                  <Ionicons name="chatbubble-outline" size={18} color={style.accent_color} />
-                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Text</Text>
-                </TouchableOpacity>
-              </>
-            )}
+            <TouchableOpacity
+              style={styles.quickLinkItem}
+              onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/showcase/${cardData.salesman_id}`)}
+              data-testid="card-view-showcase-btn"
+            >
+              <Ionicons name="images-outline" size={18} color={style.accent_color} />
+              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Showcase</Text>
+            </TouchableOpacity>
 
-            {cardData.salesman?.email && (
+            {linkPageUsername && (
               <>
                 <View style={styles.quickLinkDivider} />
                 <TouchableOpacity
                   style={styles.quickLinkItem}
-                  onPress={() => Linking.openURL(`mailto:${cardData.salesman?.email}`)}
-                  data-testid="card-email-btn"
+                  onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/l/${linkPageUsername}`)}
+                  data-testid="card-view-linkpage-btn"
                 >
-                  <Ionicons name="mail-outline" size={18} color={style.accent_color} />
-                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Email</Text>
+                  <Ionicons name="link-outline" size={18} color={style.accent_color} />
+                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Links</Text>
                 </TouchableOpacity>
               </>
             )}
