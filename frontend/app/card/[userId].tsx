@@ -482,30 +482,6 @@ export default function DigitalCardPage() {
               {/* Divider */}
               <View style={styles.divider} />
 
-              {/* Contact Row */}
-              <View style={styles.contactRow}>
-                {user.phone && (
-                  <TouchableOpacity
-                    style={styles.contactItem}
-                    onPress={() => openProtocolUrl(`tel:${user.phone}`)}
-                    data-testid="call-btn"
-                  >
-                    <Ionicons name="call" size={18} color="#C9A962" />
-                    <Text style={styles.contactText}>{user.phone}</Text>
-                  </TouchableOpacity>
-                )}
-                {user.email && (
-                  <TouchableOpacity
-                    style={styles.contactItem}
-                    onPress={() => openProtocolUrl(`mailto:${user.email}`)}
-                    data-testid="email-btn"
-                  >
-                    <Ionicons name="mail" size={18} color="#C9A962" />
-                    <Text style={styles.contactText} numberOfLines={1}>{user.email}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
               {/* Social Links */}
               {activeSocialLinks.length > 0 && (
                 <View style={styles.socialRow}>
