@@ -355,13 +355,121 @@ async def get_tag_colors(user_id: str):
     return {"colors": DEFAULT_COLORS}
 
 
+async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_ids: list):
+    """
+    Generic tag → campaign auto-enrollment engine.
+    When a tag is applied, find any active campaign with a matching trigger_tag
+    and auto-enroll the contacts.
+    """
+    db = get_db()
+    try:
+        from routers.campaigns import PREBUILT_TEMPLATES, calculate_next_send_date
+        from routers.campaign_config import get_effective_config
+
+        # Check if auto_enroll_on_tag is enabled
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "organization_id": 1})
+        config = await get_effective_config(
+            user_id=user_id,
+            store_id=user.get("store_id") if user else None,
+            org_id=user.get("organization_id") if user else None,
+        )
+        if not config.get("auto_enroll_on_tag", True):
+            logger.info(f"auto_enroll_on_tag disabled — skipping campaign enrollment for tag '{tag_name}'")
+            return
+
+        tag_lower = tag_name.lower().strip()
+        base_filter = await get_data_filter(user_id)
+
+        # 1. Check for an existing active campaign with this trigger_tag
+        existing_campaign = await db.campaigns.find_one({
+            "$and": [base_filter, {"trigger_tag": tag_lower, "active": True}]
+        })
+
+        # 2. If none, check prebuilt templates for a matching trigger_tag
+        if not existing_campaign:
+            matching_template = next(
+                (t for t in PREBUILT_TEMPLATES if t.get("trigger_tag", "").lower() == tag_lower),
+                None
+            )
+            if not matching_template:
+                # Also try matching tag name directly (e.g. tag "Hot Lead" won't match any template)
+                logger.debug(f"No campaign template found for tag '{tag_name}' — skipping enrollment")
+                return
+
+            # Auto-create the campaign from the prebuilt template
+            campaign_doc = {
+                "user_id": user_id,
+                "name": matching_template["name"],
+                "description": matching_template["description"],
+                "type": matching_template.get("type", "custom"),
+                "trigger_tag": matching_template["trigger_tag"],
+                "icon": matching_template.get("icon", "megaphone"),
+                "color": matching_template.get("color", "#007AFF"),
+                "delivery_mode": matching_template.get("delivery_mode", "manual"),
+                "ai_enabled": matching_template.get("ai_enabled", True),
+                "sequences": matching_template["sequences"],
+                "active": True,
+                "created_at": datetime.utcnow(),
+                "auto_created": True,
+            }
+            camp_result = await db.campaigns.insert_one(campaign_doc)
+            campaign_id = str(camp_result.inserted_id)
+            sequences = matching_template["sequences"]
+            logger.info(f"Auto-created campaign '{matching_template['name']}' (id={campaign_id}) from tag '{tag_name}'")
+        else:
+            campaign_id = str(existing_campaign["_id"])
+            sequences = existing_campaign.get("sequences", [])
+
+        # 3. Enroll each contact
+        for cid in contact_ids:
+            already = await db.campaign_enrollments.find_one({
+                "campaign_id": campaign_id,
+                "contact_id": cid,
+                "status": "active",
+            })
+            if already:
+                continue
+
+            contact = await db.contacts.find_one(
+                {"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1, "phone": 1}
+            )
+            if not contact:
+                continue
+
+            cname = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+            first_step = sequences[0] if sequences else None
+            next_send = calculate_next_send_date(first_step) if first_step else datetime.utcnow()
+
+            enrollment = {
+                "user_id": user_id,
+                "campaign_id": campaign_id,
+                "contact_id": cid,
+                "contact_name": cname,
+                "contact_phone": contact.get("phone", ""),
+                "current_step": 1,
+                "total_steps": len(sequences),
+                "status": "active",
+                "enrolled_at": datetime.utcnow(),
+                "next_send_at": next_send,
+                "messages_sent": [],
+                "trigger_type": f"{tag_lower}_tag",
+                "auto_enrolled": True,
+            }
+            await db.campaign_enrollments.insert_one(enrollment)
+            logger.info(f"Auto-enrolled {cname} in campaign '{campaign_id}' via tag '{tag_name}'")
+
+    except Exception as e:
+        logger.warning(f"Campaign auto-enrollment failed for tag '{tag_name}': {e}")
+
+
 @router.post("/{user_id}/assign")
 async def assign_tag_to_contacts(user_id: str, data: dict):
-    """Assign a tag to multiple contacts"""
+    """Assign a tag to multiple contacts. Optionally triggers campaign enrollment."""
     db = get_db()
     
     tag_name = data.get("tag_name")
     contact_ids = data.get("contact_ids", [])
+    skip_campaign = data.get("skip_campaign", False)
     
     if not tag_name:
         raise HTTPException(status_code=400, detail="tag_name is required")
@@ -405,90 +513,17 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
         try:
             from services.ai_outreach_service import create_outreach_record
             for cid in contact_ids:
-                # Get contact name for the record
                 contact = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1})
                 cname = f"{(contact or {}).get('first_name', '')} {(contact or {}).get('last_name', '')}".strip() or "Customer"
                 asyncio.create_task(create_outreach_record(user_id, cid, cname))
         except Exception as e:
             logger.warning(f"AI outreach trigger failed: {e}")
 
-        # Auto-enroll in the Sold Follow-Up campaign
-        try:
-            from routers.campaigns import PREBUILT_TEMPLATES, calculate_next_send_date
+    # Generic tag → campaign auto-enrollment (unless skip_campaign is true)
+    if not skip_campaign:
+        await auto_enroll_contacts_in_campaign(user_id, tag_name, contact_ids)
 
-            # Find or create the sold campaign for this user
-            sold_template = next((t for t in PREBUILT_TEMPLATES if t["id"] == "sold_followup"), None)
-            if sold_template:
-                base_filter = await get_data_filter(user_id)
-                existing_campaign = await db.campaigns.find_one({
-                    "$and": [base_filter, {"type": "sold_followup", "active": True}]
-                })
-
-                if not existing_campaign:
-                    # Create the campaign from template
-                    campaign_doc = {
-                        "user_id": user_id,
-                        "name": sold_template["name"],
-                        "description": sold_template["description"],
-                        "type": sold_template["type"],
-                        "trigger_tag": sold_template["trigger_tag"],
-                        "icon": sold_template["icon"],
-                        "color": sold_template["color"],
-                        "delivery_mode": sold_template["delivery_mode"],
-                        "ai_enabled": sold_template["ai_enabled"],
-                        "sequences": sold_template["sequences"],
-                        "active": True,
-                        "created_at": datetime.utcnow(),
-                        "auto_created": True,
-                    }
-                    camp_result = await db.campaigns.insert_one(campaign_doc)
-                    campaign_id = str(camp_result.inserted_id)
-                    logger.info(f"Auto-created Sold Follow-Up campaign: {campaign_id}")
-                else:
-                    campaign_id = str(existing_campaign["_id"])
-                    sold_template = existing_campaign  # Use user's customized version
-
-                # Enroll each contact
-                sequences = (existing_campaign or sold_template).get("sequences", [])
-                for cid in contact_ids:
-                    # Check if already enrolled
-                    already = await db.campaign_enrollments.find_one({
-                        "campaign_id": campaign_id,
-                        "contact_id": cid,
-                        "status": "active",
-                    })
-                    if already:
-                        continue
-
-                    contact = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1, "phone": 1})
-                    if not contact:
-                        continue
-
-                    cname = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
-                    first_step = sequences[0] if sequences else None
-                    next_send = calculate_next_send_date(first_step) if first_step else datetime.utcnow()
-
-                    enrollment = {
-                        "user_id": user_id,
-                        "campaign_id": campaign_id,
-                        "contact_id": cid,
-                        "contact_name": cname,
-                        "contact_phone": contact.get("phone", ""),
-                        "current_step": 1,
-                        "total_steps": len(sequences),
-                        "status": "active",
-                        "enrolled_at": datetime.utcnow(),
-                        "next_send_at": next_send,
-                        "messages_sent": [],
-                        "trigger_type": "sold_tag",
-                        "auto_enrolled": True,
-                    }
-                    await db.campaign_enrollments.insert_one(enrollment)
-                    logger.info(f"Auto-enrolled {cname} in Sold Follow-Up campaign")
-        except Exception as e:
-            logger.warning(f"Sold campaign auto-enrollment failed: {e}")
-
-    return {"message": f"Tag assigned to {result.modified_count} contacts"}
+    return {"message": f"Tag assigned to {result.modified_count} contacts", "campaign_triggered": not skip_campaign}
 
 
 @router.post("/{user_id}/remove")

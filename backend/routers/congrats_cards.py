@@ -375,6 +375,8 @@ async def create_congrats_card(
     customer_phone: str = Form(None),
     custom_message: str = Form(None),
     card_type: str = Form("congrats"),
+    tags: str = Form(None),
+    skip_campaign: str = Form(None),
     photo: UploadFile = File(...)
 ):
     """
@@ -536,13 +538,51 @@ async def create_congrats_card(
         {"$set": {"short_url": short_url_result["short_url"]}}
     )
     
+    # Apply tags to contact if provided
+    applied_tags = []
+    if tags:
+        import json as _json
+        try:
+            tag_list = _json.loads(tags) if isinstance(tags, str) else tags
+        except Exception:
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        
+        if tag_list and customer_phone:
+            # Find the contact
+            normalized_phone = customer_phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+            contact = await db.contacts.find_one({
+                "$or": [
+                    {"phone": customer_phone},
+                    {"phone": {"$regex": normalized_phone[-10:] if len(normalized_phone) >= 10 else normalized_phone}},
+                ],
+                "user_id": salesman_id,
+            })
+            
+            if contact:
+                contact_id = str(contact["_id"])
+                for tag_name in tag_list:
+                    # Add tag to contact
+                    await db.contacts.update_one(
+                        {"_id": contact["_id"], "tags": {"$ne": tag_name}},
+                        {"$push": {"tags": tag_name}},
+                    )
+                    applied_tags.append(tag_name)
+                
+                # Trigger campaign enrollment for applied tags (unless skipped)
+                should_skip = skip_campaign and skip_campaign.lower() in ("true", "1", "yes")
+                if applied_tags and not should_skip:
+                    from routers.tags import auto_enroll_contacts_in_campaign
+                    for tag_name in applied_tags:
+                        await auto_enroll_contacts_in_campaign(salesman_id, tag_name, [contact_id])
+    
     return {
         "success": True,
         "card_id": card_id,
         "card_url": full_card_url,
         "short_url": short_url_result["short_url"],
         "message": "Congrats card created!",
-        "contact_photo_updated": contact_updated
+        "contact_photo_updated": contact_updated,
+        "tags_applied": applied_tags,
     }
 
 

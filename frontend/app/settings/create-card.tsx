@@ -48,6 +48,12 @@ export default function CreateCardPage() {
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [pendingSharePlatform, setPendingSharePlatform] = useState<string | null>(null);
 
+  // Tag picker state
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [startCampaign, setStartCampaign] = useState(true);
+  const [loadingTags, setLoadingTags] = useState(false);
+
   const accent = template?.accent_color || meta.accent;
   const headline = template?.headline || meta.headline;
   const message = template?.message || meta.message;
@@ -59,6 +65,16 @@ export default function CreateCardPage() {
         .catch(() => {});
     }
   }, [user?.store_id, cardType]);
+
+  // Fetch available tags
+  useEffect(() => {
+    if (!user?._id) return;
+    setLoadingTags(true);
+    api.get(`/tags/${user._id}`)
+      .then(r => setAvailableTags(r.data || []))
+      .catch(() => {})
+      .finally(() => setLoadingTags(false));
+  }, [user?._id]);
 
   const pickPhoto = async () => {
     if (!IS_WEB) {
@@ -90,6 +106,10 @@ export default function CreateCardPage() {
       formData.append('card_type', cardType);
       if (customerPhone.trim()) formData.append('customer_phone', customerPhone.trim());
       if (customMessage.trim()) formData.append('custom_message', customMessage.trim());
+      if (selectedTags.length > 0) {
+        formData.append('tags', JSON.stringify(selectedTags));
+        if (!startCampaign) formData.append('skip_campaign', 'true');
+      }
       if (IS_WEB) {
         const response = await fetch(photo!.uri);
         const blob = await response.blob();
@@ -321,7 +341,7 @@ export default function CreateCardPage() {
           </View>
 
           {/* Create Another + Cancel */}
-          <TouchableOpacity style={s.createAnotherBtn} onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); }} data-testid="card-create-another">
+          <TouchableOpacity style={s.createAnotherBtn} onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); setSelectedTags([]); setStartCampaign(true); }} data-testid="card-create-another">
             <Ionicons name="add-circle-outline" size={18} color={accent} />
             <Text style={[s.createAnotherText, { color: accent }]}>Create Another Card</Text>
           </TouchableOpacity>
@@ -387,6 +407,23 @@ export default function CreateCardPage() {
               {creating ? <ActivityIndicator size="small" color={colors.text} /> : <><Ionicons name="send" size={18} color={colors.text} /><Text style={s.previewSendText}>{isFromContact ? 'Create Card' : 'Create & Send'}</Text></>}
             </TouchableOpacity>
           </View>
+          {selectedTags.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' }} data-testid="card-preview-tags">
+              {selectedTags.map(tag => {
+                const tagObj = availableTags.find((t: any) => t.name === tag);
+                return (
+                  <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${tagObj?.color || accent}25`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagObj?.color || accent }} />
+                    <Text style={{ fontSize: 12, color: tagObj?.color || accent, fontWeight: '600' }}>{tag}</Text>
+                  </View>
+                );
+              })}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6 }}>
+                <Ionicons name={startCampaign ? 'megaphone' : 'megaphone-outline'} size={12} color={startCampaign ? '#34C759' : colors.textSecondary} />
+                <Text style={{ fontSize: 11, color: startCampaign ? '#34C759' : colors.textSecondary }}>{startCampaign ? 'Campaign on' : 'Campaign off'}</Text>
+              </View>
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     );
@@ -423,6 +460,85 @@ export default function CreateCardPage() {
         ) : null}
         <Text style={[s.fieldLabel, { marginTop: 16 }]}>PERSONAL MESSAGE (OPTIONAL)</Text>
         <TextInput style={[s.input, { height: 100, textAlignVertical: 'top' }]} value={customMessage} onChangeText={setCustomMessage} placeholder="Add a personal message..." placeholderTextColor={colors.textSecondary} multiline />
+
+        {/* Tag Picker */}
+        <Text style={[s.fieldLabel, { marginTop: 20 }]}>APPLY TAG (OPTIONAL)</Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+          Applying a tag starts the associated follow-up campaign
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }} data-testid="card-tag-picker">
+          {availableTags.map((tag: any) => {
+            const isSelected = selectedTags.includes(tag.name);
+            return (
+              <TouchableOpacity
+                key={tag._id || tag.name}
+                onPress={() => {
+                  setSelectedTags(prev =>
+                    isSelected ? prev.filter(t => t !== tag.name) : [...prev, tag.name]
+                  );
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  borderWidth: 1.5,
+                  borderColor: isSelected ? (tag.color || accent) : colors.border,
+                  backgroundColor: isSelected ? `${tag.color || accent}20` : colors.card,
+                  gap: 6,
+                }}
+                data-testid={`card-tag-${tag.name.toLowerCase().replace(/\s/g, '-')}`}
+              >
+                {isSelected && <Ionicons name="checkmark-circle" size={16} color={tag.color || accent} />}
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tag.color || '#8E8E93' }} />
+                <Text style={{ fontSize: 13, fontWeight: isSelected ? '600' : '400', color: isSelected ? (tag.color || accent) : colors.text }}>{tag.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {loadingTags && <ActivityIndicator size="small" color={colors.textSecondary} />}
+          {!loadingTags && availableTags.length === 0 && (
+            <Text style={{ fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' }}>No tags available</Text>
+          )}
+        </View>
+
+        {/* Campaign toggle — only shown when tags are selected */}
+        {selectedTags.length > 0 && (
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: colors.card,
+              borderRadius: 10,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              marginTop: 8,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+            onPress={() => setStartCampaign(prev => !prev)}
+            data-testid="card-campaign-toggle"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <Ionicons name="megaphone-outline" size={18} color={startCampaign ? '#34C759' : colors.textSecondary} />
+              <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>Start follow-up campaign</Text>
+            </View>
+            <View style={{
+              width: 44, height: 26, borderRadius: 13,
+              backgroundColor: startCampaign ? '#34C759' : colors.surface,
+              justifyContent: 'center',
+              paddingHorizontal: 2,
+            }}>
+              <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                backgroundColor: '#FFF',
+                alignSelf: startCampaign ? 'flex-end' : 'flex-start',
+              }} />
+            </View>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={[s.createBtn, { backgroundColor: accent }, (!customerName.trim() || !photo) && { opacity: 0.5 }]} onPress={handlePreview} disabled={!customerName.trim() || !photo} data-testid="card-preview-btn">
           <Ionicons name="eye-outline" size={20} color={colors.text} /><Text style={s.createBtnText}>Preview Card</Text>
         </TouchableOpacity>
