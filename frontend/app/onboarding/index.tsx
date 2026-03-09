@@ -597,7 +597,7 @@ export default function OnboardingScreen() {
         }}
         data-testid={`onboarding-try-${currentSlide.id}`}
       >
-        <Ionicons name="play-circle" size={18} color={colors.text} />
+        <Ionicons name="play-circle" size={18} color="#007AFF" />
         <Text style={styles.tryItButtonText}>{currentSlide.tryItLabel || 'Try It Now'}</Text>
       </TouchableOpacity>
     );
@@ -838,7 +838,7 @@ export default function OnboardingScreen() {
           style={styles.actionButton}
           onPress={() => router.push(currentSlide.actionButton!.route as any)}
         >
-          <Ionicons name="cloud-upload" size={20} color={colors.text} />
+          <Ionicons name="cloud-upload" size={20} color="#007AFF" />
           <Text style={styles.actionButtonText}>{currentSlide.actionButton.label}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleNext} style={styles.skipLink}>
@@ -960,7 +960,7 @@ export default function OnboardingScreen() {
         <View style={styles.navButtons}>
           {currentIndex > 0 ? (
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Ionicons name="chevron-back" size={24} color={colors.text} />
+              <Ionicons name="chevron-back" size={24} color="#1D1D1F" />
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
           ) : (
@@ -978,14 +978,14 @@ export default function OnboardingScreen() {
             disabled={!canProceed() || completing || sendingInvites}
           >
             {completing || sendingInvites ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color="#007AFF" />
             ) : (
               <>
                 <Text style={[styles.nextButtonText, isLastSlide && styles.completeButtonText]}>
                   {isLastSlide ? "Let's Go!" : currentSlide.type === 'team_invite' ? 'Send Invites & Continue' : 'Continue'}
                 </Text>
-                {!isLastSlide && currentSlide.type !== 'team_invite' && <Ionicons name="chevron-forward" size={20} color={colors.text} />}
-                {currentSlide.type === 'team_invite' && <Ionicons name="paper-plane" size={18} color={colors.text} style={{ marginLeft: 6 }} />}
+                {!isLastSlide && currentSlide.type !== 'team_invite' && <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />}
+                {currentSlide.type === 'team_invite' && <Ionicons name="paper-plane" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />}
               </>
             )}
           </TouchableOpacity>
@@ -1443,7 +1443,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.text,
+    color: '#1D1D1F',
     textAlign: 'center',
     marginBottom: 6,
   },
@@ -1495,7 +1495,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   benefitText: {
     fontSize: 15,
-    color: colors.text,
+    color: '#1D1D1F',
     fontWeight: '500',
   },
   choicesContainer: {
@@ -1531,7 +1531,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   choiceLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#1D1D1F',
     marginBottom: 2,
   },
   choiceDescription: {
@@ -1549,7 +1549,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#1D1D1F',
     marginBottom: 8,
   },
   textInput: {
@@ -1557,7 +1557,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
-    color: colors.text,
+    color: '#1D1D1F',
     borderWidth: 1,
     borderColor: '#F0F0F5',
   },
@@ -1591,7 +1591,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     maxWidth: 280,
   },
   actionButtonText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -1621,7 +1621,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     minWidth: 80,
   },
   backButtonText: {
-    color: colors.text,
+    color: '#1D1D1F',
     fontSize: 16,
     marginLeft: 4,
   },
@@ -1639,7 +1639,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   nextButtonText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1648,7 +1648,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 32,
   },
   completeButtonText: {
-    color: colors.text,
+    color: '#FFFFFF',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -1705,7 +1705,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     maxWidth: 280,
   },
   tryItButtonText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1735,7 +1735,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   checklistLabel: {
-    color: colors.text,
+    color: '#1D1D1F',
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 2,
@@ -1754,7 +1754,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   teamInviteTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
+    color: '#1D1D1F',
     marginTop: 12,
   },
   teamInviteSubtitle: {
@@ -1787,7 +1787,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: colors.text,
+    color: '#1D1D1F',
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#F0F0F5',

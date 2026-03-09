@@ -531,10 +531,10 @@ async def reset_password(data: dict):
     if not stored or stored['code'] != code:
         raise HTTPException(status_code=400, detail="Invalid or expired reset code")
     
-    # Update password
+    # Update password and clear the temp password flag
     result = await get_db().users.update_one(
         {"email": email},
-        {"$set": {"password": hash_password(new_password)}}
+        {"$set": {"password": hash_password(new_password), "needs_password_change": False}}
     )
     
     if result.modified_count == 0:
@@ -601,7 +601,7 @@ async def admin_password_reset(data: dict):
     
     result = await get_db().users.update_one(
         {"email": email},
-        {"$set": {"password": hash_password(new_password), "status": "active", "is_active": True}}
+        {"$set": {"password": hash_password(new_password), "status": "active", "is_active": True, "needs_password_change": False}}
     )
     
     if result.matched_count == 0:
