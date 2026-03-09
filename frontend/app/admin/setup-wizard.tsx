@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Platform, Image, KeyboardAvoidingView, Animated,
@@ -358,10 +358,11 @@ export default function SetupWizardScreen() {
   };
 
   // ---- Shared UI ----
-  const SectionCard = ({ children, style }: { children: React.ReactNode; style?: any }) => (
+  // Memoized sub-components — prevents TextInput from losing focus on re-render
+  const SectionCard = useMemo(() => React.memo(({ children, style }: { children: React.ReactNode; style?: any }) => (
     <View style={[s.sectionCard, style]}>{children}</View>
-  );
-  const StepHeader = ({ title, desc }: { title: string; desc: string }) => (
+  )), [s]);
+  const StepHeader = useMemo(() => React.memo(({ title, desc }: { title: string; desc: string }) => (
     <View style={{ marginBottom: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <View style={s.stepNumBadge}><Text style={s.stepNumBadgeText}>{step}</Text></View>
@@ -369,11 +370,11 @@ export default function SetupWizardScreen() {
       </View>
       <Text style={s.stepDesc}>{desc}</Text>
     </View>
-  );
-  const Label = ({ text, required }: { text: string; required?: boolean }) => (
+  )), [step, s]);
+  const Label = useMemo(() => React.memo(({ text, required }: { text: string; required?: boolean }) => (
     <Text style={s.label}>{text}{required ? <Text style={{ color: '#C9A962' }}> *</Text> : null}</Text>
-  );
-  const BtnRow = ({ onBack, onSkip, onNext, nextLabel, nextDisabled }: any) => (
+  )), [s]);
+  const BtnRow = useMemo(() => React.memo(({ onBack, onSkip, onNext, nextLabel, nextDisabled }: any) => (
     <View style={s.btnRow}>
       {onBack && <TouchableOpacity style={s.btnSecondary} onPress={onBack} data-testid="wizard-back-btn"><Ionicons name="arrow-back" size={18} color={colors.textSecondary} /><Text style={s.btnSecondaryText}>Back</Text></TouchableOpacity>}
       {onSkip && <TouchableOpacity style={s.btnSkip} onPress={onSkip} data-testid="wizard-skip-btn"><Text style={s.btnSkipText}>Skip</Text><Ionicons name="arrow-forward" size={16} color="#FF9500" /></TouchableOpacity>}
@@ -381,7 +382,7 @@ export default function SetupWizardScreen() {
         {saving ? <ActivityIndicator size="small" color="#000" /> : <><Text style={s.btnPrimaryText}>{nextLabel || 'Continue'}</Text><Ionicons name="arrow-forward" size={18} color="#000" /></>}
       </TouchableOpacity>
     </View>
-  );
+  )), [s, saving, colors]);
 
   // ---- Step Bar ----
   const renderStepBar = () => (
