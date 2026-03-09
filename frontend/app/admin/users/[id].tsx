@@ -404,6 +404,7 @@ export default function UserDetailScreen() {
                 <TouchableOpacity 
                   style={styles.changeRoleButton}
                   onPress={() => setShowRoleModal(true)}
+                  data-testid="change-role-btn"
                 >
                   <Ionicons name="pencil" size={14} color="#007AFF" />
                 </TouchableOpacity>

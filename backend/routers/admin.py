@@ -28,6 +28,13 @@ from routers.rbac import (
 router = APIRouter(prefix="/admin", tags=["Admin"])
 logger = logging.getLogger(__name__)
 
+def safe_objectid(val):
+    """Convert a string to ObjectId, return None if invalid."""
+    try:
+        return ObjectId(val)
+    except Exception:
+        return None
+
 # Initialize Resend for invite emails
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
@@ -176,7 +183,7 @@ async def list_organizations(x_user_id: str = Header(None, alias="X-User-ID")):
         if not org_ids:
             return []
         orgs = await get_db().organizations.find({
-            "_id": {"$in": [ObjectId(oid) for oid in org_ids if oid]}
+            "_id": {"$in": [oid for oid in (safe_objectid(x) for x in org_ids) if oid is not None]}
         }, {"logo_url": 0, "email_brand_kit.logo_url": 0}).limit(500).to_list(500)
     
     return [{**org, "_id": str(org["_id"])} for org in orgs]
@@ -440,7 +447,7 @@ async def list_stores(
         elif role == 'store_manager':
             # Store manager sees only their stores
             store_ids = await get_scoped_store_ids(user)
-            query = {"_id": {"$in": [ObjectId(sid) for sid in store_ids if sid]}}
+            query = {"_id": {"$in": [oid for oid in (safe_objectid(x) for x in store_ids) if oid is not None]}}
         else:
             # Regular users don't see stores list
             return []
@@ -2583,17 +2590,21 @@ async def get_all_users_hierarchy(
     
     orgs = {}
     if org_ids:
-        org_docs = await get_db().organizations.find(
-            {"_id": {"$in": [ObjectId(oid) for oid in org_ids if oid]}}
-        ).to_list(100)
-        orgs = {str(o["_id"]): o.get("name") for o in org_docs}
+        valid_org_oids = [oid for oid in (safe_objectid(x) for x in org_ids) if oid is not None]
+        if valid_org_oids:
+            org_docs = await get_db().organizations.find(
+                {"_id": {"$in": valid_org_oids}}
+            ).to_list(100)
+            orgs = {str(o["_id"]): o.get("name") for o in org_docs}
     
     stores = {}
     if store_ids:
-        store_docs = await get_db().stores.find(
-            {"_id": {"$in": [ObjectId(sid) for sid in store_ids if sid]}}
-        ).to_list(100)
-        stores = {str(s["_id"]): s.get("name") for s in store_docs}
+        valid_store_oids = [oid for oid in (safe_objectid(x) for x in store_ids) if oid is not None]
+        if valid_store_oids:
+            store_docs = await get_db().stores.find(
+                {"_id": {"$in": valid_store_oids}}
+            ).to_list(100)
+            stores = {str(s["_id"]): s.get("name") for s in store_docs}
     
     result = []
     for u in users:
