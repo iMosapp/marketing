@@ -378,17 +378,18 @@ async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_
             return
 
         tag_lower = tag_name.lower().strip()
+        tag_normalized = tag_lower.replace(" ", "_")
         base_filter = await get_data_filter(user_id)
 
         # 1. Check for an existing active campaign with this trigger_tag
         existing_campaign = await db.campaigns.find_one({
-            "$and": [base_filter, {"trigger_tag": tag_lower, "active": True}]
+            "$and": [base_filter, {"trigger_tag": {"$in": [tag_lower, tag_normalized]}, "active": True}]
         })
 
         # 2. If none, check prebuilt templates for a matching trigger_tag
         if not existing_campaign:
             matching_template = next(
-                (t for t in PREBUILT_TEMPLATES if t.get("trigger_tag", "").lower() == tag_lower),
+                (t for t in PREBUILT_TEMPLATES if t.get("trigger_tag", "").lower() in (tag_lower, tag_normalized)),
                 None
             )
             if not matching_template:
@@ -470,6 +471,7 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
     tag_name = data.get("tag_name")
     contact_ids = data.get("contact_ids", [])
     skip_campaign = data.get("skip_campaign", False)
+    auto_create_tag = data.get("auto_create_tag", False)
     
     if not tag_name:
         raise HTTPException(status_code=400, detail="tag_name is required")
@@ -484,6 +486,20 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
         tag = await db.tags.find_one({"org_id": org_id, "name": tag_name, "status": "approved"})
     else:
         tag = await db.tags.find_one({"user_id": user_id, "name": tag_name})
+    
+    # Auto-create tag if it doesn't exist and auto_create_tag is true
+    if not tag and auto_create_tag:
+        tag_doc = {
+            "name": tag_name,
+            "color": "#FFD60A" if "review" in tag_name.lower() else "#007AFF",
+            "status": "approved",
+            "system_tag": True,
+            "org_id": org_id or "",
+            "user_id": user_id,
+            "created_at": datetime.utcnow(),
+        }
+        await db.tags.insert_one(tag_doc)
+        tag = tag_doc
     
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")

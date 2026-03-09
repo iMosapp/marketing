@@ -172,6 +172,14 @@ export default function MoreScreen() {
         setMatchInfo(res.data);
         setPendingSharePayload({ platform, payload });
         setMatchModalVisible(true);
+      } else if (res.data.contact_id) {
+        // Auto-apply "Review Sent" tag → triggers Review Follow-Up campaign
+        api.post(`/tags/${user._id}/assign`, {
+          tag_name: 'Review Sent',
+          contact_ids: [res.data.contact_id],
+          skip_campaign: false,
+          auto_create_tag: true,
+        }).catch(() => {});
       }
     } catch (err) {
       console.error('Failed to log review share event:', err);

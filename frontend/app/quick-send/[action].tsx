@@ -234,6 +234,18 @@ export default function QuickSendPage() {
         }
       }
 
+      // Auto-apply "Review Sent" tag when sending a review invite → triggers Review Follow-Up campaign
+      if (config.eventType === 'review_invite_sent' && contactId) {
+        try {
+          await api.post(`/tags/${userId}/assign`, {
+            tag_name: 'Review Sent',
+            contact_ids: [contactId],
+            skip_campaign: false,
+            auto_create_tag: true,
+          });
+        } catch {}
+      }
+
       if (sendMethod === 'copy') {
         // Copy to clipboard
         if (IS_WEB && navigator.clipboard) {

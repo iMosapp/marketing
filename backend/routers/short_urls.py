@@ -212,6 +212,48 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
         "timestamp": datetime.utcnow(),
     })
 
+    # Smart auto-complete: if customer clicked a review link, complete their review campaign
+    if event_type == "review_link_clicked" and contact_id:
+        try:
+            review_campaigns = await db.campaigns.find(
+                {"trigger_tag": "review_sent", "active": True}
+            ).to_list(50)
+            review_campaign_ids = [str(c["_id"]) for c in review_campaigns]
+            if review_campaign_ids:
+                result = await db.campaign_enrollments.update_many(
+                    {
+                        "contact_id": contact_id,
+                        "campaign_id": {"$in": review_campaign_ids},
+                        "status": "active",
+                    },
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "completed_at": datetime.utcnow(),
+                            "completed_reason": "review_link_clicked",
+                        }
+                    },
+                )
+                if result.modified_count > 0:
+                    # Also remove any pending sends for this contact's review campaigns
+                    await db.campaign_pending_sends.delete_many({
+                        "contact_id": contact_id,
+                        "campaign_id": {"$in": review_campaign_ids},
+                        "status": "pending",
+                    })
+                    # Mark related tasks as complete
+                    await db.tasks.update_many({
+                        "contact_id": contact_id,
+                        "type": "campaign_send",
+                        "status": {"$ne": "completed"},
+                        "campaign_id": {"$in": review_campaign_ids},
+                    }, {"$set": {"status": "completed", "completed_at": datetime.utcnow(), "auto_completed_reason": "customer_clicked_review_link"}})
+                    import logging
+                    logging.getLogger(__name__).info(f"[Smart Complete] Auto-completed {result.modified_count} review campaign(s) for contact {contact_id} — customer clicked review link")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"[Smart Complete] Review campaign auto-complete failed: {e}")
+
     # Fire engagement signal for real-time notification
     try:
         from routers.engagement_signals import record_signal

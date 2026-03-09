@@ -274,6 +274,39 @@ PREBUILT_TEMPLATES = [
             },
         ],
     },
+    {
+        "id": "review_followup",
+        "name": "Review Follow-Up",
+        "description": "Gentle follow-up after sending a review invite. Auto-completes when the customer clicks the review link — no nagging.",
+        "type": "custom",
+        "trigger_tag": "review_sent",
+        "icon": "star",
+        "color": "#FFD60A",
+        "delivery_mode": "manual",
+        "ai_enabled": True,
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 2,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "It's been 2 days since you sent the review invite. Gently check if they had a chance to leave a review. Don't be pushy — keep it casual and appreciative.",
+                "message_template": "Hey {name}, hope you're enjoying the new ride! If you get a sec, I'd really appreciate a quick review. It helps me out a ton. No pressure at all though!",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 3,
+                "delay_months": 0,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Final gentle nudge about the review. This is the last follow-up — keep it light and thankful regardless of whether they leave one.",
+                "message_template": "Hey {name}, last thing from me on this - just wanted to say thanks again for your business. If you ever get a chance to share your experience, it would mean the world. Either way, I'm here for anything you need!",
+                "media_urls": [],
+            },
+        ],
+    },
 ]
 
 
@@ -946,7 +979,7 @@ async def check_date_triggers(user_id: str):
                         logger.info(f"Auto-enrolled {enrollment['contact_name']} in anniversary campaign: {campaign['name']}")
     
     return {
-        "message": f"Date trigger check complete",
+        "message": "Date trigger check complete",
         "enrolled": enrolled_count,
         "birthday_campaigns": len(birthday_campaigns),
         "anniversary_campaigns": len(anniversary_campaigns)
