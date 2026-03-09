@@ -430,18 +430,6 @@ export default function LoginScreen() {
                     <Ionicons name="download" size={18} color="#007AFF" />
                     <Text style={[styles.refreshButtonText, { color: '#007AFF' }]}>Install App on Your Phone</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.refreshButton}
-                    onPress={() => {
-                      if (typeof window !== 'undefined') {
-                        window.location.reload();
-                      }
-                    }}
-                    data-testid="refresh-app-btn"
-                  >
-                    <Ionicons name="refresh" size={18} color={colors.textSecondary} />
-                    <Text style={styles.refreshButtonText}>Refresh App</Text>
-                  </TouchableOpacity>
                 </View>
               )}
             </View>
