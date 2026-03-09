@@ -262,6 +262,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Push subscription CRUD:** `POST /api/push/subscribe/{userId}`, `DELETE /api/push/unsubscribe/{userId}`, `GET /api/push/vapid-key`
 - **Tested:** 16/16 backend tests + all frontend UI tests passed (iteration 169)
 
+### Congrats Card Quick Links + Review Text Update (Mar 9, 2026)
+- **Review CTA text:** After internal review, changed "Leave a Google review" → "Leave an online review" and linked to the multi-platform review page (`/review/{storeSlug}`) instead of directly to Google
+- **Quick links row:** Replaced `My Card | Showcase | Call | Text | Email` with the 4 composer "Share Your Stuff" items (minus VCF): `My Card | My Page | Showcase | Links`
+  - My Card → `/card/{userId}` (digital business card)
+  - My Page → `/p/{userId}` (personal landing page)
+  - Showcase → `/showcase/{userId}` (delivery showcase)
+  - Links → `/l/{username}` (link page with all social links)
+- **Rationale:** Keep customers in the salesperson's ecosystem; store link removed to prevent leads going to other reps. Call/Text/Email still accessible via the My Card page (one tap from salesman name).
+- **Link Page username:** Fetched via `/api/linkpage/user/{userId}` on card load; Links button hidden if no username configured.
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
