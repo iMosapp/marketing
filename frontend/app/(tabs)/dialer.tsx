@@ -177,12 +177,10 @@ export default function DialerScreen() {
           )}
         </View>
 
-        {/* ─── Contact Matches ─── */}
-        {showMatches && (
-          <View style={{
-            marginHorizontal: 32, marginBottom: 6, backgroundColor: colors.card,
-            borderRadius: 10, overflow: 'hidden',
-          }} data-testid="dialer-matches">
+        {/* ─── Contact Matches (fixed height so keypad never moves) ─── */}
+        <View style={{ height: 90, marginHorizontal: 32, marginBottom: 6, justifyContent: 'flex-end' }} data-testid="dialer-matches-container">
+          {showMatches && (
+            <View style={{ backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden' }} data-testid="dialer-matches">
             {visibleMatches.map((c: any, i: number) => (
               <TouchableOpacity
                 key={c._id}
@@ -217,7 +215,8 @@ export default function DialerScreen() {
               </View>
             )}
           </View>
-        )}
+          )}
+        </View>
 
         {/* ─── Dial Pad ─── */}
         <View style={{ alignSelf: 'center', width: PAD_SIDE, paddingHorizontal: 32, paddingTop: 8, paddingBottom: 4 }}>
