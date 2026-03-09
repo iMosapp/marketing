@@ -3607,6 +3607,8 @@ async def get_user_permissions(user_id: str, x_user_id: str = Header(None, alias
 async def update_user_permissions(user_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
     """Update a user's feature permissions. Only admins can call this."""
     requesting = await get_requesting_user(x_user_id)
+    if not requesting:
+        raise HTTPException(status_code=401, detail="Authentication required")
     req_role = requesting.get("role", "user")
     if req_role not in ("super_admin", "org_admin", "store_manager"):
         raise HTTPException(status_code=403, detail="Only admins can manage permissions")
