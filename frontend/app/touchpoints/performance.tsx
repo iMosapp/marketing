@@ -13,6 +13,35 @@ const PERIODS = [
   { key: 'month', label: 'This Month' },
 ];
 
+// Push notification helpers
+const IS_WEB = typeof window !== 'undefined';
+
+async function registerPushNotifications(userId: string) {
+  if (!IS_WEB || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw-push.js');
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) return; // Already subscribed
+
+    const vapidKey = process.env.EXPO_PUBLIC_VAPID_KEY;
+    if (!vapidKey) return;
+
+    // Convert VAPID key
+    const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
+    const base64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: raw,
+    });
+
+    await api.post(`/push/subscribe/${userId}`, { subscription: sub.toJSON() });
+  } catch (e) {
+    console.log('Push registration skipped:', e);
+  }
+}
+
 export default function PerformanceScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
@@ -24,6 +53,11 @@ export default function PerformanceScreen() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => { loadData(); }, [user?._id, period]);
+
+  // Register push notifications on first load
+  useEffect(() => {
+    if (user?._id) registerPushNotifications(user._id);
+  }, [user?._id]);
 
   const loadData = async () => {
     if (!user?._id) return;
@@ -144,6 +178,40 @@ export default function PerformanceScreen() {
                 <Text style={{ fontSize: 12, color: scUp ? '#34C759' : '#FF9500', fontWeight: '500', marginTop: 8 }}>
                   {sc.today === 0 ? "No touchpoints yet today — let's get started!" : scDiff > 0 ? "Great work! You're ahead of yesterday. Keep it up!" : scDiff === 0 ? "On pace with yesterday. Push for more!" : "Behind yesterday's pace. Time to make some moves!"}
                 </Text>
+              </View>
+            )}
+
+            {/* Personal Bests */}
+            {data.personal_bests && (data.personal_bests.best_day > 0 || data.personal_bests.best_week > 0) && (
+              <View style={{ marginHorizontal: 16, marginBottom: 14, flexDirection: 'row', gap: 8 }} data-testid="personal-bests">
+                <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+                  <Ionicons name="trophy" size={18} color="#FFD60A" />
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFD60A', marginTop: 4 }}>{data.personal_bests.best_day}</Text>
+                  <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600' }}>BEST DAY</Text>
+                  {data.personal_bests.best_day_date && (
+                    <Text style={{ fontSize: 9, color: colors.textTertiary, marginTop: 2 }}>
+                      {new Date(data.personal_bests.best_day_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  )}
+                </View>
+                <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+                  <Ionicons name="ribbon" size={18} color="#AF52DE" />
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#AF52DE', marginTop: 4 }}>{data.personal_bests.best_week}</Text>
+                  <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600' }}>BEST WEEK</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+                  <Ionicons name="flash" size={18} color={sc && sc.today > data.personal_bests.best_day ? '#34C759' : colors.textSecondary} />
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: sc && sc.today > data.personal_bests.best_day ? '#34C759' : colors.text, marginTop: 4 }}>{sc?.today || 0}</Text>
+                  <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600' }}>TODAY</Text>
+                  {sc && sc.today > data.personal_bests.best_day && (
+                    <Text style={{ fontSize: 9, color: '#34C759', fontWeight: '700', marginTop: 2 }}>NEW RECORD!</Text>
+                  )}
+                  {sc && sc.today <= data.personal_bests.best_day && data.personal_bests.best_day > 0 && (
+                    <Text style={{ fontSize: 9, color: colors.textTertiary, marginTop: 2 }}>
+                      {data.personal_bests.best_day - sc.today} to beat
+                    </Text>
+                  )}
+                </View>
               </View>
             )}
 

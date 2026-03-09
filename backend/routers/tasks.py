@@ -484,6 +484,52 @@ async def get_performance(user_id: str, period: str = "week"):
         else:
             break
 
+    # Personal bests: best day and best week in last 90 days
+    best_day = 0
+    best_day_date = None
+    ninety_days_ago = today_start - timedelta(days=90)
+    pipeline = [
+        {"$match": {"user_id": user_id, "timestamp": {"$gte": ninety_days_ago}}},
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+            "count": {"$sum": 1},
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 1},
+    ]
+    best_day_result = await db.contact_events.aggregate(pipeline).to_list(1)
+    if best_day_result:
+        best_day = best_day_result[0]["count"]
+        best_day_date = best_day_result[0]["_id"]
+
+    best_week = 0
+    week_pipeline = [
+        {"$match": {"user_id": user_id, "timestamp": {"$gte": ninety_days_ago}}},
+        {"$group": {
+            "_id": {"$isoWeek": "$timestamp"},
+            "count": {"$sum": 1},
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 1},
+    ]
+    best_week_result = await db.contact_events.aggregate(week_pipeline).to_list(1)
+    if best_week_result:
+        best_week = best_week_result[0]["count"]
+
+    # Check for milestone notifications (non-blocking)
+    try:
+        from routers.push_notifications import check_and_notify_milestones
+        user_total = await db.contact_events.count_documents({"user_id": user_id})
+        levels = [(0, "Rookie"), (100, "Hustler"), (500, "Closer"), (1500, "All-Star"), (5000, "Legend")]
+        level_title = "Rookie"
+        for threshold, name in levels:
+            if user_total >= threshold:
+                level_title = name
+        import asyncio as _asyncio
+        _asyncio.create_task(check_and_notify_milestones(user_id, streak, level_title, today_events, best_day))
+    except Exception as e:
+        logger.warning(f"Milestone check failed: {e}")
+
     total_touchpoints = (
         activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
         activity.get("email_sent", 0) + activity.get("email_failed", 0) +
@@ -504,6 +550,11 @@ async def get_performance(user_id: str, period: str = "week"):
             "diff": today_events - yesterday_events,
             "streak": streak,
             "streak_threshold": STREAK_THRESHOLD,
+        },
+        "personal_bests": {
+            "best_day": best_day,
+            "best_day_date": best_day_date,
+            "best_week": best_week,
         },
         "communication": {
             "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),
