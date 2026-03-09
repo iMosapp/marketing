@@ -204,6 +204,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Digital card visitor "Save My Contact":** Now directly downloads VCF file — no modal. Owner still sees "Share My Contact" with full sharing options.
 - **Tested:** All 7 features verified.
 
+## Recent Fixes (Mar 9, 2026)
+- **Login Autofill Styling Fix:** Added CSS rules targeting `:-webkit-autofill` pseudo-class in `+html.tsx` to prevent browser autofill from showing black/yellow backgrounds on input fields. Uses `transition: background-color 5000s` approach for universal light/dark theme compatibility.
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
