@@ -400,7 +400,17 @@ const { showToast } = useToast();
 
   const renderCrmTimelineSettings = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>CRM Timeline Export</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={styles.sectionTitle}>CRM Timeline Export</Text>
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#C9A96220', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+          onPress={() => router.push('/admin/crm-dashboard' as any)}
+          data-testid="crm-dashboard-link"
+        >
+          <Ionicons name="stats-chart" size={14} color="#C9A962" />
+          <Text style={{ color: '#C9A962', fontSize: 13, fontWeight: '700' }}>Dashboard</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.sectionSubtitle}>
         Generate live activity links for each contact that can be pasted into any CRM
       </Text>

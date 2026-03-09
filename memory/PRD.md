@@ -309,6 +309,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
    - Uses `crm_link_copied_at` field on contact model
 5. **Export Stats:** `GET /api/crm/export-stats/{user_id}` returns total/linked/not_linked counts
 
+### CRM Adoption Dashboard (Mar 9, 2026)
+- Manager-level dashboard at `/admin/crm-dashboard`
+- Shows: overall adoption % with progress bar, per-salesperson breakdown (ranked, color-coded progress bars), recent links copied feed
+- Backend endpoint: `GET /api/crm/adoption-dashboard/{user_id}` — aggregates stats across all team members in the store
+- Accessible from Settings > Integrations > RMS tab via "Dashboard" button
+- Bug fix: CRM link Copy button was using `contact._id` (undefined) — fixed to use URL param `id`
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

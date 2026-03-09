@@ -291,3 +291,94 @@ async def get_crm_export_stats(user_id: str):
         "crm_linked": exported,
         "not_linked": total - exported,
     }
+
+
+# ─── CRM Adoption Dashboard ──────────────────────────────────────────
+
+@router.get("/adoption-dashboard/{user_id}")
+async def get_crm_adoption_dashboard(user_id: str):
+    """
+    Manager-level dashboard showing CRM link adoption across the team.
+    Returns per-salesperson stats and recent linking activity.
+    """
+    db = get_db()
+
+    # Get the requesting user's store
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+    if not user or not user.get("store_id"):
+        raise HTTPException(status_code=404, detail="User or store not found")
+
+    store_id = str(user["store_id"])
+
+    # Get all users in the store
+    team_cursor = db.users.find(
+        {"store_id": store_id, "status": {"$ne": "deleted"}},
+        {"_id": 1, "name": 1, "photo": 1, "title": 1, "role": 1}
+    )
+    team = await team_cursor.to_list(100)
+
+    # Build per-user stats
+    members = []
+    total_contacts = 0
+    total_linked = 0
+
+    for member in team:
+        uid = str(member["_id"])
+        mc = await db.contacts.count_documents({"user_id": uid})
+        ml = await db.contacts.count_documents({
+            "user_id": uid,
+            "crm_link_copied_at": {"$exists": True, "$ne": None}
+        })
+        total_contacts += mc
+        total_linked += ml
+        members.append({
+            "user_id": uid,
+            "name": member.get("name", "Unknown"),
+            "photo": member.get("photo", ""),
+            "title": member.get("title", ""),
+            "role": member.get("role", ""),
+            "total_contacts": mc,
+            "crm_linked": ml,
+            "not_linked": mc - ml,
+            "pct": round((ml / mc * 100) if mc > 0 else 0, 1),
+        })
+
+    # Sort by linked percentage descending
+    members.sort(key=lambda m: m["pct"], reverse=True)
+
+    # Recent CRM link activity (last 20 links copied across the store)
+    all_user_ids = [str(m["_id"]) for m in team]
+    recent_cursor = db.contacts.find(
+        {
+            "user_id": {"$in": all_user_ids},
+            "crm_link_copied_at": {"$exists": True, "$ne": None},
+        },
+        {"_id": 0, "first_name": 1, "last_name": 1, "name": 1, "phone": 1,
+         "user_id": 1, "crm_link_copied_at": 1}
+    ).sort("crm_link_copied_at", -1).limit(20)
+    recent_raw = await recent_cursor.to_list(20)
+
+    # Build a user_id -> name map
+    name_map = {str(m["_id"]): m.get("name", "?") for m in team}
+
+    recent = []
+    for r in recent_raw:
+        cname = r.get("name") or f"{r.get('first_name', '')} {r.get('last_name', '')}".strip() or r.get("phone", "?")
+        ts = r.get("crm_link_copied_at")
+        if isinstance(ts, datetime):
+            ts = ts.isoformat() + "Z" if ts.tzinfo is None else ts.isoformat()
+        recent.append({
+            "contact_name": cname,
+            "salesperson": name_map.get(r.get("user_id", ""), "?"),
+            "copied_at": ts,
+        })
+
+    return {
+        "store_id": store_id,
+        "total_contacts": total_contacts,
+        "total_linked": total_linked,
+        "total_not_linked": total_contacts - total_linked,
+        "overall_pct": round((total_linked / total_contacts * 100) if total_contacts > 0 else 0, 1),
+        "members": members,
+        "recent_activity": recent,
+    }
