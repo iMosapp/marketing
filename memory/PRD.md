@@ -249,6 +249,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Streak counter:** Tracks consecutive days with 5+ touchpoints. Shows flame icon, day count, "ON FIRE" badge at 7+ days, and contextual message ("Today counts! Keep going!" or "Need X more to keep it alive").
 - **Tested:** 15/15 backend tests + all frontend UI tests passed (iteration 167)
 
+### Phase 2: Review Follow-Up Campaign + Smart Auto-Complete (Mar 9, 2026)
+- **Review Follow-Up campaign:** 6th prebuilt template with `trigger_tag: review_sent`. 2 steps: Day 2 gentle check-in, Day 5 final nudge.
+- **Auto-tag on review send:** When a review invite is sent (via quick-send or more.tsx), "Review Sent" tag is auto-applied with `auto_create_tag: true`. This triggers the Review Follow-Up campaign.
+- **Smart auto-complete:** When a customer clicks the review link (tracked via short_urls.py), the system auto-completes all active review campaign enrollments, deletes pending sends, and marks related tasks as complete. No more nagging.
+- **Tag normalization:** Tag names with spaces ("Review Sent") now correctly match template trigger_tags with underscores ("review_sent").
+- **Tested:** 14/14 backend tests passed (iteration 168)
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
