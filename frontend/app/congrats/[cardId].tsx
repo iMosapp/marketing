@@ -233,11 +233,16 @@ export default function CongratsCardPage() {
     >
       {/* Card Content */}
       <View ref={cardRef} style={styles.cardWrapper}>
-        {/* Store Logo */}
+        {/* Store Logo → links to company website */}
         {cardData.store?.logo && (
-          <View style={styles.storeLogoContainer}>
+          <TouchableOpacity 
+            style={styles.storeLogoContainer}
+            onPress={() => cardData.store?.website && Linking.openURL(cardData.store.website)}
+            disabled={!cardData.store?.website}
+            data-testid="store-logo-link"
+          >
             <Image source={{ uri: cardData.store.logo }} style={styles.storeLogo} />
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Headline */}
@@ -270,9 +275,13 @@ export default function CongratsCardPage() {
         {/* Divider */}
         <View style={[styles.divider, { backgroundColor: style.accent_color }]} />
 
-        {/* Salesman Info */}
+        {/* Salesman Info → links to digital business card */}
         {cardData.salesman && (
-          <View style={styles.salesmanContainer}>
+          <TouchableOpacity 
+            style={styles.salesmanContainer}
+            onPress={() => cardData.salesman_id && Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/card/${cardData.salesman_id}`)}
+            data-testid="salesman-card-link"
+          >
             {cardData.salesman.photo && (
               <Image source={{ uri: cardData.salesman.photo }} style={styles.salesmanPhoto} />
             )}
@@ -289,7 +298,7 @@ export default function CongratsCardPage() {
                 </Text>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Footer */}
@@ -303,13 +312,16 @@ export default function CongratsCardPage() {
       {/* Quick Links  - under salesman info */}
       {cardData.salesman_id && (
         <View style={styles.quickLinksSection}>
-          {/* Leave a Review CTA — Inline form, transforms after submission */}
+          {/* Quick Links  - under salesman info */}
           {reviewSubmitted ? (
             /* After internal review: nudge toward public/Google review */
             <TouchableOpacity
               style={[styles.reviewCTA, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
               onPress={() => {
-                if (storeSlug) {
+                const googleUrl = cardData.store?.google_review_url;
+                if (googleUrl) {
+                  Linking.openURL(googleUrl);
+                } else if (storeSlug) {
                   router.push(`/review/${storeSlug}?sp=${cardData.salesman_id}` as any);
                 }
               }}
@@ -362,11 +374,11 @@ export default function CongratsCardPage() {
             </>
           )}
 
-          {/* Quick link row */}
+          {/* Quick link row — all on one line */}
           <View style={styles.quickLinksRow}>
             <TouchableOpacity
               style={styles.quickLinkItem}
-              onPress={() => router.push(`/p/${cardData.salesman_id}` as any)}
+              onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/card/${cardData.salesman_id}`)}
               data-testid="card-view-profile-btn"
             >
               <Ionicons name="card-outline" size={18} color={style.accent_color} />
@@ -407,18 +419,21 @@ export default function CongratsCardPage() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
 
-          {cardData.salesman?.email && (
-            <TouchableOpacity
-              style={styles.quickLinkItem}
-              onPress={() => Linking.openURL(`mailto:${cardData.salesman?.email}`)}
-              data-testid="card-email-btn"
-            >
-              <Ionicons name="mail-outline" size={18} color={style.accent_color} />
-              <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Email {cardData.salesman.name?.split(' ')[0]}</Text>
-            </TouchableOpacity>
-          )}
+            {cardData.salesman?.email && (
+              <>
+                <View style={styles.quickLinkDivider} />
+                <TouchableOpacity
+                  style={styles.quickLinkItem}
+                  onPress={() => Linking.openURL(`mailto:${cardData.salesman?.email}`)}
+                  data-testid="card-email-btn"
+                >
+                  <Ionicons name="mail-outline" size={18} color={style.accent_color} />
+                  <Text style={[styles.quickLinkText, { color: style.accent_color }]}>Email</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
       )}
 
@@ -774,11 +789,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: 4,
     paddingVertical: 4,
-    flexWrap: 'wrap',
   },
-  quickLinkItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 6 },
-  quickLinkText: { fontSize: 13, fontWeight: '600' },
-  quickLinkDivider: { width: 1, height: 20, backgroundColor: '#2C2C2E' },
+  quickLinkItem: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 4 },
+  quickLinkText: { fontSize: 12, fontWeight: '600' },
+  quickLinkDivider: { width: 1, height: 18, backgroundColor: '#2C2C2E' },
 });

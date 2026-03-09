@@ -224,6 +224,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Added Web Share API support for "Save Card" button — triggers native share sheet on mobile for direct camera roll save
   - Instagram share now downloads the card image first, then instructs user to post from gallery
 
+- **Card Page + Performance Overhaul (Mar 9, 2026):**
+  - Store logo on card page is now a hyperlink to the company's website
+  - Salesman signature section links to their digital business card page
+  - "My Card" quick link now correctly goes to `/card/{salesman_id}` (was going to wrong route)
+  - Google review link now uses the actual Google review URL from store's `review_links` (was using a dead slug-based route)
+  - All quick links (My Card, Showcase, Call, Text, Email) are now on ONE row — removed `flexWrap` and reduced spacing
+  - Performance page labels fixed: "MY CARD" for digital business card shares, "CARD SHARES" for congrats/birthday/thank you cards
+  - All performance tiles are now clickable — tapping opens a detail modal with recent activity (contact name, event type, timestamp), and tapping a contact navigates to their detail page
+  - New backend endpoint: `GET /api/tasks/{user_id}/performance/detail?category=texts&period=week` returns recent events for a category
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

@@ -456,7 +456,8 @@ async def get_performance(user_id: str, period: str = "week"):
         activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
         activity.get("email_sent", 0) + activity.get("email_failed", 0) +
         activity.get("call_placed", 0) + activity.get("call_received", 0) +
-        sum(v for k, v in activity.items() if k and ("_card_sent" in k or "card_shared" in k or "digital_card_shared" in k)) +
+        activity.get("digital_card_shared", 0) + activity.get("card_shared", 0) + activity.get("digital_card_sent", 0) +
+        activity.get("congrats_card_sent", 0) + activity.get("birthday_card_sent", 0) + activity.get("holiday_card_sent", 0) + activity.get("thank_you_card_sent", 0) + activity.get("anniversary_card_sent", 0) +
         activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0) +
         eng_total
     )
@@ -470,9 +471,9 @@ async def get_performance(user_id: str, period: str = "week"):
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
         },
         "sharing": {
-            "cards": sum(v for k, v in activity.items() if k and ("_card_sent" in k or "card_shared" in k or "digital_card_shared" in k)),
+            "my_card": activity.get("digital_card_shared", 0) + activity.get("card_shared", 0) + activity.get("digital_card_sent", 0),
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
-            "congrats": sum(v for k, v in activity.items() if k and ("_card_sent" in k) and k != "digital_card_sent" and k != "vcard_sent"),
+            "card_shares": activity.get("congrats_card_sent", 0) + activity.get("birthday_card_sent", 0) + activity.get("holiday_card_sent", 0) + activity.get("thank_you_card_sent", 0) + activity.get("anniversary_card_sent", 0),
         },
         "engagement": {
             "link_clicks": activity.get("link_clicked", 0) + activity.get("card_viewed", 0) + eng_signals.get("link_clicked", 0) + eng_signals.get("card_viewed", 0) + eng_signals.get("digital_card_viewed", 0) + eng_signals.get("showcase_viewed", 0) + eng_signals.get("link_page_viewed", 0) + eng_signals.get("review_link_clicked", 0),
@@ -487,6 +488,58 @@ async def get_performance(user_id: str, period: str = "week"):
             "link_page_visits": activity.get("link_page_viewed", 0) + eng_signals.get("link_page_viewed", 0),
         },
     }
+
+
+
+EVENT_CATEGORY_MAP = {
+    "texts": ["sms_sent", "sms_personal", "personal_sms", "sms_failed"],
+    "emails": ["email_sent", "email_failed"],
+    "calls": ["call_placed", "call_received"],
+    "my_card": ["digital_card_shared", "card_shared", "digital_card_sent"],
+    "reviews": ["review_invite_sent", "review_shared", "review_request_sent"],
+    "card_shares": ["congrats_card_sent", "birthday_card_sent", "holiday_card_sent", "thank_you_card_sent", "anniversary_card_sent"],
+    "link_clicks": ["link_clicked", "card_viewed"],
+    "email_opens": ["email_opened"],
+    "replies": ["reply_received", "sms_received"],
+}
+
+@router.get("/{user_id}/performance/detail")
+async def get_performance_detail(user_id: str, category: str, period: str = "week"):
+    """Get recent activity for a specific touchpoint category."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if period == "today":
+        start = today_start
+    elif period == "month":
+        start = today_start - timedelta(days=30)
+    else:
+        start = today_start - timedelta(days=7)
+
+    event_types = EVENT_CATEGORY_MAP.get(category, [])
+    if not event_types:
+        return {"events": []}
+
+    events = await db.contact_events.find(
+        {"user_id": user_id, "event_type": {"$in": event_types}, "timestamp": {"$gte": start}},
+        {"_id": 0, "event_type": 1, "channel": 1, "content": 1, "contact_id": 1, "contact_name": 1, "timestamp": 1}
+    ).sort("timestamp", -1).limit(50).to_list(50)
+
+    # Enrich with contact names if missing
+    contact_ids = [e.get("contact_id") for e in events if e.get("contact_id") and not e.get("contact_name")]
+    if contact_ids:
+        contacts = {}
+        for c in await db.contacts.find({"_id": {"$in": [ObjectId(cid) for cid in contact_ids if len(str(cid)) == 24]}}, {"first_name": 1, "last_name": 1}).to_list(100):
+            contacts[str(c["_id"])] = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+        for e in events:
+            if e.get("contact_id") and not e.get("contact_name"):
+                e["contact_name"] = contacts.get(e["contact_id"], "Unknown")
+
+    for e in events:
+        if e.get("timestamp"):
+            e["timestamp"] = e["timestamp"].isoformat()
+
+    return {"events": events, "count": len(events)}
 
 
 @router.post("/{user_id}/generate-system-tasks")

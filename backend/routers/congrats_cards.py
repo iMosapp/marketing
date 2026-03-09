@@ -629,6 +629,38 @@ async def get_congrats_card(card_id: str):
     # Use optimized image URLs
     card_photo = resolve_card_photo(card)
     
+    # Fetch store details for website link, review URL, slug
+    store_data = None
+    salesman_id = card.get("salesman_id")
+    if salesman_id:
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(salesman_id)}, {"store_id": 1})
+            if user_doc and user_doc.get("store_id"):
+                try:
+                    store_doc = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])})
+                except Exception:
+                    store_doc = None
+                if store_doc:
+                    review_links = store_doc.get("review_links", {})
+                    store_data = {
+                        "name": store_doc.get("name") or card.get("store_name"),
+                        "logo": card.get("store_logo") if card.get("store_logo", "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
+                        "website": store_doc.get("website", ""),
+                        "google_review_url": review_links.get("google", ""),
+                        "slug": store_doc.get("slug", ""),
+                    }
+        except Exception:
+            pass
+    
+    if not store_data and card.get("show_store_logo") and card.get("store_name"):
+        store_data = {
+            "name": card.get("store_name"),
+            "logo": card.get("store_logo") if card.get("store_logo", "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
+            "website": "",
+            "google_review_url": "",
+            "slug": "",
+        }
+
     return {
         "card_id": card_id,
         "salesman_id": card.get("salesman_id"),
@@ -646,10 +678,8 @@ async def get_congrats_card(card_id: str):
             "phone": card.get("salesman_phone"),
             "email": card.get("salesman_email"),
         } if card.get("show_salesman") else None,
-        "store": {
-            "name": card.get("store_name"),
-            "logo": card.get("store_logo") if card.get("store_logo", "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
-        } if card.get("show_store_logo") and card.get("store_name") else None,
+        "store": store_data,
+        "short_url": card.get("short_url", ""),
         "style": {
             "background_color": card.get("background_color", "#1A1A1A"),
             "accent_color": card.get("accent_color", "#C9A962"),
