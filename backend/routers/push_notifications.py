@@ -56,6 +56,21 @@ async def unsubscribe(user_id: str, data: dict):
     return {"status": "unsubscribed"}
 
 
+
+@router.post("/test/{user_id}")
+async def test_push(user_id: str):
+    """Send a test push notification to verify the full push pipeline."""
+    sent = await send_push_to_user(
+        user_id,
+        "Push Notifications Active!",
+        "You'll now receive real-time alerts for leads, engagement, and milestones.",
+        "/touchpoints/performance",
+        "checkmark.circle"
+    )
+    return {"status": "sent" if sent > 0 else "no_subscriptions", "sent_to": sent}
+
+
+
 async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/touchpoints/performance", icon: str = "flame"):
     """Send a push notification to all subscriptions for a user."""
     if not VAPID_PRIVATE_KEY:

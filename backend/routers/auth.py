@@ -395,7 +395,8 @@ async def login(credentials: dict):
         max_age=60 * 60 * 24 * 365 * 10,  # 10 years
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=True,
+        path="/",
     )
     return resp
 

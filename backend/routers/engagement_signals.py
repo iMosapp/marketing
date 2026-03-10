@@ -129,6 +129,16 @@ async def record_signal(
     }
     await db.notifications.insert_one(notif_doc)
 
+    # Send push notification to the salesperson (non-blocking)
+    try:
+        from routers.push_notifications import send_push_to_user
+        import asyncio
+        asyncio.create_task(
+            send_push_to_user(user_id, title, body, f"/contact/{contact_id}", type_info.get("icon", "eye"))
+        )
+    except Exception as e:
+        logger.debug(f"Push notification skipped for engagement signal: {e}")
+
     logger.info(f"[Engagement] {signal_type}: {contact_name} → {user_id} (return={is_return_visit})")
 
 

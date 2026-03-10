@@ -22,6 +22,7 @@ const BACKEND_URL = getBackendUrl();
 const api = axios.create({
   baseURL: BACKEND_URL,
   timeout: 60000, // 60 seconds for AI/voice processing
+  withCredentials: true, // Always send cookies (needed for persistent session restore)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -49,15 +50,38 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor: auto-restore session from cookie on 401
+let isRestoringSession = false;
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    // If we get a 401 and haven't already tried to restore, try cookie-based restore
+    if (error.response?.status === 401 && !originalRequest._retried && !isRestoringSession 
+        && !originalRequest.url?.includes('/auth/me') && !originalRequest.url?.includes('/auth/login')) {
+      originalRequest._retried = true;
+      isRestoringSession = true;
+      try {
+        const res = await api.get('/auth/me');
+        if (res.data?.user && res.data?.token) {
+          await AsyncStorage.setItem('auth_token', res.data.token);
+          await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
+          // Update auth store
+          const { useAuthStore } = await import('../store/authStore');
+          useAuthStore.getState().setUser(res.data.user);
+          useAuthStore.getState().setToken(res.data.token);
+          isRestoringSession = false;
+          // Retry the original request
+          return api(originalRequest);
+        }
+      } catch {
+        // Cookie restore failed — user truly needs to log in
+      }
+      isRestoringSession = false;
+    }
     if (error.response) {
-      // Server responded with error
       console.error('API Error:', error.response.data);
     } else if (error.request) {
-      // Request made but no response
       console.error('Network Error:', error.message);
     } else {
       console.error('Error:', error.message);

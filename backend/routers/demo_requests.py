@@ -206,6 +206,15 @@ async def create_demo_request(data: dict):
             "dismissed": False,
             "created_at": datetime.now(timezone.utc),
         })
+        # Send push notification for new lead
+        try:
+            from routers.push_notifications import send_push_to_user
+            import asyncio
+            asyncio.create_task(
+                send_push_to_user(uid, f"New Lead: {lead_name}", notif_body, "/admin/hot-leads", "person.fill.badge.plus")
+            )
+        except Exception:
+            pass
 
     return {"status": "success", "message": "Demo request received! We'll be in touch soon."}
 
