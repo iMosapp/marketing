@@ -492,3 +492,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **PROBLEM:** A regular text message containing the word "congrats" (e.g., "Hey Forest, saw you opened the congrats...") was being logged as "Congrats Card Sent" in the activity feed. The `resolve_event_type()` function in `utils/event_types.py` used keyword matching that triggered on ANY message containing "congrats", "birthday", "anniversary", etc. — even plain conversational texts with no card or link involved.
 - **FIX:** Keyword-based event type detection now only triggers when the message also contains a URL (`https?://`). Plain text messages without links always default to `personal_sms`.
 - **File:** `/app/backend/utils/event_types.py` lines 194-207
+
+### Company Docs Content Update (Mar 10, 2026)
+- **Operations Manual updated to v4.0** with 27 slides covering all current features:
+  - Updated Jessi AI slide (16) with Phase 2/3 capabilities: floating chat, context awareness, voice, live data lookups
+  - Updated Digital Business Cards slide (12) with congrats card image generation (Pillow + QR codes)
+  - Updated Activity Tracking slide (8) with centralized event type resolution system
+  - Added Performance Dashboard & CRM Timeline slide (26)
+  - Updated Third-Party Integrations slide (21) with Pillow and qrcode libraries
+  - Updated API Reference slide (25) with new endpoints (Jessi, CRM timeline, docs)
+  - Updated Onboarding Guide with Jessi, leaderboards, performance dashboard
+  - Version bumped to 4.0, date to March 2026
+- All 8 base docs re-seeded with app-specific content
+- Articles of Incorporation preserved across re-seeds
+
