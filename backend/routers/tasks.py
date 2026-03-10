@@ -21,6 +21,27 @@ logger = logging.getLogger(__name__)
 
 PRIORITY_ORDER = {"high": 1, "medium": 2, "low": 3}
 
+# ── Unified "Texts Sent" types ──
+# Sending a card or link via SMS IS sending a text. Count everything that
+# opens the native SMS app as a text for dashboard purposes.
+SMS_EVENT_TYPES = [
+    "sms_sent", "sms_personal", "personal_sms", "sms_failed",
+    # Cards sent via SMS
+    "congrats_card_sent", "birthday_card_sent", "holiday_card_sent",
+    "thank_you_card_sent", "thankyou_card_sent", "anniversary_card_sent",
+    "welcome_card_sent",
+    # Digital card / vCard shares
+    "digital_card_sent", "digital_card_shared", "card_shared", "vcard_sent",
+    # Review & link shares via SMS
+    "review_request_sent", "review_shared", "review_invite_sent",
+    # Showcase / link page shares
+    "link_page_shared", "showcase_shared", "showroom_shared",
+]
+
+def count_texts(activity: dict) -> int:
+    """Sum all event types that represent a text/SMS being sent."""
+    return sum(activity.get(t, 0) for t in SMS_EVENT_TYPES)
+
 
 def _serialize(task: dict) -> dict:
     """Serialize a task for JSON response."""
@@ -188,13 +209,14 @@ async def get_task_summary(user_id: str):
     # Cards sent (only outbound SEND actions — exclude customer views/downloads/shares)
     cards_sent = sum(v for k, v in activity.items() if k and ("_card_sent" in k or "card_shared" in k or "digital_card_shared" in k))
 
+    texts_sent = count_texts(activity)
+
     # Activities are completed touchpoints (user already performed the action)
+    # Use texts_sent which already includes card sends — don't double-count
     activity_touchpoints = (
-        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
+        texts_sent +
         activity.get("email_sent", 0) + activity.get("email_failed", 0) +
-        activity.get("call_placed", 0) +
-        cards_sent +
-        activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0)
+        activity.get("call_placed", 0)
     )
 
     combined_total = total_today + activity_touchpoints
@@ -208,7 +230,7 @@ async def get_task_summary(user_id: str):
         "progress_pct": round((combined_completed / max(combined_total, 1)) * 100),
         "activity": {
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
-            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),
+            "texts": texts_sent,
             "emails": activity.get("email_sent", 0) + activity.get("email_failed", 0),
             "cards": cards_sent,
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
@@ -531,13 +553,9 @@ async def get_performance(user_id: str, period: str = "week"):
         logger.warning(f"Milestone check failed: {e}")
 
     total_touchpoints = (
-        activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0) +
+        count_texts(activity) +
         activity.get("email_sent", 0) + activity.get("email_failed", 0) +
         activity.get("call_placed", 0) + activity.get("call_received", 0) +
-        activity.get("digital_card_shared", 0) + activity.get("card_shared", 0) + activity.get("digital_card_sent", 0) +
-        activity.get("showroom_shared", 0) +
-        activity.get("congrats_card_sent", 0) + activity.get("birthday_card_sent", 0) + activity.get("holiday_card_sent", 0) + activity.get("thank_you_card_sent", 0) + activity.get("anniversary_card_sent", 0) +
-        activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0) +
         eng_total
     )
 
@@ -557,7 +575,7 @@ async def get_performance(user_id: str, period: str = "week"):
             "best_week": best_week,
         },
         "communication": {
-            "texts": activity.get("sms_sent", 0) + activity.get("sms_personal", 0) + activity.get("personal_sms", 0) + activity.get("sms_failed", 0),
+            "texts": count_texts(activity),
             "emails": activity.get("email_sent", 0) + activity.get("email_failed", 0),
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
         },
@@ -585,12 +603,12 @@ async def get_performance(user_id: str, period: str = "week"):
 
 
 EVENT_CATEGORY_MAP = {
-    "texts": ["sms_sent", "sms_personal", "personal_sms", "sms_failed"],
+    "texts": SMS_EVENT_TYPES,
     "emails": ["email_sent", "email_failed"],
     "calls": ["call_placed", "call_received"],
     "my_card": ["digital_card_shared", "card_shared", "digital_card_sent"],
     "reviews": ["review_invite_sent", "review_shared", "review_request_sent"],
-    "card_shares": ["congrats_card_sent", "birthday_card_sent", "holiday_card_sent", "thank_you_card_sent", "anniversary_card_sent"],
+    "card_shares": ["congrats_card_sent", "birthday_card_sent", "holiday_card_sent", "thank_you_card_sent", "anniversary_card_sent", "welcome_card_sent"],
     "showcase": ["showroom_shared"],
     "link_clicks": ["link_clicked", "card_viewed"],
     "email_opens": ["email_opened"],
