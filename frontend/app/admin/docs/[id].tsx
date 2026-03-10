@@ -428,8 +428,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   slideNumberText: { fontSize: 16, fontWeight: '700', color: colors.text },
   slideTitle: { fontSize: 22, fontWeight: '700', color: colors.text, flex: 1 },
   slideDescriptionContainer: { marginBottom: 20 },
-  slideDescription: { fontSize: 16, color: '#E5E5E7', lineHeight: 26 },
-  boldText: { fontWeight: '700', color: colors.text },
+  slideDescription: { fontSize: 16, color: colors.text, lineHeight: 26, opacity: 0.85 },
+  boldText: { fontWeight: '700', color: colors.text, opacity: 1 },
   codeText: { fontFamily: 'monospace', backgroundColor: colors.card, color: '#FF9500', fontSize: 13, paddingHorizontal: 4 },
   tipBox: {
     flexDirection: 'row',
@@ -440,7 +440,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFD60A30',
   },
-  tipText: { fontSize: 14, color: '#FFD60A', marginLeft: 12, flex: 1, lineHeight: 22 },
+  tipText: { fontSize: 14, color: colors.textSecondary, marginLeft: 12, flex: 1, lineHeight: 22 },
   warningBox: {
     flexDirection: 'row',
     backgroundColor: '#FF3B3015',
