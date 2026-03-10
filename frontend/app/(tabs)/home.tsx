@@ -263,43 +263,35 @@ function ContactActionModal({
         ) : (
           /* ─── KEYPAD: iOS-native style dial pad + contact matching ─── */
           <View style={{ flex: 1, backgroundColor: colors.bg }}>
-            {/* Number Display + floating matches container */}
-            <View style={{ position: 'relative', zIndex: 10 }}>
-              <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingVertical: 8, minHeight: 52 }}>
-                {dialNumber ? (
-                  <Text style={{ fontSize: dialNumber.length > 10 ? 30 : 38, fontWeight: '200', color: colors.text, letterSpacing: 1.5, fontVariant: ['tabular-nums'] as any }} numberOfLines={1} adjustsFontSizeToFit>
-                    {(() => { const d = dialNumber.replace(/\D/g, ''); if (d.length <= 3) return d; if (d.length <= 6) return `${d.slice(0,3)}-${d.slice(3)}`; if (d.length <= 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return `+${d.slice(0,d.length-10)} (${d.slice(-10,-7)}) ${d.slice(-7,-4)}-${d.slice(-4)}`; })()}
-                  </Text>
-                ) : (
-                  <Text style={{ fontSize: 38, fontWeight: '200', color: colors.text, opacity: 0 }}>{'\u00A0'}</Text>
-                )}
-              </View>
+            {/* Number Display */}
+            <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingVertical: 8, minHeight: 52 }}>
+              {dialNumber ? (
+                <Text style={{ fontSize: dialNumber.length > 10 ? 30 : 38, fontWeight: '200', color: colors.text, letterSpacing: 1.5, fontVariant: ['tabular-nums'] as any }} numberOfLines={1} adjustsFontSizeToFit>
+                  {(() => { const d = dialNumber.replace(/\D/g, ''); if (d.length <= 3) return d; if (d.length <= 6) return `${d.slice(0,3)}-${d.slice(3)}`; if (d.length <= 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return `+${d.slice(0,d.length-10)} (${d.slice(-10,-7)}) ${d.slice(-7,-4)}-${d.slice(-4)}`; })()}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 38, fontWeight: '200', color: colors.text, opacity: 0 }}>{'\u00A0'}</Text>
+              )}
+            </View>
 
-              {/* Contact Matches — positioned absolutely so the keypad never moves */}
+            {/* Contact Matches — fixed height slot so keypad never moves */}
+            <View style={{ height: 84, marginHorizontal: 24, justifyContent: 'flex-start' }}>
               {dialNumber.length >= 3 && (() => {
                 const digits = dialNumber.replace(/\D/g, '');
-                const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(digits)).slice(0, 3);
+                const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(digits)).slice(0, 2);
                 if (matches.length === 0) return null;
                 const fmtPhone = (p: string) => { const d = (p||'').replace(/\D/g,''); if (d.length===11&&d[0]==='1') return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`; if (d.length===10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return p; };
                 return (
-                  <View style={{ position: 'absolute', top: '100%', left: 24, right: 24, zIndex: 20, backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
-                    <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
-                      {matches.slice(0, 3).map((item: any, i: number) => (
-                        <TouchableOpacity key={item._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }} onPress={() => logAndDial(item.phone, item)}>
-                          <Ionicons name="person-circle" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                          <Text style={{ fontSize: 15, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
-                            {`${item.first_name || ''} ${item.last_name || ''}`.trim().length > 14 ? `${item.first_name || ''} ${item.last_name || ''}`.trim().slice(0,12)+'...' : `${item.first_name || ''} ${item.last_name || ''}`.trim()}
-                          </Text>
-                          <Text style={{ fontSize: 15, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
-                        </TouchableOpacity>
-                      ))}
-                      {matches.length > 3 && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: colors.border }}>
-                          <Ionicons name="search" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                          <Text style={{ fontSize: 14, color: colors.textSecondary }}>{matches.length - 3} More Result{matches.length - 3 > 1 ? 's' : ''}</Text>
-                        </View>
-                      )}
-                    </ScrollView>
+                  <View style={{ backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden' }}>
+                    {matches.map((item: any, i: number) => (
+                      <TouchableOpacity key={item._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 40, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }} onPress={() => logAndDial(item.phone, item)}>
+                        <Ionicons name="person-circle" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                        <Text style={{ fontSize: 14, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
+                          {`${item.first_name || ''} ${item.last_name || ''}`.trim().length > 14 ? `${item.first_name || ''} ${item.last_name || ''}`.trim().slice(0,12)+'...' : `${item.first_name || ''} ${item.last_name || ''}`.trim()}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
                 );
               })()}
