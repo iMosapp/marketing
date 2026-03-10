@@ -415,3 +415,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
+
+### Unified "Texts Sent" Metric (Mar 10, 2026)
+- **PROBLEM:** Sending a card (Welcome, Congrats, Birthday, etc.) via text didn't count as a "text sent" on dashboards. Only plain SMS was counted. Cards = texts since users open the SMS app.
+- **FIX:** Single source of truth `SMS_EVENT_TYPES` in `tasks.py` includes all SMS event types. Updated: daily tasks, performance dashboard, detail drilldown, leaderboard, engagement team stats.
+- **Impact:** Texts count 58 → 202 (144 card/link sends now counted). No double-counting in totals.
+- **Tested:** iteration 178 (12/12 passed)
