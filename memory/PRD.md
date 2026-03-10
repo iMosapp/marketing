@@ -372,5 +372,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **KEY PATTERN**: Every send uses `await` BEFORE opening native app. No fire-and-forget.
 - **Tested**: iterations 172 (15/15), 173 (11/11), 174 (35/35 + all frontend pages)
 
+### Session Persistence Fix (Mar 10, 2026)
+- **Cookie**: Set `secure=True` for HTTPS production
+- **Axios**: Added `withCredentials: true` for reliable cookie sending
+- **401 Auto-Restore**: Added response interceptor that tries cookie-based `/api/auth/me` session restore on 401 before logging out — prevents unnecessary logouts when AsyncStorage is cleared by iOS
+
+### Push Notifications — Live (Mar 10, 2026)
+- **Registration**: Push subscription now registers on app startup (was only on Performance page)
+- **Engagement Alerts**: When a customer views a card or engages, the salesperson gets a push notification
+- **New Lead Alerts**: When a demo request comes in, admins get a push notification
+- **Milestone Notifications**: Streak achievements, level ups, personal bests (was already built)
+- **Test Endpoint**: `POST /api/push/test/{userId}` for verifying push is working
+- **Service Worker**: `sw-push.js` handles incoming pushes and notification clicks
+- **Tested**: iteration 175 (13/13 backend, all frontend pages verified)
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
