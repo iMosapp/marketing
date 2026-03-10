@@ -310,7 +310,7 @@ async def _build_user_context(user_id: str) -> str:
     return "\n".join(parts)
 
 
-async def chat_with_jessie(user_id: str, user_message: str) -> dict:
+async def chat_with_jessie(user_id: str, user_message: str, current_page: str = "") -> dict:
     """
     Send a message to Jessi and get a response.
     v2: Passes history as context instead of replaying through LLM (10x faster).
@@ -321,9 +321,14 @@ async def chat_with_jessie(user_id: str, user_message: str) -> dict:
 
     session = await get_or_create_chat_session(user_id)
 
-    # Build context: knowledge base + user context + recent history
+    # Build context: knowledge base + user context + page context + recent history
     user_context = await _build_user_context(user_id)
     history = await get_chat_history(user_id, limit=8)
+
+    # Page context
+    page_context = ""
+    if current_page:
+        page_context = f"\n\n## CURRENT PAGE\nThe user is currently on: **{current_page}**. Tailor your help to this page when relevant."
 
     # Format history as text context (NOT replayed through LLM calls)
     history_text = ""
@@ -333,7 +338,7 @@ async def chat_with_jessie(user_id: str, user_message: str) -> dict:
             role_label = "User" if msg["role"] == "user" else "Jessi"
             history_text += f"{role_label}: {msg['content']}\n"
 
-    system_prompt = KNOWLEDGE_BASE + user_context + history_text
+    system_prompt = KNOWLEDGE_BASE + user_context + page_context + history_text
 
     # Single LLM call — no history replay
     chat = LlmChat(

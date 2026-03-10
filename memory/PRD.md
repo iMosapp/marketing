@@ -428,5 +428,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **FIX (Context):** Injects user-specific context (name, role, org, contact count, activity count) so Jessie gives personalized answers and knows whether the user has admin access.
 - **FIX (Frontend):** Text input now skips TTS generation (instant text response). Voice input still gets TTS.
 - **Model:** Switched from gpt-5.2 to gpt-4o-mini for faster responses (knowledge base compensates).
+
+### Jessie Floating Chat Button + Context-Aware Panel (Mar 10, 2026)
+- **Feature:** Persistent floating gold chat button (bottom-right, above tab bar) on every authenticated page
+- **Panel:** Slide-up chat panel with text input, message history, gold user bubbles
+- **Context-Aware:** Uses `usePathname()` to detect current page and inject it into the greeting and backend prompt (e.g., "I see you're on the Brand Kit Settings")
+- **Hidden on:** Auth pages, public pages (timeline, review, card), and the dedicated Jessie page
+- **Files:** `/app/frontend/components/JessieFloatingChat.tsx` (new), `/app/frontend/app/_layout.tsx` (import + render)
 - **Files:** `/app/backend/services/jessie_service.py` (complete rewrite), `/app/frontend/app/jessie.tsx` (TTS optimization)
 - **Tested:** iteration 178 (12/12 passed)

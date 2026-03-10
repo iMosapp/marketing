@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { ToastProvider } from '../components/common/Toast';
+import JessieFloatingChat from '../components/JessieFloatingChat';
 
 function usePWAMetaTags() {
   useEffect(() => {
@@ -97,6 +98,7 @@ export default function RootLayout() {
             <Stack.Screen name="review/[storeSlug]" />
             <Stack.Screen name="l/[username]" />
           </Stack>
+          <JessieFloatingChat />
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
