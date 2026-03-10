@@ -402,5 +402,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Frontend**: Stats bar shows Total Activities / Salesperson / Customer / Notes counts. Direction badges (blue "Salesperson", green "Customer") on each event. Message content displayed inline.
 - **Tested**: iteration 177 (17/17 backend tests passed, 100% frontend verified)
 
+### CRM Link iOS Share Sheet Bug Fix (Mar 10, 2026)
+- **PROBLEM:** iOS share sheet concatenated the `text` field ("Activity timeline for...") with the `url` when user selected "Copy", resulting in broken tokens with `%20Activity%20timeline%20f...` appended
+- **FIX (Frontend):** Removed `text` from `navigator.share()` — only sends `title` and `url` now
+- **FIX (Backend):** Added defensive token parsing — strips any trailing garbage after the UUID before DB lookup
+- **Result:** Both new clean links AND old broken links now work
+
+### "Show All Events" Button Fix (Mar 10, 2026)
+- **PROBLEM:** The "Show All X Events" button on the contact detail page only limited the FIRST date group to 5 events, but all subsequent date groups were always fully rendered. If the first group naturally had ≤5 events, clicking "Show All" had zero visible effect.
+- **FIX:** Replaced per-group limiting with a running total counter across all groups. Now exactly 5 events show when collapsed (across all date groups), and all events show when expanded.
+- **File:** `/app/frontend/app/contact/[id].tsx` lines 3042-3160
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`

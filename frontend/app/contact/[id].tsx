@@ -415,7 +415,6 @@ export default function ContactDetailScreen() {
         (getEventTitle(e)).toLowerCase().includes(feedQuery)
       )
     : events;
-  const visibleEvents = showAllEvents ? filteredEvents : filteredEvents.slice(0, INITIAL_EVENT_COUNT);
 
   // Modals
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -3040,9 +3039,19 @@ export default function ContactDetailScreen() {
                   </View>
                 ) : (
                   <View style={s.feedTimeline}>
-                    {eventDateGroups.map((group, gi) => {
+                    {(() => {
+                      let runningCount = 0;
+                      return eventDateGroups.map((group, gi) => {
                       const isCollapsed = collapsedDateGroups[group.label] === true;
-                      const groupEvents = showAllEvents ? group.events : (gi === 0 ? group.events.slice(0, INITIAL_EVENT_COUNT) : group.events);
+                      let groupEvents: typeof group.events;
+                      if (showAllEvents) {
+                        groupEvents = group.events;
+                      } else {
+                        const remaining = INITIAL_EVENT_COUNT - runningCount;
+                        if (remaining <= 0) return null;
+                        groupEvents = group.events.slice(0, remaining);
+                      }
+                      runningCount += groupEvents.length;
                       if (groupEvents.length === 0) return null;
                       return (
                         <View key={group.label}>
@@ -3146,7 +3155,8 @@ export default function ContactDetailScreen() {
                     })}
                         </View>
                       );
-                    })}
+                    });
+                    })()}
                     {filteredEvents.length > INITIAL_EVENT_COUNT && (
                       <TouchableOpacity
                         style={s.showMoreBtn}
