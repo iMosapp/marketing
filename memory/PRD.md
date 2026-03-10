@@ -440,6 +440,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Contact-Aware:** When opened from a contact record, Jessi fetches the contact's name, tags, last interaction date, recent activity, and pending tasks. She gives tag-specific advice (sold → thank-you card + review; hot lead → immediate follow-up; dormant → re-engagement). Also warns if contact hasn't been contacted in 7+ or 30+ days.
 - **Proactive Suggestions:** Context-driven nudges based on page + data: pending tasks, hot leads needing attention, unread messages, today's progress level.
 - **Files:** `/app/backend/services/jessie_service.py` (3 new context functions), `/app/frontend/components/JessieFloatingChat.tsx` (passes contact_id), `/app/backend/routers/jessie.py` (accepts contact_id)
+
+### Jessi Phase 3: Data Lookup Agent (Mar 10, 2026)
+- **Feature:** Jessi can now query the database in real-time based on the user's question. 7 lookup capabilities:
+  1. **Contact Search** — "Tell me about Sarah Johnson" → finds matching contacts with phone, email, tags
+  2. **Hot Leads** — "Who are my hot leads?" → lists all hot leads with last contact date
+  3. **Tasks** — "What tasks do I have?" → shows pending/overdue with priority and contact names
+  4. **Weekly/Monthly Stats** — "How did I do this week?" → real touchpoint breakdown
+  5. **Team Performance** — "How's my team doing?" → each member's touchpoint count (manager/admin only)
+  6. **Unread Messages** — "Any unread messages?" → lists unread conversations or confirms inbox is clear
+  7. **Dormant Contacts** — "Who am I neglecting?" → contacts with no activity in 14+ days
+- **How it works:** Keyword matching on the user's message triggers pre-fetch queries. Results are injected into the LLM system prompt. No extra LLM calls = no added latency.
+- **Lookups only — no write actions.** Jessi reads data but never modifies anything.
+- **File:** `/app/backend/services/jessie_service.py` — `_build_data_lookups()` function
 - **Files:** `/app/frontend/components/JessieFloatingChat.tsx` (new), `/app/frontend/app/_layout.tsx` (import + render)
 - **Files:** `/app/backend/services/jessie_service.py` (complete rewrite), `/app/frontend/app/jessie.tsx` (TTS optimization)
 - **Tested:** iteration 178 (12/12 passed)

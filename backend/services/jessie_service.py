@@ -415,8 +415,11 @@ async def _build_contact_context(contact_id: str, user_id: str) -> str:
         if recent:
             last_ts = recent[0].get("timestamp")
             if last_ts:
-                from datetime import timedelta
-                days_since = (datetime.now(timezone.utc) - last_ts).days if hasattr(last_ts, "date") else None
+                days_since = None
+                if hasattr(last_ts, "date"):
+                    if last_ts.tzinfo is None:
+                        last_ts = last_ts.replace(tzinfo=timezone.utc)
+                    days_since = (datetime.now(timezone.utc) - last_ts).days
                 if days_since is not None:
                     parts.append(f"- Last interaction: {days_since} day(s) ago")
                     if days_since > 7:
@@ -508,6 +511,241 @@ async def _build_proactive_suggestion(user_id: str, current_page: str) -> str:
     return "\n\n## PROACTIVE SUGGESTIONS (share these naturally when relevant)\n" + "\n".join(f"- {s}" for s in suggestions)
 
 
+async def _build_data_lookups(user_id: str, user_message: str, role: str = "user") -> str:
+    """
+    Phase 3: Action Agent — Data Lookups.
+    Analyze the user's message and pre-fetch any data they might be asking about.
+    Returns formatted data that gets injected into the system prompt.
+    """
+    db = get_db()
+    msg = user_message.lower()
+    sections = []
+
+    # ── 1. Contact search (name mentioned) ──
+    name_triggers = ["who is", "find", "look up", "lookup", "search for", "contact named",
+                     "about", "tell me about", "info on", "details on", "what do we know about"]
+    if any(t in msg for t in name_triggers):
+        # Extract potential name from message
+        search_term = msg
+        for t in name_triggers:
+            search_term = search_term.replace(t, "")
+        search_term = search_term.strip(" ?.,!")
+        if len(search_term) >= 2:
+            try:
+                regex = {"$regex": search_term, "$options": "i"}
+                contacts = await db.contacts.find(
+                    {"user_id": user_id, "$or": [
+                        {"first_name": regex}, {"last_name": regex},
+                        {"phone": regex}, {"email": regex},
+                    ]},
+                    {"_id": 0, "first_name": 1, "last_name": 1, "phone": 1,
+                     "email": 1, "tags": 1, "created_at": 1}
+                ).limit(5).to_list(5)
+                if contacts:
+                    section = [f"\n## DATA LOOKUP: Contact Search for '{search_term}' ({len(contacts)} result{'s' if len(contacts) != 1 else ''})"]
+                    for c in contacts:
+                        name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+                        tags = ", ".join(c.get("tags", [])) or "none"
+                        section.append(f"- **{name}** | Phone: {c.get('phone', 'n/a')} | Email: {c.get('email', 'n/a')} | Tags: {tags}")
+                    sections.append("\n".join(section))
+                else:
+                    sections.append(f"\n## DATA LOOKUP: No contacts found matching '{search_term}'")
+            except Exception:
+                pass
+
+    # ── 2. Hot leads list ──
+    if any(w in msg for w in ["hot lead", "hot leads", "active lead", "leads needing", "leads that need"]):
+        try:
+            leads = await db.contacts.find(
+                {"user_id": user_id, "tags": {"$in": ["hot lead", "hot_lead"]}},
+                {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "tags": 1}
+            ).limit(15).to_list(15)
+            total = await db.contacts.count_documents({"user_id": user_id, "tags": {"$in": ["hot lead", "hot_lead"]}})
+            section = [f"\n## DATA LOOKUP: Hot Leads ({total} total)"]
+            for lead in leads:
+                name = f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
+                cid = str(lead["_id"])
+                # Get last activity
+                last_evt = await db.contact_events.find_one(
+                    {"contact_id": cid, "user_id": user_id},
+                    {"_id": 0, "event_type": 1, "timestamp": 1}
+                )
+                last_str = ""
+                if last_evt and last_evt.get("timestamp"):
+                    ts = last_evt["timestamp"]
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    days = (datetime.now(timezone.utc) - ts).days
+                    last_str = f" | Last contact: {days}d ago ({last_evt.get('event_type', '')})"
+                section.append(f"- {name} ({lead.get('phone', 'n/a')}){last_str}")
+            sections.append("\n".join(section))
+        except Exception:
+            pass
+
+    # ── 3. Tasks (pending, overdue) ──
+    if any(w in msg for w in ["task", "tasks", "overdue", "follow up", "follow-up", "to do", "todo", "due"]):
+        try:
+            now = datetime.now(timezone.utc)
+            tasks = await db.tasks.find(
+                {"assigned_to": user_id, "status": {"$in": ["pending", "active"]}},
+                {"_id": 0, "title": 1, "description": 1, "due_date": 1,
+                 "priority": 1, "contact_id": 1, "type": 1, "status": 1}
+            ).sort("due_date", 1).limit(15).to_list(15)
+
+            overdue = [t for t in tasks if t.get("due_date") and t["due_date"] < now]
+            upcoming = [t for t in tasks if t not in overdue]
+
+            section = [f"\n## DATA LOOKUP: Tasks ({len(tasks)} pending, {len(overdue)} overdue)"]
+            if overdue:
+                section.append("**OVERDUE:**")
+                for t in overdue[:8]:
+                    name = ""
+                    if t.get("contact_id"):
+                        try:
+                            c = await db.contacts.find_one({"_id": ObjectId(t["contact_id"])}, {"first_name": 1, "last_name": 1, "_id": 0})
+                            if c:
+                                name = f" → {c.get('first_name', '')} {c.get('last_name', '')}".strip()
+                        except Exception:
+                            pass
+                    due = t["due_date"].strftime("%b %d") if hasattr(t.get("due_date"), "strftime") else "?"
+                    section.append(f"- [{t.get('priority', 'med').upper()}] {t.get('title', 'Untitled')}{name} (due {due})")
+            if upcoming:
+                section.append("**UPCOMING:**")
+                for t in upcoming[:7]:
+                    name = ""
+                    if t.get("contact_id"):
+                        try:
+                            c = await db.contacts.find_one({"_id": ObjectId(t["contact_id"])}, {"first_name": 1, "last_name": 1, "_id": 0})
+                            if c:
+                                name = f" → {c.get('first_name', '')} {c.get('last_name', '')}".strip()
+                        except Exception:
+                            pass
+                    due = t.get("due_date", "")
+                    due_str = due.strftime("%b %d") if hasattr(due, "strftime") else "no date"
+                    section.append(f"- {t.get('title', 'Untitled')}{name} (due {due_str})")
+            sections.append("\n".join(section))
+        except Exception:
+            pass
+
+    # ── 4. Weekly/monthly stats ──
+    if any(w in msg for w in ["this week", "this month", "weekly", "monthly", "week's", "month's", "last week", "past week"]):
+        try:
+            now = datetime.now(timezone.utc)
+            if "month" in msg:
+                start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                period = "This Month"
+            else:
+                start = (now - __import__('datetime').timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+                period = "This Week"
+
+            pipeline = [
+                {"$match": {"user_id": user_id, "timestamp": {"$gte": start}}},
+                {"$group": {"_id": "$event_type", "count": {"$sum": 1}}},
+            ]
+            events = {doc["_id"]: doc["count"] async for doc in db.contact_events.aggregate(pipeline)}
+            from routers.tasks import SMS_EVENT_TYPES
+            texts = sum(events.get(t, 0) for t in SMS_EVENT_TYPES)
+            calls = events.get("call_placed", 0)
+            emails = events.get("email_sent", 0) + events.get("email_failed", 0)
+            total = texts + calls + emails
+            unique_contacts = await db.contact_events.distinct(
+                "contact_id", {"user_id": user_id, "timestamp": {"$gte": start}}
+            )
+
+            section = [f"\n## DATA LOOKUP: Performance — {period}"]
+            section.append(f"- Total touchpoints: {total}")
+            section.append(f"- Texts sent: {texts}")
+            section.append(f"- Calls made: {calls}")
+            section.append(f"- Emails sent: {emails}")
+            section.append(f"- Unique contacts reached: {len(unique_contacts)}")
+            sections.append("\n".join(section))
+        except Exception:
+            pass
+
+    # ── 5. Team performance (manager/admin only) ──
+    if any(w in msg for w in ["team", "everyone", "staff", "member", "who's", "who is leading", "leaderboard"]):
+        if role in ("admin", "super_admin", "manager"):
+            try:
+                user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"organization_id": 1})
+                org_id = user_doc.get("organization_id") if user_doc else None
+                if org_id:
+                    team = await db.users.find(
+                        {"organization_id": org_id, "is_active": {"$ne": False}},
+                        {"_id": 1, "name": 1, "role": 1}
+                    ).to_list(50)
+                    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                    section = [f"\n## DATA LOOKUP: Team Performance Today ({len(team)} members)"]
+                    team_stats = []
+                    for member in team:
+                        mid = str(member["_id"])
+                        count = await db.contact_events.count_documents({
+                            "user_id": mid, "timestamp": {"$gte": today_start}
+                        })
+                        team_stats.append((member.get("name", "Unknown"), member.get("role", ""), count))
+                    team_stats.sort(key=lambda x: x[2], reverse=True)
+                    for name, mrole, count in team_stats:
+                        section.append(f"- {name} ({mrole}): {count} touchpoints today")
+                    sections.append("\n".join(section))
+            except Exception:
+                pass
+
+    # ── 6. Unread messages ──
+    if any(w in msg for w in ["unread", "new message", "inbox", "waiting", "who messaged", "who texted"]):
+        try:
+            convs = await db.conversations.find(
+                {"user_id": user_id, "unread_count": {"$gt": 0}},
+                {"_id": 0, "contact_id": 1, "unread_count": 1, "last_message_at": 1}
+            ).sort("last_message_at", -1).limit(10).to_list(10)
+            if convs:
+                section = [f"\n## DATA LOOKUP: Unread Conversations ({len(convs)})"]
+                for cv in convs:
+                    cname = "Unknown"
+                    if cv.get("contact_id"):
+                        try:
+                            c = await db.contacts.find_one(
+                                {"_id": ObjectId(cv["contact_id"])},
+                                {"first_name": 1, "last_name": 1, "_id": 0}
+                            )
+                            if c:
+                                cname = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+                        except Exception:
+                            pass
+                    section.append(f"- {cname}: {cv.get('unread_count', 0)} unread")
+                sections.append("\n".join(section))
+            else:
+                sections.append("\n## DATA LOOKUP: No unread messages — inbox is clear!")
+        except Exception:
+            pass
+
+    # ── 7. Dormant / neglected contacts ──
+    if any(w in msg for w in ["dormant", "neglect", "haven't contacted", "cold", "inactive", "need attention"]):
+        try:
+            from datetime import timedelta
+            cutoff = datetime.now(timezone.utc) - timedelta(days=14)
+            # Find contacts with no recent activity
+            active_contacts = await db.contact_events.distinct(
+                "contact_id", {"user_id": user_id, "timestamp": {"$gte": cutoff}}
+            )
+            dormant = await db.contacts.find(
+                {"user_id": user_id, "_id": {"$nin": [ObjectId(c) for c in active_contacts if len(c) == 24]}},
+                {"_id": 0, "first_name": 1, "last_name": 1, "tags": 1, "phone": 1}
+            ).limit(10).to_list(10)
+            if dormant:
+                section = [f"\n## DATA LOOKUP: Contacts with No Activity in 14+ Days ({len(dormant)} shown)"]
+                for d in dormant:
+                    name = f"{d.get('first_name', '')} {d.get('last_name', '')}".strip()
+                    tags = ", ".join(d.get("tags", [])) or "none"
+                    section.append(f"- {name} | Tags: {tags}")
+                sections.append("\n".join(section))
+        except Exception:
+            pass
+
+    if not sections:
+        return ""
+    header = "\n\n## LIVE DATA LOOKUPS (Jessi retrieved this data — present it naturally, don't say 'according to the database')"
+    return header + "\n".join(sections)
+
+
 async def chat_with_jessie(user_id: str, user_message: str, current_page: str = "", contact_id: str = "") -> dict:
     """
     Send a message to Jessi and get a response.
@@ -519,11 +757,18 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
         raise ValueError("EMERGENT_LLM_KEY not configured")
 
     session = await get_or_create_chat_session(user_id)
+    db = get_db()
 
-    # Build context: knowledge base + user context + contact context + proactive + history
+    # Build context: knowledge base + user context + contact context + data lookups + proactive + history
     user_context = await _build_user_context(user_id)
     contact_context = await _build_contact_context(contact_id, user_id) if contact_id else ""
     proactive = await _build_proactive_suggestion(user_id, current_page) if current_page else ""
+
+    # Phase 3: Data lookups based on user's question
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1})
+    user_role = user_doc.get("role", "user") if user_doc else "user"
+    data_lookups = await _build_data_lookups(user_id, user_message, role=user_role)
+
     history = await get_chat_history(user_id, limit=8)
 
     # Page context
@@ -539,7 +784,7 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
             role_label = "User" if msg["role"] == "user" else "Jessi"
             history_text += f"{role_label}: {msg['content']}\n"
 
-    system_prompt = KNOWLEDGE_BASE + user_context + contact_context + page_context + proactive + history_text
+    system_prompt = KNOWLEDGE_BASE + user_context + contact_context + page_context + data_lookups + proactive + history_text
 
     # Single LLM call — no history replay
     chat = LlmChat(
