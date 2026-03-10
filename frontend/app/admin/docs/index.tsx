@@ -122,7 +122,12 @@ export default function DocsHubScreen() {
   const seedDocs = async () => {
     try {
       const headers = { 'X-User-ID': user?._id };
+      // Seed base docs
       await api.post('/docs/seed', {}, { headers });
+      // Also seed/update the operations manual
+      try { await api.post('/docs/seed-project-scope', {}, { headers }); } catch {}
+      // Generate Articles of Incorporation if not already present
+      try { await api.post('/docs/generate-articles-of-incorporation', {}, { headers }); } catch {}
       loadData();
     } catch (error) {
       console.error('Failed to seed docs:', error);
@@ -440,20 +445,23 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   filterScrollContainer: {
     marginBottom: 8,
-    maxHeight: 44,
+    maxHeight: 48,
+    minHeight: 48,
   },
   filterContainer: {
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 48,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    height: 36,
+    minWidth: 56,
+    borderRadius: 18,
     backgroundColor: colors.card,
     gap: 6,
     marginRight: 8,
@@ -461,7 +469,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   filterChipActive: {},
   filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   filterChipTextActive: { color: colors.text },
-  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  listContent: { paddingHorizontal: 12, paddingBottom: 32 },
   // Modern category card header
   categoryCard: {
     flexDirection: 'row',

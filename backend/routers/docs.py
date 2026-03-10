@@ -444,15 +444,15 @@ async def seed_nda(x_user_id: str = Header(None, alias="X-User-ID")):
 
 @router.post("/seed")
 async def seed_docs(x_user_id: str = Header(None, alias="X-User-ID")):
-    """Seed all company documents - super_admin only"""
+    """Seed all company documents - super_admin only. Clears existing and re-seeds."""
     user = await verify_admin_access(x_user_id)
     if user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Super admin only")
 
     db = get_db()
-    count = await db.company_docs.count_documents({})
-    if count > 0:
-        return {"message": f"Docs already seeded ({count} found). Delete to re-seed."}
+    # Clear existing seeded docs (but keep AI-generated ones like Articles of Incorporation)
+    await db.company_docs.delete_many({"slug": {"$nin": ["articles-of-incorporation"]}})
+    logger.info("Cleared existing docs for re-seed")
 
     now = datetime.utcnow()
 
@@ -927,6 +927,110 @@ def _build_pdf_bytes(doc: dict) -> bytes:
             pdf.ln(2)
 
     return bytes(pdf.output())
+
+
+
+@router.post("/generate-articles-of-incorporation")
+async def generate_articles_of_incorporation(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Generate Articles of Incorporation for an LLC and save as a company doc."""
+    user = await verify_admin_access(x_user_id)
+    if user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    db = get_db()
+    now = datetime.utcnow()
+
+    # Delete existing if present (allows regeneration)
+    await db.company_docs.delete_many({"slug": "articles-of-incorporation"})
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import uuid
+
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="AI service not configured")
+
+        prompt = """Generate professional Articles of Incorporation for a Utah LLC with these details:
+
+Company: i'M On Social LLC
+Business: SaaS - AI-powered Relationship Management System for automotive dealerships
+Address: 1741 Lunford Ln, Riverton, UT 84065  
+State: Utah
+Contact: forest@imonsocial.com
+
+The platform helps dealership salespeople manage customer relationships with SMS, email, digital business cards, activity tracking, leaderboards, and AI assistants.
+
+Return ONLY a JSON array of objects. Each object has "title" and "description" keys. Generate exactly 10 articles covering: Company Name, Purpose, Duration, Registered Agent, Management, Member Interests, Indemnification, Amendments, Dissolution, Governing Law.
+
+Example format:
+[{"title": "Article I - Name", "description": "The name of the company is..."}]
+
+Return ONLY valid JSON, no markdown code fences."""
+
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=str(uuid.uuid4()),
+            system_message="You are a legal document generator. Output ONLY valid JSON arrays, no markdown.",
+        ).with_model("openai", "gpt-4o-mini")
+
+        response = await chat.send_message(UserMessage(text=prompt))
+        ai_text = str(response).strip()
+
+        # Clean markdown fences if present
+        if ai_text.startswith("```"):
+            ai_text = re.sub(r'^```(?:json)?\s*', '', ai_text)
+            ai_text = re.sub(r'\s*```$', '', ai_text)
+
+        import json as json_mod
+        slides = []
+        try:
+            sections = json_mod.loads(ai_text)
+            for i, sec in enumerate(sections):
+                slides.append({
+                    "order": i + 1,
+                    "title": sec.get("title", f"Article {i+1}"),
+                    "description": sec.get("description", ""),
+                })
+        except json_mod.JSONDecodeError:
+            # Fallback: split by common patterns
+            parts = re.split(r'\n(?=(?:Article|ARTICLE)\s+[IVXLCDM]+)', ai_text)
+            for i, part in enumerate(parts):
+                part = part.strip()
+                if not part:
+                    continue
+                lines = part.split('\n', 1)
+                title = lines[0].replace('**', '').replace('#', '').strip()
+                desc = lines[1].strip() if len(lines) > 1 else part
+                slides.append({"order": i + 1, "title": title, "description": desc})
+
+        if not slides:
+            slides = [{"order": 1, "title": "Articles of Incorporation", "description": ai_text}]
+
+        doc = {
+            "title": "Articles of Incorporation - i'M On Social LLC",
+            "summary": "Articles of Incorporation for i'M On Social LLC, a Utah limited liability company operating an AI-powered Relationship Management System.",
+            "category": "legal",
+            "icon": "document-text",
+            "sort_order": 1,
+            "version": "1.0",
+            "last_reviewed": now.isoformat(),
+            "is_published": True,
+            "slug": "articles-of-incorporation",
+            "slides": slides,
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        result = await db.company_docs.insert_one(doc)
+        return {"message": "Articles of Incorporation generated and saved", "id": str(result.inserted_id), "slides_count": len(slides)}
+
+    except ImportError:
+        raise HTTPException(status_code=500, detail="AI library not available")
+    except Exception as e:
+        logger.error(f"Failed to generate Articles of Incorporation: {e}")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
 
 
 @router.get("/{doc_id}/export-pdf")

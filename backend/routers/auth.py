@@ -824,6 +824,22 @@ async def get_user(user_id: str):
     user['_id'] = str(user['_id'])
     user.pop('password', None)
     
+    # Enrich with store info (slug, name) for review link generation
+    if user.get('store_id'):
+        try:
+            store = await get_db().stores.find_one(
+                {"_id": ObjectId(str(user['store_id']))},
+                {"slug": 1, "name": 1}
+            )
+            if store:
+                user['store'] = {
+                    "slug": store.get('slug', ''),
+                    "name": store.get('name', ''),
+                }
+                user['store_slug'] = store.get('slug', '')
+        except Exception:
+            pass
+    
     return user
 
 @router.put("/user/{user_id}")
