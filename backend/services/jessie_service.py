@@ -269,7 +269,7 @@ async def get_chat_history(user_id: str, limit: int = 20) -> list:
 
 
 async def _build_user_context(user_id: str) -> str:
-    """Fetch user info for personalized context injection."""
+    """Fetch user info + live stats for personalized context injection."""
     db = get_db()
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "password": 0, "password_hash": 0})
@@ -293,7 +293,7 @@ async def _build_user_context(user_id: str) -> str:
     contact_count = await db.contacts.count_documents({"user_id": user_id})
     event_count = await db.contact_events.count_documents({"user_id": user_id})
 
-    parts = [f"\n\n## CURRENT USER CONTEXT"]
+    parts = ["\n\n## CURRENT USER CONTEXT"]
     parts.append(f"- Name: {name}")
     parts.append(f"- Role: {role}")
     if org_name:
@@ -306,14 +306,213 @@ async def _build_user_context(user_id: str) -> str:
         parts.append("- Has access to manager features (team dashboard, reports, manage team)")
     else:
         parts.append("- Standard user role — if they ask about admin features, tell them to contact their manager")
-    parts.append(f"\nAddress this user as {name}. Be personalized and helpful.")
+
+    # ── LIVE STATS: Today's touchpoints ──
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        pipeline = [
+            {"$match": {"user_id": user_id, "timestamp": {"$gte": today_start}}},
+            {"$group": {"_id": "$event_type", "count": {"$sum": 1}}},
+        ]
+        today_events = {doc["_id"]: doc["count"] async for doc in db.contact_events.aggregate(pipeline)}
+
+        sms_types = [
+            "personal_sms", "sms_sent", "sms_personal", "sms_failed",
+            "congrats_card_sent", "birthday_card_sent", "holiday_card_sent",
+            "thank_you_card_sent", "thankyou_card_sent", "anniversary_card_sent",
+            "welcome_card_sent", "digital_card_sent", "digital_card_shared",
+            "card_shared", "vcard_sent", "review_request_sent", "review_shared",
+            "review_invite_sent", "link_page_shared", "showcase_shared", "showroom_shared",
+        ]
+        texts_today = sum(today_events.get(t, 0) for t in sms_types)
+        calls_today = today_events.get("call_placed", 0)
+        emails_today = today_events.get("email_sent", 0) + today_events.get("email_failed", 0)
+
+        parts.append("\n### Today's Activity (live)")
+        parts.append(f"- Texts sent today: {texts_today}")
+        parts.append(f"- Calls made today: {calls_today}")
+        parts.append(f"- Emails sent today: {emails_today}")
+    except Exception:
+        pass
+
+    # ── LIVE STATS: Pending tasks ──
+    try:
+        pending_tasks = await db.tasks.count_documents({
+            "assigned_to": user_id,
+            "status": {"$in": ["pending", "active"]},
+        })
+        overdue_tasks = await db.tasks.count_documents({
+            "assigned_to": user_id,
+            "status": {"$in": ["pending", "active"]},
+            "due_date": {"$lt": datetime.now(timezone.utc)},
+        })
+        parts.append(f"- Pending tasks: {pending_tasks}")
+        if overdue_tasks:
+            parts.append(f"- OVERDUE tasks: {overdue_tasks} (mention this proactively!)")
+    except Exception:
+        pass
+
+    # ── LIVE STATS: Unread messages ──
+    try:
+        unread = await db.conversations.count_documents({
+            "user_id": user_id,
+            "unread_count": {"$gt": 0},
+        })
+        if unread > 0:
+            parts.append(f"- Unread conversations: {unread}")
+    except Exception:
+        pass
+
+    # ── LIVE STATS: Hot leads ──
+    try:
+        hot_leads = await db.contacts.count_documents({
+            "user_id": user_id,
+            "tags": {"$in": ["hot lead", "hot_lead"]},
+        })
+        if hot_leads > 0:
+            parts.append(f"- Hot leads requiring attention: {hot_leads}")
+    except Exception:
+        pass
+
+    parts.append(f"\nAddress this user as {name}. Use their live stats to give proactive, personalized suggestions.")
     return "\n".join(parts)
 
 
-async def chat_with_jessie(user_id: str, user_message: str, current_page: str = "") -> dict:
+async def _build_contact_context(contact_id: str, user_id: str) -> str:
+    """When user is on a contact record, fetch that contact's details for deep context."""
+    if not contact_id:
+        return ""
+    db = get_db()
+    try:
+        contact = await db.contacts.find_one(
+            {"_id": ObjectId(contact_id), "user_id": user_id},
+            {"_id": 0, "password": 0}
+        )
+    except Exception:
+        return ""
+    if not contact:
+        return ""
+
+    name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or "Unknown"
+    tags = contact.get("tags", [])
+    phone = contact.get("phone", "")
+    email = contact.get("email", "")
+    created = contact.get("created_at")
+    created_str = created.strftime("%b %d, %Y") if hasattr(created, "strftime") else str(created or "unknown")
+
+    parts = [f"\n\n## CONTACT BEING VIEWED: {name}"]
+    parts.append(f"- Phone: {phone or 'not set'}")
+    parts.append(f"- Email: {email or 'not set'}")
+    parts.append(f"- Tags: {', '.join(tags) if tags else 'none'}")
+    parts.append(f"- Customer since: {created_str}")
+
+    # Recent activity for this contact
+    try:
+        recent = await db.contact_events.find(
+            {"contact_id": str(contact_id), "user_id": user_id},
+            {"_id": 0, "event_type": 1, "timestamp": 1}
+        ).sort("timestamp", -1).limit(5).to_list(5)
+        if recent:
+            last_ts = recent[0].get("timestamp")
+            if last_ts:
+                from datetime import timedelta
+                days_since = (datetime.now(timezone.utc) - last_ts).days if hasattr(last_ts, "date") else None
+                if days_since is not None:
+                    parts.append(f"- Last interaction: {days_since} day(s) ago")
+                    if days_since > 7:
+                        parts.append("  ⚠ It's been over a week — suggest a follow-up!")
+                    if days_since > 30:
+                        parts.append("  ⚠ Over a month with no contact — this customer may be going cold!")
+            parts.append(f"- Recent activity ({len(recent)} most recent):")
+            for ev in recent[:5]:
+                parts.append(f"  • {ev.get('event_type', '?')}")
+        else:
+            parts.append("- No activity recorded yet — suggest making first contact!")
+    except Exception:
+        pass
+
+    # Check for tasks related to this contact
+    try:
+        contact_tasks = await db.tasks.count_documents({
+            "contact_id": str(contact_id),
+            "user_id": user_id,
+            "status": {"$in": ["pending", "active"]},
+        })
+        if contact_tasks:
+            parts.append(f"- Pending tasks for this contact: {contact_tasks}")
+    except Exception:
+        pass
+
+    # Tag-specific suggestions
+    if "sold" in tags:
+        parts.append("\nThis customer has PURCHASED. Suggest: thank-you card, review request, referral ask, or check-in in 2 weeks.")
+    elif "hot lead" in tags or "hot_lead" in tags:
+        parts.append("\nThis is a HOT LEAD. Suggest: immediate follow-up call or text, schedule a test drive, address any concerns.")
+    elif "be-back" in tags or "be_back" in tags:
+        parts.append("\nThis is a BE-BACK customer. Suggest: friendly check-in, share new inventory, offer to answer questions.")
+    elif "dormant" in tags:
+        parts.append("\nThis customer is DORMANT. Suggest: re-engagement text, share something personal, or a holiday card.")
+
+    parts.append("\nUse this contact info naturally. If the user asks what to do next, give specific, actionable advice based on the tags and activity history.")
+    return "\n".join(parts)
+
+
+async def _build_proactive_suggestion(user_id: str, current_page: str) -> str:
+    """Generate a proactive suggestion based on the page and user data."""
+    db = get_db()
+    suggestions = []
+
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    try:
+        # Check pending tasks
+        pending = await db.tasks.count_documents({
+            "assigned_to": user_id,
+            "status": {"$in": ["pending", "active"]},
+        })
+        if pending > 0 and "home" in current_page.lower():
+            suggestions.append(f"You have {pending} pending task{'s' if pending != 1 else ''}. Consider starting with your highest-priority follow-ups.")
+
+        # Check hot leads
+        hot = await db.contacts.count_documents({
+            "user_id": user_id,
+            "tags": {"$in": ["hot lead", "hot_lead"]},
+        })
+        if hot > 0:
+            suggestions.append(f"You have {hot} hot lead{'s' if hot != 1 else ''} that may need attention today.")
+
+        # Check unread
+        unread = await db.conversations.count_documents({
+            "user_id": user_id,
+            "unread_count": {"$gt": 0},
+        })
+        if unread > 0:
+            suggestions.append(f"You have {unread} unread conversation{'s' if unread != 1 else ''} waiting in your inbox.")
+
+        # Check today's progress
+        today_total = await db.contact_events.count_documents({
+            "user_id": user_id,
+            "timestamp": {"$gte": today_start},
+        })
+        if today_total == 0:
+            suggestions.append("No touchpoints logged yet today — time to get started! A quick text or call goes a long way.")
+        elif today_total < 10:
+            suggestions.append(f"You've logged {today_total} touchpoint{'s' if today_total != 1 else ''} today. Keep the momentum going!")
+
+    except Exception:
+        pass
+
+    if not suggestions:
+        return ""
+
+    return "\n\n## PROACTIVE SUGGESTIONS (share these naturally when relevant)\n" + "\n".join(f"- {s}" for s in suggestions)
+
+
+async def chat_with_jessie(user_id: str, user_message: str, current_page: str = "", contact_id: str = "") -> dict:
     """
     Send a message to Jessi and get a response.
     v2: Passes history as context instead of replaying through LLM (10x faster).
+    v2.1: Live stats, contact awareness, and proactive suggestions.
     """
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
@@ -321,8 +520,10 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
 
     session = await get_or_create_chat_session(user_id)
 
-    # Build context: knowledge base + user context + page context + recent history
+    # Build context: knowledge base + user context + contact context + proactive + history
     user_context = await _build_user_context(user_id)
+    contact_context = await _build_contact_context(contact_id, user_id) if contact_id else ""
+    proactive = await _build_proactive_suggestion(user_id, current_page) if current_page else ""
     history = await get_chat_history(user_id, limit=8)
 
     # Page context
@@ -338,7 +539,7 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
             role_label = "User" if msg["role"] == "user" else "Jessi"
             history_text += f"{role_label}: {msg['content']}\n"
 
-    system_prompt = KNOWLEDGE_BASE + user_context + page_context + history_text
+    system_prompt = KNOWLEDGE_BASE + user_context + contact_context + page_context + proactive + history_text
 
     # Single LLM call — no history replay
     chat = LlmChat(

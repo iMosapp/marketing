@@ -16,6 +16,7 @@ class ChatMessage(BaseModel):
     message: str
     include_voice: bool = False
     current_page: str = ""
+    contact_id: str = ""
 
 
 class VoiceMessage(BaseModel):
@@ -33,7 +34,7 @@ async def chat_with_jessie(data: ChatMessage):
     
     try:
         # Get Jessi's text response
-        result = await jessie_chat(data.user_id, data.message, current_page=data.current_page)
+        result = await jessie_chat(data.user_id, data.message, current_page=data.current_page, contact_id=data.contact_id)
         
         response = {
             "text": result["text"],

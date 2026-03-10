@@ -107,6 +107,9 @@ export default function JessieFloatingChat() {
 
   const pageLabel = getPageLabel(pathname);
 
+  // Extract contact_id from pathname if on a contact record
+  const contactId = pathname.includes('/contact/') ? pathname.split('/contact/')[1]?.split('/')[0] || '' : '';
+
   const sendMessage = async () => {
     const msg = input.trim();
     if (!msg || loading) return;
@@ -120,6 +123,7 @@ export default function JessieFloatingChat() {
         message: msg,
         include_voice: false,
         current_page: pageLabel || pathname,
+        contact_id: contactId,
       }, { timeout: 30000 });
 
       setMessages((prev) => [...prev, { role: 'assistant', text: res.data.text }]);

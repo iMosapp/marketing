@@ -434,6 +434,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Panel:** Slide-up chat panel with text input, message history, gold user bubbles
 - **Context-Aware:** Uses `usePathname()` to detect current page and inject it into the greeting and backend prompt (e.g., "I see you're on the Brand Kit Settings")
 - **Hidden on:** Auth pages, public pages (timeline, review, card), and the dedicated Jessie page
+
+### Jessi Phase 2: Live Data Awareness (Mar 10, 2026)
+- **Live Stats Injection:** Jessi now pulls today's real-time touchpoint data (texts, calls, emails), pending/overdue tasks, unread conversations, and hot lead count. She references these naturally ("You've sent 52 texts today, have 15 hot leads needing attention").
+- **Contact-Aware:** When opened from a contact record, Jessi fetches the contact's name, tags, last interaction date, recent activity, and pending tasks. She gives tag-specific advice (sold → thank-you card + review; hot lead → immediate follow-up; dormant → re-engagement). Also warns if contact hasn't been contacted in 7+ or 30+ days.
+- **Proactive Suggestions:** Context-driven nudges based on page + data: pending tasks, hot leads needing attention, unread messages, today's progress level.
+- **Files:** `/app/backend/services/jessie_service.py` (3 new context functions), `/app/frontend/components/JessieFloatingChat.tsx` (passes contact_id), `/app/backend/routers/jessie.py` (accepts contact_id)
 - **Files:** `/app/frontend/components/JessieFloatingChat.tsx` (new), `/app/frontend/app/_layout.tsx` (import + render)
 - **Files:** `/app/backend/services/jessie_service.py` (complete rewrite), `/app/frontend/app/jessie.tsx` (TTS optimization)
 - **Tested:** iteration 178 (12/12 passed)
