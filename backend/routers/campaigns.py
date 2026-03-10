@@ -475,9 +475,44 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
 
 @router.get("/{user_id}", response_model=List[Campaign])
 async def get_campaigns(user_id: str):
-    """Get campaigns for a specific user (always scoped to the user, not store/org-wide)"""
-    campaigns = await get_db().campaigns.find({"user_id": user_id}).limit(500).to_list(500)
-    return [Campaign(**{**camp, "_id": str(camp["_id"])}) for camp in campaigns]
+    """Get campaigns for a user: their own + store-level campaigns they should see."""
+    db = get_db()
+    user = await get_user_by_id(user_id)
+    
+    # Build query: user's own campaigns OR store-level campaigns from their store
+    conditions = [{"user_id": user_id}]
+    
+    if user:
+        store_id = user.get("store_id")
+        if not store_id and user.get("store_ids"):
+            store_id = user.get("store_ids", [None])[0]
+        if store_id:
+            # Include store-level campaigns from any user in the same store
+            store_user_ids = []
+            async for u in db.users.find({"store_id": store_id}, {"_id": 1}):
+                store_user_ids.append(str(u["_id"]))
+            if store_user_ids:
+                conditions.append({
+                    "user_id": {"$in": store_user_ids},
+                    "ownership_level": "store"
+                })
+    
+    campaigns = await db.campaigns.find({"$or": conditions}).limit(500).to_list(500)
+    
+    # Deduplicate by name+type (prefer user's own over store-level)
+    seen = {}
+    result = []
+    for camp in campaigns:
+        key = (camp.get("name"), camp.get("type"))
+        if key not in seen:
+            seen[key] = camp
+            result.append(camp)
+        elif camp.get("user_id") == user_id:
+            # User's own version takes priority
+            idx = next(i for i, c in enumerate(result) if (c.get("name"), c.get("type")) == key)
+            result[idx] = camp
+    
+    return [Campaign(**{**camp, "_id": str(camp["_id"])}) for camp in result]
 
 # ============= PENDING SENDS (Manual Campaigns) =============
 # NOTE: These routes MUST be above /{user_id}/{campaign_id} to avoid route collision.
