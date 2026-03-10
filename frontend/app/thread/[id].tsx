@@ -628,8 +628,9 @@ export default function ThreadScreen() {
     const hasTwilioNumber = !!(user as any).mvpline_number;
     const isPersonalSMS = messageMode === 'sms' && !hasTwilioNumber;
     
-    // PERSONAL SMS FLOW: Special handling because opening sms: navigates away from the browser.
-    // We use fetch with keepalive:true so the API call completes even as Safari goes to background.
+    // PERSONAL SMS FLOW: Log the event reliably BEFORE opening native SMS.
+    // Previous approach used raw fetch+keepalive which iOS PWA kills on navigation.
+    // Now we await the API call first, then open SMS.
     if (isPersonalSMS && contactPhone) {
       // Optimistic UI update
       const optimisticMessage: Message = {
@@ -646,47 +647,87 @@ export default function ThreadScreen() {
       setShowAISuggestion(false);
       setSending(true);
       
-      // Build message payload
-      const convId = actualConversationId || conversationId;
-      const messagePayload: any = {
-        conversation_id: convId,
-        content: contentToSend,
-        channel: 'sms_personal',
-      };
-      if (pendingEventType) messagePayload.event_type = pendingEventType;
-      if (selectedTemplateInfo) {
-        messagePayload.template_id = selectedTemplateInfo.template_id;
-        messagePayload.template_type = selectedTemplateInfo.template_type;
-        messagePayload.template_name = selectedTemplateInfo.template_name;
+      // 1. Ensure we have a valid CONVERSATION ID (not a contact ID)
+      let convId = actualConversationId;
+      if (!convId) {
+        try {
+          const convRes = await api.post(`/messages/conversations/${user._id}`, {
+            contact_id: id,
+            contact_phone: contactPhone,
+          });
+          convId = convRes.data._id;
+          setActualConversationId(convId);
+        } catch (e) {
+          console.error('Failed to ensure conversation:', e);
+        }
       }
       
-      // Fire API call with keepalive  - this ensures the request completes
-      // even when the browser navigates away to the native SMS app
-      const apiBase = Platform.OS === 'web' ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
-      try {
-        fetch(`${apiBase}/messages/send/${user._id}/${convId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(messagePayload),
-          keepalive: true,
-        }).catch(() => {});
-      } catch {}
+      // 2. Log event + save message via the regular API (awaited = guaranteed)
+      let eventLogged = false;
+      if (convId) {
+        const messagePayload: any = {
+          conversation_id: convId,
+          content: contentToSend,
+          channel: 'sms_personal',
+        };
+        if (pendingEventType) messagePayload.event_type = pendingEventType;
+        if (selectedTemplateInfo) {
+          messagePayload.template_id = selectedTemplateInfo.template_id;
+          messagePayload.template_type = selectedTemplateInfo.template_type;
+          messagePayload.template_name = selectedTemplateInfo.template_name;
+        }
+        try {
+          await api.post(`/messages/send/${user._id}/${convId}`, messagePayload);
+          eventLogged = true;
+        } catch (e) {
+          console.error('Messages send failed, will use fallback:', e);
+        }
+      }
       
-      // Copy message to clipboard (best-effort)
+      // 3. Fallback: if main send failed, log event directly via contact_events
+      if (!eventLogged) {
+        const cid = contactIdForNav || (id as string);
+        if (cid) {
+          const apiBase = IS_WEB ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
+          const eventPayload = JSON.stringify({
+            event_type: pendingEventType || 'personal_sms',
+            title: 'SMS Sent',
+            description: `Sent SMS to ${contactName}`,
+            channel: 'sms_personal',
+            category: 'message',
+          });
+          // Use sendBeacon (most reliable for pre-navigation), with fetch fallback
+          try {
+            if (IS_WEB && typeof navigator !== 'undefined' && navigator.sendBeacon) {
+              const blob = new Blob([eventPayload], { type: 'application/json' });
+              navigator.sendBeacon(`${apiBase}/contacts/${user._id}/${cid}/events`, blob);
+            } else {
+              fetch(`${apiBase}/contacts/${user._id}/${cid}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: eventPayload,
+                keepalive: true,
+              }).catch(() => {});
+            }
+          } catch {}
+        }
+      }
+      
+      // 4. Copy message to clipboard (best-effort)
       try {
-        if (Platform.OS === 'web' && navigator.clipboard) {
+        if (IS_WEB && navigator.clipboard) {
           navigator.clipboard.writeText(contentToSend).catch(() => {});
         }
       } catch {}
       
-      // Open native SMS app  - this navigates away from the browser
+      // 5. Open native SMS app — this navigates away from the browser
       const isIOS = /iPad|iPhone|iPod|Macintosh/.test(
-        Platform.OS === 'web' ? navigator.userAgent : ''
+        IS_WEB ? navigator.userAgent : ''
       );
       const separator = isIOS ? '&' : '?';
       const smsUrl = `sms:${contactPhone}${separator}body=${encodeURIComponent(contentToSend)}`;
       
-      if (Platform.OS === 'web') {
+      if (IS_WEB) {
         const a = document.createElement('a');
         a.href = smsUrl;
         a.target = '_self';
@@ -700,7 +741,7 @@ export default function ThreadScreen() {
       setSelectedTemplateInfo(null);
       setPendingEventType(null);
       setSending(false);
-      return; // Exit early  - regular await flow won't work since we navigated away
+      return;
     }
     
     // REGULAR FLOW: Email, Twilio SMS, etc. (no page navigation)
