@@ -456,3 +456,33 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Files:** `/app/frontend/components/JessieFloatingChat.tsx` (new), `/app/frontend/app/_layout.tsx` (import + render)
 - **Files:** `/app/backend/services/jessie_service.py` (complete rewrite), `/app/frontend/app/jessie.tsx` (TTS optimization)
 - **Tested:** iteration 178 (12/12 passed)
+
+
+### Bug Fix: Dead Review Link on Digital Card (Mar 10, 2026)
+- **PROBLEM:** After submitting an internal review on a congrats card page, the "Leave an online review" link did nothing. The `storeSlug` was always null because `GET /api/auth/user/{user_id}` didn't include store info.
+- **FIX:** Enriched the `/api/auth/user/{user_id}` endpoint to include `store` object (slug, name) by querying the stores collection when `store_id` is present.
+- **File:** `/app/backend/routers/auth.py` lines 817-843
+
+### Bug Fix: Company Docs "Load Documents" Button (Mar 10, 2026)
+- **PROBLEM:** The seed endpoint returned "Docs already seeded" and refused to re-seed when docs existed. Pressing "Load Documents" appeared to do nothing.
+- **FIX:** Changed the seed endpoint to always clear existing seeded docs and re-seed. AI-generated docs (Articles of Incorporation) are preserved.
+- **File:** `/app/backend/routers/docs.py` line 446
+
+### Feature: AI-Generated Articles of Incorporation (Mar 10, 2026)
+- **Feature:** New `POST /api/docs/generate-articles-of-incorporation` endpoint uses OpenAI via emergentintegrations to generate a professional 10-section Articles of Incorporation document specific to i'M On Social LLC.
+- **Integration:** Uses `LlmChat` with gpt-4o-mini, outputs JSON array for reliable parsing into slides.
+- **File:** `/app/backend/routers/docs.py` line 933
+
+### Bug Fix: Company Docs Category Pills Jumping (Mar 10, 2026)
+- **PROBLEM:** Category filter chips in the Company Docs page had inconsistent sizes, causing them to jump around when scrolling or switching categories.
+- **FIX:** Changed pills from dynamic `paddingVertical: 8` to fixed `height: 36` with `justifyContent: 'center'` and `minWidth: 56`.
+- **File:** `/app/frontend/app/admin/docs/index.tsx` line 454
+
+### Bug Fix: Home Screen Keypad Jumping (Mar 10, 2026)
+- **PROBLEM:** When typing on the keypad and contact matches appeared, they pushed the keypad buttons down, causing the numbers to jump around.
+- **FIX:** Changed contact matches to use `position: 'absolute'` with `top: '100%'` to overlay on top of the keypad instead of pushing it down. Added scrollable container with maxHeight: 120.
+- **File:** `/app/frontend/app/(tabs)/home.tsx` lines 264-333
+
+### Company Docs Seed Updated (Mar 10, 2026)
+- Frontend `seedDocs()` now chains: seed base docs → seed operations manual → generate articles of incorporation
+- **File:** `/app/frontend/app/admin/docs/index.tsx` line 122
