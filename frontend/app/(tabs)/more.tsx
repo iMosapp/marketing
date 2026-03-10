@@ -535,14 +535,6 @@ export default function MoreScreen() {
       ...(isSuperAdmin || user?.role === 'org_admin' ? [
         { icon: 'storefront', title: 'Accounts', subtitle: 'Manage store accounts', onPress: () => router.push('/admin/stores'), color: '#34C759' },
       ] : []),
-      ...(isSuperAdmin ? [
-        { icon: 'person', title: 'Individuals', subtitle: 'Independent users', onPress: () => router.push('/admin/individuals'), color: '#AF52DE' },
-        { icon: 'person-add', title: 'Pending Users', subtitle: 'Approve new signups', onPress: () => router.push('/admin/pending-users'), color: '#FF3B30', badge: pendingUsersCount },
-        { icon: 'color-palette', title: 'White Label Partners', subtitle: 'Manage branded partners', onPress: () => router.push('/admin/white-label'), color: '#E87722' },
-        { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
-        { icon: 'call', title: 'Phone Assignments', subtitle: 'Twilio numbers', onPress: () => router.push('/admin/phone-assignments'), color: '#32ADE6' },
-        { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },
-      ] : []),
     ];
     sections.push({ id: 'admin', title: 'Administration', icon: 'shield-checkmark', color: '#FF3B30', items: adminItems });
   }
@@ -552,10 +544,20 @@ export default function MoreScreen() {
     const internalItems: MenuItem[] = [
       { icon: 'library', title: 'Company Docs', subtitle: 'Policies, security & training', onPress: () => router.push('/admin/docs'), color: '#5856D6' },
       { icon: 'color-palette', title: 'Brand Assets', subtitle: 'Logos, images & downloads', onPress: () => router.push('/admin/brand-assets'), color: '#FF9500' },
-      { icon: 'document-text', title: 'Partner Agreements', subtitle: 'Reseller contracts', onPress: () => router.push('/admin/partner-agreements'), color: '#FF9500' },
+      { icon: 'people-circle', title: 'Partner Portal', subtitle: 'View as partner/reseller', onPress: () => router.push('/partner/dashboard' as any), color: '#007AFF' },
+      { icon: 'document-text', title: 'Partner Agreements', subtitle: 'Reseller contracts & commissions', onPress: () => router.push('/admin/partner-agreements'), color: '#AF52DE' },
+      { icon: 'color-palette', title: 'White Label Partners', subtitle: 'Manage branded partners', onPress: () => router.push('/admin/white-label'), color: '#E87722' },
+      { icon: 'card', title: 'Billing & Revenue', subtitle: 'Payments, MRR & commissions', onPress: () => router.push('/admin/billing'), color: '#34C759' },
+      { icon: 'trending-up', title: 'Revenue Forecast', subtitle: 'Sales projections', onPress: () => router.push('/admin/forecasting'), color: '#007AFF' },
       { icon: 'documents', title: 'View Quotes', subtitle: 'Subscription quotes', onPress: () => router.push('/admin/quotes'), color: '#30B0C7' },
       { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate quotes', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
-      { icon: 'ticket', title: 'Discount Codes', subtitle: 'Manage discounts', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
+      { icon: 'ticket', title: 'Discount Codes', subtitle: 'Manage promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
+      { icon: 'call', title: 'Phone Assignments', subtitle: 'Twilio numbers', onPress: () => router.push('/admin/phone-assignments'), color: '#32ADE6' },
+      { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' },
+      { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
+      { icon: 'person', title: 'Individuals', subtitle: 'Independent users', onPress: () => router.push('/admin/individuals'), color: '#AF52DE' },
+      { icon: 'person-add', title: 'Pending Users', subtitle: 'Approve new signups', onPress: () => router.push('/admin/pending-users'), color: '#FF3B30' },
+      { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },
     ];
     sections.push({ id: 'internal_admin', title: 'Internal Administration', icon: 'lock-closed', color: '#8E8E93', items: internalItems });
   }
