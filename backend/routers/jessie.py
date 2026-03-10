@@ -1,5 +1,5 @@
 """
-Jessie AI Assistant Router
+Jessi AI Assistant Router
 API endpoints for the voice-enabled AI assistant
 """
 from fastapi import APIRouter, HTTPException
@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 import io
 
-router = APIRouter(prefix="/jessie", tags=["Jessie AI Assistant"])
+router = APIRouter(prefix="/jessie", tags=["Jessi AI Assistant"])
 
 
 class ChatMessage(BaseModel):
@@ -26,13 +26,13 @@ class VoiceMessage(BaseModel):
 @router.post("/chat")
 async def chat_with_jessie(data: ChatMessage):
     """
-    Send a text message to Jessie and get a response.
+    Send a text message to Jessi and get a response.
     Optionally includes voice audio in the response.
     """
     from services.jessie_service import chat_with_jessie as jessie_chat, generate_voice_response_base64
     
     try:
-        # Get Jessie's text response
+        # Get Jessi's text response
         result = await jessie_chat(data.user_id, data.message, current_page=data.current_page)
         
         response = {
@@ -64,7 +64,7 @@ async def voice_chat_with_jessie(data: VoiceMessage):
     from services.jessie_service import chat_with_jessie as jessie_chat, generate_voice_response_base64
     
     try:
-        # Get Jessie's text response
+        # Get Jessi's text response
         result = await jessie_chat(data.user_id, data.text)
         
         # Generate voice response
