@@ -669,8 +669,10 @@ export default function ThreadScreen() {
           conversation_id: convId,
           content: contentToSend,
           channel: 'sms_personal',
+          // For personal SMS, DON'T pass pendingEventType — the card-specific event
+          // (e.g. holiday_card_sent) is already logged by the card creation flow.
+          // The SMS send itself should always be tracked as 'personal_sms' for attribution.
         };
-        if (pendingEventType) messagePayload.event_type = pendingEventType;
         if (selectedTemplateInfo) {
           messagePayload.template_id = selectedTemplateInfo.template_id;
           messagePayload.template_type = selectedTemplateInfo.template_type;
@@ -690,7 +692,7 @@ export default function ThreadScreen() {
         if (cid) {
           const apiBase = IS_WEB ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
           const eventPayload = JSON.stringify({
-            event_type: pendingEventType || 'personal_sms',
+            event_type: 'personal_sms',
             title: 'SMS Sent',
             description: `Sent SMS to ${contactName}`,
             channel: 'sms_personal',

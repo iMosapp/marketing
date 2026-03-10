@@ -371,6 +371,9 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
         else:
             event_type = await resolve_event_type(message_data.content, get_db())
         
+        # Set event_type on message dict so it's returned in the API response
+        message['event_type'] = event_type
+        
         logger.info(f"Personal SMS logged ({event_type}) for {to_phone}: {message_data.content[:50]}...")
         
         await get_db().messages.update_one(
@@ -1105,6 +1108,9 @@ async def send_message_simple(user_id: str, message_data: dict):
             logger.info(f"[PERSONAL SMS] Using explicit event_type={event_type} from frontend")
         else:
             event_type = await resolve_event_type(content, db)
+        
+        # Set event_type on message dict so it's returned in the API response
+        message['event_type'] = event_type
         
         logger.info(f"[PERSONAL SMS] Logged ({event_type}) for {to_phone}: {content[:50]}...")
         

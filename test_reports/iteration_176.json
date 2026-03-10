@@ -1,0 +1,84 @@
+{
+  "summary": "SMS Event Type Attribution Bug Fix (Iteration 176) - All 14 backend tests PASSED. Fixed missing event_type in API response for sms_personal channel. Frontend loads correctly, performance dashboard shows correct texts count (28).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/messages/send/{userId}/{convId} and /api/messages/send/{userId}",
+        "issue": "event_type was not being returned in API response for sms_personal channel (FIXED)",
+        "priority": "FIXED"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sms_event_type_attribution.py",
+    "/app/test_reports/pytest/pytest_sms_event_attribution.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FIX APPLIED: Added message['event_type'] = event_type in sms_personal channel handler (both send endpoints)",
+    "resolve_event_type defaults to 'personal_sms' when no explicit event_type is passed - this is correct behavior",
+    "Frontend thread/[id].tsx correctly does NOT pass pendingEventType for personal SMS (line 668-684) - card events are logged separately",
+    "Performance dashboard correctly counts texts as: sms_sent + sms_personal + personal_sms + sms_failed",
+    "Summary endpoint correctly counts texts using the same formula",
+    "Card shares (congrats/birthday/holiday/etc) are tracked separately in sharing.card_shares"
+  ],
+  "updated_files": [
+    "/app/backend/routers/messages.py",
+    "/app/backend/tests/test_sms_event_type_attribution.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% - Login works, dashboard loads, performance metrics display correctly"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667",
+    "contact_id": "69a496841603573df5a41723"
+  },
+  "seed_data_creation": "Created test contact events during testing (sms_sent, personal_sms, call_placed, email_sent)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "SMS event type attribution bug is FIXED. Key change: POST /api/messages/send without event_type field and channel=sms_personal now resolves to event_type=personal_sms (logged in DB and returned in API response). The thread page personal SMS flow no longer passes pendingEventType to avoid double-counting card events. Performance dashboard shows correct texts count: sms_sent + sms_personal + personal_sms + sms_failed.",
+  "features_verified": {
+    "sms_event_type_resolution": {
+      "POST /api/messages/send WITHOUT event_type (sms_personal channel)": "PASS - Resolves to personal_sms",
+      "POST /api/messages/send WITH explicit event_type": "PASS - Preserves explicit type",
+      "event_type returned in API response": "PASS - After fix applied to messages.py"
+    },
+    "performance_counts": {
+      "GET /api/tasks/{userId}/summary activity.texts": "PASS - Counts sms_sent + sms_personal + personal_sms + sms_failed",
+      "GET /api/tasks/{userId}/performance communication.texts": "PASS - Same formula",
+      "GET /api/tasks/{userId}/performance sharing.card_shares": "PASS - Counts *_card_sent events"
+    },
+    "contact_events": {
+      "POST /api/contacts/{userId}/{contactId}/events sms_sent": "PASS",
+      "POST /api/contacts/{userId}/{contactId}/events personal_sms": "PASS",
+      "POST /api/contacts/{userId}/{contactId}/events call_placed": "PASS",
+      "POST /api/contacts/{userId}/{contactId}/events email_sent": "PASS"
+    },
+    "authentication": {
+      "POST /api/auth/login": "PASS",
+      "GET /api/auth/me": "PASS"
+    },
+    "frontend_pages": {
+      "/auth/login": "PASS - Login page loads",
+      "/home": "PASS - Dashboard loads with correct metrics (28 texts)"
+    }
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - Personal SMS goes through native SMS app"
+  },
+  "rca_of_the_issue": {
+    "bug_description": "Card share SMS events were stored with card-specific event_types (e.g., holiday_card_sent) instead of personal_sms. Performance dashboard only counts texts as sms_sent+sms_personal+personal_sms+sms_failed, so card SMS events were not counted.",
+    "root_cause": "Frontend thread/[id].tsx was passing pendingEventType (e.g., holiday_card_sent) to the messages/send endpoint for personal SMS. This caused the SMS to be logged with the card event type instead of personal_sms.",
+    "fix_applied": "1) Frontend no longer passes pendingEventType for personal SMS (card event is already logged separately by card creation flow). 2) Backend messages.py now sets message['event_type'] = event_type for sms_personal channel so the resolved type is returned in API response.",
+    "verification": "Sending SMS without event_type now correctly resolves to personal_sms and is counted in texts on the performance dashboard."
+  }
+}
