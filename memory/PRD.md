@@ -358,15 +358,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Scheduler: 14-day expiry:** New daily job `daily_recent_tag_expiry` runs at 4 AM UTC. Removes "Recent" tag from contacts where it was applied >14 days ago.
 - **Tested:** 11/11 backend tests passed (iteration 165).
 
-### Event Logging Audit & Fix (Mar 10, 2026)
-- **BUG FIXED (CRITICAL):** `thread/[id].tsx` personal SMS flow used raw `fetch()` with `keepalive: true` which iOS Safari PWA kills when navigating to `sms:` URL — ALL texts sent from the thread page (including card shares via SMS) were silently lost
-  - Root cause 1: `fetch` with `keepalive` is not reliable on iOS PWA when the page navigates to a native app URL
-  - Root cause 2: `convId` could be a CONTACT ID (not conversation ID) when navigating from card creation, causing the backend to return 404 (silently swallowed)
-  - Fix: Now uses `await` with regular axios API to complete the call BEFORE opening SMS. Falls back to `navigator.sendBeacon()` if main call fails. Validates/creates conversation ID if `actualConversationId` is null.
-- **BUG FIXED:** Touchpoints page `handleCall` was opening native phone dialer WITHOUT logging a `call_placed` contact_event
-- **Timezone Fix:** Campaign pending-send completion (`campaigns.py`) and public API event logging (`public_api.py`) now use `datetime.now(timezone.utc)` instead of deprecated `datetime.utcnow()`
-- **Audit Confirmed:** Composer (contact/[id].tsx), Home quick actions (home.tsx), Quick-send ([action].tsx) all correctly use `await` before opening native apps
-- **Tested:** iteration 172 (15/15 backend) + iteration 173 (11/11 backend, all frontend pages verified)
+### Comprehensive Event Attribution Audit & Fix (Mar 10, 2026)
+- **ROOT CAUSE:** `thread/[id].tsx` personal SMS flow used raw `fetch()` with `keepalive:true` that iOS Safari PWA kills when navigating to `sms:` URL. Also `convId` could be a contact ID instead of conversation ID causing silent 404s.
+- **FULL AUDIT COMPLETED** — Every file that opens `sms:`, `tel:`, or `mailto:` for a logged-in user was audited and fixed:
+  - `thread/[id].tsx`: Replaced raw fetch+keepalive with `await api.post()` + `sendBeacon` fallback
+  - `contacts.tsx`: Added `await contactsAPI.logEvent(call_placed)` before `tel:` (was missing)
+  - `inbox.tsx`: Added `await contactsAPI.logEvent(call_placed)` to handleQuickCall (was missing)
+  - `dialer.tsx`: Replaced fetch+keepalive with `await api.post()` before `tel:`
+  - `tasks/index.tsx`: Added `await contactsAPI.logEvent(call_placed)` before `tel:` (was missing)
+  - `admin/hot-leads.tsx`: Added `await api.post(events)` before `sms:` (was missing)
+  - `touchpoints/index.tsx`: Added `await contactsAPI.logEvent(call_placed)` to handleCall (was missing)
+  - `more.tsx`: Moved event logging BEFORE native app open for all 6 paths
+- **KEY PATTERN**: Every send uses `await` BEFORE opening native app. No fire-and-forget.
+- **Tested**: iterations 172 (15/15), 173 (11/11), 174 (35/35 + all frontend pages)
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
