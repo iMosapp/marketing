@@ -359,11 +359,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Tested:** 11/11 backend tests passed (iteration 165).
 
 ### Event Logging Audit & Fix (Mar 10, 2026)
-- **BUG FIXED:** Touchpoints page `handleCall` was opening native phone dialer WITHOUT logging a `call_placed` contact_event — calls from Touchpoints were invisible to the performance dashboard
-- **Fix:** Added `contactsAPI.logEvent()` call with `event_type: 'call_placed'` before opening the dialer
-- **Timezone Fix:** Campaign pending-send completion (`campaigns.py`) and public API event logging (`public_api.py`) were using deprecated `datetime.utcnow()` (naive timestamps) — changed to `datetime.now(timezone.utc)` for consistency with performance dashboard queries
-- **Audit Confirmed:** Composer (contact/[id].tsx), Home quick actions (home.tsx), Quick-send ([action].tsx), and find-or-create-and-log all correctly log events before opening native apps — these were fixed in a prior session and remain working
-- **Tested:** 15/15 backend tests passed (iteration 172), all event types correctly counted in performance dashboard
+- **BUG FIXED (CRITICAL):** `thread/[id].tsx` personal SMS flow used raw `fetch()` with `keepalive: true` which iOS Safari PWA kills when navigating to `sms:` URL — ALL texts sent from the thread page (including card shares via SMS) were silently lost
+  - Root cause 1: `fetch` with `keepalive` is not reliable on iOS PWA when the page navigates to a native app URL
+  - Root cause 2: `convId` could be a CONTACT ID (not conversation ID) when navigating from card creation, causing the backend to return 404 (silently swallowed)
+  - Fix: Now uses `await` with regular axios API to complete the call BEFORE opening SMS. Falls back to `navigator.sendBeacon()` if main call fails. Validates/creates conversation ID if `actualConversationId` is null.
+- **BUG FIXED:** Touchpoints page `handleCall` was opening native phone dialer WITHOUT logging a `call_placed` contact_event
+- **Timezone Fix:** Campaign pending-send completion (`campaigns.py`) and public API event logging (`public_api.py`) now use `datetime.now(timezone.utc)` instead of deprecated `datetime.utcnow()`
+- **Audit Confirmed:** Composer (contact/[id].tsx), Home quick actions (home.tsx), Quick-send ([action].tsx) all correctly use `await` before opening native apps
+- **Tested:** iteration 172 (15/15 backend) + iteration 173 (11/11 backend, all frontend pages verified)
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
