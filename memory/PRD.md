@@ -386,5 +386,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Service Worker**: `sw-push.js` handles incoming pushes and notification clicks
 - **Tested**: iteration 175 (13/13 backend, all frontend pages verified)
 
+### SMS Attribution Fix — Card Shares Counted As Texts (Mar 10, 2026)
+- **ROOT CAUSE:** Thread page's personal SMS flow was passing `pendingEventType` (e.g., `holiday_card_sent`) to the `/messages/send` endpoint. The performance dashboard only counts `sms_sent + personal_sms + sms_personal + sms_failed` as texts — card-type events were invisible to the texts counter.
+- **FIX:** Personal SMS flow no longer passes `pendingEventType` to the messages/send endpoint. Backend's `resolve_event_type` defaults to `personal_sms`. The card-specific event is already logged separately by the card creation flow.
+- **Messages.py**: Testing agent also fixed `event_type` not being returned in the API response for sms_personal channel.
+- **Result:** SMS sends now always create `personal_sms` events → counted in Texts on both Today's Touchpoints and My Performance dashboard.
+- **Tested**: iteration 176 (14/14 backend, frontend verified)
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
