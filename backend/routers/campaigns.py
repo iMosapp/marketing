@@ -3,7 +3,7 @@ Campaigns router - handles campaign CRUD, enrollments, and scheduler
 """
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import logging
 
@@ -493,7 +493,7 @@ async def mark_pending_send_complete(user_id: str, send_id: str):
     db = get_db()
     result = await db.campaign_pending_sends.update_one(
         {"_id": ObjectId(send_id), "user_id": user_id},
-        {"$set": {"status": "sent", "sent_at": datetime.utcnow()}}
+        {"$set": {"status": "sent", "sent_at": datetime.now(timezone.utc)}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Pending send not found")
@@ -506,7 +506,7 @@ async def mark_pending_send_complete(user_id: str, send_id: str):
             "user_id": user_id,
             "contact_id": send_doc.get("contact_id", ""),
             "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {send_doc.get('step', 0)} (manual)",
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "manual_campaign": True,
         })
     return {"success": True, "message": "Marked as sent"}

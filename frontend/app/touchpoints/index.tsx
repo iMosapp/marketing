@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { tasksAPI } from '../../services/api';
+import { tasksAPI, contactsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 
@@ -116,6 +116,20 @@ export default function TouchpointsScreen() {
   const handleCall = async (task: any) => {
     const phone = task.contact_phone;
     if (!phone) { showSimpleAlert('No Number', 'No phone number available.'); return; }
+    // Log call_placed event before opening dialer
+    if (user?._id && task.contact_id) {
+      try {
+        await contactsAPI.logEvent(user._id, task.contact_id, {
+          event_type: 'call_placed',
+          title: 'Outbound Call',
+          description: `Called ${task.contact_name || phone}`,
+          channel: 'call',
+          category: 'message',
+          icon: 'call',
+          color: '#32ADE6',
+        });
+      } catch {}
+    }
     const url = `tel:${phone.replace(/[^\d+]/g, '')}`;
     IS_WEB ? (window.location.href = url) : Linking.openURL(url);
     // Auto-complete after initiating the call

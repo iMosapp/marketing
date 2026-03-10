@@ -6,7 +6,7 @@ Exposes every data point: contacts, users, messages, campaigns, reviews, tags, e
 from fastapi import APIRouter, HTTPException, Header, Query, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 import logging
 import secrets
@@ -486,7 +486,7 @@ async def api_log_contact_event(contact_id: str, data: dict, auth: dict = Depend
         "description": data.get("description", ""),
         "metadata": data.get("metadata", {}),
         "source": "api",
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(timezone.utc),
     }
     
     result = await db.contact_events.insert_one(event)
