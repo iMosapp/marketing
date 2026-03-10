@@ -191,19 +191,22 @@ async def resolve_event_type(content: str, db, explicit_event_type: str = None) 
         # Fallback: if DB lookup fails, still default to congrats
         return 'congrats_card_sent'
 
-    # 4. Keyword detection
-    if 'birthday' in content_lower and ('card' in content_lower or 'happy birthday' in content_lower):
-        return 'birthday_card_sent'
-    if 'congrats' in content_lower or 'congratulations' in content_lower:
-        return 'congrats_card_sent'
-    if 'thank' in content_lower and 'card' in content_lower:
-        return 'thank_you_card_sent'
-    if 'anniversary' in content_lower:
-        return 'anniversary_card_sent'
-    if 'holiday' in content_lower:
-        return 'holiday_card_sent'
-    if 'welcome' in content_lower and 'card' in content_lower:
-        return 'welcome_card_sent'
+    # 4. Keyword detection — ONLY when message also contains a URL or link indicator.
+    #    A plain text like "congrats on the sale!" should NOT be classified as a card send.
+    has_url = bool(re.search(r'https?://', content_lower))
+    if has_url:
+        if 'birthday' in content_lower and ('card' in content_lower or 'happy birthday' in content_lower):
+            return 'birthday_card_sent'
+        if 'congrats' in content_lower or 'congratulations' in content_lower:
+            return 'congrats_card_sent'
+        if 'thank' in content_lower and 'card' in content_lower:
+            return 'thank_you_card_sent'
+        if 'anniversary' in content_lower:
+            return 'anniversary_card_sent'
+        if 'holiday' in content_lower:
+            return 'holiday_card_sent'
+        if 'welcome' in content_lower and 'card' in content_lower:
+            return 'welcome_card_sent'
 
     # 5. Default
     return 'personal_sms'

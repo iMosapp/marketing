@@ -486,3 +486,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### Company Docs Seed Updated (Mar 10, 2026)
 - Frontend `seedDocs()` now chains: seed base docs → seed operations manual → generate articles of incorporation
 - **File:** `/app/frontend/app/admin/docs/index.tsx` line 122
+
+
+### Bug Fix: Keyword Detection Misclassifying Texts as Card Events (Mar 10, 2026)
+- **PROBLEM:** A regular text message containing the word "congrats" (e.g., "Hey Forest, saw you opened the congrats...") was being logged as "Congrats Card Sent" in the activity feed. The `resolve_event_type()` function in `utils/event_types.py` used keyword matching that triggered on ANY message containing "congrats", "birthday", "anniversary", etc. — even plain conversational texts with no card or link involved.
+- **FIX:** Keyword-based event type detection now only triggers when the message also contains a URL (`https?://`). Plain text messages without links always default to `personal_sms`.
+- **File:** `/app/backend/utils/event_types.py` lines 194-207
