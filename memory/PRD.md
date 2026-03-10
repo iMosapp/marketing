@@ -393,5 +393,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Result:** SMS sends now always create `personal_sms` events → counted in Texts on both Today's Touchpoints and My Performance dashboard.
 - **Tested**: iteration 176 (14/14 backend, frontend verified)
 
+
+### CRM Timeline Enhancement — Full Conversation History (Mar 10, 2026)
+- **PROBLEM:** CRM timeline export only showed `contact_events` — missing the salesperson's actual messages (SMS/email bodies) and other interactions (campaigns, cards, broadcasts)
+- **FIX:** Backend now fetches from **5 data sources**: `contact_events`, `messages` (via conversations), `campaign_enrollments`, `congrats_cards_sent`, `broadcast_recipients`
+- **Direction Classification**: Each event tagged as `outbound` (salesperson) or `inbound` (customer engagement). Inbound types: `*_viewed`, `customer_reply`, `review_page_viewed`, `review_link_clicked`, etc.
+- **Message Content**: Actual SMS/email bodies included via `full_content` field (using `content` field from messages collection)
+- **Frontend**: Stats bar shows Total Activities / Salesperson / Customer / Notes counts. Direction badges (blue "Salesperson", green "Customer") on each event. Message content displayed inline.
+- **Tested**: iteration 177 (17/17 backend tests passed, 100% frontend verified)
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
