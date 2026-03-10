@@ -8,32 +8,63 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 
 const EVENT_ICONS: Record<string, { icon: string; color: string }> = {
+  // Salesperson outbound actions
+  call_placed: { icon: 'call-outline', color: '#30D158' },
   call_made: { icon: 'call-outline', color: '#34C759' },
-  call_received: { icon: 'call-outline', color: '#007AFF' },
-  sms_sent: { icon: 'chatbubble-outline', color: '#5856D6' },
-  sms_received: { icon: 'chatbubble-outline', color: '#007AFF' },
-  email_sent: { icon: 'mail-outline', color: '#FF9500' },
-  email_opened: { icon: 'mail-open-outline', color: '#34C759' },
   personal_sms: { icon: 'chatbubble-outline', color: '#5856D6' },
+  sms_sent: { icon: 'chatbubble-outline', color: '#5856D6' },
+  email_sent: { icon: 'mail-outline', color: '#FF9500' },
   personal_email: { icon: 'mail-outline', color: '#FF9500' },
-  congrats_card_sent: { icon: 'gift-outline', color: '#FF2D55' },
-  birthday_card_sent: { icon: 'gift-outline', color: '#FF2D55' },
-  holiday_card_sent: { icon: 'gift-outline', color: '#FF2D55' },
-  thankyou_card_sent: { icon: 'gift-outline', color: '#FF2D55' },
+  message_outbound: { icon: 'chatbubble-outline', color: '#007AFF' },
+  // Customer inbound signals
+  call_received: { icon: 'call-outline', color: '#007AFF' },
+  sms_received: { icon: 'chatbubble-outline', color: '#007AFF' },
+  email_opened: { icon: 'mail-open-outline', color: '#34C759' },
+  message_inbound: { icon: 'chatbubble-outline', color: '#8E8E93' },
+  customer_reply: { icon: 'chatbubble-ellipses-outline', color: '#30D158' },
+  // Cards & links
+  congrats_card_sent: { icon: 'gift-outline', color: '#C9A962' },
+  birthday_card_sent: { icon: 'gift-outline', color: '#FF9500' },
+  holiday_card_sent: { icon: 'gift-outline', color: '#5AC8FA' },
+  thankyou_card_sent: { icon: 'gift-outline', color: '#34C759' },
+  thank_you_card_sent: { icon: 'gift-outline', color: '#34C759' },
+  welcome_card_sent: { icon: 'gift-outline', color: '#007AFF' },
+  anniversary_card_sent: { icon: 'heart-outline', color: '#FF2D55' },
+  review_request_sent: { icon: 'star-outline', color: '#FFD60A' },
   review_link_shared: { icon: 'star-outline', color: '#FFD60A' },
   review_link_clicked: { icon: 'star', color: '#34C759' },
+  review_submitted: { icon: 'star', color: '#FFD60A' },
+  digital_card_sent: { icon: 'card-outline', color: '#007AFF' },
   digital_card_shared: { icon: 'card-outline', color: '#007AFF' },
   digital_card_viewed: { icon: 'eye-outline', color: '#007AFF' },
+  congrats_card_viewed: { icon: 'eye-outline', color: '#C9A962' },
+  birthday_card_viewed: { icon: 'eye-outline', color: '#FF9500' },
+  thankyou_card_viewed: { icon: 'eye-outline', color: '#34C759' },
+  holiday_card_viewed: { icon: 'eye-outline', color: '#5AC8FA' },
+  welcome_card_viewed: { icon: 'eye-outline', color: '#007AFF' },
+  anniversary_card_viewed: { icon: 'eye-outline', color: '#FF2D55' },
+  review_page_viewed: { icon: 'eye-outline', color: '#FFD60A' },
   showcase_shared: { icon: 'images-outline', color: '#AF52DE' },
+  showcase_viewed: { icon: 'eye-outline', color: '#AF52DE' },
   link_page_shared: { icon: 'link-outline', color: '#5856D6' },
+  link_page_viewed: { icon: 'eye-outline', color: '#5856D6' },
+  vcard_sent: { icon: 'person-outline', color: '#007AFF' },
+  // Campaigns & broadcasts
   campaign_enrolled: { icon: 'rocket-outline', color: '#AF52DE' },
+  campaign_message_sent: { icon: 'megaphone-outline', color: '#FF9500' },
   campaign_completed: { icon: 'checkmark-circle-outline', color: '#34C759' },
+  broadcast_sent: { icon: 'megaphone-outline', color: '#FF2D55' },
+  // Tasks & notes
   task_created: { icon: 'checkbox-outline', color: '#FF9500' },
   task_completed: { icon: 'checkmark-done-outline', color: '#34C759' },
   note_added: { icon: 'document-text-outline', color: '#8E8E93' },
+  note_updated: { icon: 'document-text-outline', color: '#8E8E93' },
   voice_note: { icon: 'mic-outline', color: '#FF9500' },
   tag_applied: { icon: 'pricetag-outline', color: '#5856D6' },
   lead_created: { icon: 'person-add-outline', color: '#007AFF' },
+  lead_reassigned: { icon: 'swap-horizontal-outline', color: '#C9A962' },
+  new_contact: { icon: 'person-add-outline', color: '#007AFF' },
+  new_contact_added: { icon: 'person-add-outline', color: '#007AFF' },
 };
 
 function getEventMeta(type: string) {
@@ -242,6 +273,10 @@ export default function TimelinePage() {
   const grouped = groupByDate(events || []);
   const storeColor = store?.color || '#007AFF';
 
+  // Count outbound (salesperson) vs inbound (customer) for stats
+  const outboundCount = (events || []).filter((e: any) => e.direction === 'outbound').length;
+  const inboundCount = (events || []).filter((e: any) => e.direction === 'inbound').length;
+
   return (
     <ScrollView style={s.page} data-testid="crm-timeline-page">
       {/* Header */}
@@ -291,17 +326,22 @@ export default function TimelinePage() {
       <View style={s.statsBar}>
         <View style={s.statItem}>
           <Text style={s.statNum}>{total_events || 0}</Text>
-          <Text style={s.statLabel}>Activities</Text>
+          <Text style={s.statLabel}>Total Activities</Text>
+        </View>
+        <View style={s.statDivider} />
+        <View style={s.statItem}>
+          <Text style={s.statNum}>{outboundCount}</Text>
+          <Text style={s.statLabel}>Salesperson</Text>
+        </View>
+        <View style={s.statDivider} />
+        <View style={s.statItem}>
+          <Text style={s.statNum}>{inboundCount}</Text>
+          <Text style={s.statLabel}>Customer</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
           <Text style={s.statNum}>{notes?.length || 0}</Text>
           <Text style={s.statLabel}>Notes</Text>
-        </View>
-        <View style={s.statDivider} />
-        <View style={s.statItem}>
-          <Text style={s.statNum}>{contact?.created_at ? formatDate(contact.created_at) : '—'}</Text>
-          <Text style={s.statLabel}>Customer Since</Text>
         </View>
       </View>
 
@@ -319,14 +359,26 @@ export default function TimelinePage() {
               <Text style={s.dayLabel}>{formatDate(date + 'T00:00:00Z')}</Text>
               {dayEvents.map((evt: any, idx: number) => {
                 const meta = getEventMeta(evt.event_type);
+                const isInbound = evt.direction === 'inbound';
                 return (
-                  <View key={idx} style={s.eventRow}>
+                  <View key={idx} style={s.eventRow} data-testid={`timeline-event-${idx}`}>
                     <View style={[s.eventDot, { backgroundColor: meta.color + '20' }]}>
                       <Ionicons name={meta.icon as any} size={16} color={meta.color} />
                     </View>
                     <View style={s.eventContent}>
-                      <Text style={s.eventTitle}>{evt.title || formatEventType(evt.event_type)}</Text>
-                      {evt.description ? <Text style={s.eventDesc}>{evt.description}</Text> : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={s.eventTitle}>{evt.title || formatEventType(evt.event_type)}</Text>
+                        {isInbound ? (
+                          <View style={s.dirBadgeIn}><Text style={s.dirBadgeTextIn}>Customer</Text></View>
+                        ) : (
+                          <View style={s.dirBadgeOut}><Text style={s.dirBadgeTextOut}>Salesperson</Text></View>
+                        )}
+                      </View>
+                      {evt.description ? <Text style={s.eventDesc} numberOfLines={3}>{evt.description}</Text> : null}
+                      {evt.full_content && evt.full_content !== evt.description ? (
+                        <Text style={s.eventBody} numberOfLines={4}>{evt.full_content}</Text>
+                      ) : null}
+                      {evt.channel ? <Text style={s.eventChannel}>via {evt.channel.toUpperCase()}</Text> : null}
                     </View>
                     <Text style={s.eventTime}>{formatTime(evt.timestamp)}</Text>
                   </View>
@@ -411,6 +463,14 @@ const s = StyleSheet.create({
   eventTitle: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   eventDesc: { fontSize: 12, color: '#8E8E93', marginTop: 2 },
   eventTime: { fontSize: 11, color: '#666', minWidth: 60, textAlign: 'right' },
+  // Direction badges
+  dirBadgeOut: { backgroundColor: '#007AFF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  dirBadgeTextOut: { fontSize: 9, fontWeight: '700', color: '#007AFF', letterSpacing: 0.5 },
+  dirBadgeIn: { backgroundColor: '#30D15820', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  dirBadgeTextIn: { fontSize: 9, fontWeight: '700', color: '#30D158', letterSpacing: 0.5 },
+  // Message body & channel
+  eventBody: { fontSize: 12, color: '#AAA', marginTop: 4, fontStyle: 'italic', lineHeight: 17 },
+  eventChannel: { fontSize: 10, color: '#555', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
   // Empty
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyText: { fontSize: 14, color: '#666' },
