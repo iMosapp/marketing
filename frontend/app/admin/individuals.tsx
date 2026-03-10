@@ -37,6 +37,9 @@ export default function IndividualsScreen() {
   const [individuals, setIndividuals] = useState<Individual[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newIndividual, setNewIndividual] = useState({ name: '', email: '', phone: '', title: '' });
 
   useFocusEffect(
     useCallback(() => {
@@ -60,6 +63,21 @@ export default function IndividualsScreen() {
     setRefreshing(true);
     await loadIndividuals();
     setRefreshing(false);
+  };
+
+  const handleCreate = async () => {
+    if (!newIndividual.name.trim() || !newIndividual.email.trim()) return;
+    try {
+      setCreating(true);
+      await api.post('/admin/individuals', newIndividual);
+      setShowAddModal(false);
+      setNewIndividual({ name: '', email: '', phone: '', title: '' });
+      await loadIndividuals();
+    } catch (error: any) {
+      alert(error.response?.data?.detail || 'Failed to create individual');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const filteredIndividuals = individuals.filter((individual) => {
@@ -141,7 +159,9 @@ export default function IndividualsScreen() {
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Individuals</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => setShowAddModal(true)} data-testid="add-individual-btn">
+          <Ionicons name="add-circle" size={28} color="#AF52DE" />
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -198,6 +218,56 @@ export default function IndividualsScreen() {
           </View>
         }
       />
+
+      {/* Add Individual Modal */}
+      {showAddModal && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24, zIndex: 100 }}>
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Add Individual</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)} data-testid="close-add-modal">
+                <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 16 }}>
+              Create an independent user account (not under any organization). This is for salespeople who pay for the tool themselves.
+            </Text>
+            {[
+              { key: 'name', label: 'Full Name *', placeholder: 'John Smith' },
+              { key: 'email', label: 'Email *', placeholder: 'john@example.com', keyboardType: 'email-address' },
+              { key: 'phone', label: 'Phone', placeholder: '(801) 555-1234', keyboardType: 'phone-pad' },
+              { key: 'title', label: 'Title', placeholder: 'Sales Associate' },
+            ].map(({ key, label, placeholder, keyboardType }) => (
+              <View key={key} style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 }}>{label}</Text>
+                <TextInput
+                  style={{ backgroundColor: colors.bg, color: colors.text, borderRadius: 10, paddingHorizontal: 14, height: 44, fontSize: 15 }}
+                  placeholder={placeholder}
+                  placeholderTextColor={colors.textSecondary}
+                  value={(newIndividual as any)[key]}
+                  onChangeText={(v) => setNewIndividual(prev => ({ ...prev, [key]: v }))}
+                  keyboardType={(keyboardType as any) || 'default'}
+                  autoCapitalize={key === 'email' ? 'none' : 'words'}
+                  data-testid={`add-individual-${key}`}
+                />
+              </View>
+            ))}
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 16 }}>
+              A temporary password will be generated. Share it with the user so they can log in.
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: '#AF52DE', borderRadius: 12, height: 48, alignItems: 'center', justifyContent: 'center', opacity: (!newIndividual.name.trim() || !newIndividual.email.trim() || creating) ? 0.5 : 1 }}
+              onPress={handleCreate}
+              disabled={!newIndividual.name.trim() || !newIndividual.email.trim() || creating}
+              data-testid="create-individual-submit"
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+                {creating ? 'Creating...' : 'Create Individual'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
