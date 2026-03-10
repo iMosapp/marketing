@@ -68,9 +68,10 @@ async def get_public_timeline(token: str, pin: Optional[str] = None):
     """
     db = get_db()
 
-    # Find the contact by token
+    # Find the contact by token (strip any trailing garbage that iOS share sheet may append)
+    clean_token = token.split(" ")[0].split("%20")[0].strip()
     contact = await db.contacts.find_one(
-        {"crm_link_token": token},
+        {"crm_link_token": clean_token},
         {"_id": 1, "name": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
          "user_id": 1, "tags": 1, "photo": 1, "photo_thumbnail": 1, "photo_url": 1,
          "created_at": 1}

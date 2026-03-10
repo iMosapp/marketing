@@ -3849,8 +3849,7 @@ export default function ContactDetailScreen() {
                         if (typeof navigator !== 'undefined' && navigator.share) {
                           try {
                             await navigator.share({
-                              title: 'CRM Timeline Link',
-                              text: `Activity timeline for ${contact.first_name || ''} ${contact.last_name || ''}`.trim(),
+                              title: `${contact.first_name || ''} ${contact.last_name || ''} — Activity Timeline`.trim(),
                               url: link,
                             });
                             return;
