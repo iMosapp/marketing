@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname } from 'expo-router';
+import { Audio } from 'expo-av';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
@@ -74,9 +75,12 @@ export default function JessieFloatingChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [speaking, setSpeaking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   // Pulse animation for the floating button
   useEffect(() => {
@@ -101,6 +105,16 @@ export default function JessieFloatingChat() {
     }).start();
   }, [open]);
 
+  // Stop any playing audio when panel closes
+  useEffect(() => {
+    if (!open && soundRef.current) {
+      soundRef.current.stopAsync().catch(() => {});
+      soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+      setSpeaking(false);
+    }
+  }, [open]);
+
   // Don't render on public/auth pages or if not logged in
   if (!user?._id) return null;
   if (HIDDEN_ROUTES.some((r) => pathname.startsWith(r))) return null;
@@ -110,6 +124,40 @@ export default function JessieFloatingChat() {
   // Extract contact_id from pathname if on a contact record
   const contactId = pathname.includes('/contact/') ? pathname.split('/contact/')[1]?.split('/')[0] || '' : '';
 
+  const playVoice = async (text: string) => {
+    if (!voiceEnabled) return;
+    try {
+      // Stop any currently playing audio
+      if (soundRef.current) {
+        await soundRef.current.stopAsync().catch(() => {});
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+      setSpeaking(true);
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const res = await fetch(`${backendUrl}/api/jessie/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.slice(0, 4000) }),
+      });
+      if (!res.ok) throw new Error('TTS failed');
+      const blob = await res.blob();
+      const uri = URL.createObjectURL(blob);
+      const { sound } = await Audio.Sound.createAsync({ uri });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status: any) => {
+        if (status.didJustFinish) {
+          setSpeaking(false);
+          sound.unloadAsync().catch(() => {});
+          soundRef.current = null;
+        }
+      });
+      await sound.playAsync();
+    } catch {
+      setSpeaking(false);
+    }
+  };
+
   const sendMessage = async () => {
     const msg = input.trim();
     if (!msg || loading) return;
@@ -118,6 +166,7 @@ export default function JessieFloatingChat() {
     setLoading(true);
 
     try {
+      // Step 1: Get text response instantly (no voice)
       const res = await api.post('/jessie/chat', {
         user_id: user._id,
         message: msg,
@@ -126,7 +175,13 @@ export default function JessieFloatingChat() {
         contact_id: contactId,
       }, { timeout: 30000 });
 
-      setMessages((prev) => [...prev, { role: 'assistant', text: res.data.text }]);
+      const responseText = res.data.text;
+      setMessages((prev) => [...prev, { role: 'assistant', text: responseText }]);
+
+      // Step 2: Fire off TTS in background (non-blocking)
+      if (voiceEnabled && responseText) {
+        playVoice(responseText);
+      }
     } catch {
       setMessages((prev) => [...prev, { role: 'assistant', text: "Sorry, I couldn't process that. Try again." }]);
     } finally {
@@ -198,9 +253,30 @@ export default function JessieFloatingChat() {
                   ) : null}
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setOpen(false)} data-testid="jessie-close">
-                <Ionicons name="close" size={24} color={colors.textSecondary || '#8E8E93'} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setVoiceEnabled(!voiceEnabled);
+                    if (soundRef.current) {
+                      soundRef.current.stopAsync().catch(() => {});
+                      soundRef.current.unloadAsync().catch(() => {});
+                      soundRef.current = null;
+                      setSpeaking(false);
+                    }
+                  }}
+                  data-testid="jessie-voice-toggle"
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons
+                    name={voiceEnabled ? 'volume-high' : 'volume-mute'}
+                    size={20}
+                    color={voiceEnabled ? '#C9A962' : '#6E6E73'}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setOpen(false)} data-testid="jessie-close">
+                  <Ionicons name="close" size={24} color={colors.textSecondary || '#8E8E93'} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Messages */}
@@ -231,6 +307,12 @@ export default function JessieFloatingChat() {
                   <Text style={[s.msgText, { color: m.role === 'user' ? '#fff' : colors.text }]}>
                     {m.text}
                   </Text>
+                  {m.role === 'assistant' && speaking && i === messages.length - 1 && (
+                    <View style={s.speakingRow}>
+                      <Ionicons name="volume-high" size={12} color="#C9A962" />
+                      <Text style={s.speakingText}>Speaking...</Text>
+                    </View>
+                  )}
                 </View>
               ))}
               {loading && (
@@ -339,6 +421,8 @@ const s = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   msgText: { fontSize: 14, lineHeight: 20 },
+  speakingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  speakingText: { fontSize: 11, color: '#C9A962', fontWeight: '500' },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
