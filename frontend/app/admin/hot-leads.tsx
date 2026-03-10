@@ -172,8 +172,18 @@ export default function HotLeadsPage() {
                     {lead.phone && (
                       <TouchableOpacity
                         style={styles.quickText}
-                        onPress={(e) => {
+                        onPress={async (e) => {
                           e.stopPropagation?.();
+                          // Log SMS event before opening native SMS
+                          if (user?._id && lead.contact_id) {
+                            try {
+                              await api.post(`/contacts/${user._id}/${lead.contact_id}/events`, {
+                                event_type: 'sms_sent', title: 'SMS Sent',
+                                description: `Texted ${lead.name || lead.phone} from Hot Leads`,
+                                channel: 'sms_personal', category: 'message', icon: 'chatbubble', color: '#007AFF',
+                              });
+                            } catch {}
+                          }
                           Linking.openURL(`sms:${lead.phone}`);
                         }}
                         data-testid={`quick-text-${i}`}

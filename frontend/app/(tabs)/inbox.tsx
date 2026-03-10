@@ -597,6 +597,17 @@ export default function InboxScreen() {
     const conversation = conversations.find(c => c._id === conversationId);
     const phone = conversation?.contact?.phone;
     if (phone) {
+      // Log call event before opening dialer
+      const contactId = conversation?.contact?._id || conversation?.contact_id;
+      if (user?._id && contactId) {
+        try {
+          await contactsAPI.logEvent(user._id, contactId, {
+            event_type: 'call_placed', title: 'Outbound Call',
+            description: `Called ${conversation?.contact?.name || phone}`,
+            channel: 'call', category: 'message', icon: 'call', color: '#32ADE6',
+          });
+        } catch {}
+      }
       const phoneUrl = Platform.OS === 'ios' ? `telprompt:${phone}` : `tel:${phone}`;
       Linking.openURL(phoneUrl).catch(() => {
         Alert.alert('Error', 'Unable to make phone call');

@@ -209,6 +209,9 @@ export default function MoreScreen() {
       ? `sms:${phone}${sep}body=${encodeURIComponent(msg)}`
       : `sms:${sep === '&' ? '&' : '?'}body=${encodeURIComponent(msg)}`;
     
+    // Log event BEFORE opening native SMS
+    await logReviewShareEvent('sms');
+
     if (Platform.OS === 'web') {
       const a = document.createElement('a');
       a.href = smsUrl;
@@ -220,7 +223,6 @@ export default function MoreScreen() {
       Linking.openURL(smsUrl);
     }
 
-    await logReviewShareEvent('sms');
     setShowShareModal(false);
     setShareRecipientName('');
     setShareRecipientPhone('');
@@ -235,6 +237,10 @@ export default function MoreScreen() {
     const mailto = email
       ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
       : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // Log event BEFORE opening native email
+    await logReviewShareEvent('email');
+
     if (Platform.OS === 'web') {
       const a = document.createElement('a');
       a.href = mailto;
@@ -246,7 +252,6 @@ export default function MoreScreen() {
       Linking.openURL(mailto);
     }
 
-    await logReviewShareEvent('email');
     setShowShareModal(false);
     setShareRecipientName('');
     setShareRecipientPhone('');
@@ -283,18 +288,20 @@ export default function MoreScreen() {
     const phone = shareRecipientPhone.trim();
     const greeting = name ? `Hi ${name}, ` : '';
     const body = `${greeting}Check out our happy customers and reviews: ${url}`;
+    // Log event BEFORE opening native SMS
+    if (user?._id && phone) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone, name: name || phone,
+          event_type: 'showroom_shared', event_title: 'Showcase Shared',
+          event_description: 'Shared showcase via SMS', event_icon: 'storefront', event_color: '#34C759',
+        });
+      } catch {}
+    }
     const smsUrl = Platform.OS === 'ios' ? `sms:${phone}&body=${encodeURIComponent(body)}` : `sms:${phone}?body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = smsUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(smsUrl); }
-    // Log event
-    if (user?._id && phone) {
-      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-        phone, name: name || phone,
-        event_type: 'showroom_shared', event_title: 'Showcase Shared',
-        event_description: 'Shared showcase via SMS', event_icon: 'storefront', event_color: '#34C759',
-      }).catch(() => {});
-    }
     setShowShowroomShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };
@@ -305,18 +312,20 @@ export default function MoreScreen() {
     const body = `Hi!\n\nTake a look at what our customers are saying:\n\n${url}\n\nThank you!`;
     const email = shareRecipientEmail.trim();
     const name = shareRecipientName.trim();
+    // Log event BEFORE opening native email
+    if (user?._id && email) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          email, name: name || email,
+          event_type: 'showroom_shared', event_title: 'Showcase Shared',
+          event_description: 'Shared showcase via email', event_icon: 'storefront', event_color: '#34C759',
+        });
+      } catch {}
+    }
     const mailto = email ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = mailto; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(mailto); }
-    // Log event
-    if (user?._id && email) {
-      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-        email, name: name || email,
-        event_type: 'showroom_shared', event_title: 'Showcase Shared',
-        event_description: 'Shared showcase via email', event_icon: 'storefront', event_color: '#34C759',
-      }).catch(() => {});
-    }
     setShowShowroomShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };
@@ -327,18 +336,20 @@ export default function MoreScreen() {
     const name = shareRecipientName.trim();
     const greeting = name ? `Happy Birthday ${name}! ` : 'Happy Birthday! ';
     const body = `${greeting}We hope your day is amazing. Thank you for being a valued customer!`;
+    // Log event BEFORE opening native SMS
+    if (user?._id && phone) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone, name: name || phone,
+          event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
+          event_description: `Sent birthday greeting to ${name || phone}`, event_icon: 'gift', event_color: '#FF9500',
+        });
+      } catch {}
+    }
     const smsUrl = Platform.OS === 'ios' ? `sms:${phone}&body=${encodeURIComponent(body)}` : `sms:${phone}?body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = smsUrl; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(smsUrl); }
-    // Log event
-    if (user?._id && phone) {
-      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-        phone, name: name || phone,
-        event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
-        event_description: `Sent birthday greeting to ${name || phone}`, event_icon: 'gift', event_color: '#FF9500',
-      }).catch(() => {});
-    }
     setShowBirthdayShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };
@@ -350,18 +361,20 @@ export default function MoreScreen() {
       ? `Happy Birthday, ${name}!\n\nWe hope you have an amazing day! Thank you for being such a wonderful customer.\n\nWarm wishes!`
       : `Happy Birthday!\n\nWe hope you have an amazing day! Thank you for being such a wonderful customer.\n\nWarm wishes!`;
     const email = shareRecipientEmail.trim();
+    // Log event BEFORE opening native email
+    if (user?._id && email) {
+      try {
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          email, name: name || email,
+          event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
+          event_description: `Sent birthday greeting to ${name || email}`, event_icon: 'gift', event_color: '#FF9500',
+        });
+      } catch {}
+    }
     const mailto = email ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (Platform.OS === 'web') {
       const a = document.createElement('a'); a.href = mailto; a.target = '_self'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else { Linking.openURL(mailto); }
-    // Log event
-    if (user?._id && email) {
-      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-        email, name: name || email,
-        event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
-        event_description: `Sent birthday greeting to ${name || email}`, event_icon: 'gift', event_color: '#FF9500',
-      }).catch(() => {});
-    }
     setShowBirthdayShare(false);
     setShareRecipientName(''); setShareRecipientPhone(''); setShareRecipientEmail('');
   };

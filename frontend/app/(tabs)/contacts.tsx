@@ -320,18 +320,22 @@ export default function ContactsScreen() {
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={(e) => {
+          onPress={async (e) => {
             e.stopPropagation();
             if (item.phone) {
-              const phoneUrl = Platform.OS === 'web' 
-                ? `tel:${item.phone}` 
-                : `tel:${item.phone}`;
-              Linking.canOpenURL(phoneUrl).then(supported => {
-                if (supported) {
-                  Linking.openURL(phoneUrl);
-                } else {
-                  showSimpleAlert('Call', `Calling ${item.phone}`);
-                }
+              // Log call event before opening dialer
+              if (userId && item._id) {
+                try {
+                  await contactsAPI.logEvent(userId, item._id, {
+                    event_type: 'call_placed', title: 'Outbound Call',
+                    description: `Called ${item.first_name || ''} ${item.last_name || ''}`.trim(),
+                    channel: 'call', category: 'message', icon: 'call', color: '#32ADE6',
+                  });
+                } catch {}
+              }
+              const phoneUrl = `tel:${item.phone}`;
+              Linking.openURL(phoneUrl).catch(() => {
+                showSimpleAlert('Call', `Calling ${item.phone}`);
               });
             }
           }}

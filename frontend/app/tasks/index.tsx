@@ -111,6 +111,17 @@ export default function TasksScreen() {
             'Call Contact',
             `Call ${contact.name} at ${contact.phone}?`,
             async () => {
+              // Log call event before opening dialer
+              const cId = task.contact_id || contact?._id;
+              if (user?._id && cId) {
+                try {
+                  await contactsAPI.logEvent(user._id, cId, {
+                    event_type: 'call_placed', title: 'Outbound Call',
+                    description: `Called ${contact.name || contact.phone}`,
+                    channel: 'call', category: 'message', icon: 'call', color: '#32ADE6',
+                  });
+                } catch {}
+              }
               const phoneUrl = Platform.OS === 'ios' ? `telprompt:${contact.phone}` : `tel:${contact.phone}`;
               try {
                 await Linking.openURL(phoneUrl);

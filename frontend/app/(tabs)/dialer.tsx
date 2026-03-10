@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI } from '../../services/api';
+import api from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -72,7 +73,7 @@ export default function DialerScreen() {
     if (!numberToCall) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Log call activity
+    // Log call activity BEFORE opening dialer (await ensures it completes)
     if (user?._id) {
       const digits = numberToCall.replace(/\D/g, '');
       const suffix = digits.length >= 10 ? digits.slice(-10) : digits;
@@ -81,19 +82,13 @@ export default function DialerScreen() {
         return cDigits.endsWith(suffix);
       });
       const contactName = match ? `${match.first_name || ''} ${match.last_name || ''}`.trim() : '';
-      const apiBase = IS_WEB ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
       try {
-        fetch(`${apiBase}/contacts/${user._id}/find-or-create-and-log`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: numberToCall, name: contactName,
-            event_type: 'call_placed', event_title: 'Call Placed',
-            event_description: `Called ${contactName || numberToCall} from dialer`,
-            event_icon: 'call', event_color: '#34C759',
-          }),
-          keepalive: true,
-        }).catch(() => {});
+        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+          phone: numberToCall, name: contactName,
+          event_type: 'call_placed', event_title: 'Call Placed',
+          event_description: `Called ${contactName || numberToCall} from dialer`,
+          event_icon: 'call', event_color: '#34C759',
+        });
       } catch {}
     }
 
