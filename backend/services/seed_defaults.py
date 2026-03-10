@@ -359,10 +359,15 @@ async def seed_user_defaults(user_id: str):
     else:
         seeded["email_templates"] = 0
 
-    # 3. Campaigns
-    existing_camps = await db.campaigns.count_documents({"user_id": user_id})
-    if existing_camps == 0:
-        docs = [{"user_id": user_id, **c, "created_at": now} for c in DEFAULT_CAMPAIGNS]
+    # 3. Campaigns — deduplicate by name+type per user
+    existing_camp_names = set()
+    existing_camps_cursor = db.campaigns.find({"user_id": user_id}, {"name": 1, "type": 1})
+    async for c in existing_camps_cursor:
+        existing_camp_names.add((c.get("name", ""), c.get("type", "")))
+
+    new_campaigns = [c for c in DEFAULT_CAMPAIGNS if (c["name"], c["type"]) not in existing_camp_names]
+    if new_campaigns:
+        docs = [{"user_id": user_id, **c, "created_at": now} for c in new_campaigns]
         await db.campaigns.insert_many(docs)
         seeded["campaigns"] = len(docs)
     else:

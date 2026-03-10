@@ -456,6 +456,16 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
     campaign_dict['user_id'] = user_id
     campaign_dict['created_at'] = datetime.utcnow()
     
+    # Prevent exact duplicate campaigns (same name + type for same user)
+    existing = await get_db().campaigns.find_one({
+        "user_id": user_id,
+        "name": campaign_dict.get("name"),
+        "type": campaign_dict.get("type"),
+    })
+    if existing:
+        existing["_id"] = str(existing["_id"])
+        return Campaign(**existing)
+    
     result = await get_db().campaigns.insert_one(campaign_dict)
     campaign_dict['_id'] = result.inserted_id
     
@@ -465,10 +475,8 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
 
 @router.get("/{user_id}", response_model=List[Campaign])
 async def get_campaigns(user_id: str):
-    """Get all campaigns with role-based access"""
-    base_filter = await get_data_filter(user_id)
-    
-    campaigns = await get_db().campaigns.find(base_filter).limit(500).to_list(500)
+    """Get campaigns for a specific user (always scoped to the user, not store/org-wide)"""
+    campaigns = await get_db().campaigns.find({"user_id": user_id}).limit(500).to_list(500)
     return [Campaign(**{**camp, "_id": str(camp["_id"])}) for camp in campaigns]
 
 # ============= PENDING SENDS (Manual Campaigns) =============
