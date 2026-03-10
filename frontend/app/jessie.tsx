@@ -405,9 +405,9 @@ export default function JessiScreen() {
       const chatRes = await api.post('/jessie/chat', {
         user_id: user?._id,
         message: message,
-        include_voice: true,
+        include_voice: false,  // Skip TTS for text input — instant response
       }, {
-        timeout: 60000,
+        timeout: 30000,
       });
       
       // Success haptic when Jessi responds

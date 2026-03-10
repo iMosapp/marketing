@@ -420,4 +420,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **PROBLEM:** Sending a card (Welcome, Congrats, Birthday, etc.) via text didn't count as a "text sent" on dashboards. Only plain SMS was counted. Cards = texts since users open the SMS app.
 - **FIX:** Single source of truth `SMS_EVENT_TYPES` in `tasks.py` includes all SMS event types. Updated: daily tasks, performance dashboard, detail drilldown, leaderboard, engagement team stats.
 - **Impact:** Texts count 58 → 202 (144 card/link sends now counted). No double-counting in totals.
+
+### Jessie AI Support Agent — v2.0 Upgrade (Mar 10, 2026)
+- **PROBLEM:** Jessie was extremely slow (10-15s+ per response) because it replayed the ENTIRE chat history through separate LLM API calls for every message. Knowledge was also shallow — just a paragraph overview.
+- **FIX (Speed):** Eliminated the O(n²) history replay. Now passes last 8 messages as text context in the system prompt, then makes a SINGLE LLM call. Response time: **1.4-3.3 seconds** (was 10-15s+).
+- **FIX (Knowledge):** Replaced the shallow prompt with a comprehensive ~4000-word knowledge base covering every feature, screen, navigation path, workflow, troubleshooting step, and onboarding flow.
+- **FIX (Context):** Injects user-specific context (name, role, org, contact count, activity count) so Jessie gives personalized answers and knows whether the user has admin access.
+- **FIX (Frontend):** Text input now skips TTS generation (instant text response). Voice input still gets TTS.
+- **Model:** Switched from gpt-5.2 to gpt-4o-mini for faster responses (knowledge base compensates).
+- **Files:** `/app/backend/services/jessie_service.py` (complete rewrite), `/app/frontend/app/jessie.tsx` (TTS optimization)
 - **Tested:** iteration 178 (12/12 passed)
