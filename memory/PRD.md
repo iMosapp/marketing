@@ -358,5 +358,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Scheduler: 14-day expiry:** New daily job `daily_recent_tag_expiry` runs at 4 AM UTC. Removes "Recent" tag from contacts where it was applied >14 days ago.
 - **Tested:** 11/11 backend tests passed (iteration 165).
 
+### Event Logging Audit & Fix (Mar 10, 2026)
+- **BUG FIXED:** Touchpoints page `handleCall` was opening native phone dialer WITHOUT logging a `call_placed` contact_event — calls from Touchpoints were invisible to the performance dashboard
+- **Fix:** Added `contactsAPI.logEvent()` call with `event_type: 'call_placed'` before opening the dialer
+- **Timezone Fix:** Campaign pending-send completion (`campaigns.py`) and public API event logging (`public_api.py`) were using deprecated `datetime.utcnow()` (naive timestamps) — changed to `datetime.now(timezone.utc)` for consistency with performance dashboard queries
+- **Audit Confirmed:** Composer (contact/[id].tsx), Home quick actions (home.tsx), Quick-send ([action].tsx), and find-or-create-and-log all correctly log events before opening native apps — these were fixed in a prior session and remain working
+- **Tested:** 15/15 backend tests passed (iteration 172), all event types correctly counted in performance dashboard
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
