@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pick Jessi's Voice</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0A0A;
+    color: #F5F5F7;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .container { max-width: 500px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #8E8E93; font-size: 14px; margin-bottom: 36px; }
+  .voice-card {
+    background: #1C1C1E;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.1s;
+    cursor: pointer;
+  }
+  .voice-card:hover { border-color: #C9A962; transform: scale(1.01); }
+  .voice-card.playing { border-color: #C9A962; }
+  .voice-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .voice-name { font-size: 20px; font-weight: 700; color: #C9A962; }
+  .voice-desc { font-size: 13px; color: #8E8E93; line-height: 1.5; }
+  .play-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: #C9A962;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .play-btn:hover { transform: scale(1.1); }
+  .play-btn:active { transform: scale(0.95); }
+  .play-btn svg { fill: #000; }
+  .sample-text {
+    background: #2C2C2E;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #AAA;
+    font-style: italic;
+    line-height: 1.5;
+    display: none;
+  }
+  .voice-card.playing .sample-text { display: block; }
+  .footer {
+    text-align: center;
+    color: #6E6E73;
+    font-size: 12px;
+    margin-top: 32px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Pick Jessi's Voice</h1>
+  <p class="subtitle">Tap play to hear each voice say the same line</p>
+
+  <div class="voice-card" data-voice="nova">
+    <div class="voice-header">
+      <div>
+        <div class="voice-name">Nova</div>
+        <div class="voice-desc">Energetic, friendly, warm — current default</div>
+      </div>
+      <button class="play-btn" onclick="playVoice('nova', this)">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+    <div class="sample-text">"Hey Forest! I see you're on the Brand Kit page. Need help with your logo or brand colors? I'm here for you!"</div>
+  </div>
+
+  <div class="voice-card" data-voice="shimmer">
+    <div class="voice-header">
+      <div>
+        <div class="voice-name">Shimmer</div>
+        <div class="voice-desc">Soft, gentle, a touch playful</div>
+      </div>
+      <button class="play-btn" onclick="playVoice('shimmer', this)">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+    <div class="sample-text">"Hey Forest! I see you're on the Brand Kit page. Need help with your logo or brand colors? I'm here for you!"</div>
+  </div>
+
+  <div class="voice-card" data-voice="coral">
+    <div class="voice-header">
+      <div>
+        <div class="voice-name">Coral</div>
+        <div class="voice-desc">Clear, professional, polished</div>
+      </div>
+      <button class="play-btn" onclick="playVoice('coral', this)">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+    <div class="sample-text">"Hey Forest! I see you're on the Brand Kit page. Need help with your logo or brand colors? I'm here for you!"</div>
+  </div>
+
+  <div class="voice-card" data-voice="sage">
+    <div class="voice-header">
+      <div>
+        <div class="voice-name">Sage</div>
+        <div class="voice-desc">Calm, thoughtful, measured</div>
+      </div>
+      <button class="play-btn" onclick="playVoice('sage', this)">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+    <div class="sample-text">"Hey Forest! I see you're on the Brand Kit page. Need help with your logo or brand colors? I'm here for you!"</div>
+  </div>
+
+  <div class="voice-card" data-voice="alloy">
+    <div class="voice-header">
+      <div>
+        <div class="voice-name">Alloy</div>
+        <div class="voice-desc">Neutral, balanced, smooth</div>
+      </div>
+      <button class="play-btn" onclick="playVoice('alloy', this)">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+    <div class="sample-text">"Hey Forest! I see you're on the Brand Kit page. Need help with your logo or brand colors? I'm here for you!"</div>
+  </div>
+
+  <div class="footer">
+    Once you pick a voice, let me know and I'll set it as Jessi's voice<br>
+    for all spoken responses in the app.
+  </div>
+</div>
+
+<script>
+let currentAudio = null;
+let currentCard = null;
+
+function playVoice(voice, btn) {
+  // Stop any playing audio
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    if (currentCard) currentCard.classList.remove('playing');
+  }
+
+  const card = btn.closest('.voice-card');
+  card.classList.add('playing');
+  currentCard = card;
+
+  // Update button to show pause
+  btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+
+  const audio = new Audio('/static/voice_sample_' + voice + '.mp3');
+  currentAudio = audio;
+
+  audio.onended = function() {
+    card.classList.remove('playing');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    currentAudio = null;
+    currentCard = null;
+  };
+
+  audio.play().catch(e => console.error('Play error:', e));
+}
+</script>
+</body>
+</html>

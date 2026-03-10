@@ -73,6 +73,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Serve static files (voice samples, etc.)
+from fastapi.staticfiles import StaticFiles
+static_dir = ROOT_DIR / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 # ============= HEALTH CHECK =============
 @api_router.get("/")
 async def root():
@@ -89,6 +96,12 @@ async def build_version():
     start_time = getattr(app.state, 'start_time', 0)
     version = hashlib.md5(str(start_time).encode()).hexdigest()[:8]
     return {"version": version}
+
+
+@app.get("/voice-picker")
+async def voice_picker():
+    """Voice sample picker for choosing Jessi's voice"""
+    return FileResponse(str(ROOT_DIR / "static" / "voice-picker.html"), media_type="text/html")
 
 # Debug endpoint removed for security
 
