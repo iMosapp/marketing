@@ -11,7 +11,7 @@ Features:
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import Response
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 import base64
 import uuid
@@ -680,7 +680,15 @@ async def get_congrats_card(card_id: str):
         title = viewed_info["label"]
         event_type = viewed_info["event_type"]
         
-        if salesman_id:
+        # Dedup: skip if the same card view was logged in the last 2 minutes
+        recent_cutoff = datetime.utcnow() - timedelta(minutes=2)
+        existing = await db.contact_events.find_one({
+            "event_type": event_type,
+            "metadata.card_id": card_id,
+            "created_at": {"$gte": recent_cutoff}
+        })
+        
+        if salesman_id and not existing:
             await log_activity_for_customer(
                 user_id=salesman_id,
                 customer_phone=customer_phone,

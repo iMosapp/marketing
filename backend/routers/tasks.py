@@ -648,7 +648,7 @@ async def get_performance(user_id: str, period: str = "week"):
         "click_through": {
             "my_card_views": activity.get("digital_card_viewed", 0) + eng_signals.get("digital_card_viewed", 0),
             "customer_card_views": activity.get("congrats_card_viewed", 0) + activity.get("birthday_card_viewed", 0) + activity.get("holiday_card_viewed", 0) + eng_signals.get("card_viewed", 0),
-            "review_link_clicks": activity.get("review_link_clicked", 0) + eng_signals.get("review_link_clicked", 0),
+            "review_link_clicks": activity.get("review_link_clicked", 0) + activity.get("online_review_clicked", 0) + activity.get("card_review_clicked", 0) + activity.get("card_online_review_clicked", 0) + eng_signals.get("review_link_clicked", 0),
             "showcase_views": activity.get("showcase_viewed", 0) + activity.get("showroom_viewed", 0) + eng_signals.get("showcase_viewed", 0),
             "link_page_visits": activity.get("link_page_viewed", 0) + eng_signals.get("link_page_viewed", 0),
         },
@@ -669,7 +669,7 @@ EVENT_CATEGORY_MAP = {
     "replies": ["reply_received", "sms_received"],
     "my_card_views": ["digital_card_viewed"],
     "customer_card_views": ["congrats_card_viewed", "birthday_card_viewed", "holiday_card_viewed"],
-    "review_link_clicks": ["review_link_clicked"],
+    "review_link_clicks": ["review_link_clicked", "online_review_clicked", "card_review_clicked", "card_online_review_clicked"],
     "showcase_views": ["showcase_viewed", "showroom_viewed"],
     "link_page_visits": ["link_page_viewed"],
 }
@@ -679,7 +679,7 @@ ENGAGEMENT_CATEGORY_MAP = {
     "link_clicks": ["link_clicked", "card_viewed", "digital_card_viewed", "showcase_viewed", "link_page_viewed", "review_link_clicked"],
     "my_card_views": ["digital_card_viewed"],
     "customer_card_views": ["card_viewed"],
-    "review_link_clicks": ["review_link_clicked"],
+    "review_link_clicks": ["review_link_clicked", "online_review_clicked", "card_review_clicked", "card_online_review_clicked"],
     "showcase_views": ["showcase_viewed"],
     "link_page_visits": ["link_page_viewed"],
 }
