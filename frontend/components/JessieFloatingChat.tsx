@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname } from 'expo-router';
 import { Audio } from 'expo-av';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
@@ -71,6 +72,7 @@ export default function JessieFloatingChat() {
   const { colors } = useThemeStore();
   const user = useAuthStore((s) => s.user);
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -79,22 +81,7 @@ export default function JessieFloatingChat() {
   const [speaking, setSpeaking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const soundRef = useRef<Audio.Sound | null>(null);
-
-  // Pulse animation for the floating button
-  useEffect(() => {
-    if (!open) {
-      const anim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.08, duration: 2000, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-        ])
-      );
-      anim.start();
-      return () => anim.stop();
-    }
-  }, [open]);
 
   // Slide animation
   useEffect(() => {
@@ -204,18 +191,18 @@ export default function JessieFloatingChat() {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Slim top bar — "Have questions? Ask Jessi" */}
       {!open && (
-        <Animated.View style={[s.fab, { transform: [{ scale: pulseAnim }] }]}>
-          <TouchableOpacity
-            onPress={handleOpen}
-            activeOpacity={0.85}
-            style={s.fabBtn}
-            data-testid="jessie-fab"
-          >
-            <Ionicons name="chatbubble-ellipses" size={24} color="#000" />
-          </TouchableOpacity>
-        </Animated.View>
+        <TouchableOpacity
+          onPress={handleOpen}
+          activeOpacity={0.7}
+          style={[s.topBar, { top: insets.top, backgroundColor: colors.bg, borderBottomColor: colors.border }]}
+          data-testid="jessi-top-bar"
+        >
+          <Text style={[s.topBarText, { color: colors.textSecondary || '#8E8E93' }]}>
+            Have questions? Ask Jessi
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* Chat Panel Modal */}
@@ -352,24 +339,20 @@ export default function JessieFloatingChat() {
 }
 
 const s = StyleSheet.create({
-  fab: {
+  topBar: {
     position: 'absolute',
-    bottom: 90,
-    right: 16,
+    left: 0,
+    right: 0,
+    height: 22,
     zIndex: 9999,
-  },
-  fabBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#C9A962',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C9A962',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  topBarText: {
+    fontSize: 11,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   backdrop: {
     flex: 1,
