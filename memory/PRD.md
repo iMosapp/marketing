@@ -316,6 +316,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Accessible from Settings > Integrations > RMS tab via "Dashboard" button
 - Bug fix: CRM link Copy button was using `contact._id` (undefined) — fixed to use URL param `id`
 
+### Activity Feed Data Integrity Fix (Mar 11, 2026)
+- **BUG FIXED (P0):** Activity Feed showing "Unknown" for all contact names/photos
+- **Root cause:** `master-feed` endpoint used a single list comprehension `[ObjectId(cid) for cid in contact_ids]` to convert ALL contact_ids at once. If even ONE invalid contact_id existed (e.g., test data like `abc123def456`), the entire comprehension failed silently (`except: pass`), leaving `contacts_map` empty — so ALL events showed "Unknown".
+- **Fix 1 (`contact_events.py`):** Changed to per-item ObjectId conversion with try/except — invalid IDs are skipped, valid ones still resolve correctly.
+- **Fix 2 (`contact_activity.py`):** Added ObjectId validation in `log_customer_activity` — prevents storing events with invalid contact_ids.
+- **Fix 3 (`tracking.py`):** Added ObjectId validation on incoming `contact_id` in tracking endpoint — rejects garbage IDs at the entry point.
+- **Tested:** 13/13 backend tests passed, frontend Activity tab fully verified (iteration 184).
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
