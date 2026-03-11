@@ -596,5 +596,20 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### Customer Performance UI Fix (Mar 11, 2026)
 - **PROBLEM:** Period and scope filter pills were overlapping/smashed together, tiles too small. User requested matching the My Performance page design.
 - **FIX:** Replaced horizontal `ScrollView` pills with equal-width `flex: 1` buttons in a `flexDirection: 'row'` container. Period filters use gold accent, scope filters use green accent. Added solid background when selected, proper padding (8px), borderRadius 10. Tiles enlarged with bigger rank badges (32px), larger scores (18pt), and more padding.
+
+### Contextual OG Meta Tags for Link Previews (Mar 11, 2026)
+- **PROBLEM:** All shared links (cards, review requests, digital business cards) showed the generic "i'M On Social" logo in iMessage/SMS previews. Titles were generic, descriptions were empty or irrelevant.
+- **FIX (`/app/backend/routers/short_urls.py`):**
+  - **Card links** (congrats, birthday, anniversary, thankyou, welcome, holiday): Now show the customer's actual photo (from object storage `photo_url`) as `og:image`, with contextual titles like "Congrats Forest!", "Happy Birthday Forest!", "Thank You Forest!". Description shows "From [Salesperson] at [Store Name]".
+  - **Review request links**: Show the dealership's logo with "Share Your Experience with [Store Name]" title.
+  - **Digital business card links**: Show the salesperson's photo with "[Name]'s Digital Card" title.
+  - **Showcase/link pages**: Contextual titles with store name.
+  - Card type detection expanded from only `congrats_card` to ALL card types: congrats_card, birthday_card, thank_you_card, thankyou_card, holiday_card, welcome_card, anniversary_card.
+  - Customer names are properly title-cased.
+  - Card lookup checks both `congrats_cards` and `birthday_cards` collections.
+  - OG image fallback chain: customer photo → generated card image → store logo → static default.
+- **Impact:** Every shared link now shows a personalized, branded preview instead of the generic app logo. Customers see their own photo when receiving a card link, making them far more likely to open it.
+- **Tested:** 14/14 backend tests passed (iteration 183).
+
 - **File:** `/app/frontend/app/touchpoints/customer-performance.tsx`
 - **Tested:** All frontend verified (iteration 182)
