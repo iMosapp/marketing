@@ -134,22 +134,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   loadAuth: async () => {
-    // Helper: attempt cookie-based session restore from the server
+    // Helper: attempt cookie-based session restore from the server (with retry)
     const tryRestoreFromCookie = async (): Promise<boolean> => {
-      try {
-        const { default: api } = await import('../services/api');
-        const res = await api.get('/auth/me');
-        if (res.data?.user && res.data?.token) {
-          const user = res.data.user;
-          const restoredToken = res.data.token;
-          // Re-persist to AsyncStorage so future cold boots are instant
-          await AsyncStorage.setItem('auth_token', restoredToken).catch(() => {});
-          await AsyncStorage.setItem('user', JSON.stringify(user)).catch(() => {});
-          set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
-          return true;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const { default: api } = await import('../services/api');
+          const res = await api.get('/auth/me');
+          if (res.data?.user && res.data?.token) {
+            const user = res.data.user;
+            const restoredToken = res.data.token;
+            // Re-persist to AsyncStorage so future cold boots are instant
+            await AsyncStorage.setItem('auth_token', restoredToken).catch(() => {});
+            await AsyncStorage.setItem('user', JSON.stringify(user)).catch(() => {});
+            set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
+            return true;
+          }
+        } catch (e: any) {
+          // Only retry on network errors, not on 401s (which mean no valid session)
+          if (e?.response?.status === 401) break;
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+            continue;
+          }
         }
-      } catch {
-        // Cookie restore failed — server has no session
+        break;
       }
       return false;
     };

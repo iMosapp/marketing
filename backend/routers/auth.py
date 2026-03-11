@@ -423,6 +423,10 @@ async def get_current_user(request: Request):
         if isinstance(user[k], datetime):
             user[k] = user[k].isoformat()
 
+    # Merge feature permissions with role-based defaults (same as login)
+    from permissions import merge_permissions
+    user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
+
     return {
         "token": f"mock_token_{user['_id']}",
         "user": user
