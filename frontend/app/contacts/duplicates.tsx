@@ -64,31 +64,30 @@ export default function DuplicatesScreen() {
 
   useFocusEffect(useCallback(() => { fetchDuplicates(); }, [fetchDuplicates]));
 
-  const handleMerge = async (primaryId: string, duplicateId: string, primaryName: string, dupName: string) => {
-    const confirmed = await showConfirm(
+  const handleMerge = (primaryId: string, duplicateId: string, primaryName: string, dupName: string) => {
+    showConfirm(
       'Merge Contacts',
-      `Keep "${primaryName}" and merge "${dupName}" into it?\n\nAll activity, messages, cards, and tags from "${dupName}" will be moved to "${primaryName}". This cannot be undone.`
+      `Keep "${primaryName}" and merge "${dupName}" into it?\n\nAll activity, messages, cards, and tags from "${dupName}" will be moved to "${primaryName}". This cannot be undone.`,
+      async () => {
+        try {
+          setMerging(duplicateId);
+          const res = await api.post(`/contacts/${userId}/merge`, {
+            primary_id: primaryId,
+            duplicate_id: duplicateId,
+          });
+          const data = res.data;
+          showSimpleAlert(
+            `Merged! ${data.records_migrated} record${data.records_migrated !== 1 ? 's' : ''} moved.`,
+            'success'
+          );
+          fetchDuplicates();
+        } catch (e: any) {
+          showSimpleAlert(e?.response?.data?.detail || 'Merge failed', 'error');
+        } finally {
+          setMerging(null);
+        }
+      }
     );
-    if (!confirmed) return;
-
-    try {
-      setMerging(duplicateId);
-      const res = await api.post(`/contacts/${userId}/merge`, {
-        primary_id: primaryId,
-        duplicate_id: duplicateId,
-      });
-      const data = res.data;
-      showSimpleAlert(
-        `Merged! ${data.records_migrated} record${data.records_migrated !== 1 ? 's' : ''} moved.`,
-        'success'
-      );
-      // Remove the merged set or refresh
-      fetchDuplicates();
-    } catch (e: any) {
-      showSimpleAlert(e?.response?.data?.detail || 'Merge failed', 'error');
-    } finally {
-      setMerging(null);
-    }
   };
 
   const formatDate = (iso: string | null) => {
