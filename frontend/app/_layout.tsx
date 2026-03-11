@@ -52,10 +52,9 @@ function usePWAMetaTags() {
         textarea { min-height: 0 !important; }
         input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus,
         textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus {
-          -webkit-box-shadow: 0 0 0px 1000px #1C1C1E inset !important;
-          -webkit-text-fill-color: #FFFFFF !important;
-          caret-color: #FFFFFF !important;
-          transition: background-color 5000s ease-in-out 0s;
+          -webkit-text-fill-color: currentColor !important;
+          caret-color: currentColor !important;
+          transition: background-color 9999s ease-in-out 0s, -webkit-box-shadow 9999s ease-in-out 0s;
         }
       `;
       head.appendChild(style);
