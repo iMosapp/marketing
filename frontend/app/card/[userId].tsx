@@ -60,7 +60,7 @@ const SOCIAL_PLATFORMS = [
 
 export default function DigitalCardPage() {
   const router = useRouter();
-  const { userId, campaign, contact, preview } = useLocalSearchParams();
+  const { userId, campaign, contact, preview, cid } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [cardData, setCardData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -80,6 +80,17 @@ export default function DigitalCardPage() {
   const [matchModalVisible, setMatchModalVisible] = useState(false);
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [pendingShareAction, setPendingShareAction] = useState<{platform: string; payload: any} | null>(null);
+  
+  // Tracking context — only track when NOT the owner (customer viewing)
+  const trackCtx = {
+    salesperson_id: userId as string,
+    contact_id: (cid as string) || undefined,
+  };
+  const track = (action: string, extra?: Record<string, any>) => {
+    if (!isOwner) {
+      trackCustomerAction('card', action, { ...trackCtx, ...extra });
+    }
+  };
   
   // Direct shareable link - always use production URL like congrats cards
   const cardUrl = `https://app.imonsocial.com/card/${userId}`;
@@ -105,7 +116,8 @@ export default function DigitalCardPage() {
 
   const loadCardData = async () => {
     try {
-      const response = await api.get(`/card/data/${userId}`);
+      const cidParam = cid ? `?cid=${cid}` : '';
+      const response = await api.get(`/card/data/${userId}${cidParam}`);
       setCardData(response.data);
     } catch (error) {
       console.error('Error loading card:', error);
@@ -117,6 +129,7 @@ export default function DigitalCardPage() {
   const handleSubmitFeedback = async () => {
     if (feedbackRating === 0) return;
     setSubmittingFeedback(true);
+    track('internal_review_submitted', { metadata: { rating: feedbackRating } });
     try {
       const storeSlug = cardData?.store?.slug || 'default';
       await api.post(`/review/submit/${storeSlug}`, {
@@ -166,6 +179,7 @@ export default function DigitalCardPage() {
 
   const handleSaveContact = async () => {
     setSaving(true);
+    track('vcard_saved');
     try {
       // Track the save + enroll in campaign if specified
       await api.post(`/card/save/${userId}`, {
@@ -204,6 +218,7 @@ export default function DigitalCardPage() {
 
   // Share via link
   const handleShareLink = async () => {
+    track('share_clicked', { platform: 'link' });
     try {
       const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       if (Platform.OS === 'web') {
@@ -229,6 +244,7 @@ export default function DigitalCardPage() {
 
   // Copy link to clipboard
   const handleCopyLink = async () => {
+    track('share_clicked', { platform: 'copy_link' });
     try {
       const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       await Clipboard.setStringAsync(cardUrl);
@@ -300,6 +316,7 @@ export default function DigitalCardPage() {
 
   // Share via SMS
   const handleShareSMS = () => {
+    track('share_clicked', { platform: 'sms' });
     const cardUrl = `https://app.imonsocial.com/card/${userId}`;
     const message = `Check out my digital business card: ${cardUrl}`;
     const phone = shareRecipientPhone.trim();
@@ -318,6 +335,7 @@ export default function DigitalCardPage() {
 
   // Share via Email
   const handleShareEmail = () => {
+    track('share_clicked', { platform: 'email' });
     const cardUrl = `https://app.imonsocial.com/card/${userId}`;
     const subject = `${cardData?.user?.name || 'My'} Digital Business Card`;
     const body = `Hi!\n\nHere's my digital business card:\n${cardUrl}\n\nLooking forward to connecting!`;
@@ -335,6 +353,7 @@ export default function DigitalCardPage() {
 
   // Share QR Code - uses short URL for cleaner sharing
   const handleShareQR = async () => {
+    track('share_clicked', { platform: 'qr_code' });
     try {
       const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       if (Platform.OS === 'web') {
@@ -500,7 +519,10 @@ export default function DigitalCardPage() {
                       <TouchableOpacity
                         key={platform.key}
                         style={styles.socialIcon}
-                        onPress={() => Linking.openURL(url)}
+                        onPress={() => {
+                          track('social_clicked', { platform: platform.key, url });
+                          Linking.openURL(url);
+                        }}
                         data-testid={`social-${platform.key}`}
                       >
                         <Ionicons name={platform.icon as any} size={22} color={platform.color} />
@@ -592,7 +614,10 @@ export default function DigitalCardPage() {
             {user.phone && (
               <TouchableOpacity
                 style={styles.quickActionButton}
-                onPress={() => openProtocolUrl(`tel:${user.phone}`)}
+                onPress={() => {
+                  track('call_clicked', { url: `tel:${user.phone}` });
+                  openProtocolUrl(`tel:${user.phone}`);
+                }}
                 data-testid="quick-call-btn"
               >
                 <View style={styles.quickActionIcon}>
@@ -605,7 +630,10 @@ export default function DigitalCardPage() {
             {user.phone && (
               <TouchableOpacity
                 style={styles.quickActionButton}
-                onPress={() => openProtocolUrl(`sms:${user.phone}`)}
+                onPress={() => {
+                  track('text_clicked', { url: `sms:${user.phone}` });
+                  openProtocolUrl(`sms:${user.phone}`);
+                }}
                 data-testid="quick-text-btn"
               >
                 <View style={styles.quickActionIcon}>
@@ -618,7 +646,10 @@ export default function DigitalCardPage() {
             {user.email && (
               <TouchableOpacity
                 style={styles.quickActionButton}
-                onPress={() => openProtocolUrl(`mailto:${user.email}`)}
+                onPress={() => {
+                  track('email_clicked', { url: `mailto:${user.email}` });
+                  openProtocolUrl(`mailto:${user.email}`);
+                }}
                 data-testid="quick-email-btn"
               >
                 <View style={styles.quickActionIcon}>
@@ -647,6 +678,7 @@ export default function DigitalCardPage() {
               <TouchableOpacity 
                 style={[styles.reviewCTABanner, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
                 onPress={() => {
+                  track('online_review_clicked');
                   const slug = cardData?.store?.slug;
                   if (slug) {
                     router.push(`/review/${slug}?sp=${userId}` as any);
@@ -666,7 +698,10 @@ export default function DigitalCardPage() {
               <>
                 <TouchableOpacity 
                   style={styles.reviewCTABanner}
-                  onPress={() => setShowReviewForm(!showReviewForm)}
+                  onPress={() => {
+                    track('review_clicked');
+                    setShowReviewForm(!showReviewForm);
+                  }}
                   data-testid="leave-review-cta"
                 >
                   <Ionicons name="star" size={22} color="#FFD60A" />
@@ -707,6 +742,7 @@ export default function DigitalCardPage() {
             <TouchableOpacity
               style={styles.referralBanner}
               onPress={() => {
+                track('refer_clicked');
                 const shareText = `Check out ${user.name || 'my contact'}! ${typeof window !== 'undefined' ? window.location.href : ''}`;
                 if (Platform.OS === 'web') {
                   if (navigator.share) {
@@ -767,7 +803,11 @@ export default function DigitalCardPage() {
               {store?.website && (
                 <TouchableOpacity 
                   style={[styles.infoRow, { borderBottomWidth: 0 }]}
-                  onPress={() => openProtocolUrl(store.website.startsWith('http') ? store.website : `https://${store.website}`)}
+                  onPress={() => {
+                    const url = store.website.startsWith('http') ? store.website : `https://${store.website}`;
+                    track('website_clicked', { url });
+                    openProtocolUrl(url);
+                  }}
                 >
                   <Ionicons name="globe-outline" size={20} color="#C9A962" />
                   <Text style={[styles.infoText, styles.linkText]}>{store.website}</Text>

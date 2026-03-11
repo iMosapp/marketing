@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Linking, P
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { trackCustomerAction } from '../../services/tracking';
 
 const ICON_MAP: Record<string, string> = {
   'logo-instagram': 'logo-instagram',
@@ -24,12 +25,13 @@ interface PageData {
   username: string; display_name: string; bio: string; photo_url: string;
   company: string; built_social_links: LinkItem[]; contact_links: LinkItem[];
   custom_links: LinkItem[]; theme: string; accent_color: string;
+  user_id?: string;
   // Legacy fields for backward compat
   links?: LinkItem[];
 }
 
 export default function PublicLinkPage() {
-  const { username } = useLocalSearchParams<{ username: string }>();
+  const { username, cid } = useLocalSearchParams<{ username: string; cid?: string }>();
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -40,14 +42,25 @@ export default function PublicLinkPage() {
 
   const loadPage = async () => {
     try {
-      const res = await api.get(`/linkpage/public/${username}`);
+      const cidParam = cid ? `?cid=${cid}` : '';
+      const res = await api.get(`/linkpage/public/${username}${cidParam}`);
       setData(res.data);
     } catch { setNotFound(true); }
     finally { setLoading(false); }
   };
 
   const openLink = (link: LinkItem) => {
+    // Legacy counter
     api.post(`/linkpage/public/${username}/click`, { link_id: link.id }).catch(() => {});
+    // Universal tracking
+    if (data?.user_id) {
+      trackCustomerAction('link_page', 'link_clicked', {
+        salesperson_id: data.user_id,
+        contact_id: cid || undefined,
+        url: link.url,
+        metadata: { link_id: link.id, link_label: link.label },
+      });
+    }
     const url = link.url.startsWith('/') ? `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}${link.url}` : link.url;
     Linking.openURL(url).catch(() => {});
   };

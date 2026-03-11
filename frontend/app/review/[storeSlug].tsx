@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
+import { trackCustomerAction } from '../../services/tracking';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 const REVIEW_PLATFORMS = [
@@ -25,7 +26,7 @@ const REVIEW_PLATFORMS = [
 ];
 
 export default function PublicReviewPage() {
-  const { storeSlug, sp } = useLocalSearchParams();
+  const { storeSlug, sp, cid } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [storeData, setStoreData] = useState<any>(null);
   const [fbRating, setFbRating] = useState(0);
@@ -34,14 +35,28 @@ export default function PublicReviewPage() {
   const [fbSubmitted, setFbSubmitted] = useState(false);
   const [fbSubmitting, setFbSubmitting] = useState(false);
 
+  // Tracking helper
+  const track = (action: string, extra?: Record<string, any>) => {
+    if (sp) {
+      trackCustomerAction('review', action, {
+        salesperson_id: sp as string,
+        contact_id: (cid as string) || undefined,
+        ...extra,
+      });
+    }
+  };
+
   useEffect(() => {
     loadStoreData();
   }, [storeSlug]);
 
   const loadStoreData = async () => {
     try {
-      const params = sp ? `?sp=${sp}` : '';
-      const response = await api.get(`/review/page/${storeSlug}${params}`);
+      const params = new URLSearchParams();
+      if (sp) params.set('sp', sp as string);
+      if (cid) params.set('cid', cid as string);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const response = await api.get(`/review/page/${storeSlug}${qs}`);
       setStoreData(response.data);
     } catch (error) {
       console.error('Error loading store:', error);
@@ -51,7 +66,9 @@ export default function PublicReviewPage() {
   };
 
   const handlePlatformClick = async (platform: string, url: string) => {
-    // Track the click
+    // Track the click via universal tracking
+    track('review_link_clicked', { platform, url });
+    // Also track via the legacy per-store endpoint
     try {
       await api.post(`/review/track-click/${storeSlug}`, {
         platform,
@@ -72,6 +89,7 @@ export default function PublicReviewPage() {
   const handleSubmitFeedback = async () => {
     if (fbRating === 0) return;
     setFbSubmitting(true);
+    track('review_submitted', { metadata: { rating: fbRating } });
     try {
       await api.post(`/review/submit/${storeSlug}`, {
         customer_name: fbName.trim() || 'Anonymous',

@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../services/api';
+import { trackCustomerAction } from '../../services/tracking';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 interface CongratsCardData {
@@ -47,7 +48,7 @@ interface CongratsCardData {
 }
 
 export default function CongratsCardPage() {
-  const { cardId, preview } = useLocalSearchParams();
+  const { cardId, preview, cid } = useLocalSearchParams();
   const router = useRouter();
   const [cardData, setCardData] = useState<CongratsCardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,20 @@ export default function CongratsCardPage() {
   const [reviewSubmitted, setReviewSubmitted] = useState(preview === 'reviewed');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [hasExistingConsent, setHasExistingConsent] = useState(false); // show banner by default, hide after consent check
+
+  // Tracking helper — fires for every customer CTA click
+  const track = (action: string, extra?: Record<string, any>) => {
+    if (cardData?.salesman_id) {
+      trackCustomerAction('congrats', action, {
+        salesperson_id: cardData.salesman_id,
+        contact_id: (cid as string) || undefined,
+        customer_phone: (cardData as any)?.customer_phone,
+        customer_name: cardData?.customer_name,
+        card_id: cardId as string,
+        ...extra,
+      });
+    }
+  };
 
   useEffect(() => {
     loadCardData();
@@ -117,6 +132,7 @@ export default function CongratsCardPage() {
   const handleSubmitReview = async () => {
     if (reviewRating === 0 || !cardData?.salesman_id) return;
     setSubmittingReview(true);
+    track('internal_review_submitted', { metadata: { rating: reviewRating } });
     try {
       // Get the store slug to submit review
       const userResp = await api.get(`/auth/user/${cardData.salesman_id}`);
@@ -139,6 +155,7 @@ export default function CongratsCardPage() {
 
   const handleDownload = async () => {
     await trackAction('download');
+    track('download_clicked');
     const imageUrl = `${api.defaults.baseURL}/congrats/card/${cardId}/image`;
     
     if (Platform.OS === 'web') {
@@ -168,6 +185,7 @@ export default function CongratsCardPage() {
 
   const handleShare = async (platform?: string) => {
     await trackAction('share');
+    track(platform ? `share_${platform}` : 'share_clicked', { platform: platform || 'native' });
     
     // Always use the tracked short URL for sharing
     const shareUrl = cardData?.short_url || 
@@ -284,7 +302,10 @@ export default function CongratsCardPage() {
         {cardData.salesman && (
           <TouchableOpacity 
             style={styles.salesmanContainer}
-            onPress={() => cardData.salesman_id && Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/card/${cardData.salesman_id}`)}
+            onPress={() => {
+              track('salesman_card_clicked');
+              cardData.salesman_id && Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/card/${cardData.salesman_id}`);
+            }}
             data-testid="salesman-card-link"
           >
             {cardData.salesman.photo && (
@@ -323,6 +344,7 @@ export default function CongratsCardPage() {
             <TouchableOpacity
               style={[styles.reviewCTA, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
               onPress={() => {
+                track('online_review_clicked');
                 if (storeSlug) {
                   Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/review/${storeSlug}?sp=${cardData.salesman_id}`);
                 }
@@ -380,7 +402,10 @@ export default function CongratsCardPage() {
           <View style={styles.quickLinksRow}>
             <TouchableOpacity
               style={styles.quickLinkItem}
-              onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/card/${cardData.salesman_id}`)}
+              onPress={() => {
+                track('my_card_clicked');
+                Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/card/${cardData.salesman_id}`);
+              }}
               data-testid="card-view-profile-btn"
             >
               <Ionicons name="card-outline" size={18} color={style.accent_color} />
@@ -391,7 +416,10 @@ export default function CongratsCardPage() {
 
             <TouchableOpacity
               style={styles.quickLinkItem}
-              onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/p/${cardData.salesman_id}`)}
+              onPress={() => {
+                track('my_page_clicked');
+                Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/p/${cardData.salesman_id}`);
+              }}
               data-testid="card-view-landing-btn"
             >
               <Ionicons name="globe-outline" size={18} color={style.accent_color} />
@@ -402,7 +430,10 @@ export default function CongratsCardPage() {
 
             <TouchableOpacity
               style={styles.quickLinkItem}
-              onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/showcase/${cardData.salesman_id}`)}
+              onPress={() => {
+                track('showcase_clicked');
+                Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/showcase/${cardData.salesman_id}`);
+              }}
               data-testid="card-view-showcase-btn"
             >
               <Ionicons name="images-outline" size={18} color={style.accent_color} />
@@ -414,7 +445,10 @@ export default function CongratsCardPage() {
                 <View style={styles.quickLinkDivider} />
                 <TouchableOpacity
                   style={styles.quickLinkItem}
-                  onPress={() => Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/l/${linkPageUsername}`)}
+                  onPress={() => {
+                    track('links_clicked');
+                    Linking.openURL(`${api.defaults.baseURL?.replace('/api', '')}/l/${linkPageUsername}`);
+                  }}
                   data-testid="card-view-linkpage-btn"
                 >
                   <Ionicons name="link-outline" size={18} color={style.accent_color} />
@@ -487,6 +521,7 @@ export default function CongratsCardPage() {
         <TouchableOpacity
           style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
           onPress={() => {
+            track('opt_in_clicked');
             router.push(`/opt-in/${cardId}` as any);
           }}
           data-testid="congrats-opt-in-btn"

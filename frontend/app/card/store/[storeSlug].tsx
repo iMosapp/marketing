@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../../services/api';
+import { trackCustomerAction } from '../../../services/tracking';
 import { PoweredByFooter } from '../../../components/PoweredByFooter';
 
 const openProtocolUrl = (url: string) => {
@@ -30,7 +31,7 @@ const openProtocolUrl = (url: string) => {
 };
 
 export default function StoreCardPage() {
-  const { storeSlug } = useLocalSearchParams();
+  const { storeSlug, sp, cid } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [fbRating, setFbRating] = useState(0);
@@ -38,6 +39,17 @@ export default function StoreCardPage() {
   const [fbText, setFbText] = useState('');
   const [fbSubmitted, setFbSubmitted] = useState(false);
   const [fbSubmitting, setFbSubmitting] = useState(false);
+
+  // Tracking helper
+  const track = (action: string, extra?: Record<string, any>) => {
+    if (sp) {
+      trackCustomerAction('store_card', action, {
+        salesperson_id: sp as string,
+        contact_id: (cid as string) || undefined,
+        ...extra,
+      });
+    }
+  };
 
   useEffect(() => { loadData(); }, [storeSlug]);
 
@@ -109,25 +121,25 @@ export default function StoreCardPage() {
         {/* Contact Actions */}
         <View style={styles.actionsRow}>
           {store.phone && (
-            <TouchableOpacity style={styles.actionBtn} onPress={() => openProtocolUrl(`tel:${store.phone}`)} data-testid="store-call-btn">
+            <TouchableOpacity style={styles.actionBtn} onPress={() => { track('call_clicked', { url: `tel:${store.phone}` }); openProtocolUrl(`tel:${store.phone}`); }} data-testid="store-call-btn">
               <Ionicons name="call" size={20} color="#C9A962" />
               <Text style={styles.actionLabel}>Call</Text>
             </TouchableOpacity>
           )}
           {store.email && (
-            <TouchableOpacity style={styles.actionBtn} onPress={() => openProtocolUrl(`mailto:${store.email}`)} data-testid="store-email-btn">
+            <TouchableOpacity style={styles.actionBtn} onPress={() => { track('email_clicked', { url: `mailto:${store.email}` }); openProtocolUrl(`mailto:${store.email}`); }} data-testid="store-email-btn">
               <Ionicons name="mail" size={20} color="#C9A962" />
               <Text style={styles.actionLabel}>Email</Text>
             </TouchableOpacity>
           )}
           {store.website && (
-            <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(store.website.startsWith('http') ? store.website : `https://${store.website}`)} data-testid="store-web-btn">
+            <TouchableOpacity style={styles.actionBtn} onPress={() => { const url = store.website.startsWith('http') ? store.website : `https://${store.website}`; track('website_clicked', { url }); Linking.openURL(url); }} data-testid="store-web-btn">
               <Ionicons name="globe" size={20} color="#C9A962" />
               <Text style={styles.actionLabel}>Website</Text>
             </TouchableOpacity>
           )}
           {store.address && (
-            <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(`${store.address}, ${store.city || ''} ${store.state || ''}`)}`)}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => { const url = `https://maps.google.com/?q=${encodeURIComponent(`${store.address}, ${store.city || ''} ${store.state || ''}`)}`; track('directions_clicked', { url }); Linking.openURL(url); }}>
               <Ionicons name="navigate" size={20} color="#C9A962" />
               <Text style={styles.actionLabel}>Directions</Text>
             </TouchableOpacity>
@@ -167,7 +179,7 @@ export default function StoreCardPage() {
                 <TouchableOpacity
                   key={member.id}
                   style={styles.teamCard}
-                  onPress={() => Linking.openURL(`https://app.imonsocial.com/card/${member.id}`)}
+                  onPress={() => { track('team_member_clicked', { metadata: { member_id: member.id, member_name: member.name } }); Linking.openURL(`https://app.imonsocial.com/card/${member.id}`); }}
                   data-testid={`team-${member.id}`}
                 >
                   {member.photo_url ? (
