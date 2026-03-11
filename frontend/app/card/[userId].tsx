@@ -23,6 +23,7 @@ import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import api from '../../services/api';
+import { trackCustomerAction } from '../../services/tracking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
