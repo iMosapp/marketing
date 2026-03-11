@@ -274,7 +274,7 @@ export default function TouchpointsScreen() {
           {/* My Performance Card */}
           <TouchableOpacity
             onPress={() => router.push(`/touchpoints/performance${periodParam ? `?period=${periodParam}` : ''}` as any)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginBottom: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}
             activeOpacity={0.8}
             data-testid="my-performance-link"
           >
@@ -284,6 +284,23 @@ export default function TouchpointsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>My Performance</Text>
               <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Day / Week / Month stats + click-throughs</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#48484A" />
+          </TouchableOpacity>
+
+          {/* Customer Performance Card */}
+          <TouchableOpacity
+            onPress={() => router.push('/touchpoints/customer-performance' as any)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginBottom: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}
+            activeOpacity={0.8}
+            data-testid="customer-performance-link"
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,149,0,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="people" size={20} color="#FF9500" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Customer Performance</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Ranked engagement across your contacts</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#48484A" />
           </TouchableOpacity>

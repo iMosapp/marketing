@@ -156,3 +156,130 @@ async def track_event(data: dict):
     except Exception as e:
         logger.error(f"[Tracking] Failed: {e}")
         return {"tracked": False, "reason": str(e)}
+
+
+# ── Engagement scoring weights ──
+SCORE_WEIGHTS = {
+    "viewed": 1,
+    "digital_card_viewed": 1, "congrats_card_viewed": 1, "review_page_viewed": 1,
+    "link_page_viewed": 1, "store_card_viewed": 1, "showcase_viewed": 1,
+    "card_call_clicked": 3, "card_text_clicked": 3, "card_email_clicked": 3,
+    "store_call_clicked": 3, "store_text_clicked": 3, "store_email_clicked": 3,
+    "card_social_clicked": 2, "card_website_clicked": 2, "store_website_clicked": 2,
+    "card_directions_clicked": 2, "store_directions_clicked": 2,
+    "vcard_saved": 4, "card_share_clicked": 4,
+    "congrats_card_downloaded": 3, "congrats_card_shared": 4,
+    "card_salesman_clicked": 2, "card_quick_link_clicked": 2,
+    "page_quick_link_clicked": 2, "showcase_quick_link_clicked": 2,
+    "links_quick_link_clicked": 2, "opt_in_clicked": 3,
+    "review_link_clicked": 3, "review_submitted": 5, "internal_review_submitted": 5,
+    "card_review_clicked": 3, "card_online_review_clicked": 3,
+    "card_refer_clicked": 5, "card_internal_review_submitted": 5,
+    "link_page_link_clicked": 2, "store_team_clicked": 2, "store_review_clicked": 3,
+}
+DEFAULT_WEIGHT = 1
+
+
+@router.get("/customer-rankings/{user_id}")
+async def get_customer_rankings(user_id: str, period: str = "month", scope: str = "user"):
+    """
+    Get ranked list of contacts by engagement score.
+    
+    period: today, week, month, all
+    scope: user (my contacts), org (store-wide), global
+    """
+    db = get_db()
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    if period == "today":
+        since = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "week":
+        since = now - timedelta(days=7)
+    elif period == "month":
+        since = now - timedelta(days=30)
+    else:
+        since = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    
+    # Build match filter — timestamps are stored as datetime objects
+    match_filter = {"timestamp": {"$gte": since}}
+    
+    if scope == "user":
+        match_filter["user_id"] = user_id
+    elif scope == "org":
+        user_doc = await db.users.find_one({"_id": user_id}, {"store_id": 1})
+        if not user_doc:
+            user_doc = await db.users.find_one({"id": user_id}, {"store_id": 1})
+        store_id = user_doc.get("store_id") if user_doc else None
+        if store_id:
+            store_users = await db.users.find({"store_id": store_id}, {"_id": 1, "id": 1}).to_list(500)
+            user_ids = list(set([str(u.get("_id", "")) for u in store_users] + [u.get("id", "") for u in store_users]))
+            match_filter["user_id"] = {"$in": user_ids}
+        else:
+            match_filter["user_id"] = user_id
+    # scope == "global" → no user filter
+    
+    # Aggregate events by contact
+    pipeline = [
+        {"$match": match_filter},
+        {"$match": {"contact_id": {"$exists": True, "$ne": None}}},
+        {"$group": {
+            "_id": "$contact_id",
+            "events": {"$push": {"event_type": "$event_type", "title": "$title", "timestamp": "$timestamp"}},
+            "event_count": {"$sum": 1},
+            "last_activity": {"$max": "$timestamp"},
+            "user_id": {"$first": "$user_id"},
+        }},
+        {"$sort": {"event_count": -1}},
+        {"$limit": 50},
+    ]
+    
+    raw_rankings = await db.contact_events.aggregate(pipeline).to_list(50)
+    
+    # Enrich with contact info and calculate weighted score
+    rankings = []
+    for r in raw_rankings:
+        contact_id = r["_id"]
+        
+        # Calculate weighted score
+        score = 0
+        event_breakdown = {}
+        for ev in r.get("events", []):
+            et = ev.get("event_type", "")
+            weight = SCORE_WEIGHTS.get(et, DEFAULT_WEIGHT)
+            score += weight
+            event_breakdown[et] = event_breakdown.get(et, 0) + 1
+        
+        # Get contact name/phone
+        from bson import ObjectId as BsonObjectId
+        contact_queries = [{"id": contact_id}]
+        try:
+            contact_queries.append({"_id": BsonObjectId(contact_id)})
+        except Exception:
+            pass
+        contact = await db.contacts.find_one(
+            {"$or": contact_queries},
+            {"_id": 0, "first_name": 1, "last_name": 1, "phone": 1, "photo_url": 1, "tags": 1}
+        )
+        if not contact:
+            contact = {"first_name": "Unknown", "last_name": "", "phone": ""}
+        
+        name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or contact.get("phone", "Unknown")
+        
+        rankings.append({
+            "contact_id": contact_id,
+            "name": name,
+            "phone": contact.get("phone", ""),
+            "photo_url": contact.get("photo_url", ""),
+            "tags": contact.get("tags", []),
+            "score": score,
+            "event_count": r["event_count"],
+            "last_activity": r["last_activity"],
+            "salesperson_id": r.get("user_id", ""),
+            "breakdown": event_breakdown,
+        })
+    
+    # Sort by weighted score (not just event count)
+    rankings.sort(key=lambda x: x["score"], reverse=True)
+    
+    return {"rankings": rankings, "period": period, "scope": scope}

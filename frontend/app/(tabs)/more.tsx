@@ -467,6 +467,7 @@ export default function MoreScreen() {
     const items = filterItems('my_tools', [
       { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/(tabs)/touchpoints' as any), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
+      { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach when you close deals', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
       { permKey: 'training_hub', icon: 'school', title: 'Training Hub', subtitle: "Learn how to use i'M On Social", onPress: () => router.push('/training-hub'), color: '#FF9500' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
     ]);
@@ -500,6 +501,7 @@ export default function MoreScreen() {
   if (perm('insights')) {
     const items = filterItems('insights', [
       { permKey: 'my_performance', icon: 'stats-chart', title: 'My Performance', subtitle: 'Day / Week / Month stats', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
+      { permKey: 'my_performance', icon: 'people', title: 'Customer Performance', subtitle: 'Ranked customer engagement', onPress: () => router.push('/touchpoints/customer-performance' as any), color: '#FF9500' },
       { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Activity reports & analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
       { permKey: 'email_analytics', icon: 'bar-chart', title: 'Email Analytics', subtitle: 'Opens, clicks, engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
       { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Team rankings & performance', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
