@@ -644,19 +644,38 @@ async def get_congrats_card(card_id: str):
     """
     Get card data for the public landing page.
     Checks congrats_cards first, then falls back to legacy birthday_cards collection.
+    Also tries lookup by MongoDB _id and short_url reference_id as fallbacks.
     """
     db = get_db()
     
     card = await db.congrats_cards.find_one({"card_id": card_id})
     
-    # Fallback: check legacy birthday_cards collection for old cards
+    # Fallback 1: check legacy birthday_cards collection for old cards
     if not card:
         card = await db.birthday_cards.find_one({"card_id": card_id})
         if card:
-            # Track views in the legacy collection
             await db.birthday_cards.update_one({"card_id": card_id}, {"$inc": {"views": 1}})
     
+    # Fallback 2: try looking up by MongoDB _id (in case card_id is actually an ObjectId)
     if not card:
+        try:
+            card = await db.congrats_cards.find_one({"_id": ObjectId(card_id)})
+        except Exception:
+            pass
+    
+    # Fallback 3: check short_urls for the reference_id to find the actual card_id
+    if not card:
+        try:
+            short_doc = await db.short_urls.find_one({"reference_id": card_id})
+            if short_doc:
+                real_card_id = short_doc.get("reference_id")
+                if real_card_id and real_card_id != card_id:
+                    card = await db.congrats_cards.find_one({"card_id": real_card_id})
+        except Exception:
+            pass
+    
+    if not card:
+        logger.warning(f"[GetCard] Card not found for id='{card_id}' — checked congrats_cards, birthday_cards, _id lookup, and short_urls")
         raise HTTPException(status_code=404, detail="Card not found")
     
     # Increment view count (only for congrats_cards - legacy already incremented above)
@@ -939,6 +958,12 @@ async def get_card_image(card_id: str):
     if not card:
         card = await db.birthday_cards.find_one({"card_id": card_id})
     if not card:
+        try:
+            card = await db.congrats_cards.find_one({"_id": ObjectId(card_id)})
+        except Exception:
+            pass
+    if not card:
+        logger.warning(f"[CardImage] Card not found for id='{card_id}'")
         raise HTTPException(status_code=404, detail="Card not found")
 
     # ---------- dimensions & colors ----------
