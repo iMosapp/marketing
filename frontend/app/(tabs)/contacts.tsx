@@ -428,7 +428,7 @@ export default function ContactsScreen() {
               >
                 <Ionicons 
                   name="refresh" 
-                  size={24} 
+                  size={20} 
                   color={refreshing ? "#4C4C4E" : "#007AFF"} 
                 />
               </TouchableOpacity>
@@ -437,20 +437,20 @@ export default function ContactsScreen() {
               onPress={() => setSelectMode(true)}
               style={styles.headerButton}
             >
-              <Ionicons name="checkbox-outline" size={24} color="#007AFF" />
+              <Ionicons name="checkbox-outline" size={20} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => router.push('/contacts/duplicates')}
               style={styles.headerButton}
               data-testid="duplicates-btn"
             >
-              <Ionicons name="copy-outline" size={24} color="#007AFF" />
+              <Ionicons name="copy-outline" size={20} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => router.push('/contacts/import')}
               style={styles.headerButton}
             >
-              <Ionicons name="download-outline" size={26} color="#007AFF" />
+              <Ionicons name="download-outline" size={22} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={handleAddNewContact}
@@ -458,7 +458,7 @@ export default function ContactsScreen() {
               accessibilityLabel="Add new contact"
               data-testid="add-contact-btn"
             >
-              <Ionicons name="add-circle" size={32} color="#007AFF" />
+              <Ionicons name="add-circle" size={28} color="#007AFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -637,10 +637,10 @@ const getStyles = (colors: any) => StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 6,
   },
   headerButton: {
-    padding: 4,
+    padding: 2,
   },
   title: {
     fontSize: 34,
