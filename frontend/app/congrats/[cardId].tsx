@@ -539,16 +539,17 @@ export default function CongratsCardPage() {
       <TouchableOpacity
         style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
         onPress={() => {
-          const shareText = `Check out ${cardData.salesman?.name || 'this amazing person'}! ${typeof window !== 'undefined' ? window.location.href : ''}`;
+          const referText = `Check out ${cardData.salesman?.name || 'this amazing person'}!`;
+          const referUrl = typeof window !== 'undefined' ? window.location.href : '';
           if (Platform.OS === 'web') {
             if (typeof navigator !== 'undefined' && navigator.share) {
-              navigator.share({ title: 'Refer a Friend', text: shareText, url: window.location.href });
+              navigator.share({ title: 'Refer a Friend', text: referText, url: referUrl });
             } else if (typeof navigator !== 'undefined') {
-              navigator.clipboard?.writeText(shareText);
+              navigator.clipboard?.writeText(`${referText} ${referUrl}`);
               alert('Link copied! Share it with a friend.');
             }
           } else {
-            Share.share({ message: shareText });
+            Share.share({ message: `${referText} ${referUrl}` });
           }
         }}
         data-testid="congrats-refer-friend"
