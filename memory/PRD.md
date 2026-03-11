@@ -493,6 +493,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **FIX:** Keyword-based event type detection now only triggers when the message also contains a URL (`https?://`). Plain text messages without links always default to `personal_sms`.
 - **File:** `/app/backend/utils/event_types.py` lines 194-207
 
+### Auth Persistence Hardening (Mar 11, 2026)
+- **PROBLEM:** Users on production (iOS PWA) getting logged out 3-4 times/day despite 10-year cookie and localStorage persistence.
+- **ROOT CAUSE:** The `loadAuth()` function had a silent failure mode — if `JSON.parse(userStr)` threw (corrupted data from iOS memory pressure, interrupted writes, etc.), the entire try block jumped to catch, which set `isLoading: false` WITHOUT attempting the cookie fallback. User silently landed on login screen.
+- **FIXES:**
+  1. `loadAuth()` catch block now attempts cookie restore (`GET /auth/me`) as last resort instead of giving up
+  2. All `JSON.parse` calls wrapped in `safeParse()` helper — corrupted data triggers cookie restore instead of crash
+  3. API request interceptor now reads user from **Zustand in-memory state first** (instant), falls back to AsyncStorage only on cold boot. Eliminates per-request AsyncStorage reads that could return null under memory pressure.
+  4. Fallback timeout reduced from 30s to 8s with automatic retry
+- **Files:** `/app/frontend/store/authStore.ts`, `/app/frontend/services/api.ts`, `/app/frontend/app/index.tsx`
+
+
 ### Company Docs Content Update (Mar 10, 2026)
 - **Operations Manual updated to v4.0** with 27 slides covering all current features:
   - Updated Jessi AI slide (16) with Phase 2/3 capabilities: floating chat, context awareness, voice, live data lookups

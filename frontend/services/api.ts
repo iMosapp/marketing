@@ -29,16 +29,26 @@ const api = axios.create({
 });
 
 // Request interceptor to add auth token and user ID
+// Uses in-memory Zustand state first (instant), falls back to AsyncStorage only if needed
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Get user from storage and add X-User-ID header
+      // Try in-memory state first — avoids AsyncStorage read on every request
+      const { useAuthStore } = await import('../store/authStore');
+      const { user } = useAuthStore.getState();
+      if (user?._id) {
+        config.headers['X-User-ID'] = user._id;
+        return config;
+      }
+      // Fallback: read from AsyncStorage (cold boot, before loadAuth completes)
       const userStr = await AsyncStorage.getItem('user');
       if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user?._id) {
-          config.headers['X-User-ID'] = user._id;
-        }
+        try {
+          const parsed = JSON.parse(userStr);
+          if (parsed?._id) {
+            config.headers['X-User-ID'] = parsed._id;
+          }
+        } catch {}
       }
     } catch (e) {
       console.log('Error getting user for header:', e);

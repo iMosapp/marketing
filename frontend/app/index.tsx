@@ -69,12 +69,14 @@ export default function Index() {
     }
   }, [mounted, isLoading, isAuthenticated, user]);
   
-  // Fallback timeout — extended to 30s to allow cookie-based session restore
+  // Fallback timeout — if loadAuth hasn't resolved in 8s, something is wrong.
+  // Try one more loadAuth and then redirect to login if still not authenticated.
   useEffect(() => {
     if (!mounted || redirectPath) return;
     
     const timer = setTimeout(() => {
       if (!redirectPath && isLoading) {
+        console.warn('[Auth] loadAuth still loading after 8s, retrying once');
         loadAuth().finally(() => {
           const { isAuthenticated: authNow } = useAuthStore.getState();
           if (!authNow) {
@@ -82,7 +84,7 @@ export default function Index() {
           }
         });
       }
-    }, 30000);
+    }, 8000);
     
     return () => clearTimeout(timer);
   }, [mounted, redirectPath]);

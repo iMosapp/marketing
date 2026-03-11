@@ -134,24 +134,61 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   loadAuth: async () => {
+    // Helper: attempt cookie-based session restore from the server
+    const tryRestoreFromCookie = async (): Promise<boolean> => {
+      try {
+        const { default: api } = await import('../services/api');
+        const res = await api.get('/auth/me');
+        if (res.data?.user && res.data?.token) {
+          const user = res.data.user;
+          const restoredToken = res.data.token;
+          // Re-persist to AsyncStorage so future cold boots are instant
+          await AsyncStorage.setItem('auth_token', restoredToken).catch(() => {});
+          await AsyncStorage.setItem('user', JSON.stringify(user)).catch(() => {});
+          set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
+          return true;
+        }
+      } catch {
+        // Cookie restore failed — server has no session
+      }
+      return false;
+    };
+
+    // Helper: safely parse JSON without throwing
+    const safeParse = (str: string | null): any => {
+      if (!str) return null;
+      try { return JSON.parse(str); } catch { return null; }
+    };
+
     try {
       const token = await AsyncStorage.getItem('auth_token');
       const userStr = await AsyncStorage.getItem('user');
-      const originalAuthStr = await AsyncStorage.getItem('original_auth');
-      const brandingStr = await AsyncStorage.getItem('partner_branding');
       
       if (token && userStr) {
-        const user = JSON.parse(userStr);
-        const partnerBranding = brandingStr ? JSON.parse(brandingStr) : null;
+        const user = safeParse(userStr);
+        
+        // If parse failed (corrupted data), try cookie restore instead of giving up
+        if (!user || !user._id) {
+          console.warn('[Auth] localStorage user data corrupted, attempting cookie restore');
+          if (await tryRestoreFromCookie()) return;
+          set({ isLoading: false });
+          return;
+        }
+        
+        const originalAuthStr = await AsyncStorage.getItem('original_auth');
+        const brandingStr = await AsyncStorage.getItem('partner_branding');
+        const partnerBranding = safeParse(brandingStr);
         let isImpersonating = false;
         let originalUser = null;
         let originalToken = null;
         
         if (originalAuthStr) {
-          const originalAuth = JSON.parse(originalAuthStr);
-          isImpersonating = true;
-          originalUser = originalAuth.user;
-          originalToken = originalAuth.token;
+          const originalAuth = safeParse(originalAuthStr);
+          if (originalAuth?.user) {
+            isImpersonating = true;
+            originalUser = originalAuth.user;
+            originalToken = originalAuth.token;
+          }
         }
         
         set({ 
@@ -166,23 +203,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       } else {
         // localStorage empty — try restoring from persistent cookie
-        try {
-          const { default: api } = await import('../services/api');
-          const res = await api.get('/auth/me');
-          if (res.data?.user && res.data?.token) {
-            const user = res.data.user;
-            const restoredToken = res.data.token;
-            await AsyncStorage.setItem('auth_token', restoredToken);
-            await AsyncStorage.setItem('user', JSON.stringify(user));
-            set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
-            return;
-          }
-        } catch {
-          // No cookie session — user needs to log in
-        }
+        console.log('[Auth] No localStorage session, attempting cookie restore');
+        if (await tryRestoreFromCookie()) return;
         set({ isLoading: false });
       }
     } catch (error) {
+      // AsyncStorage itself threw (iOS memory pressure, storage full, etc.)
+      // CRITICAL: Don't give up — try the cookie as a last resort
+      console.warn('[Auth] AsyncStorage read failed, attempting cookie restore:', error);
+      try {
+        if (await tryRestoreFromCookie()) return;
+      } catch {}
       set({ isLoading: false });
     }
   },
