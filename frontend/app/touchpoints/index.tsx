@@ -141,9 +141,21 @@ export default function TouchpointsScreen() {
     const phone = task.contact_phone;
     if (!phone) { showSimpleAlert('No Number', 'No phone number for this contact.'); return; }
 
+    // Get the clean message for pre-fill (strip campaign prefix, replace template vars)
+    let cleanMessage = task.suggested_message || task.description || '';
+    // Strip "Campaign '...' step X:" prefix if present
+    cleanMessage = cleanMessage.replace(/^Campaign\s+'[^']*'\s+step\s+\d+:\s*/i, '');
+    // Replace template variables with actual contact data
+    const firstName = (task.contact_name || '').split(' ')[0] || 'there';
+    const lastName = (task.contact_name || '').split(' ').slice(1).join(' ') || '';
+    cleanMessage = cleanMessage.replace(/\{name\}/gi, firstName);
+    cleanMessage = cleanMessage.replace(/\{first_name\}/gi, firstName);
+    cleanMessage = cleanMessage.replace(/\{last_name\}/gi, lastName);
+    cleanMessage = cleanMessage.replace(/\{contact_name\}/gi, task.contact_name || '');
+
     // Build query params for the contact page composer
     const params: any = {};
-    if (task.suggested_message) params.prefill = task.suggested_message;
+    if (cleanMessage) params.prefill = cleanMessage;
     params.taskId = task._id;
 
     // If we already have a contact_id, go directly to their page
@@ -182,7 +194,7 @@ export default function TouchpointsScreen() {
       const ua = window.navigator.userAgent.toLowerCase();
       const isIos = /iphone|ipad|ipod/.test(ua);
       const sep = isIos ? '&' : '?';
-      const smsUrl = `sms:${encodeURIComponent(phone)}${sep}body=${encodeURIComponent(task.suggested_message || '')}`;
+      const smsUrl = `sms:${encodeURIComponent(phone)}${sep}body=${encodeURIComponent(cleanMessage)}`;
       window.open(smsUrl, '_self');
     } else {
       const smsUrl = `sms:${phone.replace(/[^\d+]/g, '')}`;

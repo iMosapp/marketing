@@ -838,7 +838,7 @@ async def generate_system_tasks(user_id: str):
                     "contact_name": name, "contact_phone": contact.get("phone", ""),
                     "type": "birthday", "source": "system",
                     "title": f"Birthday {label}: {name}",
-                    "description": f"{name}'s birthday is {label}. Send a personal message!",
+                    "description": f"Send {contact.get('first_name','') or name} a personal birthday message!",
                     "suggested_message": f"Happy Birthday, {contact.get('first_name','')}! Hope you have an amazing day!",
                     "action_type": "text",
                     "priority": "high" if offset == 0 else "medium",

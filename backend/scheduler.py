@@ -515,6 +515,14 @@ async def process_pending_campaign_steps():
                         task_title = f"Send {channel.upper()} to {contact_display}"
                         task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
 
+                    # Replace template variables in the message
+                    contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
+                    clean_message = message_content
+                    clean_message = clean_message.replace("{name}", contact_first)
+                    clean_message = clean_message.replace("{first_name}", contact_first)
+                    clean_message = clean_message.replace("{last_name}", enrollment.get("contact_name", "").split()[-1] if enrollment.get("contact_name") else "")
+                    clean_message = clean_message.replace("{contact_name}", enrollment.get("contact_name", ""))
+
                     await db.tasks.insert_one({
                         "user_id": user_id,
                         "contact_id": contact_id,
@@ -523,7 +531,7 @@ async def process_pending_campaign_steps():
                         "type": "campaign_send",
                         "title": task_title,
                         "description": task_desc,
-                        "suggested_message": message_content,
+                        "suggested_message": clean_message,
                         "relationship_brief": relationship_brief,
                         "ai_generated": bool(ai_generated),
                         "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
