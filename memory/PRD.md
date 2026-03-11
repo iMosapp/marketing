@@ -316,6 +316,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Accessible from Settings > Integrations > RMS tab via "Dashboard" button
 - Bug fix: CRM link Copy button was using `contact._id` (undefined) — fixed to use URL param `id`
 
+### Duplicate Contact Merge Tool (Mar 11, 2026)
+- **NEW FEATURE:** Full duplicate detection and merge system for contacts under the same salesperson.
+- **Detection:** `GET /api/contacts/{user_id}/duplicates` — groups contacts by normalized phone (last 10 digits) within same salesperson, enriched with event/chat/card counts.
+- **Merge:** `POST /api/contacts/{user_id}/merge` — migrates data across 15+ collections (`contact_events`, `conversations`, `tasks`, `campaigns`, `cards`, etc.), merges tags/notes/photos, soft-deletes duplicate with `status: "merged"`.
+- **Safety:** Never merges across different salespeople. Rejects self-merge, cross-user merge, already-merged contacts.
+- **Frontend:** New `/contacts/duplicates` page with "Most Active" badge, activity stats, one-click merge with confirmation.
+- **Tested:** 13/13 backend tests passed (iteration 186), frontend verified.
+
 ### Contact Tracking Attribution Fix (Mar 11, 2026)
 - **BUG FIXED (P0):** Short URL redirects for card links were passing the **card_id** as `cid` (contact_id) instead of the actual contact's ObjectId. This caused all card-view tracking events to be misattributed or lost.
 - **Root cause:** `short_urls.py` used `reference_id` as fallback for `cid`. For card links, `reference_id` = card_id (NOT a contact_id). Metadata never stored the contact_id.
