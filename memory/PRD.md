@@ -545,6 +545,29 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## DO NOT REVERT — Universal Tracking Invariants
 1. Every customer-facing page MUST read `cid` from URL params
+
+### Customer Performance Rankings (Mar 11, 2026)
+- **NEW FEATURE:** Customer engagement leaderboard — ranks contacts by weighted interaction scores
+- **Backend:** `GET /api/tracking/customer-rankings/{user_id}?period=today|week|month|all&scope=user|org|global`
+  - Aggregates `contact_events` per contact, applies `SCORE_WEIGHTS` (review=5, call/text/email=3, page view=1, etc.)
+  - Returns: ranked list with score, event_count, breakdown, last_activity, contact info
+- **Frontend:** `/app/frontend/app/touchpoints/customer-performance.tsx`
+  - Period filters: Today, This Week, This Month, All Time
+  - Scope filters: My Contacts, Organization, Global
+  - Heat labels: Very Engaged (red), Engaged (orange), Warm (yellow), Cool (gray)
+  - Score bars with visual indicator
+  - Tap contact → detail modal with full activity breakdown + "View Contact" button
+- **Touchpoints index:** Added "Customer Performance" tile below "My Performance"
+- **Home screen:** Removed "AI Follow-ups" tile (moved to Menu > My Tools)
+- **Menu:** Added "Customer Performance" under Insights, "AI Follow-ups" under My Tools
+- **Tested:** 12/12 backend tests passed, all frontend verified (iteration 181)
+
+### Jessi Top Bar (Mar 11, 2026)
+- Replaced floating gold chat bubble with slim 22px "Have questions? Ask Jessi" bar at top of every screen
+- Root layout applies `paddingTop: 22` for logged-in users so content doesn't overlap
+- Bar shows on ALL screens (HIDDEN_ROUTES cleared) — user explicitly requested no hiding
+- File: `/app/frontend/components/JessieFloatingChat.tsx`, `/app/frontend/app/_layout.tsx`
+
 2. Every customer-facing page MUST pass `cid` to its backend data API call
 3. Every clickable CTA MUST call `trackCustomerAction` BEFORE the action
 4. The tracking endpoint MUST accept `contact_id` as preferred attribution (no phone/name lookup needed)
