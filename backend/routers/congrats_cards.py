@@ -1118,7 +1118,7 @@ async def get_card_image(card_id: str):
         qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=4, border=2)
         qr.add_data(share_url)
         qr.make(fit=True)
-        qr_img = qr.make_image(fill_color=accent_hex, back_color=bg_hex).convert("RGB")
+        qr_img = qr.make_image(fill_color="#FFFFFF", back_color=bg_hex).convert("RGB")
         qr_size = 130
         qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.LANCZOS)
         qr_x = 60
