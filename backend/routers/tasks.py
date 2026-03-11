@@ -12,12 +12,73 @@ from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 import logging
 
 from routers.database import get_db, get_user_by_id
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
+
+
+async def get_user_day_bounds(user_id: str, period: str = "today"):
+    """
+    Calculate the start/end of 'today', 'week', or 'month' in the user's local timezone,
+    returned as UTC datetimes for MongoDB queries.
+    
+    Lookup order: user.timezone → store.timezone → UTC
+    Uses IANA timezone names (e.g. America/Denver) which auto-handle DST.
+    """
+    db = get_db()
+    tz_name = None
+    
+    # 1. Check user's timezone
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1, "store_id": 1})
+    if user:
+        user_tz = user.get("timezone")
+        if user_tz and user_tz != "UTC":
+            tz_name = user_tz
+        
+        # 2. Fallback to store timezone
+        if not tz_name and user.get("store_id"):
+            try:
+                store = await db.stores.find_one(
+                    {"_id": ObjectId(str(user["store_id"]))},
+                    {"timezone": 1}
+                )
+                if store and store.get("timezone"):
+                    tz_name = store["timezone"]
+            except Exception:
+                pass
+    
+    # 3. Final fallback to UTC
+    try:
+        local_tz = ZoneInfo(tz_name) if tz_name else timezone.utc
+    except Exception:
+        local_tz = timezone.utc
+    
+    # Get current time in the user's local timezone
+    now_local = datetime.now(local_tz)
+    local_midnight = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    if period == "today":
+        start = local_midnight
+        end = local_midnight + timedelta(days=1)
+    elif period == "week":
+        start = local_midnight - timedelta(days=7)
+        end = local_midnight + timedelta(days=1)
+    elif period == "month":
+        start = local_midnight - timedelta(days=30)
+        end = local_midnight + timedelta(days=1)
+    else:
+        start = local_midnight
+        end = local_midnight + timedelta(days=1)
+    
+    # Convert to UTC for MongoDB queries
+    start_utc = start.astimezone(timezone.utc)
+    end_utc = end.astimezone(timezone.utc)
+    
+    return start_utc, end_utc
 
 PRIORITY_ORDER = {"high": 1, "medium": 2, "low": 3}
 
@@ -67,9 +128,8 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
     Get tasks. Filters: today (due today + overdue), overdue, upcoming, completed, all
     """
     db = get_db()
+    today_start, today_end = await get_user_day_bounds(user_id, "today")
     now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + timedelta(days=1)
 
     base = {"user_id": user_id}
 
@@ -112,9 +172,8 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
 async def get_task_summary(user_id: str):
     """Daily summary for scoreboard + progress bar."""
     db = get_db()
+    today_start, today_end = await get_user_day_bounds(user_id, "today")
     now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + timedelta(days=1)
 
     total_today = await db.tasks.count_documents({
         "user_id": user_id,
@@ -420,16 +479,9 @@ async def get_performance(user_id: str, period: str = "week"):
     """Performance stats for My Performance page. period: today, week, month"""
     db = get_db()
     now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start, end = await get_user_day_bounds(user_id, period)
 
-    if period == "today":
-        start = today_start
-    elif period == "month":
-        start = today_start - timedelta(days=30)
-    else:
-        start = today_start - timedelta(days=7)
-
-    match = {"user_id": user_id, "timestamp": {"$gte": start, "$lt": now}}
+    match = {"user_id": user_id, "timestamp": {"$gte": start, "$lt": end}}
 
     # Aggregate events by type
     pipeline = [
@@ -441,7 +493,7 @@ async def get_performance(user_id: str, period: str = "week"):
         activity[r["_id"]] = r["count"]
 
     # Also aggregate engagement_signals for the same period
-    eng_match = {"user_id": user_id, "created_at": {"$gte": start, "$lt": now}}
+    eng_match = {"user_id": user_id, "created_at": {"$gte": start, "$lt": end}}
     eng_pipeline = [
         {"$match": eng_match},
         {"$group": {"_id": "$signal_type", "count": {"$sum": 1}}},
@@ -454,7 +506,8 @@ async def get_performance(user_id: str, period: str = "week"):
         pass
 
     # Previous period for trend
-    prev_start = start - (now - start)
+    period_length = end - start
+    prev_start = start - period_length
     prev_match = {"user_id": user_id, "timestamp": {"$gte": prev_start, "$lt": start}}
     prev_total = await db.contact_events.count_documents(prev_match)
     curr_total = await db.contact_events.count_documents(match)
@@ -471,16 +524,17 @@ async def get_performance(user_id: str, period: str = "week"):
     # New contacts added
     new_leads = await db.contacts.count_documents({
         "$or": [{"user_id": user_id}, {"created_by": user_id}],
-        "created_at": {"$gte": start, "$lt": now},
+        "created_at": {"$gte": start, "$lt": end},
     })
 
-    # Daily scorecard: today vs yesterday (always calculated regardless of period filter)
-    yesterday_start = today_start - timedelta(days=1)
-    today_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": today_start, "$lt": now}})
-    yesterday_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": yesterday_start, "$lt": today_start}})
+    # Daily scorecard: today vs yesterday (always calculated using user's local timezone)
+    today_start_tz, today_end_tz = await get_user_day_bounds(user_id, "today")
+    yesterday_start_tz = today_start_tz - timedelta(days=1)
+    today_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": today_start_tz, "$lt": today_end_tz}})
+    yesterday_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": yesterday_start_tz, "$lt": today_start_tz}})
     try:
-        today_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": today_start, "$lt": now}})
-        yesterday_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": yesterday_start, "$lt": today_start}})
+        today_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": today_start_tz, "$lt": today_end_tz}})
+        yesterday_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": yesterday_start_tz, "$lt": today_start_tz}})
         today_events += today_eng
         yesterday_events += yesterday_eng
     except Exception:
@@ -494,7 +548,7 @@ async def get_performance(user_id: str, period: str = "week"):
         streak = 1
     # Walk backwards from yesterday
     for days_ago in range(1, 91):
-        day_start = today_start - timedelta(days=days_ago)
+        day_start = today_start_tz - timedelta(days=days_ago)
         day_end = day_start + timedelta(days=1)
         day_count = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": day_start, "$lt": day_end}})
         try:
@@ -509,7 +563,7 @@ async def get_performance(user_id: str, period: str = "week"):
     # Personal bests: best day and best week in last 90 days
     best_day = 0
     best_day_date = None
-    ninety_days_ago = today_start - timedelta(days=90)
+    ninety_days_ago = today_start_tz - timedelta(days=90)
     pipeline = [
         {"$match": {"user_id": user_id, "timestamp": {"$gte": ninety_days_ago}}},
         {"$group": {
@@ -634,14 +688,7 @@ ENGAGEMENT_CATEGORY_MAP = {
 async def get_performance_detail(user_id: str, category: str, period: str = "week"):
     """Get recent activity for a specific touchpoint category."""
     db = get_db()
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    if period == "today":
-        start = today_start
-    elif period == "month":
-        start = today_start - timedelta(days=30)
-    else:
-        start = today_start - timedelta(days=7)
+    start, end = await get_user_day_bounds(user_id, period)
 
     event_types = EVENT_CATEGORY_MAP.get(category, [])
 
@@ -650,7 +697,7 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
         contacts = await db.contacts.find(
             {
                 "$or": [{"user_id": user_id}, {"created_by": user_id}],
-                "created_at": {"$gte": start, "$lt": now},
+                "created_at": {"$gte": start, "$lt": end},
             },
             {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "created_at": 1, "source": 1},
         ).sort("created_at", -1).limit(50).to_list(50)
@@ -669,7 +716,7 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
         return {"events": []}
 
     events = await db.contact_events.find(
-        {"user_id": user_id, "event_type": {"$in": event_types}, "timestamp": {"$gte": start}},
+        {"user_id": user_id, "event_type": {"$in": event_types}, "timestamp": {"$gte": start, "$lt": end}},
         {"_id": 0, "event_type": 1, "channel": 1, "content": 1, "contact_id": 1, "contact_name": 1, "timestamp": 1}
     ).sort("timestamp", -1).limit(50).to_list(50)
 
@@ -678,7 +725,7 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
     if eng_types:
         try:
             eng_events = await db.engagement_signals.find(
-                {"user_id": user_id, "signal_type": {"$in": eng_types}, "created_at": {"$gte": start}},
+                {"user_id": user_id, "signal_type": {"$in": eng_types}, "created_at": {"$gte": start, "$lt": end}},
                 {"_id": 0, "signal_type": 1, "contact_id": 1, "contact_name": 1, "created_at": 1, "metadata": 1},
             ).sort("created_at", -1).limit(50).to_list(50)
             for e in eng_events:

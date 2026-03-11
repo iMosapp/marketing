@@ -6,6 +6,7 @@ Includes streaks, levels/titles, and "you vs average" comparison.
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 
@@ -13,6 +14,24 @@ from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/leaderboard/v2", tags=["Leaderboard V2"])
+
+
+async def _get_user_tz(user_id: str) -> str:
+    """Get user's timezone name (falls back to store timezone, then None for UTC)."""
+    db = get_db()
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1, "store_id": 1})
+        if user:
+            tz = user.get("timezone")
+            if tz and tz != "UTC":
+                return tz
+            if user.get("store_id"):
+                store = await db.stores.find_one({"_id": ObjectId(str(user["store_id"]))}, {"timezone": 1})
+                if store and store.get("timezone"):
+                    return store["timezone"]
+    except Exception:
+        pass
+    return None
 
 # Categories tracked for scoring
 CATEGORIES = {
@@ -86,21 +105,31 @@ def _build_date_filter(month: Optional[int], year: Optional[int]) -> dict:
     return {"timestamp": {"$gte": start, "$lt": end}}
 
 
-def _build_date_filter_v2(period: str = "month", month: Optional[int] = None, year: Optional[int] = None) -> dict:
-    """Build date filter from a period string (week/month/all) or explicit month/year."""
+def _build_date_filter_v2(period: str = "month", month: Optional[int] = None, year: Optional[int] = None, tz_name: str = None) -> dict:
+    """Build date filter from a period string (week/month/all) or explicit month/year.
+    Uses the user's timezone for accurate day boundaries."""
     if month or year:
         return _build_date_filter(month, year)
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    try:
+        local_tz = ZoneInfo(tz_name) if tz_name else timezone.utc
+    except Exception:
+        local_tz = timezone.utc
+    
+    now_local = datetime.now(local_tz)
+    local_midnight = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    
     if period == "week":
-        start = today_start - timedelta(days=7)
+        start = local_midnight - timedelta(days=7)
     elif period == "month":
-        start = today_start - timedelta(days=30)
+        start = local_midnight - timedelta(days=30)
     elif period == "all":
         return {}
     else:
-        start = today_start - timedelta(days=30)
-    return {"timestamp": {"$gte": start, "$lt": now}}
+        start = local_midnight - timedelta(days=30)
+    
+    end = local_midnight + timedelta(days=1)
+    return {"timestamp": {"$gte": start.astimezone(timezone.utc), "$lt": end.astimezone(timezone.utc)}}
 
 
 async def _aggregate_user_scores(user_ids: list, date_filter: dict) -> dict:
@@ -167,11 +196,17 @@ async def _aggregate_user_scores(user_ids: list, date_filter: dict) -> dict:
 async def _get_streak(user_id: str) -> int:
     """Calculate how many consecutive days the user has completed at least one task."""
     db = get_db()
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    tz_name = await _get_user_tz(user_id)
+    try:
+        local_tz = ZoneInfo(tz_name) if tz_name else timezone.utc
+    except Exception:
+        local_tz = timezone.utc
+    now_local = datetime.now(local_tz)
+    today = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
     streak = 0
     for i in range(60):  # check up to 60 days back
-        day_start = today - timedelta(days=i)
-        day_end = day_start + timedelta(days=1)
+        day_start = (today - timedelta(days=i)).astimezone(timezone.utc)
+        day_end = (today - timedelta(days=i) + timedelta(days=1)).astimezone(timezone.utc)
         count = await db.tasks.count_documents({
             "user_id": user_id,
             "status": "completed",
@@ -244,7 +279,7 @@ async def store_leaderboard(
     users = await db.users.find(query, {"password": 0}).to_list(200)
     user_ids = [str(u["_id"]) for u in users]
 
-    date_filter = _build_date_filter_v2(period, month, year)
+    date_filter = _build_date_filter_v2(period, month, year, tz_name=await _get_user_tz(user_id))
     scores = await _aggregate_user_scores(user_ids, date_filter)
     ranked = _rank_users(users, scores, category)
 
@@ -325,7 +360,7 @@ async def org_leaderboard(
         for u in s.get("users", []):
             all_user_ids.append(u["id"])
 
-    date_filter = _build_date_filter_v2(period, month, year)
+    date_filter = _build_date_filter_v2(period, month, year, tz_name=await _get_user_tz(user_id))
     scores = await _aggregate_user_scores(all_user_ids, date_filter)
 
     # Aggregate scores per store
@@ -402,7 +437,7 @@ async def global_leaderboard(
     users = await db.users.find(user_query, {"password": 0, "email": 0, "phone": 0}).limit(500).to_list(500)
     user_ids = [str(u["_id"]) for u in users]
 
-    date_filter = _build_date_filter_v2(period, month, year)
+    date_filter = _build_date_filter_v2(period, month, year, tz_name=await _get_user_tz(user_id))
     scores = await _aggregate_user_scores(user_ids, date_filter)
     ranked = _rank_users(users, scores, category)
 
