@@ -843,6 +843,45 @@ async def track_card_action(card_id: str, data: dict):
     return {"success": True}
 
 
+@router.post("/referral-link/{salesman_id}")
+async def create_referral_link(salesman_id: str, card_id: str = ""):
+    """Create a tracked short URL for referral sharing that points to the salesperson's digital card."""
+    import os
+    db = get_db()
+    app_url = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+
+    # Look up salesperson info for metadata
+    user_doc = await db.users.find_one({"_id": ObjectId(salesman_id)}, {"first_name": 1, "last_name": 1, "title": 1, "store_id": 1, "photo_url": 1})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="Salesperson not found")
+
+    user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
+    user_title = user_doc.get("title", "")
+    store_name = ""
+    if user_doc.get("store_id"):
+        store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"name": 1})
+        store_name = store.get("name", "") if store else ""
+
+    card_url = f"{app_url}/card/{salesman_id}"
+    result = await create_short_url(
+        original_url=card_url,
+        link_type="referral",
+        reference_id=salesman_id,
+        user_id=salesman_id,
+        metadata={
+            "salesman_name": user_name,
+            "salesman_title": user_title,
+            "store_name": store_name,
+            "photo_url": user_doc.get("photo_url", ""),
+            "source_card_id": card_id,
+        }
+    )
+    return {
+        "short_url": result["short_url"],
+        "salesman_name": user_name,
+    }
+
+
 def hex_to_rgb(hex_color: str) -> tuple:
     """Convert hex color to RGB tuple"""
     hex_color = hex_color.lstrip('#')

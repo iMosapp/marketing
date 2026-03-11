@@ -538,9 +538,25 @@ export default function CongratsCardPage() {
       {/* Refer a Friend */}
       <TouchableOpacity
         style={[styles.referralBanner, { borderColor: (style?.accent_color || '#C9A962') + '40' }]}
-        onPress={() => {
-          const referText = `Check out ${cardData.salesman?.name || 'this amazing person'}!`;
-          const referUrl = typeof window !== 'undefined' ? window.location.href : '';
+        onPress={async () => {
+          const salespersonName = cardData.salesman?.name || 'this amazing person';
+          const referText = `Check out ${salespersonName}!`;
+          let referUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+          // Get a tracked referral short URL pointing to the salesperson's digital card
+          if (cardData.salesman_id) {
+            try {
+              const res = await api.post(`/congrats/referral-link/${cardData.salesman_id}`, null, {
+                params: { card_id: cardData.card_id || '' }
+              });
+              if (res.data?.short_url) {
+                referUrl = res.data.short_url;
+              }
+            } catch (e) {
+              console.log('Referral link fallback to page URL');
+            }
+          }
+
           if (Platform.OS === 'web') {
             if (typeof navigator !== 'undefined' && navigator.share) {
               navigator.share({ title: 'Refer a Friend', text: referText, url: referUrl });
@@ -551,6 +567,9 @@ export default function CongratsCardPage() {
           } else {
             Share.share({ message: `${referText} ${referUrl}` });
           }
+
+          // Track the referral click
+          track('card_refer_clicked');
         }}
         data-testid="congrats-refer-friend"
       >

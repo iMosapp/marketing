@@ -474,6 +474,20 @@ async def redirect_short_url(short_code: str, request: Request):
                             og_image = f"{base_url}{sp_photo}"
                         elif sp_photo and not sp_photo.startswith("data:"):
                             og_image = sp_photo
+                    elif link_type == "referral":
+                        sp_title = doc_metadata.get("salesman_title") or ""
+                        if user_name and sp_title:
+                            og_title = f"{user_name} — {sp_title}"
+                        elif user_name:
+                            og_title = f"Check out {user_name}!"
+                        else:
+                            og_title = "You've been referred!"
+                        og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
+                        sp_photo = doc_metadata.get("photo_url") or user_doc.get("photo_url")
+                        if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
+                            og_image = f"{base_url}{sp_photo}"
+                        elif sp_photo and not sp_photo.startswith("data:"):
+                            og_image = sp_photo
                     elif link_type in ("review_request", "review_invite", "review"):
                         og_title = f"Share Your Experience with {store_name}" if store_name else "We'd Love Your Feedback!"
                         og_description = f"{user_name} would love to hear about your experience" if user_name else "Your feedback means the world to us"
