@@ -119,6 +119,13 @@ async def track_event(data: dict):
         event = None
 
         # ── Path 1: Direct contact_id (most reliable — from cid URL param) ──
+        # Validate contact_id is a real ObjectId before using it
+        if contact_id:
+            try:
+                from bson import ObjectId as BsonOid
+                BsonOid(contact_id)
+            except Exception:
+                contact_id = None
         if contact_id:
             event = await log_customer_activity(
                 user_id=salesperson_id,

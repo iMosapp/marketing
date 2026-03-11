@@ -64,6 +64,13 @@ async def log_customer_activity(
     metadata: dict = None,
 ):
     """Log a customer-initiated event to the contact_events collection."""
+    # Validate contact_id is a valid ObjectId before storing
+    if contact_id:
+        try:
+            ObjectId(contact_id)
+        except Exception:
+            logger.warning(f"[CustomerActivity] Invalid contact_id '{contact_id}' — skipping event {event_type}")
+            return None
     db = get_db()
 
     event = {

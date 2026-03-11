@@ -119,28 +119,34 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
     # Bulk fetch contact info — only small fields, exclude heavy photo
     contacts_map = {}
     if contact_ids:
-        try:
-            oids = [ObjectId(cid) for cid in contact_ids]
-            contacts_cursor = db.contacts.find(
-                {"_id": {"$in": oids}},
-                {"_id": 1, "first_name": 1, "last_name": 1, "photo_thumbnail": 1, "photo_url": 1, "photo": 1, "tags": 1, "vehicle": 1}
-            )
-            async for c in contacts_cursor:
-                # Prefer thumbnail/url; fall back to photo only if it's a URL (not base64 blob)
-                photo = c.get("photo_thumbnail") or c.get("photo_url")
-                if not photo:
-                    raw = c.get("photo") or ""
-                    if raw and not raw.startswith("data:") and len(raw) < 500:
-                        photo = raw
-                contacts_map[str(c["_id"])] = {
-                    "id": str(c["_id"]),
-                    "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
-                    "photo": photo,
-                    "tags": c.get("tags", []),
-                    "vehicle": c.get("vehicle", ""),
-                }
-        except Exception:
-            pass
+        # Convert to ObjectIds individually — skip any invalid ones
+        oids = []
+        for cid in contact_ids:
+            try:
+                oids.append(ObjectId(cid))
+            except Exception:
+                pass
+        if oids:
+            try:
+                contacts_cursor = db.contacts.find(
+                    {"_id": {"$in": oids}},
+                    {"_id": 1, "first_name": 1, "last_name": 1, "photo_thumbnail": 1, "photo_url": 1, "photo": 1, "tags": 1, "vehicle": 1}
+                )
+                async for c in contacts_cursor:
+                    photo = c.get("photo_thumbnail") or c.get("photo_url")
+                    if not photo:
+                        raw = c.get("photo") or ""
+                        if raw and not raw.startswith("data:") and len(raw) < 500:
+                            photo = raw
+                    contacts_map[str(c["_id"])] = {
+                        "id": str(c["_id"]),
+                        "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
+                        "photo": photo,
+                        "tags": c.get("tags", []),
+                        "vehicle": c.get("vehicle", ""),
+                    }
+            except Exception:
+                pass
 
     # Format events with contact info
     feed_items = []
