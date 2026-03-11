@@ -368,7 +368,13 @@ async def redirect_short_url(short_code: str, request: Request):
 
     # Get contact_id from metadata for tracking
     doc_metadata = doc.get("metadata") or {}
-    cid = doc_metadata.get("contact_id") or doc.get("reference_id")
+    # For card links, reference_id is the card_id (NOT a contact_id).
+    # Only use metadata.contact_id for tracking; never fall back to reference_id for cards.
+    link_type = doc.get("link_type", "")
+    if "_card" in link_type:
+        cid = doc_metadata.get("contact_id")
+    else:
+        cid = doc_metadata.get("contact_id") or doc.get("reference_id")
 
     # Build the redirect URL with contact_id for tracking
     redirect_url = original_url

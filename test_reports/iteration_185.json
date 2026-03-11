@@ -1,0 +1,53 @@
+{
+  "summary": "Contact Tracking Attribution Fix VERIFIED - All 10 backend tests PASSED. The 3 key fixes are working correctly: (1) congrats_cards.py create endpoint now resolves contact_id from phone+salesman_id and stores it in both card doc and short URL metadata, (2) short_urls.py redirect handler checks link_type and for '_card' types only uses metadata.contact_id (NOT reference_id which is the card_id), (3) tracking.py validates contact_id is a valid ObjectId before using it for attribution.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_contact_tracking_attribution.py",
+    "/app/test_reports/pytest/pytest_contact_tracking_attribution.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "short_urls.py lines 371-377: For '_card' link types, cid is taken from metadata.contact_id only - prevents using card_id as contact_id",
+    "congrats_cards.py lines 527-554: Card creation resolves contact_id from phone+salesman_id and stores in both card doc and short URL metadata",
+    "tracking.py lines 121-128: contact_id validated as ObjectId before use - rejects invalid values like card_ids",
+    "contact_events.py lines 122-128: Per-item ObjectId conversion with try/except handles invalid contact_ids gracefully in master-feed"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_contact_tracking_attribution.py"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 tests passed)"
+  },
+  "test_credentials": {
+    "super_admin_email": "forest@imosapp.com",
+    "super_admin_password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667",
+    "valid_contact_id": "69a0c06f7626f14d125f8c34",
+    "test_card_id": "a37ec720-548",
+    "test_short_code": "b3Cb86"
+  },
+  "seed_data_creation": "Test card b3Cb86 (thankyou card for Forest Ward) already exists with contact_id in metadata",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Contact tracking attribution fix fully verified. Key evidence: (1) Short URL b3Cb86 has metadata.contact_id=69a0c06f7626f14d125f8c34 which is different from reference_id=a37ec720-548 (card_id), (2) Tracking endpoint correctly rejects invalid contact_ids like card_ids or random strings, (3) Master-feed correctly resolves contact names using per-item ObjectId conversion. Old card short URLs without contact_id in metadata will simply not append any cid (correct behavior).",
+  "features_verified": {
+    "card_creation_stores_contact_id": "PASS - Card doc and short URL metadata both have contact_id",
+    "short_url_redirect_uses_metadata_contact_id": "PASS - '_card' types use metadata.contact_id, not reference_id",
+    "old_cards_no_wrong_cid": "PASS - Old cards without metadata.contact_id don't append wrong cid",
+    "tracking_validates_contact_id": "PASS - Invalid ObjectIds rejected (tracked=false)",
+    "tracking_with_valid_contact_id": "PASS - Valid ObjectId contact_ids work",
+    "master_feed_correct_names": "PASS - Contact names properly resolved, not 'Unknown'",
+    "card_lookup_by_card_id": "PASS - GET /api/congrats/card/{card_id} works"
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED"
+  }
+}

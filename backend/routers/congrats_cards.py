@@ -218,7 +218,7 @@ async def auto_create_card(
             link_type=f"{card_type}_card",
             reference_id=card_id,
             user_id=user_id,
-            metadata={"customer_name": customer_name, "card_type": card_type},
+            metadata={"customer_name": customer_name, "card_type": card_type, "contact_id": contact_id},
         )
         await db.congrats_cards.update_one(
             {"card_id": card_id},
@@ -514,6 +514,7 @@ async def create_congrats_card(
         "shares": 0,
         "created_at": datetime.now(timezone.utc),
         "contact_photo_updated": contact_updated,
+        "contact_id": None,  # Will be resolved and set below
         # Showroom moderation  - requires admin/manager approval before appearing publicly
         "showcase_approved": False,
     }
@@ -524,12 +525,32 @@ async def create_congrats_card(
     base_url = get_short_url_base()
     full_card_url = f"{base_url}/congrats/{card_id}"
     
+    # Resolve contact_id for tracking — find the salesperson's contact by phone
+    resolved_contact_id = None
+    if customer_phone:
+        norm_ph = re.sub(r'\D', '', customer_phone)
+        suffix_ph = norm_ph[-10:] if len(norm_ph) >= 10 else norm_ph
+        if suffix_ph:
+            matched_contact = await db.contacts.find_one(
+                {"user_id": salesman_id, "phone": {"$regex": suffix_ph}, "status": {"$ne": "deleted"}},
+                {"_id": 1}
+            )
+            if matched_contact:
+                resolved_contact_id = str(matched_contact["_id"])
+    
+    # Store contact_id on the card doc for future reference
+    if resolved_contact_id:
+        await db.congrats_cards.update_one(
+            {"card_id": card_id},
+            {"$set": {"contact_id": resolved_contact_id}}
+        )
+    
     short_url_result = await create_short_url(
         original_url=full_card_url,
         link_type=f"{card_type}_card",
         reference_id=card_id,
         user_id=salesman_id,
-        metadata={"customer_name": customer_name, "card_type": card_type}
+        metadata={"customer_name": customer_name, "card_type": card_type, "contact_id": resolved_contact_id}
     )
     
     # Update card with short URL
