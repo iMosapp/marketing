@@ -117,125 +117,128 @@ export default function CustomerPerformanceScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }} data-testid="back-btn">
+      {/* Header — matches My Performance */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, flex: 1 }}>Customer Performance</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>Customer Performance</Text>
       </View>
 
-      {/* Period Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 10 }}>
-        {PERIODS.map(p => (
-          <TouchableOpacity
-            key={p.key}
-            onPress={() => setPeriod(p.key)}
-            style={{
-              paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1,
-              backgroundColor: period === p.key ? 'rgba(201,169,98,0.1)' : colors.card,
-              borderColor: period === p.key ? 'rgba(201,169,98,0.4)' : colors.border,
-            }}
-            data-testid={`period-${p.key}`}
-          >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: period === p.key ? colors.accent : colors.textSecondary }}>{p.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Scope Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 12 }}>
-        {SCOPES.map(s => (
-          <TouchableOpacity
-            key={s.key}
-            onPress={() => setScope(s.key)}
-            style={{
-              paddingVertical: 5, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1,
-              backgroundColor: scope === s.key ? 'rgba(52,199,89,0.1)' : colors.card,
-              borderColor: scope === s.key ? 'rgba(52,199,89,0.4)' : colors.border,
-            }}
-            data-testid={`scope-${s.key}`}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: scope === s.key ? '#34C759' : colors.textSecondary }}>{s.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Rankings List */}
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.accent} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        {/* Period Filters — matches My Performance exactly */}
+        <View style={{ flexDirection: 'row', gap: 4, padding: 16, paddingBottom: 8 }}>
+          {PERIODS.map(p => (
+            <TouchableOpacity
+              key={p.key}
+              onPress={() => setPeriod(p.key)}
+              style={{
+                flex: 1, padding: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
+                backgroundColor: period === p.key ? colors.accent : colors.card,
+                borderColor: period === p.key ? colors.accent : colors.border,
+              }}
+              data-testid={`period-${p.key}`}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      ) : rankings.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
-          <Ionicons name="people-outline" size={48} color="#48484A" />
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12, textAlign: 'center' }}>No Customer Activity</Text>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
-            When customers interact with your shared cards and links, their engagement will show up here.
-          </Text>
+
+        {/* Scope Filters — same style, green accent */}
+        <View style={{ flexDirection: 'row', gap: 4, paddingHorizontal: 16, paddingBottom: 14 }}>
+          {SCOPES.map(s => (
+            <TouchableOpacity
+              key={s.key}
+              onPress={() => setScope(s.key)}
+              style={{
+                flex: 1, padding: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
+                backgroundColor: scope === s.key ? '#34C759' : colors.card,
+                borderColor: scope === s.key ? '#34C759' : colors.border,
+              }}
+              data-testid={`scope-${s.key}`}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: scope === s.key ? '#000' : colors.textSecondary }}>{s.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      ) : (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
-          {/* Summary */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14, paddingHorizontal: 4 }}>
+
+        {/* Summary Stats */}
+        {!loading && rankings.length > 0 && (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 4 }}>
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>{rankings.length} active customers</Text>
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>Top score: {maxScore}</Text>
           </View>
+        )}
 
-          {rankings.map((contact, idx) => {
-            const heatColor = getHeatColor(contact.score, maxScore);
-            const heatLabel = getHeatLabel(contact.score, maxScore);
-            const barWidth = maxScore > 0 ? Math.max(8, (contact.score / maxScore) * 100) : 0;
-            
-            return (
-              <TouchableOpacity
-                key={contact.contact_id}
-                onPress={() => setSelectedContact(contact)}
-                activeOpacity={0.8}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 12,
-                  backgroundColor: colors.card, borderRadius: 12, padding: 12,
-                  borderWidth: 1, borderColor: colors.border, marginBottom: 8,
-                }}
-                data-testid={`customer-rank-${idx}`}
-              >
-                {/* Rank Badge */}
-                <View style={{
-                  width: 28, height: 28, borderRadius: 14,
-                  backgroundColor: idx < 3 ? heatColor : '#2C2C2E',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: idx < 3 ? '#FFF' : colors.textSecondary }}>
-                    {idx + 1}
-                  </Text>
-                </View>
-
-                {/* Contact Info */}
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }} numberOfLines={1}>{contact.name}</Text>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, overflow: 'hidden' }}>
-                      {heatLabel}
+        {/* Rankings List */}
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
+        ) : rankings.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 }}>
+            <Ionicons name="people-outline" size={48} color="#48484A" />
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12, textAlign: 'center' }}>No Customer Activity</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
+              When customers interact with your shared cards and links, their engagement will show up here.
+            </Text>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 16 }}>
+            {rankings.map((contact, idx) => {
+              const heatColor = getHeatColor(contact.score, maxScore);
+              const heatLabel = getHeatLabel(contact.score, maxScore);
+              const barWidth = maxScore > 0 ? Math.max(8, (contact.score / maxScore) * 100) : 0;
+              
+              return (
+                <TouchableOpacity
+                  key={contact.contact_id}
+                  onPress={() => setSelectedContact(contact)}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                    backgroundColor: colors.card, borderRadius: 12, padding: 14,
+                    borderWidth: 1, borderColor: colors.border, marginBottom: 8,
+                  }}
+                  data-testid={`customer-rank-${idx}`}
+                >
+                  {/* Rank Badge */}
+                  <View style={{
+                    width: 32, height: 32, borderRadius: 16,
+                    backgroundColor: idx < 3 ? heatColor : '#2C2C2E',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: idx < 3 ? '#FFF' : colors.textSecondary }}>
+                      {idx + 1}
                     </Text>
                   </View>
-                  {/* Score bar */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <View style={{ flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
-                      <View style={{ height: '100%', width: `${barWidth}%`, backgroundColor: heatColor, borderRadius: 2 }} />
-                    </View>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: heatColor, minWidth: 28, textAlign: 'right' }}>{contact.score}</Text>
-                  </View>
-                  <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 2 }}>
-                    {contact.event_count} interactions {contact.last_activity ? ` - ${formatTimeAgo(contact.last_activity)}` : ''}
-                  </Text>
-                </View>
 
-                <Ionicons name="chevron-forward" size={16} color="#48484A" />
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+                  {/* Contact Info */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, flexShrink: 1 }} numberOfLines={1}>{contact.name}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>
+                        {heatLabel}
+                      </Text>
+                    </View>
+                    {/* Score bar */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={{ flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
+                        <View style={{ height: '100%', width: `${barWidth}%`, backgroundColor: heatColor, borderRadius: 2 }} />
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                      {contact.event_count} interactions{contact.last_activity ? `  -  ${formatTimeAgo(contact.last_activity)}` : ''}
+                    </Text>
+                  </View>
+
+                  {/* Score */}
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: heatColor, minWidth: 36, textAlign: 'right' }}>{contact.score}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#48484A" />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
 
       {/* Detail Modal */}
       <Modal visible={!!selectedContact} animationType="slide" transparent>

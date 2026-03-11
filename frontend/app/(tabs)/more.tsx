@@ -510,35 +510,37 @@ export default function MoreScreen() {
     if (items.length > 0) sections.push({ id: 'insights', title: 'Insights', icon: 'stats-chart', color: '#34C759', items });
   }
 
-  // 5. ADMIN (role-gated — managers+)
-  if (isAdmin) {
-    const adminItems: MenuItem[] = [
+  // 5. ADMIN (permission-gated via role-based permissions)
+  if (perm('admin')) {
+    const adminItems: (MenuItem & { permKey?: string })[] = [
       // Team Management
-      { icon: 'people', title: 'Users', subtitle: 'Manage team members & permissions', onPress: () => router.push('/admin/users'), color: '#FF9500' },
-      { icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
+      { permKey: 'users', icon: 'people', title: 'Users', subtitle: 'Manage team members & permissions', onPress: () => router.push('/admin/users'), color: '#FF9500' },
+      { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
       ...(isSuperAdmin ? [{ icon: 'people', title: 'Company Directory', subtitle: 'Team & leaderboards', onPress: () => router.push('/admin/directory'), color: '#AF52DE' }] : []),
       ...(isSuperAdmin ? [{ icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' }] : []),
       // Organization
-      { icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address, store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
-      { icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
-      { icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'Overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
+      { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address, store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
+      { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
+      { permKey: 'admin_dashboard', icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'Overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
       // Content Moderation
-      { icon: 'chatbubbles-outline', title: 'Review Approvals', subtitle: 'Approve customer reviews', onPress: () => router.push('/settings/review-approvals'), color: '#AF52DE' },
-      { icon: 'shield-checkmark-outline', title: 'Showcase Approvals', subtitle: 'Approve showcase posts', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
-      { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook, Yelp', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
-      { icon: 'pricetags', title: 'Contact Tags', subtitle: 'Organize with tags', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
-      { icon: 'git-branch', title: 'Lead Sources', subtitle: 'Inbound leads & routing', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
+      { permKey: 'review_approvals', icon: 'chatbubbles-outline', title: 'Review Approvals', subtitle: 'Approve customer reviews', onPress: () => router.push('/settings/review-approvals'), color: '#AF52DE' },
+      { permKey: 'showcase_approvals', icon: 'shield-checkmark-outline', title: 'Showcase Approvals', subtitle: 'Approve showcase posts', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
+      { permKey: 'review_links', icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook, Yelp', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
+      { permKey: 'contact_tags', icon: 'pricetags', title: 'Contact Tags', subtitle: 'Organize with tags', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
+      { permKey: 'lead_sources', icon: 'git-branch', title: 'Lead Sources', subtitle: 'Inbound leads & routing', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
       // Integrations & API
-      { icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
+      { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
       // Super Admin Only
       ...(isSuperAdmin ? [
         { icon: 'business', title: 'Organizations', subtitle: 'Manage organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },
       ] : []),
-      ...(isSuperAdmin || user?.role === 'org_admin' ? [
+      ...(perm('admin', 'accounts') ? [
         { icon: 'storefront', title: 'Accounts', subtitle: 'Manage store accounts', onPress: () => router.push('/admin/stores'), color: '#34C759' },
       ] : []),
     ];
-    sections.push({ id: 'admin', title: 'Administration', icon: 'shield-checkmark', color: '#FF3B30', items: adminItems });
+    // Filter admin items by permissions (items with permKey are checked, items without permKey are always shown)
+    const filteredAdminItems = adminItems.filter(i => !i.permKey || perm('admin', i.permKey));
+    if (filteredAdminItems.length > 0) sections.push({ id: 'admin', title: 'Administration', icon: 'shield-checkmark', color: '#FF3B30', items: filteredAdminItems });
   }
 
   // 5b. INTERNAL ADMINISTRATION (super_admin only)

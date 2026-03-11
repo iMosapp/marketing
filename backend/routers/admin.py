@@ -3655,7 +3655,7 @@ async def get_user_permissions(user_id: str, x_user_id: str = Header(None, alias
     target = await db.users.find_one({"_id": ObjectId(user_id)}, {"feature_permissions": 1, "name": 1, "email": 1, "role": 1})
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-    perms = merge_permissions(target.get("feature_permissions"))
+    perms = merge_permissions(target.get("feature_permissions"), target.get("role", "user"))
     return {
         "user_id": user_id,
         "name": target.get("name", ""),
@@ -3685,7 +3685,9 @@ async def update_user_permissions(user_id: str, data: dict, x_user_id: str = Hea
         {"$set": {"feature_permissions": permissions, "permissions_updated_at": datetime.utcnow()}}
     )
     from permissions import merge_permissions
-    return {"status": "ok", "permissions": merge_permissions(permissions)}
+    target_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1})
+    target_role = target_user.get("role", "user") if target_user else "user"
+    return {"status": "ok", "permissions": merge_permissions(permissions, target_role)}
 
 
 @router.post("/send-power-rankings")

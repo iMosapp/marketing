@@ -313,5 +313,5 @@ async def apply_template(template_id: str, user_id: str, x_user_id: str = Header
         "message": f"Template '{template.get('name')}' applied",
         "user_id": user_id,
         "new_role": new_role,
-        "permissions": merge_permissions(new_permissions),
+        "permissions": merge_permissions(new_permissions, new_role),
     }
