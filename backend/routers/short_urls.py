@@ -365,177 +365,169 @@ async def redirect_short_url(short_code: str, request: Request):
         print(f"[ShortURL] Failed to log click event: {e}")
 
     original_url = doc["original_url"]
-    user_agent = (request.headers.get("user-agent") or "").lower()
-
-    # Detect link preview crawlers (iMessage, Facebook, Twitter, etc.)
-    is_crawler = any(bot in user_agent for bot in [
-        "facebookexternalhit", "twitterbot", "linkedinbot", "slackbot",
-        "whatsapp", "telegrambot", "applebot", "iframely", "embedly",
-        "bot", "crawler", "spider", "preview",
-    ])
 
     # Get contact_id from metadata for tracking
     doc_metadata = doc.get("metadata") or {}
     cid = doc_metadata.get("contact_id") or doc.get("reference_id")
 
-    if is_crawler:
-        # Serve HTML with dynamic OG tags using contextual branding
-        og_title = "Check this out!"
-        og_description = ""
-        og_image = ""
-        link_type = doc.get("link_type", "")
-        user_id = doc.get("user_id")
-        doc_metadata = doc.get("metadata") or {}
-        # Build the redirect URL with contact_id for tracking
-        redirect_url = original_url
-        if cid and f"cid={cid}" not in redirect_url:
-            separator = "&" if "?" in redirect_url else "?"
-            redirect_url = f"{redirect_url}{separator}cid={cid}"
+    # Build the redirect URL with contact_id for tracking
+    redirect_url = original_url
+    if cid and f"cid={cid}" not in redirect_url:
+        separator = "&" if "?" in redirect_url else "?"
+        redirect_url = f"{redirect_url}{separator}cid={cid}"
 
-        base_url = str(request.base_url).rstrip("/")
+    # Always serve HTML with OG meta tags + JS redirect.
+    # This ensures link previewers (iMessage, Facebook, etc.) get rich previews
+    # regardless of their user-agent, while normal browsers redirect instantly via JS.
+    og_title = "Check this out!"
+    og_description = ""
+    og_image = ""
+    link_type = doc.get("link_type", "")
+    user_id = doc.get("user_id")
+    base_url = str(request.base_url).rstrip("/")
 
-        # Detect if this is ANY type of card link
-        card_link_types = {"congrats_card", "birthday_card", "thank_you_card", "thankyou_card",
-                           "holiday_card", "welcome_card", "anniversary_card"}
-        ref_id = doc.get("reference_id", "")
+    # Detect if this is ANY type of card link
+    card_link_types = {"congrats_card", "birthday_card", "thank_you_card", "thankyou_card",
+                       "holiday_card", "welcome_card", "anniversary_card"}
+    ref_id = doc.get("reference_id", "")
 
-        if link_type in card_link_types and ref_id:
-            # === CARD LINK: Use customer photo + contextual title ===
-            card_doc = await db.congrats_cards.find_one({"card_id": ref_id})
-            if not card_doc:
-                card_doc = await db.birthday_cards.find_one({"card_id": ref_id})
-            if card_doc:
-                customer_name = card_doc.get("customer_name", "")
-                # Capitalize name properly
-                customer_name = customer_name.strip().title() if customer_name else ""
-                first_name = customer_name.split()[0] if customer_name else ""
-                card_type = doc_metadata.get("card_type") or link_type.replace("_card", "")
-                store_name = card_doc.get("store_name", "")
-                salesman_name = card_doc.get("salesman_name", "")
+    if link_type in card_link_types and ref_id:
+        # === CARD LINK: Use customer photo + contextual title ===
+        card_doc = await db.congrats_cards.find_one({"card_id": ref_id})
+        if not card_doc:
+            card_doc = await db.birthday_cards.find_one({"card_id": ref_id})
+        if card_doc:
+            customer_name = card_doc.get("customer_name", "")
+            # Capitalize name properly
+            customer_name = customer_name.strip().title() if customer_name else ""
+            first_name = customer_name.split()[0] if customer_name else ""
+            card_type = doc_metadata.get("card_type") or link_type.replace("_card", "")
+            store_name = card_doc.get("store_name", "")
+            salesman_name = card_doc.get("salesman_name", "")
 
-                # Contextual titles per card type
-                card_titles = {
-                    "congrats": f"Congrats {customer_name}!" if customer_name else "Congratulations!",
-                    "birthday": f"Happy Birthday {first_name}!" if first_name else "Happy Birthday!",
-                    "anniversary": f"Happy Anniversary {first_name}!" if first_name else "Happy Anniversary!",
-                    "thankyou": f"Thank You {first_name}!" if first_name else "Thank You!",
-                    "thank_you": f"Thank You {first_name}!" if first_name else "Thank You!",
-                    "welcome": f"Welcome {first_name}!" if first_name else "Welcome!",
-                    "holiday": f"Happy Holidays {first_name}!" if first_name else "Happy Holidays!",
-                }
-                og_title = card_titles.get(card_type, f"A special card for {customer_name}!" if customer_name else "You've received a card!")
+            # Contextual titles per card type
+            card_titles = {
+                "congrats": f"Congrats {customer_name}!" if customer_name else "Congratulations!",
+                "birthday": f"Happy Birthday {first_name}!" if first_name else "Happy Birthday!",
+                "anniversary": f"Happy Anniversary {first_name}!" if first_name else "Happy Anniversary!",
+                "thankyou": f"Thank You {first_name}!" if first_name else "Thank You!",
+                "thank_you": f"Thank You {first_name}!" if first_name else "Thank You!",
+                "welcome": f"Welcome {first_name}!" if first_name else "Welcome!",
+                "holiday": f"Happy Holidays {first_name}!" if first_name else "Happy Holidays!",
+            }
+            og_title = card_titles.get(card_type, f"A special card for {customer_name}!" if customer_name else "You've received a card!")
 
-                # Contextual description
-                if salesman_name and store_name:
-                    og_description = f"From {salesman_name} at {store_name}"
-                elif store_name:
-                    og_description = f"From {store_name}"
-                elif salesman_name:
-                    og_description = f"From {salesman_name}"
+            # Contextual description
+            if salesman_name and store_name:
+                og_description = f"From {salesman_name} at {store_name}"
+            elif store_name:
+                og_description = f"From {store_name}"
+            elif salesman_name:
+                og_description = f"From {salesman_name}"
 
-                # OG Image priority: customer photo (object storage) > generated card image > store logo
-                photo_url = card_doc.get("photo_url")
-                if photo_url and not photo_url.startswith("data:"):
-                    # Resolve relative URLs to absolute
-                    if photo_url.startswith("/"):
-                        og_image = f"{base_url}{photo_url}"
-                    else:
-                        og_image = photo_url
+            # OG Image priority: customer photo (object storage) > generated card image > store logo
+            photo_url = card_doc.get("photo_url")
+            if photo_url and not photo_url.startswith("data:"):
+                # Resolve relative URLs to absolute
+                if photo_url.startswith("/"):
+                    og_image = f"{base_url}{photo_url}"
                 else:
-                    # Use the generated card image (includes customer photo, QR code, branding)
-                    og_image = f"{base_url}/api/congrats/card/{ref_id}/image"
+                    og_image = photo_url
             else:
-                # Card not found in DB, still try the image endpoint
+                # Use the generated card image (includes customer photo, QR code, branding)
                 og_image = f"{base_url}/api/congrats/card/{ref_id}/image"
-                meta_name = doc_metadata.get("customer_name", "")
-                if meta_name:
-                    # Derive card type from link_type for contextual title
-                    ct = link_type.replace("_card", "")
-                    meta_name = meta_name.strip().title()
-                    fn = meta_name.split()[0] if meta_name else ""
-                    ct_titles = {
-                        "congrats": f"Congrats {meta_name}!",
-                        "birthday": f"Happy Birthday {fn}!",
-                        "anniversary": f"Happy Anniversary {fn}!",
-                        "thankyou": f"Thank You {fn}!",
-                        "thank_you": f"Thank You {fn}!",
-                        "welcome": f"Welcome {fn}!",
-                        "holiday": f"Happy Holidays {fn}!",
-                    }
-                    og_title = ct_titles.get(ct, f"A special card for {meta_name}!")
-                else:
-                    og_title = "You've received a card!"
-
-        elif user_id:
-            # === NON-CARD LINK: Use store branding ===
-            try:
-                user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "first_name": 1, "last_name": 1, "photo_url": 1})
-                if user_doc and user_doc.get("store_id"):
-                    store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"name": 1, "logo_url": 1, "logo_avatar_url": 1})
-                    if store:
-                        store_name = store.get("name", "")
-                        user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
-                        if link_type == "business_card":
-                            og_title = f"{user_name}'s Digital Card" if user_name else "Digital Business Card"
-                            og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
-                            # Use salesperson's photo if available
-                            sp_photo = user_doc.get("photo_url")
-                            if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
-                                og_image = f"{base_url}{sp_photo}"
-                            elif sp_photo and not sp_photo.startswith("data:"):
-                                og_image = sp_photo
-                        elif link_type in ("review_request", "review_invite", "review"):
-                            og_title = f"Share Your Experience with {store_name}" if store_name else "We'd Love Your Feedback!"
-                            og_description = f"{user_name} would love to hear about your experience" if user_name else "Your feedback means the world to us"
-                        elif link_type == "showcase":
-                            og_title = f"{store_name} — Happy Customers" if store_name else "Our Happy Customers"
-                            og_description = f"See what customers are saying about {store_name}" if store_name else "Check out our showcase"
-                        elif link_type == "link_page":
-                            og_title = f"{user_name}" if user_name else "Connect With Us"
-                            og_description = f"Find all of {user_name}'s links" if user_name else ""
-                        else:
-                            og_title = store_name or "Check this out!"
-                            og_description = f"Shared by {user_name}" if user_name else ""
-
-                        # Use the white-background store logo OG image (unless already set for business card)
-                        if not og_image:
-                            og_image = f"{base_url}/api/s/og-image/{user_id}"
-            except Exception:
-                pass
-
-        # Fallback: use the static OG image
-        if not og_image:
-            og_image = f"{base_url}/og-image.png"
-
-        from fastapi.responses import HTMLResponse
-        og_image_tags = ""
-        twitter_card = "summary_large_image"
-        if og_image:
-            # Card-generated images are 1080x1350, customer photos and logos are ~square
-            if "/congrats/card/" in og_image and "/image" in og_image:
-                img_w, img_h = "1080", "1350"
+        else:
+            # Card not found in DB, still try the image endpoint
+            og_image = f"{base_url}/api/congrats/card/{ref_id}/image"
+            meta_name = doc_metadata.get("customer_name", "")
+            if meta_name:
+                ct = link_type.replace("_card", "")
+                meta_name = meta_name.strip().title()
+                fn = meta_name.split()[0] if meta_name else ""
+                ct_titles = {
+                    "congrats": f"Congrats {meta_name}!",
+                    "birthday": f"Happy Birthday {fn}!",
+                    "anniversary": f"Happy Anniversary {fn}!",
+                    "thankyou": f"Thank You {fn}!",
+                    "thank_you": f"Thank You {fn}!",
+                    "welcome": f"Welcome {fn}!",
+                    "holiday": f"Happy Holidays {fn}!",
+                }
+                og_title = ct_titles.get(ct, f"A special card for {meta_name}!")
             else:
-                img_w, img_h = "800", "800"
-            og_image_tags = f"""<meta property="og:image" content="{og_image}" />
+                og_title = "You've received a card!"
+
+    elif user_id:
+        # === NON-CARD LINK: Use store branding ===
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "first_name": 1, "last_name": 1, "photo_url": 1})
+            if user_doc and user_doc.get("store_id"):
+                store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"name": 1, "logo_url": 1, "logo_avatar_url": 1})
+                if store:
+                    store_name = store.get("name", "")
+                    user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
+                    if link_type == "business_card":
+                        og_title = f"{user_name}'s Digital Card" if user_name else "Digital Business Card"
+                        og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
+                        sp_photo = user_doc.get("photo_url")
+                        if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
+                            og_image = f"{base_url}{sp_photo}"
+                        elif sp_photo and not sp_photo.startswith("data:"):
+                            og_image = sp_photo
+                    elif link_type in ("review_request", "review_invite", "review"):
+                        og_title = f"Share Your Experience with {store_name}" if store_name else "We'd Love Your Feedback!"
+                        og_description = f"{user_name} would love to hear about your experience" if user_name else "Your feedback means the world to us"
+                    elif link_type == "showcase":
+                        og_title = f"{store_name} — Happy Customers" if store_name else "Our Happy Customers"
+                        og_description = f"See what customers are saying about {store_name}" if store_name else "Check out our showcase"
+                    elif link_type == "link_page":
+                        og_title = f"{user_name}" if user_name else "Connect With Us"
+                        og_description = f"Find all of {user_name}'s links" if user_name else ""
+                    else:
+                        og_title = store_name or "Check this out!"
+                        og_description = f"Shared by {user_name}" if user_name else ""
+
+                    if not og_image:
+                        og_image = f"{base_url}/api/s/og-image/{user_id}"
+        except Exception:
+            pass
+
+    # Fallback: use the static OG image
+    if not og_image:
+        og_image = f"{base_url}/og-image.png"
+
+    from fastapi.responses import HTMLResponse
+    og_image_tags = ""
+    if og_image:
+        if "/congrats/card/" in og_image and "/image" in og_image:
+            img_w, img_h = "1080", "1350"
+        else:
+            img_w, img_h = "800", "800"
+        og_image_tags = f"""<meta property="og:image" content="{og_image}" />
 <meta property="og:image:width" content="{img_w}" />
 <meta property="og:image:height" content="{img_h}" />"""
-        html = f"""<!DOCTYPE html>
-<html><head>
-<meta property="og:title" content="{og_title}" />
-<meta property="og:description" content="{og_description}" />
-{og_image_tags}
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="{twitter_card}" />
-<meta http-equiv="refresh" content="0;url={redirect_url}" />
-</head><body><a href="{redirect_url}">Continue</a></body></html>"""
-        return HTMLResponse(content=html)
 
-    # Regular redirect for normal browsers
-    # Append contact_id to the redirect URL so tracking pages know exactly who clicked
-    if cid and f"cid={cid}" not in original_url:
-        separator = "&" if "?" in original_url else "?"
-        original_url = f"{original_url}{separator}cid={cid}"
-    return RedirectResponse(url=original_url, status_code=302)
+    # Escape any quotes in titles/descriptions for safe HTML embedding
+    safe_title = og_title.replace('"', '&quot;').replace("'", '&#39;')
+    safe_desc = og_description.replace('"', '&quot;').replace("'", '&#39;')
+
+    html = f"""<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8" />
+<meta property="og:title" content="{safe_title}" />
+<meta property="og:description" content="{safe_desc}" />
+{og_image_tags}
+<meta property="og:url" content="{redirect_url}" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{safe_title}" />
+<meta name="twitter:description" content="{safe_desc}" />
+</head><body>
+<script>window.location.replace("{redirect_url}");</script>
+<noscript><meta http-equiv="refresh" content="0;url={redirect_url}" /></noscript>
+<p><a href="{redirect_url}">Continue</a></p>
+</body></html>"""
+    return HTMLResponse(content=html)
 
 
 @router.post("/create")

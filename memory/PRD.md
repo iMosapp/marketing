@@ -613,3 +613,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 - **File:** `/app/frontend/app/touchpoints/customer-performance.tsx`
 - **Tested:** All frontend verified (iteration 182)
+
+### OG Tag iMessage Fix — Universal HTML Response (Mar 11, 2026)
+- **PROBLEM:** User deployed and sent a card via iMessage but the preview still showed the generic iM On Social logo. Two root causes identified:
+  1. **create-card page** (`/app/frontend/app/settings/create-card.tsx`) was building the share URL locally as `app.imonsocial.com/congrats/{cardId}` instead of using the backend's tracked short URL. This bypassed the OG handler entirely.
+  2. **Short URL handler** relied on bot user-agent detection to serve OG tags. iMessage on iPhone fetches previews with a normal Safari user-agent (not "AppleBot"), so it got a 302 redirect → SPA default OG tags → generic logo.
+- **FIX 1 (`create-card.tsx`):** Changed line 122 to use `res.data?.short_url` from the backend response, falling back to the direct URL only if the short URL is unavailable.
+- **FIX 2 (`short_urls.py`):** Removed all bot/crawler user-agent detection. ALL requests to short URLs now receive an HTML page with contextual OG meta tags + a `<script>window.location.replace(url)</script>` JS redirect. This ensures:
+  - iMessage, WhatsApp, Facebook, etc. always get the OG tags for rich previews
+  - Normal browsers redirect instantly via JavaScript (no visible delay)
+  - `<noscript>` fallback uses `meta http-equiv="refresh"` for clients without JS
+- **Impact:** Every shared link now shows contextual previews in ALL messaging apps, regardless of their user-agent.
+

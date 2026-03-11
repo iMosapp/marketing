@@ -119,7 +119,8 @@ export default function CreateCardPage() {
       }
       const res = await api.post('/congrats/create', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       const cardId = res.data?.card_id;
-      const shareUrl = `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
+      // Use the tracked short URL from the backend (enables contextual OG previews in iMessage)
+      const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
       setShowPreview(false);
 
       // If we came from an inbox thread, auto-return with the card link pre-filled
