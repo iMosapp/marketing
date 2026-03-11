@@ -316,6 +316,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Accessible from Settings > Integrations > RMS tab via "Dashboard" button
 - Bug fix: CRM link Copy button was using `contact._id` (undefined) — fixed to use URL param `id`
 
+### Contact Tracking Attribution Fix (Mar 11, 2026)
+- **BUG FIXED (P0):** Short URL redirects for card links were passing the **card_id** as `cid` (contact_id) instead of the actual contact's ObjectId. This caused all card-view tracking events to be misattributed or lost.
+- **Root cause:** `short_urls.py` used `reference_id` as fallback for `cid`. For card links, `reference_id` = card_id (NOT a contact_id). Metadata never stored the contact_id.
+- **Fix 1 (`congrats_cards.py`):** Both `create_congrats_card` and `auto_create_card` now resolve the contact by phone+salesman_id and store `contact_id` in short URL metadata AND card document.
+- **Fix 2 (`short_urls.py`):** Redirect handler now checks `link_type` — for `_card` types, only uses `metadata.contact_id` (never falls back to `reference_id`).
+- **Fix 3:** Card endpoint resilience — 3 fallback lookups (card_id → birthday_cards → ObjectId → short_urls reference) + logging.
+- **Per-salesperson isolation verified:** All contact lookups scope by `user_id` — same customer under different salespeople = separate records.
+- **Tested:** 10/10 backend tests passed (iteration 185).
+
 ### Activity Feed Data Integrity Fix (Mar 11, 2026)
 - **BUG FIXED (P0):** Activity Feed showing "Unknown" for all contact names/photos
 - **Root cause:** `master-feed` endpoint used a single list comprehension `[ObjectId(cid) for cid in contact_ids]` to convert ALL contact_ids at once. If even ONE invalid contact_id existed (e.g., test data like `abc123def456`), the entire comprehension failed silently (`except: pass`), leaving `contacts_map` empty — so ALL events showed "Unknown".
