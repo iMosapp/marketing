@@ -4587,9 +4587,10 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 4,
-    backgroundColor: '#2C2C2E',
     borderRadius: 14,
-    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
     gap: 4,
   },
   tabBtn: {
