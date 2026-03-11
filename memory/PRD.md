@@ -572,3 +572,29 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 3. Every clickable CTA MUST call `trackCustomerAction` BEFORE the action
 4. The tracking endpoint MUST accept `contact_id` as preferred attribution (no phone/name lookup needed)
 5. `trackCustomerAction` is fire-and-forget — NEVER block user actions on tracking
+
+### Role-Based Access Control (RBAC) Menu Redesign (Mar 11, 2026)
+- **PROBLEM:** All roles (User, Store Manager, Org Admin, Super Admin) saw the same cluttered menu. The Administration section was identical for everyone with admin access.
+- **FIX — Backend (`/app/backend/permissions.py`):**
+  - Complete rewrite with 4 role-based permission templates: `_USER_PERMISSIONS`, `_STORE_MANAGER_PERMISSIONS`, `_ORG_ADMIN_PERMISSIONS`, `_SUPER_ADMIN_PERMISSIONS`
+  - `merge_permissions()` now takes a `role` parameter and uses the appropriate template as the base
+  - User-specific overrides are still preserved (merged on top of role defaults)
+  - Legacy roles (`admin`, `manager`) gracefully fall back to user permissions
+- **Permission tiers:**
+  - **User:** No Admin section, no Broadcast, no Card Templates, no Leaderboard, no Lead Attribution. Has Date Triggers, Manage Showcase, Activity Reports, Email Analytics enabled.
+  - **Store Manager:** Simplified Admin (7 items: Users, Invite Team, Store Profile, Brand Kit, Review Approvals, Showcase Approvals, Contact Tags). Gets Broadcast, Card Templates, Leaderboard.
+  - **Org Admin:** Full Admin (12 items: +Admin Dashboard, Review Links, Lead Sources, Integrations, Accounts). Gets Lead Attribution.
+  - **Super Admin:** Everything + Internal Administration + Organizations.
+- **Features enabled by default for ALL roles:** Date Triggers, Manage Showcase, Activity Reports, Email Analytics
+- **FIX — Frontend (`/app/frontend/app/(tabs)/more.tsx`):**
+  - Admin section now uses `perm('admin')` instead of hardcoded `isAdmin` check
+  - Each admin item has a `permKey` that maps to the backend permission template
+  - Items without a matching permission are filtered out
+- **FIX — Backend callers updated:** `auth.py` (login), `admin.py` (get/set permissions), `permission_templates.py` (apply template) all pass user's role to `merge_permissions()`
+- **Tested:** 11/11 backend tests passed, all frontend verified (iteration 182)
+
+### Customer Performance UI Fix (Mar 11, 2026)
+- **PROBLEM:** Period and scope filter pills were overlapping/smashed together, tiles too small. User requested matching the My Performance page design.
+- **FIX:** Replaced horizontal `ScrollView` pills with equal-width `flex: 1` buttons in a `flexDirection: 'row'` container. Period filters use gold accent, scope filters use green accent. Added solid background when selected, proper padding (8px), borderRadius 10. Tiles enlarged with bigger rank badges (32px), larger scores (18pt), and more padding.
+- **File:** `/app/frontend/app/touchpoints/customer-performance.tsx`
+- **Tested:** All frontend verified (iteration 182)
