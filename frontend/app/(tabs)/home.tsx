@@ -645,7 +645,7 @@ export default function HomeScreen() {
 
           {/* Today's Touchpoints Tile */}
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/touchpoints' as any)}
+            onPress={() => router.push('/(tabs)/touchpoints?period=today' as any)}
             activeOpacity={0.85}
             style={{ backgroundColor: colors.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 12 }}
             data-testid="touchpoints-tile"

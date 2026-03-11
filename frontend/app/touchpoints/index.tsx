@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
@@ -74,6 +74,7 @@ function getDueLabel(task: any) {
 export default function TouchpointsScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
+  const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
   const user = useAuthStore((s) => s.user);
   const [tasks, setTasks] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -272,7 +273,7 @@ export default function TouchpointsScreen() {
 
           {/* My Performance Card */}
           <TouchableOpacity
-            onPress={() => router.push('/touchpoints/performance' as any)}
+            onPress={() => router.push(`/touchpoints/performance${periodParam ? `?period=${periodParam}` : ''}` as any)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginBottom: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}
             activeOpacity={0.8}
             data-testid="my-performance-link"

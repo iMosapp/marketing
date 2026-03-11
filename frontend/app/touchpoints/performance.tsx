@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api, { tasksAPI } from '../../services/api';
@@ -46,7 +46,8 @@ export default function PerformanceScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const [period, setPeriod] = useState('week');
+  const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
+  const [period, setPeriod] = useState(periodParam === 'today' ? 'today' : periodParam === 'month' ? 'month' : 'week');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState<{ visible: boolean; title: string; category: string; events: any[] }>({ visible: false, title: '', category: '', events: [] });
