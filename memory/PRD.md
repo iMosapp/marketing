@@ -517,3 +517,35 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - All 8 base docs re-seeded with app-specific content
 - Articles of Incorporation preserved across re-seeds
 
+
+
+### Universal Customer Click Tracking System (Mar 11, 2026)
+- **PROBLEM:** Customer interactions on shared pages (digital cards, congrats cards, review pages, link pages, store cards) were NOT being tracked. The tracking system had been partially implemented (backend endpoint + frontend utility created) but never wired into any frontend pages. Additionally, the `cid` (contact_id) URL parameter — appended by the short URL redirect handler for accurate attribution — was never read by any customer-facing page.
+- **ROOT CAUSE (5 issues):**
+  1. `cid` URL param not read by ANY customer-facing page (card, congrats, review, link page, store card)
+  2. `cid` not passed to backend API calls for accurate page-view tracking
+  3. `trackCustomerAction` imported but never called on digital card page; not even imported on other 4 pages
+  4. Link page click tracking only incremented a counter, didn't create contact_events
+  5. Tracking endpoint didn't support `contact_id` directly (only phone/name lookup)
+- **FIX — Backend (`/app/backend/routers/tracking.py`):**
+  - Added `contact_id` support as preferred attribution path (direct `log_customer_activity` call)
+  - Falls back to `customer_phone`/`customer_name` lookup if no `contact_id`
+  - Expanded `ACTION_CONFIG` from ~20 to 45+ mapped actions across all 5 page types
+  - Every action has: event_type, human-readable title, icon, brand color
+- **FIX — Frontend (ALL 5 customer-facing pages):**
+  - `/app/frontend/app/card/[userId].tsx`: Reads `cid`, passes to `GET /card/data/{userId}?cid=...`, tracks: Call, Text, Email, Social links (per platform), Website, Save Contact, Review CTA, Online Review, Refer a Friend, Share (via link/copy/SMS/email/QR)
+  - `/app/frontend/app/congrats/[cardId].tsx`: Reads `cid`, tracks: Download, Share (per platform), Internal Review, Online Review, Quick links (My Card, My Page, Showcase, Links), Salesman card link, Opt-in
+  - `/app/frontend/app/review/[storeSlug].tsx`: Reads `cid`, passes to `GET /review/page/{slug}?sp=...&cid=...`, tracks: Review platform clicks (Google, Yelp, etc.), Feedback submission
+  - `/app/frontend/app/l/[username].tsx`: Reads `cid`, passes to `GET /linkpage/public/{username}?cid=...`, tracks: All link clicks (dual: legacy counter + universal tracking)
+  - `/app/frontend/app/card/store/[storeSlug].tsx`: Reads `sp`/`cid`, tracks: Call, Email, Website, Directions, Team member card clicks
+- **DO NOT REVERT:** The tracking wiring in these 5 files is critical. Every `onPress` handler that opens a URL or triggers an action MUST call `trackCustomerAction` BEFORE the action. If adding new CTAs, follow the same pattern.
+- **Architecture:**
+  - Short URL redirect → appends `?cid=<contact_id>` → customer-facing page reads `cid` → passes to `trackCustomerAction('page', 'action', { salesperson_id, contact_id })` → `POST /api/tracking/event` → `log_customer_activity()` → `contact_events` collection → feeds into: activity feed, daily touchpoints, leaderboard, performance dashboard
+- **Tested:** 13/13 backend tests passed, all 5 frontend pages verified (iteration 180)
+
+## DO NOT REVERT — Universal Tracking Invariants
+1. Every customer-facing page MUST read `cid` from URL params
+2. Every customer-facing page MUST pass `cid` to its backend data API call
+3. Every clickable CTA MUST call `trackCustomerAction` BEFORE the action
+4. The tracking endpoint MUST accept `contact_id` as preferred attribution (no phone/name lookup needed)
+5. `trackCustomerAction` is fire-and-forget — NEVER block user actions on tracking
