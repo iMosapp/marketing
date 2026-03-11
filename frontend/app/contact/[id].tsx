@@ -4582,31 +4582,32 @@ const getS = (colors: any) => StyleSheet.create({
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
   },
 
-  // Tab bar (Feed / Details)
+  // Tab bar (Feed / Details) — Pill Toggle style
   tabBar: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
   },
   tabBtn: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderRadius: 11,
   },
   tabBtnActive: {
-    borderBottomColor: '#C9A962',
+    backgroundColor: '#C9A962',
   },
   tabBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
-    color: colors.textTertiary,
+    color: '#888',
   },
   tabBtnTextActive: {
-    color: colors.text,
+    color: '#000',
   },
 
   // Pinned note (feed tab)
