@@ -868,6 +868,14 @@ def create_circular_mask(size):
     return mask
 
 
+def create_rounded_rect_mask(width, height, radius):
+    """Create a rounded rectangle mask for the photo"""
+    mask = Image.new('L', (width, height), 0)
+    draw = ImageDraw.Draw(mask)
+    draw.rounded_rectangle([0, 0, width, height], radius=radius, fill=255)
+    return mask
+
+
 @router.get("/card/{card_id}/image")
 async def get_card_image(card_id: str):
     """
@@ -1008,19 +1016,24 @@ async def get_card_image(card_id: str):
                 top = (cphoto.height - mn) // 2
                 cphoto = cphoto.crop((left, top, left + mn, top + mn))
                 cphoto = cphoto.resize((photo_size, photo_size), Image.Resampling.LANCZOS)
-                mask = create_circular_mask(photo_size)
-                # accent ring
-                ring = photo_size + 12
-                rx = (W - ring) // 2
-                draw.ellipse([rx, y - 6, rx + ring, y + ring - 6], fill=accent)
+                corner_radius = 24
+                mask = create_rounded_rect_mask(photo_size, photo_size, corner_radius)
+                # accent border (rounded rectangle)
+                border_w = 6
+                border_size = photo_size + border_w * 2
+                bx = (W - border_size) // 2
+                draw.rounded_rectangle(
+                    [bx, y - border_w, bx + border_size, y + border_size - border_w],
+                    radius=corner_radius + 4, fill=accent
+                )
                 img.paste(cphoto.convert("RGB"), (photo_x, y), mask)
                 photo_loaded = True
         except Exception:
             pass
 
     if not photo_loaded:
-        # placeholder circle
-        draw.ellipse([photo_x, y, photo_x + photo_size, y + photo_size], outline=accent, width=4)
+        # placeholder rounded rectangle
+        draw.rounded_rectangle([photo_x, y, photo_x + photo_size, y + photo_size], radius=24, outline=accent, width=4)
         # initials
         cname = card.get("customer_name", "?")
         initials = "".join(w[0].upper() for w in cname.split()[:2])
