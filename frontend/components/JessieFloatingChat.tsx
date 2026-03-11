@@ -64,7 +64,9 @@ function getPageLabel(pathname: string): string {
 }
 
 // Public routes where the button should NOT appear
-const HIDDEN_ROUTES = ['/auth/', '/onboarding', '/timeline/', '/congrats/', '/review/', '/card/', '/l/', '/jessie'];
+export const JESSI_BAR_HEIGHT = 22;
+
+const HIDDEN_ROUTES: string[] = []; // Bar shows on every page for logged-in users
 
 type Message = { role: 'user' | 'assistant'; text: string };
 
