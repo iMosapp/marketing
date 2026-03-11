@@ -440,6 +440,13 @@ export default function ContactsScreen() {
               <Ionicons name="checkbox-outline" size={24} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
+              onPress={() => router.push('/contacts/duplicates')}
+              style={styles.headerButton}
+              data-testid="duplicates-btn"
+            >
+              <Ionicons name="copy-outline" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
               onPress={() => router.push('/contacts/import')}
               style={styles.headerButton}
             >
