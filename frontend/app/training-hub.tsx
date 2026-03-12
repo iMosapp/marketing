@@ -6,8 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 
 interface Track {
@@ -33,20 +33,17 @@ export default function TrainingHubScreen() {
   const [selectedTrack, setSelectedTrack] = useState<{ id: string; title: string; color: string; lessons: Lesson[] } | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [progress, setProgress] = useState<Record<string, boolean>>({});
-  const [user, setUser] = useState<any>(null);
+  const user = useAuthStore((state) => state.user);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [user?._id]);
 
   const loadData = async () => {
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      const u = userStr ? JSON.parse(userStr) : null;
-      setUser(u);
-      const userRole = u?.role || 'user';
+      const userRole = user?.role || 'user';
       const [tracksRes, progressRes] = await Promise.all([
         api.get(`/training/tracks?role=${userRole}`),
-        u?._id ? api.get(`/training/progress/${u._id}`).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        user?._id ? api.get(`/training/progress/${user._id}`).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ]);
       setTracks(Array.isArray(tracksRes.data) ? tracksRes.data : []);
       const pm: Record<string, boolean> = {};

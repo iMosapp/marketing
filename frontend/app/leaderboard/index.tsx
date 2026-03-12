@@ -5,9 +5,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { leaderboardAPI } from '../../services/api';
-
+import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const PERIODS = [
@@ -34,7 +33,7 @@ export default function LeaderboardPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const user = useAuthStore((state) => state.user);
   const [level, setLevel] = useState('store');
   const [category, setCategory] = useState('total');
   const [period, setPeriod] = useState('month');
@@ -42,12 +41,8 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    AsyncStorage.getItem('user').then(u => u && setUser(JSON.parse(u)));
-  }, []);
-
   const loadData = useCallback(async () => {
-    if (!user) return;
+    if (!user?._id) return;
     setLoading(true);
     try {
       let result;
@@ -60,7 +55,7 @@ export default function LeaderboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, level, category, period]);
+  }, [user?._id, level, category, period]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

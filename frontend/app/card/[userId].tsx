@@ -24,7 +24,7 @@ import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import api from '../../services/api';
 import { trackCustomerAction } from '../../services/tracking';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore } from '../../store/authStore';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
 // Web-safe URL opener  - Linking.openURL uses window.open('_blank')
@@ -106,9 +106,8 @@ export default function DigitalCardPage() {
 
   const checkOwnership = async () => {
     try {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
+      const user = useAuthStore.getState().user;
+      if (user) {
         setIsOwner(user._id === userId || user.id === userId);
       }
     } catch {}
@@ -264,12 +263,8 @@ export default function DigitalCardPage() {
     const name = shareRecipientName.trim();
     if (!phone && !email) return; // Nothing to log
 
-    // Get current user ID from AsyncStorage
-    let currentUserId = '';
-    try {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) currentUserId = JSON.parse(userData)._id || JSON.parse(userData).id;
-    } catch {}
+    // Get current user ID from auth store
+    const currentUserId = useAuthStore.getState().user?._id || '';
     if (!currentUserId) return;
 
     const payload: any = {
@@ -297,11 +292,7 @@ export default function DigitalCardPage() {
   const resolveMatchAction = async (action: string) => {
     setMatchModalVisible(false);
     if (!pendingShareAction) return;
-    let currentUserId = '';
-    try {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) currentUserId = JSON.parse(userData)._id || JSON.parse(userData).id;
-    } catch {}
+    const currentUserId = useAuthStore.getState().user?._id || '';
     if (!currentUserId) return;
 
     try {

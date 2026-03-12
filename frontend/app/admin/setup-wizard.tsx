@@ -6,8 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 
 const STEPS = [
@@ -120,8 +120,7 @@ export default function SetupWizardScreen() {
 
   const loadInitialData = async () => {
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
+      const user = useAuthStore.getState().user;
       setCurrentUser(user);
       const [orgsRes, storesRes] = await Promise.all([
         api.get('/admin/organizations').catch(() => ({ data: [] })),

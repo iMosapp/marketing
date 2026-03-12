@@ -6,8 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 
 export default function PartnerDashboard() {
@@ -17,19 +17,16 @@ export default function PartnerDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const user = useAuthStore((state) => state.user);
   const [orgs, setOrgs] = useState<any[]>([]);
   const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
   const [orgStores, setOrgStores] = useState<Record<string, any[]>>({});
   const [orgUsers, setOrgUsers] = useState<Record<string, any[]>>({});
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [user?._id]);
 
   const loadData = async () => {
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      const u = userStr ? JSON.parse(userStr) : null;
-      setUser(u);
       const res = await api.get('/partners/portal/orgs');
       setOrgs(Array.isArray(res.data) ? res.data : []);
     } catch (e) { console.error(e); }

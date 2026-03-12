@@ -5,9 +5,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-
+import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 interface ShowroomEntry {
   card_id: string;
@@ -22,17 +21,13 @@ export default function ManageShowroom() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const user = useAuthStore((state) => state.user);
   const [entries, setEntries] = useState<ShowroomEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
 
-  useEffect(() => {
-    AsyncStorage.getItem('user').then(u => u && setUser(JSON.parse(u)));
-  }, []);
-
   const loadEntries = useCallback(async () => {
-    if (!user) return;
+    if (!user?._id) return;
     setLoading(true);
     try {
       const res = await api.get(`/showcase/manage/${user._id}`);
@@ -42,7 +37,7 @@ export default function ManageShowroom() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?._id]);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
 

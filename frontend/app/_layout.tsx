@@ -75,6 +75,17 @@ export default function RootLayout() {
     loadAuth();
     loadTheme();
     setMounted(true);
+    
+    // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
+    if (Platform.OS === 'web') {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          loadAuth();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
   }, []);
   
   // Use SSR-safe default (#000000) until client hydration is complete

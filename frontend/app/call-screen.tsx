@@ -5,9 +5,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-
+import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 export default function CallScreen() {
   const { colors } = useThemeStore();
@@ -78,8 +77,7 @@ export default function CallScreen() {
     // Log the call
     setLogging(true);
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
+      const user = useAuthStore.getState().user;
       if (user?._id && contactId) {
         await api.post(`/calls/${user._id}`, {
           contact_id: contactId,
