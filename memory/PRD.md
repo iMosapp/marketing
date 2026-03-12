@@ -699,3 +699,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Issue 4 (Task Bleed):** System-generated tasks (dormant contacts, birthdays, anniversaries) were using `get_data_filter()` which returns org-wide contacts for managers. Fixed to use strict `user_id` filter so tasks are only generated for the user's OWN contacts.
 - **Tested:** 12/12 backend tests passed (iteration 188)
 - **Files:** `contacts.py`, `tasks.py`, `models.py`
+
+
+### Personalization Token Inserter — "Smart Merge Tags" (Mar 12, 2026)
+- **Feature:** Reusable `PersonalizeButton` component that opens a bottom-sheet dropdown with all available merge tags (first_name, last_name, full_name, phone, email, my_name, my_phone, company, date_sold).
+- **Integrated in:** Campaign editor, New campaign, Thread compose, Date triggers, Broadcast messages
+- **UX:** Tapping a tag inserts `{tag_key}` at the end of the message. Each tag shows an icon, label, key preview, and gold pill.
+- **Files:** `components/PersonalizeButton.tsx` (NEW), `campaigns/[id].tsx`, `campaigns/new.tsx`, `thread/[id].tsx`, `settings/date-triggers.tsx`, `broadcast/new.tsx`

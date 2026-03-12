@@ -30,6 +30,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { PersonalizeButton } from '../../components/PersonalizeButton';
 
 // Web platform detection
 const IS_WEB = Platform.OS === 'web';
@@ -2016,6 +2017,12 @@ export default function ThreadScreen() {
                 >
                   <Ionicons name="card-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
+                
+                <PersonalizeButton
+                  colors={colors}
+                  compact
+                  onInsert={(tag) => setMessage(prev => prev + tag)}
+                />
                 
                 <WebToolButton
                   onPress={handleVoiceToText}

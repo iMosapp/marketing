@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { PersonalizeButton } from '../../components/PersonalizeButton';
 type TriggerType = 'birthday' | 'anniversary' | 'sold_date';
 
 const DATE_TRIGGERS: { type: TriggerType; label: string; icon: string; defaultMsg: string }[] = [
@@ -298,8 +299,13 @@ export default function DateTriggersScreen() {
                         ))}
                       </View>
 
-                      <Text style={styles.fieldLabel}>Message Template</Text>
-                      <Text style={styles.fieldHint}>Use {'{first_name}'}, {'{last_name}'}, {'{name}'}</Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={styles.fieldLabel}>Message Template</Text>
+                        <PersonalizeButton
+                          colors={colors}
+                          onInsert={(tag) => updateTriggerField(trigger.type, 'message_template', (config.message_template || trigger.defaultMsg) + tag)}
+                        />
+                      </View>
                       <TextInput
                         style={styles.templateInput}
                         value={config.message_template || trigger.defaultMsg}

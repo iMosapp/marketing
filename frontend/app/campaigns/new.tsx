@@ -26,6 +26,7 @@ import { WebModal } from '../../components/WebModal';
 import { useToast } from '../../components/common/Toast';
 
 import { useThemeStore } from '../../store/themeStore';
+import { PersonalizeButton } from '../../components/PersonalizeButton';
 interface SequenceStep {
   id: string;
   message: string;
@@ -745,9 +746,17 @@ const { showToast } = useToast();
                 />
               )}
 
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 6 }}>
+                <PersonalizeButton
+                  colors={colors}
+                  onInsert={(tag) => {
+                    updateSequenceStep(step.id, 'message', step.message + tag);
+                  }}
+                />
+              </View>
               <TextInput
                 style={styles.messageInput}
-                placeholder="Enter your message..."
+                placeholder="Enter your message... Use the Personalize button above"
                 placeholderTextColor={colors.textSecondary}
                 value={step.message}
                 onChangeText={(text) => updateSequenceStep(step.id, 'message', text)}

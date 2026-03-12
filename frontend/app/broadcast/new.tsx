@@ -23,6 +23,7 @@ import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 
 import { useThemeStore } from '../../store/themeStore';
+import { PersonalizeButton } from '../../components/PersonalizeButton';
 const IS_WEB = Platform.OS === 'web';
 
 interface Tag {
@@ -315,7 +316,13 @@ const { showToast } = useToast();
 
         {/* Message */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Message</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.label}>Message</Text>
+            <PersonalizeButton
+              colors={colors}
+              onInsert={(tag) => setMessage(prev => prev + tag)}
+            />
+          </View>
           <TextInput
             style={[styles.input, styles.messageInput]}
             placeholder="Type your broadcast message..."

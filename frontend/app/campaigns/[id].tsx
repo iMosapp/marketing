@@ -26,6 +26,7 @@ import { useToast } from '../../components/common/Toast';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { PersonalizeButton } from '../../components/PersonalizeButton';
 interface SequenceStep {
   id: string;
   step: number;
@@ -596,11 +597,19 @@ const { showToast } = useToast();
               ) : (
                 /* Message Input (existing) */
                 <>
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 6 }}>
+                    <PersonalizeButton
+                      colors={colors}
+                      onInsert={(tag) => {
+                        updateSequenceStep(step.id, 'message', step.message + tag);
+                      }}
+                    />
+                  </View>
                   <TextInput
                     style={styles.messageInput}
                     value={step.message}
                     onChangeText={(text) => updateSequenceStep(step.id, 'message', text)}
-                    placeholder="Enter message template... Use {name}, {vehicle}, etc."
+                    placeholder="Enter message template... Use the Personalize button above"
                     placeholderTextColor="#6E6E73"
                     multiline
                     numberOfLines={4}
