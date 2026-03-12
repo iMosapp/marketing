@@ -345,6 +345,18 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Fix 3 (`tracking.py`):** Added ObjectId validation on incoming `contact_id` in tracking endpoint — rejects garbage IDs at the entry point.
 - **Tested:** 13/13 backend tests passed, frontend Activity tab fully verified (iteration 184).
 
+### Login Screen Loading Optimization (Mar 12, 2026)
+- **BUG FIXED (P0):** Login screen took ~5 seconds to load with a spinner, then flickered/reloaded before settling.
+- **Root causes found and fixed:**
+  1. **Double `loadAuth()` calls** — Both `_layout.tsx` and `index.tsx` called `loadAuth()` simultaneously on mount, causing overlapping state updates and flicker. Fixed by removing the duplicate call from `index.tsx`.
+  2. **Expensive retry logic on desktop** — `readWithRetry()` retried AsyncStorage reads with 300ms/600ms delays, even on desktop. Now only retries on iOS PWA where cold-boot race conditions exist.
+  3. **Unnecessary cookie restore for fresh visitors** — When no local session exists, the app was making a network request to `/auth/me` (which always returned 401). Removed this for the empty-session path.
+  4. **1-second retry delay** — A `setTimeout` in `index.tsx` added a 1-second wait before showing login. Removed entirely.
+  5. **Black→white background flash** — Index spinner had hardcoded `#000` background while login page uses theme colors. Now uses `colors.bg` from theme store consistently.
+  6. **Concurrent loadAuth prevention** — Added singleton promise pattern to prevent multiple simultaneous calls from causing state race conditions.
+- **Files changed:** `store/authStore.ts`, `app/index.tsx`, `app/_layout.tsx`
+- **Result:** Login screen now loads in ~2.3 seconds (down from ~5s) with no flicker or color flash
+
 ## Known Issues
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested

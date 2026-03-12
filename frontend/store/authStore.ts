@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { authAPI } from '../services/api';
 
 // IndexedDB helpers — iOS PWA preserves IndexedDB better than localStorage
@@ -98,6 +99,9 @@ interface AuthState {
   stopImpersonation: () => Promise<void>;
 }
 
+// Singleton promise to prevent concurrent loadAuth calls
+let _loadAuthPromise: Promise<void> | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
@@ -180,124 +184,103 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   loadAuth: async () => {
-    // Helper: attempt cookie-based session restore from the server (with retry)
-    const tryRestoreFromCookie = async (): Promise<boolean> => {
-      for (let attempt = 0; attempt < 3; attempt++) {
+    // Prevent concurrent loadAuth calls — share the same promise
+    if (_loadAuthPromise) return _loadAuthPromise;
+    
+    const isIOS_PWA = typeof window !== 'undefined' && 
+      Platform.OS === 'web' && 
+      (window.navigator as any).standalone === true;
+    
+    _loadAuthPromise = (async () => {
+      // Helper: safely parse JSON without throwing
+      const safeParse = (str: string | null): any => {
+        if (!str) return null;
+        try { return JSON.parse(str); } catch { return null; }
+      };
+
+      try {
+        // Fast path: single read from AsyncStorage (no retries on desktop)
+        let token = await AsyncStorage.getItem('auth_token');
+        let userStr = await AsyncStorage.getItem('user');
+        
+        // Only retry on iOS PWA where cold boot can cause slow reads
+        if ((!token || !userStr) && isIOS_PWA) {
+          await new Promise(r => setTimeout(r, 300));
+          if (!token) token = await AsyncStorage.getItem('auth_token');
+          if (!userStr) userStr = await AsyncStorage.getItem('user');
+        }
+        
+        // Fallback: try IndexedDB if AsyncStorage is empty
+        if ((!token || !userStr) && typeof window !== 'undefined' && window.indexedDB) {
+          try {
+            const idbToken = await _idbGet('imos_token');
+            const idbUser = await _idbGet('imos_user');
+            if (idbToken && idbUser) {
+              token = idbToken;
+              userStr = idbUser;
+              await AsyncStorage.setItem('auth_token', idbToken).catch(() => {});
+              await AsyncStorage.setItem('user', idbUser).catch(() => {});
+            }
+          } catch {}
+        }
+        
+        if (token && userStr) {
+          const user = safeParse(userStr);
+          
+          if (!user || !user._id) {
+            // Corrupted data — try cookie restore
+            try {
+              const { default: api } = await import('../services/api');
+              const res = await api.get('/auth/me');
+              if (res.data?.user && res.data?.token) {
+                await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
+                await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
+                _idbSet('imos_user', JSON.stringify(res.data.user)).catch(() => {});
+                _idbSet('imos_token', res.data.token).catch(() => {});
+                set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
+                return;
+              }
+            } catch {}
+            set({ isLoading: false });
+            return;
+          }
+          
+          const originalAuthStr = await AsyncStorage.getItem('original_auth');
+          const brandingStr = await AsyncStorage.getItem('partner_branding');
+          const partnerBranding = safeParse(brandingStr);
+          let isImpersonating = false;
+          let originalUser = null;
+          let originalToken = null;
+          
+          if (originalAuthStr) {
+            const originalAuth = safeParse(originalAuthStr);
+            if (originalAuth?.user) {
+              isImpersonating = true;
+              originalUser = originalAuth.user;
+              originalToken = originalAuth.token;
+            }
+          }
+          
+          set({ user, token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
+        } else {
+          // No local session at all — go straight to login, no network request needed
+          set({ isLoading: false });
+        }
+      } catch (error) {
+        // Last resort: try cookie
         try {
           const { default: api } = await import('../services/api');
           const res = await api.get('/auth/me');
           if (res.data?.user && res.data?.token) {
-            const user = res.data.user;
-            const restoredToken = res.data.token;
-            // Re-persist to AsyncStorage so future cold boots are instant
-            await AsyncStorage.setItem('auth_token', restoredToken).catch(() => {});
-            await AsyncStorage.setItem('user', JSON.stringify(user)).catch(() => {});
-            // Also persist to IndexedDB as backup (iOS PWA preserves it better)
-            _idbSet('imos_user', JSON.stringify(user)).catch(() => {});
-            _idbSet('imos_token', restoredToken).catch(() => {});
-            set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
-            return true;
-          }
-        } catch (e: any) {
-          // Only retry on network errors, not on 401s (which mean no valid session)
-          if (e?.response?.status === 401) break;
-          if (attempt < 2) {
-            await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
-            continue;
-          }
-        }
-        break;
-      }
-      return false;
-    };
-
-    // Helper: safely parse JSON without throwing
-    const safeParse = (str: string | null): any => {
-      if (!str) return null;
-      try { return JSON.parse(str); } catch { return null; }
-    };
-
-    // Helper: read from AsyncStorage with retry (iOS cold-boot can return null on first read)
-    const readWithRetry = async (key: string, retries = 2): Promise<string | null> => {
-      for (let i = 0; i <= retries; i++) {
-        const val = await AsyncStorage.getItem(key);
-        if (val) return val;
-        if (i < retries) await new Promise(r => setTimeout(r, 300 * (i + 1)));
-      }
-      return null;
-    };
-
-    try {
-      let token = await readWithRetry('auth_token');
-      let userStr = await readWithRetry('user');
-      
-      // Fallback: try IndexedDB if AsyncStorage is empty (iOS PWA can clear localStorage)
-      if ((!token || !userStr) && typeof window !== 'undefined' && window.indexedDB) {
-        try {
-          const idbToken = await _idbGet('imos_token');
-          const idbUser = await _idbGet('imos_user');
-          if (idbToken && idbUser) {
-            token = idbToken;
-            userStr = idbUser;
-            // Re-sync to AsyncStorage
-            await AsyncStorage.setItem('auth_token', idbToken).catch(() => {});
-            await AsyncStorage.setItem('user', idbUser).catch(() => {});
+            set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
+            return;
           }
         } catch {}
-      }
-      
-      if (token && userStr) {
-        const user = safeParse(userStr);
-        
-        // If parse failed (corrupted data), try cookie restore instead of giving up
-        if (!user || !user._id) {
-          console.warn('[Auth] localStorage user data corrupted, attempting cookie restore');
-          if (await tryRestoreFromCookie()) return;
-          set({ isLoading: false });
-          return;
-        }
-        
-        const originalAuthStr = await AsyncStorage.getItem('original_auth');
-        const brandingStr = await AsyncStorage.getItem('partner_branding');
-        const partnerBranding = safeParse(brandingStr);
-        let isImpersonating = false;
-        let originalUser = null;
-        let originalToken = null;
-        
-        if (originalAuthStr) {
-          const originalAuth = safeParse(originalAuthStr);
-          if (originalAuth?.user) {
-            isImpersonating = true;
-            originalUser = originalAuth.user;
-            originalToken = originalAuth.token;
-          }
-        }
-        
-        set({ 
-          user, 
-          token, 
-          partnerBranding,
-          isAuthenticated: true, 
-          isLoading: false,
-          isImpersonating,
-          originalUser,
-          originalToken
-        });
-      } else {
-        // All local storage empty — try restoring from persistent cookie
-        console.log('[Auth] No local session found, attempting cookie restore');
-        if (await tryRestoreFromCookie()) return;
         set({ isLoading: false });
       }
-    } catch (error) {
-      // AsyncStorage itself threw (iOS memory pressure, storage full, etc.)
-      // CRITICAL: Don't give up — try the cookie as a last resort
-      console.warn('[Auth] AsyncStorage read failed, attempting cookie restore:', error);
-      try {
-        if (await tryRestoreFromCookie()) return;
-      } catch {}
-      set({ isLoading: false });
-    }
+    })();
+    
+    try { await _loadAuthPromise; } finally { _loadAuthPromise = null; }
   },
   
   startImpersonation: async (impersonatedUser, impersonationToken) => {

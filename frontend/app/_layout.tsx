@@ -88,8 +88,8 @@ export default function RootLayout() {
     }
   }, []);
   
-  // Use SSR-safe default (#000000) until client hydration is complete
-  const bgColor = mounted ? colors.bg : '#000000';
+  // Use theme background color once mounted, SSR-safe default that matches light theme
+  const bgColor = mounted ? colors.bg : '#F2F2F7';
   
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>

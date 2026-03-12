@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
-import { useRouter, useRootNavigationState, Redirect } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 
 // Push notification registration — runs once after successful auth
@@ -43,34 +44,22 @@ const getDefaultRoute = (role?: string): string => {
 };
 
 export default function Index() {
-  const router = useRouter();
-  const { isAuthenticated, isLoading, user, loadAuth, isImpersonating } = useAuthStore();
+  const { isAuthenticated, isLoading, user, isImpersonating } = useAuthStore();
+  const colors = useThemeStore((s) => s.colors);
   const [mounted, setMounted] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
   
-  // Track mount state and load auth
+  // Track mount state — loadAuth is already called by _layout.tsx
   useEffect(() => {
     setMounted(true);
-    loadAuth();
   }, []);
   
   // Determine redirect path once loading is complete
-  // CRITICAL: If loadAuth fails once, retry before sending to login screen.
-  // iOS PWA can have slow AsyncStorage reads on cold boot after process kill.
   useEffect(() => {
     if (!mounted || isLoading) return;
     
     if (!isAuthenticated) {
-      // Don't redirect to login immediately — retry once after a short delay
-      // This handles iOS cold-boot race conditions where AsyncStorage is slow
-      const retryTimer = setTimeout(async () => {
-        await loadAuth();
-        const state = useAuthStore.getState();
-        if (!state.isAuthenticated) {
-          setRedirectPath('/auth/login');
-        }
-      }, 1000);
-      return () => clearTimeout(retryTimer);
+      setRedirectPath('/auth/login');
     } else if (!isImpersonating && (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete)) {
       setRedirectPath('/onboarding/index');
     } else {
@@ -80,33 +69,13 @@ export default function Index() {
     }
   }, [mounted, isLoading, isAuthenticated, user]);
   
-  // Fallback timeout — if loadAuth hasn't resolved in 30s, something is truly wrong.
-  // Try one more loadAuth and then redirect to login if still not authenticated.
-  useEffect(() => {
-    if (!mounted || redirectPath) return;
-    
-    const timer = setTimeout(() => {
-      if (!redirectPath && isLoading) {
-        console.warn('[Auth] loadAuth still loading after 30s, retrying once');
-        loadAuth().finally(() => {
-          const { isAuthenticated: authNow } = useAuthStore.getState();
-          if (!authNow) {
-            setRedirectPath('/auth/login');
-          }
-        });
-      }
-    }, 30000);
-    
-    return () => clearTimeout(timer);
-  }, [mounted, redirectPath]);
-  
   // Use Redirect component for cleaner navigation
   if (redirectPath) {
     return <Redirect href={redirectPath as any} />;
   }
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <ActivityIndicator size="large" color="#007AFF" />
     </View>
   );
@@ -115,7 +84,6 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },
