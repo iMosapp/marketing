@@ -13,6 +13,7 @@ import {
   FlatList,
   Linking,
   Dimensions,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -2382,6 +2383,22 @@ export default function ContactDetailScreen() {
               </View>
             </View>
 
+            {/* Share with Team Toggle */}
+            <View style={[ncs.card, { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }]}>
+              <Ionicons name="people-outline" size={20} color="#C9A962" style={ncs.cardRowIcon} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }}>Share with Team</Text>
+                <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 1 }}>Managers and admins can view this contact</Text>
+              </View>
+              <Switch
+                value={contact.ownership_type === 'org'}
+                onValueChange={(val) => setContact({ ...contact, ownership_type: val ? 'org' : 'personal' })}
+                trackColor={{ false: colors.border, true: '#C9A96280' }}
+                thumbColor={contact.ownership_type === 'org' ? '#C9A962' : '#f4f3f4'}
+                data-testid="share-team-toggle"
+              />
+            </View>
+
             {/* Expandable: More Details */}
             {!showMoreDetails ? (
               <TouchableOpacity
@@ -3032,6 +3049,24 @@ export default function ContactDetailScreen() {
                     <Text style={s.addTagChipText}>Add</Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+              )}
+
+              {/* Share with Team Toggle (edit mode) */}
+              {(!isNewContact || showMoreDetails) && (
+              <View style={[s.section, { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }]}>
+                <Ionicons name="people-outline" size={20} color="#C9A962" style={{ marginRight: 10 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }}>Share with Team</Text>
+                  <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 1 }}>Managers and admins can view this contact</Text>
+                </View>
+                <Switch
+                  value={contact.ownership_type === 'org'}
+                  onValueChange={(val) => setContact({ ...contact, ownership_type: val ? 'org' : 'personal' })}
+                  trackColor={{ false: colors.border, true: '#C9A96280' }}
+                  thumbColor={contact.ownership_type === 'org' ? '#C9A962' : '#f4f3f4'}
+                  data-testid="share-team-toggle-edit"
+                />
               </View>
               )}
 
