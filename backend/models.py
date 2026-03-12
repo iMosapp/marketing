@@ -328,6 +328,9 @@ class ContactCreate(BaseModel):
     address_zip: Optional[str] = None
     address_country: Optional[str] = None
     
+    # Source tracking - determines ownership_type automatically
+    source: str = "manual"  # manual, csv, phone_import, lead_form, referral, api, dms, crm
+    
     referred_by: Optional[str] = None
     referred_by_name: Optional[str] = None
     referral_notes: Optional[str] = None

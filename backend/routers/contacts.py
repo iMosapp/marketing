@@ -98,7 +98,7 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     contact_dict['tags'] = list(existing_tags)
     
     result = await get_db().contacts.insert_one(contact_dict)
-    contact_dict['_id'] = result.inserted_id
+    contact_dict['_id'] = str(result.inserted_id)
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
@@ -883,8 +883,8 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                 "thumbnail_url": contact.get("photo_thumbnail") or contact["photo"],
             })
 
-    # 2. Congrats card photos
-    congrats_filter = {"$or": []}
+    # 2. Congrats card photos — MUST be scoped to this user's cards only
+    congrats_filter = {"user_id": user_id, "$or": []}
     if contact_id:
         congrats_filter["$or"].append({"contact_id": contact_id})
     if contact and contact.get("phone"):

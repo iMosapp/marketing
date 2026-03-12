@@ -774,14 +774,14 @@ async def generate_system_tasks(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    from routers.database import get_data_filter
-    base_filter = await get_data_filter(user_id)
-
     # === DORMANT CONTACTS (no event in 90+ days) ===
+    # CRITICAL: Only use the user's OWN contacts, not org-wide contacts
+    # Each user's system tasks must be based solely on their own contact list
     cutoff = now - timedelta(days=90)
     contacts = await db.contacts.find({
-        **base_filter,
+        "user_id": user_id,
         "phone": {"$exists": True, "$ne": ""},
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
     }).to_list(500)
 
     for contact in contacts:
@@ -821,7 +821,8 @@ async def generate_system_tasks(user_id: str):
 
     # === UPCOMING BIRTHDAYS (next 3 days) ===
     bday_contacts = await db.contacts.find({
-        **base_filter, "birthday": {"$exists": True, "$ne": None},
+        "user_id": user_id, "birthday": {"$exists": True, "$ne": None},
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
     }).to_list(500)
 
     for offset in range(4):
@@ -854,7 +855,8 @@ async def generate_system_tasks(user_id: str):
 
     # === PURCHASE ANNIVERSARIES (next 3 days) ===
     sold_contacts = await db.contacts.find({
-        **base_filter,
+        "user_id": user_id,
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
         "$or": [
             {"date_sold": {"$exists": True, "$ne": None}},
             {"purchase_date": {"$exists": True, "$ne": None}},
