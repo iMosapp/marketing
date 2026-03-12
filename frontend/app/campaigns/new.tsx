@@ -27,6 +27,7 @@ import { useToast } from '../../components/common/Toast';
 
 import { useThemeStore } from '../../store/themeStore';
 import { PersonalizeButton } from '../../components/PersonalizeButton';
+import { SmartTagPicker } from '../../components/SmartTagPicker';
 interface SequenceStep {
   id: string;
   message: string;
@@ -526,33 +527,14 @@ const { showToast } = useToast();
         {/* Trigger Tag */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Trigger Tag</Text>
-          <Text style={styles.sectionDescription}>
-            Campaign starts when a contact gets this tag
-          </Text>
-          <View style={styles.tagGrid}>
-            {availableTags.map((tag) => (
-              <TouchableOpacity
-                key={tag}
-                style={[
-                  styles.tagButton,
-                  campaign.triggerTag === tag && styles.tagButtonActive,
-                ]}
-                onPress={() => setCampaign({ ...campaign, triggerTag: tag })}
-              >
-                <Text
-                  style={[
-                    styles.tagButtonText,
-                    campaign.triggerTag === tag && styles.tagButtonTextActive,
-                  ]}
-                >
-                  {tag}
-                </Text>
-                {campaign.triggerTag === tag && (
-                  <Ionicons name="checkmark-circle" size={16} color="#007AFF" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+          <SmartTagPicker
+            tags={availableTags}
+            selectedTag={campaign.triggerTag}
+            onSelect={(tag) => setCampaign({ ...campaign, triggerTag: tag })}
+            onTagCreated={(tag) => setTags(prev => [...prev, tag])}
+            userId={user?._id || ''}
+            colors={colors}
+          />
         </View>
         
         {/* Delivery Mode */}

@@ -27,6 +27,7 @@ import { showAlert, showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 import { PersonalizeButton } from '../../components/PersonalizeButton';
+import { SmartTagPicker } from '../../components/SmartTagPicker';
 interface SequenceStep {
   id: string;
   step: number;
@@ -69,6 +70,8 @@ const { showToast } = useToast();
   
   // Editable fields
   const [name, setName] = useState('');
+  const [triggerTag, setTriggerTag] = useState('');
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [active, setActive] = useState(true);
   const [sequences, setSequences] = useState<SequenceStep[]>([]);
   const [sendTime, setSendTime] = useState(new Date(new Date().setHours(10, 0, 0, 0)));
@@ -81,6 +84,11 @@ const { showToast } = useToast();
     useCallback(() => {
       if (id && user) {
         loadCampaign();
+        // Load available tags
+        api.get(`/tags/${user._id}`).then(r => {
+          const tagNames = (r.data || []).map((t: any) => t.name || t);
+          setAvailableTags(tagNames);
+        }).catch(() => {});
       }
     }, [id, user])
   );
@@ -95,6 +103,7 @@ const { showToast } = useToast();
       
       // Set editable fields
       setName(data.name || '');
+      setTriggerTag(data.trigger_tag || '');
       setActive(data.active ?? true);
       
       // Parse send time
@@ -289,6 +298,7 @@ const { showToast } = useToast();
       
       const updateData = {
         name: name.trim(),
+        trigger_tag: triggerTag,
         active,
         send_time: format(sendTime, 'HH:mm'),
         sequences: sequences.map((s, idx) => ({
@@ -432,6 +442,19 @@ const { showToast } = useToast();
           />
         </View>
         
+        {/* Trigger Tag */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Trigger Tag</Text>
+          <SmartTagPicker
+            tags={availableTags}
+            selectedTag={triggerTag}
+            onSelect={(tag) => { setTriggerTag(tag); setHasChanges(true); }}
+            onTagCreated={(tag) => setAvailableTags(prev => [...prev, tag])}
+            userId={user?._id || ''}
+            colors={colors}
+          />
+        </View>
+
         {/* Active Toggle */}
         <View style={styles.toggleSection}>
           <View style={styles.toggleInfo}>
