@@ -111,7 +111,7 @@ export default function RootLayout() {
               <Stack.Screen name="l/[username]" />
             </Stack>
           </View>
-          <JessieFloatingChat />
+          {user?._id && <JessieFloatingChat />}
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
