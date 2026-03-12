@@ -333,6 +333,7 @@ export default function ContactDetailScreen() {
     date_sold: null as Date | null, custom_dates: [] as CustomDateField[],
     address_street: '', address_city: '', address_state: '', address_zip: '', address_country: '',
     disabled_automations: [] as string[],
+    ownership_type: 'org' as string,
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
@@ -511,6 +512,7 @@ export default function ContactDetailScreen() {
       zip_code: addr?.postalCode || prev.zip_code,
       birthday: bday ? `${bday.year || new Date().getFullYear()}-${String(bday.month! + 1).padStart(2, '0')}-${String(bday.day).padStart(2, '0')}` : prev.birthday,
       photo: dc.image?.uri || prev.photo,
+      ownership_type: 'personal',
     }));
     setShowDeviceContacts(false);
     setDeviceContactSearch('');
@@ -574,7 +576,7 @@ export default function ContactDetailScreen() {
 
     try {
       setBulkImporting(true);
-      const res = await api.post(`/contacts/${user._id}/import`, payload);
+      const res = await api.post(`/contacts/${user._id}/import?source=phone_import`, payload);
       const count = res.data?.imported || payload.length;
       showSimpleAlert(`Imported ${count} contact${count !== 1 ? 's' : ''}!`, 'success');
       setShowDeviceContacts(false);

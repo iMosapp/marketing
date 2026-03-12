@@ -77,12 +77,17 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     contact_dict['updated_at'] = datetime.utcnow()
     
     # Determine ownership type based on source
-    # Personal = user's own contacts (only they see details)
-    # Org = store/company leads (admins can see details)
+    # Phone imports stay personal (user's own contacts, go with them if they leave)
+    # Everything created in the app defaults to org (stays with the dealership)
     source = contact_dict.get('source', 'manual')
-    if source in ('manual', 'csv', 'phone_contacts'):
+    if contact_dict.get('ownership_type') == 'personal':
+        # Explicitly set by the user via toggle — respect it
+        contact_dict['ownership_type'] = 'personal'
+    elif source == 'phone_import':
+        # Imported from device contacts — personal by default
         contact_dict['ownership_type'] = 'personal'
     else:
+        # Manual entry, CSV, or any other source — org by default
         contact_dict['ownership_type'] = 'org'
     contact_dict['status'] = 'active'
     
@@ -624,8 +629,8 @@ async def get_contact_referrals(user_id: str, contact_id: str):
     } for r in referrals]
 
 @router.post("/{user_id}/import")
-async def import_contacts(user_id: str, contacts: List[ContactCreate]):
-    """Bulk import contacts from CSV"""
+async def import_contacts(user_id: str, contacts: List[ContactCreate], source: str = "csv"):
+    """Bulk import contacts from CSV or phone"""
     imported = []
     for contact_data in contacts:
         # Check for duplicates by phone (only check for this user's contacts)
@@ -640,8 +645,9 @@ async def import_contacts(user_id: str, contacts: List[ContactCreate]):
         contact_dict = contact_data.dict()
         contact_dict['user_id'] = user_id
         contact_dict['original_user_id'] = user_id
-        contact_dict['source'] = 'csv'
-        contact_dict['ownership_type'] = 'personal'
+        contact_dict['source'] = source
+        # Phone imports are personal; CSV/other imports are org
+        contact_dict['ownership_type'] = 'personal' if source == 'phone_import' else 'org'
         contact_dict['status'] = 'active'
         contact_dict['created_at'] = datetime.utcnow()
         contact_dict['updated_at'] = datetime.utcnow()
