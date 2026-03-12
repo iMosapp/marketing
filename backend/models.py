@@ -285,6 +285,9 @@ class Contact(BaseModel):
     # Automation control
     disabled_automations: List[str] = []  # List of disabled automation types: birthday, anniversary, sold_date
     
+    # Enrichment (not persisted, added at query time)
+    salesperson_name: Optional[str] = None  # Populated in team view mode
+    
     # CRM Timeline Export
     crm_link_token: Optional[str] = None  # Unique token for public timeline access
     crm_link_copied_at: Optional[datetime] = None  # When the CRM link was first copied

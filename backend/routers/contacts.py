@@ -76,18 +76,14 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     contact_dict['created_at'] = datetime.utcnow()
     contact_dict['updated_at'] = datetime.utcnow()
     
-    # Determine ownership type based on source
-    # Phone imports stay personal (user's own contacts, go with them if they leave)
-    # Everything created in the app defaults to org (stays with the dealership)
+    # Determine ownership type AUTOMATICALLY based on source
+    # Phone imports = personal (user's own contacts, go with them if they leave)
+    # Everything created in the app = org (stays with the dealership)
+    # Users cannot override this — ownership is a business rule, not a user preference
     source = contact_dict.get('source', 'manual')
-    if contact_dict.get('ownership_type') == 'personal':
-        # Explicitly set by the user via toggle — respect it
-        contact_dict['ownership_type'] = 'personal'
-    elif source == 'phone_import':
-        # Imported from device contacts — personal by default
+    if source == 'phone_import':
         contact_dict['ownership_type'] = 'personal'
     else:
-        # Manual entry, CSV, or any other source — org by default
         contact_dict['ownership_type'] = 'org'
     contact_dict['status'] = 'active'
     
@@ -178,15 +174,16 @@ async def check_duplicate_contact(user_id: str, phone: Optional[str] = None, ema
     ]}
 
 @router.get("/{user_id}", response_model=List[Contact])
-async def get_contacts(user_id: str, search: Optional[str] = None):
-    """Get all contacts accessible to a user based on their role.
-    Excludes heavy photo field - uses photo_thumbnail for avatars.
-    Excludes hidden contacts (from deactivated users' personal imports).
+async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Optional[str] = None):
+    """Get contacts based on view mode.
     
-    Privacy rules:
-    - Regular users: see only their own contacts
-    - Admins/managers: see their own contacts + 'org' ownership_type contacts from their store/org
-      Personal contacts of other users are NOT visible (only activity stats are shared)
+    view_mode:
+    - None / 'mine' (default): Only the user's own contacts (all roles)
+    - 'team': (managers/admins only) All org contacts from team members, excluding personal contacts.
+              Enriched with salesperson_name. View-only on the frontend.
+    
+    Salespeople ONLY ever see their own contacts. The 'team' mode is ignored for regular users.
+    Personal contacts are NEVER visible to anyone except the owner.
     """
     db = get_db()
     user = await get_user_by_id(user_id)
@@ -194,36 +191,29 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
         return []
     
     role = user.get("role", "user")
+    is_manager = role in ("super_admin", "org_admin", "store_manager")
     
-    # Build privacy-aware filter
-    if role in ("super_admin", "org_admin", "store_manager"):
-        # Admins see: their own contacts (any type) + other users' org/store contacts
+    # Status filter (reusable)
+    status_filter = {"$or": [
+        {"status": {"$nin": ["hidden", "merged", "deleted"]}},
+        {"status": {"$exists": False}},
+        {"original_user_id": user_id, "status": {"$nin": ["merged", "deleted"]}},
+    ]}
+    
+    if view_mode == "team" and is_manager:
+        # Team view: all org contacts from accessible users (excluding personal)
         accessible_ids = await get_accessible_user_ids(user)
-        privacy_filter = {
-            "$and": [
-                {"$or": [
-                    {"user_id": user_id},  # All of my own contacts
-                    {"user_id": {"$in": accessible_ids}, "ownership_type": {"$ne": "personal"}},  # Other users' non-personal contacts
-                ]},
-                {"$or": [
-                    {"status": {"$nin": ["hidden", "merged", "deleted"]}},
-                    {"status": {"$exists": False}},
-                    {"original_user_id": user_id, "status": {"$nin": ["merged", "deleted"]}},
-                ]}
-            ]
-        }
+        privacy_filter = {"$and": [
+            {"user_id": {"$in": accessible_ids}},
+            {"ownership_type": {"$ne": "personal"}},
+            status_filter,
+        ]}
     else:
-        # Regular users: only their own contacts
-        privacy_filter = {
-            "$and": [
-                {"user_id": user_id},
-                {"$or": [
-                    {"status": {"$nin": ["hidden", "merged", "deleted"]}},
-                    {"status": {"$exists": False}},
-                    {"original_user_id": user_id, "status": {"$nin": ["merged", "deleted"]}},
-                ]}
-            ]
-        }
+        # Default: only user's own contacts (same for ALL roles)
+        privacy_filter = {"$and": [
+            {"user_id": user_id},
+            status_filter,
+        ]}
     
     if search:
         query = {
@@ -243,6 +233,17 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
     
     # Exclude heavy 'photo' field from list queries  - use photo_thumbnail instead
     contacts = await db.contacts.find(query, {"photo": 0}).sort("first_name", 1).limit(500).to_list(500)
+    
+    # For team view: enrich with salesperson names
+    salesperson_map = {}
+    if view_mode == "team" and is_manager:
+        sp_ids = list(set(c.get("user_id", "") for c in contacts))
+        if sp_ids:
+            sp_docs = await db.users.find(
+                {"_id": {"$in": [ObjectId(sid) for sid in sp_ids if len(sid) == 24]}},
+                {"_id": 1, "name": 1}
+            ).to_list(len(sp_ids))
+            salesperson_map = {str(d["_id"]): d.get("name", "Unknown") for d in sp_docs}
     
     # Auto-backfill: find contacts missing thumbnails but having a photo in DB
     needs_backfill = [c for c in contacts if not c.get('photo_thumbnail') and not c.get('photo_url')]
@@ -280,7 +281,14 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
                 except Exception as e:
                     logger.error(f"Failed to backfill thumbnail for {pdoc['_id']}: {e}")
     
-    return [Contact(**{**c, "_id": str(c["_id"])}) for c in contacts]
+    results = []
+    for c in contacts:
+        c_dict = {**c, "_id": str(c["_id"])}
+        # Enrich with salesperson name for team view
+        if salesperson_map:
+            c_dict["salesperson_name"] = salesperson_map.get(c.get("user_id", ""), "")
+        results.append(Contact(**c_dict))
+    return results
 
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
 async def get_contact(user_id: str, contact_id: str):

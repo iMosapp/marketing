@@ -43,6 +43,7 @@ export default function ContactsScreen() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked'>('all');
+  const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
   
   // Add Contact navigation (unified with home page)
   
@@ -53,6 +54,9 @@ export default function ContactsScreen() {
   
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
+  
+  // Role checks
+  const isManager = ['super_admin', 'org_admin', 'store_manager'].includes(user?.role || '');
   
   // Check if user has restricted access
   const isPending = user?.status === 'pending';
@@ -66,7 +70,7 @@ export default function ContactsScreen() {
       loadTags();
       initialLoadDone.current = true;
     }
-  }, [userId, isPending]);
+  }, [userId, isPending, viewMode]);
 
   // Auto-refresh when tab gains focus (e.g. after adding a new contact)
   useFocusEffect(
@@ -116,14 +120,14 @@ export default function ContactsScreen() {
     
     try {
       if (!initialLoadDone.current) setLoading(true);
-      const data = await contactsAPI.getAll(userId, search || undefined);
+      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined);
       setContacts(data);
     } catch (error) {
       console.error('Failed to load contacts:', error);
     } finally {
       setLoading(false);
     }
-  }, [userId, search]);
+  }, [userId, search, viewMode]);
   
   const onRefresh = async () => {
     setRefreshing(true);
@@ -138,7 +142,7 @@ export default function ContactsScreen() {
     searchTimer.current = setTimeout(async () => {
       if (text.length > 2 || text.length === 0) {
         try {
-          const data = await contactsAPI.getAll(userId || '', text || undefined);
+          const data = await contactsAPI.getAll(userId || '', text || undefined, viewMode === 'team' ? 'team' : undefined);
           setContacts(data);
         } catch (error) {
           console.error('Search failed:', error);
@@ -267,26 +271,28 @@ export default function ContactsScreen() {
       color: tagMap[tagName] || colors.textSecondary,
     })) || [];
     const isSelected = selectedIds.has(item._id);
+    const isTeamView = viewMode === 'team';
+    const isOwnContact = item.user_id === userId;
 
     return (
     <TouchableOpacity
       style={[styles.contactItem, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
       onPress={() => {
-        if (selectMode) {
+        if (selectMode && !isTeamView) {
           toggleSelect(item._id);
         } else {
           router.push(`/contact/${item._id}`);
         }
       }}
       onLongPress={() => {
-        if (!selectMode) {
+        if (!selectMode && !isTeamView) {
           setSelectMode(true);
           setSelectedIds(new Set([item._id]));
         }
       }}
     >
       {/* Checkbox in select mode */}
-      {selectMode && (
+      {selectMode && !isTeamView && (
         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
           {isSelected && <Ionicons name="checkmark" size={16} color={colors.text} />}
         </View>
@@ -305,6 +311,11 @@ export default function ContactsScreen() {
         <Text style={[styles.contactName, { color: colors.text }]}>
           {item.first_name} {item.last_name || ''}
         </Text>
+        {isTeamView && item.salesperson_name && !isOwnContact ? (
+          <Text style={{ fontSize: 12, color: '#C9A962', fontWeight: '500', marginBottom: 1 }} data-testid="team-contact-salesperson">
+            {item.salesperson_name}
+          </Text>
+        ) : null}
         <Text style={[styles.contactPhone, { color: colors.textSecondary }]} dataDetectorType="none">{item.phone}</Text>
         {contactTags.length > 0 && (
           <View style={styles.tags}>
@@ -317,6 +328,8 @@ export default function ContactsScreen() {
         )}
       </View>
       
+      {/* Action buttons: hidden in team view for other users' contacts */}
+      {(!isTeamView || isOwnContact) && (
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -382,9 +395,17 @@ export default function ContactsScreen() {
           <Ionicons name="mail" size={20} color="#34C759" />
         </TouchableOpacity>
       </View>
+      )}
+
+      {/* View-only indicator for team contacts */}
+      {isTeamView && !isOwnContact && (
+        <View style={{ paddingHorizontal: 8, paddingVertical: 4 }}>
+          <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+        </View>
+      )}
     </TouchableOpacity>
     );
-  }, [tagMap, router, user, selectMode, selectedIds]);
+  }, [tagMap, router, user, selectMode, selectedIds, viewMode, userId]);
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -474,6 +495,36 @@ export default function ContactsScreen() {
           onChangeText={handleSearch}
         />
       </View>
+
+      {/* My Contacts / Team Contacts Toggle (managers/admins only) */}
+      {isManager && (
+        <View style={{ flexDirection: 'row', marginHorizontal: 16, marginBottom: 10, backgroundColor: colors.card, borderRadius: 10, padding: 3 }} data-testid="view-mode-toggle">
+          <TouchableOpacity
+            style={{
+              flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+              backgroundColor: viewMode === 'mine' ? '#C9A962' : 'transparent',
+            }}
+            onPress={() => { setViewMode('mine'); setSelectMode(false); setSelectedIds(new Set()); }}
+            data-testid="view-mode-mine"
+          >
+            <Text style={{ fontSize: 13, fontWeight: '600', color: viewMode === 'mine' ? '#000' : colors.textSecondary }}>
+              My Contacts
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+              backgroundColor: viewMode === 'team' ? '#C9A962' : 'transparent',
+            }}
+            onPress={() => { setViewMode('team'); setSelectMode(false); setSelectedIds(new Set()); }}
+            data-testid="view-mode-team"
+          >
+            <Text style={{ fontSize: 13, fontWeight: '600', color: viewMode === 'team' ? '#000' : colors.textSecondary }}>
+              Team Contacts
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Tag Filter Bar */}
       {tags.length > 0 && (

@@ -1,0 +1,58 @@
+{
+  "summary": "Contact Ownership & Visibility Rules tested - ALL 11 backend tests PASSED. Frontend verified: View mode toggle shows for managers, 'Share with Team' toggle REMOVED from new/edit contact forms, action buttons correctly shown in both My Contacts and Team Contacts views (since all test contacts belong to logged-in user).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_contact_ownership_visibility.py",
+    "/app/test_reports/pytest/pytest_contact_ownership_visibility.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "contacts.py: Ownership logic is correctly enforced - manual/app-created contacts get 'org', phone_import gets 'personal'. User cannot override this.",
+    "contacts.py: Team view correctly excludes personal contacts from other users and enriches with salesperson_name",
+    "contacts.tsx: View mode toggle correctly shown only for super_admin, org_admin, store_manager roles",
+    "contact/[id].tsx: 'Share with Team' toggle correctly REMOVED from edit form - ownership is automatic based on source"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_contact_ownership_visibility.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% - Toggle visible for manager, no 'Share with Team' toggle in forms"
+  },
+  "test_credentials": {
+    "super_admin_email": "forest@imosapp.com",
+    "super_admin_password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "Test contacts created with TEST_ prefix and cleaned up after tests",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Contact ownership rules fully implemented. Default view_mode is 'mine' (user's own contacts). 'team' mode only works for managers/admins and excludes personal contacts. ownership_type is AUTOMATIC: phone_import=personal, everything else=org. Users cannot override ownership. In Team view, contacts from other users would show eye icon instead of action buttons, but since all test contacts belong to Forest Ward, action buttons are shown for all.",
+  "features_verified": {
+    "backend_default_mode_returns_own_contacts": "PASS - GET /api/contacts/{user_id} returns only user's contacts",
+    "backend_mine_mode_explicit": "PASS - view_mode=mine returns only user's contacts",
+    "backend_team_mode_for_manager": "PASS - view_mode=team works for super_admin",
+    "backend_team_mode_excludes_personal": "PASS - Team view excludes other users' personal contacts",
+    "backend_team_mode_salesperson_enrichment": "PASS - salesperson_name field added to contacts in team view",
+    "backend_manual_source_gets_org_ownership": "PASS - source=manual creates contact with ownership_type='org'",
+    "backend_phone_import_gets_personal_ownership": "PASS - source=phone_import creates contact with ownership_type='personal'",
+    "backend_ownership_cannot_be_overridden": "PASS - Even if user sends ownership_type='personal' with manual source, it becomes 'org'",
+    "backend_default_source_is_manual": "PASS - No source provided defaults to 'manual' and ownership_type='org'",
+    "frontend_view_toggle_visible_for_manager": "PASS - 'My Contacts / Team Contacts' toggle shown for super_admin",
+    "frontend_share_toggle_removed_new_form": "PASS - No 'Share with Team' in new contact form",
+    "frontend_share_toggle_removed_edit_form": "PASS - No 'Share with Team' in edit contact form",
+    "frontend_action_buttons_in_my_view": "PASS - Call/Text/Email buttons visible for own contacts",
+    "frontend_action_buttons_in_team_view": "PASS - Action buttons shown for own contacts in team view"
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED"
+  }
+}
