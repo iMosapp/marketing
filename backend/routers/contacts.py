@@ -201,9 +201,9 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
                     {"user_id": {"$in": accessible_ids}, "ownership_type": {"$ne": "personal"}},  # Other users' non-personal contacts
                 ]},
                 {"$or": [
-                    {"status": {"$ne": "hidden"}},
+                    {"status": {"$nin": ["hidden", "merged", "deleted"]}},
                     {"status": {"$exists": False}},
-                    {"original_user_id": user_id},
+                    {"original_user_id": user_id, "status": {"$nin": ["merged", "deleted"]}},
                 ]}
             ]
         }
@@ -213,9 +213,9 @@ async def get_contacts(user_id: str, search: Optional[str] = None):
             "$and": [
                 {"user_id": user_id},
                 {"$or": [
-                    {"status": {"$ne": "hidden"}},
+                    {"status": {"$nin": ["hidden", "merged", "deleted"]}},
                     {"status": {"$exists": False}},
-                    {"original_user_id": user_id},
+                    {"original_user_id": user_id, "status": {"$nin": ["merged", "deleted"]}},
                 ]}
             ]
         }
