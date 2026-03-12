@@ -123,6 +123,55 @@ async def detect_duplicates(user_id: str):
     }
 
 
+@router.get("/{user_id}/merged-history")
+async def get_merged_history(user_id: str):
+    """
+    Get contacts that have been previously merged for this user.
+    Used to show the Repair section in the UI.
+    """
+    db = get_db()
+
+    merged = await db.contacts.find(
+        {"user_id": user_id, "status": "merged", "merged_into": {"$exists": True}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "merged_into": 1, "merged_at": 1}
+    ).to_list(100)
+
+    # Group by the primary contact they were merged into
+    primary_map = {}
+    for m in merged:
+        pid = m["merged_into"]
+        if pid not in primary_map:
+            primary_map[pid] = {
+                "primary_id": pid,
+                "duplicates_count": 0,
+                "merged_at": None,
+            }
+        primary_map[pid]["duplicates_count"] += 1
+        mat = m.get("merged_at")
+        if mat:
+            iso = mat.isoformat() if hasattr(mat, 'isoformat') else str(mat)
+            if not primary_map[pid]["merged_at"] or iso > primary_map[pid]["merged_at"]:
+                primary_map[pid]["merged_at"] = iso
+
+    # Enrich with the primary contact's name
+    results = []
+    for pid, info in primary_map.items():
+        try:
+            primary = await db.contacts.find_one(
+                {"_id": ObjectId(pid)},
+                {"first_name": 1, "last_name": 1}
+            )
+            info["primary_name"] = f"{primary.get('first_name', '')} {primary.get('last_name', '')}".strip() if primary else "Unknown"
+        except Exception:
+            info["primary_name"] = "Unknown"
+        results.append(info)
+
+    results.sort(key=lambda x: x.get("merged_at") or "", reverse=True)
+
+    return {"merged": results}
+
+
+
 @router.post("/{user_id}/merge")
 async def merge_contacts(user_id: str, body: dict):
     """

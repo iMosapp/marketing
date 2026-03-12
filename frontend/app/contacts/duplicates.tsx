@@ -46,8 +46,10 @@ export default function DuplicatesScreen() {
   const userId = user?._id;
 
   const [duplicates, setDuplicates] = useState<DuplicateSet[]>([]);
+  const [mergedContacts, setMergedContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState<string | null>(null);
+  const [repairing, setRepairing] = useState<string | null>(null);
 
   const fetchDuplicates = useCallback(async () => {
     if (!userId) return;
@@ -55,12 +57,43 @@ export default function DuplicatesScreen() {
       setLoading(true);
       const res = await api.get(`/contacts/${userId}/duplicates`);
       setDuplicates(res.data?.duplicates || []);
+      // Also fetch contacts that have previously been merged (for repair)
+      const mergedRes = await api.get(`/contacts/${userId}/merged-history`);
+      setMergedContacts(mergedRes.data?.merged || []);
     } catch (e) {
       showSimpleAlert('Failed to load duplicates', 'error');
     } finally {
       setLoading(false);
     }
   }, [userId]);
+
+  useFocusEffect(useCallback(() => { fetchDuplicates(); }, [fetchDuplicates]));
+
+  const handleRepair = (primaryId: string, primaryName: string) => {
+    showConfirm(
+      'Repair Merge',
+      `Re-run migration for "${primaryName}"?\n\nThis will consolidate any messages or records that were missed during the original merge.`,
+      async () => {
+        try {
+          setRepairing(primaryId);
+          const res = await api.post(`/contacts/${userId}/repair-merge`, {
+            primary_id: primaryId,
+          });
+          const data = res.data;
+          if (data.records_migrated > 0) {
+            showSimpleAlert(`Repaired! ${data.records_migrated} record${data.records_migrated !== 1 ? 's' : ''} consolidated.`, 'success');
+          } else {
+            showSimpleAlert('All records are already consolidated. Nothing to repair.', 'success');
+          }
+          fetchDuplicates();
+        } catch (e: any) {
+          showSimpleAlert(e?.response?.data?.detail || 'Repair failed', 'error');
+        } finally {
+          setRepairing(null);
+        }
+      }
+    );
+  };
 
   useFocusEffect(useCallback(() => { fetchDuplicates(); }, [fetchDuplicates]));
 
@@ -224,7 +257,7 @@ export default function DuplicatesScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Scanning for duplicates...</Text>
         </View>
-      ) : duplicates.length === 0 ? (
+      ) : duplicates.length === 0 && mergedContacts.length === 0 ? (
         <View style={styles.center} data-testid="no-duplicates">
           <Ionicons name="checkmark-circle-outline" size={56} color="#4CAF50" />
           <Text style={styles.emptyTitle}>No Duplicates Found</Text>
@@ -234,9 +267,59 @@ export default function DuplicatesScreen() {
         </View>
       ) : (
         <FlatList
-          data={duplicates}
-          keyExtractor={(item) => item.phone}
-          renderItem={renderDuplicateSet}
+          data={[
+            ...(mergedContacts.length > 0 ? [{ _type: 'repair_header' }] : []),
+            ...mergedContacts.map(m => ({ ...m, _type: 'repair' })),
+            ...(duplicates.length > 0 ? [{ _type: 'dup_header' }] : []),
+            ...duplicates.map(d => ({ ...d, _type: 'duplicate' })),
+          ]}
+          keyExtractor={(item, idx) => item._type + '_' + (item.phone || item.primary_id || idx)}
+          renderItem={({ item }) => {
+            if (item._type === 'repair_header') {
+              return (
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="construct-outline" size={16} color={colors.textSecondary} />
+                  <Text style={styles.sectionHeaderText}>Previously Merged — Repair if Needed</Text>
+                </View>
+              );
+            }
+            if (item._type === 'repair') {
+              return (
+                <View style={styles.repairCard} data-testid={`repair-${item.primary_id}`}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactName}>{item.primary_name}</Text>
+                    <Text style={styles.contactMeta}>
+                      {item.duplicates_count} duplicate{item.duplicates_count !== 1 ? 's' : ''} merged · {formatDate(item.merged_at)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.repairButton}
+                    onPress={() => handleRepair(item.primary_id, item.primary_name)}
+                    disabled={repairing === item.primary_id}
+                    data-testid={`repair-btn-${item.primary_id}`}
+                  >
+                    {repairing === item.primary_id ? (
+                      <ActivityIndicator size="small" color="#C9A962" />
+                    ) : (
+                      <>
+                        <Ionicons name="construct-outline" size={14} color="#C9A962" />
+                        <Text style={styles.repairButtonText}>Repair</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+            if (item._type === 'dup_header') {
+              return (
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="copy-outline" size={16} color={colors.textSecondary} />
+                  <Text style={styles.sectionHeaderText}>Unmerged Duplicates</Text>
+                </View>
+              );
+            }
+            return renderDuplicateSet({ item: item as DuplicateSet });
+          }}
           contentContainerStyle={styles.list}
           data-testid="duplicates-list"
         />
@@ -337,4 +420,34 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   mergeButtonText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  sectionHeaderText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  repairCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  repairButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#C9A962',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  repairButtonText: { fontSize: 12, fontWeight: '600', color: '#C9A962' },
 });
