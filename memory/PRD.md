@@ -184,10 +184,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### P1
 - Voice Help Assistant
 - Google Places API Integration
+- AI-Powered Outreach (sold tag triggers)
+- App Store Deployment Setup
 
 ### P2
 - Full Twilio Integration (enables auto_send)
 - WhatsApp, Training Hub, Inventory Module
+- Code Cleanup: refactor admin.py, break down contact/[id].tsx
 
 ### Contact Tracking Misattribution Fix (Mar 8, 2026)
 - **BUG FIXED:** When a link (review invite, digital card, showcase, link page) was clicked, the system attributed the view to the WRONG contact — it guessed from the "most recent message" instead of tracking the specific contact the link was sent to.
@@ -650,3 +653,29 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - `<noscript>` fallback uses `meta http-equiv="refresh"` for clients without JS
 - **Impact:** Every shared link now shows contextual previews in ALL messaging apps, regardless of their user-agent.
 
+
+
+### Contact Ownership & Visibility Policy (Mar 12, 2026)
+- **Feature:** Implemented clear contact ownership and visibility rules as a core business policy.
+- **Ownership Rules (Automatic — no user toggle):**
+  - Contacts created in the app (manual, CSV, lead form, etc.) → `ownership_type: 'org'` (belongs to the company)
+  - Contacts imported from phone → `ownership_type: 'personal'` (belongs to the user)
+  - Users **cannot** override ownership — the "Share with Team" toggle has been removed from both new and edit contact forms
+- **Visibility Rules:**
+  - **Salespeople/Users:** Only see their OWN contacts (regardless of ownership type)
+  - **Managers/Admins:** Default view "My Contacts" shows only their own contacts with full interaction (message, call, send cards)
+  - **Managers/Admins:** "Team Contacts" toggle shows all `org` contacts from team members — **view-only** (no action buttons for other users' contacts, salesperson name displayed)
+  - **Personal contacts** are NEVER visible to anyone except the owner, not even admins
+- **When a salesperson leaves:**
+  - `org` contacts can be bulk-transferred to another specific user
+  - `personal` contacts stay hidden/archived
+- **Backend changes:**
+  - `GET /api/contacts/{user_id}` now accepts `view_mode` query param: `mine` (default) or `team`
+  - `team` mode enriches contacts with `salesperson_name` field
+  - `POST /api/contacts/{user_id}` ownership is forced by source, ignoring any user-provided value
+- **Frontend changes:**
+  - New "My Contacts / Team Contacts" segmented control on Contacts page (only for managers/admins)
+  - Team view: shows eye icon and salesperson name, hides call/text/email buttons for other users' contacts
+  - Removed "Share with Team" toggle from contact/[id].tsx (both new and edit modes)
+- **Files:** `contacts.py`, `models.py`, `contacts.tsx`, `contact/[id].tsx`, `api.ts`
+- **Tested:** 11/11 backend tests passed, all frontend verified (iteration 187)
