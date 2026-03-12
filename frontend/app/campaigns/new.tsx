@@ -98,7 +98,7 @@ const { showToast } = useToast();
       setCampaign({
         ...campaign,
         name: tpl.name,
-        type: tpl.type || 'custom',
+        type: 'tag',
         triggerTag: tpl.trigger_tag || '',
         selectedTags: tpl.trigger_tag ? [tpl.trigger_tag] : [],
         deliveryMode: tpl.delivery_mode || 'manual',
@@ -324,8 +324,13 @@ const { showToast } = useToast();
       return;
     }
     
-    if (campaign.selectedTags.length === 0 && !campaign.triggerTag) {
-      Alert.alert('Error', 'Please select at least one tag to target');
+    if (campaign.type === 'tag' && campaign.selectedTags.length === 0 && !campaign.triggerTag) {
+      Alert.alert('Error', 'Please select a trigger tag');
+      return;
+    }
+
+    if (campaign.type === 'date' && !campaign.dateType) {
+      Alert.alert('Error', 'Please select a date type (Birthday, Anniversary, or Sold Date)');
       return;
     }
     
@@ -339,9 +344,10 @@ const { showToast } = useToast();
       
       const campaignData = {
         name: campaign.name,
-        type: campaign.type,
-        trigger_tag: campaign.triggerTag || campaign.selectedTags[0],
-        segment_tags: campaign.selectedTags,
+        type: campaign.type === 'date' ? campaign.dateType : (campaign.type || 'custom'),
+        trigger_tag: campaign.type === 'tag' ? (campaign.triggerTag || campaign.selectedTags[0]) : '',
+        segment_tags: campaign.type === 'tag' ? campaign.selectedTags : [],
+        date_type: campaign.type === 'date' ? campaign.dateType : '',
         sequences: sequences.map((s, index) => ({
           step: index + 1,
           message_template: s.message,
@@ -504,47 +510,100 @@ const { showToast } = useToast();
           />
         </View>
         
-        {/* Campaign Type */}
+        {/* Trigger Type — Tag vs Date */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Campaign Type</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
-            {campaignTypes.map((type) => (
-              <TouchableOpacity
-                key={type.id}
-                style={[
-                  styles.typeCard,
-                  campaign.type === type.id && { borderColor: type.color, backgroundColor: `${type.color}15` },
-                ]}
-                onPress={() => handleTypeSelect(type.id as any)}
-              >
-                <View style={[styles.typeIconContainer, { backgroundColor: `${type.color}20` }]}>
-                  <Ionicons
-                    name={type.icon as any}
-                    size={24}
-                    color={type.color}
-                  />
-                </View>
-                <Text style={[styles.typeName, campaign.type === type.id && { color: type.color }]}>
-                  {type.name}
+          <Text style={styles.sectionTitle}>What triggers this campaign?</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              style={[
+                styles.modeCard,
+                campaign.type === 'tag' && { borderColor: '#007AFF50', backgroundColor: '#007AFF08' },
+              ]}
+              onPress={() => handleTriggerTypeSelect('tag')}
+              data-testid="trigger-type-tag"
+            >
+              <Ionicons name="pricetag" size={24} color={campaign.type === 'tag' ? '#007AFF' : colors.textSecondary} />
+              <Text style={[styles.modeTitle, campaign.type === 'tag' && { color: '#007AFF' }]}>Tag-Based</Text>
+              <Text style={styles.modeDesc}>Starts when a tag is applied to a contact (e.g., "Sold", "VIP")</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeCard,
+                campaign.type === 'date' && { borderColor: '#FF950050', backgroundColor: '#FF950008' },
+              ]}
+              onPress={() => handleTriggerTypeSelect('date')}
+              data-testid="trigger-type-date"
+            >
+              <Ionicons name="calendar" size={24} color={campaign.type === 'date' ? '#FF9500' : colors.textSecondary} />
+              <Text style={[styles.modeTitle, campaign.type === 'date' && { color: '#FF9500' }]}>Date-Based</Text>
+              <Text style={styles.modeDesc}>Fires on a special date like Birthday, Anniversary, or Sold Date</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Tag Trigger — show SmartTagPicker */}
+        {campaign.type === 'tag' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Trigger Tag</Text>
+            <Text style={styles.sectionDescription}>
+              Campaign starts when this tag is applied to a contact
+            </Text>
+            <SmartTagPicker
+              tags={availableTags}
+              selectedTag={campaign.triggerTag}
+              onSelect={(tag) => setCampaign({ ...campaign, triggerTag: tag })}
+              onTagCreated={(tag) => setTags(prev => [...prev, tag])}
+              userId={user?._id || ''}
+              colors={colors}
+            />
+          </View>
+        )}
+
+        {/* Date Trigger — show date type picker */}
+        {campaign.type === 'date' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Which Date?</Text>
+            <Text style={styles.sectionDescription}>
+              Campaign triggers based on this date field on each contact. Contacts with this date filled in will be auto-enrolled.
+            </Text>
+            <View style={{ gap: 8 }}>
+              {DATE_TYPES.map((dt) => (
+                <TouchableOpacity
+                  key={dt.id}
+                  style={[
+                    {
+                      flexDirection: 'row', alignItems: 'center', gap: 12,
+                      backgroundColor: colors.card, borderRadius: 12, padding: 14,
+                      borderWidth: 2, borderColor: campaign.dateType === dt.id ? dt.color : colors.surface,
+                    },
+                    campaign.dateType === dt.id && { backgroundColor: `${dt.color}08` },
+                  ]}
+                  onPress={() => handleDateTypeSelect(dt.id)}
+                  data-testid={`date-type-${dt.id}`}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: `${dt.color}20`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={dt.icon as any} size={22} color={dt.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: campaign.dateType === dt.id ? dt.color : colors.text }}>{dt.name}</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{dt.description}</Text>
+                  </View>
+                  {campaign.dateType === dt.id && (
+                    <Ionicons name="checkmark-circle" size={22} color={dt.color} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+            {campaign.dateType && (
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#34C75910', borderRadius: 10, padding: 10, marginTop: 10, borderWidth: 1, borderColor: '#34C75920' }}>
+                <Ionicons name="flash" size={16} color="#34C759" />
+                <Text style={{ fontSize: 12, color: '#34C759', flex: 1, lineHeight: 17 }}>
+                  Contacts with a {DATE_TYPES.find(d => d.id === campaign.dateType)?.name || 'date'} on file will be automatically enrolled in this campaign.
                 </Text>
-                <Text style={styles.typeDesc} numberOfLines={2}>{type.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        
-        {/* Trigger Tag */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Trigger Tag</Text>
-          <SmartTagPicker
-            tags={availableTags}
-            selectedTag={campaign.triggerTag}
-            onSelect={(tag) => setCampaign({ ...campaign, triggerTag: tag })}
-            onTagCreated={(tag) => setTags(prev => [...prev, tag])}
-            userId={user?._id || ''}
-            colors={colors}
-          />
-        </View>
+              </View>
+            )}
+          </View>
+        )}
         
         {/* Delivery Mode */}
         <View style={styles.section}>

@@ -416,8 +416,9 @@ class Campaign(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user_id: str
     name: str
-    type: str = "custom"  # birthday, anniversary, check_in, sold_followup, custom
+    type: str = "custom"  # birthday, anniversary, check_in, sold_followup, sold_date, custom
     trigger_tag: str = ""  # Tag that triggers this campaign
+    date_type: str = ""  # birthday, anniversary, sold_date — for date-based campaigns
     segment_tags: List[str] = []
     message_template: str = ""  # Legacy single message
     media_urls: List[str] = []  # Media attachments (legacy single message)
@@ -440,6 +441,7 @@ class CampaignCreate(BaseModel):
     name: str
     type: str = "custom"
     trigger_tag: str = ""
+    date_type: str = ""  # birthday, anniversary, sold_date — for date-based campaigns
     segment_tags: List[str] = []
     message_template: str = ""
     media_urls: List[str] = []  # Media attachments

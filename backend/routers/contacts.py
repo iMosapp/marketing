@@ -66,6 +66,70 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
     except Exception as e:
         logger.error(f"Tag campaign enrollment check failed: {e}")
 
+
+async def _check_date_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):
+    """Auto-enroll contact in date-based campaigns when date fields are present"""
+    db = get_db()
+    
+    # Map contact date fields to campaign date_type/type values
+    date_field_map = {
+        "birthday": ["birthday"],
+        "anniversary": ["anniversary"],
+        "date_sold": ["sold_date"],
+    }
+    
+    try:
+        for contact_field, campaign_types in date_field_map.items():
+            date_val = contact_data.get(contact_field)
+            if not date_val:
+                continue
+            
+            # Find active date campaigns matching this date type
+            type_conditions = []
+            for ct in campaign_types:
+                type_conditions.append({"type": ct})
+                type_conditions.append({"date_type": ct})
+            
+            campaigns = await db.campaigns.find({
+                "user_id": user_id,
+                "active": True,
+                "$or": type_conditions
+            }).to_list(50)
+            
+            for campaign in campaigns:
+                campaign_id = str(campaign['_id'])
+                # Check if already enrolled
+                existing = await db.campaign_enrollments.find_one({
+                    "campaign_id": campaign_id,
+                    "contact_id": contact_id,
+                    "status": {"$in": ["active", "completed"]}
+                })
+                if existing:
+                    continue
+                
+                contact_name = f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip()
+                sequences = campaign.get('sequences', [])
+                
+                enrollment = {
+                    "user_id": user_id,
+                    "campaign_id": campaign_id,
+                    "campaign_name": campaign.get('name', ''),
+                    "contact_id": contact_id,
+                    "contact_name": contact_name,
+                    "contact_phone": contact_data.get('phone', ''),
+                    "current_step": 1,
+                    "total_steps": len(sequences),
+                    "status": "active",
+                    "enrolled_at": datetime.utcnow(),
+                    "next_send_at": datetime.utcnow(),
+                    "messages_sent": [],
+                    "trigger_type": campaign_types[0]
+                }
+                await db.campaign_enrollments.insert_one(enrollment)
+                logger.info(f"Auto-enrolled {contact_name} in date campaign '{campaign.get('name')}' ({campaign_types[0]})")
+    except Exception as e:
+        logger.error(f"Date campaign enrollment check failed: {e}")
+
 @router.post("/{user_id}", response_model=Contact)
 async def create_contact(user_id: str, contact_data: ContactCreate):
     """Create a new contact"""
@@ -102,6 +166,9 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
+    
+    # Auto-enroll in date-based campaigns (birthday, anniversary, sold_date)
+    await _check_date_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
     
     # Track stat for leaderboard
     await increment_user_stat(user_id, "contacts_added")
@@ -415,6 +482,9 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, contact_id, update_dict)
+    
+    # Auto-enroll in date-based campaigns if date fields were updated
+    await _check_date_campaign_enrollment(user_id, contact_id, update_dict)
     
     return {"message": "Contact updated successfully"}
 

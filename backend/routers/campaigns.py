@@ -589,7 +589,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['name', 'type', 'trigger_tag', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type']
+    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
     
     result = await get_db().campaigns.update_one(
@@ -913,7 +913,7 @@ async def trigger_scheduler():
 
 @router.post("/scheduler/check-date-triggers/{user_id}")
 async def check_date_triggers(user_id: str):
-    """Check for contacts with birthdays/anniversaries today and auto-enroll in campaigns"""
+    """Check for contacts with birthdays/anniversaries/sold dates today and auto-enroll in campaigns"""
     db = get_db()
     today = datetime.utcnow()
     today_month = today.month
@@ -922,108 +922,69 @@ async def check_date_triggers(user_id: str):
     # Get base filter for user's data
     base_filter = await get_data_filter(user_id)
     
-    # Find birthday campaigns
-    birthday_campaigns = await db.campaigns.find({
-        "$and": [
-            {"type": "birthday", "active": True},
-            base_filter
-        ]
-    }).to_list(100)
-    
-    # Find anniversary campaigns  
-    anniversary_campaigns = await db.campaigns.find({
-        "$and": [
-            {"type": "anniversary", "active": True},
-            base_filter
-        ]
-    }).to_list(100)
+    # Find date-based campaigns using both legacy 'type' field and new 'date_type' field
+    date_type_configs = [
+        {"date_type": "birthday", "contact_field": "birthday", "campaign_filter": {"$or": [{"type": "birthday"}, {"date_type": "birthday"}]}},
+        {"date_type": "anniversary", "contact_field": "anniversary", "campaign_filter": {"$or": [{"type": "anniversary"}, {"date_type": "anniversary"}]}},
+        {"date_type": "sold_date", "contact_field": "date_sold", "campaign_filter": {"$or": [{"type": "sold_date"}, {"date_type": "sold_date"}]}},
+    ]
     
     enrolled_count = 0
+    stats = {}
     
-    # Process birthday campaigns
-    for campaign in birthday_campaigns:
-        # Find contacts with birthday today (using MongoDB date aggregation)
+    for config in date_type_configs:
+        campaigns = await db.campaigns.find({
+            "$and": [
+                {**config["campaign_filter"], "active": True},
+                base_filter
+            ]
+        }).to_list(100)
+        
+        stats[f"{config['date_type']}_campaigns"] = len(campaigns)
+        
+        if not campaigns:
+            continue
+        
         contacts = await db.contacts.find({
             "$and": [
                 base_filter,
-                {"birthday": {"$exists": True, "$ne": None}}
+                {config["contact_field"]: {"$exists": True, "$ne": None}}
             ]
         }).limit(500).to_list(500)
         
-        for contact in contacts:
-            birthday = contact.get('birthday')
-            if birthday and isinstance(birthday, datetime):
-                if birthday.month == today_month and birthday.day == today_day:
-                    # Check if already enrolled in this campaign recently
-                    existing = await db.campaign_enrollments.find_one({
-                        "campaign_id": str(campaign['_id']),
-                        "contact_id": str(contact['_id']),
-                        "enrolled_at": {"$gte": today - timedelta(days=30)}
-                    })
-                    
-                    if not existing:
-                        # Auto-enroll
-                        enrollment = {
-                            "user_id": user_id,
+        for campaign in campaigns:
+            for contact in contacts:
+                date_val = contact.get(config["contact_field"])
+                if date_val and isinstance(date_val, datetime):
+                    if date_val.month == today_month and date_val.day == today_day:
+                        existing = await db.campaign_enrollments.find_one({
                             "campaign_id": str(campaign['_id']),
-                            "campaign_name": campaign['name'],
                             "contact_id": str(contact['_id']),
-                            "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
-                            "contact_phone": contact.get('phone', ''),
-                            "current_step": 1,
-                            "total_steps": len(campaign.get('sequences', [])),
-                            "status": "active",
-                            "enrolled_at": today,
-                            "next_send_at": today,
-                            "messages_sent": [],
-                            "trigger_type": "birthday"
-                        }
-                        await db.campaign_enrollments.insert_one(enrollment)
-                        enrolled_count += 1
-                        logger.info(f"Auto-enrolled {enrollment['contact_name']} in birthday campaign: {campaign['name']}")
-    
-    # Process anniversary campaigns
-    for campaign in anniversary_campaigns:
-        contacts = await db.contacts.find({
-            "$and": [
-                base_filter,
-                {"anniversary": {"$exists": True, "$ne": None}}
-            ]
-        }).limit(500).to_list(500)
-        
-        for contact in contacts:
-            anniversary = contact.get('anniversary')
-            if anniversary and isinstance(anniversary, datetime):
-                if anniversary.month == today_month and anniversary.day == today_day:
-                    existing = await db.campaign_enrollments.find_one({
-                        "campaign_id": str(campaign['_id']),
-                        "contact_id": str(contact['_id']),
-                        "enrolled_at": {"$gte": today - timedelta(days=30)}
-                    })
-                    
-                    if not existing:
-                        enrollment = {
-                            "user_id": user_id,
-                            "campaign_id": str(campaign['_id']),
-                            "campaign_name": campaign['name'],
-                            "contact_id": str(contact['_id']),
-                            "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
-                            "contact_phone": contact.get('phone', ''),
-                            "current_step": 1,
-                            "total_steps": len(campaign.get('sequences', [])),
-                            "status": "active",
-                            "enrolled_at": today,
-                            "next_send_at": today,
-                            "messages_sent": [],
-                            "trigger_type": "anniversary"
-                        }
-                        await db.campaign_enrollments.insert_one(enrollment)
-                        enrolled_count += 1
-                        logger.info(f"Auto-enrolled {enrollment['contact_name']} in anniversary campaign: {campaign['name']}")
+                            "enrolled_at": {"$gte": today - timedelta(days=30)}
+                        })
+                        
+                        if not existing:
+                            enrollment = {
+                                "user_id": user_id,
+                                "campaign_id": str(campaign['_id']),
+                                "campaign_name": campaign['name'],
+                                "contact_id": str(contact['_id']),
+                                "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+                                "contact_phone": contact.get('phone', ''),
+                                "current_step": 1,
+                                "total_steps": len(campaign.get('sequences', [])),
+                                "status": "active",
+                                "enrolled_at": today,
+                                "next_send_at": today,
+                                "messages_sent": [],
+                                "trigger_type": config["date_type"]
+                            }
+                            await db.campaign_enrollments.insert_one(enrollment)
+                            enrolled_count += 1
+                            logger.info(f"Auto-enrolled {enrollment['contact_name']} in {config['date_type']} campaign: {campaign['name']}")
     
     return {
         "message": "Date trigger check complete",
         "enrolled": enrolled_count,
-        "birthday_campaigns": len(birthday_campaigns),
-        "anniversary_campaigns": len(anniversary_campaigns)
+        **stats
     }

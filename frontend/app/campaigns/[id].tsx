@@ -71,6 +71,8 @@ const { showToast } = useToast();
   // Editable fields
   const [name, setName] = useState('');
   const [triggerTag, setTriggerTag] = useState('');
+  const [triggerType, setTriggerType] = useState<'tag' | 'date'>('tag');
+  const [dateType, setDateType] = useState('');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [active, setActive] = useState(true);
   const [sequences, setSequences] = useState<SequenceStep[]>([]);
@@ -105,6 +107,11 @@ const { showToast } = useToast();
       setName(data.name || '');
       setTriggerTag(data.trigger_tag || '');
       setActive(data.active ?? true);
+      
+      // Determine trigger type from campaign data
+      const isDateCampaign = ['birthday', 'anniversary', 'sold_date'].includes(data.type) || !!data.date_type;
+      setTriggerType(isDateCampaign ? 'date' : 'tag');
+      setDateType(data.date_type || (isDateCampaign ? data.type : ''));
       
       // Parse send time
       if (data.send_time) {
@@ -153,9 +160,10 @@ const { showToast } = useToast();
     switch (type) {
       case 'birthday': return { icon: 'gift', color: '#FF9500', label: 'Birthday' };
       case 'anniversary': return { icon: 'heart', color: '#FF3B30', label: 'Anniversary' };
+      case 'sold_date': return { icon: 'calendar', color: '#34C759', label: 'Sold Date' };
       case 'sold_followup': return { icon: 'car', color: '#34C759', label: 'Sold Follow-up' };
       case 'check_in': return { icon: 'chatbubble', color: '#007AFF', label: 'Check-in' };
-      default: return { icon: 'create', color: colors.textSecondary, label: 'Custom' };
+      default: return { icon: 'pricetag', color: '#007AFF', label: triggerType === 'date' ? 'Date Campaign' : 'Tag Campaign' };
     }
   };
   
@@ -298,7 +306,9 @@ const { showToast } = useToast();
       
       const updateData = {
         name: name.trim(),
-        trigger_tag: triggerTag,
+        trigger_tag: triggerType === 'tag' ? triggerTag : '',
+        type: triggerType === 'date' ? dateType : (campaign?.type || 'custom'),
+        date_type: triggerType === 'date' ? dateType : '',
         active,
         send_time: format(sendTime, 'HH:mm'),
         sequences: sequences.map((s, idx) => ({
@@ -442,18 +452,79 @@ const { showToast } = useToast();
           />
         </View>
         
-        {/* Trigger Tag */}
+        {/* Trigger Type Toggle */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Trigger Tag</Text>
-          <SmartTagPicker
-            tags={availableTags}
-            selectedTag={triggerTag}
-            onSelect={(tag) => { setTriggerTag(tag); setHasChanges(true); }}
-            onTagCreated={(tag) => setAvailableTags(prev => [...prev, tag])}
-            userId={user?._id || ''}
-            colors={colors}
-          />
+          <Text style={styles.sectionLabel}>Trigger Type</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            <TouchableOpacity
+              style={[
+                { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.borderLight },
+                triggerType === 'tag' && { backgroundColor: '#007AFF15', borderColor: '#007AFF' },
+              ]}
+              onPress={() => { setTriggerType('tag'); setHasChanges(true); }}
+              data-testid="edit-trigger-type-tag"
+            >
+              <Ionicons name="pricetag" size={16} color={triggerType === 'tag' ? '#007AFF' : colors.textSecondary} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: triggerType === 'tag' ? '#007AFF' : colors.textSecondary }}>Tag-Based</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.borderLight },
+                triggerType === 'date' && { backgroundColor: '#FF950015', borderColor: '#FF9500' },
+              ]}
+              onPress={() => { setTriggerType('date'); setHasChanges(true); }}
+              data-testid="edit-trigger-type-date"
+            >
+              <Ionicons name="calendar" size={16} color={triggerType === 'date' ? '#FF9500' : colors.textSecondary} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: triggerType === 'date' ? '#FF9500' : colors.textSecondary }}>Date-Based</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Tag Trigger */}
+        {triggerType === 'tag' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Trigger Tag</Text>
+            <SmartTagPicker
+              tags={availableTags}
+              selectedTag={triggerTag}
+              onSelect={(tag) => { setTriggerTag(tag); setHasChanges(true); }}
+              onTagCreated={(tag) => setAvailableTags(prev => [...prev, tag])}
+              userId={user?._id || ''}
+              colors={colors}
+            />
+          </View>
+        )}
+
+        {/* Date Trigger */}
+        {triggerType === 'date' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Which Date?</Text>
+            <View style={{ gap: 8 }}>
+              {[
+                { id: 'birthday', name: 'Birthday', icon: 'gift', color: '#FF9500' },
+                { id: 'anniversary', name: 'Purchase Anniversary', icon: 'heart', color: '#FF3B30' },
+                { id: 'sold_date', name: 'Sold Date', icon: 'calendar', color: '#34C759' },
+              ].map((dt) => (
+                <TouchableOpacity
+                  key={dt.id}
+                  style={[
+                    { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14, borderWidth: 2, borderColor: dateType === dt.id ? dt.color : colors.surface },
+                    dateType === dt.id && { backgroundColor: `${dt.color}08` },
+                  ]}
+                  onPress={() => { setDateType(dt.id); setHasChanges(true); }}
+                  data-testid={`edit-date-type-${dt.id}`}
+                >
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${dt.color}20`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={dt.icon as any} size={18} color={dt.color} />
+                  </View>
+                  <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: dateType === dt.id ? dt.color : colors.text }}>{dt.name}</Text>
+                  {dateType === dt.id && <Ionicons name="checkmark-circle" size={20} color={dt.color} />}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Active Toggle */}
         <View style={styles.toggleSection}>
