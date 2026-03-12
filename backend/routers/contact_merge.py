@@ -285,3 +285,103 @@ async def merge_contacts(user_id: str, body: dict):
         "migration_detail": migration_log,
         "fields_merged": list(merge_updates.keys()),
     }
+
+
+@router.post("/{user_id}/repair-merge")
+async def repair_merge(user_id: str, body: dict):
+    """
+    Re-run migration for an already-merged contact pair.
+    Fixes cases where the original merge missed conversations/messages.
+
+    Body: { "primary_id": "..." }
+    Finds all contacts that were merged into this primary and re-runs the full migration.
+    """
+    db = get_db()
+
+    primary_id = body.get("primary_id", "").strip()
+    if not primary_id:
+        raise HTTPException(status_code=400, detail="primary_id is required")
+
+    try:
+        primary = await db.contacts.find_one({"_id": ObjectId(primary_id), "user_id": user_id})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid primary_id format")
+
+    if not primary:
+        raise HTTPException(status_code=404, detail="Primary contact not found")
+
+    # Find all contacts that were merged into this primary
+    merged_contacts = await db.contacts.find(
+        {"merged_into": primary_id, "status": "merged"}
+    ).to_list(50)
+
+    if not merged_contacts:
+        raise HTTPException(status_code=404, detail="No merged contacts found for this primary")
+
+    migration_log = {}
+    total_migrated = 0
+
+    for dup in merged_contacts:
+        duplicate_id = str(dup["_id"])
+
+        # Re-run contact_id migration across all collections
+        for collection_name in COLLECTIONS_WITH_CONTACT_ID:
+            try:
+                result = await db[collection_name].update_many(
+                    {"contact_id": duplicate_id},
+                    {"$set": {"contact_id": primary_id}}
+                )
+                if result.modified_count > 0:
+                    migration_log[collection_name] = migration_log.get(collection_name, 0) + result.modified_count
+            except Exception as e:
+                logger.warning(f"[RepairMerge] Failed to migrate {collection_name}: {e}")
+
+        # Re-run short_urls migration
+        try:
+            result = await db.short_urls.update_many(
+                {"metadata.contact_id": duplicate_id},
+                {"$set": {"metadata.contact_id": primary_id}}
+            )
+            if result.modified_count > 0:
+                migration_log["short_urls"] = migration_log.get("short_urls", 0) + result.modified_count
+        except Exception as e:
+            logger.warning(f"[RepairMerge] Failed to migrate short_urls: {e}")
+
+        # Merge conversations — move messages from duplicate's convs into primary's conv
+        try:
+            primary_conv = await db.conversations.find_one(
+                {"contact_id": primary_id, "user_id": user_id}
+            )
+            # Any extra conversations (from the duplicate) now have contact_id = primary_id
+            all_convs = await db.conversations.find(
+                {"contact_id": primary_id, "user_id": user_id}
+            ).to_list(20)
+
+            if primary_conv and len(all_convs) > 1:
+                primary_conv_id = str(primary_conv["_id"])
+                for conv in all_convs:
+                    if str(conv["_id"]) != primary_conv_id:
+                        result = await db.messages.update_many(
+                            {"conversation_id": str(conv["_id"])},
+                            {"$set": {"conversation_id": primary_conv_id}}
+                        )
+                        if result.modified_count > 0:
+                            migration_log["messages"] = migration_log.get("messages", 0) + result.modified_count
+                        await db.conversations.delete_one({"_id": conv["_id"]})
+                        migration_log["conversations_cleaned"] = migration_log.get("conversations_cleaned", 0) + 1
+        except Exception as e:
+            logger.warning(f"[RepairMerge] Failed to merge conversations: {e}")
+
+    total_migrated = sum(migration_log.values())
+    logger.info(
+        f"[RepairMerge] Repaired {len(merged_contacts)} merged contact(s) into {primary_id}. "
+        f"Migrated {total_migrated} records."
+    )
+
+    return {
+        "success": True,
+        "primary_id": primary_id,
+        "merged_contacts_repaired": len(merged_contacts),
+        "records_migrated": total_migrated,
+        "migration_detail": migration_log,
+    }
