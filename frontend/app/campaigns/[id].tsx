@@ -34,6 +34,8 @@ interface SequenceStep {
   cardType: string;
   message: string;
   message_template?: string;
+  delayHours: number;
+  delay_hours?: number;
   delayDays: number;
   delay_days?: number;
   delayMonths: number;
@@ -114,13 +116,14 @@ const { showToast } = useToast();
         actionType: s.action_type || 'message',
         cardType: s.card_type || '',
         message: s.message_template || s.message || '',
+        delayHours: s.delay_hours || 0,
         delayDays: s.delay_days || 0,
         delayMonths: s.delay_months || 0,
         media_urls: s.media_urls || [],
       }));
       
       if (seqs.length === 0) {
-        seqs.push({ id: '1', step: 1, actionType: 'message', cardType: '', message: data.message_template || '', delayDays: 0, delayMonths: 0, media_urls: [] });
+        seqs.push({ id: '1', step: 1, actionType: 'message', cardType: '', message: data.message_template || '', delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [] });
       }
       
       setSequences(seqs);
@@ -158,6 +161,7 @@ const { showToast } = useToast();
         actionType: 'message',
         cardType: '',
         message: '', 
+        delayHours: 0,
         delayDays: 0, 
         delayMonths: (lastStep?.delayMonths || 0) + 1,
         media_urls: [],
@@ -247,10 +251,6 @@ const { showToast } = useToast();
   };
   
   const getDelayLabel = (step: SequenceStep, index: number) => {
-    if (index === 0 && step.delayDays === 0 && step.delayMonths === 0) {
-      return 'Immediately';
-    }
-    
     const parts = [];
     if (step.delayMonths > 0) {
       parts.push(`${step.delayMonths} month${step.delayMonths > 1 ? 's' : ''}`);
@@ -258,8 +258,14 @@ const { showToast } = useToast();
     if (step.delayDays > 0) {
       parts.push(`${step.delayDays} day${step.delayDays > 1 ? 's' : ''}`);
     }
+    if (step.delayHours > 0) {
+      parts.push(`${step.delayHours} hour${step.delayHours > 1 ? 's' : ''}`);
+    }
     
-    return parts.length > 0 ? `After ${parts.join(' and ')}` : 'Same day';
+    if (parts.length === 0) {
+      return index === 0 ? 'Immediately when triggered' : 'Immediately after previous';
+    }
+    return index === 0 ? `${parts.join(' ')} after trigger` : `After ${parts.join(' ')}`;
   };
   
   const handleSave = async () => {
@@ -290,6 +296,7 @@ const { showToast } = useToast();
           action_type: s.actionType,
           card_type: s.cardType,
           message_template: s.message,
+          delay_hours: s.delayHours,
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
           media_urls: s.media_urls,
@@ -511,48 +518,65 @@ const { showToast } = useToast();
                 </TouchableOpacity>
               </View>
               
-              {/* Delay Controls */}
-              {index > 0 && (
-                <View style={styles.delayControls}>
-                  <View style={styles.delayInput}>
-                    <Text style={styles.delayInputLabel}>Days</Text>
-                    <View style={styles.stepper}>
-                      <TouchableOpacity 
-                        style={styles.stepperButton}
-                        onPress={() => updateSequenceStep(step.id, 'delayDays', Math.max(0, step.delayDays - 1))}
-                      >
-                        <Ionicons name="remove" size={20} color={colors.text} />
-                      </TouchableOpacity>
-                      <Text style={styles.stepperValue}>{step.delayDays}</Text>
-                      <TouchableOpacity 
-                        style={styles.stepperButton}
-                        onPress={() => updateSequenceStep(step.id, 'delayDays', step.delayDays + 1)}
-                      >
-                        <Ionicons name="add" size={20} color={colors.text} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.delayInput}>
-                    <Text style={styles.delayInputLabel}>Months</Text>
-                    <View style={styles.stepper}>
-                      <TouchableOpacity 
-                        style={styles.stepperButton}
-                        onPress={() => updateSequenceStep(step.id, 'delayMonths', Math.max(0, step.delayMonths - 1))}
-                      >
-                        <Ionicons name="remove" size={20} color={colors.text} />
-                      </TouchableOpacity>
-                      <Text style={styles.stepperValue}>{step.delayMonths}</Text>
-                      <TouchableOpacity 
-                        style={styles.stepperButton}
-                        onPress={() => updateSequenceStep(step.id, 'delayMonths', step.delayMonths + 1)}
-                      >
-                        <Ionicons name="add" size={20} color={colors.text} />
-                      </TouchableOpacity>
-                    </View>
+              {/* Delay Controls — shown for ALL steps including step 1 */}
+              <View style={styles.delayControls}>
+                <View style={styles.delayInput}>
+                  <Text style={styles.delayInputLabel}>Months</Text>
+                  <View style={styles.stepper}>
+                    <TouchableOpacity 
+                      style={styles.stepperButton}
+                      onPress={() => updateSequenceStep(step.id, 'delayMonths', Math.max(0, step.delayMonths - 1))}
+                    >
+                      <Ionicons name="remove" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.stepperValue}>{step.delayMonths}</Text>
+                    <TouchableOpacity 
+                      style={styles.stepperButton}
+                      onPress={() => updateSequenceStep(step.id, 'delayMonths', step.delayMonths + 1)}
+                    >
+                      <Ionicons name="add" size={20} color={colors.text} />
+                    </TouchableOpacity>
                   </View>
                 </View>
-              )}
+                
+                <View style={styles.delayInput}>
+                  <Text style={styles.delayInputLabel}>Days</Text>
+                  <View style={styles.stepper}>
+                    <TouchableOpacity 
+                      style={styles.stepperButton}
+                      onPress={() => updateSequenceStep(step.id, 'delayDays', Math.max(0, step.delayDays - 1))}
+                    >
+                      <Ionicons name="remove" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.stepperValue}>{step.delayDays}</Text>
+                    <TouchableOpacity 
+                      style={styles.stepperButton}
+                      onPress={() => updateSequenceStep(step.id, 'delayDays', step.delayDays + 1)}
+                    >
+                      <Ionicons name="add" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.delayInput}>
+                  <Text style={styles.delayInputLabel}>Hours</Text>
+                  <View style={styles.stepper}>
+                    <TouchableOpacity 
+                      style={styles.stepperButton}
+                      onPress={() => updateSequenceStep(step.id, 'delayHours', Math.max(0, step.delayHours - 1))}
+                    >
+                      <Ionicons name="remove" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.stepperValue}>{step.delayHours}</Text>
+                    <TouchableOpacity 
+                      style={styles.stepperButton}
+                      onPress={() => updateSequenceStep(step.id, 'delayHours', step.delayHours + 1)}
+                    >
+                      <Ionicons name="add" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
               
               {step.actionType === 'send_card' ? (
                 /* Card Type Picker */
