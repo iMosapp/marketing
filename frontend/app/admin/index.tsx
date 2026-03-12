@@ -349,6 +349,13 @@ export default function AdminDashboard() {
           onPress: () => router.push('/admin/setup-wizard' as any),
           color: '#FF2D55',
         });
+        customerItems.push({
+          icon: 'book',
+          title: 'Onboarding Guide',
+          subtitle: 'Step-by-step account setup process',
+          onPress: () => router.push('/admin/onboarding-guide' as any),
+          color: '#5856D6',
+        });
       }
       
       sections.push({

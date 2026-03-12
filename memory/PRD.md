@@ -386,6 +386,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Maps: `birthday` → birthday campaigns, `anniversary` → anniversary campaigns, `date_sold` → sold_date campaigns
 - **Tested:** 11/11 backend tests + all frontend UI tests passed (iteration 189)
 
+### In-App Onboarding Guide (Mar 12, 2026)
+- **NEW PAGE:** Created `/admin/onboarding-guide.tsx` — a clean, scannable reference guide for super admins showing the complete 7-step account setup process.
+- Each step shows: numbered card, icon, description, required fields (as colored pills), and a pro tip.
+- Includes "What Happens After Setup" section explaining the new user's first login experience.
+- Big "Start New Account Setup" CTA button links directly to the setup wizard.
+- Added to the admin panel's Customer Infrastructure section as "Onboarding Guide" link.
+- **BUG FIX:** Step 3 (Team Roster) in the setup wizard was missing a "Skip" button — users got stuck with no way to advance if they didn't want to add team members. Added `onSkip` prop to the BtnRow.
+
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes
