@@ -230,22 +230,18 @@ export default function PerformanceScreen() {
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}>COMMUNICATION</Text>
-            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
               <StatCard icon="chatbubble" iconColor="#007AFF" iconBg="rgba(0,122,255,0.12)" value={data.communication?.texts || 0} label="TEXTS SENT" onPress={() => openDetail('Texts Sent', 'texts')} colors={colors} />
               <StatCard icon="mail" iconColor="#5856D6" iconBg="rgba(88,86,214,0.12)" value={data.communication?.emails || 0} label="EMAILS" onPress={() => openDetail('Emails', 'emails')} colors={colors} />
               <StatCard icon="call" iconColor="#34C759" iconBg="rgba(52,199,89,0.12)" value={data.communication?.calls || 0} label="CALLS" onPress={() => openDetail('Calls', 'calls')} colors={colors} />
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}>SHARING</Text>
-            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 4 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
               <StatCard icon="person-circle" iconColor="#C9A962" iconBg="rgba(201,169,98,0.12)" value={data.sharing?.my_card || 0} label="MY CARD" onPress={() => openDetail('My Card Shares', 'my_card')} colors={colors} />
               <StatCard icon="star" iconColor="#FFD60A" iconBg="rgba(255,214,10,0.12)" value={data.sharing?.reviews || 0} label="REVIEWS" onPress={() => openDetail('Review Invites', 'reviews')} colors={colors} />
               <StatCard icon="gift" iconColor="#FF9500" iconBg="rgba(255,150,0,0.12)" value={data.sharing?.card_shares || 0} label="CARD SHARES" onPress={() => openDetail('Card Shares', 'card_shares')} colors={colors} />
-            </View>
-            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
               <StatCard icon="storefront" iconColor="#34C759" iconBg="rgba(52,199,89,0.12)" value={data.sharing?.showcase || 0} label="SHOWCASE" onPress={() => openDetail('Showcase Shares', 'showcase')} colors={colors} />
-              <View style={{ flex: 1 }} />
-              <View style={{ flex: 1 }} />
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}>ENGAGEMENT & CLICK-THROUGHS</Text>
@@ -316,7 +312,7 @@ export default function PerformanceScreen() {
 function StatCard({ icon, iconColor, iconBg, value, label, colors, onPress }: any) {
   return (
     <TouchableOpacity
-      style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}
+      style={{ flex: 1, flexBasis: '28%', maxWidth: '32%', backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}
