@@ -457,6 +457,8 @@ export default function ContactDetailScreen() {
   const [deviceContacts, setDeviceContacts] = useState<DeviceContacts.Contact[]>([]);
   const [deviceContactSearch, setDeviceContactSearch] = useState('');
   const [loadingDeviceContacts, setLoadingDeviceContacts] = useState(false);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<Set<string>>(new Set());
+  const [bulkImporting, setBulkImporting] = useState(false);
 
   const loadDeviceContacts = useCallback(async () => {
     try {
@@ -480,6 +482,7 @@ export default function ContactDetailScreen() {
         ],
       });
       setDeviceContacts(data || []);
+      setSelectedDeviceIds(new Set());
       setShowDeviceContacts(true);
     } catch (e) {
       showSimpleAlert('Could not load phone contacts', 'error');
@@ -489,6 +492,7 @@ export default function ContactDetailScreen() {
   }, []);
 
   const selectDeviceContact = useCallback((dc: DeviceContacts.Contact) => {
+    // Single-select mode: fill the current form
     const phone = dc.phoneNumbers?.[0]?.number || '';
     const email = dc.emails?.[0]?.email || '';
     const addr = dc.addresses?.[0];
@@ -509,19 +513,79 @@ export default function ContactDetailScreen() {
     }));
     setShowDeviceContacts(false);
     setDeviceContactSearch('');
+    setSelectedDeviceIds(new Set());
   }, []);
 
-  const filteredDeviceContacts = useMemo(() => {
-    if (!deviceContactSearch.trim()) return deviceContacts.slice(0, 50);
-    const q = deviceContactSearch.toLowerCase();
-    return deviceContacts
-      .filter(dc => {
-        const name = `${dc.firstName || ''} ${dc.lastName || ''}`.toLowerCase();
-        const phone = dc.phoneNumbers?.[0]?.number || '';
-        return name.includes(q) || phone.includes(q);
-      })
-      .slice(0, 50);
+  const toggleDeviceContact = useCallback((dcId: string) => {
+    setSelectedDeviceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(dcId)) next.delete(dcId);
+      else next.add(dcId);
+      return next;
+    });
+  }, []);
+
+  const filteredDeviceContactsList = useMemo(() => {
+    const list = deviceContactSearch.trim()
+      ? deviceContacts.filter(dc => {
+          const name = `${dc.firstName || ''} ${dc.lastName || ''}`.toLowerCase();
+          const phone = dc.phoneNumbers?.[0]?.number || '';
+          return name.includes(deviceContactSearch.toLowerCase()) || phone.includes(deviceContactSearch);
+        })
+      : deviceContacts;
+    return list.slice(0, 100);
   }, [deviceContacts, deviceContactSearch]);
+
+  const toggleSelectAllVisible = useCallback(() => {
+    setSelectedDeviceIds(prev => {
+      const visibleIds = filteredDeviceContactsList.map(dc => dc.id!).filter(Boolean);
+      const allSelected = visibleIds.length > 0 && visibleIds.every(id => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(visibleIds);
+    });
+  }, [filteredDeviceContactsList]);
+
+  const handleBulkImport = useCallback(async () => {
+    if (selectedDeviceIds.size === 0) return;
+    const selected = deviceContacts.filter(dc => dc.id && selectedDeviceIds.has(dc.id));
+    const payload = selected.map(dc => {
+      const phone = dc.phoneNumbers?.[0]?.number || '';
+      const email = dc.emails?.[0]?.email || '';
+      const addr = dc.addresses?.[0];
+      const bday = dc.birthday;
+      return {
+        first_name: dc.firstName || '',
+        last_name: dc.lastName || '',
+        phone,
+        email,
+        address: addr?.street || '',
+        city: addr?.city || '',
+        state: addr?.region || '',
+        zip_code: addr?.postalCode || '',
+        birthday: bday ? `${bday.year || new Date().getFullYear()}-${String(bday.month! + 1).padStart(2, '0')}-${String(bday.day).padStart(2, '0')}` : '',
+      };
+    }).filter(c => c.first_name || c.last_name || c.phone);
+
+    if (payload.length === 0) {
+      showSimpleAlert('No valid contacts to import', 'error');
+      return;
+    }
+
+    try {
+      setBulkImporting(true);
+      const res = await api.post(`/contacts/${user._id}/import`, payload);
+      const count = res.data?.imported || payload.length;
+      showSimpleAlert(`Imported ${count} contact${count !== 1 ? 's' : ''}!`, 'success');
+      setShowDeviceContacts(false);
+      setSelectedDeviceIds(new Set());
+      setDeviceContactSearch('');
+      router.back();
+    } catch (e: any) {
+      showSimpleAlert(e?.response?.data?.detail || 'Import failed', 'error');
+    } finally {
+      setBulkImporting(false);
+    }
+  }, [selectedDeviceIds, deviceContacts, user, router]);
 
   // Composer state (inline inbox)
   const [composerMessage, setComposerMessage] = useState('');
@@ -2007,11 +2071,15 @@ export default function ContactDetailScreen() {
             <Modal visible={showDeviceContacts} animationType="slide" presentationStyle="pageSheet">
               <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                  <TouchableOpacity onPress={() => { setShowDeviceContacts(false); setDeviceContactSearch(''); }} data-testid="device-contacts-close">
+                  <TouchableOpacity onPress={() => { setShowDeviceContacts(false); setDeviceContactSearch(''); setSelectedDeviceIds(new Set()); }} data-testid="device-contacts-close">
                     <Ionicons name="close" size={24} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' }}>Phone Contacts</Text>
-                  <View style={{ width: 24 }} />
+                  {selectedDeviceIds.size === 0 ? (
+                    <View style={{ width: 24 }} />
+                  ) : (
+                    <Text style={{ fontSize: 13, color: '#C9A962', fontWeight: '600' }}>{selectedDeviceIds.size} selected</Text>
+                  )}
                 </View>
                 <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12 }}>
@@ -2032,38 +2100,70 @@ export default function ContactDetailScreen() {
                     ) : null}
                   </View>
                 </View>
+                {/* Select All toggle */}
+                <TouchableOpacity
+                  onPress={toggleSelectAllVisible}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+                  data-testid="select-all-btn"
+                >
+                  <Ionicons
+                    name={filteredDeviceContactsList.length > 0 && filteredDeviceContactsList.every(dc => dc.id && selectedDeviceIds.has(dc.id)) ? "checkbox" : "square-outline"}
+                    size={22}
+                    color="#C9A962"
+                  />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962', marginLeft: 10 }}>
+                    Select All ({filteredDeviceContactsList.length})
+                  </Text>
+                </TouchableOpacity>
                 <FlatList
-                  data={filteredDeviceContacts}
+                  data={filteredDeviceContactsList}
                   keyExtractor={(item) => item.id || Math.random().toString()}
-                  renderItem={({ item: dc }) => (
-                    <TouchableOpacity
-                      onPress={() => selectDeviceContact(dc)}
-                      style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
-                      data-testid={`device-contact-${dc.id}`}
-                    >
-                      {dc.image?.uri ? (
-                        <Image source={{ uri: dc.image.uri }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                      ) : (
-                        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textTertiary }}>
-                            {(dc.firstName?.[0] || '') + (dc.lastName?.[0] || '')}
+                  renderItem={({ item: dc }) => {
+                    const isSelected = dc.id ? selectedDeviceIds.has(dc.id) : false;
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (selectedDeviceIds.size > 0 && dc.id) {
+                            toggleDeviceContact(dc.id);
+                          } else {
+                            selectDeviceContact(dc);
+                          }
+                        }}
+                        onLongPress={() => dc.id && toggleDeviceContact(dc.id)}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, backgroundColor: isSelected ? '#C9A96210' : 'transparent' }}
+                        data-testid={`device-contact-${dc.id}`}
+                      >
+                        {selectedDeviceIds.size > 0 ? (
+                          <Ionicons
+                            name={isSelected ? "checkbox" : "square-outline"}
+                            size={22}
+                            color={isSelected ? '#C9A962' : colors.textTertiary}
+                            style={{ marginRight: 10 }}
+                          />
+                        ) : null}
+                        {dc.image?.uri ? (
+                          <Image source={{ uri: dc.image.uri }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                        ) : (
+                          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textTertiary }}>
+                              {(dc.firstName?.[0] || '') + (dc.lastName?.[0] || '')}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }}>
+                            {dc.firstName || ''} {dc.lastName || ''}
                           </Text>
+                          {dc.phoneNumbers?.[0]?.number ? (
+                            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{dc.phoneNumbers[0].number}</Text>
+                          ) : null}
                         </View>
-                      )}
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }}>
-                          {dc.firstName || ''} {dc.lastName || ''}
-                        </Text>
-                        {dc.phoneNumbers?.[0]?.number ? (
-                          <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{dc.phoneNumbers[0].number}</Text>
-                        ) : null}
-                        {dc.emails?.[0]?.email ? (
-                          <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 1 }}>{dc.emails[0].email}</Text>
-                        ) : null}
-                      </View>
-                      <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                    </TouchableOpacity>
-                  )}
+                        {selectedDeviceIds.size === 0 && (
+                          <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }}
                   ListEmptyComponent={
                     <View style={{ padding: 32, alignItems: 'center' }}>
                       <Text style={{ fontSize: 14, color: colors.textSecondary }}>
@@ -2072,6 +2172,26 @@ export default function ContactDetailScreen() {
                     </View>
                   }
                 />
+                {/* Bulk import footer */}
+                {selectedDeviceIds.size > 0 && (
+                  <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg }}>
+                    <TouchableOpacity
+                      onPress={handleBulkImport}
+                      disabled={bulkImporting}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 12 }}
+                      data-testid="bulk-import-btn"
+                    >
+                      {bulkImporting ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Ionicons name="download-outline" size={18} color="#fff" />
+                      )}
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+                        {bulkImporting ? 'Importing...' : `Import ${selectedDeviceIds.size} Contact${selectedDeviceIds.size !== 1 ? 's' : ''}`}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </SafeAreaView>
             </Modal>
 
