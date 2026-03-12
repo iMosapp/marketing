@@ -44,7 +44,7 @@ const getDefaultRoute = (role?: string): string => {
 
 export default function Index() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user, loadAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, user, loadAuth, isImpersonating } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
   
@@ -71,7 +71,7 @@ export default function Index() {
         }
       }, 1000);
       return () => clearTimeout(retryTimer);
-    } else if (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete) {
+    } else if (!isImpersonating && (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete)) {
       setRedirectPath('/onboarding/index');
     } else {
       setRedirectPath(getDefaultRoute(user?.role));

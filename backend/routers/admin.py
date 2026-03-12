@@ -3692,3 +3692,18 @@ async def trigger_power_rankings(x_user_id: str = Header(None, alias="X-User-ID"
     from services.power_rankings import send_weekly_power_rankings
     count = await send_weekly_power_rankings(db)
     return {"status": "ok", "emails_sent": count}
+
+
+@router.post("/backfill-onboarding")
+async def backfill_onboarding(x_user_id: str = Header(alias="X-User-ID")):
+    """Bulk-mark all existing active users as onboarding_complete.
+    This fixes users created before the onboarding system was implemented."""
+    caller = await get_user_by_id(x_user_id)
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    db = get_db()
+    result = await db.users.update_many(
+        {"onboarding_complete": {"$ne": True}, "status": {"$ne": "pending"}},
+        {"$set": {"onboarding_complete": True, "needs_onboarding": False}}
+    )
+    return {"updated": result.modified_count, "message": f"Marked {result.modified_count} existing users as onboarding complete"}
