@@ -466,7 +466,7 @@ export default function ContactDetailScreen() {
       setLoadingDeviceContacts(true);
       const { status } = await DeviceContacts.requestPermissionsAsync();
       if (status !== 'granted') {
-        showSimpleAlert('Permission needed to access your contacts', 'error');
+        showSimpleAlert('Permission Needed', 'Please allow access to your contacts in your device Settings to use this feature.');
         return;
       }
       const { data } = await DeviceContacts.getContactsAsync({
@@ -486,7 +486,7 @@ export default function ContactDetailScreen() {
       setSelectedDeviceIds(new Set());
       setShowDeviceContacts(true);
     } catch (e) {
-      showSimpleAlert('Could not load phone contacts', 'error');
+      showSimpleAlert('Error', 'Could not load phone contacts. Please check your permissions in Settings.');
     } finally {
       setLoadingDeviceContacts(false);
     }
