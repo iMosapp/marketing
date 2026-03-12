@@ -679,3 +679,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Removed "Share with Team" toggle from contact/[id].tsx (both new and edit modes)
 - **Files:** `contacts.py`, `models.py`, `contacts.tsx`, `contact/[id].tsx`, `api.ts`
 - **Tested:** 11/11 backend tests passed, all frontend verified (iteration 187)
+
+
+### Auth Persistence Fix — iOS PWA Session Survival (Mar 12, 2026)
+- **Root cause:** iOS kills PWA processes after ~15 min of inactivity. On cold boot, AsyncStorage reads can return null temporarily, causing `loadAuth()` to fail and redirect to login.
+- **Fix — Triple-layer auth persistence:** AsyncStorage with retry + IndexedDB backup + Cookie fallback + Retry before redirect
+- **Also fixed:** 7 pages reading user from AsyncStorage directly (race condition) → now use Zustand auth store
+- **Files:** `authStore.ts`, `index.tsx`, `_layout.tsx` + 7 page files
+
+### UI Consistency — Performance Page Pills (Mar 12, 2026)
+- Added "All Time" to My Performance. Made all pills compact, single-line, horizontal scroll across both performance pages.
+- **Files:** `performance.tsx`, `customer-performance.tsx`, `tasks.py`

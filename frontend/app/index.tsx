@@ -55,11 +55,22 @@ export default function Index() {
   }, []);
   
   // Determine redirect path once loading is complete
+  // CRITICAL: If loadAuth fails once, retry before sending to login screen.
+  // iOS PWA can have slow AsyncStorage reads on cold boot after process kill.
   useEffect(() => {
     if (!mounted || isLoading) return;
     
     if (!isAuthenticated) {
-      setRedirectPath('/auth/login');
+      // Don't redirect to login immediately — retry once after a short delay
+      // This handles iOS cold-boot race conditions where AsyncStorage is slow
+      const retryTimer = setTimeout(async () => {
+        await loadAuth();
+        const state = useAuthStore.getState();
+        if (!state.isAuthenticated) {
+          setRedirectPath('/auth/login');
+        }
+      }, 1000);
+      return () => clearTimeout(retryTimer);
     } else if (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete) {
       setRedirectPath('/onboarding/index');
     } else {

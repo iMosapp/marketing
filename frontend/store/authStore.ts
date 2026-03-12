@@ -2,6 +2,47 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
 
+// IndexedDB helpers — iOS PWA preserves IndexedDB better than localStorage
+const IDB_NAME = 'imos_auth';
+const IDB_STORE = 'session';
+
+function _idbOpen(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !window.indexedDB) return reject('no idb');
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function _idbSet(key: string, value: string): Promise<void> {
+  return _idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  }));
+}
+
+function _idbGet(key: string): Promise<string | null> {
+  return _idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  }));
+}
+
+function _idbClear(): Promise<void> {
+  return _idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).clear();
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  })).catch(() => {});
+}
+
 interface User {
   _id: string;
   email: string;
@@ -83,6 +124,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await AsyncStorage.setItem('auth_token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
+      // Backup to IndexedDB (survives iOS PWA localStorage purges)
+      _idbSet('imos_token', token).catch(() => {});
+      _idbSet('imos_user', JSON.stringify(user)).catch(() => {});
       if (partner_branding) {
         await AsyncStorage.setItem('partner_branding', JSON.stringify(partner_branding));
       } else {
@@ -117,6 +161,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('original_auth');
     await AsyncStorage.removeItem('partner_branding');
+    // Clear IndexedDB backup
+    _idbClear().catch(() => {});
     // Clear server-side session cookie
     try {
       const { default: api } = await import('../services/api');
@@ -146,6 +192,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // Re-persist to AsyncStorage so future cold boots are instant
             await AsyncStorage.setItem('auth_token', restoredToken).catch(() => {});
             await AsyncStorage.setItem('user', JSON.stringify(user)).catch(() => {});
+            // Also persist to IndexedDB as backup (iOS PWA preserves it better)
+            _idbSet('imos_user', JSON.stringify(user)).catch(() => {});
+            _idbSet('imos_token', restoredToken).catch(() => {});
             set({ user, token: restoredToken, isAuthenticated: true, isLoading: false });
             return true;
           }
@@ -168,9 +217,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try { return JSON.parse(str); } catch { return null; }
     };
 
+    // Helper: read from AsyncStorage with retry (iOS cold-boot can return null on first read)
+    const readWithRetry = async (key: string, retries = 2): Promise<string | null> => {
+      for (let i = 0; i <= retries; i++) {
+        const val = await AsyncStorage.getItem(key);
+        if (val) return val;
+        if (i < retries) await new Promise(r => setTimeout(r, 300 * (i + 1)));
+      }
+      return null;
+    };
+
     try {
-      const token = await AsyncStorage.getItem('auth_token');
-      const userStr = await AsyncStorage.getItem('user');
+      let token = await readWithRetry('auth_token');
+      let userStr = await readWithRetry('user');
+      
+      // Fallback: try IndexedDB if AsyncStorage is empty (iOS PWA can clear localStorage)
+      if ((!token || !userStr) && typeof window !== 'undefined' && window.indexedDB) {
+        try {
+          const idbToken = await _idbGet('imos_token');
+          const idbUser = await _idbGet('imos_user');
+          if (idbToken && idbUser) {
+            token = idbToken;
+            userStr = idbUser;
+            // Re-sync to AsyncStorage
+            await AsyncStorage.setItem('auth_token', idbToken).catch(() => {});
+            await AsyncStorage.setItem('user', idbUser).catch(() => {});
+          }
+        } catch {}
+      }
       
       if (token && userStr) {
         const user = safeParse(userStr);
@@ -210,8 +284,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           originalToken
         });
       } else {
-        // localStorage empty — try restoring from persistent cookie
-        console.log('[Auth] No localStorage session, attempting cookie restore');
+        // All local storage empty — try restoring from persistent cookie
+        console.log('[Auth] No local session found, attempting cookie restore');
         if (await tryRestoreFromCookie()) return;
         set({ isLoading: false });
       }
