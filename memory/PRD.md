@@ -186,6 +186,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Google Places API Integration
 - AI-Powered Outreach (sold tag triggers)
 - App Store Deployment Setup
+- Campaign Creation Redesign (**COMPLETED** — Mar 12, 2026)
 
 ### P2
 - Full Twilio Integration (enables auto_send)
@@ -348,6 +349,30 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
 - P2: React Hydration Error #418
+
+### Campaign Creation Redesign — Unified Tag & Date Triggers (Mar 12, 2026)
+- **NEW FEATURE:** Completely redesigned campaign creation to unify "Tag-Based" and "Date-Based" campaigns into a single, clear workflow.
+- **Frontend (`campaigns/new.tsx`):**
+  - New trigger type picker: "Tag-Based" (blue, shows SmartTagPicker) vs "Date-Based" (orange, shows Birthday/Anniversary/Sold Date options)
+  - Each date type option has icon, description, and auto-fill for campaign name and default message
+  - Green info box explains auto-enrollment when a date type is selected
+  - Pre-built template selector properly sets trigger type to 'tag'
+  - Updated validation: tag campaigns require a trigger tag, date campaigns require a date type
+  - Save payload now includes `date_type` for date-based campaigns
+- **Frontend (`campaigns/[id].tsx`):**
+  - Edit campaign now shows Tag-Based vs Date-Based toggle
+  - Date-based campaigns show the date type picker (Birthday/Anniversary/Sold Date) 
+  - Switching trigger type marks campaign as having changes
+- **Backend (`models.py`):** Added `date_type` field to both `Campaign` and `CampaignCreate` models
+- **Backend (`campaigns.py`):**
+  - `date_type` added to allowed update fields
+  - `check_date_triggers` refactored to handle birthday, anniversary, AND sold_date (was only birthday + anniversary)
+  - Uses both legacy `type` field and new `date_type` field for campaign matching
+- **Backend (`contacts.py`):**
+  - New `_check_date_campaign_enrollment()` helper auto-enrolls contacts in date campaigns when created/updated with date fields
+  - Called on both `create_contact` and `update_contact` endpoints
+  - Maps: `birthday` → birthday campaigns, `anniversary` → anniversary campaigns, `date_sold` → sold_date campaigns
+- **Tested:** 11/11 backend tests + all frontend UI tests passed (iteration 189)
 
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
