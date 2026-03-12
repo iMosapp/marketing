@@ -11,6 +11,7 @@ const PERIODS = [
   { key: 'today', label: 'Today' },
   { key: 'week', label: 'This Week' },
   { key: 'month', label: 'This Month' },
+  { key: 'all', label: 'All Time' },
 ];
 
 // Push notification helpers
@@ -126,17 +127,17 @@ export default function PerformanceScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <View style={{ flexDirection: 'row', gap: 4, padding: 16, paddingBottom: 14 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingVertical: 14 }}>
           {PERIODS.map(p => (
             <TouchableOpacity key={p.key} onPress={() => setPeriod(p.key)}
-              style={{ flex: 1, padding: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
+              style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
                 backgroundColor: period === p.key ? colors.accent : colors.card,
                 borderColor: period === p.key ? colors.accent : colors.border }}
               data-testid={`period-${p.key}`}>
               <Text style={{ fontSize: 13, fontWeight: '600', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         {loading ? (
           <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />

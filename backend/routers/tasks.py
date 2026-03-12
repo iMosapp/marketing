@@ -70,6 +70,9 @@ async def get_user_day_bounds(user_id: str, period: str = "today"):
     elif period == "month":
         start = local_midnight - timedelta(days=30)
         end = local_midnight + timedelta(days=1)
+    elif period == "all":
+        start = datetime(2020, 1, 1, tzinfo=local_tz)
+        end = local_midnight + timedelta(days=1)
     else:
         start = local_midnight
         end = local_midnight + timedelta(days=1)

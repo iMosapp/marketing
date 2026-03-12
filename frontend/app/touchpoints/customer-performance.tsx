@@ -126,14 +126,14 @@ export default function CustomerPerformanceScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        {/* Period Filters — matches My Performance exactly */}
-        <View style={{ flexDirection: 'row', gap: 4, padding: 16, paddingBottom: 8 }}>
+        {/* Period Filters — horizontal scroll, compact pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
           {PERIODS.map(p => (
             <TouchableOpacity
               key={p.key}
               onPress={() => setPeriod(p.key)}
               style={{
-                flex: 1, padding: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
+                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
                 backgroundColor: period === p.key ? colors.accent : colors.card,
                 borderColor: period === p.key ? colors.accent : colors.border,
               }}
@@ -142,16 +142,16 @@ export default function CustomerPerformanceScreen() {
               <Text style={{ fontSize: 13, fontWeight: '600', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
-        {/* Scope Filters — same style, green accent */}
-        <View style={{ flexDirection: 'row', gap: 4, paddingHorizontal: 16, paddingBottom: 14 }}>
+        {/* Scope Filters — horizontal scroll, compact pills, green accent */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 14 }}>
           {SCOPES.map(s => (
             <TouchableOpacity
               key={s.key}
               onPress={() => setScope(s.key)}
               style={{
-                flex: 1, padding: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
+                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
                 backgroundColor: scope === s.key ? '#34C759' : colors.card,
                 borderColor: scope === s.key ? '#34C759' : colors.border,
               }}
@@ -160,7 +160,7 @@ export default function CustomerPerformanceScreen() {
               <Text style={{ fontSize: 13, fontWeight: '600', color: scope === s.key ? '#000' : colors.textSecondary }}>{s.label}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         {/* Summary Stats */}
         {!loading && rankings.length > 0 && (
