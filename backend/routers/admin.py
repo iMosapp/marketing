@@ -1051,26 +1051,39 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
     
     # Handle contacts based on ownership
     if not is_individual:
-        # ORG USER (Option 2): ALL contacts transfer to the org on deactivation.
-        # The "Share with Team" toggle only controls day-to-day visibility while active.
-        # When someone leaves, the org retains everything.
+        # ORG USER: Personal contacts stay personal (removed from org view).
+        # Org/shared contacts transfer to the organization.
         
-        total_contacts = await get_db().contacts.count_documents({"user_id": user_id})
+        # 1. Personal contacts: hide from org — these belong to the user, not the company
+        personal_count = await get_db().contacts.count_documents(
+            {"user_id": user_id, "ownership_type": "personal"}
+        )
+        if personal_count > 0:
+            await get_db().contacts.update_many(
+                {"user_id": user_id, "ownership_type": "personal"},
+                {"$set": {
+                    "status": "hidden",
+                    "hidden_at": now,
+                    "hidden_reason": "user_deactivated",
+                    "original_user_id": user_id,
+                }}
+            )
         
-        # Convert ALL contacts to org-owned and tag with original owner for audit
+        # 2. Org/shared contacts: stay visible, transfer to org ownership
+        org_contact_count = await get_db().contacts.count_documents(
+            {"user_id": user_id, "ownership_type": {"$ne": "personal"}}
+        )
         await get_db().contacts.update_many(
-            {"user_id": user_id},
+            {"user_id": user_id, "ownership_type": {"$ne": "personal"}},
             {"$set": {
-                "ownership_type": "org",
                 "original_user_id": user_id,
                 "user_deactivated": True,
                 "transferred_to_org_at": now,
             }}
         )
         
-        archived_count = 0
-        org_contact_count = total_contacts
-        logger.info(f"User {user_id} deactivated from org. {total_contacts} contacts transferred to org ownership.")
+        archived_count = personal_count
+        logger.info(f"User {user_id} deactivated. {personal_count} personal contacts hidden (stay with user), {org_contact_count} org contacts retained by org.")
     else:
         # INDIVIDUAL USER: they keep everything, just deactivated
         archived_count = 0
