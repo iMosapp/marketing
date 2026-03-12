@@ -52,7 +52,8 @@ const { showToast } = useToast();
   const [loadingTemplates, setLoadingTemplates] = useState(true);
     const [campaign, setCampaign] = useState({
     name: '',
-    type: 'check_in' as 'birthday' | 'anniversary' | 'check_in' | 'sold_followup' | 'custom',
+    type: 'tag' as 'tag' | 'date',
+    dateType: '' as '' | 'birthday' | 'anniversary' | 'sold_date',
     triggerTag: '',
     selectedTags: [] as string[],
     active: true,
@@ -125,35 +126,43 @@ const { showToast } = useToast();
   
   const availableTags = tags;
   
-  const campaignTypes = [
-    { id: 'sold_followup', name: 'Sold Follow-up', icon: 'car', color: '#34C759', description: 'Check in with customers after purchase' },
-    { id: 'birthday', name: 'Birthday', icon: 'gift', color: '#FF9500', description: 'Wish them happy birthday' },
-    { id: 'anniversary', name: 'Anniversary', icon: 'heart', color: '#FF3B30', description: 'Celebrate purchase anniversary' },
-    { id: 'check_in', name: 'Check-in', icon: 'chatbubble', color: '#007AFF', description: 'Regular touchpoints' },
-    { id: 'custom', name: 'Custom', icon: 'create', color: colors.textSecondary, description: 'Build your own' },
-  ];
-  
   const soldFollowupTemplates: SequenceStep[] = [
-    { id: '1', message: "Hey {name}! Just wanted to check in - how are you enjoying your new {vehicle}? Let me know if you have any questions!", delayHours: 0, delayDays: 3, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Initial check-in after purchase' },
-    { id: '2', message: "Hi {name}! It's been about a month with your {vehicle}. Everything running smoothly? I'm here if you need anything!", delayHours: 0, delayDays: 0, delayMonths: 1, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 month follow-up' },
-    { id: '3', message: "Hey {name}! Quick check-in at the 3 month mark. How's the {vehicle} treating you? Don't forget to schedule your first service if you haven't already!", delayHours: 0, delayDays: 0, delayMonths: 3, media_urls: [], channel: 'sms', ai_generated: false, step_context: '3 month check-in' },
-    { id: '4', message: "Happy 6 months with your {vehicle}, {name}! Hope you're still loving it. Let me know if there's anything I can help with!", delayHours: 0, delayDays: 0, delayMonths: 6, media_urls: [], channel: 'sms', ai_generated: false, step_context: '6 month milestone' },
-    { id: '5', message: "Can you believe it's been a year, {name}?! Time flies! How's the {vehicle}? If you know anyone looking for a great deal, send them my way!", delayHours: 0, delayDays: 0, delayMonths: 12, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 year anniversary' },
+    { id: '1', message: "Hey {first_name}! Just wanted to check in - how are you enjoying your new ride? Let me know if you have any questions!", delayHours: 0, delayDays: 3, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Initial check-in after purchase' },
+    { id: '2', message: "Hi {first_name}! It's been about a month since your purchase. Everything running smoothly? I'm here if you need anything!", delayHours: 0, delayDays: 0, delayMonths: 1, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 month follow-up' },
+    { id: '3', message: "Hey {first_name}! Quick check-in at the 3 month mark. How's everything treating you? Don't forget to schedule your first service if you haven't already!", delayHours: 0, delayDays: 0, delayMonths: 3, media_urls: [], channel: 'sms', ai_generated: false, step_context: '3 month check-in' },
+    { id: '4', message: "Happy 6 months, {first_name}! Hope you're still loving it. Let me know if there's anything I can help with!", delayHours: 0, delayDays: 0, delayMonths: 6, media_urls: [], channel: 'sms', ai_generated: false, step_context: '6 month milestone' },
+    { id: '5', message: "Can you believe it's been a year, {first_name}?! Time flies! If you know anyone looking for a great deal, send them my way!", delayHours: 0, delayDays: 0, delayMonths: 12, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 year anniversary' },
   ];
-  
-  const handleTypeSelect = (type: typeof campaign.type) => {
-    setCampaign({ ...campaign, type });
-    
-    // Pre-fill sequences for sold follow-up
-    if (type === 'sold_followup') {
-      setSequences(soldFollowupTemplates);
-      setCampaign(prev => ({ ...prev, type, triggerTag: 'sold' }));
-    } else if (type === 'birthday') {
-      setSequences([{ id: '1', message: "Happy birthday, {name}! Hope you have an amazing day! If there's anything I can do for you, just let me know.", delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Birthday greeting' }]);
-    } else if (type === 'anniversary') {
-      setSequences([{ id: '1', message: "Happy anniversary on your {vehicle} purchase, {name}! Can you believe it's been a year? Hope it's still treating you well!", delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Purchase anniversary' }]);
-    } else {
+
+  const DATE_TYPES = [
+    { id: 'birthday', name: 'Birthday', icon: 'gift', color: '#FF9500', description: 'Auto-send on their birthday every year', defaultMsg: "Happy birthday, {first_name}! Hope you have an amazing day!" },
+    { id: 'anniversary', name: 'Purchase Anniversary', icon: 'heart', color: '#FF3B30', description: 'Celebrate the date they bought from you', defaultMsg: "Happy anniversary on your purchase, {first_name}! Hope it's still treating you well!" },
+    { id: 'sold_date', name: 'Sold Date', icon: 'calendar', color: '#34C759', description: 'Trigger messages based on purchase date', defaultMsg: "Hey {first_name}! Checking in since your purchase. How's everything going?" },
+  ];
+
+  const handleTriggerTypeSelect = (triggerType: 'tag' | 'date') => {
+    setCampaign(prev => ({ ...prev, type: triggerType, dateType: '', triggerTag: '' }));
+    if (triggerType === 'tag') {
       setSequences([{ id: '1', message: '', delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' }]);
+    }
+  };
+
+  const handleDateTypeSelect = (dateType: string) => {
+    const dt = DATE_TYPES.find(d => d.id === dateType);
+    setCampaign(prev => ({ ...prev, dateType: dateType as any, name: prev.name || dt?.name || '' }));
+    setSequences([{
+      id: '1', message: dt?.defaultMsg || '', delayHours: 0, delayDays: 0, delayMonths: 0,
+      media_urls: [], channel: 'sms', ai_generated: false, step_context: dt?.name || '',
+    }]);
+  };
+
+  const handleTagTemplateSelect = (template: 'sold_followup' | 'check_in' | 'custom') => {
+    if (template === 'sold_followup') {
+      setSequences(soldFollowupTemplates);
+      setCampaign(prev => ({ ...prev, name: prev.name || 'Sold Follow-up', triggerTag: 'Sold' }));
+    } else if (template === 'check_in') {
+      setSequences([{ id: '1', message: "Hey {first_name}! Just checking in to see how things are going. Is there anything I can help with?", delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Check-in' }]);
+      setCampaign(prev => ({ ...prev, name: prev.name || 'Check-in Campaign', triggerTag: 'Follow Up' }));
     }
   };
   
