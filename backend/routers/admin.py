@@ -1051,47 +1051,26 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
     
     # Handle contacts based on ownership
     if not is_individual:
-        # ORG USER: Archive personal contacts separately, org contacts stay with store
+        # ORG USER (Option 2): ALL contacts transfer to the org on deactivation.
+        # The "Share with Team" toggle only controls day-to-day visibility while active.
+        # When someone leaves, the org retains everything.
         
-        # 1. Archive personal contacts to a separate collection
-        personal_contacts = await get_db().contacts.find(
-            {"user_id": user_id, "ownership_type": "personal"}
-        ).to_list(None)
+        total_contacts = await get_db().contacts.count_documents({"user_id": user_id})
+        
+        # Convert ALL contacts to org-owned and tag with original owner for audit
+        await get_db().contacts.update_many(
+            {"user_id": user_id},
+            {"$set": {
+                "ownership_type": "org",
+                "original_user_id": user_id,
+                "user_deactivated": True,
+                "transferred_to_org_at": now,
+            }}
+        )
         
         archived_count = 0
-        if personal_contacts:
-            # Store archived copies (for potential individual account conversion)
-            for contact in personal_contacts:
-                contact["original_user_id"] = user_id
-                contact["archived_at"] = now
-                contact["archive_reason"] = "user_deactivated_from_org"
-                contact["retain_until"] = hard_delete
-            await get_db().archived_contacts.insert_many(personal_contacts)
-            archived_count = len(personal_contacts)
-            
-            # Hide personal contacts from org view
-            await get_db().contacts.update_many(
-                {"user_id": user_id, "ownership_type": "personal"},
-                {"$set": {
-                    "status": "hidden",
-                    "hidden_at": now,
-                    "hidden_reason": "user_deactivated",
-                    "purge_date": grace_end,
-                    "hard_delete_date": hard_delete,
-                }}
-            )
-        
-        # 2. Org contacts stay with the store (available for bulk transfer)
-        org_contact_count = await get_db().contacts.count_documents(
-            {"user_id": user_id, "ownership_type": {"$ne": "personal"}}
-        )
-        # Tag org contacts with the original owner for audit trail
-        await get_db().contacts.update_many(
-            {"user_id": user_id, "ownership_type": {"$ne": "personal"}},
-            {"$set": {"original_user_id": user_id, "user_deactivated": True}}
-        )
-        
-        logger.info(f"User {user_id} deactivated from org. {archived_count} personal contacts archived, {org_contact_count} org contacts retained. Purge: {grace_end.isoformat()}")
+        org_contact_count = total_contacts
+        logger.info(f"User {user_id} deactivated from org. {total_contacts} contacts transferred to org ownership.")
     else:
         # INDIVIDUAL USER: they keep everything, just deactivated
         archived_count = 0
