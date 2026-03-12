@@ -176,6 +176,45 @@ async def merge_contacts(user_id: str, body: dict):
         except Exception as e:
             logger.warning(f"[Merge] Failed to migrate {collection_name}: {e}")
 
+    # --- Phase 1b: Merge conversations (messages are linked via conversation_id) ---
+    try:
+        primary_conv = await db.conversations.find_one(
+            {"contact_id": primary_id, "user_id": user_id}
+        )
+        # Find the duplicate's conversation(s) — contact_id was already updated to primary_id above,
+        # so we look for any conversations that were the duplicate's by checking all convs for this
+        # contact/user pair and excluding the primary's original conversation.
+        dup_convs = []
+        if primary_conv:
+            all_convs = await db.conversations.find(
+                {"contact_id": primary_id, "user_id": user_id}
+            ).to_list(10)
+            dup_convs = [c for c in all_convs if str(c["_id"]) != str(primary_conv["_id"])]
+        else:
+            # Primary had no conversation — the first one we find becomes the primary's
+            primary_conv = await db.conversations.find_one(
+                {"contact_id": primary_id, "user_id": user_id}
+            )
+
+        # Move messages from duplicate conversations into the primary conversation
+        msgs_moved = 0
+        for dup_conv in dup_convs:
+            dup_conv_id = str(dup_conv["_id"])
+            if primary_conv:
+                primary_conv_id = str(primary_conv["_id"])
+                result = await db.messages.update_many(
+                    {"conversation_id": dup_conv_id},
+                    {"$set": {"conversation_id": primary_conv_id}}
+                )
+                msgs_moved += result.modified_count
+            # Remove the now-empty duplicate conversation
+            await db.conversations.delete_one({"_id": dup_conv["_id"]})
+
+        if msgs_moved > 0:
+            migration_log["messages"] = msgs_moved
+    except Exception as e:
+        logger.warning(f"[Merge] Failed to merge conversations: {e}")
+
     # Also update short_urls metadata.contact_id
     try:
         result = await db.short_urls.update_many(
