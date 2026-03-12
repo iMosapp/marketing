@@ -690,3 +690,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### UI Consistency — Performance Page Pills (Mar 12, 2026)
 - Added "All Time" to My Performance. Made all pills compact, single-line, horizontal scroll across both performance pages.
 - **Files:** `performance.tsx`, `customer-performance.tsx`, `tasks.py`
+
+
+### Data Isolation Fixes — Cross-User Data Bleed (Mar 12, 2026)
+- **Issue 1 (Photo Bleed):** Congrats card photos were queried by phone number without `user_id` filter, causing one user's photos to appear on another user's contact. Fixed by adding `user_id` to the congrats card query.
+- **Issue 2 (Contact Creation):** `_id` was returned as ObjectId (not string), causing frontend redirect to fail and show "Unknown". Fixed by converting to `str(result.inserted_id)`. Also fixed: `source` field was missing from `ContactCreate` model, so phone_import ownership was never set.
+- **Issue 3 (Contact Isolation):** Photos, activity, and tasks are now fully isolated per user. No cross-user data sharing.
+- **Issue 4 (Task Bleed):** System-generated tasks (dormant contacts, birthdays, anniversaries) were using `get_data_filter()` which returns org-wide contacts for managers. Fixed to use strict `user_id` filter so tasks are only generated for the user's OWN contacts.
+- **Tested:** 12/12 backend tests passed (iteration 188)
+- **Files:** `contacts.py`, `tasks.py`, `models.py`
