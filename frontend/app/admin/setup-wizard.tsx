@@ -617,6 +617,7 @@ export default function SetupWizardScreen() {
       )}
 
       <BtnRow onBack={() => go(2)}
+        onSkip={skip}
         onNext={bulkCreated ? () => go(4) : createAllUsers}
         nextLabel={bulkCreated ? 'Continue' : `Create ${teamMembers.filter(m => m.firstName.trim() && m.email.trim()).length} User${teamMembers.filter(m => m.firstName.trim() && m.email.trim()).length !== 1 ? 's' : ''}`}
         nextDisabled={!bulkCreated && teamMembers.filter(m => m.firstName.trim() && m.email.trim()).length === 0} />
