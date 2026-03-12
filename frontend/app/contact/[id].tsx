@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
+import * as DeviceContacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -450,6 +451,78 @@ export default function ContactDetailScreen() {
   // Ref for ScrollView in new contact form
   const ncScrollRef = useRef<ScrollView>(null);
   const referredByRef = useRef<View>(null);
+
+  // Device contacts picker state
+  const [showDeviceContacts, setShowDeviceContacts] = useState(false);
+  const [deviceContacts, setDeviceContacts] = useState<DeviceContacts.Contact[]>([]);
+  const [deviceContactSearch, setDeviceContactSearch] = useState('');
+  const [loadingDeviceContacts, setLoadingDeviceContacts] = useState(false);
+
+  const loadDeviceContacts = useCallback(async () => {
+    try {
+      setLoadingDeviceContacts(true);
+      const { status } = await DeviceContacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        showSimpleAlert('Permission needed to access your contacts', 'error');
+        return;
+      }
+      const { data } = await DeviceContacts.getContactsAsync({
+        fields: [
+          DeviceContacts.Fields.FirstName,
+          DeviceContacts.Fields.LastName,
+          DeviceContacts.Fields.PhoneNumbers,
+          DeviceContacts.Fields.Emails,
+          DeviceContacts.Fields.Image,
+          DeviceContacts.Fields.Birthday,
+          DeviceContacts.Fields.Company,
+          DeviceContacts.Fields.JobTitle,
+          DeviceContacts.Fields.Addresses,
+        ],
+      });
+      setDeviceContacts(data || []);
+      setShowDeviceContacts(true);
+    } catch (e) {
+      showSimpleAlert('Could not load phone contacts', 'error');
+    } finally {
+      setLoadingDeviceContacts(false);
+    }
+  }, []);
+
+  const selectDeviceContact = useCallback((dc: DeviceContacts.Contact) => {
+    const phone = dc.phoneNumbers?.[0]?.number || '';
+    const email = dc.emails?.[0]?.email || '';
+    const addr = dc.addresses?.[0];
+    const bday = dc.birthday;
+    
+    setContact(prev => ({
+      ...prev,
+      first_name: dc.firstName || prev.first_name,
+      last_name: dc.lastName || prev.last_name,
+      phone: phone || prev.phone,
+      email: email || prev.email,
+      address: addr?.street || prev.address,
+      city: addr?.city || prev.city,
+      state: addr?.region || prev.state,
+      zip_code: addr?.postalCode || prev.zip_code,
+      birthday: bday ? `${bday.year || new Date().getFullYear()}-${String(bday.month! + 1).padStart(2, '0')}-${String(bday.day).padStart(2, '0')}` : prev.birthday,
+      photo: dc.image?.uri || prev.photo,
+    }));
+    setShowDeviceContacts(false);
+    setDeviceContactSearch('');
+  }, []);
+
+  const filteredDeviceContacts = useMemo(() => {
+    if (!deviceContactSearch.trim()) return deviceContacts.slice(0, 50);
+    const q = deviceContactSearch.toLowerCase();
+    return deviceContacts
+      .filter(dc => {
+        const name = `${dc.firstName || ''} ${dc.lastName || ''}`.toLowerCase();
+        const phone = dc.phoneNumbers?.[0]?.number || '';
+        return name.includes(q) || phone.includes(q);
+      })
+      .slice(0, 50);
+  }, [deviceContacts, deviceContactSearch]);
+
   // Composer state (inline inbox)
   const [composerMessage, setComposerMessage] = useState('');
   const [composerInputHeight, setComposerInputHeight] = useState(36);
@@ -1912,6 +1985,95 @@ export default function ContactDetailScreen() {
                 <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600' }}>{contact.photo ? 'Change Photo' : 'Add Photo'}</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Import from Phone Contacts */}
+            <TouchableOpacity
+              onPress={loadDeviceContacts}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, paddingVertical: 10, marginHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: '#C9A962' }}
+              disabled={loadingDeviceContacts}
+              data-testid="import-phone-contact-btn"
+            >
+              {loadingDeviceContacts ? (
+                <ActivityIndicator size="small" color="#C9A962" />
+              ) : (
+                <Ionicons name="person-add-outline" size={18} color="#C9A962" />
+              )}
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>
+                Import from Phone Contacts
+              </Text>
+            </TouchableOpacity>
+
+            {/* Device Contacts Picker Modal */}
+            <Modal visible={showDeviceContacts} animationType="slide" presentationStyle="pageSheet">
+              <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <TouchableOpacity onPress={() => { setShowDeviceContacts(false); setDeviceContactSearch(''); }} data-testid="device-contacts-close">
+                    <Ionicons name="close" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' }}>Phone Contacts</Text>
+                  <View style={{ width: 24 }} />
+                </View>
+                <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12 }}>
+                    <Ionicons name="search" size={18} color={colors.textTertiary} />
+                    <TextInput
+                      style={{ flex: 1, paddingVertical: 10, paddingLeft: 8, fontSize: 15, color: colors.text }}
+                      placeholder="Search by name or phone..."
+                      placeholderTextColor={colors.textTertiary}
+                      value={deviceContactSearch}
+                      onChangeText={setDeviceContactSearch}
+                      autoFocus
+                      data-testid="device-contacts-search"
+                    />
+                    {deviceContactSearch ? (
+                      <TouchableOpacity onPress={() => setDeviceContactSearch('')}>
+                        <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+                <FlatList
+                  data={filteredDeviceContacts}
+                  keyExtractor={(item) => item.id || Math.random().toString()}
+                  renderItem={({ item: dc }) => (
+                    <TouchableOpacity
+                      onPress={() => selectDeviceContact(dc)}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+                      data-testid={`device-contact-${dc.id}`}
+                    >
+                      {dc.image?.uri ? (
+                        <Image source={{ uri: dc.image.uri }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                      ) : (
+                        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textTertiary }}>
+                            {(dc.firstName?.[0] || '') + (dc.lastName?.[0] || '')}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }}>
+                          {dc.firstName || ''} {dc.lastName || ''}
+                        </Text>
+                        {dc.phoneNumbers?.[0]?.number ? (
+                          <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{dc.phoneNumbers[0].number}</Text>
+                        ) : null}
+                        {dc.emails?.[0]?.email ? (
+                          <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 1 }}>{dc.emails[0].email}</Text>
+                        ) : null}
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                    </TouchableOpacity>
+                  )}
+                  ListEmptyComponent={
+                    <View style={{ padding: 32, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                        {deviceContactSearch ? 'No contacts match your search' : 'No contacts found'}
+                      </Text>
+                    </View>
+                  }
+                />
+              </SafeAreaView>
+            </Modal>
 
             {/* Name Card */}
             <View style={ncs.card}>
