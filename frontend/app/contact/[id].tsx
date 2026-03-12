@@ -2052,7 +2052,8 @@ export default function ContactDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Import from Phone Contacts */}
+            {/* Import from Phone Contacts (native only — not available on web) */}
+            {!IS_WEB && (
             <TouchableOpacity
               onPress={loadDeviceContacts}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, paddingVertical: 10, marginHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: '#C9A962' }}
@@ -2068,6 +2069,7 @@ export default function ContactDetailScreen() {
                 Import from Phone Contacts
               </Text>
             </TouchableOpacity>
+            )}
 
             {/* Device Contacts Picker Modal */}
             <Modal visible={showDeviceContacts} animationType="slide" presentationStyle="pageSheet">
