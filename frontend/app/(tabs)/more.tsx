@@ -532,6 +532,7 @@ export default function MoreScreen() {
     const items: (MenuItem & { permKey?: string })[] = [
       { icon: 'id-card', title: 'My Digital Card', subtitle: 'View, edit & share your card', onPress: () => router.push(`/card/${user?._id}` as any), color: '#C9A962' },
       { icon: 'globe-outline', title: 'My Link Page', subtitle: 'Your public landing page', onPress: () => router.push(`/l/${user?.username || user?._id}` as any), color: '#007AFF' },
+      { icon: 'planet-outline', title: 'My Landing Page', subtitle: 'Your personal welcome page', onPress: () => router.push(`/p/${user?._id}` as any), color: '#AF52DE' },
       { icon: 'images', title: 'My Showcase', subtitle: 'Your happy customers page', onPress: () => router.push('/showroom-manage' as any), color: '#34C759' },
       { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', onPress: () => { setShowShareModal(true); }, color: '#FFD60A' },
       { permKey: 'sms_templates', icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates I use', onPress: () => router.push('/settings/templates'), color: '#AF52DE' },
