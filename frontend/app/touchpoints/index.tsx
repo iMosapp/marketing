@@ -187,6 +187,7 @@ export default function TouchpointsScreen() {
         event_description: `Texted ${task.contact_name || phone}`,
         event_icon: 'chatbubble',
         event_color: '#007AFF',
+        event_channel: 'sms',
       });
     } catch {}
     // Open native SMS app with message pre-filled

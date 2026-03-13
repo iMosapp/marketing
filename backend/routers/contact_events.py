@@ -529,6 +529,9 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
         "category": event_data.get("category", "custom"),
         "timestamp": datetime.now(timezone.utc),
     }
+    # Store the sharing channel if provided (e.g., sms, whatsapp, email, etc.)
+    if event_data.get("channel"):
+        event["channel"] = event_data["channel"]
 
     await db.contact_events.insert_one(event)
     event.pop("_id", None)
@@ -922,6 +925,7 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
     contact_id = str(contact["_id"])
 
     # Log the event
+    event_channel = payload.get("event_channel") or payload.get("channel")
     event = {
         "contact_id": contact_id,
         "user_id": user_id,
@@ -933,6 +937,8 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
         "category": "outreach",
         "timestamp": datetime.now(timezone.utc),
     }
+    if event_channel:
+        event["channel"] = event_channel
     await db.contact_events.insert_one(event)
     event.pop("_id", None)
 

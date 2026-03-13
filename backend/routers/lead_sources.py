@@ -118,6 +118,115 @@ async def list_lead_sources(store_id: str):
         "lead_sources": [serialize_lead_source(s) for s in sources]
     }
 
+@router.get("/team-inbox/{team_id}")
+async def get_team_inbox(team_id: str, include_claimed: bool = False):
+    """Get all conversations for a team inbox"""
+    db = get_db()
+    
+    query = {"team_id": team_id}
+    if not include_claimed:
+        query["$or"] = [{"claimed": False}, {"claimed": {"$exists": False}}]
+    
+    conversations = list(db.conversations.find(query).sort("last_message_at", -1))
+    
+    result = []
+    for c in conversations:
+        conv_data = {
+            "id": str(c["_id"]),
+            "contact_id": c.get("contact_id"),
+            "contact_phone": c.get("contact_phone"),
+            "contact_name": c.get("contact_name"),
+            "contact_photo": None,
+            "lead_source_name": c.get("lead_source_name"),
+            "status": c.get("status"),
+            "claimed": c.get("claimed", False),
+            "claimed_by": c.get("claimed_by"),
+            "assigned_to": c.get("assigned_to"),
+            "last_message_at": c.get("last_message_at"),
+            "created_at": c.get("created_at"),
+        }
+        if c.get("contact_id"):
+            try:
+                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
+                if contact:
+                    conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
+            except:
+                pass
+        result.append(conv_data)
+    
+    return {
+        "success": True,
+        "conversations": result
+    }
+
+@router.get("/user-inbox/{user_id}")
+async def get_user_inbox(user_id: str):
+    """Get all conversations assigned to a specific user"""
+    db = get_db()
+    
+    conversations = list(db.conversations.find({
+        "$or": [
+            {"assigned_to": user_id},
+            {"claimed_by": user_id}
+        ]
+    }).sort("last_message_at", -1))
+    
+    result = []
+    for c in conversations:
+        conv_data = {
+            "id": str(c["_id"]),
+            "contact_id": c.get("contact_id"),
+            "contact_phone": c.get("contact_phone"),
+            "contact_name": c.get("contact_name"),
+            "contact_photo": None,
+            "lead_source_name": c.get("lead_source_name"),
+            "status": c.get("status"),
+            "claimed": c.get("claimed", False),
+            "last_message_at": c.get("last_message_at"),
+            "created_at": c.get("created_at"),
+        }
+        if c.get("contact_id"):
+            try:
+                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
+                if contact:
+                    conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
+            except:
+                pass
+        result.append(conv_data)
+    
+    return {
+        "success": True,
+        "conversations": result
+    }
+
+@router.get("/stats/{source_id}")
+async def get_lead_source_stats(source_id: str):
+    """Get statistics for a lead source"""
+    db = get_db()
+    
+    source = db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+    
+    pipeline = [
+        {"$match": {"lead_source_id": source_id}},
+        {"$group": {
+            "_id": "$status",
+            "count": {"$sum": 1}
+        }}
+    ]
+    status_counts = {doc["_id"]: doc["count"] for doc in db.conversations.aggregate(pipeline)}
+    
+    return {
+        "success": True,
+        "stats": {
+            "total_leads": source.get("lead_count", 0),
+            "by_status": status_counts,
+            "member_lead_counts": source.get("member_lead_counts", {}),
+            "assignment_method": source.get("assignment_method"),
+        }
+    }
+
 @router.get("/{source_id}")
 async def get_lead_source(source_id: str):
     """Get a specific lead source"""
@@ -468,118 +577,3 @@ async def claim_lead(conversation_id: str, user_id: str):
         "claimed_by": user_id
     }
 
-# ============ TEAM INBOX QUERIES ============
-
-@router.get("/team-inbox/{team_id}")
-async def get_team_inbox(team_id: str, include_claimed: bool = False):
-    """Get all conversations for a team inbox"""
-    db = get_db()
-    
-    query = {"team_id": team_id}
-    if not include_claimed:
-        query["$or"] = [{"claimed": False}, {"claimed": {"$exists": False}}]
-    
-    conversations = list(db.conversations.find(query).sort("last_message_at", -1))
-    
-    result = []
-    for c in conversations:
-        conv_data = {
-            "id": str(c["_id"]),
-            "contact_id": c.get("contact_id"),
-            "contact_phone": c.get("contact_phone"),
-            "contact_name": c.get("contact_name"),
-            "contact_photo": None,
-            "lead_source_name": c.get("lead_source_name"),
-            "status": c.get("status"),
-            "claimed": c.get("claimed", False),
-            "claimed_by": c.get("claimed_by"),
-            "assigned_to": c.get("assigned_to"),
-            "last_message_at": c.get("last_message_at"),
-            "created_at": c.get("created_at"),
-        }
-        # Try to get contact photo
-        if c.get("contact_id"):
-            try:
-                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
-                if contact:
-                    conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
-            except:
-                pass
-        result.append(conv_data)
-    
-    return {
-        "success": True,
-        "conversations": result
-    }
-
-@router.get("/user-inbox/{user_id}")
-async def get_user_inbox(user_id: str):
-    """Get all conversations assigned to a specific user"""
-    db = get_db()
-    
-    conversations = list(db.conversations.find({
-        "$or": [
-            {"assigned_to": user_id},
-            {"claimed_by": user_id}
-        ]
-    }).sort("last_message_at", -1))
-    
-    result = []
-    for c in conversations:
-        conv_data = {
-            "id": str(c["_id"]),
-            "contact_id": c.get("contact_id"),
-            "contact_phone": c.get("contact_phone"),
-            "contact_name": c.get("contact_name"),
-            "contact_photo": None,
-            "lead_source_name": c.get("lead_source_name"),
-            "status": c.get("status"),
-            "claimed": c.get("claimed", False),
-            "last_message_at": c.get("last_message_at"),
-            "created_at": c.get("created_at"),
-        }
-        # Try to get contact photo
-        if c.get("contact_id"):
-            try:
-                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
-                if contact:
-                    conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
-            except:
-                pass
-        result.append(conv_data)
-    
-    return {
-        "success": True,
-        "conversations": result
-    }
-
-# ============ STATS ============
-
-@router.get("/stats/{source_id}")
-async def get_lead_source_stats(source_id: str):
-    """Get statistics for a lead source"""
-    db = get_db()
-    
-    source = db.lead_sources.find_one({"_id": ObjectId(source_id)})
-    if not source:
-        raise HTTPException(status_code=404, detail="Lead source not found")
-    
-    # Count conversations by status
-    pipeline = [
-        {"$match": {"lead_source_id": source_id}},
-        {"$group": {
-            "_id": "$status",
-            "count": {"$sum": 1}
-        }}
-    ]
-    status_counts = {doc["_id"]: doc["count"] for doc in db.conversations.aggregate(pipeline)}
-    
-    return {
-        "success": True,
-        "stats": {
-            "total_leads": source.get("lead_count", 0),
-            "by_status": status_counts,
-            "member_lead_counts": source.get("member_lead_counts", {}),
-            "assignment_method": source.get("assignment_method"),
-        }
-    }

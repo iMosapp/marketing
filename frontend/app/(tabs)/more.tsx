@@ -218,6 +218,7 @@ export default function MoreScreen() {
       event_description: `Shared review link via ${platform}`,
       event_icon: 'star',
       event_color: '#FFD60A',
+      event_channel: platform,
     };
     if (forceAction) payload.force_action = forceAction;
 
@@ -350,6 +351,7 @@ export default function MoreScreen() {
           phone, name: name || phone,
           event_type: 'showroom_shared', event_title: 'Showcase Shared',
           event_description: 'Shared showcase via SMS', event_icon: 'storefront', event_color: '#34C759',
+          event_channel: 'sms',
         });
       } catch {}
     }
@@ -374,6 +376,7 @@ export default function MoreScreen() {
           email, name: name || email,
           event_type: 'showroom_shared', event_title: 'Showcase Shared',
           event_description: 'Shared showcase via email', event_icon: 'storefront', event_color: '#34C759',
+          event_channel: 'email',
         });
       } catch {}
     }
@@ -398,6 +401,7 @@ export default function MoreScreen() {
           phone, name: name || phone,
           event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
           event_description: `Sent birthday greeting to ${name || phone}`, event_icon: 'gift', event_color: '#FF9500',
+          event_channel: 'sms',
         });
       } catch {}
     }
@@ -423,6 +427,7 @@ export default function MoreScreen() {
           email, name: name || email,
           event_type: 'birthday_card_sent', event_title: 'Birthday Greeting Sent',
           event_description: `Sent birthday greeting to ${name || email}`, event_icon: 'gift', event_color: '#FF9500',
+          event_channel: 'email',
         });
       } catch {}
     }

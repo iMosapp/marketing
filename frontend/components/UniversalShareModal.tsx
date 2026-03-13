@@ -148,6 +148,7 @@ export function UniversalShareModal({
         event_description: `Shared via ${platform}`,
         event_icon: 'share',
         event_color: '#007AFF',
+        event_channel: platform,
       });
     } catch {}
   };
@@ -208,6 +209,7 @@ export function UniversalShareModal({
         event_title: title,
         event_description: `Shared via text`,
         event_icon: 'share', event_color: '#007AFF',
+        event_channel: 'sms',
       });
       const contactId = res.data.contact_id;
       close();
@@ -247,6 +249,7 @@ export function UniversalShareModal({
         event_title: title,
         event_description: `Shared via email`,
         event_icon: 'share', event_color: '#007AFF',
+        event_channel: 'email',
       });
       const contactId = res.data.contact_id;
       close();

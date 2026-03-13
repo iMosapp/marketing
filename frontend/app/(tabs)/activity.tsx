@@ -12,6 +12,39 @@ import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 
+const CHANNEL_LABELS: Record<string, string> = {
+  sms: 'SMS',
+  sms_personal: 'SMS',
+  whatsapp: 'WhatsApp',
+  messenger: 'Messenger',
+  telegram: 'Telegram',
+  linkedin: 'LinkedIn',
+  email: 'Email',
+  clipboard: 'Copied',
+};
+
+const CHANNEL_ICONS: Record<string, string> = {
+  sms: 'chatbubble-ellipses',
+  sms_personal: 'chatbubble-ellipses',
+  whatsapp: 'logo-whatsapp',
+  messenger: 'logo-facebook',
+  telegram: 'paper-plane',
+  linkedin: 'logo-linkedin',
+  email: 'mail',
+  clipboard: 'copy',
+};
+
+const CHANNEL_COLORS: Record<string, string> = {
+  sms: '#34C759',
+  sms_personal: '#34C759',
+  whatsapp: '#25D366',
+  messenger: '#0084FF',
+  telegram: '#0088CC',
+  linkedin: '#0A66C2',
+  email: '#FF9500',
+  clipboard: '#8E8E93',
+};
+
 const formatFeedTime = (ts: string) => {
   if (!ts) return '';
   const d = new Date(ts);
@@ -117,6 +150,7 @@ export default function ActivityTab() {
     const isInbound = item.is_inbound;
     const evtLabel = getEventLabel(item.event_type) || item.title || 'Activity';
     const photoUri = item.contact?.photo;
+    const channelName = CHANNEL_LABELS[item.channel] || '';
 
     return (
       <TouchableOpacity
@@ -155,9 +189,17 @@ export default function ActivityTab() {
               <View key={ti} style={[s.miniTag, { backgroundColor: colors.border }]}><Text style={[s.miniTagText, { color: colors.textTertiary }]}>{t}</Text></View>
             ))}
           </View>
-          <Text style={[s.eventTitle, { color: colors.textSecondary }, isInbound && { color: '#30D158' }]}>
-            {isInbound ? `"${item.description}"` : evtLabel}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[s.eventTitle, { color: colors.textSecondary }, isInbound && { color: '#30D158' }]}>
+              {isInbound ? `"${item.description}"` : evtLabel}
+            </Text>
+            {channelName ? (
+              <View style={[s.channelBadge, { backgroundColor: (CHANNEL_COLORS[item.channel] || '#8E8E93') + '20' }]} data-testid={`channel-badge-${item.channel}`}>
+                <Ionicons name={(CHANNEL_ICONS[item.channel] || 'share-outline') as any} size={10} color={CHANNEL_COLORS[item.channel] || '#8E8E93'} />
+                <Text style={[s.channelBadgeText, { color: CHANNEL_COLORS[item.channel] || '#8E8E93' }]}>{channelName}</Text>
+              </View>
+            ) : null}
+          </View>
           {!isInbound && item.description && item.description !== evtLabel && (
             <Text style={[s.eventDesc, { color: colors.textTertiary }]} numberOfLines={2}>{item.description}</Text>
           )}
@@ -247,6 +289,8 @@ const s = StyleSheet.create({
   inboundText: { fontSize: 9, fontWeight: '700', color: '#30D158' },
   miniTag: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   miniTagText: { fontSize: 9, fontWeight: '600' },
+  channelBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  channelBadgeText: { fontSize: 10, fontWeight: '700' },
 
   // Empty
   empty: { alignItems: 'center', paddingVertical: 60 },

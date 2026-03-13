@@ -3309,7 +3309,7 @@ export default function ContactDetailScreen() {
                       const hasLink = !!evt.link;
                       const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
                       const isCustomerActivity = evt.category === 'customer_activity';
-                      const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'Personal SMS' : evt.channel === 'sms' ? 'SMS' : '';
+                      const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'SMS' : evt.channel === 'sms' ? 'SMS' : evt.channel === 'whatsapp' ? 'WhatsApp' : evt.channel === 'messenger' ? 'Messenger' : evt.channel === 'telegram' ? 'Telegram' : evt.channel === 'linkedin' ? 'LinkedIn' : evt.channel === 'clipboard' ? 'Copied' : '';
                       return (
                         <TouchableOpacity
                           key={evtKey}
@@ -3348,7 +3348,7 @@ export default function ContactDetailScreen() {
                               <View style={s.feedExpandedPreview}>
                                 {channelLabel ? (
                                   <View style={[s.feedChannelBadge, { backgroundColor: `${evt.color || '#007AFF'}20` }]}>
-                                    <Ionicons name={evt.channel === 'email' ? 'mail' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
+                                    <Ionicons name={evt.channel === 'email' ? 'mail' : evt.channel === 'whatsapp' ? 'logo-whatsapp' : evt.channel === 'messenger' ? 'logo-facebook' : evt.channel === 'telegram' ? 'paper-plane' : evt.channel === 'linkedin' ? 'logo-linkedin' : evt.channel === 'clipboard' ? 'copy' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
                                     <Text style={[s.feedChannelText, { color: evt.color || '#007AFF' }]}>{channelLabel}</Text>
                                   </View>
                                 ) : null}

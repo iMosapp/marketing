@@ -191,7 +191,7 @@ export default function CreateCardPage() {
 
       try {
         // Find or create contact
-        const payload: any = { name: customerName.trim(), event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`, event_description: `Sent ${meta.label.toLowerCase()} via ${platform}`, event_icon: meta.icon, event_color: accent };
+        const payload: any = { name: customerName.trim(), event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`, event_description: `Sent ${meta.label.toLowerCase()} via ${platform}`, event_icon: meta.icon, event_color: accent, event_channel: platform };
         if (customerPhone.trim()) payload.phone = customerPhone.trim();
         if (customerEmail.trim()) payload.email = customerEmail.trim();
 
@@ -244,7 +244,7 @@ export default function CreateCardPage() {
         name: customerName.trim(),
         event_type: `${cardType}_card_sent`, event_title: `${meta.label} Sent`,
         event_description: `Sent ${meta.label.toLowerCase()} via ${pendingSharePlatform}`,
-        event_icon: meta.icon, event_color: accent, force_action: action,
+        event_icon: meta.icon, event_color: accent, force_action: action, event_channel: pendingSharePlatform,
       };
       if (customerPhone.trim()) payload.phone = customerPhone.trim();
       if (customerEmail.trim()) payload.email = customerEmail.trim();

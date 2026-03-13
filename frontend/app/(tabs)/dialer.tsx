@@ -88,6 +88,7 @@ export default function DialerScreen() {
           event_type: 'call_placed', event_title: 'Call Placed',
           event_description: `Called ${contactName || numberToCall} from dialer`,
           event_icon: 'call', event_color: '#34C759',
+          event_channel: 'call',
         });
       } catch {}
     }
