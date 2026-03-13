@@ -152,6 +152,7 @@ function formatDateUTC(dateStr: string, fmt: string = 'MMM d'): string {
 
 // ===== EVENT LABELS — from centralized module =====
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
+import PersonalIntelSection from '../../components/PersonalIntelSection';
 
 function getEventTitle(evt: ContactEvent): string {
   if (evt.title) return evt.title;
@@ -222,62 +223,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
   return <View>{elements}</View>;
 };
 
-// Personal Intelligence Section - shows AI-extracted details from voice memos
-function PersonalIntelSection({ contactId, userId, colors }: { contactId: string; userId: string; colors: any }) {
-  const [details, setDetails] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [loaded, setLoaded] = React.useState(false);
-
-  const load = React.useCallback(async () => {
-    if (!contactId || !userId || loaded) return;
-    setLoading(true);
-    try {
-      const res = await api.get(`/contacts/${userId}/${contactId}/personal-details`);
-      setDetails(res.data.personal_details || {});
-    } catch (e) { /* ignore */ }
-    setLoading(false);
-    setLoaded(true);
-  }, [contactId, userId, loaded]);
-
-  React.useEffect(() => { load(); }, [load]);
-
-  if (loading || !loaded) return null;
-  if (!details || Object.keys(details).length === 0) return null;
-
-  const items: { label: string; value: string; icon: string }[] = [];
-  if (details.spouse_name) items.push({ label: 'Spouse', value: `${details.spouse_name}${details.spouse_details ? ` — ${details.spouse_details}` : ''}`, icon: 'heart' });
-  if (details.kids?.length) items.push({ label: 'Kids', value: details.kids.map((k: any) => `${k.name}${k.details ? ` (${k.details})` : ''}`).join(', '), icon: 'people' });
-  if (details.interests?.length) items.push({ label: 'Interests', value: details.interests.join(', '), icon: 'golf' });
-  if (details.occupation) items.push({ label: 'Work', value: `${details.occupation}${details.employer ? ` at ${details.employer}` : ''}`, icon: 'briefcase' });
-  if (details.vehicle_purchased) items.push({ label: 'Vehicle', value: `${details.vehicle_purchased}${details.vehicle_color ? ` (${details.vehicle_color})` : ''}${details.vehicle_details ? ` — ${details.vehicle_details}` : ''}`, icon: 'car' });
-  if (details.trade_in) items.push({ label: 'Trade-in', value: details.trade_in, icon: 'swap-horizontal' });
-  if (details.purchase_context) items.push({ label: 'Why they bought', value: details.purchase_context, icon: 'chatbox-ellipses' });
-  if (details.pets) items.push({ label: 'Pets', value: details.pets, icon: 'paw' });
-  if (details.neighborhood) items.push({ label: 'Area', value: details.neighborhood, icon: 'location' });
-  if (details.referral_potential) items.push({ label: 'Referral lead', value: details.referral_potential, icon: 'people-circle' });
-  if (details.personal_notes) items.push({ label: 'Notes', value: details.personal_notes, icon: 'document-text' });
-
-  if (items.length === 0) return null;
-
-  return (
-    <View style={{ paddingHorizontal: 16, marginBottom: 16 }} data-testid="personal-intel-section">
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <Ionicons name="sparkles" size={14} color="#AF52DE" />
-        <Text style={{ color: '#AF52DE', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Personal Intelligence</Text>
-        <Text style={{ color: '#555', fontSize: 10, fontStyle: 'italic', marginLeft: 4 }}>from voice memos</Text>
-      </View>
-      {items.map((item, i) => (
-        <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: colors.border }} data-testid={`personal-detail-${item.label.toLowerCase().replace(/\s/g, '-')}`}>
-          <Ionicons name={item.icon as any} size={15} color="#C9A962" style={{ marginTop: 2, width: 18 }} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#8E8E93', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{item.label}</Text>
-            <Text style={{ color: colors.text, fontSize: 13, lineHeight: 18 }}>{item.value}</Text>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
+// PersonalIntelSection extracted to /components/PersonalIntelSection.tsx
 
 export default function ContactDetailScreen() {
   const { colors } = useThemeStore();
