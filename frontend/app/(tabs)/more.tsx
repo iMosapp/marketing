@@ -74,37 +74,59 @@ export default function MoreScreen() {
   const [showBirthdayShare, setShowBirthdayShare] = useState(false);
   const [shareMode, setShareMode] = useState<'review' | 'showroom' | 'birthday'>('review');
 
-  // Recently Visited tracking
-  type RecentVisit = { title: string; icon: string; color: string; subtitle: string; timestamp: number };
-  const RECENT_KEY = `hub_recent_${user?._id || 'anon'}`;
+  // Recently Visited & Pinned Tools tracking
+  type HubItem = { title: string; icon: string; color: string; subtitle: string; timestamp: number };
+  const uid = user?._id || 'anon';
+  const RECENT_KEY = `hub_recent_${uid}`;
+  const PINNED_KEY = `hub_pinned_${uid}`;
   const MAX_RECENT = 4;
-  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
+  const MAX_PINNED = 6;
+  const [recentVisits, setRecentVisits] = useState<HubItem[]>([]);
+  const [pinnedTools, setPinnedTools] = useState<HubItem[]>([]);
 
-  // Load recent visits on focus
+  // Load recent visits + pinned tools on focus
   useFocusEffect(
     useCallback(() => {
       AsyncStorage.getItem(RECENT_KEY).then(raw => {
-        if (raw) {
-          try { setRecentVisits(JSON.parse(raw)); } catch {}
-        }
+        if (raw) { try { setRecentVisits(JSON.parse(raw)); } catch {} }
       });
-    }, [RECENT_KEY])
+      AsyncStorage.getItem(PINNED_KEY).then(raw => {
+        if (raw) { try { setPinnedTools(JSON.parse(raw)); } catch {} }
+      });
+    }, [RECENT_KEY, PINNED_KEY])
   );
 
   const trackVisit = useCallback(async (item: { title: string; icon: string; color: string; subtitle: string }) => {
     try {
       const raw = await AsyncStorage.getItem(RECENT_KEY);
-      let visits: RecentVisit[] = raw ? JSON.parse(raw) : [];
-      // Remove existing entry for same title
+      let visits: HubItem[] = raw ? JSON.parse(raw) : [];
       visits = visits.filter(v => v.title !== item.title);
-      // Prepend new visit
       visits.unshift({ ...item, timestamp: Date.now() });
-      // Cap at MAX_RECENT
       visits = visits.slice(0, MAX_RECENT);
       await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(visits));
       setRecentVisits(visits);
     } catch {}
   }, [RECENT_KEY]);
+
+  const togglePin = useCallback(async (item: { title: string; icon: string; color: string; subtitle: string }) => {
+    try {
+      const raw = await AsyncStorage.getItem(PINNED_KEY);
+      let pins: HubItem[] = raw ? JSON.parse(raw) : [];
+      const exists = pins.some(p => p.title === item.title);
+      if (exists) {
+        pins = pins.filter(p => p.title !== item.title);
+      } else {
+        if (pins.length >= MAX_PINNED) {
+          pins.pop(); // remove oldest to make room
+        }
+        pins.unshift({ ...item, timestamp: Date.now() });
+      }
+      await AsyncStorage.setItem(PINNED_KEY, JSON.stringify(pins));
+      setPinnedTools(pins);
+    } catch {}
+  }, [PINNED_KEY]);
+
+  const isPinned = useCallback((title: string) => pinnedTools.some(p => p.title === title), [pinnedTools]);
   
   // Load pending count for super admins
   useFocusEffect(
@@ -683,6 +705,21 @@ export default function MoreScreen() {
           <Text style={styles.notificationBadgeText}>{item.badge}</Text>
         </View>
       )}
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation?.();
+          togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle });
+        }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.pinButton}
+        data-testid={`pin-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        <Ionicons
+          name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'}
+          size={16}
+          color={isPinned(item.title) ? item.color : colors.textTertiary}
+        />
+      </TouchableOpacity>
       <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
     </TouchableOpacity>
   );
@@ -819,32 +856,69 @@ export default function MoreScreen() {
           </View>
         </View>
         
-        {/* Recently Visited — quick access to your last tools */}
-        {recentVisits.length > 0 && (
-          <View style={styles.recentSection} data-testid="recently-visited-section">
-            <Text style={[styles.recentLabel, { color: colors.textTertiary }]}>Recently Visited</Text>
+        {/* Pinned Tools — your permanent quick-launch bar */}
+        {pinnedTools.length > 0 && (
+          <View style={styles.recentSection} data-testid="pinned-tools-section">
+            <Text style={[styles.recentLabel, { color: colors.textTertiary }]}>Pinned</Text>
             <View style={styles.recentRow}>
-              {recentVisits.map((rv) => {
-                // Find the matching menu item to get its onPress
-                const match = allSections.flatMap(s => s.items).find(i => i.title === rv.title);
+              {pinnedTools.map((pt) => {
+                const match = allSections.flatMap(s => s.items).find(i => i.title === pt.title);
                 return (
                   <TouchableOpacity
-                    key={rv.title}
-                    style={[styles.recentChip, { backgroundColor: colors.card }]}
-                    onPress={() => match?.onPress()}
+                    key={pt.title}
+                    style={[styles.recentChip, { backgroundColor: colors.card, borderWidth: 1, borderColor: `${pt.color}30` }]}
+                    onPress={() => {
+                      if (match) {
+                        trackVisit({ title: match.title, icon: match.icon, color: match.color, subtitle: match.subtitle });
+                        match.onPress();
+                      }
+                    }}
+                    onLongPress={() => togglePin(pt)}
                     activeOpacity={0.7}
-                    data-testid={`recent-${rv.title.toLowerCase().replace(/\s+/g, '-')}`}
+                    data-testid={`pinned-${pt.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
-                    <View style={[styles.recentChipIcon, { backgroundColor: `${rv.color}20` }]}>
-                      <Ionicons name={rv.icon as any} size={16} color={rv.color} />
+                    <View style={[styles.recentChipIcon, { backgroundColor: `${pt.color}20` }]}>
+                      <Ionicons name={pt.icon as any} size={16} color={pt.color} />
                     </View>
-                    <Text style={[styles.recentChipText, { color: colors.text }]} numberOfLines={1}>{rv.title}</Text>
+                    <Text style={[styles.recentChipText, { color: colors.text }]} numberOfLines={1}>{pt.title}</Text>
+                    <Ionicons name="bookmark" size={12} color={pt.color} style={{ opacity: 0.5 }} />
                   </TouchableOpacity>
                 );
               })}
             </View>
           </View>
         )}
+
+        {/* Recently Visited — quick access to your last tools (excludes pinned) */}
+        {(() => {
+          const pinnedTitles = new Set(pinnedTools.map(p => p.title));
+          const filteredRecent = recentVisits.filter(rv => !pinnedTitles.has(rv.title));
+          if (filteredRecent.length === 0) return null;
+          return (
+            <View style={styles.recentSection} data-testid="recently-visited-section">
+              <Text style={[styles.recentLabel, { color: colors.textTertiary }]}>Recently Visited</Text>
+              <View style={styles.recentRow}>
+                {filteredRecent.map((rv) => {
+                  const match = allSections.flatMap(s => s.items).find(i => i.title === rv.title);
+                  return (
+                    <TouchableOpacity
+                      key={rv.title}
+                      style={[styles.recentChip, { backgroundColor: colors.card }]}
+                      onPress={() => match?.onPress()}
+                      activeOpacity={0.7}
+                      data-testid={`recent-${rv.title.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <View style={[styles.recentChipIcon, { backgroundColor: `${rv.color}20` }]}>
+                        <Ionicons name={rv.icon as any} size={16} color={rv.color} />
+                      </View>
+                      <Text style={[styles.recentChipText, { color: colors.text }]} numberOfLines={1}>{rv.title}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          );
+        })()}
 
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
@@ -1373,6 +1447,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '500' as const,
     flex: 1,
+  },
+  pinButton: {
+    padding: 4,
+    marginRight: 4,
   },
   // Section Wrapper
   sectionWrapper: {
