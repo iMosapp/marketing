@@ -30,6 +30,7 @@ def _sync_upload_bytes(image_bytes: bytes, prefix: str, entity_id: str):
     """
     Synchronous image upload from raw bytes.
     Runs in asyncio.to_thread to avoid blocking the event loop.
+    Pre-shrinks large images to reduce memory usage before processing.
     """
     import gc
     from utils.image_storage import (
@@ -40,21 +41,51 @@ def _sync_upload_bytes(image_bytes: bytes, prefix: str, entity_id: str):
     file_id = str(uuid.uuid4())
     base_path = f"{APP_NAME}/{prefix}/{entity_id}"
 
-    compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
-    original_path = f"{base_path}/{file_id}.webp"
-    put_object(original_path, compressed_data, compressed_ct)
+    # Pre-shrink: if image is very large, downscale first to reduce memory
+    try:
+        pre_img = Image.open(io.BytesIO(image_bytes))
+        w, h = pre_img.size
+        if w > 3000 or h > 3000:
+            ratio = min(3000 / w, 3000 / h)
+            pre_img = pre_img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
+            buf = io.BytesIO()
+            pre_img.save(buf, format="JPEG", quality=85)
+            image_bytes = buf.getvalue()
+            buf.close()
+            logger.info(f"[CardUpload] Pre-shrunk {w}x{h} -> {int(w*ratio)}x{int(h*ratio)}")
+        pre_img.close()
+        del pre_img
+    except Exception as e:
+        logger.warning(f"[CardUpload] Pre-shrink failed (continuing): {e}")
 
-    thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
-    thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
-    put_object(thumb_path, thumb_data, thumb_ct)
+    try:
+        compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+        original_path = f"{base_path}/{file_id}.webp"
+        put_object(original_path, compressed_data, compressed_ct)
+        del compressed_data
+    except Exception as e:
+        logger.error(f"[CardUpload] Original upload failed: {e}")
+        raise
 
-    avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
-    avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
-    put_object(avatar_path, avatar_data, avatar_ct)
+    try:
+        thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
+        thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
+        put_object(thumb_path, thumb_data, thumb_ct)
+        del thumb_data
+    except Exception as e:
+        logger.warning(f"[CardUpload] Thumbnail failed: {e}")
+        thumb_path = original_path
 
-    del compressed_data, thumb_data, avatar_data
+    try:
+        avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
+        avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
+        put_object(avatar_path, avatar_data, avatar_ct)
+        del avatar_data
+    except Exception as e:
+        logger.warning(f"[CardUpload] Avatar failed: {e}")
+        avatar_path = original_path
+
     gc.collect()
-
     return {"original_path": original_path, "thumbnail_path": thumb_path, "avatar_path": avatar_path}
 
 # ===== Card Type Defaults =====
@@ -417,15 +448,27 @@ async def create_congrats_card(
     if len(contents) > 10 * 1024 * 1024:  # 10MB limit
         raise HTTPException(status_code=400, detail="Image must be less than 10MB")
     
+    # Validate it's actually an image before heavy processing
+    try:
+        test_img = Image.open(io.BytesIO(contents))
+        test_img.verify()
+        del test_img
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid image file")
+    
     # Generate unique card ID first (needed for image path)
     card_id = str(uuid.uuid4())[:12]
     
     # Upload via optimized pipeline (run in thread to avoid blocking event loop)
     import asyncio
     try:
-        img_result = await asyncio.to_thread(
-            _sync_upload_bytes, contents, "congrats", card_id
+        img_result = await asyncio.wait_for(
+            asyncio.to_thread(_sync_upload_bytes, contents, "congrats", card_id),
+            timeout=30  # 30 second timeout for image processing + upload
         )
+    except asyncio.TimeoutError:
+        logger.warning(f"[CongratsCard] Image upload timed out after 30s, using base64 fallback")
+        img_result = None
     except Exception as e:
         logger.warning(f"[CongratsCard] Image upload failed, using base64 fallback: {e}")
         img_result = None

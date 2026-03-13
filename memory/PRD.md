@@ -922,3 +922,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Birthday card OG image improvement:** Strengthened the photo field lookup chain — now checks `photo_url`, `customer_photo`, AND `optimized_photo_url` fields before falling back to the dynamic card image generator at `/api/congrats/card/{id}/image`.
 - **Files changed:** `/app/backend/routers/messaging_channels.py`, `/app/backend/routers/short_urls.py`
 
+
+### Card Creation 502 Fix (Mar 13, 2026)
+- **Root cause:** Large phone photos (4000x3000+, 10MB+) caused Pillow to consume excessive memory during image processing (3 copies: original WebP, thumbnail, avatar), potentially OOMing the worker → 502.
+- **Fixes applied:**
+  - Added pre-shrink step: images >3000px are downscaled before processing, reducing memory usage by 50-75%
+  - Added 30-second timeout to image upload thread (prevents hanging on slow object storage)
+  - Added image validation before processing (rejects corrupt files early)
+  - Wrapped each processing step (original, thumbnail, avatar) in individual try/except so partial failures don't crash the request
+  - Falls back to base64 if image processing fails entirely
+- **Files changed:** `/app/backend/routers/congrats_cards.py`
+- **Tested:** Both small (800x800) and large (4000x3000) images create cards successfully.
+
