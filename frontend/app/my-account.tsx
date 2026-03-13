@@ -524,28 +524,212 @@ export default function MyAccountScreen() {
         {/* ====== MY PRESENCE — Everything you send out ====== */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Presence</Text>
-          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, marginTop: -6, paddingHorizontal: 2 }}>
-            Everything that represents you to customers — view, edit & share
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 14, marginTop: -6, paddingHorizontal: 2 }}>
+            Everything that represents you to customers
           </Text>
-          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
+
+          {/* --- My Digital Card --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-digital-card">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="card" size={20} color="#007AFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>My Digital Card</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : 'Configure in Account Setup'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#007AFF15' }]} onPress={() => {
+                const url = storeSlug ? `/imos/digital-card` : '/settings/store-profile';
+                router.push(url as any);
+              }} data-testid="card-preview-btn">
+                <Ionicons name="eye-outline" size={16} color="#007AFF" />
+                <Text style={[styles.presenceBtnText, { color: '#007AFF' }]}>Preview</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => router.push('/settings/store-profile' as any)} data-testid="card-edit-btn">
+                <Ionicons name="create-outline" size={16} color="#34C759" />
+                <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015' }]} onPress={() => {
+                const url = storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : '';
+                if (url && Platform.OS === 'web' && navigator.clipboard) {
+                  navigator.clipboard.writeText(url);
+                  showSimpleAlert('Copied!', 'Digital card link copied to clipboard');
+                }
+              }} data-testid="card-copy-btn">
+                <Ionicons name="copy-outline" size={16} color="#FF9500" />
+                <Text style={[styles.presenceBtnText, { color: '#FF9500' }]}>Copy Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- My Showcase --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-showcase">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#34C75920' }]}>
+                <Ionicons name="images" size={20} color="#34C759" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>My Showcase</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {storeSlug ? `${PROD_BASE}/showcase/${user?._id}` : 'Your happy customers page'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => router.push('/imos/showcase' as any)} data-testid="showcase-preview-btn">
+                <Ionicons name="eye-outline" size={16} color="#34C759" />
+                <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Preview</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015' }]} onPress={() => router.push('/showroom-manage' as any)} data-testid="showcase-manage-btn">
+                <Ionicons name="settings-outline" size={16} color="#FF9500" />
+                <Text style={[styles.presenceBtnText, { color: '#FF9500' }]}>Manage</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#007AFF15' }]} onPress={() => router.push('/settings/showcase-approvals' as any)} data-testid="showcase-approve-btn">
+                <Ionicons name="checkmark-circle-outline" size={16} color="#007AFF" />
+                <Text style={[styles.presenceBtnText, { color: '#007AFF' }]}>Approve</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#C9A96215' }]} onPress={() => {
+                const url = `${PROD_BASE}/showcase/${user?._id}`;
+                if (Platform.OS === 'web' && navigator.clipboard) {
+                  navigator.clipboard.writeText(url);
+                  showSimpleAlert('Copied!', 'Showcase link copied to clipboard');
+                }
+              }} data-testid="showcase-copy-btn">
+                <Ionicons name="copy-outline" size={16} color="#C9A962" />
+                <Text style={[styles.presenceBtnText, { color: '#C9A962' }]}>Copy Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- Review Link --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-review-link">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#FFD60A20' }]}>
+                <Ionicons name="star" size={20} color="#FFD60A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>Review Link</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {getReviewUrl() || 'Configure store slug first'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#5856D615' }]} onPress={handlePreviewReviewPage} data-testid="review-preview-btn">
+                <Ionicons name="eye-outline" size={16} color="#5856D6" />
+                <Text style={[styles.presenceBtnText, { color: '#5856D6' }]}>Preview</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => router.push('/settings/review-links' as any)} data-testid="review-edit-btn">
+                <Ionicons name="create-outline" size={16} color="#34C759" />
+                <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Edit Links</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015' }]} onPress={handleCopyReviewLink} data-testid="review-copy-btn">
+                <Ionicons name={copiedLink ? 'checkmark' : 'copy-outline'} size={16} color={copiedLink ? '#34C759' : '#FF9500'} />
+                <Text style={[styles.presenceBtnText, { color: copiedLink ? '#34C759' : '#FF9500' }]}>{copiedLink ? 'Copied!' : 'Copy Link'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FFD60A15' }]} onPress={() => setShowShareModal(true)} data-testid="review-share-btn">
+                <Ionicons name="share-outline" size={16} color="#FFD60A" />
+                <Text style={[styles.presenceBtnText, { color: '#FFD60A' }]}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- My Link Page --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-link-page">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#C9A96220' }]}>
+                <Ionicons name="link" size={20} color="#C9A962" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>My Link Page</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {user?._id ? `${PROD_BASE}/l/${user._id}` : 'Your public link tree'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#C9A96215' }]} onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(`${PROD_BASE}/l/${user?._id}`, '_blank');
+                } else {
+                  Linking.openURL(`${PROD_BASE}/l/${user?._id}`);
+                }
+              }} data-testid="linkpage-preview-btn">
+                <Ionicons name="eye-outline" size={16} color="#C9A962" />
+                <Text style={[styles.presenceBtnText, { color: '#C9A962' }]}>Preview</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => router.push('/settings/link-page' as any)} data-testid="linkpage-edit-btn">
+                <Ionicons name="create-outline" size={16} color="#34C759" />
+                <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015' }]} onPress={() => {
+                const url = `${PROD_BASE}/l/${user?._id}`;
+                if (Platform.OS === 'web' && navigator.clipboard) {
+                  navigator.clipboard.writeText(url);
+                  showSimpleAlert('Copied!', 'Link page URL copied to clipboard');
+                }
+              }} data-testid="linkpage-copy-btn">
+                <Ionicons name="copy-outline" size={16} color="#FF9500" />
+                <Text style={[styles.presenceBtnText, { color: '#FF9500' }]}>Copy Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- My Landing Page --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-landing-page">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#AF52DE20' }]}>
+                <Ionicons name="globe-outline" size={20} color="#AF52DE" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>My Landing Page</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {user?._id ? `${PROD_BASE}/p/${user._id}` : 'Your personal landing page'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#AF52DE15' }]} onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(`${PROD_BASE}/p/${user?._id}`, '_blank');
+                } else {
+                  Linking.openURL(`${PROD_BASE}/p/${user?._id}`);
+                }
+              }} data-testid="landing-preview-btn">
+                <Ionicons name="eye-outline" size={16} color="#AF52DE" />
+                <Text style={[styles.presenceBtnText, { color: '#AF52DE' }]}>Preview</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => router.push('/settings/store-profile' as any)} data-testid="landing-edit-btn">
+                <Ionicons name="create-outline" size={16} color="#34C759" />
+                <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015' }]} onPress={() => {
+                const url = `${PROD_BASE}/p/${user?._id}`;
+                if (Platform.OS === 'web' && navigator.clipboard) {
+                  navigator.clipboard.writeText(url);
+                  showSimpleAlert('Copied!', 'Landing page link copied to clipboard');
+                }
+              }} data-testid="landing-copy-btn">
+                <Ionicons name="copy-outline" size={16} color="#FF9500" />
+                <Text style={[styles.presenceBtnText, { color: '#FF9500' }]}>Copy Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- AI Persona & Voice --- */}
+          <View style={[styles.menuList, { backgroundColor: colors.card, marginTop: 12 }]}>
             {[
-              { icon: 'card', title: 'My Digital Card', subtitle: 'Bio, photo & contact info', color: '#007AFF', route: '/settings/store-profile' },
-              { icon: 'globe-outline', title: 'My Link Page', subtitle: 'Your public landing page', color: '#C9A962', route: '/settings/link-page' },
-              { icon: 'images', title: 'My Showcase', subtitle: 'Happy customers page & approvals', color: '#34C759', route: '/showroom-manage' },
-              { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', color: '#FFD60A', action: 'share_review' },
               { icon: 'person', title: 'AI Persona', subtitle: 'How AI communicates as you', color: '#AF52DE', route: '/settings/persona' },
               { icon: 'mic', title: 'Voice Training', subtitle: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
             ].map((item, index, arr) => (
               <TouchableOpacity
                 key={item.title}
                 style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
-                onPress={() => {
-                  if ((item as any).action === 'share_review') {
-                    setShowShareModal(true);
-                  } else if ((item as any).route) {
-                    router.push((item as any).route as any);
-                  }
-                }}
+                onPress={() => router.push(item.route as any)}
                 data-testid={`presence-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
