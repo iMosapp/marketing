@@ -630,7 +630,7 @@ export default function HomeScreen() {
           {TILES.map((tile) => (
             <TouchableOpacity key={tile.key} style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={tile.onPress} activeOpacity={0.7} data-testid={`home-tile-${tile.key}`}>
               <View style={[styles.tileIconWrap, { backgroundColor: `${tile.color}18` }]}>
-                <Ionicons name={tile.icon as any} size={28} color={tile.color} />
+                <Ionicons name={tile.icon as any} size={24} color={tile.color} />
               </View>
               <Text style={[styles.tileLabel, { color: colors.text }]}>{tile.label}</Text>
             </TouchableOpacity>
@@ -925,11 +925,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   userName: { fontSize: 18, fontWeight: '700' },
   scroll: { flex: 1, zIndex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  tile: { width: '48%', flexBasis: '47%', flexGrow: 1, borderRadius: 16, padding: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, minHeight: 120 },
-  tileIconWrap: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  tileLabel: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
-  activitySection: { marginTop: 28 },
+  tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  tile: { width: '48%', flexBasis: '47%', flexGrow: 1, borderRadius: 14, padding: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, minHeight: 88 },
+  tileIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  tileLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  activitySection: { marginTop: 16 },
   activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '700' },
   viewAll: { fontSize: 13, fontWeight: '600' },
