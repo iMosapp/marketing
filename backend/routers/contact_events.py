@@ -545,6 +545,22 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     return event
 
 
+
+@router.patch("/{user_id}/{contact_id}/events/latest-channel")
+async def update_latest_event_channel(user_id: str, contact_id: str, payload: dict):
+    """Update the channel field on the most recent event for this user+contact."""
+    channel = payload.get("channel")
+    if not channel:
+        raise HTTPException(status_code=400, detail="channel is required")
+    db = get_db()
+    result = await db.contact_events.find_one_and_update(
+        {"user_id": user_id, "contact_id": contact_id},
+        {"$set": {"channel": channel}},
+        sort=[("timestamp", -1)],
+    )
+    return {"updated": result is not None, "channel": channel}
+
+
 @router.post("/{user_id}/{contact_id}/log-reply")
 async def log_customer_reply(user_id: str, contact_id: str, reply_data: dict):
     """Log a manually pasted customer reply with optional photo attachment."""

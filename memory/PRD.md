@@ -24,6 +24,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
+### Channel Tracking Fix — Messenger/WhatsApp/All Channels (Mar 13, 2026) — LATEST
+- **BUG FIXED:** When sharing via ChannelPicker, the event was logged with `channel: 'sms_personal'` before the channel picker opened. The `onSent(channelId)` callback only showed a toast, never updated the backend with the actual channel.
+- **Fix:** Added `PATCH /api/contacts/{user_id}/{contact_id}/events/latest-channel` endpoint. The `onSent` callback in `contact/[id].tsx` now fire-and-forgets a PATCH to update the event's channel to the actual one used (messenger, whatsapp, sms, clipboard, etc.).
+- **Files:** `contact_events.py` (new endpoint), `contact/[id].tsx` (onSent callback updated)
+
 ### Share Channel Tracking (Mar 13, 2026) — LATEST
 - **NEW FEATURE:** When sharing digital cards, review links, showcases, or any content, the sharing channel (SMS, WhatsApp, Email, Messenger, Telegram, LinkedIn, Clipboard) is now tracked and displayed in the activity feed.
 - **Backend:** `POST /api/contacts/{user_id}/{contact_id}/events` and `POST /api/contacts/{user_id}/find-or-create-and-log` now accept and store a `channel` field in `contact_events`.

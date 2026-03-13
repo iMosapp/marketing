@@ -1379,6 +1379,8 @@ export default function ContactDetailScreen() {
           email: contact.email || '',
           onSent: (ch) => {
             showToast(`Message logged & opened in ${ch === 'clipboard' ? 'clipboard' : ch}!`);
+            // Update the just-logged event with the actual channel used
+            api.patch(`/contacts/${user._id}/${id}/events/latest-channel`, { channel: ch }).catch(() => {});
           },
         });
       } else {
