@@ -889,3 +889,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Broken link fixed:** Hub > Learning > "Manage Training" was pointing to non-existent `/admin/training-hub` → fixed to `/admin/manage-training`
 - **Dangling references fixed:** My Account's "My Digital Card", "Edit Card", "Leaderboard" quick actions updated from deleted routes to working ones
 - **Tested:** iteration 197 — 100% frontend navigation tests passed, all Hub sections and tab bar verified
+
+### Recently Visited Quick Access (Mar 13, 2026)
+- **NEW FEATURE:** "Recently Visited" section at the top of the Hub page that tracks the last 4 tools a user navigated to.
+- **How it works:** Every time a user taps a Hub menu item, the visit is recorded in AsyncStorage (per-user key). When returning to the Hub, the most recent 4 unique tools appear as compact chips in a 2-column grid above the accordion sections.
+- **Deduplication:** Clicking the same item moves it to the top instead of duplicating.
+- **Persistence:** Survives page navigations and app restarts via AsyncStorage.
+- **Per-user:** Each user sees their own recently visited items (stored under `hub_recent_{userId}`).
+- **Tested:** iteration 198 — 100% (all 10 feature tests passed)
+
