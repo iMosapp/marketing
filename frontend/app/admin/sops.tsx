@@ -53,7 +53,7 @@ export default function SOPsPage() {
       if (department !== 'all') params.department = department;
       if (search) params.search = search;
       const query = new URLSearchParams(params).toString();
-      const res = await api.get(`/sop${query ? `?${query}` : ''}`);
+      const res = await api.get(`/sop/${query ? `?${query}` : ''}`);
       setSOPs(Array.isArray(res.data) ? res.data : []);
     } catch {
       setSOPs([]);

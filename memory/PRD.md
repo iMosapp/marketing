@@ -908,3 +908,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Persistence:** Per-user via AsyncStorage (`hub_pinned_{userId}`).
 - **Tested:** iteration 199 — All core features verified, no issues.
 
+
+### Critical Bug Fixes (Mar 13, 2026)
+- **Account Health vertical text bug (P0):** The card layout crammed 7+ elements into a single horizontal row, causing names to render vertically on mobile. Restructured into a 2-row layout: name/role/login-badge on top, metrics/actions on bottom.
+- **SOPs & Guides dead link (P0):** Hub linked to `/admin/sops` but no frontend page existed. Created full page with search, department filters, expandable step-by-step content. Also fixed trailing slash issue in API call (`/sop` → `/sop/`).
+- **SOP data seeding:** Called the existing seed endpoint to populate 13 SOPs that were in the backend but never seeded to the database.
+- **Tested:** All fixes verified at mobile viewport (390px and 430px) with screenshots.
+
