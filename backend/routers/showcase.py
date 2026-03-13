@@ -522,11 +522,29 @@ async def get_manage_showcase(user_id: str):
         {"customer_photo": 0, "salesman_photo": 0}
     ).sort("created_at", -1).to_list(500)
 
+    # Resolve photos: WebP first, then photo endpoint for un-migrated, null for no-photo cards
+    photo_map = {}
+    if cards:
+        card_ids = [c["_id"] for c in cards]
+        photo_check = await db.congrats_cards.find(
+            {"_id": {"$in": card_ids}, "$or": [
+                {"photo_path": {"$exists": True, "$ne": None}},
+                {"customer_photo": {"$exists": True, "$nin": [None, ""]}}
+            ]},
+            {"_id": 1, "card_id": 1, "photo_path": 1, "photo_thumb_path": 1}
+        ).to_list(500)
+        for pc in photo_check:
+            cid = str(pc["_id"])
+            if pc.get("photo_path"):
+                photo_map[cid] = f"/api/images/{pc.get('photo_thumb_path') or pc['photo_path']}"
+            else:
+                photo_map[cid] = f"/api/showcase/photo/{pc.get('card_id', cid)}"
+
     return [{
         "card_id": c.get("card_id", str(c["_id"])),
         "customer_name": c.get("customer_name"),
         "customer_phone": c.get("customer_phone"),
-        "customer_photo": f"/api/showcase/photo/{c.get('card_id', str(c['_id']))}",
+        "customer_photo": photo_map.get(str(c["_id"])),
         "hidden": c.get("hidden", False),
         "views": c.get("views", 0),
         "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,

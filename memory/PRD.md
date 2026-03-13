@@ -52,7 +52,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Copy Link buttons copy the production URL to clipboard
 - **Tested:** 95% frontend pass (iteration 203), navigation fix verified via screenshot
 
-### Photo Gallery — Speed + History (Mar 13, 2026)
+### Showcase Photo Resolution Fix (Mar 13, 2026)
+- **FIXED:** `/manage/{user_id}` endpoint was generating photo URLs for ALL cards even ones without photos → 404s → grey squares
+- Now resolves photos properly: WebP `photo_path` → direct `/api/images/` URL (fastest), un-migrated `customer_photo` → `/api/showcase/photo/` endpoint (lazy migrates), no photo → null
+- Frontend shows camera icon placeholder for cards with no photo instead of broken grey squares
 - Gallery endpoint (`GET /photos/all`) ONLY serves `/api/images/` WebP paths and `http` URLs — ZERO base64
 - Added photo history tracking: when a contact's profile photo is changed, the old WebP URL is saved to `photo_history` array
 - Gallery includes historical photos going forward (only fast `/api/images/` and `http` paths)

@@ -97,7 +97,13 @@ export default function ManageShowroom() {
         <ScrollView style={s.list} contentContainerStyle={s.listContent}>
           {entries.map((entry) => (
             <View key={entry.card_id} style={[s.card, entry.hidden && s.cardHidden]} data-testid={`showroom-entry-${entry.card_id}`}>
-              <Image source={{ uri: entry.customer_photo }} style={s.thumb} resizeMode="cover" />
+              {entry.customer_photo ? (
+                <Image source={{ uri: entry.customer_photo }} style={s.thumb} resizeMode="cover" />
+              ) : (
+                <View style={[s.thumb, { backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }]}>
+                  <Ionicons name="camera-outline" size={20} color={colors.textTertiary} />
+                </View>
+              )}
               <View style={s.info}>
                 <Text style={[s.name, entry.hidden && s.nameHidden]}>{entry.customer_name || 'Customer'}</Text>
                 <Text style={s.meta}>
