@@ -101,7 +101,7 @@ export default function SOPsPage() {
         {DEPARTMENTS.map(d => (
           <TouchableOpacity
             key={d.key}
-            style={[s.filterChip, department === d.key && { backgroundColor: colors.primary || '#007AFF' }]}
+            style={[s.filterChip, { backgroundColor: department === d.key ? (colors.primary || '#007AFF') : colors.surface }]}
             onPress={() => setDepartment(d.key)}
             data-testid={`dept-filter-${d.key}`}
           >
@@ -215,7 +215,7 @@ const s = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15 },
   filterRow: { maxHeight: 44, marginBottom: 8 },
   filterContent: { paddingHorizontal: 16, gap: 8 },
-  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: '#ffffff10' },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   filterText: { fontSize: 13, fontWeight: '500' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { flex: 1, paddingHorizontal: 16 },
@@ -232,7 +232,7 @@ const s = StyleSheet.create({
   timeText: { fontSize: 12 },
   sopTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
   sopSummary: { fontSize: 14, lineHeight: 20 },
-  stepsSection: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#ffffff10' },
+  stepsSection: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' },
   stepsTitle: { fontSize: 14, fontWeight: '600', marginBottom: 10 },
   stepRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   stepNumber: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
