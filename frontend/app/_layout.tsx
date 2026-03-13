@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
@@ -67,7 +67,13 @@ export default function RootLayout() {
   const loadTheme = useThemeStore((state) => state.loadTheme);
   const colors = useThemeStore((state) => state.colors);
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const segments = useSegments();
   const [mounted, setMounted] = useState(false);
+  
+  // Hide Jessi on auth/public screens
+  const isAuthScreen = !segments.length || segments[0] === 'auth' || segments[0] === 'index' || segments[0] === 'onboarding';
+  const showJessi = isAuthenticated && !!user?._id && !isAuthScreen;
   
   usePWAMetaTags();
   
@@ -95,7 +101,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
       <SafeAreaProvider>
         <ToastProvider>
-          <View style={{ flex: 1, paddingTop: user?._id ? JESSI_BAR_HEIGHT : 0 }}>
+          <View style={{ flex: 1, paddingTop: showJessi ? JESSI_BAR_HEIGHT : 0 }}>
             <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
               <Stack.Screen name="index" options={{ animation: 'none' }} />
               <Stack.Screen name="auth/login" options={{ animation: 'none' }} />
@@ -111,7 +117,7 @@ export default function RootLayout() {
               <Stack.Screen name="l/[username]" />
             </Stack>
           </View>
-          {user?._id && <JessieFloatingChat />}
+          {showJessi && <JessieFloatingChat />}
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
