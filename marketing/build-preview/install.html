@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<title>Install i'M On Social</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  :root {
+    --bg: #FFFFFF;
+    --text: #1D1D1F;
+    --text-2: #6E6E73;
+    --text-3: #8E8E93;
+    --card: #F5F5F7;
+    --border: #E5E5EA;
+    --accent: #007AFF;
+  }
+  /* Always light theme to match login screen */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 24px 40px;
+    text-align: center;
+  }
+  .logo { width: 120px; height: 120px; border-radius: 26px; margin-bottom: 24px; }
+  .hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .hero h1 span { background: linear-gradient(135deg, #007AFF, #5AC8FA, #34C759, #FF2D55); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 15px; color: var(--text-2); max-width: 320px; line-height: 1.5; }
+
+  .install-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #007AFF; color: #fff;
+    font-size: 17px; font-weight: 700;
+    padding: 16px 32px; border-radius: 14px;
+    border: none; cursor: pointer;
+    margin: 28px 0 12px;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .install-btn:active { transform: scale(0.97); }
+  .install-btn.android { background: #34C759; }
+  .install-btn svg { width: 22px; height: 22px; fill: #fff; }
+  .install-note { font-size: 12px; color: var(--text-3); }
+
+  .divider { width: 60px; height: 2px; background: var(--border); margin: 36px auto; border-radius: 1px; }
+
+  /* Steps */
+  .steps { padding: 0 24px 40px; max-width: 400px; margin: 0 auto; }
+  .steps-title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-2); font-weight: 700; margin-bottom: 20px; text-align: center; }
+  .step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: var(--card); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; flex-shrink: 0;
+  }
+  .step-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .step-text p { font-size: 13px; color: var(--text-2); line-height: 1.4; }
+  .step-icon { font-size: 18px; }
+
+  /* QR Section */
+  .qr-section {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .qr-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .qr-section p { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
+  .qr-code {
+    background: #fff;
+    padding: 16px;
+    border-radius: 16px;
+    display: inline-block;
+  }
+  .qr-code canvas { display: block; }
+
+  /* Features */
+  .features {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; padding: 0 24px 40px;
+    max-width: 400px; margin: 0 auto;
+  }
+  .feature {
+    background: var(--card); border-radius: 14px;
+    padding: 16px; text-align: center;
+  }
+  .feature-icon { font-size: 24px; margin-bottom: 6px; }
+  .feature h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  .feature p { font-size: 11px; color: var(--text-2); }
+
+  .footer {
+    text-align: center; padding: 20px 24px 40px;
+    border-top: 1px solid var(--border);
+  }
+  .footer p { font-size: 12px; color: var(--text-3); }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* Already installed banner */
+  .installed-banner {
+    display: none;
+    background: #34C75920;
+    border: 1px solid #34C75940;
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin: 0 24px 20px;
+    text-align: center;
+  }
+  .installed-banner.show { display: block; }
+  .installed-banner p { font-size: 14px; color: #34C759; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <img src="/logo512.png" alt="i'M On Social" class="logo">
+  <h1>Install <span>i'M On Social</span></h1>
+  <p>Your relationship management portal. Add it to your home screen — it works just like an app.</p>
+  <button class="install-btn" id="installBtn" onclick="handleInstall()">
+    <svg viewBox="0 0 24 24"><path d="M13 5v6h6l-7 8-7-8h6V5h2zm-2-3H5v2h6V2zm6 0h-4v2h4V2zM5 20v2h14v-2H5z"/></svg>
+    Add to Home Screen
+  </button>
+  <p class="install-note" id="installNote"></p>
+</div>
+
+<div class="installed-banner" id="installedBanner">
+  <p>You're already using the app! Open it from your home screen.</p>
+</div>
+
+<div class="divider"></div>
+
+<!-- iPhone Steps (shown by default) -->
+<div class="steps" id="iphoneSteps">
+  <div class="steps-title">iPhone — 3 Easy Steps</div>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <h3>Open in Safari <span class="step-icon"></span></h3>
+      <p>Make sure you're viewing this page in Safari (not Chrome or another browser).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <h3>Tap the Share button <span class="step-icon"></span></h3>
+      <p>It's the square with an arrow at the bottom of your screen. Scroll down in the menu.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <h3>Tap "Add to Home Screen" <span class="step-icon">+</span></h3>
+      <p>Hit "Add" in the top right. That's it — the app icon will appear on your home screen.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Android Steps -->
+<div class="steps" id="androidSteps" style="display:none;">
+  <div class="steps-title">Android — 2 Easy Steps</div>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <h3>Tap "Install" on the banner</h3>
+      <p>Chrome will show an install banner at the bottom of your screen. Tap "Install" or "Add".</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <h3>Confirm the install</h3>
+      <p>Tap "Install" again on the confirmation popup. The app will appear on your home screen.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Desktop Steps -->
+<div class="steps" id="desktopSteps" style="display:none;">
+  <div class="steps-title">Desktop — Quick Install</div>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <h3>Click the install icon in your address bar</h3>
+      <p>Look for the small install icon (monitor with arrow) on the right side of Chrome's URL bar.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <h3>Click "Install"</h3>
+      <p>The app will open in its own window and be available from your dock or start menu.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="features">
+  <div class="feature">
+    <div class="feature-icon" style="color:#007AFF;">&#9993;</div>
+    <h4>Instant Access</h4>
+    <p>One tap from your home screen</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon" style="color:#34C759;">&#9889;</div>
+    <h4>Lightning Fast</h4>
+    <p>No app store download needed</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon" style="color:#FF2D55;">&#9829;</div>
+    <h4>Always Updated</h4>
+    <p>Latest features automatically</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon" style="color:var(--accent);">&#9733;</div>
+    <h4>Full Screen</h4>
+    <p>No browser bar — feels native</p>
+  </div>
+</div>
+
+<div class="qr-section">
+  <h2>Share This Install Page</h2>
+  <p>Scan or share this QR code with your team</p>
+  <div class="qr-code">
+    <canvas id="qrCanvas" width="180" height="180"></canvas>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Powered by <a href="https://imonsocial.com">i'M On Social</a></p>
+</div>
+
+<script>
+// Device detection
+const ua = navigator.userAgent;
+const isIOS = /iPad|iPhone|iPod/.test(ua);
+const isAndroid = /Android/.test(ua);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+if (isStandalone) {
+  document.getElementById('installedBanner').classList.add('show');
+  document.getElementById('installBtn').style.display = 'none';
+}
+
+if (isIOS) {
+  document.getElementById('iphoneSteps').style.display = '';
+  document.getElementById('androidSteps').style.display = 'none';
+  document.getElementById('desktopSteps').style.display = 'none';
+  document.getElementById('installNote').textContent = 'Use Safari for the best experience on iPhone';
+} else if (isAndroid) {
+  document.getElementById('iphoneSteps').style.display = 'none';
+  document.getElementById('androidSteps').style.display = '';
+  document.getElementById('desktopSteps').style.display = 'none';
+  document.getElementById('installBtn').classList.add('android');
+  document.getElementById('installNote').textContent = 'Chrome will prompt you to install automatically';
+} else {
+  document.getElementById('iphoneSteps').style.display = 'none';
+  document.getElementById('androidSteps').style.display = 'none';
+  document.getElementById('desktopSteps').style.display = '';
+  document.getElementById('installNote').textContent = 'Available in Chrome, Edge, and Brave browsers';
+}
+
+// PWA install prompt (Android/Desktop)
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+function handleInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choice) => {
+      if (choice.outcome === 'accepted') {
+        document.getElementById('installBtn').textContent = 'Installed!';
+        document.getElementById('installBtn').style.background = '#34C759';
+      }
+      deferredPrompt = null;
+    });
+  } else if (isIOS) {
+    // Scroll to instructions
+    document.getElementById('iphoneSteps').scrollIntoView({ behavior: 'smooth' });
+  } else {
+    // Scroll to instructions
+    document.getElementById('desktopSteps').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+// QR Code generator (minimal, no dependencies)
+function generateQR(canvas, text) {
+  // Use a simple QR code via an image from a public API
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 180, 180);
+    ctx.drawImage(img, 0, 0, 180, 180);
+  };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(text) + '&color=000000&bgcolor=ffffff&format=png';
+}
+
+// Generate QR code pointing to this install page
+const installUrl = 'https://app.imonsocial.com/install.html';
+generateQR(document.getElementById('qrCanvas'), installUrl);
+</script>
+
+</body>
+</html>

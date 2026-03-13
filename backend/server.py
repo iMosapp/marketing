@@ -699,6 +699,11 @@ async def seed_admin_user(db):
     except Exception as e:
         logger.error(f"Failed to seed admin user: {e}")
 
+# Serve marketing preview (temporary - for content review only)
+marketing_preview_dir = Path("/app/marketing/build-preview")
+if marketing_preview_dir.exists():
+    app.mount("/api/marketing-preview", StaticFiles(directory=str(marketing_preview_dir), html=True), name="marketing-preview")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

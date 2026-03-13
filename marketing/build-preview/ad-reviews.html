@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Triple Your Google Reviews | i'M On Social</title>
+  <meta name="description" content="Send Google and Facebook review requests in one tap. Any employee can do it. Triple your reviews in 90 days."/>
+  <meta property="og:title" content="Triple Your Google Reviews in 90 Days"/>
+  <meta property="og:description" content="One tap review requests. Google, Facebook, Yelp. Any employee can send them."/>
+  <meta property="og:image" content="/logo512.png"/>
+  <link rel="icon" href="/favicon.ico"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--accent:#007AFF;--bg:#FFFFFF;--card:#F8F9FB;--border:#E5E5EA;--text:#1D1D1F;--muted:#6E6E73}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center}
+    .ad-container{width:100%;max-width:430px;height:100vh;max-height:932px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+    .phone-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#F8F9FB}
+    .phone-frame{width:85%;max-width:340px;aspect-ratio:9/19;border-radius:36px;overflow:hidden;border:3px solid #E5E5EA;background:#FFF;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.08)}
+    .slide{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity 0.8s ease}
+    .slide.active{opacity:1}
+    .slide img{width:100%;height:100%;object-fit:cover;object-position:top}
+    .phone-frame::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(transparent,rgba(0,0,0,0.7));pointer-events:none;z-index:1}
+    .text-overlay{position:absolute;bottom:0;left:0;right:0;padding:24px 20px;z-index:2;text-align:center}
+    .text-overlay h2{font-size:20px;font-weight:800;line-height:1.2;margin-bottom:6px}
+    .text-overlay p{font-size:13px;color:var(--muted);line-height:1.5}
+    .controls{padding:16px 20px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+    .play-row{display:flex;align-items:center;gap:12px}
+    .play-btn{width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;border:none;transition:transform 0.2s}
+    .play-btn:hover{transform:scale(1.05)}
+    .play-btn svg{width:20px;height:20px;margin-left:2px}
+    .progress-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
+    .progress-bar{height:4px;background:#E5E5EA;border-radius:2px;overflow:hidden}
+    .progress-fill{height:100%;width:0%;background:var(--accent);transition:width 0.3s linear}
+    .progress-label{font-size:11px;color:var(--muted)}
+    .cta-bar{padding:0 20px 24px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+    .cta-btn{display:block;width:100%;padding:16px;background:var(--accent);color:#FFF;font-size:16px;font-weight:800;text-align:center;border-radius:50px;text-decoration:none;transition:box-shadow 0.3s}
+    .cta-btn:hover{box-shadow:0 4px 24px rgba(0,122,255,0.3)}
+    .brand-line{display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0}
+    .brand-line img{height:24px;border-radius:6px}
+    .brand-line span{font-size:13px;font-weight:700;color:#1D1D1F}
+    .end-card{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10;gap:16px;padding:32px;text-align:center}
+    .end-card.active{display:flex}
+    .end-card img{height:64px;border-radius:16px}
+    .end-card h3{font-size:24px;font-weight:900;color:#1D1D1F}
+    .end-card p{font-size:14px;color:var(--muted)}
+    .end-card a{margin-top:8px;padding:14px 36px;background:var(--accent);color:#FFF;font-weight:800;border-radius:50px;text-decoration:none;font-size:15px}
+    @media(max-width:430px){.ad-container{max-height:100vh}.phone-frame{width:80%;border-radius:28px;border-width:2px}}
+    @media(max-height:700px){.phone-frame{max-width:260px}.text-overlay h2{font-size:17px}.text-overlay p{font-size:11px}}
+  </style>
+</head>
+<body>
+<div class="ad-container">
+  <div class="phone-area">
+    <div class="phone-frame" id="phoneFrame">
+      <div class="slide active" id="slide-0"><img src="/ad3-slide1.png" alt="Send Review Request"/></div>
+      <div class="slide" id="slide-1"><img src="/ad3-slide2.png" alt="Review Stats"/></div>
+      <div class="slide" id="slide-2"><img src="/slide-dashboard.png" alt="Dashboard"/></div>
+      <div class="slide" id="slide-3"><img src="/slide-inbox.png" alt="Inbox"/></div>
+      <div class="text-overlay" id="textOverlay">
+        <h2>One Tap. Five Stars.</h2>
+        <p>Send review requests instantly</p>
+      </div>
+    </div>
+    <div class="end-card" id="endCard">
+      <img src="/logo192.png" alt="i'M On Social"/>
+      <h3>i'M On Social</h3>
+      <p>Triple your Google reviews in 90 days</p>
+      <a href="https://imonsocial.com">Try It Free</a>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="play-row">
+      <button class="play-btn" id="playBtn" onclick="toggleAudio()">
+        <svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel">Tap to play</div>
+      </div>
+    </div>
+  </div>
+  <div class="cta-bar">
+    <a href="https://imonsocial.com" class="cta-btn">Try It Free</a>
+    <div class="brand-line"><img src="/logo192.png" alt=""/><span>i'M On Social</span></div>
+  </div>
+  <audio id="audio" src="/ad3-reviews.mp3" preload="auto"></audio>
+</div>
+<script>
+  const audio=document.getElementById('audio'),playBtn=document.getElementById('playBtn'),fill=document.getElementById('progressFill'),label=document.getElementById('progressLabel'),endCard=document.getElementById('endCard'),textOverlay=document.getElementById('textOverlay');
+  let playing=false,slideIdx=0,slideTimer=null;const slides=document.querySelectorAll('.slide'),totalSlides=slides.length;
+  const captions=[{h:'One Tap. Five Stars.',p:'Send review requests instantly'},{h:'Watch Reviews Grow',p:'Real-time tracking & analytics'},{h:'Everything In One Place',p:'Your complete relationship dashboard'},{h:'Every Conversation Tracked',p:'SMS, email, and more'}];
+  function showSlide(i){slides.forEach(s=>s.classList.remove('active'));slides[i].classList.add('active');if(captions[i])textOverlay.innerHTML=`<h2>${captions[i].h}</h2><p>${captions[i].p}</p>`}
+  function startSlides(){slideTimer=setInterval(()=>{slideIdx=(slideIdx+1)%totalSlides;showSlide(slideIdx)},4000)}
+  function stopSlides(){clearInterval(slideTimer);slideTimer=null}
+  function toggleAudio(){if(playing){audio.pause();playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';label.textContent='Paused';stopSlides();playing=false}else{endCard.classList.remove('active');audio.play();playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';label.textContent='Playing...';startSlides();playing=true}}
+  audio.addEventListener('timeupdate',()=>{if(audio.duration)fill.style.width=(audio.currentTime/audio.duration*100)+'%'});
+  audio.addEventListener('ended',()=>{playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>';label.textContent='Replay';stopSlides();playing=false;endCard.classList.add('active');fill.style.width='100%'});
+</script>
+</body>
+</html>
