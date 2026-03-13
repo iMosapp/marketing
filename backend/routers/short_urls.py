@@ -468,12 +468,12 @@ async def redirect_short_url(short_code: str, request: Request):
     elif user_id:
         # === NON-CARD LINK: Use store branding ===
         try:
-            user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "first_name": 1, "last_name": 1, "photo_url": 1})
+            user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "first_name": 1, "last_name": 1, "name": 1, "photo_url": 1})
             if user_doc and user_doc.get("store_id"):
                 store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"name": 1, "logo_url": 1, "logo_avatar_url": 1})
                 if store:
                     store_name = store.get("name", "")
-                    user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
+                    user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip() or user_doc.get("name", "")
 
                     # Helper to resolve a photo URL to absolute
                     def _abs(url):
@@ -543,6 +543,7 @@ async def redirect_short_url(short_code: str, request: Request):
     html = f"""<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta property="og:title" content="{safe_title}" />
 <meta property="og:description" content="{safe_desc}" />
 {og_image_tags}
@@ -551,10 +552,28 @@ async def redirect_short_url(short_code: str, request: Request):
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="{safe_title}" />
 <meta name="twitter:description" content="{safe_desc}" />
+<style>
+body{{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}}
+.wrap{{padding:24px}}
+.logo{{font-size:22px;font-weight:700;letter-spacing:-.5px;color:#C9A962;margin-bottom:12px}}
+.msg{{font-size:15px;color:#8E8E93;margin-bottom:24px}}
+a.btn{{display:inline-block;padding:12px 32px;background:#C9A962;color:#000;text-decoration:none;border-radius:24px;font-weight:600;font-size:15px}}
+.spinner{{width:24px;height:24px;border:3px solid #333;border-top-color:#C9A962;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}}
+@keyframes spin{{to{{transform:rotate(360deg)}}}}
+</style>
 </head><body>
-<script>window.location.replace("{redirect_url}");</script>
+<div class="wrap" id="content">
+<div class="spinner"></div>
+<div class="logo">i'M On Social</div>
+<p class="msg">Opening...</p>
+</div>
+<script>
+window.location.replace("{redirect_url}");
+setTimeout(function(){{
+  document.getElementById('content').innerHTML='<div class="logo">i\\'M On Social</div><p class="msg">You can close this tab</p><a class="btn" href="{redirect_url}">Open Again</a>';
+}},3000);
+</script>
 <noscript><meta http-equiv="refresh" content="0;url={redirect_url}" /></noscript>
-<p><a href="{redirect_url}">Continue</a></p>
 </body></html>"""
     return HTMLResponse(content=html)
 
