@@ -39,13 +39,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### My Presence Visual Command Center (Mar 13, 2026) — LATEST
 - **REBUILT:** "My Account" page into "My Presence" visual hub
-- Header changed from "My Account" to "My Presence"
 - 5 presence cards with visual mini-previews: Digital Card, Showcase, Review Link, Link Page, Landing Page
-- Each card shows a styled visual representation of the page (avatar+contacts, photo grid, stars, link pills, hero CTA)
-- Preview panels are tappable — opens the actual page
-- Action buttons render in horizontal rows: Preview, Edit, Copy Link, Manage, Approve, Share
-- All navigation and clipboard functionality working
-- **Tested:** 95% frontend pass (iteration 203)
+- Each card shows a styled visual representation of the page
+- **ALL Preview buttons and panel taps open the actual production customer-facing URLs in new tabs** — NOT internal config/marketing pages
+  - Digital Card → `${PROD_BASE}/imos/${storeSlug}/${firstName}`
+  - Showcase → `${PROD_BASE}/showcase/${userId}`
+  - Review Link → `/review/${storeSlug}` (internal route, renders correct customer page)
+  - Link Page → `${PROD_BASE}/l/${userId}`
+  - Landing Page → `${PROD_BASE}/p/${userId}`
+- Edit buttons navigate to internal settings pages
+- Copy Link buttons copy the production URL to clipboard
+- **Tested:** 95% frontend pass (iteration 203), navigation fix verified via screenshot
 
 ### Photo Gallery — Speed + History (Mar 13, 2026)
 - Gallery endpoint (`GET /photos/all`) ONLY serves `/api/images/` WebP paths and `http` URLs — ZERO base64

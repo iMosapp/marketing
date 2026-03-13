@@ -533,8 +533,12 @@ export default function MyAccountScreen() {
             <TouchableOpacity
               style={[styles.previewPanel, { backgroundColor: '#007AFF08' }]}
               onPress={() => {
-                const url = storeSlug ? `/imos/digital-card` : '/settings/store-profile';
-                router.push(url as any);
+                const cardUrl = storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : '';
+                if (cardUrl && Platform.OS === 'web') {
+                  window.open(cardUrl, '_blank');
+                } else if (cardUrl) {
+                  Linking.openURL(cardUrl);
+                }
               }}
               activeOpacity={0.8}
               data-testid="card-preview-panel"
@@ -576,8 +580,12 @@ export default function MyAccountScreen() {
             </View>
             <View style={styles.presenceActions}>
               <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#007AFF15' }]} onPress={() => {
-                const url = storeSlug ? `/imos/digital-card` : '/settings/store-profile';
-                router.push(url as any);
+                const cardUrl = storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : '';
+                if (cardUrl && Platform.OS === 'web') {
+                  window.open(cardUrl, '_blank');
+                } else if (cardUrl) {
+                  Linking.openURL(cardUrl);
+                }
               }} data-testid="card-preview-btn">
                 <Ionicons name="eye-outline" size={16} color="#007AFF" />
                 <Text style={[styles.presenceBtnText, { color: '#007AFF' }]}>Preview</Text>
@@ -603,7 +611,14 @@ export default function MyAccountScreen() {
           <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-showcase">
             <TouchableOpacity
               style={[styles.previewPanel, { backgroundColor: '#34C75908' }]}
-              onPress={() => router.push('/imos/showcase' as any)}
+              onPress={() => {
+                const showcaseUrl = `${PROD_BASE}/showcase/${user?._id}`;
+                if (Platform.OS === 'web') {
+                  window.open(showcaseUrl, '_blank');
+                } else {
+                  Linking.openURL(showcaseUrl);
+                }
+              }}
               activeOpacity={0.8}
               data-testid="showcase-preview-panel"
             >
@@ -637,7 +652,14 @@ export default function MyAccountScreen() {
               </View>
             </View>
             <View style={styles.presenceActions}>
-              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => router.push('/imos/showcase' as any)} data-testid="showcase-preview-btn">
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915' }]} onPress={() => {
+                const showcaseUrl = `${PROD_BASE}/showcase/${user?._id}`;
+                if (Platform.OS === 'web') {
+                  window.open(showcaseUrl, '_blank');
+                } else {
+                  Linking.openURL(showcaseUrl);
+                }
+              }} data-testid="showcase-preview-btn">
                 <Ionicons name="eye-outline" size={16} color="#34C759" />
                 <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Preview</Text>
               </TouchableOpacity>
