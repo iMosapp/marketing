@@ -367,15 +367,6 @@ export default function TouchpointsScreen() {
         </ScrollView>
       )}
 
-      {/* FAB */}
-      <TouchableOpacity
-        onPress={() => router.push('/touchpoints/add-task' as any)}
-        style={{ position: 'absolute', bottom: 24, right: 24, width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: colors.accent, shadowOpacity: 0.3, shadowRadius: 16, shadowOffset: { width: 0, height: 4 } }}
-        activeOpacity={0.8}
-        data-testid="touchpoints-fab"
-      >
-        <Ionicons name="add" size={26} color="#000" />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
