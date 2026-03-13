@@ -521,57 +521,32 @@ export default function MyAccountScreen() {
           )}
         </View>
 
-        {/* My Performance Shortcut */}
+        {/* ====== MY PRESENCE — Everything you send out ====== */}
         <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.installBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push('/touchpoints/performance' as any)}
-            data-testid="my-performance-link"
-          >
-            <View style={[styles.menuIcon, { backgroundColor: '#34C75920' }]}>
-              <Ionicons name="stats-chart" size={22} color="#34C759" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={[styles.menuTitle, { color: colors.text }]}>My Performance</Text>
-              <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>Day / Week / Month stats & click-throughs</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Sign Up New Account */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.installBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push('/onboarding/new-account' as any)}
-            data-testid="sign-up-new-account"
-          >
-            <View style={[styles.menuIcon, { backgroundColor: '#FF2D5520' }]}>
-              <Ionicons name="storefront-outline" size={22} color="#FF2D55" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={[styles.menuTitle, { color: colors.text }]}>Sign Up New Account</Text>
-              <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>Onboard a new store or business</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile & AI Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Profile & AI</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Presence</Text>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, marginTop: -6, paddingHorizontal: 2 }}>
+            Everything that represents you to customers — view, edit & share
+          </Text>
           <View style={[styles.menuList, { backgroundColor: colors.card }]}>
             {[
-              { icon: 'card', title: 'My Digital Card', subtitle: 'Bio, socials & preview', color: '#007AFF', route: '/settings/my-profile' },
-              { icon: 'link', title: 'My Link Page', subtitle: 'Linktree-style page for socials', color: '#C9A962', route: '/settings/link-page' },
-              { icon: 'person', title: 'AI Persona', subtitle: 'Communication style', color: '#AF52DE', route: '/settings/persona' },
+              { icon: 'card', title: 'My Digital Card', subtitle: 'Bio, photo & contact info', color: '#007AFF', route: '/settings/my-profile' },
+              { icon: 'globe-outline', title: 'My Link Page', subtitle: 'Your public landing page', color: '#C9A962', route: '/settings/link-page' },
+              { icon: 'images', title: 'My Showcase', subtitle: 'Happy customers page & approvals', color: '#34C759', route: '/showroom-manage' },
+              { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', color: '#FFD60A', action: 'share_review' },
+              { icon: 'person', title: 'AI Persona', subtitle: 'How AI communicates as you', color: '#AF52DE', route: '/settings/persona' },
               { icon: 'mic', title: 'Voice Training', subtitle: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
-            ].map((item, index) => (
+            ].map((item, index, arr) => (
               <TouchableOpacity
                 key={item.title}
-                style={[styles.menuItem, { borderBottomColor: colors.border }, index === 3 && { borderBottomWidth: 0 }]}
-                onPress={() => router.push(item.route as any)}
-                data-testid={`profile-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  if ((item as any).action === 'share_review') {
+                    setShowShareModal(true);
+                  } else if ((item as any).route) {
+                    router.push((item as any).route as any);
+                  }
+                }}
+                data-testid={`presence-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={22} color={item.color} />
@@ -586,39 +561,79 @@ export default function MyAccountScreen() {
           </View>
         </View>
 
-        {/* Install App Button */}
+        {/* ====== QUICK ACTIONS — Home screen shortcuts ====== */}
         <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.installBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => {
-              if (Platform.OS === 'web') {
-                window.open('/install.html', '_self');
-              } else {
-                Linking.openURL('https://app.imonsocial.com/install.html');
-              }
-            }}
-            data-testid="install-app-btn"
-          >
-            <View style={[styles.menuIcon, { backgroundColor: '#007AFF20' }]}>
-              <Ionicons name="download-outline" size={22} color="#007AFF" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <Text style={[styles.sectionTitle, { color: colors.textTertiary, marginBottom: 0 }]}>Quick Actions</Text>
+            <TouchableOpacity onPress={() => setEditingQuickActions(!editingQuickActions)} data-testid="edit-quick-actions-btn">
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>{editingQuickActions ? 'Done' : 'Customize'}</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, marginTop: -4, paddingHorizontal: 2 }}>
+            Shortcuts on your home screen — tap Customize to change
+          </Text>
+
+          {!editingQuickActions ? (
+            <View style={styles.tileRow}>
+              {quickActionIds.map(id => {
+                const action = ALL_ACTIONS.find(a => a.id === id);
+                if (!action) return null;
+                return (
+                  <TouchableOpacity key={id} style={[styles.tileBtnThird, { backgroundColor: colors.card }]} onPress={() => router.push(action.route as any)} data-testid={`qa-${id}`}>
+                    <View style={[styles.tileIcon, { backgroundColor: `${action.color}20` }]}>
+                      <Ionicons name={action.icon as any} size={20} color={action.color} />
+                    </View>
+                    <Text style={[styles.tileLabel, { color: colors.text }]} numberOfLines={1}>{action.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <View style={styles.menuContent}>
-              <Text style={[styles.menuTitle, { color: colors.text }]}>Install App</Text>
-              <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>Add to home screen for fullscreen mode</Text>
+          ) : (
+            <View style={[styles.editPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>Tap to add/remove (max 6)</Text>
+              <View style={styles.editGrid}>
+                {ALL_ACTIONS.map(action => {
+                  const isSelected = quickActionIds.includes(action.id);
+                  return (
+                    <TouchableOpacity key={action.id} style={[styles.editItem, { backgroundColor: isSelected ? `${action.color}12` : 'transparent', borderColor: isSelected ? `${action.color}40` : colors.border }]} onPress={() => toggleQuickAction(action.id)} data-testid={`qa-edit-${action.id}`}>
+                      <View style={[styles.editIconBox, { backgroundColor: `${action.color}20` }]}>
+                        <Ionicons name={action.icon as any} size={16} color={action.color} />
+                        {isSelected && (
+                          <View style={[styles.editBadge, { backgroundColor: '#34C759' }]}>
+                            <Ionicons name="checkmark" size={10} color="#FFF" />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.editLabel, { color: isSelected ? action.color : colors.textSecondary }]} numberOfLines={1}>{action.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
+          )}
         </View>
 
-        {/* Billing & Rewards */}
+        {/* ====== PERSONAL SETTINGS ====== */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Billing & Rewards</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Personal Settings</Text>
           <View style={[styles.menuList, { backgroundColor: colors.card }]}>
-            {upgradeItems.map((item, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={[styles.menuItem, { borderBottomColor: colors.border }, index === upgradeItems.length - 1 && { borderBottomWidth: 0 }]}
-                onPress={item.onPress}
+            {[
+              { icon: 'shield-checkmark', title: 'Security', subtitle: 'Password & Face ID', color: '#FF3B30', route: '/settings/security' },
+              { icon: 'calendar', title: 'Calendar', subtitle: 'Connect Google Calendar', color: '#007AFF', route: '/settings/calendar' },
+              { icon: 'download-outline', title: 'Install App', subtitle: 'Add to home screen', color: '#007AFF', action: 'install' },
+            ].map((item, index, arr) => (
+              <TouchableOpacity
+                key={item.title}
+                style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  if ((item as any).action === 'install') {
+                    if (Platform.OS === 'web') window.open('/install.html', '_self');
+                    else Linking.openURL('https://app.imonsocial.com/install.html');
+                  } else {
+                    router.push((item as any).route as any);
+                  }
+                }}
+                data-testid={`settings-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={22} color={item.color} />
@@ -633,44 +648,24 @@ export default function MyAccountScreen() {
           </View>
         </View>
 
-        {/* Settings */}
+        {/* ====== ACCOUNT INFO ====== */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Settings</Text>
-          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
-            {settingsItems.map((item, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={[styles.menuItem, { borderBottomColor: colors.border }, index === settingsItems.length - 1 && { borderBottomWidth: 0 }]}
-                onPress={item.onPress}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={22} color={item.color} />
-                </View>
-                <View style={styles.menuContent}>
-                  <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
-                  <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-              </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Account Info</Text>
+          <View style={[styles.accountInfo, { backgroundColor: colors.card }]}>
+            {[
+              { label: 'Phone', value: user?.mvpline_number || 'Not assigned' },
+              { label: 'Organization', value: user?.organization_name || 'Independent' },
+              { label: 'Store', value: user?.store_name || 'N/A' },
+            ].map((item, i, arr) => (
+              <View key={item.label} style={[styles.infoRow, { borderBottomColor: colors.border }, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{item.label}</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{item.value}</Text>
+              </View>
             ))}
           </View>
         </View>
 
-        {/* Account Info */}
-        <View style={[styles.accountInfo, { backgroundColor: colors.card }]}>
-          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Phone</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.mvpline_number || 'Not assigned'}</Text>
-          </View>
-          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Organization</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.organization_name || 'Independent'}</Text>
-          </View>
-          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Store</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.store_name || 'N/A'}</Text>
-          </View>
-        </View>
+        <View style={{ height: 32 }} />
       </ScrollView>
 
       {/* Share Review Link Modal */}

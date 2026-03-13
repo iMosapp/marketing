@@ -515,6 +515,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 - **Smart Contact Search:** All 6 home screen tiles and card sending now search by first name, last name, phone number, AND email. Backend `/api/contacts/{user_id}` also includes email in search query.
 - **Voice Recorder 5 Minutes:** Contact page voice recorder max length increased from 2 minutes to 5 minutes.
+
+### My Account Page Cleanup (Mar 13, 2026)
+- **REMOVED redundant items:** "My Performance" (already in Hub), "Sign Up New Account" (admin action, now in Hub > Account Management), "Billing & Rewards" (org concern, in Hub > Internal Operations)
+- **NEW sections:**
+  - **My Presence** — "Everything that represents you to customers": Digital Card, Link Page, Showcase, Review Link, AI Persona, Voice Training
+  - **Quick Actions** — Customizable home screen shortcuts with "Customize" toggle and visual grid editor (max 6)
+  - **Personal Settings** — Security, Calendar, Install App
+  - **Account Info** — Phone, Org, Store
+- **Philosophy:** My Account = about YOU. Hub = about your WORK.
+- **Tested:** Via screenshot verification
+
 - **Voice-to-Task:** New task page (`/tasks/new`) includes voice recording button. Speaks task → transcribed via Whisper → AI (gpt-4o-mini) extracts title, type, priority, due date, and due time. Backend endpoint: `POST /api/voice/parse-task`.
 - **Tested:** 11/11 backend tests passed, all frontend features verified.
 
