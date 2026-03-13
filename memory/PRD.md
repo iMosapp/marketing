@@ -192,6 +192,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Personal Intelligence Editing Fix (**COMPLETED** — Mar 13, 2026)
 - Scheduled Monthly Health Reports (**COMPLETED** — Mar 13, 2026)
 - Configurable Messaging Channels (**COMPLETED** — Mar 13, 2026)
+- Hub Navigation Reorganization (**COMPLETED** — Mar 13, 2026)
+- Jessi Bar Login Regression Fix (**COMPLETED** — Mar 13, 2026)
 
 ### P2
 - Full Twilio Integration (enables auto_send)
@@ -493,6 +495,24 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Tested:** iteration 195 — 19/19 backend + 100% frontend verified
 
 ### Smart Contact Search + Voice-to-Task (Mar 8, 2026)
+
+### Hub Navigation Reorganization (Mar 13, 2026)
+- **MAJOR UX OVERHAUL:** Completely restructured the "More" menu (35+ flat items) into a clean, role-aware "Hub" with 9 organized sections:
+  1. **My Brand** (gold) — Digital Card, Link Page, Showcase, Review Link, Templates, Card Templates
+  2. **My Tools** (blue) — Today's Touchpoints, Ask Jessi, AI Follow-ups, Team Chat
+  3. **Campaigns** (red) — SMS/Email Campaigns, Dashboard, Broadcast, Date Triggers
+  4. **My Performance** (green) — My Stats, Customer Engagement, Leaderboard, Reports, Email Analytics
+  5. **Setup & Manage** (orange, admin-only) — Store Profile, Brand Kit, Messaging Channels, Review Links, Tags, Team, Integrations
+  6. **Account Management** (blue, super_admin/partner-only) — Onboarding Hub, Account Health, Admin Dashboard, Organizations, Users
+  7. **Internal Operations** (gray, super_admin-only) — Partners, Revenue, Billing, Phone Assignments, Bulk Transfer
+  8. **Learning** — Training Hub, SOPs & Guides
+  9. **Settings** — Security, Calendar, Help Center
+- **Role-aware visibility:** Salesperson sees sections 1-4 + Learning + Settings only. Admin adds Setup & Manage. Super admin/partner adds Account Management + Internal Operations.
+- **Bottom tab renamed:** "Menu" → "Hub" with `apps` icon
+- **Jessi Bar regression fix:** Used `useSegments()` from expo-router to detect auth/login/index/onboarding routes and hide "Ask Jessi" bar. No longer depends on cached user state.
+- **Tested:** iteration 196 — 100% (15/15 frontend tests passed)
+
+
 - **Smart Contact Search:** All 6 home screen tiles and card sending now search by first name, last name, phone number, AND email. Backend `/api/contacts/{user_id}` also includes email in search query.
 - **Voice Recorder 5 Minutes:** Contact page voice recorder max length increased from 2 minutes to 5 minutes.
 - **Voice-to-Task:** New task page (`/tasks/new`) includes voice recording button. Speaks task → transcribed via Whisper → AI (gpt-4o-mini) extracts title, type, priority, due date, and due time. Backend endpoint: `POST /api/voice/parse-task`.
