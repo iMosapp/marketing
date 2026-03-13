@@ -444,6 +444,23 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Note:** Email sending requires verified Resend domain (works in production, not preview).
 - **Tested:** iteration 193 — 12/12 backend + 100% frontend verified
 
+### Scheduled Monthly Health Reports (Mar 13, 2026)
+- **NEW BACKEND CRUD:** Full schedule management at `/api/account-health/schedules`:
+  - `POST` creates schedule (scope: user/org, target_id, recipient_email, note)
+  - `GET` lists all schedules sorted by creation date
+  - `PUT /{id}` toggles active/pauses and edits email/note
+  - `DELETE /{id}` removes a schedule
+- **Scheduler Job:** Added `run_monthly_health_reports` to APScheduler (daily at 22:00 UTC). Only sends emails on the last day of each month. Updates `last_sent_at` on each schedule after successful send.
+- **NEW FRONTEND Tab:** "Scheduled Reports" tab on Account Health dashboard with:
+  - "New Monthly Schedule" button opens inline form
+  - Individual/Organization scope toggle
+  - Quick-pick account chips with health score badges for fast selection
+  - Schedule list with active toggle (green), delete, target info, email, last-sent date
+  - Empty state with helpful guidance
+- **Quick Actions:** Calendar icon on each overview row lets admins jump to schedule creation pre-filled with that account's data.
+- **DB Collection:** `health_report_schedules` stores scope, target_id/name, recipient, note, frequency, active, created_by, created_at, last_sent_at
+- **Tested:** iteration 194 — 12/12 backend + 100% frontend verified
+
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes

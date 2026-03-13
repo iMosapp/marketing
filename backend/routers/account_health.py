@@ -706,6 +706,12 @@ async def create_schedule(req: ScheduleCreateRequest, created_by: str = ""):
     if req.scope not in ("user", "org"):
         raise HTTPException(400, "scope must be 'user' or 'org'")
 
+    # Validate ObjectId format
+    try:
+        ObjectId(req.target_id)
+    except Exception:
+        raise HTTPException(400, "Invalid target ID format")
+
     # Validate target exists
     if req.scope == "user":
         target = await db.users.find_one({"_id": ObjectId(req.target_id)}, {"name": 1, "email": 1})
