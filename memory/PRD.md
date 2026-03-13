@@ -875,3 +875,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Integrated in:** Campaign editor, New campaign, Thread compose, Date triggers, Broadcast messages
 - **UX:** Tapping a tag inserts `{tag_key}` at the end of the message. Each tag shows an icon, label, key preview, and gold pill.
 - **Files:** `components/PersonalizeButton.tsx` (NEW), `campaigns/[id].tsx`, `campaigns/new.tsx`, `thread/[id].tsx`, `settings/date-triggers.tsx`, `broadcast/new.tsx`
+
+
+### Comprehensive UI Audit & Dead File Cleanup (Mar 13, 2026)
+- **MAJOR CLEANUP:** Systematic audit of entire frontend codebase to eliminate duplicate navigation, dead routes, and orphaned pages.
+- **19 files deleted:**
+  - **Exact duplicate:** `settings/showroom-approvals.tsx` (identical to `showcase-approvals.tsx`)
+  - **Near duplicates:** `admin/my-rankings.tsx` (duplicate of `/my-rankings.tsx`)
+  - **Superseded pages:** `admin/client-onboarding.tsx` (replaced by `onboarding-hub`), `admin/onboarding-guide.tsx` (merged into hub), `admin/onboarding-preview.tsx`, `admin/onboarding-settings.tsx`, `admin/directory.tsx` (replaced by `app-directory`), `admin/training-preview.tsx`
+  - **Dead settings:** `settings/congrats-template.tsx` (superseded by `card-templates`), `settings/email-templates.tsx`, `settings/my-profile.tsx` (replaced by `my-account`), `settings/toggle-style.tsx`
+  - **Dead root pages:** `customize-menu.tsx` (replaced by Hub), `imos-landing-legacy.tsx`, `leaderboard/index.tsx` (Hub uses `/admin/leaderboard`)
+  - **Unused admin/data:** `referral-templates.tsx`, `referrals.tsx`, `review-templates.tsx`, `sold-templates.tsx`
+- **Broken link fixed:** Hub > Learning > "Manage Training" was pointing to non-existent `/admin/training-hub` → fixed to `/admin/manage-training`
+- **Dangling references fixed:** My Account's "My Digital Card", "Edit Card", "Leaderboard" quick actions updated from deleted routes to working ones
+- **Tested:** iteration 197 — 100% frontend navigation tests passed, all Hub sections and tab bar verified
