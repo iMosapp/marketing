@@ -915,3 +915,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **SOP data seeding:** Called the existing seed endpoint to populate 13 SOPs that were in the backend but never seeded to the database.
 - **Tested:** All fixes verified at mobile viewport (390px and 430px) with screenshots.
 
+
+### Sharing & OG Preview Fixes (Mar 13, 2026)
+- **Facebook Messenger fix:** Changed URL scheme from broken `facebook.com/dialog/send?app_id=0` to native `fb-messenger://share/?link={link}` which opens Messenger app directly on mobile.
+- **Showcase OG image fix:** Showroom/showcase WhatsApp previews now show the salesperson's personal photo (same as the business card) instead of just the generic company logo. More personal touch.
+- **Birthday card OG image improvement:** Strengthened the photo field lookup chain — now checks `photo_url`, `customer_photo`, AND `optimized_photo_url` fields before falling back to the dynamic card image generator at `/api/congrats/card/{id}/image`.
+- **Files changed:** `/app/backend/routers/messaging_channels.py`, `/app/backend/routers/short_urls.py`
+

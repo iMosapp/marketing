@@ -23,7 +23,7 @@ AVAILABLE_CHANNELS = [
      "url_scheme": "https://wa.me/{phone_clean}?text={message}", "requires_phone": True},
     {"id": "messenger", "name": "Facebook Messenger", "icon": "logo-facebook", "color": "#0084FF",
      "description": "Send via Facebook Messenger",
-     "url_scheme": "https://www.facebook.com/dialog/send?link={link}&app_id=0&redirect_uri={link}", "requires_phone": False},
+     "url_scheme": "fb-messenger://share/?link={link}", "requires_phone": False},
     {"id": "telegram", "name": "Telegram", "icon": "paper-plane", "color": "#0088CC",
      "description": "Send via Telegram messaging",
      "url_scheme": "https://t.me/share/url?url={link}&text={message}", "requires_phone": False},

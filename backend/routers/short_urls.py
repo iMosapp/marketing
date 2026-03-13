@@ -432,7 +432,7 @@ async def redirect_short_url(short_code: str, request: Request):
                 og_description = f"From {salesman_name}"
 
             # OG Image priority: customer photo (object storage) > generated card image > store logo
-            photo_url = card_doc.get("photo_url")
+            photo_url = card_doc.get("photo_url") or card_doc.get("customer_photo") or card_doc.get("optimized_photo_url")
             if photo_url and not photo_url.startswith("data:"):
                 # Resolve relative URLs to absolute
                 if photo_url.startswith("/"):
@@ -500,6 +500,12 @@ async def redirect_short_url(short_code: str, request: Request):
                     elif link_type == "showcase":
                         og_title = f"{store_name} — Happy Customers" if store_name else "Our Happy Customers"
                         og_description = f"See what customers are saying about {store_name}" if store_name else "Check out our showcase"
+                        # Use salesperson's photo for personal touch (same as business card)
+                        sp_photo = user_doc.get("photo_url")
+                        if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
+                            og_image = f"{base_url}{sp_photo}"
+                        elif sp_photo and not sp_photo.startswith("data:"):
+                            og_image = sp_photo
                     elif link_type == "link_page":
                         og_title = f"{user_name}" if user_name else "Connect With Us"
                         og_description = f"Find all of {user_name}'s links" if user_name else ""
