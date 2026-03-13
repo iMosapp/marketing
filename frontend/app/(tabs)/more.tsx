@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { showSimpleAlert } from '../../services/alert';
@@ -72,6 +73,38 @@ export default function MoreScreen() {
   const [showShowroomShare, setShowShowroomShare] = useState(false);
   const [showBirthdayShare, setShowBirthdayShare] = useState(false);
   const [shareMode, setShareMode] = useState<'review' | 'showroom' | 'birthday'>('review');
+
+  // Recently Visited tracking
+  type RecentVisit = { title: string; icon: string; color: string; subtitle: string; timestamp: number };
+  const RECENT_KEY = `hub_recent_${user?._id || 'anon'}`;
+  const MAX_RECENT = 4;
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
+
+  // Load recent visits on focus
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(RECENT_KEY).then(raw => {
+        if (raw) {
+          try { setRecentVisits(JSON.parse(raw)); } catch {}
+        }
+      });
+    }, [RECENT_KEY])
+  );
+
+  const trackVisit = useCallback(async (item: { title: string; icon: string; color: string; subtitle: string }) => {
+    try {
+      const raw = await AsyncStorage.getItem(RECENT_KEY);
+      let visits: RecentVisit[] = raw ? JSON.parse(raw) : [];
+      // Remove existing entry for same title
+      visits = visits.filter(v => v.title !== item.title);
+      // Prepend new visit
+      visits.unshift({ ...item, timestamp: Date.now() });
+      // Cap at MAX_RECENT
+      visits = visits.slice(0, MAX_RECENT);
+      await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(visits));
+      setRecentVisits(visits);
+    } catch {}
+  }, [RECENT_KEY]);
   
   // Load pending count for super admins
   useFocusEffect(
@@ -631,7 +664,10 @@ export default function MoreScreen() {
     <TouchableOpacity
       key={`${item.title}-${index}`}
       style={[styles.menuItemCard, { backgroundColor: colors.surface }]}
-      onPress={item.onPress}
+      onPress={() => {
+        trackVisit({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle });
+        item.onPress();
+      }}
       activeOpacity={0.7}
       data-testid={`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
     >
@@ -783,6 +819,33 @@ export default function MoreScreen() {
           </View>
         </View>
         
+        {/* Recently Visited — quick access to your last tools */}
+        {recentVisits.length > 0 && (
+          <View style={styles.recentSection} data-testid="recently-visited-section">
+            <Text style={[styles.recentLabel, { color: colors.textTertiary }]}>Recently Visited</Text>
+            <View style={styles.recentRow}>
+              {recentVisits.map((rv) => {
+                // Find the matching menu item to get its onPress
+                const match = allSections.flatMap(s => s.items).find(i => i.title === rv.title);
+                return (
+                  <TouchableOpacity
+                    key={rv.title}
+                    style={[styles.recentChip, { backgroundColor: colors.card }]}
+                    onPress={() => match?.onPress()}
+                    activeOpacity={0.7}
+                    data-testid={`recent-${rv.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <View style={[styles.recentChipIcon, { backgroundColor: `${rv.color}20` }]}>
+                      <Ionicons name={rv.icon as any} size={16} color={rv.color} />
+                    </View>
+                    <Text style={[styles.recentChipText, { color: colors.text }]} numberOfLines={1}>{rv.title}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
         
@@ -1270,6 +1333,46 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   profilePhone: {
     fontSize: 12,
+  },
+  // Recently Visited
+  recentSection: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  recentLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  recentRow: {
+    flexDirection: 'row' as const,
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  recentChip: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 8,
+    flex: 1,
+    minWidth: '45%' as any,
+    maxWidth: '48%' as any,
+  },
+  recentChipIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  recentChipText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    flex: 1,
   },
   // Section Wrapper
   sectionWrapper: {
