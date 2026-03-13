@@ -31,7 +31,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env', override=False)
 
 # Import routers (after env is loaded)
-from routers import auth, contacts, tasks, messages, calls, campaigns, admin, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, contact_merge, account_health
+from routers import auth, contacts, tasks, messages, calls, campaigns, admin, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, contact_merge, account_health, messaging_channels
 from routers.database import get_db
 from websocket_manager import manager as ws_manager
 
@@ -193,6 +193,7 @@ api_router.include_router(push_notifications.router)
 api_router.include_router(crm_timeline.router)
 api_router.include_router(tracking.router)
 api_router.include_router(account_health.router)
+api_router.include_router(messaging_channels.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")

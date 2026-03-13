@@ -530,6 +530,8 @@ export default function MoreScreen() {
       { permKey: 'lead_sources', icon: 'git-branch', title: 'Lead Sources', subtitle: 'Inbound leads & routing', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
       // Integrations & API
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
+      // Messaging Channels
+      { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
       // Super Admin Only
       ...(isSuperAdmin ? [
         { icon: 'business', title: 'Organizations', subtitle: 'Manage organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },

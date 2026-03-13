@@ -18,6 +18,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="card-templates" />
       <Stack.Screen name="showroom-approvals" />
       <Stack.Screen name="showcase-approvals" />
+      <Stack.Screen name="messaging-channels" />
     </Stack>
   );
 }

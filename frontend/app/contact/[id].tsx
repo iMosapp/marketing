@@ -153,6 +153,7 @@ function formatDateUTC(dateStr: string, fmt: string = 'MMM d'): string {
 // ===== EVENT LABELS — from centralized module =====
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 import PersonalIntelSection from '../../components/PersonalIntelSection';
+import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 
 function getEventTitle(evt: ContactEvent): string {
   if (evt.title) return evt.title;
@@ -541,6 +542,7 @@ export default function ContactDetailScreen() {
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
   const [composerEventType, setComposerEventType] = useState<string | null>(null);
+  const channelPicker = useChannelPicker();
 
   // Populate composer from query param (e.g. returning from create-card or task action item)
   useEffect(() => {
@@ -1361,7 +1363,7 @@ export default function ContactDetailScreen() {
       const conversationId = conv._id || conv.id;
       
       if (composerMode === 'sms') {
-        // For SMS: Use personal SMS flow  - log the message server-side, then open native SMS app
+        // For SMS: Use personal SMS flow  - log the message server-side, then open channel picker
         const sendPayload: any = {
           conversation_id: conversationId,
           content: messageContent,
@@ -1370,16 +1372,15 @@ export default function ContactDetailScreen() {
         if (composerEventType) sendPayload.event_type = composerEventType;
         await messagesAPI.send(user._id, sendPayload);
         
-        // Open native SMS app with the message pre-filled
-        if (IS_WEB && typeof window !== 'undefined') {
-          const ua = window.navigator.userAgent.toLowerCase();
-          const isIos = /iphone|ipad|ipod/.test(ua);
-          const sep = isIos ? '&' : '?';
-          const smsUrl = `sms:${encodeURIComponent(contact.phone || '')}${sep}body=${encodeURIComponent(messageContent)}`;
-          window.open(smsUrl, '_self');
-        }
-        
-        showToast('Message logged & SMS app opened!');
+        // Open channel picker (auto-routes to single channel or shows picker for multi)
+        channelPicker.open({
+          message: messageContent,
+          phone: contact.phone || '',
+          email: contact.email || '',
+          onSent: (ch) => {
+            showToast(`Message logged & opened in ${ch === 'clipboard' ? 'clipboard' : ch}!`);
+          },
+        });
       } else {
         // Email: send directly via Resend
         const emailPayload: any = {
@@ -4673,6 +4674,15 @@ export default function ContactDetailScreen() {
           )}
         </View>
       </Modal>
+      <ChannelPicker
+        message={channelPicker.message}
+        phone={channelPicker.phone}
+        email={channelPicker.email}
+        link={channelPicker.link}
+        onSent={channelPicker.onSent}
+        visible={channelPicker.visible}
+        onClose={channelPicker.close}
+      />
     </SafeAreaView>
   );
 }
