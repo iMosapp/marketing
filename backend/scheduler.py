@@ -733,6 +733,22 @@ async def expire_recent_tags():
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
 
 
+async def run_monthly_health_reports_job():
+    """Wrapper for the scheduler — calls the account_health module's function."""
+    logger.info("[Scheduler] Running monthly health reports check...")
+    try:
+        from routers.account_health import run_monthly_health_reports
+        sent = await run_monthly_health_reports()
+        _scheduler_state["last_health_report_run"] = datetime.now(timezone.utc).isoformat()
+        _scheduler_state["health_report_results"] = {"sent": sent, "ran_at": datetime.now(timezone.utc).isoformat()}
+        logger.info(f"[Scheduler] Monthly health reports: {sent} sent")
+    except Exception as e:
+        msg = f"[Scheduler] Error in monthly health reports: {e}"
+        logger.error(msg)
+        _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -802,8 +818,17 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
+    # Daily at 10 PM UTC - check if last day of month → send scheduled health reports
+    scheduler.add_job(
+        run_monthly_health_reports_job,
+        CronTrigger(hour=22, minute=0),
+        id="monthly_health_reports",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 7 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC)")
+    logger.info("[Scheduler] Started with 8 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC), monthly_health_reports (22:00 UTC)")
 
 
 def stop_scheduler():

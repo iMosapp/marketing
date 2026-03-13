@@ -1,0 +1,69 @@
+{
+  "summary": "Scheduled Health Reports CRUD feature fully tested. Backend: 12/12 tests pass - all CRUD operations work correctly (POST, GET, PUT toggle, DELETE). Frontend: All UI elements verified - Overview/Scheduled Reports tabs, New Monthly Schedule form with scope toggle and quick-pick chips, schedule list with toggle/delete buttons, detail page with Send Report button.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/account-health/schedules", "issue": "Invalid ObjectId format causes 500 Internal Server Error instead of 400 Bad Request. Should validate ObjectId format before querying DB", "priority": "LOW"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_schedule_health_reports.py",
+    "/app/test_reports/pytest/pytest_schedule_health_reports.xml"
+  ],
+  "action_items": [
+    "Minor: Add ObjectId format validation in POST /api/account-health/schedules to return 400 instead of 500 for invalid IDs"
+  ],
+  "critical_code_review_comments": [
+    "account_health.py lines 691-739: create_schedule endpoint properly validates scope, checks target existence, creates schedule document with all fields",
+    "account_health.py lines 742-755: list_schedules returns all schedules sorted by created_at desc with proper datetime serialization",
+    "account_health.py lines 758-773: update_schedule only allows whitelisted fields (active, recipient_email, recipient_name, note)",
+    "account_health.py lines 776-783: delete_schedule properly removes schedule and returns 404 for non-existent",
+    "account_health.py lines 786-891: run_monthly_health_reports scheduler function checks last day of month before sending",
+    "account-health.tsx: Well-structured tab-based UI with Overview and Scheduled Reports tabs",
+    "account-health.tsx: New schedule form with scope toggle (Individual/Organization), quick-pick chips from loaded accounts, proper form fields",
+    "account-health.tsx: Schedule list shows toggle switch (green=active), delete button, target info, email, note, last sent status",
+    "account-health/[id].tsx: Detail page with comprehensive health metrics, Send Report button with modal, period toggle"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_schedule_health_reports.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% - All UI features verified via Playwright"
+  },
+  "test_credentials": {
+    "super_admin_email": "forest@imosapp.com",
+    "super_admin_password": "Admin123!",
+    "test_user_id": "69a0b7095fddcede09591667",
+    "test_user_for_schedule": "69afb8d48cf8b4a3d52867b1"
+  },
+  "seed_data_creation": "Created and deleted test schedule during UI testing. All test schedules cleaned up.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Scheduled Health Reports feature complete. Backend CRUD: POST creates schedule (requires scope user/org, target_id, recipient_email), GET lists all, PUT updates allowed fields (active, email, name, note), DELETE removes schedule. Frontend has tabs, New Monthly Schedule form appears on Scheduled Reports tab with scope toggle, quick-pick account chips, and form fields. Schedule list shows toggle/delete controls. Schedule runs on last day of month via APScheduler (22:00 UTC). Email sending uses Resend - domain not verified in preview env.",
+  "features_verified": {
+    "backend_create_schedule": "PASS - POST /api/account-health/schedules creates schedule with all fields",
+    "backend_list_schedules": "PASS - GET /api/account-health/schedules returns list sorted by created_at desc",
+    "backend_toggle_schedule": "PASS - PUT /api/account-health/schedules/{id} with {active: false/true} works",
+    "backend_delete_schedule": "PASS - DELETE /api/account-health/schedules/{id} removes schedule",
+    "backend_validation": "PASS - Invalid scope returns 400, non-existent user returns 404",
+    "frontend_tabs": "PASS - Overview and Scheduled Reports tabs visible and navigable",
+    "frontend_new_schedule_button": "PASS - 'New Monthly Schedule' button on Scheduled Reports tab",
+    "frontend_scope_toggle": "PASS - Individual/Organization toggle buttons in form",
+    "frontend_quick_pick_chips": "PASS - Account chips with health scores for quick selection",
+    "frontend_schedule_form": "PASS - User ID, Recipient Email, Note fields with Cancel/Schedule buttons",
+    "frontend_schedule_creation": "PASS - Form submission creates schedule, toast shows 'Monthly report scheduled!'",
+    "frontend_schedule_list": "PASS - Created schedule appears with toggle switch and delete button",
+    "frontend_overview_icons": "PASS - Paper-plane (send) and calendar (schedule) icons on each account row",
+    "frontend_detail_page": "PASS - Health banner, metrics grid, touchpoint breakdown, Send Report button"
+  },
+  "mocked_apis": {
+    "Resend Email": "MOCKED - Domain send.imonsocial.com not verified in preview environment",
+    "Twilio SMS": "MOCKED (not relevant to this feature)"
+  }
+}

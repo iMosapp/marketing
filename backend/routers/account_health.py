@@ -686,3 +686,206 @@ async def send_org_health_report(org_id: str, req: SendReportRequest):
     except Exception as e:
         logger.error(f"Failed to send org health report: {e}")
         raise HTTPException(500, f"Failed to send email: {str(e)}")
+
+
+# ==================== Scheduled Health Reports ====================
+
+class ScheduleCreateRequest(BaseModel):
+    scope: str  # "user" or "org"
+    target_id: str
+    target_name: str = ""
+    recipient_email: str
+    recipient_name: str = ""
+    note: str = ""
+
+
+@router.post("/schedules")
+async def create_schedule(req: ScheduleCreateRequest, created_by: str = ""):
+    """Create a monthly health report schedule."""
+    db = get_db()
+    if req.scope not in ("user", "org"):
+        raise HTTPException(400, "scope must be 'user' or 'org'")
+
+    # Validate target exists
+    if req.scope == "user":
+        target = await db.users.find_one({"_id": ObjectId(req.target_id)}, {"name": 1, "email": 1})
+        if not target:
+            raise HTTPException(404, "User not found")
+        target_name = req.target_name or target.get("name") or target.get("email", "")
+    else:
+        target = await db.organizations.find_one({"_id": ObjectId(req.target_id)}, {"name": 1})
+        if not target:
+            raise HTTPException(404, "Organization not found")
+        target_name = req.target_name or target.get("name", "")
+
+    doc = {
+        "scope": req.scope,
+        "target_id": req.target_id,
+        "target_name": target_name,
+        "recipient_email": req.recipient_email,
+        "recipient_name": req.recipient_name,
+        "note": req.note,
+        "frequency": "monthly",
+        "active": True,
+        "created_by": created_by,
+        "created_at": datetime.now(timezone.utc),
+        "last_sent_at": None,
+    }
+    result = await db.health_report_schedules.insert_one(doc)
+    doc["id"] = str(result.inserted_id)
+    del doc["_id"]
+    if "created_at" in doc and doc["created_at"]:
+        doc["created_at"] = doc["created_at"].isoformat()
+    return doc
+
+
+@router.get("/schedules")
+async def list_schedules():
+    """List all scheduled health reports."""
+    db = get_db()
+    schedules = []
+    async for doc in db.health_report_schedules.find().sort("created_at", -1):
+        doc["id"] = str(doc["_id"])
+        del doc["_id"]
+        if isinstance(doc.get("created_at"), datetime):
+            doc["created_at"] = doc["created_at"].isoformat()
+        if isinstance(doc.get("last_sent_at"), datetime):
+            doc["last_sent_at"] = doc["last_sent_at"].isoformat()
+        schedules.append(doc)
+    return schedules
+
+
+@router.put("/schedules/{schedule_id}")
+async def update_schedule(schedule_id: str, data: dict = Body(...)):
+    """Update a schedule (toggle active, change email, etc.)."""
+    db = get_db()
+    allowed = {"active", "recipient_email", "recipient_name", "note"}
+    updates = {k: v for k, v in data.items() if k in allowed}
+    if not updates:
+        raise HTTPException(400, "No valid fields to update")
+
+    result = await db.health_report_schedules.update_one(
+        {"_id": ObjectId(schedule_id)},
+        {"$set": updates}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(404, "Schedule not found")
+    return {"status": "updated"}
+
+
+@router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str):
+    """Delete a scheduled health report."""
+    db = get_db()
+    result = await db.health_report_schedules.delete_one({"_id": ObjectId(schedule_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(404, "Schedule not found")
+    return {"status": "deleted"}
+
+
+async def run_monthly_health_reports():
+    """Called by the scheduler on the last day of each month. Sends all active health report schedules."""
+    from routers.database import get_db
+    db = get_db()
+
+    today = datetime.now(timezone.utc)
+    tomorrow = today + timedelta(days=1)
+    if tomorrow.month == today.month:
+        # Not the last day of the month
+        return 0
+
+    logger.info("[HealthScheduler] Last day of month — processing scheduled health reports")
+
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.error("[HealthScheduler] RESEND_API_KEY not set")
+        return 0
+
+    resend.api_key = api_key
+    sent = 0
+
+    async for schedule in db.health_report_schedules.find({"active": True}):
+        try:
+            scope = schedule["scope"]
+            target_id = schedule["target_id"]
+            email = schedule["recipient_email"]
+            note = schedule.get("note", "")
+            period = 30
+
+            if scope == "user":
+                user = await db.users.find_one({"_id": ObjectId(target_id)}, {"password": 0})
+                if not user:
+                    continue
+                metrics = await _get_user_metrics(db, target_id, period)
+                health = _health_score(metrics)
+
+                org_name, store_name = "", ""
+                if user.get("organization_id"):
+                    try:
+                        org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])}, {"name": 1})
+                        org_name = org.get("name", "") if org else ""
+                    except:
+                        pass
+                if user.get("store_id"):
+                    try:
+                        store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"name": 1})
+                        store_name = store.get("name", "") if store else ""
+                    except:
+                        pass
+
+                recent = []
+                async for ev in db.contact_events.find({"user_id": target_id}, {"_id": 0}).sort("timestamp", -1).limit(10):
+                    if ev.get("timestamp"):
+                        ev["timestamp"] = ev["timestamp"].isoformat()
+                    recent.append(ev)
+
+                user_info = {"name": user.get("name", ""), "email": user.get("email", "")}
+                html = _build_report_html(user_info, metrics, health, metrics.get("event_breakdown", {}), recent, org_name, store_name, period, note)
+                subject = f"Monthly Health Report: {user_info['name'] or user_info['email']} — {health['grade']} ({health['score']}/100)"
+
+            else:
+                org = await db.organizations.find_one({"_id": ObjectId(target_id)})
+                if not org:
+                    continue
+                # Simplified org report — reuse the org send logic
+                org_name = org.get("name", "Organization")
+                users = await db.users.find({"organization_id": target_id, "is_active": {"$ne": False}}, {"password": 0}).to_list(500)
+                cutoff = datetime.utcnow() - timedelta(days=period)
+                tc, tm, tt, tca = 0, 0, 0, 0
+                for u in users:
+                    uid = str(u["_id"])
+                    tc += await db.contacts.count_documents({"user_id": uid})
+                    tm += await db.messages.count_documents({"user_id": uid, "timestamp": {"$gte": cutoff}})
+                    tt += await db.contact_events.count_documents({"user_id": uid, "timestamp": {"$gte": cutoff}})
+                    tca += await db.campaigns.count_documents({"user_id": uid, "active": True})
+
+                avg_score = 50  # placeholder
+                org_health = {"score": avg_score, "grade": "At Risk", "color": "#FF9500"}
+                agg_metrics = {"total_contacts": tc, "new_contacts": 0, "total_messages": 0, "messages_30d": tm,
+                    "total_tasks": 0, "completed_tasks": 0, "active_campaigns": tca, "total_campaigns": tca,
+                    "enrollments": 0, "enrollments_30d": 0, "total_touchpoints": tt, "touchpoints_30d": tt,
+                    "short_urls_created": 0, "link_clicks_30d": 0, "cards_shared": 0, "days_since_login": 0, "event_breakdown": {}}
+                org_info = {"name": org_name, "email": ""}
+                html = _build_report_html(org_info, agg_metrics, org_health, {}, [], org_name, "", period, note)
+                subject = f"Monthly Org Health Report: {org_name}"
+
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": f"i'M On Social <{SENDER_EMAIL}>",
+                "to": [email],
+                "reply_to": "support@imonsocial.com",
+                "subject": subject,
+                "html": html,
+            })
+
+            await db.health_report_schedules.update_one(
+                {"_id": schedule["_id"]},
+                {"$set": {"last_sent_at": datetime.now(timezone.utc)}}
+            )
+            sent += 1
+            logger.info(f"[HealthScheduler] Sent {scope} report for {target_id} to {email}")
+
+        except Exception as e:
+            logger.error(f"[HealthScheduler] Failed to send report for schedule {schedule.get('_id')}: {e}")
+
+    logger.info(f"[HealthScheduler] Monthly reports complete: {sent} sent")
+    return sent

@@ -33,8 +33,19 @@ export default function AccountHealthDashboard() {
   const [sendEmail, setSendEmail] = useState('');
   const [sendNote, setSendNote] = useState('');
   const [sending, setSending] = useState(false);
+  const [tab, setTab] = useState<'overview' | 'scheduled'>('overview');
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedLoading, setSchedLoading] = useState(false);
+  const [showNewSched, setShowNewSched] = useState(false);
+  const [schedScope, setSchedScope] = useState<'user' | 'org'>('user');
+  const [schedTarget, setSchedTarget] = useState('');
+  const [schedEmail, setSchedEmail] = useState('');
+  const [schedName, setSchedName] = useState('');
+  const [schedNote, setSchedNote] = useState('');
+  const [creatingSched, setCreatingSched] = useState(false);
 
   useEffect(() => { load(); }, [period]);
+  useEffect(() => { if (tab === 'scheduled') loadSchedules(); }, [tab]);
 
   const load = async () => {
     setLoading(true);
@@ -90,6 +101,72 @@ export default function AccountHealthDashboard() {
     setSending(false);
   };
 
+  const loadSchedules = async () => {
+    setSchedLoading(true);
+    try {
+      const res = await api.get('/account-health/schedules');
+      setSchedules(res.data || []);
+    } catch { /* ignore */ }
+    setSchedLoading(false);
+  };
+
+  const toggleSchedule = async (id: string, active: boolean) => {
+    try {
+      await api.put(`/account-health/schedules/${id}`, { active: !active });
+      setSchedules(prev => prev.map(s => s.id === id ? { ...s, active: !active } : s));
+      showToast(active ? 'Schedule paused' : 'Schedule activated', 'success');
+    } catch {
+      showToast('Failed to update schedule', 'error');
+    }
+  };
+
+  const deleteSchedule = async (id: string) => {
+    try {
+      await api.delete(`/account-health/schedules/${id}`);
+      setSchedules(prev => prev.filter(s => s.id !== id));
+      showToast('Schedule deleted', 'success');
+    } catch {
+      showToast('Failed to delete', 'error');
+    }
+  };
+
+  const createSchedule = async () => {
+    if (!schedTarget.trim() || !schedEmail.trim()) {
+      showToast('Please select an account and enter email', 'error');
+      return;
+    }
+    setCreatingSched(true);
+    try {
+      const res = await api.post('/account-health/schedules', {
+        scope: schedScope,
+        target_id: schedTarget.trim(),
+        target_name: schedName.trim(),
+        recipient_email: schedEmail.trim(),
+        note: schedNote.trim(),
+      });
+      setSchedules(prev => [res.data, ...prev]);
+      setShowNewSched(false);
+      setSchedTarget('');
+      setSchedEmail('');
+      setSchedName('');
+      setSchedNote('');
+      showToast('Monthly report scheduled!', 'success');
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Failed to create schedule', 'error');
+    }
+    setCreatingSched(false);
+  };
+
+  const handleScheduleFromAccount = (a: Account) => {
+    setSchedScope('user');
+    setSchedTarget(a.user_id);
+    setSchedEmail(a.email);
+    setSchedName(a.name);
+    setSchedNote('');
+    setShowNewSched(true);
+    setTab('scheduled');
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -113,6 +190,25 @@ export default function AccountHealthDashboard() {
           </View>
         </View>
 
+        {/* Tab Bar */}
+        <View style={[styles.tabBar, { borderColor: colors.surface }]}>
+          <TouchableOpacity onPress={() => setTab('overview')} style={[styles.tabItem, tab === 'overview' && styles.tabItemActive]} data-testid="tab-overview">
+            <Ionicons name="pulse" size={14} color={tab === 'overview' ? '#007AFF' : colors.textSecondary} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: tab === 'overview' ? '#007AFF' : colors.textSecondary }}>Overview</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setTab('scheduled')} style={[styles.tabItem, tab === 'scheduled' && styles.tabItemActive]} data-testid="tab-scheduled">
+            <Ionicons name="calendar" size={14} color={tab === 'scheduled' ? '#C9A962' : colors.textSecondary} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: tab === 'scheduled' ? '#C9A962' : colors.textSecondary }}>Scheduled Reports</Text>
+            {schedules.filter(s => s.active).length > 0 && (
+              <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 }}>
+                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '700' }}>{schedules.filter(s => s.active).length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {tab === 'overview' && (
+        <>
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           {[
@@ -220,12 +316,157 @@ export default function AccountHealthDashboard() {
                 <Ionicons name="paper-plane-outline" size={14} color="#C9A962" />
               </TouchableOpacity>
 
+              {/* Quick schedule */}
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); handleScheduleFromAccount(a); }}
+                style={styles.quickSendBtn}
+                data-testid={`schedule-${a.user_id}`}
+              >
+                <Ionicons name="calendar-outline" size={14} color="#007AFF" />
+              </TouchableOpacity>
+
               <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           ))
         )}
 
         <View style={{ height: 40 }} />
+        </>
+        )}
+
+        {tab === 'scheduled' && (
+          <>
+            {/* New Schedule Button */}
+            <TouchableOpacity
+              onPress={() => setShowNewSched(true)}
+              style={[styles.newSchedBtn, { borderColor: '#C9A962' }]}
+              data-testid="new-schedule-btn"
+            >
+              <Ionicons name="add-circle" size={18} color="#C9A962" />
+              <Text style={{ color: '#C9A962', fontSize: 14, fontWeight: '600' }}>New Monthly Schedule</Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.schedInfo, { color: colors.textSecondary }]}>
+              Reports are automatically sent on the last day of each month.
+            </Text>
+
+            {/* New Schedule Form */}
+            {showNewSched && (
+              <View style={[styles.schedForm, { backgroundColor: colors.card, borderColor: colors.surface }]}>
+                <Text style={[styles.schedFormTitle, { color: colors.text }]}>New Monthly Report</Text>
+
+                <View style={styles.scopeRow}>
+                  {(['user', 'org'] as const).map(s => (
+                    <TouchableOpacity key={s} onPress={() => setSchedScope(s)}
+                      style={[styles.scopeBtn, { backgroundColor: schedScope === s ? (s === 'user' ? '#007AFF' : '#AF52DE') : colors.surface, borderColor: schedScope === s ? (s === 'user' ? '#007AFF' : '#AF52DE') : colors.surface }]}
+                      data-testid={`scope-${s}-btn`}
+                    >
+                      <Ionicons name={s === 'user' ? 'person' : 'business'} size={14} color={schedScope === s ? '#FFF' : colors.textSecondary} />
+                      <Text style={{ color: schedScope === s ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{s === 'user' ? 'Individual' : 'Organization'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{schedScope === 'user' ? 'User' : 'Organization'} ID *</Text>
+                <TextInput
+                  value={schedTarget}
+                  onChangeText={setSchedTarget}
+                  placeholder={schedScope === 'user' ? 'Select from accounts above, or paste user ID' : 'Paste organization ID'}
+                  placeholderTextColor="#666"
+                  style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+                  data-testid="sched-target-input"
+                />
+
+                {/* Quick-pick from loaded accounts */}
+                {schedScope === 'user' && accounts.length > 0 && !schedTarget && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6, marginBottom: 4 }}>
+                    {accounts.slice(0, 10).map(a => (
+                      <TouchableOpacity key={a.user_id} onPress={() => { setSchedTarget(a.user_id); setSchedEmail(a.email); setSchedName(a.name); }}
+                        style={[styles.quickPick, { backgroundColor: colors.surface }]}
+                        data-testid={`quick-pick-${a.user_id}`}
+                      >
+                        <View style={[styles.miniDot, { backgroundColor: a.health.color }]}>
+                          <Text style={{ color: '#FFF', fontSize: 8, fontWeight: '800' }}>{a.health.score}</Text>
+                        </View>
+                        <Text style={{ color: colors.text, fontSize: 11 }} numberOfLines={1}>{a.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Recipient Email *</Text>
+                <TextInput
+                  value={schedEmail}
+                  onChangeText={setSchedEmail}
+                  placeholder="email@example.com"
+                  placeholderTextColor="#666"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+                  data-testid="sched-email-input"
+                />
+
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Note (included in email)</Text>
+                <TextInput
+                  value={schedNote}
+                  onChangeText={setSchedNote}
+                  placeholder="Optional message..."
+                  placeholderTextColor="#666"
+                  style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+                  data-testid="sched-note-input"
+                />
+
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                  <TouchableOpacity onPress={() => setShowNewSched(false)} style={[styles.cancelBtn, { borderColor: colors.surface }]} data-testid="cancel-new-sched-btn">
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={createSchedule} disabled={creatingSched} style={[styles.sendReportBtn, creatingSched && { opacity: 0.6 }]} data-testid="create-schedule-btn">
+                    {creatingSched ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="calendar-outline" size={14} color="#FFF" />}
+                    <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{creatingSched ? 'Creating...' : 'Schedule'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Schedules List */}
+            {schedLoading ? (
+              <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 30 }} />
+            ) : schedules.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="calendar-outline" size={40} color={colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No scheduled reports yet</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                  Create a monthly schedule to automatically send health snapshots to account contacts on the last day of each month.
+                </Text>
+              </View>
+            ) : (
+              schedules.map((s) => (
+                <View key={s.id} style={[styles.schedRow, { backgroundColor: colors.card, borderColor: colors.surface, opacity: s.active ? 1 : 0.5 }]} data-testid={`schedule-${s.id}`}>
+                  <View style={[styles.schedIcon, { backgroundColor: s.scope === 'user' ? '#007AFF20' : '#AF52DE20' }]}>
+                    <Ionicons name={s.scope === 'user' ? 'person' : 'business'} size={16} color={s.scope === 'user' ? '#007AFF' : '#AF52DE'} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.accountName, { color: colors.text }]}>{s.target_name || s.target_id}</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                      {s.recipient_email} {s.note ? `— "${s.note}"` : ''}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#888', marginTop: 2 }}>
+                      Monthly &bull; {s.last_sent_at ? `Last sent: ${new Date(s.last_sent_at).toLocaleDateString()}` : 'Not yet sent'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => toggleSchedule(s.id, s.active)} style={{ padding: 8 }} data-testid={`toggle-schedule-${s.id}`}>
+                    <Ionicons name={s.active ? 'toggle' : 'toggle-outline'} size={28} color={s.active ? '#34C759' : '#888'} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteSchedule(s.id)} style={{ padding: 8 }} data-testid={`delete-schedule-${s.id}`}>
+                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+
+            <View style={{ height: 40 }} />
+          </>
+        )}
       </ScrollView>
 
       {/* Send Report Modal */}
@@ -329,4 +570,19 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
   sendReportBtn: { flex: 1, flexDirection: 'row', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' },
+  // Tab bar
+  tabBar: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 14, gap: 4 },
+  tabItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabItemActive: { borderBottomColor: '#007AFF' },
+  // Scheduled reports
+  newSchedBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', marginBottom: 10 },
+  schedInfo: { fontSize: 12, marginBottom: 14, lineHeight: 17 },
+  schedForm: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 14 },
+  schedFormTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
+  scopeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  scopeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
+  quickPick: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginRight: 6 },
+  miniDot: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  schedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
+  schedIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 });
