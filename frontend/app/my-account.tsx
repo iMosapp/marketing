@@ -533,7 +533,7 @@ export default function MyAccountScreen() {
             <TouchableOpacity
               style={[styles.previewPanel, { backgroundColor: '#007AFF08' }]}
               onPress={() => {
-                const cardUrl = storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : '';
+                const cardUrl = storeSlug ? `${PROD_BASE}/card/${user?._id}` : '';
                 if (cardUrl && Platform.OS === 'web') {
                   window.open(cardUrl, '_blank');
                 } else if (cardUrl) {
@@ -574,13 +574,13 @@ export default function MyAccountScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.presenceTitle, { color: colors.text }]}>My Digital Card</Text>
                 <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
-                  {storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : 'Configure in Account Setup'}
+                  {user?._id ? `${PROD_BASE}/card/${user._id}` : 'Configure in Account Setup'}
                 </Text>
               </View>
             </View>
             <View style={styles.presenceActions}>
               <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#007AFF15' }]} onPress={() => {
-                const cardUrl = storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : '';
+                const cardUrl = user?._id ? `${PROD_BASE}/card/${user._id}` : '';
                 if (cardUrl && Platform.OS === 'web') {
                   window.open(cardUrl, '_blank');
                 } else if (cardUrl) {
@@ -595,7 +595,7 @@ export default function MyAccountScreen() {
                 <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015' }]} onPress={() => {
-                const url = storeSlug ? `${PROD_BASE}/imos/${storeSlug}/${user?.name?.split(' ')[0]?.toLowerCase() || 'me'}` : '';
+                const url = user?._id ? `${PROD_BASE}/card/${user._id}` : '';
                 if (url && Platform.OS === 'web' && navigator.clipboard) {
                   navigator.clipboard.writeText(url);
                   showSimpleAlert('Copied!', 'Digital card link copied to clipboard');

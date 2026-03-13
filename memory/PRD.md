@@ -42,11 +42,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - 5 presence cards with visual mini-previews: Digital Card, Showcase, Review Link, Link Page, Landing Page
 - Each card shows a styled visual representation of the page
 - **ALL Preview buttons and panel taps open the actual production customer-facing URLs in new tabs** — NOT internal config/marketing pages
-  - Digital Card → `${PROD_BASE}/imos/${storeSlug}/${firstName}`
+  - Digital Card → `${PROD_BASE}/card/${userId}` (matches backend `digital_card.py` route)
   - Showcase → `${PROD_BASE}/showcase/${userId}`
   - Review Link → `/review/${storeSlug}` (internal route, renders correct customer page)
   - Link Page → `${PROD_BASE}/l/${userId}`
   - Landing Page → `${PROD_BASE}/p/${userId}`
+- **FIXED:** Broken `/imos/${storeSlug}/${firstName}` URL pattern — that route never existed. Now uses `/card/${userId}` which matches the backend API.
 - Edit buttons navigate to internal settings pages
 - Copy Link buttons copy the production URL to clipboard
 - **Tested:** 95% frontend pass (iteration 203), navigation fix verified via screenshot
