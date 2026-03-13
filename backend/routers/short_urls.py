@@ -390,7 +390,9 @@ async def redirect_short_url(short_code: str, request: Request):
     og_image = ""
     link_type = doc.get("link_type", "")
     user_id = doc.get("user_id")
-    base_url = str(request.base_url).rstrip("/")
+    # Use APP_URL for OG images — request.base_url returns internal cluster URLs behind proxies
+    base_url = os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL", "https://app.imonsocial.com")
+    base_url = base_url.rstrip("/")
 
     # Detect if this is ANY type of card link
     card_link_types = {"congrats_card", "birthday_card", "thank_you_card", "thankyou_card",
