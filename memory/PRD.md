@@ -11,15 +11,27 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-## CRITICAL: Image Pipeline Rules — DO NOT REVERT
-- ALL images use `utils/image_storage.py` + `utils/image_urls.py` resolvers
-- WebP format, served via `/api/images/` with immutable caching
-- All uploads use `asyncio.to_thread()` to prevent 520 timeouts
-- EXIF orientation is fixed BEFORE pre-shrink in congrats_cards.py
+## CRITICAL RULES — READ BEFORE TOUCHING ANY CODE
 
-## CRITICAL: Unified Card System — DO NOT REVERT
+### Image Pipeline — DO NOT REVERT, DO NOT ADD BASE64 FALLBACKS
+- ALL images go through `utils/image_storage.py` → WebP format → served via `/api/images/`
+- `utils/image_urls.py` resolves all photo URLs
+- Immutable caching on all `/api/images/` responses
+- All uploads use `asyncio.to_thread()` to prevent 520 timeouts
+- EXIF orientation fixed BEFORE pre-shrink in `congrats_cards.py`
+- **NEVER add `data:` / base64 fallbacks anywhere.** The entire database was migrated OFF base64. Adding it back destroys performance.
+- **NEVER serve base64 in API responses.** Gallery, contact lists, card endpoints — ONLY `/api/images/` paths and `http` URLs.
+- **NEVER add lazy migration during reads.** Gallery endpoint is pure read-only. No processing, no converting, no fallbacks.
+
+### Unified Card System — DO NOT REVERT
 - ALL card types use `congrats_cards.py` only
 - `birthday_cards.py` is LEGACY — NOT registered in server.py
+
+### General Rules for ALL Agents
+- **READ THIS PRD FIRST** before writing any code. Understand what's been built and what the constraints are.
+- **DO NOT revert completed migrations.** If data has been migrated to a new format, do NOT add backwards-compatible fallbacks to the old format.
+- **Speed is the #1 priority.** Every API response, every image load, every page render must be as fast as possible.
+- **When fixing a bug, do NOT introduce old patterns.** If you see old code that contradicts these rules, the old code is wrong — these rules are correct.
 
 ---
 
@@ -36,10 +48,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Tested:** 95% frontend pass (iteration 203)
 
 ### Photo Gallery — Speed + History (Mar 13, 2026)
-- Gallery endpoint cleaned: ONLY serves `/api/images/` WebP paths and `http` URLs — zero base64
-- Added photo history tracking: when a contact's profile photo is changed, the old photo URL is saved to `photo_history` array
-- Gallery includes historical photos going forward (only fast paths)
-- `PATCH /profile-photo` also clears stale `photo_path` fields to ensure correct photo is displayed
+- Gallery endpoint (`GET /photos/all`) ONLY serves `/api/images/` WebP paths and `http` URLs — ZERO base64
+- Added photo history tracking: when a contact's profile photo is changed, the old WebP URL is saved to `photo_history` array
+- Gallery includes historical photos going forward (only fast `/api/images/` and `http` paths)
+- `PATCH /profile-photo` clears stale `photo_path` fields via `$unset` to ensure correct photo displays
+- **Rule: NEVER add base64 data URLs to this endpoint. It was intentionally stripped out.**
 
 ### Instagram-Style Photo Gallery (Mar 13, 2026)
 - **REBUILT:** Contact photo gallery from scratch with Instagram-style 3-column square grid
