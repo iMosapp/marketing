@@ -1,13 +1,13 @@
 # i'M On Social — Product Requirements Document
 
 ## Original Problem Statement
-Build a Relationship Management System (RMS) / CRM for automotive sales professionals. The vision: AI-powered, human-to-human relationship building where every follow-up is deliberate, meaningful, and personal. Salespeople record voice memos, and the system extracts personal details (family, interests, vehicle info) to power AI-generated campaign messages that nurture long-term relationships for repeat and referral business.
+Build a Relationship Management System (RMS) / CRM for automotive sales professionals. AI-powered, human-to-human relationship building where every follow-up is deliberate, meaningful, and personal.
 
 ## Core Architecture
 - **Frontend:** React Native / Expo (web)
 - **Backend:** FastAPI (Python)
 - **Database:** MongoDB Atlas
-- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI (GPT-5.2 via emergentintegrations), Emergent Object Storage, Pillow
+- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI (via emergentintegrations), Emergent Object Storage, Pillow, qrcode
 
 ---
 
@@ -15,6 +15,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - ALL images use `utils/image_storage.py` + `utils/image_urls.py` resolvers
 - WebP format, served via `/api/images/` with immutable caching
 - All uploads use `asyncio.to_thread()` to prevent 520 timeouts
+- EXIF orientation is fixed BEFORE pre-shrink in congrats_cards.py
 
 ## CRITICAL: Unified Card System — DO NOT REVERT
 - ALL card types use `congrats_cards.py` only
@@ -24,52 +25,56 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Channel Tracking Fix — Messenger/WhatsApp/All Channels (Mar 13, 2026) — LATEST
-- **BUG FIXED:** When sharing via ChannelPicker, the event was logged with `channel: 'sms_personal'` before the channel picker opened. The `onSent(channelId)` callback only showed a toast, never updated the backend with the actual channel.
-- **Fix:** Added `PATCH /api/contacts/{user_id}/{contact_id}/events/latest-channel` endpoint. The `onSent` callback in `contact/[id].tsx` now fire-and-forgets a PATCH to update the event's channel to the actual one used (messenger, whatsapp, sms, clipboard, etc.).
-- **Files:** `contact_events.py` (new endpoint), `contact/[id].tsx` (onSent callback updated)
+### Instagram-Style Photo Gallery (Mar 13, 2026) — LATEST
+- **REBUILT:** Contact photo gallery from scratch with Instagram-style 3-column square grid
+- Backend `/photos/all` endpoint rewritten to be pure read-only — no lazy migration during gallery load, instant response
+- Photos preloaded when contact page mounts (gallery opens instantly on tap)
+- Grid uses `onLayout` to measure actual container width for precise pixel-based tile sizing
+- Gallery constrained to `maxWidth: 480px` on web, centered on desktop
+- Profile photo shows gold badge overlay; non-profile photos show "Set as Profile" quick-action button
+- Shimmer skeleton placeholders while loading
+- Full-screen swipeable viewer with "Back to Grid" and "Set as Profile" actions
+- **Tested:** 13/13 backend + 100% frontend (iteration 202)
 
-### Share Channel Tracking (Mar 13, 2026) — LATEST
-- **NEW FEATURE:** When sharing digital cards, review links, showcases, or any content, the sharing channel (SMS, WhatsApp, Email, Messenger, Telegram, LinkedIn, Clipboard) is now tracked and displayed in the activity feed.
-- **Backend:** `POST /api/contacts/{user_id}/{contact_id}/events` and `POST /api/contacts/{user_id}/find-or-create-and-log` now accept and store a `channel` field in `contact_events`.
-- **Frontend Activity Feed:** Events with a channel show a colored badge next to the event title (e.g., green "SMS" badge, green "WhatsApp" badge, orange "Email" badge).
-- **Frontend Contact Detail:** Expanded events show channel badges with appropriate icons for all 7 channel types.
-- **Files updated:** `contact_events.py`, `activity.tsx`, `contact/[id].tsx`, `more.tsx`, `UniversalShareModal.tsx`, `create-card.tsx`, `touchpoints/index.tsx`, `dialer.tsx`
-- **Tested:** 18/18 backend tests + 100% frontend verified (iteration 201)
+### EXIF Orientation Fix (Mar 13, 2026)
+- Fixed sideways iPhone photos in card upload pipeline
+- `ImageOps.exif_transpose()` now applied BEFORE pre-shrink resize in `congrats_cards.py`
+- Previously: EXIF stripped during JPEG pre-shrink → photos permanently sideways
 
-### Lead Sources API 500 Fix (Mar 13, 2026) — LATEST
-- **BUG FIXED:** `GET /api/lead-sources/team-inbox/{team_id}`, `/user-inbox/{user_id}`, and `/stats/{source_id}` were caught by the generic `/{source_id}` route, causing 500 errors when trying to convert route names like "team-inbox" to ObjectId.
-- **Fix:** Reordered routes in `lead_sources.py` — specific path routes now defined before the generic `/{source_id}` catch-all.
-- **Tested:** All 3 routes return correct responses (200/404 as appropriate).
+### Channel Tracking in Composer (Mar 13, 2026)
+- Added `PATCH /api/contacts/{user_id}/{contact_id}/events/latest-channel` endpoint
+- Composer's `onSent(channelId)` now patches the event with the actual channel used (messenger, whatsapp, sms, etc.)
+
+### Share Channel Tracking (Mar 13, 2026)
+- Activity feed shows colored channel badges ("SMS", "WhatsApp", "Email", etc.)
+- Backend stores `channel` field in `contact_events` via both `log_contact_event` and `find-or-create-and-log`
+- All frontend sharing flows pass `event_channel` to backend
+
+### Lead Sources API 500 Fix (Mar 13, 2026)
+- Reordered routes in `lead_sources.py` — specific paths (`team-inbox`, `user-inbox`, `stats`) before generic `/{source_id}`
 
 ### Previous Features (see CHANGELOG.md for full history)
 - Voice Memo Intelligence + Campaign Config + Full AI Pipeline
 - AI-Powered Outreach + Sold Campaign Intelligence
-- Card Analytics Dashboard, Card Labeling Bug Fix
-- Digital Card Sharing Redesign with QR codes
+- Card Analytics Dashboard, Digital Card Sharing with QR codes
 - Performance Dashboard with clickable tiles
-- CRM Timeline Export with PIN protection
-- Duplicate Contact Merge Tool
-- Hub Navigation Reorganization
-- Configurable Messaging Channels (ChannelPicker)
-- Auth Refactor (bcrypt), Persistent Sessions, Web Push Notifications
-- Jessi AI Assistant (v2.0 with live data awareness)
-- Account Health Dashboard with scheduled reports
+- CRM Timeline Export, Duplicate Contact Merge
+- Hub Navigation, ChannelPicker, Auth Refactor (bcrypt)
+- Jessi AI Assistant v2.0, Account Health Dashboard
 - And 50+ more features and bug fixes
 
 ---
 
 ## Key API Endpoints
-- `POST /api/contacts/{user_id}/{contact_id}/events` — Log event with optional `channel` field
-- `POST /api/contacts/{user_id}/find-or-create-and-log` — Create/find contact and log event with optional `event_channel`
-- `GET /api/contacts/{user_id}/master-feed` — Activity feed with channel badges
-- `GET /api/lead-sources/team-inbox/{team_id}` — Fixed route ordering
-- `GET /api/lead-sources/user-inbox/{user_id}` — Fixed route ordering
+- `GET /api/contacts/{user_id}/{contact_id}/photos/all` — Fast read-only gallery photos
+- `PATCH /api/contacts/{user_id}/{contact_id}/events/latest-channel` — Update event channel
+- `POST /api/contacts/{user_id}/{contact_id}/events` — Log event with optional `channel`
+- `POST /api/contacts/{user_id}/find-or-create-and-log` — Create/find + log with `event_channel`
 
 ## Key DB Collections
-- `contact_events` — Now stores `channel` field (e.g., 'sms', 'whatsapp', 'email')
-- `contacts.personal_details` — Structured personal data from voice memos
-- `campaign_configs` — Hierarchical campaign configuration
+- `contact_events` — Stores `channel` field (sms, whatsapp, email, messenger, etc.)
+- `congrats_cards` — Photo paths used by gallery
+- `birthday_cards` — Photo paths used by gallery
 
 ---
 
@@ -79,28 +84,27 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Onboarding Task List for new salespeople
 - Voice Help Assistant
 - Google Places API Integration
-- App Store Deployment Setup
 
 ### P2
 - Full Twilio Integration (currently MOCK)
 - WhatsApp Integration
-- Populate Training Hub with video content
+- Training Hub video content
 - Inventory Management Module
-- Refactor large monolithic files (admin.py, contact/[id].tsx)
+- Refactor large files (admin.py 3600+ lines, contact/[id].tsx 5600+ lines)
 
 ## Known Issues
 - P2: Mobile tags sync
-- P2: Leaderboard toggle not fully tested
 - P2: React Hydration Error #418
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
+- Contact with photos: `69a0c06f7626f14d125f8c34`
 
 ## 3rd Party Integrations
 - **Resend:** Transactional emails
 - **MongoDB Atlas:** Primary database
-- **Twilio:** Configured but in MOCK mode
+- **Twilio:** MOCK mode
 - **OpenAI:** AI features via emergentintegrations
-- **Pillow:** Image manipulation
+- **Pillow + ImageOps:** Image processing with EXIF handling
 - **qrcode:** QR code generation
 - **apscheduler:** Backend job scheduling
