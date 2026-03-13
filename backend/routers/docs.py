@@ -29,6 +29,39 @@ async def verify_admin_access(user_id: str) -> dict:
     return user
 
 
+async def _deduplicate_docs():
+    """Remove duplicate company_docs, keeping the newest of each title+category pair."""
+    db = get_db()
+    pipeline = [
+        {"$group": {
+            "_id": {"title": "$title", "category": "$category"},
+            "ids": {"$push": "$_id"},
+            "count": {"$sum": 1},
+        }},
+        {"$match": {"count": {"$gt": 1}}},
+    ]
+    dupes = await db.company_docs.aggregate(pipeline).to_list(100)
+    total_removed = 0
+    for group in dupes:
+        ids_to_remove = group["ids"][:-1]  # keep the last (newest) one
+        if ids_to_remove:
+            await db.company_docs.delete_many({"_id": {"$in": ids_to_remove}})
+            total_removed += len(ids_to_remove)
+    if total_removed:
+        logger.info(f"Deduplicated company_docs: removed {total_removed} duplicates")
+    return total_removed
+
+
+@router.post("/deduplicate")
+async def deduplicate_docs(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Remove duplicate documents. Super admin only."""
+    user = await verify_admin_access(x_user_id)
+    if user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    removed = await _deduplicate_docs()
+    return {"message": f"Removed {removed} duplicate documents", "removed": removed}
+
+
 @router.get("/")
 async def list_docs(
     category: Optional[str] = None,
@@ -38,6 +71,9 @@ async def list_docs(
     user = await verify_admin_access(x_user_id)
     user_role = user.get("role", "")
     db = get_db()
+
+    # Auto-deduplicate on first load (lightweight check)
+    await _deduplicate_docs()
 
     query: dict = {"is_published": True}
     # Filter out docs that require a higher role than the user has
