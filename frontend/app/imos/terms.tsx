@@ -28,31 +28,43 @@ const SECTIONS = [
     content: `The Service, including all software, design, text, graphics, and other content, is owned by i'M On Social and protected by intellectual property laws. You retain ownership of content you create or upload through the Service.\n\nBy using the Service, you grant us a limited, non-exclusive license to use, store, and process your content solely for the purpose of providing and improving the Service.`,
   },
   {
-    title: '7. Data Ownership & Portability',
-    content: `You own your data. Your contacts, messages, templates, and other content created within the Service belong to you. You may export your data at any time through the platform's export features or by contacting support.\n\nWhen an organization account is terminated, data will be retained for 90 days to allow for export, after which it will be permanently deleted.`,
+    title: '7. Contact Data & CRM Information',
+    content: `When you use i'M On Social's Relationship Management features, you may store customer and prospect contact information including names, phone numbers, email addresses, physical addresses, birthdays, anniversaries, purchase dates, vehicle information, photos, notes, tags, and communication history.\n\nYou represent and warrant that you have obtained all necessary consents from individuals whose data you store in the platform. You are responsible for complying with all applicable data protection laws (including TCPA, CAN-SPAM, CCPA, and GDPR where applicable) when collecting, storing, and using contact data through the Service.\n\nContact data you create belongs to you. However, within an organizational account, contact data may be shared among team members within the same store or organization as configured by your administrator. When a team member's account is deactivated, their contacts remain accessible to the organization for continuity purposes.`,
   },
   {
-    title: '8. API & Integration Terms',
+    title: '8. Data Ownership & Portability',
+    content: `You own your data. Your contacts, messages, templates, and other content created within the Service belong to you. You may export your data at any time through the platform's export features or by contacting support.\n\nWhen an organization account is terminated, data will be retained for 90 days to allow for export, after which it will be permanently deleted.\n\nContact data and communication history may be reassigned between team members within your organization by an administrator. When contacts are transferred between users, the full relationship history (messages, notes, tags, photos) transfers with them.`,
+  },
+  {
+    title: '9. Data Transfer & Account Changes',
+    content: `When team members leave an organization or change roles, administrators may reassign their contacts and related data to other team members. This ensures continuity of customer relationships.\n\nIf you are an individual user (not part of an organization), your data is private to your account and will not be shared with or transferred to any other user without your explicit consent.\n\nPartner and reseller accounts may have access to aggregated, anonymized data about accounts they manage for reporting purposes, but never direct access to individual contact records or message content.`,
+  },
+  {
+    title: '10. SMS, Email & Communication Terms',
+    content: `You agree to use the messaging features of i'M On Social in compliance with all applicable laws, including the Telephone Consumer Protection Act (TCPA), CAN-SPAM Act, and any state-level regulations.\n\nYou must obtain proper consent before sending automated messages to contacts. The platform provides tools for managing opt-outs, and you are required to honor all unsubscribe and opt-out requests promptly.\n\nMessage content sent through the platform may be stored and associated with contact records for relationship management purposes. AI-generated message suggestions are provided as drafts for your review and approval before sending.`,
+  },
+  {
+    title: '11. API & Integration Terms',
     content: `Access to i'M On Social's public API is subject to rate limits and usage policies. API keys are confidential and must not be shared publicly. We reserve the right to revoke API access if usage policies are violated.\n\nWebhook endpoints must be secure (HTTPS) and respond within reasonable timeframes. We are not responsible for data loss due to webhook endpoint failures.`,
   },
   {
-    title: '9. Limitation of Liability',
+    title: '12. Limitation of Liability',
     content: `The Service is provided "as is" without warranties of any kind, express or implied. i'M On Social shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or business opportunities.\n\nOur total liability for any claim arising from or related to the Service shall not exceed the amount you paid us in the 12 months preceding the claim.`,
   },
   {
-    title: '10. Termination',
+    title: '13. Termination',
     content: `We may suspend or terminate your access to the Service at any time for violation of these terms or for any other reason with reasonable notice. You may terminate your account at any time.\n\nUpon termination, your right to use the Service ceases immediately. Provisions that by their nature should survive termination will survive, including ownership, warranty disclaimers, and limitations of liability.`,
   },
   {
-    title: '11. Modifications to Terms',
+    title: '14. Modifications to Terms',
     content: `We reserve the right to modify these Terms at any time. Material changes will be communicated via email or in-app notification at least 30 days before they take effect. Continued use of the Service after changes take effect constitutes acceptance of the modified terms.`,
   },
   {
-    title: '12. Governing Law',
+    title: '15. Governing Law',
     content: `These Terms shall be governed by and construed in accordance with the laws of the State of Texas, United States, without regard to conflict of law principles. Any disputes arising from these Terms shall be resolved in the courts of Texas.`,
   },
   {
-    title: '13. Contact',
+    title: '16. Contact',
     content: `For questions about these Terms of Service, contact us at:\n\ni'M On Social\nEmail: legal@imonsocial.com\nGeneral: forest@imonsocial.com\nWebsite: https://imonsocial.com`,
   },
 ];
@@ -69,7 +81,7 @@ export default function TermsScreen() {
         <View style={[s.content, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : undefined]}>
           <Text style={s.label}>LEGAL</Text>
           <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Terms of Service</Text>
-          <Text style={s.updated}>Last updated: February 1, 2026</Text>
+          <Text style={s.updated}>Last updated: March 12, 2026</Text>
           <Text style={s.intro}>
             These Terms of Service govern your access to and use of the i'M On Social platform and services. Please read these terms carefully before using our Service.
           </Text>

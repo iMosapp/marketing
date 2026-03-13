@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +32,8 @@ export default function ChangePasswordScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [tosViewed, setTosViewed] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   const isFirstTimeChange = user?.needs_password_change === true;
 
@@ -62,12 +65,18 @@ export default function ChangePasswordScreen() {
       return;
     }
     
+    if (isFirstTimeChange && !tosAccepted) {
+      setError('You must review and accept the Terms of Service to continue');
+      return;
+    }
+    
     setLoading(true);
     try {
       await api.post('/auth/change-password', {
         user_id: user?._id,
         current_password: currentPassword,
         new_password: newPassword,
+        tos_accepted: isFirstTimeChange ? true : undefined,
       });
       
       // Update local user state to clear the flag
@@ -256,6 +265,71 @@ export default function ChangePasswordScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Terms of Service Acceptance — First time only */}
+            {isFirstTimeChange && (
+              <View style={styles.tosContainer}>
+                <View style={styles.tosCard}>
+                  <Ionicons name="document-text" size={20} color="#007AFF" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tosTitle}>Terms of Service</Text>
+                    <Text style={styles.tosDesc}>Please review our terms before continuing</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setTosViewed(true);
+                    if (Platform.OS === 'web') {
+                      window.open('/imos/terms', '_blank');
+                    } else {
+                      router.push('/imos/terms' as any);
+                    }
+                  }}
+                  style={[styles.tosLink, tosViewed && styles.tosLinkViewed]}
+                >
+                  <Ionicons name={tosViewed ? 'checkmark-circle' : 'open-outline'} size={18} color={tosViewed ? '#34C759' : '#007AFF'} />
+                  <Text style={[styles.tosLinkText, { color: tosViewed ? '#34C759' : '#007AFF' }]}>
+                    {tosViewed ? 'Terms Reviewed' : 'Read Terms of Service'}
+                  </Text>
+                  {!tosViewed && <Ionicons name="arrow-forward" size={14} color="#007AFF" />}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    if (Platform.OS === 'web') {
+                      window.open('/imos/privacy', '_blank');
+                    } else {
+                      router.push('/imos/privacy' as any);
+                    }
+                  }}
+                  style={styles.privacyLink}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.tosLinkText, { color: colors.textSecondary, fontSize: 13 }]}>View Privacy Policy</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => tosViewed && setTosAccepted(!tosAccepted)}
+                  style={[styles.tosCheckRow, !tosViewed && { opacity: 0.4 }]}
+                  disabled={!tosViewed}
+                >
+                  <View style={[styles.tosCheckbox, tosAccepted && styles.tosCheckboxChecked]}>
+                    {tosAccepted && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                  </View>
+                  <Text style={styles.tosCheckText}>
+                    I have read and agree to the{' '}
+                    <Text style={{ color: '#007AFF', fontWeight: '600' }}>Terms of Service</Text>
+                    {' '}and{' '}
+                    <Text style={{ color: '#007AFF', fontWeight: '600' }}>Privacy Policy</Text>
+                  </Text>
+                </TouchableOpacity>
+
+                {!tosViewed && (
+                  <Text style={styles.tosHint}>You must read the Terms of Service before accepting</Text>
+                )}
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -375,5 +449,91 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   requirementMet: {
     color: '#34C759',
+  },
+  tosContainer: {
+    marginTop: 20,
+    gap: 12,
+  },
+  tosCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#007AFF10',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#007AFF20',
+  },
+  tosTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  tosDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  tosLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF30',
+  },
+  tosLinkViewed: {
+    borderColor: '#34C75930',
+    backgroundColor: '#34C75908',
+  },
+  tosLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  privacyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tosCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 12,
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.surface,
+  },
+  tosCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.textSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  tosCheckboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  tosCheckText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 19,
+  },
+  tosHint: {
+    fontSize: 11,
+    color: '#FF9500',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

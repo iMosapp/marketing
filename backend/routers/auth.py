@@ -577,13 +577,20 @@ async def change_password(data: dict):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     
     # Update password and clear needs_password_change flag
+    update_fields = {
+        "password": hash_password(new_password), 
+        "needs_password_change": False,
+        "updated_at": datetime.utcnow()
+    }
+    
+    # Store TOS acceptance if this is a first-time password change
+    if data.get('tos_accepted'):
+        update_fields["tos_accepted"] = True
+        update_fields["tos_accepted_at"] = datetime.utcnow()
+    
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {
-            "password": hash_password(new_password), 
-            "needs_password_change": False,
-            "updated_at": datetime.utcnow()
-        }}
+        {"$set": update_fields}
     )
     
     if result.modified_count == 0:

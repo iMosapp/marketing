@@ -344,17 +344,10 @@ export default function AdminDashboard() {
         });
         customerItems.push({
           icon: 'rocket',
-          title: 'Onboard New Account',
-          subtitle: 'Setup wizard for new orgs & teams',
-          onPress: () => router.push('/admin/setup-wizard' as any),
+          title: 'Onboarding Hub',
+          subtitle: 'Create accounts, add teams, onboard partners',
+          onPress: () => router.push('/admin/onboarding-hub' as any),
           color: '#FF2D55',
-        });
-        customerItems.push({
-          icon: 'book',
-          title: 'Onboarding Guide',
-          subtitle: 'Step-by-step account setup process',
-          onPress: () => router.push('/admin/onboarding-guide' as any),
-          color: '#5856D6',
         });
       }
       

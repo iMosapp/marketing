@@ -1,0 +1,66 @@
+{
+  "summary": "Onboarding Hub and TOS acceptance features tested - ALL 6 backend tests PASS and frontend UI verified. Unified Onboarding Hub shows all 7 action cards for super_admin. Terms/Privacy pages have new sections for contact data handling, data transfer, and SMS compliance. Change-password endpoint correctly accepts tos_accepted field.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Onboarding Hub",
+        "issues": ["Partner/Reseller card uses 'handshake' icon which is not valid for Ionicons family - shows question mark icon instead"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_onboarding_hub_tos.py",
+    "/app/test_reports/pytest/pytest_onboarding_hub_tos.xml"
+  ],
+  "action_items": [
+    "MINOR: Fix Partner/Reseller icon in onboarding-hub.tsx - change 'handshake' to a valid Ionicons name (e.g., 'people-circle', 'briefcase', or 'business')"
+  ],
+  "critical_code_review_comments": [
+    "onboarding-hub.tsx: ACTIONS array correctly defines 7 onboarding action cards with role-based visibility",
+    "onboarding-hub.tsx line 115: visibleActions correctly filters by user role",
+    "onboarding-hub.tsx line 65: 'handshake' icon for partner_onboard is NOT valid Ionicons name (shows ? icon)",
+    "change-password.tsx lines 35-36: tosViewed and tosAccepted state variables correctly manage TOS flow",
+    "change-password.tsx lines 68-71: Validation requires tosAccepted for first-time password changes",
+    "change-password.tsx lines 269-332: TOS acceptance UI correctly conditional on isFirstTimeChange",
+    "auth.py lines 587-589: Backend correctly stores tos_accepted and tos_accepted_at on password change",
+    "terms.tsx: 16 sections total including new sections 7-10 (Contact Data, Data Ownership, Data Transfer, SMS Terms)",
+    "privacy.tsx: 12 sections total including new sections 3 (Contact Data Storage) and 7 (Data Transfer)",
+    "admin/index.tsx lines 345-351: Onboarding Hub link correctly placed in Customer Infrastructure section"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_onboarding_hub_tos.py"
+  ],
+  "success_rate": {
+    "backend": "100% (6/6 tests passed)",
+    "frontend": "100% - All features verified"
+  },
+  "test_credentials": {
+    "super_admin_email": "forest@imosapp.com",
+    "super_admin_password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "None - Used existing super_admin account",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Onboarding Hub and TOS acceptance features fully tested. Admin dashboard shows 'Onboarding Hub' link under Customer Infrastructure section. Onboarding Hub page displays 7 action cards for super_admin role (New Org & Store, Add Store, Add Team, Individual, Partner, White Label, Internal Employee). TOS acceptance section on change-password page is conditional on user.needs_password_change=true. Backend stores tos_accepted and tos_accepted_at when changing password with tos_accepted=true.",
+  "features_verified": {
+    "admin_onboarding_hub_link": "PASS - /admin shows 'Onboarding Hub' link in Customer Infrastructure section",
+    "onboarding_hub_7_cards": "PASS - /admin/onboarding-hub shows all 7 action cards for super_admin",
+    "onboarding_hub_guide": "PASS - Collapsible 'Setup Wizard Quick-Reference Guide' expands to show 7-step wizard + After Setup",
+    "card_routes_correct": "PASS - Cards link to /admin/setup-wizard, /settings/invite-team, /admin/individuals, /partner/onboard, /admin/white-label",
+    "terms_page_sections_7_10": "PASS - /imos/terms has sections 7 (Contact Data), 8 (Data Ownership), 9 (Data Transfer), 10 (SMS Terms)",
+    "privacy_page_sections_3_7": "PASS - /imos/privacy has sections 3 (Contact Data Storage) and 7 (Data Transfer)",
+    "backend_tos_accepted_field": "PASS - POST /api/auth/change-password accepts tos_accepted field",
+    "backend_tos_stored": "PASS - Backend stores tos_accepted and tos_accepted_at in user record",
+    "change_password_tos_ui": "PASS - TOS section conditionally shown for first-time users (needs_password_change=true)"
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED"
+  }
+}
