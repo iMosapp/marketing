@@ -186,7 +186,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Google Places API Integration
 - AI-Powered Outreach (sold tag triggers)
 - App Store Deployment Setup
+- Pre-built date-based campaign templates in template picker
 - Campaign Creation Redesign (**COMPLETED** — Mar 12, 2026)
+- Send Health Report (**COMPLETED** — Mar 13, 2026)
+- Personal Intelligence Editing Fix (**COMPLETED** — Mar 13, 2026)
 
 ### P2
 - Full Twilio Integration (enables auto_send)
@@ -421,6 +424,25 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **NEW FRONTEND:** `/admin/account-health/[id]` — Detailed user health report with health banner, 9 metric tiles, touchpoint breakdown bars, recent activity timeline, account info.
 - **Admin Panel:** Added "Account Health" link (teal pulse icon) in Customer Infrastructure section.
 - **Tested:** iteration 191 — 19/19 backend tests + all frontend UI verified
+
+### Personal Intelligence Editing Fix (Mar 13, 2026)
+- **BUG FIXED (P0):** AI-extracted Personal Intelligence on contact detail page was READ-ONLY. Users could not edit spouse, kids, interests, or other extracted data.
+- **Root cause:** `PersonalIntelSection` in `contact/[id].tsx` only displayed data, had no edit UI, and never called the existing `PATCH /api/contacts/{user_id}/{contact_id}/personal-details` endpoint.
+- **Fix:** Extracted component to standalone `/app/frontend/components/PersonalIntelSection.tsx` with full edit/save/cancel functionality:
+  - View mode: displays all personal details with Edit button
+  - Edit mode: 16 editable fields (spouse, kids, interests, occupation, vehicle, etc.) with Save/Cancel
+  - "Add Personal Intelligence" dashed button when no data exists
+  - Calls PATCH endpoint on save, shows success/error toasts
+- **Tested:** iteration 192 — 8/8 backend + 100% frontend verified
+
+### Send Health Report Feature (Mar 13, 2026)
+- **NEW BACKEND:** `POST /api/account-health/user/{user_id}/send-report` — Generates comprehensive HTML health report email and sends via Resend. Includes health score, account info, key metrics (contacts, messages, touchpoints, campaigns, enrollments, tasks, links, cards), touchpoint breakdown bars, and recent activity timeline.
+- **NEW BACKEND:** `POST /api/account-health/org/{org_id}/send-report` — Org-level aggregate report with per-team-member breakdown table.
+- **NEW FRONTEND (Overview):** Paper-plane quick-send icon on each account row. Opens modal pre-filled with user's email.
+- **NEW FRONTEND (Detail):** Gold "Send Report" button in header. Modal with recipient email, name, optional personal note, and Send/Cancel.
+- **Use case:** Partners/resellers/admins can email health snapshots to account contacts for retention reviews.
+- **Note:** Email sending requires verified Resend domain (works in production, not preview).
+- **Tested:** iteration 193 — 12/12 backend + 100% frontend verified
 
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
