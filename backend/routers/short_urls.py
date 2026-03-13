@@ -474,14 +474,20 @@ async def redirect_short_url(short_code: str, request: Request):
                 if store:
                     store_name = store.get("name", "")
                     user_name = f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip()
+
+                    # Helper to resolve a photo URL to absolute
+                    def _abs(url):
+                        if url and not url.startswith("data:"):
+                            return f"{base_url}{url}" if url.startswith("/") else url
+                        return ""
+
+                    salesperson_photo = _abs(user_doc.get("photo_url"))
+                    store_logo = _abs(store.get("logo_url") or store.get("logo_avatar_url"))
+
                     if link_type == "business_card":
                         og_title = f"{user_name}'s Digital Card" if user_name else "Digital Business Card"
                         og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
-                        sp_photo = user_doc.get("photo_url")
-                        if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
-                            og_image = f"{base_url}{sp_photo}"
-                        elif sp_photo and not sp_photo.startswith("data:"):
-                            og_image = sp_photo
+                        og_image = salesperson_photo
                     elif link_type == "referral":
                         sp_title = doc_metadata.get("salesman_title") or ""
                         if user_name and sp_title:
@@ -491,32 +497,27 @@ async def redirect_short_url(short_code: str, request: Request):
                         else:
                             og_title = "You've been referred!"
                         og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
-                        sp_photo = doc_metadata.get("photo_url") or user_doc.get("photo_url")
-                        if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
-                            og_image = f"{base_url}{sp_photo}"
-                        elif sp_photo and not sp_photo.startswith("data:"):
-                            og_image = sp_photo
+                        og_image = _abs(doc_metadata.get("photo_url")) or salesperson_photo
                     elif link_type in ("review_request", "review_invite", "review"):
                         og_title = f"Share Your Experience with {store_name}" if store_name else "We'd Love Your Feedback!"
                         og_description = f"{user_name} would love to hear about your experience" if user_name else "Your feedback means the world to us"
+                        og_image = store_logo
                     elif link_type == "showcase":
                         og_title = f"{store_name} — Happy Customers" if store_name else "Our Happy Customers"
                         og_description = f"See what customers are saying about {store_name}" if store_name else "Check out our showcase"
-                        # Use salesperson's photo for personal touch (same as business card)
-                        sp_photo = user_doc.get("photo_url")
-                        if sp_photo and not sp_photo.startswith("data:") and sp_photo.startswith("/"):
-                            og_image = f"{base_url}{sp_photo}"
-                        elif sp_photo and not sp_photo.startswith("data:"):
-                            og_image = sp_photo
+                        og_image = salesperson_photo
                     elif link_type == "link_page":
-                        og_title = f"{user_name}" if user_name else "Connect With Us"
-                        og_description = f"Find all of {user_name}'s links" if user_name else ""
+                        og_title = f"{user_name}'s Links" if user_name else "Connect With Us"
+                        og_description = f"Find all of {user_name}'s links at {store_name}" if store_name else f"Find all of {user_name}'s links"
+                        og_image = salesperson_photo
                     else:
                         og_title = store_name or "Check this out!"
                         og_description = f"Shared by {user_name}" if user_name else ""
+                        og_image = store_logo or salesperson_photo
 
+                    # Final fallback: use store logo if no image was set
                     if not og_image:
-                        og_image = f"{base_url}/api/s/og-image/{user_id}"
+                        og_image = store_logo
         except Exception:
             pass
 
