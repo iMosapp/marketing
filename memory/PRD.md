@@ -190,6 +190,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Campaign Creation Redesign (**COMPLETED** — Mar 12, 2026)
 - Send Health Report (**COMPLETED** — Mar 13, 2026)
 - Personal Intelligence Editing Fix (**COMPLETED** — Mar 13, 2026)
+- Scheduled Monthly Health Reports (**COMPLETED** — Mar 13, 2026)
+- Configurable Messaging Channels (**COMPLETED** — Mar 13, 2026)
 
 ### P2
 - Full Twilio Integration (enables auto_send)
@@ -465,6 +467,30 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes
 - **OG Image / iMessage Link Preview Fix:** Created white-background OG image (`og-image.png`) and added `/api/s/og-image/{user_id}` endpoint that composites store logos onto white. All link previews now guaranteed to have WHITE background instead of showing transparency artifacts (red/brown tint)
+
+
+### Configurable Messaging Channels (Mar 13, 2026)
+- **NEW BACKEND:** Full CRUD at `/api/messaging-channels/`:
+  - `GET /available` — Returns all 7 channels: SMS, WhatsApp, Facebook Messenger, Telegram, LinkedIn, Email, Copy to Clipboard
+  - `GET /org/{org_id}` — Returns enabled channels for organization
+  - `PUT /org/{org_id}` — Updates org's enabled channels (validates channel IDs)
+  - `GET /user/{user_id}` — Returns user's channels based on their org config (falls back to SMS default)
+- **NEW FRONTEND Settings Page:** `/settings/messaging-channels` with:
+  - 7 channel cards with branded icons, descriptions, and toggle switches
+  - Color-coded active borders (green accent for SMS, WhatsApp green, FB blue, etc.)
+  - "Requires phone number" indicator on SMS/WhatsApp
+  - Dynamic info banner: changes text based on single vs multi-channel mode
+  - "Share Experience Preview" shows either "opens directly" (1 channel) or picker preview (multi)
+  - Prevents disabling all channels (minimum 1 required)
+- **NEW Reusable ChannelPicker Component:** `/components/ChannelPicker.tsx`
+  - Bottom-sheet style modal with channel icons in a grid
+  - **Smart routing:** 1 channel → auto-opens directly (zero friction), 2+ → shows picker
+  - URL schemes: WhatsApp (`wa.me`), Telegram (`t.me/share`), LinkedIn, Messenger, SMS, Email, Clipboard
+  - `useChannelPicker()` hook for easy integration
+  - Disabled state for channels requiring phone when contact has no phone
+- **Integration:** Wired into contact detail page message composer — replaces hardcoded `sms://` with dynamic channel routing
+- **Menu:** Added to More > Administration as "Messaging Channels" with WhatsApp green icon
+- **Tested:** iteration 195 — 19/19 backend + 100% frontend verified
 
 ### Smart Contact Search + Voice-to-Task (Mar 8, 2026)
 - **Smart Contact Search:** All 6 home screen tiles and card sending now search by first name, last name, phone number, AND email. Backend `/api/contacts/{user_id}` also includes email in search query.
