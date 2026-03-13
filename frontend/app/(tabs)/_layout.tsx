@@ -90,6 +90,7 @@ export default function TabLayout() {
       initialRouteName="home"
       screenOptions={{
         headerShown: false,
+        sceneContainerStyle: { backgroundColor: colors.bg },
         tabBarStyle: {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
