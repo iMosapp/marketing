@@ -18,7 +18,7 @@ import uuid
 import re
 import io
 import logging
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from routers.database import get_db
 from routers.short_urls import create_short_url, get_short_url_base
 
@@ -44,6 +44,8 @@ def _sync_upload_bytes(image_bytes: bytes, prefix: str, entity_id: str):
     # Pre-shrink: if image is very large, downscale first to reduce memory
     try:
         pre_img = Image.open(io.BytesIO(image_bytes))
+        # Fix EXIF orientation BEFORE any resizing (prevents sideways iPhone photos)
+        pre_img = ImageOps.exif_transpose(pre_img)
         w, h = pre_img.size
         if w > 3000 or h > 3000:
             ratio = min(3000 / w, 3000 / h)
