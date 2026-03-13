@@ -68,7 +68,7 @@ export default function SOPsPage() {
   const onRefresh = () => { setRefreshing(true); fetchSOPs(); };
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} data-testid="sops-back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.text} />
