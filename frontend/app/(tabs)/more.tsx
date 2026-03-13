@@ -458,124 +458,167 @@ export default function MoreScreen() {
   const filterItems = (sectionKey: string, items: (MenuItem & { permKey?: string })[]) =>
     items.filter(i => !i.permKey || perm(sectionKey, i.permKey));
 
-  // ===== SECTION DEFINITIONS (5 sections + Admin + Settings) =====
+  // ===== REORGANIZED HUB SECTIONS (Role-Aware) =====
 
   const sections: Section[] = [];
+  const isStoreManager = user?.role === 'store_manager';
+  const isPartner = user?.role === 'partner' || user?.role === 'reseller';
 
-  // 1. MY TOOLS
+  // ============================================================
+  // SECTION 1: MY BRAND (Salesperson's personal command center)
+  // "Everything I send out, in one spot"
+  // ============================================================
+  {
+    const items: (MenuItem & { permKey?: string })[] = [
+      { icon: 'id-card', title: 'My Digital Card', subtitle: 'View, edit & share your card', onPress: () => router.push(`/card/${user?._id}` as any), color: '#C9A962' },
+      { icon: 'globe-outline', title: 'My Link Page', subtitle: 'Your public landing page', onPress: () => router.push(`/l/${user?.username || user?._id}` as any), color: '#007AFF' },
+      { icon: 'images', title: 'My Showcase', subtitle: 'Your happy customers page', onPress: () => router.push('/showroom-manage' as any), color: '#34C759' },
+      { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', onPress: () => { setShowShareModal(true); }, color: '#FFD60A' },
+      { permKey: 'sms_templates', icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates I use', onPress: () => router.push('/settings/templates'), color: '#AF52DE' },
+      { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
+    ];
+    const filtered = items.filter(i => !i.permKey || perm('content', i.permKey));
+    if (filtered.length > 0) sections.push({ id: 'my_brand', title: 'My Brand', icon: 'sparkles', color: '#C9A962', defaultExpanded: true, items: filtered });
+  }
+
+  // ============================================================
+  // SECTION 2: MY TOOLS (Daily action items)
+  // ============================================================
   if (perm('my_tools')) {
     const items = filterItems('my_tools', [
       { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/(tabs)/touchpoints' as any), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
-      { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach when you close deals', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
-      { permKey: 'training_hub', icon: 'school', title: 'Training Hub', subtitle: "Learn how to use i'M On Social", onPress: () => router.push('/training-hub'), color: '#FF9500' },
+      { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach suggestions', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
     ]);
-    if (items.length > 0) sections.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF', defaultExpanded: true, items });
+    if (items.length > 0) sections.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF', items });
   }
 
-  // 2. CAMPAIGNS
+  // ============================================================
+  // SECTION 3: CAMPAIGNS (Automated follow-ups & outreach)
+  // ============================================================
   if (perm('campaigns')) {
     const items = filterItems('campaigns', [
-      { permKey: 'campaign_builder', icon: 'chatbubbles', title: 'SMS Campaigns', subtitle: 'Automated SMS follow-ups', onPress: () => router.push('/campaigns'), color: '#FF2D55' },
+      { permKey: 'campaign_builder', icon: 'chatbubbles', title: 'SMS Campaigns', subtitle: 'Automated text follow-ups', onPress: () => router.push('/campaigns'), color: '#FF2D55' },
       { permKey: 'campaign_builder', icon: 'mail', title: 'Email Campaigns', subtitle: 'Automated email follow-ups', onPress: () => router.push('/campaigns/email'), color: '#AF52DE' },
-      { permKey: 'campaign_dashboard', icon: 'speedometer', title: 'Campaign Dashboard', subtitle: 'View enrollments & stats', onPress: () => router.push('/campaigns/dashboard'), color: '#5AC8FA' },
-      { permKey: 'broadcast', icon: 'megaphone', title: 'Broadcast', subtitle: 'Mass messaging', onPress: () => router.push('/broadcast'), color: '#FF9500' },
-      { permKey: 'date_triggers', icon: 'calendar-outline', title: 'Date Triggers', subtitle: 'Birthdays, anniversaries, holidays', onPress: () => router.push('/settings/date-triggers'), color: '#FF9500' },
+      { permKey: 'campaign_dashboard', icon: 'speedometer', title: 'Campaign Dashboard', subtitle: 'Enrollments & performance', onPress: () => router.push('/campaigns/dashboard'), color: '#5AC8FA' },
+      { permKey: 'broadcast', icon: 'megaphone', title: 'Broadcast', subtitle: 'Send to many at once', onPress: () => router.push('/broadcast'), color: '#FF9500' },
+      { permKey: 'date_triggers', icon: 'calendar-outline', title: 'Date Triggers', subtitle: 'Birthdays & anniversaries', onPress: () => router.push('/settings/date-triggers'), color: '#FF9500' },
     ]);
     if (items.length > 0) sections.push({ id: 'campaigns', title: 'Campaigns', icon: 'rocket', color: '#FF2D55', items });
   }
 
-  // 3. CONTENT
-  if (perm('content')) {
-    const items = filterItems('content', [
-      { permKey: 'sms_templates', icon: 'document-text', title: 'SMS Templates', subtitle: 'Create SMS templates', onPress: () => router.push('/settings/templates'), color: '#FFD60A' },
-      { permKey: 'email_templates', icon: 'mail-outline', title: 'Email Templates', subtitle: 'Create email templates', onPress: () => router.push('/settings/email-templates'), color: '#34C759' },
-      { permKey: 'card_templates', icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Customize card designs & messages', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
-      { permKey: 'manage_showcase', icon: 'images', title: 'Manage Showcase', subtitle: 'Edit your happy customers page', onPress: () => router.push('/showroom-manage' as any), color: '#34C759' },
-    ]);
-    if (items.length > 0) sections.push({ id: 'content', title: 'Content', icon: 'color-palette', color: '#AF52DE', items });
-  }
-
-  // 4. INSIGHTS
+  // ============================================================
+  // SECTION 4: MY PERFORMANCE (How am I doing?)
+  // ============================================================
   if (perm('insights')) {
     const items = filterItems('insights', [
-      { permKey: 'my_performance', icon: 'stats-chart', title: 'My Performance', subtitle: 'Day / Week / Month stats', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
-      { permKey: 'my_performance', icon: 'people', title: 'Customer Performance', subtitle: 'Ranked customer engagement', onPress: () => router.push('/touchpoints/customer-performance' as any), color: '#FF9500' },
-      { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Activity reports & analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
-      { permKey: 'email_analytics', icon: 'bar-chart', title: 'Email Analytics', subtitle: 'Opens, clicks, engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
-      { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Team rankings & performance', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
-      { permKey: 'lead_attribution', icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests, sources & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+      { permKey: 'my_performance', icon: 'stats-chart', title: 'My Stats', subtitle: 'Day / week / month performance', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
+      { permKey: 'my_performance', icon: 'people', title: 'Customer Engagement', subtitle: 'Ranked by engagement level', onPress: () => router.push('/touchpoints/customer-performance' as any), color: '#FF9500' },
+      { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Where I stand on the team', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
+      { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Detailed activity analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
+      { permKey: 'email_analytics', icon: 'trending-up', title: 'Email Analytics', subtitle: 'Opens, clicks & engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
     ]);
-    if (items.length > 0) sections.push({ id: 'insights', title: 'Insights', icon: 'stats-chart', color: '#34C759', items });
+    if (items.length > 0) sections.push({ id: 'performance', title: 'My Performance', icon: 'stats-chart', color: '#34C759', items });
   }
 
-  // 5. ADMIN (permission-gated via role-based permissions)
+  // ============================================================
+  // SECTION 5: SETUP & MANAGE (Admin/Manager tools for their accounts)
+  // Only visible to admins, store managers, partners
+  // ============================================================
   if (perm('admin')) {
-    const adminItems: (MenuItem & { permKey?: string })[] = [
-      // Team Management
-      { permKey: 'users', icon: 'people', title: 'Users', subtitle: 'Manage team members & permissions', onPress: () => router.push('/admin/users'), color: '#FF9500' },
-      { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
-      ...(isSuperAdmin ? [{ icon: 'people', title: 'Company Directory', subtitle: 'Team & leaderboards', onPress: () => router.push('/admin/directory'), color: '#AF52DE' }] : []),
-      ...(isSuperAdmin ? [{ icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' }] : []),
-      // Organization
-      { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address, store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
+    const items: (MenuItem & { permKey?: string })[] = [
+      { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address & store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
-      { permKey: 'admin_dashboard', icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'Overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
-      // Content Moderation
+      { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
+      { permKey: 'review_links', icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook & Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
+      { permKey: 'contact_tags', icon: 'pricetags', title: 'Tags & Lead Sources', subtitle: 'Organize contacts & track leads', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
+      { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
+      { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
       { permKey: 'review_approvals', icon: 'chatbubbles-outline', title: 'Review Approvals', subtitle: 'Approve customer reviews', onPress: () => router.push('/settings/review-approvals'), color: '#AF52DE' },
       { permKey: 'showcase_approvals', icon: 'shield-checkmark-outline', title: 'Showcase Approvals', subtitle: 'Approve showcase posts', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
-      { permKey: 'review_links', icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook, Yelp', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
-      { permKey: 'contact_tags', icon: 'pricetags', title: 'Contact Tags', subtitle: 'Organize with tags', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
-      { permKey: 'lead_sources', icon: 'git-branch', title: 'Lead Sources', subtitle: 'Inbound leads & routing', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
-      // Integrations & API
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
-      // Messaging Channels
-      { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
-      // Super Admin Only
-      ...(isSuperAdmin ? [
-        { icon: 'business', title: 'Organizations', subtitle: 'Manage organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },
-      ] : []),
-      ...(perm('admin', 'accounts') ? [
-        { icon: 'storefront', title: 'Accounts', subtitle: 'Manage store accounts', onPress: () => router.push('/admin/stores'), color: '#34C759' },
-      ] : []),
     ];
-    // Filter admin items by permissions (items with permKey are checked, items without permKey are always shown)
-    const filteredAdminItems = adminItems.filter(i => !i.permKey || perm('admin', i.permKey));
-    if (filteredAdminItems.length > 0) sections.push({ id: 'admin', title: 'Administration', icon: 'shield-checkmark', color: '#FF3B30', items: filteredAdminItems });
+    const filtered = items.filter(i => !i.permKey || perm('admin', i.permKey));
+    if (filtered.length > 0) sections.push({ id: 'setup_manage', title: 'Setup & Manage', icon: 'construct', color: '#FF9500', items: filtered });
   }
 
-  // 5b. INTERNAL ADMINISTRATION (super_admin only)
+  // ============================================================
+  // SECTION 6: ACCOUNT MANAGEMENT (Partners/Super Admins — multi-account management)
+  // For people managing MULTIPLE organizations/accounts
+  // ============================================================
+  if (isSuperAdmin || isPartner) {
+    const items: MenuItem[] = [
+      { icon: 'rocket', title: 'Onboarding Hub', subtitle: 'Create & onboard new accounts', onPress: () => router.push('/admin/onboarding-hub' as any), color: '#C9A962' },
+      { icon: 'pulse', title: 'Account Health', subtitle: 'Retention dashboard & reports', onPress: () => router.push('/admin/account-health' as any), color: '#00C7BE' },
+      { icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'System overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
+      ...(isSuperAdmin ? [
+        { icon: 'business', title: 'Organizations', subtitle: 'All organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },
+      ] : []),
+      { icon: 'storefront', title: 'Accounts', subtitle: 'Store accounts', onPress: () => router.push('/admin/stores'), color: '#34C759' },
+      { icon: 'people', title: 'All Users', subtitle: 'Cross-org user management', onPress: () => router.push('/admin/users'), color: '#FF9500' },
+      ...(isSuperAdmin ? [
+        { icon: 'person', title: 'Individuals', subtitle: 'Independent users', onPress: () => router.push('/admin/individuals'), color: '#AF52DE' },
+        { icon: 'person-add', title: 'Pending Users', subtitle: 'Approve new signups', onPress: () => router.push('/admin/pending-users'), color: '#FF3B30' },
+      ] : []),
+      { icon: 'podium', title: 'Leaderboard', subtitle: 'Performance across all accounts', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
+      { icon: 'pulse', title: 'Activity Feed', subtitle: 'Team activity across accounts', onPress: () => router.push('/(tabs)/activity-feed' as any), color: '#5856D6' },
+      { icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+    ];
+    sections.push({ id: 'account_mgmt', title: 'Account Management', icon: 'briefcase', color: '#007AFF', items });
+  }
+
+  // ============================================================
+  // SECTION 7: INTERNAL OPERATIONS (Super Admin only — revenue, partners, system)
+  // ============================================================
   if (isSuperAdmin) {
-    const internalItems: MenuItem[] = [
-      { icon: 'library', title: 'Company Docs', subtitle: 'Policies, security & training', onPress: () => router.push('/admin/docs'), color: '#5856D6' },
-      { icon: 'color-palette', title: 'Brand Assets', subtitle: 'Logos, images & downloads', onPress: () => router.push('/admin/brand-assets'), color: '#FF9500' },
+    const items: MenuItem[] = [
+      // Partners
       { icon: 'people-circle', title: 'Partner Portal', subtitle: 'View as partner/reseller', onPress: () => router.push('/partner/dashboard' as any), color: '#007AFF' },
-      { icon: 'document-text', title: 'Partner Agreements', subtitle: 'Reseller contracts & commissions', onPress: () => router.push('/admin/partner-agreements'), color: '#AF52DE' },
+      { icon: 'document-text', title: 'Partner Agreements', subtitle: 'Contracts & commissions', onPress: () => router.push('/admin/partner-agreements'), color: '#AF52DE' },
       { icon: 'color-palette', title: 'White Label Partners', subtitle: 'Manage branded partners', onPress: () => router.push('/admin/white-label'), color: '#E87722' },
+      // Revenue
       { icon: 'card', title: 'Billing & Revenue', subtitle: 'Payments, MRR & commissions', onPress: () => router.push('/admin/billing'), color: '#34C759' },
       { icon: 'trending-up', title: 'Revenue Forecast', subtitle: 'Sales projections', onPress: () => router.push('/admin/forecasting'), color: '#007AFF' },
       { icon: 'documents', title: 'View Quotes', subtitle: 'Subscription quotes', onPress: () => router.push('/admin/quotes'), color: '#30B0C7' },
-      { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate quotes', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
-      { icon: 'ticket', title: 'Discount Codes', subtitle: 'Manage promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
+      { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate new quote', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
+      { icon: 'ticket', title: 'Discount Codes', subtitle: 'Promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
+      // System
       { icon: 'call', title: 'Phone Assignments', subtitle: 'Twilio numbers', onPress: () => router.push('/admin/phone-assignments'), color: '#32ADE6' },
       { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' },
-      { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
-      { icon: 'person', title: 'Individuals', subtitle: 'Independent users', onPress: () => router.push('/admin/individuals'), color: '#AF52DE' },
-      { icon: 'person-add', title: 'Pending Users', subtitle: 'Approve new signups', onPress: () => router.push('/admin/pending-users'), color: '#FF3B30' },
+      { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts between users', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
       { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },
+      // Docs & Assets
+      { icon: 'library', title: 'Company Docs', subtitle: 'Policies & procedures', onPress: () => router.push('/admin/docs'), color: '#5856D6' },
+      { icon: 'color-palette', title: 'Brand Assets', subtitle: 'Logos & downloads', onPress: () => router.push('/admin/brand-assets'), color: '#FF9500' },
     ];
-    sections.push({ id: 'internal_admin', title: 'Internal Administration', icon: 'lock-closed', color: '#8E8E93', items: internalItems });
+    sections.push({ id: 'internal_ops', title: 'Internal Operations', icon: 'lock-closed', color: '#8E8E93', items });
   }
 
-  // 6. SETTINGS (always visible, simplified)
+  // ============================================================
+  // SECTION 8: LEARNING (Training & SOPs — visible to everyone)
+  // ============================================================
+  if (perm('my_tools', 'training_hub')) {
+    const items: MenuItem[] = [
+      { icon: 'school', title: 'Training Hub', subtitle: 'Learn the platform', onPress: () => router.push('/training-hub'), color: '#FF9500' },
+      { icon: 'book', title: 'SOPs & Guides', subtitle: 'Step-by-step procedures', onPress: () => router.push('/admin/sops'), color: '#5856D6' },
+    ];
+    if (isAdmin) {
+      items.push({ icon: 'create', title: 'Manage Training', subtitle: 'Edit lessons & tracks', onPress: () => router.push('/admin/training-hub'), color: '#34C759' });
+    }
+    sections.push({ id: 'learning', title: 'Learning', icon: 'school', color: '#FF9500', items });
+  }
+
+  // ============================================================
+  // SECTION 9: SETTINGS (Minimal personal settings)
+  // ============================================================
   sections.push({
     id: 'settings',
     title: 'Settings',
     icon: 'settings',
     color: colors.textSecondary,
     items: [
-      { icon: 'shield-checkmark', title: 'Security', subtitle: 'Face ID, passwords', onPress: () => router.push('/settings/security'), color: '#FF3B30' },
+      { icon: 'shield-checkmark', title: 'Security', subtitle: 'Passwords & Face ID', onPress: () => router.push('/settings/security'), color: '#FF3B30' },
       { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
       { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },
     ],
