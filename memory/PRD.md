@@ -394,6 +394,24 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Added to the admin panel's Customer Infrastructure section as "Onboarding Guide" link.
 - **BUG FIX:** Step 3 (Team Roster) in the setup wizard was missing a "Skip" button — users got stuck with no way to advance if they didn't want to add team members. Added `onSkip` prop to the BtnRow.
 
+### Unified Onboarding Hub + TOS Acceptance (Mar 12, 2026)
+- **NEW PAGE:** Created `/admin/onboarding-hub.tsx` — consolidated onboarding center replacing the separate "Onboard New Account" and "Onboarding Guide" links.
+  - 7 action cards: New Org & Store, Add Store to Existing Org, Add Team Members, Add Individual Account, Partner/Reseller Onboard, White Label Partner, Internal Employee
+  - Role-based visibility: super_admin sees all 7, org_admin sees 3, store_manager sees 1
+  - Collapsible "Setup Wizard Quick-Reference Guide" built-in with 7-step wizard + "After Setup" section
+  - Recently Added Users section at bottom
+- **TOS ACCEPTANCE:** Added mandatory Terms of Service opt-in to the first-time password change screen (`/auth/change-password`):
+  - User must click "Read Terms of Service" link first (opens in new tab)
+  - Checkbox remains disabled until TOS is reviewed
+  - Warning text "You must read the Terms of Service before accepting"
+  - Backend stores `tos_accepted: true` and `tos_accepted_at` timestamp in user record
+- **TERMS & PRIVACY UPDATED:**
+  - Terms: Added sections 7 (Contact Data & CRM), 8 (Data Ownership & Portability), 9 (Data Transfer), 10 (SMS/Communication Terms) — now 16 sections total
+  - Privacy: Added sections 3 (Contact Data You Store), 7 (Data Transfer & Portability) — now 12 sections total
+  - Both updated to March 12, 2026
+- **Files changed:** `admin/onboarding-hub.tsx` (new), `admin/index.tsx`, `auth/change-password.tsx`, `imos/terms.tsx`, `imos/privacy.tsx`, `backend/routers/auth.py`
+- **Tested:** iteration 190 — 6/6 backend tests + all frontend UI tests passed
+
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes

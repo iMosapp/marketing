@@ -59,7 +59,7 @@ const ACTIONS: Action[] = [
   },
   {
     id: 'partner_onboard',
-    icon: 'handshake',
+    icon: 'briefcase',
     title: 'Partner / Reseller Onboard',
     desc: 'Set up a new store for a partner or reseller organization',
     color: '#5856D6',
