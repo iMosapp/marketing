@@ -25,7 +25,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Instagram-Style Photo Gallery (Mar 13, 2026) — LATEST
+### My Presence Visual Command Center (Mar 13, 2026) — LATEST
+- **REBUILT:** "My Account" page into "My Presence" visual hub
+- Header changed from "My Account" to "My Presence"
+- 5 presence cards with visual mini-previews: Digital Card, Showcase, Review Link, Link Page, Landing Page
+- Each card shows a styled visual representation of the page (avatar+contacts, photo grid, stars, link pills, hero CTA)
+- Preview panels are tappable — opens the actual page
+- Action buttons render in horizontal rows: Preview, Edit, Copy Link, Manage, Approve, Share
+- All navigation and clipboard functionality working
+- **Tested:** 95% frontend pass (iteration 203)
+
+### Instagram-Style Photo Gallery (Mar 13, 2026)
 - **REBUILT:** Contact photo gallery from scratch with Instagram-style 3-column square grid
 - Backend `/photos/all` endpoint rewritten to be pure read-only — no lazy migration during gallery load, instant response
 - Photos preloaded when contact page mounts (gallery opens instantly on tap)
