@@ -51,10 +51,10 @@ export default function MyAccountScreen() {
     { id: 'review_links', icon: 'star', label: 'Review Links', color: '#FFD60A', route: '/settings/review-links' },
     { id: 'brand_assets', icon: 'images', label: 'Brand Assets', color: '#AF52DE', route: '/admin/brand-assets' },
     { id: 'approvals', icon: 'chatbubbles', label: 'Approvals', color: '#FF9500', route: '/settings/review-approvals' },
-    { id: 'edit_card', icon: 'create', label: 'Edit Card', color: '#007AFF', route: '/settings/my-profile' },
-    { id: 'leaderboard', icon: 'trophy', label: 'Leaderboard', color: '#FFD700', route: '/leaderboard' },
+    { id: 'edit_card', icon: 'create', label: 'Edit Card', color: '#007AFF', route: '/settings/store-profile' },
+    { id: 'leaderboard', icon: 'trophy', label: 'Leaderboard', color: '#FFD700', route: '/admin/leaderboard' },
     { id: 'link_page', icon: 'link', label: 'Link Page', color: '#C9A962', route: '/settings/link-page' },
-    { id: 'digital_card', icon: 'card', label: 'Digital Card', color: '#007AFF', route: '/settings/my-profile' },
+    { id: 'digital_card', icon: 'card', label: 'Digital Card', color: '#007AFF', route: '/settings/store-profile' },
     { id: 'ai_persona', icon: 'person', label: 'AI Persona', color: '#AF52DE', route: '/settings/persona' },
     { id: 'voice_training', icon: 'mic', label: 'Voice Training', color: '#FF3B30', route: '/voice-training' },
     { id: 'send_card', icon: 'paper-plane', label: 'Send Card', color: '#32ADE6', route: '/settings/create-card' },
@@ -529,7 +529,7 @@ export default function MyAccountScreen() {
           </Text>
           <View style={[styles.menuList, { backgroundColor: colors.card }]}>
             {[
-              { icon: 'card', title: 'My Digital Card', subtitle: 'Bio, photo & contact info', color: '#007AFF', route: '/settings/my-profile' },
+              { icon: 'card', title: 'My Digital Card', subtitle: 'Bio, photo & contact info', color: '#007AFF', route: '/settings/store-profile' },
               { icon: 'globe-outline', title: 'My Link Page', subtitle: 'Your public landing page', color: '#C9A962', route: '/settings/link-page' },
               { icon: 'images', title: 'My Showcase', subtitle: 'Happy customers page & approvals', color: '#34C759', route: '/showroom-manage' },
               { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', color: '#FFD60A', action: 'share_review' },

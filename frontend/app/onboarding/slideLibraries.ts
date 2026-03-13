@@ -222,7 +222,7 @@ const QUICK_WIN_LEADERBOARD: OnboardingSlide = {
   icon: 'trophy',
   iconColor: '#FFD60A',
   bgGradient: ['#FFFFFF', '#FFFCF0'],
-  tryItRoute: '/leaderboard',
+  tryItRoute: '/admin/leaderboard',
   tryItLabel: 'View Leaderboard',
   benefits: [
     'Real-time rankings by category',
@@ -327,7 +327,7 @@ const MANAGER_CHECKLIST: OnboardingSlide = {
   bgGradient: ['#FFFFFF', '#F0FFF5'],
   checklistItems: [
     ...SALESPERSON_CHECKLIST.checklistItems!,
-    { id: 'leaderboard', label: 'Check the Leaderboard', description: 'See your team\'s rankings', route: '/leaderboard', icon: 'trophy', iconColor: '#FFD60A' },
+    { id: 'leaderboard', label: 'Check the Leaderboard', description: 'See your team\'s rankings', route: '/admin/leaderboard', icon: 'trophy', iconColor: '#FFD60A' },
     { id: 'reports', label: 'Review Activity Reports', description: 'Track your team\'s output', route: '/admin/reports/activity', icon: 'analytics', iconColor: '#007AFF' },
     { id: 'campaigns', label: 'Set up automated campaigns', description: 'Birthdays, anniversaries, follow-ups', route: '/settings/date-triggers', icon: 'calendar', iconColor: '#AF52DE' },
   ],

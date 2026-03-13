@@ -604,7 +604,7 @@ export default function MoreScreen() {
       { icon: 'book', title: 'SOPs & Guides', subtitle: 'Step-by-step procedures', onPress: () => router.push('/admin/sops'), color: '#5856D6' },
     ];
     if (isAdmin) {
-      items.push({ icon: 'create', title: 'Manage Training', subtitle: 'Edit lessons & tracks', onPress: () => router.push('/admin/training-hub'), color: '#34C759' });
+      items.push({ icon: 'create', title: 'Manage Training', subtitle: 'Edit lessons & tracks', onPress: () => router.push('/admin/manage-training'), color: '#34C759' });
     }
     sections.push({ id: 'learning', title: 'Learning', icon: 'school', color: '#FF9500', items });
   }
