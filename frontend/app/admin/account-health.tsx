@@ -266,66 +266,63 @@ export default function AccountHealthDashboard() {
               style={[styles.accountRow, { backgroundColor: colors.card, borderColor: colors.surface }]}
               onPress={() => router.push(`/admin/account-health/${a.user_id}` as any)}
             >
-              {/* Health indicator */}
-              <View style={[styles.healthDot, { backgroundColor: a.health.color }]}>
-                <Text style={styles.healthScore}>{a.health.score}</Text>
-              </View>
-
-              {/* User info */}
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.accountName, { color: colors.text }]}>{a.name}</Text>
-                <Text style={[styles.accountMeta, { color: colors.textSecondary }]}>
-                  {a.role} {a.organization ? `at ${a.organization}` : ''} {a.store ? `/ ${a.store}` : ''}
-                </Text>
-              </View>
-
-              {/* Metrics */}
-              <View style={styles.metricsRow}>
-                <View style={styles.metricItem}>
-                  <Text style={[styles.metricValue, { color: colors.text }]}>{a.contacts}</Text>
-                  <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>contacts</Text>
+              {/* Top row: Health dot + Name + Login badge */}
+              <View style={styles.accountTopRow}>
+                <View style={[styles.healthDot, { backgroundColor: a.health.color }]}>
+                  <Text style={styles.healthScore}>{a.health.score}</Text>
                 </View>
-                <View style={styles.metricItem}>
-                  <Text style={[styles.metricValue, { color: colors.text }]}>{a.messages_30d}</Text>
-                  <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>msgs</Text>
+                <View style={styles.accountInfo}>
+                  <Text style={[styles.accountName, { color: colors.text }]} numberOfLines={1}>{a.name}</Text>
+                  <Text style={[styles.accountMeta, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {a.role} {a.organization ? `at ${a.organization}` : ''} {a.store ? `/ ${a.store}` : ''}
+                  </Text>
                 </View>
-                <View style={styles.metricItem}>
-                  <Text style={[styles.metricValue, { color: colors.text }]}>{a.touchpoints_30d}</Text>
-                  <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>touches</Text>
+                <View style={[styles.loginBadge, {
+                  backgroundColor: a.days_since_login <= 3 ? '#34C75915' : a.days_since_login <= 14 ? '#FF950015' : '#FF3B3015',
+                }]}>
+                  <Text style={{
+                    fontSize: 10, fontWeight: '600',
+                    color: a.days_since_login <= 3 ? '#34C759' : a.days_since_login <= 14 ? '#FF9500' : '#FF3B30',
+                  }}>
+                    {a.days_since_login <= 0 ? 'Today' : a.days_since_login >= 999 ? 'Never' : `${a.days_since_login}d ago`}
+                  </Text>
                 </View>
               </View>
 
-              {/* Login recency */}
-              <View style={[styles.loginBadge, {
-                backgroundColor: a.days_since_login <= 3 ? '#34C75915' : a.days_since_login <= 14 ? '#FF950015' : '#FF3B3015',
-              }]}>
-                <Text style={{
-                  fontSize: 10, fontWeight: '600',
-                  color: a.days_since_login <= 3 ? '#34C759' : a.days_since_login <= 14 ? '#FF9500' : '#FF3B30',
-                }}>
-                  {a.days_since_login <= 0 ? 'Today' : a.days_since_login >= 999 ? 'Never' : `${a.days_since_login}d ago`}
-                </Text>
+              {/* Bottom row: Metrics + Actions */}
+              <View style={styles.accountBottomRow}>
+                <View style={styles.metricsRow}>
+                  <View style={styles.metricItem}>
+                    <Text style={[styles.metricValue, { color: colors.text }]}>{a.contacts}</Text>
+                    <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>contacts</Text>
+                  </View>
+                  <View style={styles.metricItem}>
+                    <Text style={[styles.metricValue, { color: colors.text }]}>{a.messages_30d}</Text>
+                    <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>msgs</Text>
+                  </View>
+                  <View style={styles.metricItem}>
+                    <Text style={[styles.metricValue, { color: colors.text }]}>{a.touchpoints_30d}</Text>
+                    <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>touches</Text>
+                  </View>
+                </View>
+                <View style={styles.accountActions}>
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation(); openSendModal(a); }}
+                    style={styles.quickSendBtn}
+                    data-testid={`send-report-${a.user_id}`}
+                  >
+                    <Ionicons name="paper-plane-outline" size={14} color="#C9A962" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation(); handleScheduleFromAccount(a); }}
+                    style={styles.quickSendBtn}
+                    data-testid={`schedule-${a.user_id}`}
+                  >
+                    <Ionicons name="calendar-outline" size={14} color="#007AFF" />
+                  </TouchableOpacity>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                </View>
               </View>
-
-              {/* Quick send report */}
-              <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); openSendModal(a); }}
-                style={styles.quickSendBtn}
-                data-testid={`send-report-${a.user_id}`}
-              >
-                <Ionicons name="paper-plane-outline" size={14} color="#C9A962" />
-              </TouchableOpacity>
-
-              {/* Quick schedule */}
-              <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); handleScheduleFromAccount(a); }}
-                style={styles.quickSendBtn}
-                data-testid={`schedule-${a.user_id}`}
-              >
-                <Ionicons name="calendar-outline" size={14} color="#007AFF" />
-              </TouchableOpacity>
-
-              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           ))
         )}
@@ -547,7 +544,11 @@ const styles = StyleSheet.create({
   filterPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyText: { fontSize: 14 },
-  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
+  accountRow: { padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
+  accountTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  accountInfo: { flex: 1, minWidth: 0 },
+  accountBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)' },
+  accountActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   healthDot: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   healthScore: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   accountName: { fontSize: 14, fontWeight: '600' },
