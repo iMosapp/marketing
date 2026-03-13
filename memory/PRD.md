@@ -412,6 +412,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Files changed:** `admin/onboarding-hub.tsx` (new), `admin/index.tsx`, `auth/change-password.tsx`, `imos/terms.tsx`, `imos/privacy.tsx`, `backend/routers/auth.py`
 - **Tested:** iteration 190 — 6/6 backend tests + all frontend UI tests passed
 
+### Account Health / Retention Dashboard (Mar 13, 2026)
+- **NEW BACKEND:** `/api/account-health/overview` — Lists all user accounts with health scores (0-100), sorted worst-first. Aggregates contacts, messages, touchpoints, campaigns, login recency.
+- **NEW BACKEND:** `/api/account-health/user/{user_id}` — Detailed health report with 9 metric categories, event breakdown bar chart, recent activity timeline, account info.
+- **NEW BACKEND:** `/api/account-health/org/{org_id}` — Org-level aggregate health report across all users.
+- **Health Score Algorithm:** Activity (40pts: login recency), Contacts (20pts), Messages (20pts), Campaigns+Touchpoints (20pts). Grades: >=70 Healthy (green), >=40 At Risk (orange), <40 Critical (red).
+- **NEW FRONTEND:** `/admin/account-health` — Dashboard with summary cards (Healthy/At Risk/Critical counts), search, filter pills, 30d/90d period toggle, sortable account list with health score circles.
+- **NEW FRONTEND:** `/admin/account-health/[id]` — Detailed user health report with health banner, 9 metric tiles, touchpoint breakdown bars, recent activity timeline, account info.
+- **Admin Panel:** Added "Account Health" link (teal pulse icon) in Customer Infrastructure section.
+- **Tested:** iteration 191 — 19/19 backend tests + all frontend UI verified
+
 ## Recent UI Fixes (Mar 8, 2026)
 - **AI Suggestion Bubble:** Changed from dark green solid background to light green outline with subtle tint — text now readable in light mode
 - **AI Outreach Page:** Converted all hardcoded dark-mode colors to use theme store (`useThemeStore`) — now properly renders in both light and dark modes
