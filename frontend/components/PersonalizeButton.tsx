@@ -30,8 +30,8 @@ export function PersonalizeButton({ onInsert, colors, compact }: Props) {
         style={compact ? s.compactBtn : [s.btn, { borderColor: colors.border, backgroundColor: colors.card }]}
         data-testid="personalize-btn"
       >
-        <Ionicons name="code-slash-outline" size={compact ? 22 : 16} color={compact ? colors.textSecondary : '#C9A962'} />
-        {!compact && <Text style={s.btnText}>{'{}'} Personalize</Text>}
+        <Ionicons name="at-outline" size={compact ? 22 : 16} color={compact ? '#C9A962' : '#C9A962'} />
+        {!compact && <Text style={s.btnText}>Personalize</Text>}
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>

@@ -87,6 +87,15 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
       return;
     }
 
+    // For external apps: copy message to clipboard first so user can paste
+    try {
+      if (IS_WEB && typeof navigator !== 'undefined' && navigator.clipboard) {
+        navigator.clipboard.writeText(message);
+      } else {
+        Clipboard.setString(message);
+      }
+    } catch {}
+
     const url = buildUrl(ch.url_scheme, params);
 
     if (IS_WEB && typeof window !== 'undefined') {
@@ -96,6 +105,7 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
         showToast(`Could not open ${ch.name}`, 'error');
       });
     }
+    showToast(`Message copied & opening ${ch.name}... Paste to send!`, 'success');
     onSent?.(ch.id);
     onClose();
   }, [message, phone, email, link, onSent, onClose]);

@@ -602,8 +602,24 @@ export default function ThreadScreen() {
   };
   
   const handleSend = async (textToSend?: string) => {
-    const contentToSend = textToSend || message.trim();
+    let contentToSend = textToSend || message.trim();
     if (!contentToSend || !user) return;
+    
+    // Resolve personalization merge tags
+    const firstName = (contact_name as string || '').split(' ')[0] || '';
+    const nameParts = (contact_name as string || '').split(' ');
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+    contentToSend = contentToSend
+      .replace(/\{first_name\}/g, firstName)
+      .replace(/\{last_name\}/g, lastName)
+      .replace(/\{full_name\}/g, (contact_name as string) || '')
+      .replace(/\{phone\}/g, (contact_phone as string) || '')
+      .replace(/\{email\}/g, (contact_email as string) || savedContactEmail || '')
+      .replace(/\{my_name\}/g, (user as any).name || '')
+      .replace(/\{my_phone\}/g, (user as any).phone || '')
+      .replace(/\{company\}/g, (user as any).organization_name || '')
+      .replace(/\{date_sold\}/g, '')
+      .replace(/\{name\}/g, firstName);
     
     // Block email send if contact has no email - check API as fallback
     if (messageMode === 'email' && !hasEmail) {

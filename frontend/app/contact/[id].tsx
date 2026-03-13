@@ -1315,9 +1315,24 @@ export default function ContactDetailScreen() {
 
   // ===== COMPOSER: Send message directly from contact page =====
   const handleComposerSend = async (textOverride?: string) => {
-    const content = textOverride || composerMessage.trim();
+    let content = textOverride || composerMessage.trim();
     if (!content && !selectedMedia) return;
     if (!user) return;
+    
+    // Resolve personalization merge tags
+    const firstName = contact.first_name || '';
+    const lastName = contact.last_name || '';
+    content = content
+      .replace(/\{first_name\}/g, firstName)
+      .replace(/\{last_name\}/g, lastName)
+      .replace(/\{full_name\}/g, `${firstName} ${lastName}`.trim())
+      .replace(/\{phone\}/g, contact.phone || '')
+      .replace(/\{email\}/g, contact.email || '')
+      .replace(/\{my_name\}/g, (user as any).name || '')
+      .replace(/\{my_phone\}/g, (user as any).phone || '')
+      .replace(/\{company\}/g, (user as any).organization_name || '')
+      .replace(/\{date_sold\}/g, '')
+      .replace(/\{name\}/g, firstName);
     
     const contactEmail = contact.email || '';
     if (composerMode === 'email' && !contactEmail) {
@@ -3376,7 +3391,7 @@ export default function ContactDetailScreen() {
                               <View style={s.feedExpandedPreview}>
                                 {channelLabel ? (
                                   <View style={[s.feedChannelBadge, { backgroundColor: `${evt.color || '#007AFF'}20` }]}>
-                                    <Ionicons name={evt.channel === 'email' ? 'mail' : evt.channel === 'whatsapp' ? 'logo-whatsapp' : evt.channel === 'messenger' ? 'logo-facebook' : evt.channel === 'telegram' ? 'paper-plane' : evt.channel === 'linkedin' ? 'logo-linkedin' : evt.channel === 'clipboard' ? 'copy' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
+                                    <Ionicons name={evt.channel === 'email' ? 'mail' : evt.channel === 'whatsapp' ? 'logo-whatsapp' : evt.channel === 'messenger' ? 'chatbubbles' : evt.channel === 'telegram' ? 'paper-plane' : evt.channel === 'linkedin' ? 'logo-linkedin' : evt.channel === 'clipboard' ? 'copy' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
                                     <Text style={[s.feedChannelText, { color: evt.color || '#007AFF' }]}>{channelLabel}</Text>
                                   </View>
                                 ) : null}
@@ -4533,7 +4548,7 @@ export default function ContactDetailScreen() {
 
       {/* Photo Gallery — Modern reel */}
       <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']}>
         <View style={s.galleryRoot}>
           {/* Header */}
           <View style={s.galleryTopBar}>
@@ -4720,7 +4735,7 @@ export default function ContactDetailScreen() {
             </View>
           )}
         </View>
-        </View>
+        </SafeAreaView>
       </Modal>
       <ChannelPicker
         message={channelPicker.message}
@@ -5376,7 +5391,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   galleryTopBar: {
     flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 56 : 16,
+    paddingTop: 12,
     paddingHorizontal: 16, paddingBottom: 12,
     backgroundColor: '#000',
   },
