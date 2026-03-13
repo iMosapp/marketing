@@ -13,6 +13,7 @@ import {
   FlatList,
   Linking,
   Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -229,6 +230,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
 export default function ContactDetailScreen() {
   const { colors } = useThemeStore();
   const s = getS(colors);
+  const { width: screenWidth } = useWindowDimensions();
   const ncs = {
     card: {
       backgroundColor: colors.card,
@@ -286,6 +288,7 @@ export default function ContactDetailScreen() {
   const [originalNotes, setOriginalNotes] = useState('');
   // Full photo viewer & gallery
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [galleryWidth, setGalleryWidth] = useState(0);
   const [fullPhoto, setFullPhoto] = useState<string | null>(null);
   const [fullPhotoLoading, setFullPhotoLoading] = useState(false);
   const [allPhotos, setAllPhotos] = useState<any[]>([]);
@@ -1556,34 +1559,57 @@ export default function ContactDetailScreen() {
     }
   };
 
-  const viewFullPhoto = async () => {
+  // Preload gallery photos when contact loads (so gallery opens instantly)
+  const preloadGalleryPhotos = React.useCallback(async () => {
     if (!user || isNewContact) return;
-    setShowPhotoViewer(true);
-    setFullPhotoLoading(true);
-    setSelectedPhotoIndex(-1);
-    setFullPhoto(null);
     try {
       const galleryRes = await api.get(`/contacts/${user._id}/${id}/photos/all`);
       const rawPhotos = galleryRes.data?.photos || [];
-      // Ensure all photo URLs are absolute (critical for mobile)
       const photos = rawPhotos.map((p: any) => ({
         ...p,
         url: resolvePhotoUrl(p.url),
         thumbnail_url: resolvePhotoUrl(p.thumbnail_url || p.url),
       }));
       setAllPhotos(photos);
-      // If only 1 photo, go straight to full view
+    } catch { /* silent — gallery will show empty */ }
+  }, [user, id, isNewContact]);
+
+  React.useEffect(() => {
+    if (!isNewContact && user) preloadGalleryPhotos();
+  }, [isNewContact, user]);
+
+  const viewFullPhoto = () => {
+    if (!user || isNewContact) return;
+    setShowPhotoViewer(true);
+    setSelectedPhotoIndex(-1);
+    setFullPhoto(null);
+    // If photos already preloaded, show grid instantly
+    if (allPhotos.length > 0) {
+      setFullPhotoLoading(false);
+      if (allPhotos.length === 1) {
+        setSelectedPhotoIndex(0);
+        setFullPhoto(allPhotos[0]?.url || resolvePhotoUrl(contact.photo));
+      }
+      return;
+    }
+    // Fallback: load now (first visit or preload didn't run)
+    setFullPhotoLoading(true);
+    api.get(`/contacts/${user._id}/${id}/photos/all`).then(res => {
+      const photos = (res.data?.photos || []).map((p: any) => ({
+        ...p, url: resolvePhotoUrl(p.url), thumbnail_url: resolvePhotoUrl(p.thumbnail_url || p.url),
+      }));
+      setAllPhotos(photos);
       if (photos.length <= 1) {
         setSelectedPhotoIndex(0);
         setFullPhoto(photos[0]?.url || resolvePhotoUrl(contact.photo));
       }
-    } catch {
+    }).catch(() => {
       setAllPhotos([]);
-      setSelectedPhotoIndex(0);
-      setFullPhoto(resolvePhotoUrl(contact.photo));
-    } finally {
-      setFullPhotoLoading(false);
-    }
+      if (contact.photo) {
+        setSelectedPhotoIndex(0);
+        setFullPhoto(resolvePhotoUrl(contact.photo));
+      }
+    }).finally(() => setFullPhotoLoading(false));
   };
 
   // ===== VOICE NOTES =====
@@ -4507,8 +4533,9 @@ export default function ContactDetailScreen() {
 
       {/* Photo Gallery — Modern reel */}
       <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
         <View style={s.galleryRoot}>
-          {/* Top bar with safe area */}
+          {/* Header */}
           <View style={s.galleryTopBar}>
             <TouchableOpacity
               style={s.galleryCloseBtn}
@@ -4518,31 +4545,36 @@ export default function ContactDetailScreen() {
             >
               <Ionicons name="close" size={22} color="#FFF" />
             </TouchableOpacity>
-
             <Text style={s.galleryTopTitle}>
-              {selectedPhotoIndex >= 0 && allPhotos.length > 0
-                ? `${selectedPhotoIndex + 1} of ${allPhotos.length}`
-                : `${allPhotos.length} Photo${allPhotos.length !== 1 ? 's' : ''}`}
+              {selectedPhotoIndex >= 0 ? `${selectedPhotoIndex + 1} of ${allPhotos.length}` : 'Photos'}
             </Text>
-
-            {/* Upload new photo button */}
             <TouchableOpacity
               style={s.galleryUploadBtn}
               onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); pickImage(); }}
               data-testid="gallery-upload-btn"
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Ionicons name="add-circle-outline" size={24} color="#C9A962" />
+              <Ionicons name="camera" size={22} color="#C9A962" />
             </TouchableOpacity>
           </View>
 
           {fullPhotoLoading ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#C9A962" />
-              <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 12, fontSize: 14 }}>Loading photos...</Text>
+            /* === SHIMMER SKELETON GRID === */
+            <View style={{ flex: 1, padding: 0 }}>
+              <View
+                style={s.galleryGrid}
+                onLayout={(e) => setGalleryWidth(e.nativeEvent.layout.width)}
+              >
+                {[0,1,2,3,4,5].map(i => {
+                  const sz = galleryWidth > 0 ? Math.floor((galleryWidth - 2) / 3) : 120;
+                  return (
+                    <View key={i} style={{ width: sz, height: sz, backgroundColor: '#1a1a1a' }} data-testid={`shimmer-${i}`} />
+                  );
+                })}
+              </View>
             </View>
           ) : selectedPhotoIndex >= 0 && allPhotos.length > 0 ? (
-            /* === FULL-SCREEN SWIPEABLE VIEWER === */
+            /* === FULL-SCREEN VIEWER (tap a photo to get here) === */
             <View style={{ flex: 1 }}>
               <FlatList
                 data={allPhotos}
@@ -4551,7 +4583,7 @@ export default function ContactDetailScreen() {
                 showsHorizontalScrollIndicator={false}
                 initialScrollIndex={Math.min(selectedPhotoIndex, allPhotos.length - 1)}
                 getItemLayout={(_, index) => {
-                  const w = Dimensions.get('window').width;
+                  const w = screenWidth;
                   return { length: w, offset: w * index, index };
                 }}
                 onMomentumScrollEnd={(e) => {
@@ -4564,14 +4596,14 @@ export default function ContactDetailScreen() {
                 }}
                 keyExtractor={(item, index) => `photo-reel-${item.type}-${index}`}
                 renderItem={({ item }) => {
-                  const { width: screenW, height: screenH } = Dimensions.get('window');
-                  // Reserve space for top bar (~80px) and bottom bar (~120px)
+                  const screenW = galleryWidth || screenWidth;
+                  const screenH = Dimensions.get('window').height;
                   const imgH = screenH - 200;
                   return (
-                    <View style={{ width: screenW, height: imgH, justifyContent: 'center', alignItems: 'center', padding: 8 }}>
+                    <View style={{ width: screenW, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
                       <Image
                         source={{ uri: item.url }}
-                        style={{ width: screenW - 16, height: imgH - 16, borderRadius: 8 }}
+                        style={{ width: screenW, height: imgH }}
                         contentFit="contain"
                         transition={200}
                         cachePolicy="memory-disk"
@@ -4582,98 +4614,112 @@ export default function ContactDetailScreen() {
                 style={{ flex: 1 }}
                 data-testid="photo-reel"
               />
-
-              {/* Bottom bar */}
-              <View style={s.galleryBottomBar}>
-                <Text style={s.galleryBottomLabel} numberOfLines={1}>
-                  {allPhotos[selectedPhotoIndex]?.label || 'Photo'}
-                </Text>
-                {allPhotos[selectedPhotoIndex]?.date && (
-                  <Text style={s.galleryBottomDate}>
-                    {new Date(allPhotos[selectedPhotoIndex].date).toLocaleDateString()}
+              {/* Bottom action bar */}
+              <View style={s.viewerBottomBar}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.viewerLabel} numberOfLines={1}>
+                    {allPhotos[selectedPhotoIndex]?.type === 'profile' ? 'Profile Photo' : (allPhotos[selectedPhotoIndex]?.label || 'Photo')}
                   </Text>
-                )}
-
-                <View style={s.galleryBottomActions}>
-                  {allPhotos.length > 1 && (
-                    <TouchableOpacity
-                      style={s.galleryActionBtn}
-                      onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
-                      data-testid="back-to-gallery-grid"
-                    >
-                      <Ionicons name="grid-outline" size={16} color="#FFF" />
-                      <Text style={s.galleryActionText}>Grid</Text>
-                    </TouchableOpacity>
+                  {allPhotos[selectedPhotoIndex]?.date && (
+                    <Text style={s.viewerDate}>{new Date(allPhotos[selectedPhotoIndex].date).toLocaleDateString()}</Text>
                   )}
-
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={s.viewerActionBtn}
+                    onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
+                    data-testid="back-to-gallery-grid"
+                  >
+                    <Ionicons name="grid-outline" size={18} color="#FFF" />
+                  </TouchableOpacity>
                   {allPhotos[selectedPhotoIndex]?.type !== 'profile' && (
                     <TouchableOpacity
-                      style={[s.galleryActionBtn, { backgroundColor: '#C9A962' }]}
+                      style={[s.viewerActionBtn, { backgroundColor: '#C9A962' }]}
                       onPress={async () => {
                         const photoUrl = allPhotos[selectedPhotoIndex]?.url;
                         if (!photoUrl) return;
                         try {
-                          // Send the original relative path if possible, else the full URL
-                          const patchUrl = photoUrl.startsWith('http') ? photoUrl : photoUrl;
-                          await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: patchUrl });
+                          await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photoUrl });
                           setContact((prev: any) => ({ ...prev, photo: photoUrl, photo_url: photoUrl, photo_thumbnail: photoUrl }));
                           showToast('Profile photo updated!', 'success');
-                          setShowPhotoViewer(false); setFullPhoto(null); setSelectedPhotoIndex(0);
+                          setShowPhotoViewer(false); setFullPhoto(null); setSelectedPhotoIndex(-1);
                         } catch { showSimpleAlert('Error', 'Failed to update profile photo'); }
                       }}
                       data-testid="set-as-profile-btn"
                     >
-                      <Ionicons name="person-circle" size={16} color="#FFF" />
-                      <Text style={s.galleryActionText}>Set as Profile</Text>
+                      <Ionicons name="person-circle" size={18} color="#000" />
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
             </View>
           ) : allPhotos.length > 0 ? (
-            /* === THUMBNAIL GRID VIEW === */
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-              <View style={s.galleryGrid}>
-                {allPhotos.map((photo: any, idx: number) => (
-                  <TouchableOpacity
-                    key={`${photo.type}-${idx}`}
-                    style={s.galleryTile}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setSelectedPhotoIndex(idx);
-                      setFullPhoto(photo.url);
-                    }}
-                    data-testid={`gallery-tile-${idx}`}
-                  >
-                    <Image
-                      source={{ uri: photo.thumbnail_url || photo.url }}
-                      style={s.galleryTileImg}
-                      contentFit="cover"
-                      transition={150}
-                      cachePolicy="memory-disk"
-                    />
-                    <View style={s.galleryTileBadge}>
-                      <Text style={s.galleryTileBadgeText}>
-                        {photo.type === 'profile' ? 'Profile' : (photo.label || photo.type || '').replace(/_/g, ' ')}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+            /* === INSTAGRAM-STYLE 3-COLUMN GRID === */
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
+              <View
+                style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}
+                onLayout={(e) => setGalleryWidth(e.nativeEvent.layout.width)}
+              >
+                {galleryWidth > 0 && allPhotos.map((photo: any, idx: number) => {
+                  const isProfile = photo.type === 'profile';
+                  const tileSize = Math.floor((galleryWidth - 2) / 3);
+                  return (
+                    <TouchableOpacity
+                      key={`${photo.type}-${idx}`}
+                      activeOpacity={0.85}
+                      onPress={() => { setSelectedPhotoIndex(idx); setFullPhoto(photo.url); }}
+                      data-testid={`gallery-tile-${idx}`}
+                      style={{ width: tileSize, height: tileSize, overflow: 'hidden', position: 'relative', backgroundColor: '#111' }}
+                    >
+                      <Image
+                        source={{ uri: photo.thumbnail_url || photo.url }}
+                        style={{ width: tileSize, height: tileSize }}
+                        contentFit="cover"
+                        transition={250}
+                        cachePolicy="memory-disk"
+                      />
+                      {isProfile && (
+                        <View style={s.profileBadge} data-testid="profile-badge">
+                          <Ionicons name="person-circle" size={14} color="#C9A962" />
+                        </View>
+                      )}
+                      {!isProfile && (
+                        <TouchableOpacity
+                          style={s.setProfileOverlay}
+                          onPress={async (e) => {
+                            e.stopPropagation?.();
+                            try {
+                              await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
+                              setContact((prev: any) => ({ ...prev, photo: photo.url, photo_url: photo.url, photo_thumbnail: photo.url }));
+                              showToast('Profile photo updated!', 'success');
+                            } catch { showSimpleAlert('Error', 'Failed to update'); }
+                          }}
+                          data-testid={`set-profile-${idx}`}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        >
+                          <Ionicons name="person-circle-outline" size={16} color="#FFF" />
+                        </TouchableOpacity>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </ScrollView>
           ) : (
+            /* === EMPTY STATE === */
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
-              <Ionicons name="images-outline" size={48} color="rgba(255,255,255,0.2)" />
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, marginTop: 12, textAlign: 'center' }}>No photos yet</Text>
+              <Ionicons name="images-outline" size={48} color="rgba(255,255,255,0.15)" />
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, marginTop: 12, textAlign: 'center' }}>No photos yet</Text>
               <TouchableOpacity
                 style={{ marginTop: 20, backgroundColor: '#C9A962', borderRadius: 20, paddingHorizontal: 24, paddingVertical: 10 }}
                 onPress={() => { setShowPhotoViewer(false); pickImage(); }}
                 data-testid="gallery-empty-upload"
               >
-                <Text style={{ color: '#FFF', fontWeight: '600', fontSize: 14 }}>Add Photo</Text>
+                <Text style={{ color: '#000', fontWeight: '700', fontSize: 14 }}>Add Photo</Text>
               </TouchableOpacity>
             </View>
           )}
+        </View>
         </View>
       </Modal>
       <ChannelPicker
@@ -5326,6 +5372,7 @@ const getS = (colors: any) => StyleSheet.create({
   // Photo Gallery — new modern layout
   galleryRoot: {
     flex: 1, backgroundColor: '#000',
+    maxWidth: 480, width: '100%', alignSelf: 'center' as const,
   },
   galleryTopBar: {
     flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'space-between',
@@ -5345,44 +5392,51 @@ const getS = (colors: any) => StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     justifyContent: 'center', alignItems: 'center',
   },
-  galleryBottomBar: {
-    paddingHorizontal: 20, paddingBottom: 34, paddingTop: 12, alignItems: 'center',
-    backgroundColor: '#000',
+  // Full-screen viewer bottom bar
+  viewerBottomBar: {
+    flexDirection: 'row' as const, alignItems: 'center',
+    paddingHorizontal: 20, paddingBottom: 34, paddingTop: 12,
+    backgroundColor: '#000', gap: 12,
   },
-  galleryBottomLabel: {
-    color: '#FFF', fontSize: 15, fontWeight: '600', textAlign: 'center' as const,
+  viewerLabel: {
+    color: '#FFF', fontSize: 15, fontWeight: '600',
   },
-  galleryBottomDate: {
-    color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 2,
+  viewerDate: {
+    color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2,
   },
-  galleryBottomActions: {
-    flexDirection: 'row' as const, gap: 10, marginTop: 14, justifyContent: 'center',
+  viewerActionBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  galleryActionBtn: {
-    flexDirection: 'row' as const, alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20,
-    paddingVertical: 8, paddingHorizontal: 16,
-  },
-  galleryActionText: {
-    color: '#FFF', fontSize: 13, fontWeight: '600',
-  },
-  // Gallery grid
+  // Instagram-style 3-column grid — edge-to-edge with 1px gaps
   galleryGrid: {
-    flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 3, justifyContent: 'flex-start' as const, width: '100%',
-    maxWidth: 600,
+    flexDirection: 'row' as const, flexWrap: 'wrap' as const,
+    gap: 1,
   },
   galleryTile: {
-    width: '32.5%', aspectRatio: 1, borderRadius: 4, overflow: 'hidden' as const, position: 'relative' as const,
+    width: `${(100 / 3) - 0.1}%` as any,
+    aspectRatio: 1,
+    overflow: 'hidden' as const,
+    position: 'relative' as const,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   galleryTileImg: {
     width: '100%', height: '100%',
   },
-  galleryTileBadge: {
-    position: 'absolute' as const, bottom: 0, left: 0, right: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 3,
+  // Gold star badge for current profile photo
+  profileBadge: {
+    position: 'absolute' as const, top: 6, left: 6,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  galleryTileBadgeText: {
-    color: '#FFF', fontSize: 9, fontWeight: '700', textAlign: 'center' as const, textTransform: 'uppercase' as const, letterSpacing: 0.5,
+  // "Set as profile" quick-action overlay (bottom-right of each tile)
+  setProfileOverlay: {
+    position: 'absolute' as const, bottom: 6, right: 6,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center', alignItems: 'center',
   },
   // Voice notes
   vnRecordBtn: {
