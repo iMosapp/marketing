@@ -463,7 +463,7 @@ export default function MyAccountScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="back-button">
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>My Account</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>My Presence</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -530,6 +530,39 @@ export default function MyAccountScreen() {
 
           {/* --- My Digital Card --- */}
           <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-digital-card">
+            <TouchableOpacity
+              style={[styles.previewPanel, { backgroundColor: '#007AFF08' }]}
+              onPress={() => {
+                const url = storeSlug ? `/imos/digital-card` : '/settings/store-profile';
+                router.push(url as any);
+              }}
+              activeOpacity={0.8}
+              data-testid="card-preview-panel"
+            >
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  {photoUrl ? (
+                    <Image source={{ uri: photoUrl }} style={{ width: 52, height: 52, borderRadius: 26 }} />
+                  ) : (
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 20 }}>{getInitials()}</Text>
+                  )}
+                </View>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{user?.name || 'Your Name'}</Text>
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Sales Professional</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                  {[
+                    { icon: 'call', color: '#34C759' },
+                    { icon: 'mail', color: '#007AFF' },
+                    { icon: 'chatbubble', color: '#FF9500' },
+                    { icon: 'globe', color: '#5856D6' },
+                  ].map((item, i) => (
+                    <View key={i} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: `${item.color}15`, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={item.icon as any} size={14} color={item.color} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </TouchableOpacity>
             <View style={styles.presenceHeader}>
               <View style={[styles.presenceIcon, { backgroundColor: '#007AFF20' }]}>
                 <Ionicons name="card" size={20} color="#007AFF" />
@@ -568,6 +601,30 @@ export default function MyAccountScreen() {
 
           {/* --- My Showcase --- */}
           <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-showcase">
+            <TouchableOpacity
+              style={[styles.previewPanel, { backgroundColor: '#34C75908' }]}
+              onPress={() => router.push('/imos/showcase' as any)}
+              activeOpacity={0.8}
+              data-testid="showcase-preview-panel"
+            >
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  {['#007AFF20', '#34C75920', '#FF950020'].map((bg, i) => (
+                    <View key={i} style={{ width: 50, height: 50, borderRadius: 8, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="camera" size={16} color={['#007AFF', '#34C759', '#FF9500'][i]} />
+                    </View>
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  {['#5856D620', '#FF2D5520', '#FFD60A20'].map((bg, i) => (
+                    <View key={i} style={{ width: 50, height: 50, borderRadius: 8, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="camera" size={16} color={['#5856D6', '#FF2D55', '#FFD60A'][i]} />
+                    </View>
+                  ))}
+                </View>
+                <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 8 }}>Your public portfolio</Text>
+              </View>
+            </TouchableOpacity>
             <View style={styles.presenceHeader}>
               <View style={[styles.presenceIcon, { backgroundColor: '#34C75920' }]}>
                 <Ionicons name="images" size={20} color="#34C759" />
@@ -607,6 +664,32 @@ export default function MyAccountScreen() {
 
           {/* --- Review Link --- */}
           <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-review-link">
+            <TouchableOpacity
+              style={[styles.previewPanel, { backgroundColor: '#FFD60A08' }]}
+              onPress={handlePreviewReviewPage}
+              activeOpacity={0.8}
+              data-testid="review-preview-panel"
+            >
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 10 }}>
+                  {[1,2,3,4,5].map(i => (
+                    <Ionicons key={i} name="star" size={22} color="#FFD60A" />
+                  ))}
+                </View>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Rate Your Experience</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#4285F415' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#4285F4' }}>Google</Text>
+                  </View>
+                  <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#1877F215' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#1877F2' }}>Facebook</Text>
+                  </View>
+                  <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#AF281415' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#AF2814' }}>Yelp</Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
             <View style={styles.presenceHeader}>
               <View style={[styles.presenceIcon, { backgroundColor: '#FFD60A20' }]}>
                 <Ionicons name="star" size={20} color="#FFD60A" />
@@ -640,6 +723,29 @@ export default function MyAccountScreen() {
 
           {/* --- My Link Page --- */}
           <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-link-page">
+            <TouchableOpacity
+              style={[styles.previewPanel, { backgroundColor: '#C9A96208' }]}
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(`${PROD_BASE}/l/${user?._id}`, '_blank');
+                } else {
+                  Linking.openURL(`${PROD_BASE}/l/${user?._id}`);
+                }
+              }}
+              activeOpacity={0.8}
+              data-testid="linkpage-preview-panel"
+            >
+              <View style={{ alignItems: 'center', width: '100%', maxWidth: 200 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96230', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                  <Ionicons name="person" size={18} color="#C9A962" />
+                </View>
+                {['Website', 'Instagram', 'Facebook'].map((label, i) => (
+                  <View key={i} style={{ width: '100%', paddingVertical: 7, borderRadius: 20, backgroundColor: colors.bg, marginBottom: 4, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+            </TouchableOpacity>
             <View style={styles.presenceHeader}>
               <View style={[styles.presenceIcon, { backgroundColor: '#C9A96220' }]}>
                 <Ionicons name="link" size={20} color="#C9A962" />
@@ -681,6 +787,27 @@ export default function MyAccountScreen() {
 
           {/* --- My Landing Page --- */}
           <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-landing-page">
+            <TouchableOpacity
+              style={[styles.previewPanel, { backgroundColor: '#AF52DE08' }]}
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(`${PROD_BASE}/p/${user?._id}`, '_blank');
+                } else {
+                  Linking.openURL(`${PROD_BASE}/p/${user?._id}`);
+                }
+              }}
+              activeOpacity={0.8}
+              data-testid="landing-preview-panel"
+            >
+              <View style={{ alignItems: 'center' }}>
+                <Ionicons name="globe-outline" size={30} color="#AF52DE" style={{ marginBottom: 6 }} />
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Welcome</Text>
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2, marginBottom: 10 }}>{user?.name || 'Your Name'}</Text>
+                <View style={{ paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: '#AF52DE' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#fff' }}>Get in Touch</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
             <View style={styles.presenceHeader}>
               <View style={[styles.presenceIcon, { backgroundColor: '#AF52DE20' }]}>
                 <Ionicons name="globe-outline" size={20} color="#AF52DE" />
@@ -1202,6 +1329,60 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     gap: 12,
+  },
+  presenceCard: {
+    borderRadius: 16,
+    overflow: 'hidden' as const,
+    marginBottom: 16,
+  },
+  previewPanel: {
+    paddingVertical: 20,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    minHeight: 150,
+  },
+  presenceHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 6,
+    gap: 12,
+  },
+  presenceIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  presenceTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  presenceUrl: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  presenceActions: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingTop: 4,
+  },
+  presenceBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  presenceBtnText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
 });
 
