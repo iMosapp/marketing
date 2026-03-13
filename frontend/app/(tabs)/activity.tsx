@@ -257,7 +257,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 28, fontWeight: '800' },
   headerSubtitle: { fontSize: 13, marginTop: 2 },
   scrollContainer: { flex: 1 },
-  scroll: { paddingBottom: 40 },
+  scroll: { paddingBottom: 8 },
 
   // Date groups
   dateLabelRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 12 },

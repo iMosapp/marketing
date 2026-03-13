@@ -916,7 +916,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
 
   // Master feed
-  feedContainer: { paddingBottom: 20 },
+  feedContainer: { paddingBottom: 8 },
   feedSection: { marginBottom: 8 },
   feedSectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
