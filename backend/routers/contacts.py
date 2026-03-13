@@ -395,6 +395,36 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     # Process photo if it's a new base64 upload → compress to WebP via image pipeline
     photo_val = update_dict.get('photo')
     if photo_val and (photo_val.startswith('data:') or len(photo_val) > 1000):
+        # Save old photo to history before replacing
+        try:
+            db = get_db()
+            old_contact = await db.contacts.find_one(
+                {"_id": ObjectId(contact_id)},
+                {"photo_path": 1, "photo_thumb_path": 1, "photo_url": 1, "photo_thumbnail": 1, "photo": 1}
+            )
+            if old_contact:
+                old_url = None
+                old_thumb = None
+                if old_contact.get("photo_path"):
+                    old_url = f"/api/images/{old_contact['photo_path']}"
+                    old_thumb = f"/api/images/{old_contact.get('photo_thumb_path', old_contact['photo_path'])}"
+                elif old_contact.get("photo_url") and old_contact["photo_url"].startswith(("/api/images/", "http")):
+                    old_url = old_contact["photo_url"]
+                    old_thumb = old_contact.get("photo_thumbnail") or old_url
+                elif old_contact.get("photo") and old_contact["photo"].startswith(("/api/images/", "http")):
+                    old_url = old_contact["photo"]
+                    old_thumb = old_contact.get("photo_thumbnail") or old_url
+                if old_url:
+                    await db.contacts.update_one(
+                        {"_id": ObjectId(contact_id)},
+                        {"$push": {"photo_history": {
+                            "url": old_url, "thumbnail_url": old_thumb or old_url,
+                            "replaced_at": datetime.now(timezone.utc).isoformat(),
+                            "type": "profile"
+                        }}}
+                    )
+        except Exception as e:
+            logger.warning(f"Failed to save photo history: {e}")
         try:
             from utils.image_storage import upload_image
             result = await upload_image(photo_val, prefix="contacts", entity_id=contact_id)
@@ -496,15 +526,51 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
     if not photo_url:
         raise HTTPException(status_code=400, detail="photo_url is required")
 
+    # Save old photo to history before replacing
+    try:
+        old_contact = await db.contacts.find_one(
+            {"_id": ObjectId(contact_id)},
+            {"photo_path": 1, "photo_thumb_path": 1, "photo_url": 1, "photo_thumbnail": 1, "photo": 1}
+        )
+        if old_contact:
+            old_url = None
+            old_thumb = None
+            if old_contact.get("photo_path"):
+                old_url = f"/api/images/{old_contact['photo_path']}"
+                old_thumb = f"/api/images/{old_contact.get('photo_thumb_path', old_contact['photo_path'])}"
+            elif old_contact.get("photo_url") and old_contact["photo_url"].startswith(("/api/images/", "http")):
+                old_url = old_contact["photo_url"]
+                old_thumb = old_contact.get("photo_thumbnail") or old_url
+            elif old_contact.get("photo") and old_contact["photo"].startswith(("/api/images/", "http")):
+                old_url = old_contact["photo"]
+                old_thumb = old_contact.get("photo_thumbnail") or old_url
+            if old_url and old_url != photo_url:
+                await db.contacts.update_one(
+                    {"_id": ObjectId(contact_id)},
+                    {"$push": {"photo_history": {
+                        "url": old_url, "thumbnail_url": old_thumb or old_url,
+                        "replaced_at": datetime.now(timezone.utc).isoformat(),
+                        "type": "profile"
+                    }}}
+                )
+    except Exception as e:
+        logger.warning(f"Failed to save photo history on profile-photo set: {e}")
+
     try:
         result = await db.contacts.update_one(
             {"_id": ObjectId(contact_id)},
-            {"$set": {"photo": photo_url, "photo_url": photo_url, "photo_thumbnail": photo_url, "updated_at": datetime.utcnow()}}
+            {
+                "$set": {"photo": photo_url, "photo_url": photo_url, "photo_thumbnail": photo_url, "updated_at": datetime.utcnow()},
+                "$unset": {"photo_path": "", "photo_thumb_path": "", "photo_avatar_path": ""}
+            }
         )
     except Exception:
         result = await db.contacts.update_one(
             {"_id": contact_id},
-            {"$set": {"photo": photo_url, "photo_url": photo_url, "photo_thumbnail": photo_url, "updated_at": datetime.utcnow()}}
+            {
+                "$set": {"photo": photo_url, "photo_url": photo_url, "photo_thumbnail": photo_url, "updated_at": datetime.utcnow()},
+                "$unset": {"photo_path": "", "photo_thumb_path": "", "photo_avatar_path": ""}
+            }
         )
 
     if result.modified_count == 0:
@@ -892,20 +958,20 @@ async def regenerate_thumbnails():
 
 @router.get("/{user_id}/{contact_id}/photos/all")
 async def get_all_contact_photos(user_id: str, contact_id: str):
-    """Get all photos for a contact — fast read-only, no lazy migration."""
+    """Get all photos for a contact — fast read-only, WebP pipeline only. No base64."""
     db = get_db()
     photos = []
 
     try:
         contact = await db.contacts.find_one(
             {"_id": ObjectId(contact_id)},
-            {"photo": 1, "photo_thumbnail": 1, "photo_path": 1, "photo_thumb_path": 1,
-             "photo_url": 1, "first_name": 1, "phone": 1}
+            {"photo_path": 1, "photo_thumb_path": 1, "photo_url": 1,
+             "photo_thumbnail": 1, "first_name": 1, "phone": 1, "photo_history": 1}
         )
     except Exception:
         contact = None
 
-    # 1. Profile photo — serve whatever we have, no migration
+    # 1. Current profile photo — only fast paths
     if contact:
         if contact.get("photo_path"):
             photos.append({
@@ -913,26 +979,26 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                 "url": f"/api/images/{contact['photo_path']}",
                 "thumbnail_url": f"/api/images/{contact.get('photo_thumb_path', contact['photo_path'])}",
             })
-        elif contact.get("photo_url") and contact["photo_url"].startswith("/api/images/"):
+        elif contact.get("photo_url") and contact["photo_url"].startswith(("/api/images/", "http")):
             photos.append({
                 "type": "profile", "label": "Profile Photo",
                 "url": contact["photo_url"],
                 "thumbnail_url": contact.get("photo_thumbnail") or contact["photo_url"],
             })
-        elif contact.get("photo") and contact["photo"].startswith("/api/images/"):
-            photos.append({
-                "type": "profile", "label": "Profile Photo",
-                "url": contact["photo"],
-                "thumbnail_url": contact.get("photo_thumbnail") or contact["photo"],
-            })
-        elif contact.get("photo_thumbnail"):
-            photos.append({
-                "type": "profile", "label": "Profile Photo",
-                "url": contact["photo_thumbnail"],
-                "thumbnail_url": contact["photo_thumbnail"],
-            })
 
-    # 2. Congrats card photos — fast read only
+    # 2. Photo history — previous profile photos (only fast URLs)
+    if contact and contact.get("photo_history"):
+        for hist in reversed(contact["photo_history"]):
+            url = hist.get("url", "")
+            if url.startswith(("/api/images/", "http")):
+                photos.append({
+                    "type": "history", "label": "Previous Photo",
+                    "url": url,
+                    "thumbnail_url": hist.get("thumbnail_url") or url,
+                    "date": hist.get("replaced_at"),
+                })
+
+    # 3. Congrats card photos — only fast paths, skip base64
     congrats_filter = {"user_id": user_id, "$or": []}
     if contact_id:
         congrats_filter["$or"].append({"contact_id": contact_id})
@@ -956,10 +1022,7 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             elif c.get("photo_url") and c["photo_url"].startswith("/api/images/"):
                 full_url = c["photo_url"]
                 thumb_url = c.get("photo_thumbnail_url") or full_url
-            elif c.get("customer_photo") and c["customer_photo"].startswith("/api/images/"):
-                full_url = c["customer_photo"]
-                thumb_url = full_url
-            elif c.get("customer_photo") and c["customer_photo"].startswith("http"):
+            elif c.get("customer_photo") and c["customer_photo"].startswith(("/api/images/", "http")):
                 full_url = c["customer_photo"]
                 thumb_url = full_url
             else:
@@ -972,7 +1035,7 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                 "date": c["created_at"].isoformat() if c.get("created_at") else None,
             })
 
-    # 3. Birthday card photos — fast read only
+    # 4. Birthday card photos — only fast paths, skip base64
     bday_cards = await db.birthday_cards.find(
         {"contact_id": contact_id},
         {"card_id": 1, "customer_name": 1, "created_at": 1, "customer_photo": 1,
@@ -986,7 +1049,7 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
         elif bc.get("photo_url") and bc["photo_url"].startswith("/api/images/"):
             full_url = bc["photo_url"]
             thumb_url = bc.get("photo_thumbnail_url") or full_url
-        elif bc.get("customer_photo") and bc["customer_photo"].startswith("http"):
+        elif bc.get("customer_photo") and bc["customer_photo"].startswith(("/api/images/", "http")):
             full_url = bc["customer_photo"]
             thumb_url = bc["customer_photo"]
         else:

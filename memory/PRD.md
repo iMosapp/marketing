@@ -35,6 +35,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - All navigation and clipboard functionality working
 - **Tested:** 95% frontend pass (iteration 203)
 
+### Photo Gallery — Speed + History (Mar 13, 2026)
+- Gallery endpoint cleaned: ONLY serves `/api/images/` WebP paths and `http` URLs — zero base64
+- Added photo history tracking: when a contact's profile photo is changed, the old photo URL is saved to `photo_history` array
+- Gallery includes historical photos going forward (only fast paths)
+- `PATCH /profile-photo` also clears stale `photo_path` fields to ensure correct photo is displayed
+
 ### Instagram-Style Photo Gallery (Mar 13, 2026)
 - **REBUILT:** Contact photo gallery from scratch with Instagram-style 3-column square grid
 - Backend `/photos/all` endpoint rewritten to be pure read-only — no lazy migration during gallery load, instant response
