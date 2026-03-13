@@ -349,6 +349,13 @@ export default function AdminDashboard() {
           onPress: () => router.push('/admin/onboarding-hub' as any),
           color: '#FF2D55',
         });
+        customerItems.push({
+          icon: 'pulse',
+          title: 'Account Health',
+          subtitle: 'Retention dashboard & engagement tracking',
+          onPress: () => router.push('/admin/account-health' as any),
+          color: '#00C7BE',
+        });
       }
       
       sections.push({
