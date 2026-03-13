@@ -898,3 +898,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Per-user:** Each user sees their own recently visited items (stored under `hub_recent_{userId}`).
 - **Tested:** iteration 198 — 100% (all 10 feature tests passed)
 
+
+### Pinned Tools Quick Access (Mar 13, 2026)
+- **NEW FEATURE:** "Pinned" section on the Hub page — users can tap the bookmark icon on any Hub menu item to pin/unpin it permanently.
+- **How it works:** Each menu item row has a bookmark icon (outline=unpinned, filled=pinned). Tapping it toggles the pin state. Pinned items appear as chips above "Recently Visited" with a subtle colored border.
+- **Unpin:** Tap the bookmark icon again on the menu item, or long-press the pinned chip.
+- **Max 6 pins:** If user pins a 7th item, the oldest pin is automatically removed.
+- **No duplication:** Pinned items are automatically filtered out of the "Recently Visited" section.
+- **Persistence:** Per-user via AsyncStorage (`hub_pinned_{userId}`).
+- **Tested:** iteration 199 — All core features verified, no issues.
+
