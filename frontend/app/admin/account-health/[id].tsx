@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator,
+  TextInput, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useThemeStore } from '../../../store/themeStore';
+import { useToast } from '../../../components/common/Toast';
 import api from '../../../services/api';
 
 type Metrics = {
@@ -24,10 +26,10 @@ type HealthReport = {
   recent_events: any[]; period_days: number;
 };
 
-const MetricTile = ({ icon, label, value, sub, color, bgColor }: any) => {
+const MetricTile = ({ icon, label, value, sub, color }: any) => {
   const colors = useThemeStore((s) => s.colors);
   return (
-    <View style={[tileStyles.tile, { backgroundColor: bgColor || colors.card, borderColor: colors.surface }]}>
+    <View style={[tileStyles.tile, { backgroundColor: colors.card, borderColor: colors.surface }]} data-testid={`metric-tile-${label.toLowerCase().replace(/\s/g, '-')}`}>
       <Ionicons name={icon} size={18} color={color} />
       <Text style={[tileStyles.value, { color: colors.text }]}>{value}</Text>
       <Text style={[tileStyles.label, { color: colors.textSecondary }]}>{label}</Text>
@@ -47,9 +49,15 @@ export default function AccountHealthDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeStore((s) => s.colors);
+  const { showToast } = useToast();
   const [report, setReport] = useState<HealthReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendEmail, setSendEmail] = useState('');
+  const [sendName, setSendName] = useState('');
+  const [sendNote, setSendNote] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => { load(); }, [id, period]);
 
@@ -58,10 +66,35 @@ export default function AccountHealthDetail() {
     try {
       const res = await api.get(`/account-health/user/${id}?period=${period}`);
       setReport(res.data);
+      // Pre-fill email from user data
+      if (res.data?.user?.email) setSendEmail(res.data.user.email);
+      if (res.data?.user?.name) setSendName(res.data.user.name);
     } catch (e) {
       console.error('Failed to load:', e);
     }
     setLoading(false);
+  };
+
+  const handleSendReport = async () => {
+    if (!sendEmail.trim()) {
+      showToast('Please enter a recipient email', 'error');
+      return;
+    }
+    setSending(true);
+    try {
+      await api.post(`/account-health/user/${id}/send-report`, {
+        recipient_email: sendEmail.trim(),
+        recipient_name: sendName.trim(),
+        note: sendNote.trim(),
+        period,
+      });
+      showToast('Health report sent!', 'success');
+      setShowSendModal(false);
+      setSendNote('');
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Failed to send report', 'error');
+    }
+    setSending(false);
   };
 
   if (loading) {
@@ -90,7 +123,7 @@ export default function AccountHealthDetail() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="back-btn">
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
@@ -99,6 +132,15 @@ export default function AccountHealthDetail() {
               {user.role} {report.organization ? `at ${report.organization}` : ''} {report.store ? `/ ${report.store}` : ''}
             </Text>
           </View>
+          {/* Send Report Button */}
+          <TouchableOpacity
+            onPress={() => setShowSendModal(true)}
+            style={[styles.sendBtn, { backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
+            data-testid="send-report-btn"
+          >
+            <Ionicons name="paper-plane" size={14} color="#C9A962" />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#C9A962' }}>Send Report</Text>
+          </TouchableOpacity>
           <View style={styles.periodRow}>
             {[30, 90].map(p => (
               <TouchableOpacity key={p} onPress={() => setPeriod(p)}
@@ -210,6 +252,82 @@ export default function AccountHealthDetail() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Send Report Modal */}
+      <Modal visible={showSendModal} transparent animationType="fade" onRequestClose={() => setShowSendModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="paper-plane" size={20} color="#C9A962" />
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Send Health Report</Text>
+              <TouchableOpacity onPress={() => setShowSendModal(false)} data-testid="close-send-modal-btn">
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
+              Email a comprehensive {period}-day health snapshot for {user.name || user.email}
+            </Text>
+
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Recipient Email *</Text>
+            <TextInput
+              value={sendEmail}
+              onChangeText={setSendEmail}
+              placeholder="email@example.com"
+              placeholderTextColor="#666"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+              data-testid="send-report-email-input"
+            />
+
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Recipient Name</Text>
+            <TextInput
+              value={sendName}
+              onChangeText={setSendName}
+              placeholder="Name (optional)"
+              placeholderTextColor="#666"
+              style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+              data-testid="send-report-name-input"
+            />
+
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Personal Note</Text>
+            <TextInput
+              value={sendNote}
+              onChangeText={setSendNote}
+              placeholder="Add a personal message (optional)..."
+              placeholderTextColor="#666"
+              multiline
+              numberOfLines={3}
+              style={[styles.input, styles.textarea, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+              data-testid="send-report-note-input"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={() => setShowSendModal(false)}
+                style={[styles.cancelBtn, { borderColor: colors.surface }]}
+                data-testid="cancel-send-report-btn"
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSendReport}
+                disabled={sending}
+                style={[styles.sendReportBtn, sending && { opacity: 0.6 }]}
+                data-testid="confirm-send-report-btn"
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Ionicons name="paper-plane" size={14} color="#FFF" />
+                )}
+                <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -218,10 +336,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: 16, maxWidth: 800, alignSelf: 'center' as any, width: '100%' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 12, marginTop: 2 },
+  sendBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
   periodRow: { flexDirection: 'row', gap: 6 },
   periodBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   healthBanner: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 16, borderWidth: 1.5, marginBottom: 20 },
@@ -248,4 +367,16 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12 },
   infoLabel: { fontSize: 13 },
   infoValue: { fontSize: 13, fontWeight: '600' },
+  // Modal styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { width: '100%', maxWidth: 460, borderRadius: 16, borderWidth: 1, padding: 24 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  modalTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
+  modalDesc: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
+  inputLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
+  input: { fontSize: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  textarea: { minHeight: 70, textAlignVertical: 'top' },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  sendReportBtn: { flex: 1, flexDirection: 'row', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' },
 });

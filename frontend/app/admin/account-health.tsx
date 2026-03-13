@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
 
 type HealthGrade = { score: number; grade: string; color: string };
@@ -21,11 +23,16 @@ const FILTERS = ['All', 'Critical', 'At Risk', 'Healthy'] as const;
 export default function AccountHealthDashboard() {
   const router = useRouter();
   const colors = useThemeStore((s) => s.colors);
+  const { showToast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<typeof FILTERS[number]>('All');
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState(30);
+  const [sendModal, setSendModal] = useState<Account | null>(null);
+  const [sendEmail, setSendEmail] = useState('');
+  const [sendNote, setSendNote] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => { load(); }, [period]);
 
@@ -54,6 +61,33 @@ export default function AccountHealthDashboard() {
     healthy: accounts.filter(a => a.health.grade === 'Healthy').length,
     atRisk: accounts.filter(a => a.health.grade === 'At Risk').length,
     critical: accounts.filter(a => a.health.grade === 'Critical').length,
+  };
+
+  const openSendModal = (account: Account) => {
+    setSendModal(account);
+    setSendEmail(account.email);
+    setSendNote('');
+  };
+
+  const handleSendReport = async () => {
+    if (!sendModal || !sendEmail.trim()) {
+      showToast('Please enter a recipient email', 'error');
+      return;
+    }
+    setSending(true);
+    try {
+      await api.post(`/account-health/user/${sendModal.user_id}/send-report`, {
+        recipient_email: sendEmail.trim(),
+        recipient_name: sendModal.name,
+        note: sendNote.trim(),
+        period,
+      });
+      showToast('Health report sent!', 'success');
+      setSendModal(null);
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Failed to send report', 'error');
+    }
+    setSending(false);
   };
 
   return (
@@ -177,6 +211,15 @@ export default function AccountHealthDashboard() {
                 </Text>
               </View>
 
+              {/* Quick send report */}
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); openSendModal(a); }}
+                style={styles.quickSendBtn}
+                data-testid={`send-report-${a.user_id}`}
+              >
+                <Ionicons name="paper-plane-outline" size={14} color="#C9A962" />
+              </TouchableOpacity>
+
               <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           ))
@@ -184,6 +227,61 @@ export default function AccountHealthDashboard() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Send Report Modal */}
+      {sendModal && (
+        <Modal visible={!!sendModal} transparent animationType="fade" onRequestClose={() => setSendModal(null)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.surface }]}>
+              <View style={styles.modalHeader}>
+                <Ionicons name="paper-plane" size={20} color="#C9A962" />
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Send Health Report</Text>
+                <TouchableOpacity onPress={() => setSendModal(null)} data-testid="close-send-modal-btn">
+                  <Ionicons name="close" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
+                Email a {period}-day health snapshot for {sendModal.name}
+              </Text>
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Recipient Email *</Text>
+              <TextInput
+                value={sendEmail}
+                onChangeText={setSendEmail}
+                placeholder="email@example.com"
+                placeholderTextColor="#666"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+                data-testid="send-report-email-input"
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Personal Note</Text>
+              <TextInput
+                value={sendNote}
+                onChangeText={setSendNote}
+                placeholder="Add a personal message (optional)..."
+                placeholderTextColor="#666"
+                multiline
+                numberOfLines={3}
+                style={[styles.modalInput, styles.textarea, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
+                data-testid="send-report-note-input"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity onPress={() => setSendModal(null)} style={[styles.cancelBtn, { borderColor: colors.surface }]} data-testid="cancel-send-report-btn">
+                  <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSendReport} disabled={sending} style={[styles.sendReportBtn, sending && { opacity: 0.6 }]} data-testid="confirm-send-report-btn">
+                  {sending ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="paper-plane" size={14} color="#FFF" />}
+                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -218,4 +316,17 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 14, fontWeight: '700' },
   metricLabel: { fontSize: 9, marginTop: 1 },
   loginBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  quickSendBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  // Modal styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { width: '100%', maxWidth: 460, borderRadius: 16, borderWidth: 1, padding: 24 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  modalTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
+  modalDesc: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
+  inputLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
+  modalInput: { fontSize: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  textarea: { minHeight: 70, textAlignVertical: 'top' },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  sendReportBtn: { flex: 1, flexDirection: 'row', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' },
 });
