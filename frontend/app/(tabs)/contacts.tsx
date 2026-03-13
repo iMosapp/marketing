@@ -449,7 +449,7 @@ export default function ContactsScreen() {
               >
                 <Ionicons 
                   name="refresh" 
-                  size={20} 
+                  size={18} 
                   color={refreshing ? "#4C4C4E" : "#007AFF"} 
                 />
               </TouchableOpacity>
@@ -458,20 +458,20 @@ export default function ContactsScreen() {
               onPress={() => setSelectMode(true)}
               style={styles.headerButton}
             >
-              <Ionicons name="checkbox-outline" size={20} color="#007AFF" />
+              <Ionicons name="checkbox-outline" size={18} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => router.push('/contacts/duplicates')}
               style={styles.headerButton}
               data-testid="duplicates-btn"
             >
-              <Ionicons name="copy-outline" size={20} color="#007AFF" />
+              <Ionicons name="copy-outline" size={18} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => router.push('/contacts/import')}
               style={styles.headerButton}
             >
-              <Ionicons name="download-outline" size={22} color="#007AFF" />
+              <Ionicons name="download-outline" size={18} color="#007AFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={handleAddNewContact}
@@ -479,14 +479,14 @@ export default function ContactsScreen() {
               accessibilityLabel="Add new contact"
               data-testid="add-contact-btn"
             >
-              <Ionicons name="add-circle" size={28} color="#007AFF" />
+              <Ionicons name="add-circle" size={24} color="#007AFF" />
             </TouchableOpacity>
           </View>
         </View>
       )}
       
       <View style={[styles.searchContainer, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
-        <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+        <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search contacts"
@@ -498,113 +498,105 @@ export default function ContactsScreen() {
 
       {/* My Contacts / Team Contacts Toggle (managers/admins only) */}
       {isManager && (
-        <View style={{ flexDirection: 'row', marginHorizontal: 16, marginBottom: 10, backgroundColor: colors.card, borderRadius: 10, padding: 3 }} data-testid="view-mode-toggle">
+        <View style={{ flexDirection: 'row', marginHorizontal: 16, marginBottom: 6, backgroundColor: colors.card, borderRadius: 8, padding: 2 }} data-testid="view-mode-toggle">
           <TouchableOpacity
             style={{
-              flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+              flex: 1, paddingVertical: 5, borderRadius: 6, alignItems: 'center',
               backgroundColor: viewMode === 'mine' ? '#C9A962' : 'transparent',
             }}
             onPress={() => { setViewMode('mine'); setSelectMode(false); setSelectedIds(new Set()); }}
             data-testid="view-mode-mine"
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: viewMode === 'mine' ? '#000' : colors.textSecondary }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: viewMode === 'mine' ? '#000' : colors.textSecondary }}>
               My Contacts
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={{
-              flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+              flex: 1, paddingVertical: 5, borderRadius: 6, alignItems: 'center',
               backgroundColor: viewMode === 'team' ? '#C9A962' : 'transparent',
             }}
             onPress={() => { setViewMode('team'); setSelectMode(false); setSelectedIds(new Set()); }}
             data-testid="view-mode-team"
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: viewMode === 'team' ? '#000' : colors.textSecondary }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: viewMode === 'team' ? '#000' : colors.textSecondary }}>
               Team Contacts
             </Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Tag Filter Bar */}
-      {tags.length > 0 && (
-        <View style={styles.tagFilterContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tagFilterContent}
-          >
+      {/* Combined Tag + CRM Filters — single scrollable row */}
+      <View style={styles.tagFilterContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagFilterContent}
+        >
+          {/* CRM filters first */}
+          {(['all', 'linked', 'not_linked'] as const).map(f => (
             <TouchableOpacity
+              key={`crm-${f}`}
               style={[
                 styles.tagFilterChip,
-                { backgroundColor: colors.card },
-                !selectedTag && styles.tagFilterChipActive,
+                { backgroundColor: crmFilter === f ? '#C9A962' : colors.card },
               ]}
-              onPress={() => handleTagFilter(null)}
+              onPress={() => setCrmFilter(crmFilter === f ? 'all' : f)}
+              data-testid={`crm-filter-${f}`}
             >
               <Text style={[
                 styles.tagFilterText,
-                !selectedTag && styles.tagFilterTextActive,
-              ]}>All</Text>
+                { color: crmFilter === f ? '#000' : colors.textSecondary },
+                crmFilter === f && { fontWeight: '700' },
+              ]}>
+                {f === 'all' ? 'All' : f === 'linked' ? 'CRM' : 'Non-CRM'}
+              </Text>
             </TouchableOpacity>
-            {tags.map((tag) => (
-              <TouchableOpacity
-                key={tag._id}
-                style={[
-                  styles.tagFilterChip,
-                  { backgroundColor: colors.card },
-                  selectedTag === tag.name && styles.tagFilterChipActive,
-                  selectedTag === tag.name && { backgroundColor: tag.color },
-                ]}
-                onPress={() => handleTagFilter(tag.name)}
-              >
-                <Ionicons 
-                  name={tag.icon as any} 
-                  size={14} 
-                  color={selectedTag === tag.name ? '#FFF' : tag.color} 
-                  style={{ marginRight: 4 }}
-                />
-                <Text style={[
-                  styles.tagFilterText,
-                  selectedTag === tag.name && styles.tagFilterTextActive,
-                  selectedTag !== tag.name && { color: tag.color },
-                ]}>
-                  {tag.name}
-                </Text>
-                {tag.contact_count > 0 && (
-                  <Text style={[
-                    styles.tagFilterCount,
-                    selectedTag === tag.name && styles.tagFilterCountActive,
-                  ]}>
-                    {tag.contact_count}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+          ))}
 
-      {/* CRM Link Filter */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
-        {(['all', 'linked', 'not_linked'] as const).map(f => (
-          <TouchableOpacity
-            key={f}
-            style={{
-              paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
-              backgroundColor: crmFilter === f ? '#C9A962' : colors.card,
-            }}
-            onPress={() => setCrmFilter(crmFilter === f ? 'all' : f)}
-            data-testid={`crm-filter-${f}`}
-          >
-            <Text style={{
-              fontSize: 12, fontWeight: '600',
-              color: crmFilter === f ? '#000' : colors.textSecondary,
-            }}>
-              {f === 'all' ? 'All' : f === 'linked' ? 'CRM Linked' : 'Not in CRM'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+          {/* Separator dot */}
+          {tags.length > 0 && (
+            <View style={{ justifyContent: 'center', paddingHorizontal: 2 }}>
+              <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: colors.textTertiary }} />
+            </View>
+          )}
+
+          {/* Tag filters */}
+          {tags.length > 0 && !selectedTag ? null : null}
+          {tags.map((tag) => (
+            <TouchableOpacity
+              key={tag._id}
+              style={[
+                styles.tagFilterChip,
+                { backgroundColor: colors.card },
+                selectedTag === tag.name && { backgroundColor: tag.color },
+              ]}
+              onPress={() => handleTagFilter(tag.name)}
+            >
+              <Ionicons 
+                name={tag.icon as any} 
+                size={12} 
+                color={selectedTag === tag.name ? '#FFF' : tag.color} 
+                style={{ marginRight: 3 }}
+              />
+              <Text style={[
+                styles.tagFilterText,
+                selectedTag === tag.name && styles.tagFilterTextActive,
+                selectedTag !== tag.name && { color: tag.color },
+              ]}>
+                {tag.name}
+              </Text>
+              {tag.contact_count > 0 && (
+                <Text style={[
+                  styles.tagFilterCount,
+                  selectedTag === tag.name && styles.tagFilterCountActive,
+                ]}>
+                  {tag.contact_count}
+                </Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
       
       {loading ? (
@@ -658,7 +650,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   selectHeader: {
     flexDirection: 'row',
@@ -688,31 +681,31 @@ const getStyles = (colors: any) => StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 14,
   },
   headerButton: {
-    padding: 2,
+    padding: 4,
   },
   title: {
-    fontSize: 34,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    marginHorizontal: 24,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    gap: 8,
+    borderRadius: 10,
+    marginHorizontal: 16,
+    paddingHorizontal: 10,
+    marginBottom: 6,
+    gap: 6,
   },
   searchIcon: {
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 17,
+    paddingVertical: 8,
+    fontSize: 15,
   },
   listContent: {
     paddingBottom: 16,
@@ -819,20 +812,20 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   tagFilterContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    marginBottom: 4,
   },
   tagFilterContent: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 8,
+    gap: 6,
+    paddingHorizontal: 4,
   },
   tagFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
   },
   tagFilterChipActive: {
     backgroundColor: '#007AFF',
