@@ -651,7 +651,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   catBadgeText: { fontSize: 14, fontWeight: '600' },
   // Page card
   pageCard: {
-    backgroundColor: '#1A1A1C',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginLeft: 16,
