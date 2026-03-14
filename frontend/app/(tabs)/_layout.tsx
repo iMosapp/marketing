@@ -95,22 +95,16 @@ export default function TabLayout() {
           backgroundColor: colors.bg,
           borderTopColor: 'transparent',
           borderTopWidth: 0,
-          height: 50,
-          paddingBottom: 0,
-          paddingTop: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
         tabBarItemStyle: {
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingTop: 6,
-          paddingBottom: 6,
+          paddingBottom: 16,
         },
         tabBarShowLabel: true,
         tabBarActiveTintColor: partnerBranding?.primary_color || '#C9A962',
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 0 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
