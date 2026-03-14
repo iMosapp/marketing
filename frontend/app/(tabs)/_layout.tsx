@@ -9,7 +9,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 
 export default function TabLayout() {
   const { colors } = useThemeStore();
-  const { user, isAuthenticated, isLoading, partnerBranding } = useAuthStore();
+  const { user, isAuthenticated, isLoading, partnerBranding, isImpersonating } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -60,10 +60,10 @@ export default function TabLayout() {
   }, [mounted, isLoading, isAuthenticated]);
 
   useEffect(() => {
-    if (mounted && !isLoading && isAuthenticated && user && !user.onboarding_complete) {
+    if (mounted && !isLoading && isAuthenticated && user && !isImpersonating && !user.onboarding_complete) {
       router.replace('/onboarding');
     }
-  }, [mounted, isLoading, isAuthenticated, user?.onboarding_complete]);
+  }, [mounted, isLoading, isAuthenticated, user?.onboarding_complete, isImpersonating]);
 
   const isPending = user?.status === 'pending';
 

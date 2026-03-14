@@ -197,7 +197,8 @@ export default function UserDetailScreen() {
   
   const handleToggleActive = () => {
     if (!user) return;
-    const newStatus = !user.is_active;
+    const currentlyActive = user.is_active !== false;
+    const newStatus = !currentlyActive;
     const contactWarning = !newStatus
       ? '\n\nImportant: If this user uploaded or downloaded personal contacts into the app, those contacts will NOT remain with the organization or store. Personal contacts belong to the user.'
       : '';
@@ -440,18 +441,18 @@ export default function UserDetailScreen() {
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Account Status</Text>
             <TouchableOpacity 
-              style={[styles.statusBadge, { backgroundColor: user.is_active ? '#34C75920' : '#FF3B3020' }]}
+              style={[styles.statusBadge, { backgroundColor: user.is_active !== false ? '#34C75920' : '#FF3B3020' }]}
               onPress={handleToggleActive}
             >
-              <View style={[styles.statusDot, { backgroundColor: user.is_active ? '#34C759' : '#FF3B30' }]} />
-              <Text style={[styles.statusText, { color: user.is_active ? '#34C759' : '#FF3B30' }]}>
-                {user.is_active ? 'Active' : 'Inactive'}
+              <View style={[styles.statusDot, { backgroundColor: user.is_active !== false ? '#34C759' : '#FF3B30' }]} />
+              <Text style={[styles.statusText, { color: user.is_active !== false ? '#34C759' : '#FF3B30' }]}>
+                {user.is_active !== false ? 'Active' : 'Inactive'}
               </Text>
             </TouchableOpacity>
           </View>
           
           {/* Inactive User Banner with Reactivate */}
-          {!user.is_active && (
+          {user.is_active === false && (
             <View style={styles.inactiveBanner}>
               <View style={styles.inactiveBannerHeader}>
                 <Ionicons name="person-remove" size={24} color="#FF9500" />
