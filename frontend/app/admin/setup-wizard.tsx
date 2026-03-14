@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Platform, Image, KeyboardAvoidingView, Animated,
+  Alert, Linking, Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -249,13 +250,14 @@ export default function SetupWizardScreen() {
       if (!m.firstName.trim() || !m.email.trim() || m.createdId) continue;
       try {
         const fullName = `${m.firstName.trim()} ${m.lastName.trim()}`.trim();
-        const res = await api.post('/admin/users', {
+        const res = await api.post('/admin/users/create', {
           name: fullName, email: m.email, phone: m.phone,
-          password: m.tempPassword, role: m.role,
+          role: m.role, send_invite: true,
           store_id: storeId, organization_id: orgId,
-          needs_password_change: true, onboarding_complete: false,
         });
-        updated[i] = { ...m, createdId: res.data._id || res.data.id, error: undefined };
+        // Use server-generated temp password (not the frontend one)
+        const serverPassword = res.data.temp_password || m.tempPassword;
+        updated[i] = { ...m, tempPassword: serverPassword, createdId: res.data.user_id || res.data._id || res.data.id, error: undefined };
         anyCreated = true;
       } catch (e: any) {
         updated[i] = { ...m, error: e.response?.data?.detail || 'Failed to create' };
@@ -327,7 +329,9 @@ export default function SetupWizardScreen() {
   // ==== CSV / Copy ====
   const getCredsText = () => {
     const created = teamMembers.filter(m => m.createdId);
-    return created.map(m => `${m.firstName} ${m.lastName} | ${m.email} | ${m.tempPassword} | ${m.role}`).join('\n');
+    return created.map(m =>
+      `Welcome to i'M On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`
+    ).join('\n\n---\n\n');
   };
 
   const downloadCSV = () => {
@@ -744,8 +748,23 @@ export default function SetupWizardScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Team Credentials ({created.length})</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={s.actionChip} onPress={() => { if (Platform.OS === 'web') { navigator.clipboard?.writeText(getCredsText()); alert('Copied!'); } }}>
+                <TouchableOpacity style={s.actionChip} onPress={() => {
+                  const text = getCredsText();
+                  if (Platform.OS === 'web') { navigator.clipboard?.writeText(text); alert('Copied!'); }
+                  else { Clipboard.setString(text); Alert.alert('Copied', 'Credentials copied to clipboard'); }
+                }}>
                   <Ionicons name="copy-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>Copy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.actionChip} onPress={() => {
+                  const created = teamMembers.filter(m => m.createdId);
+                  if (created.length > 0) {
+                    const m = created[0];
+                    const msg = `Welcome to i'M On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`;
+                    const url = Platform.OS === 'ios' ? `sms:${m.phone || ''}&body=${encodeURIComponent(msg)}` : `sms:${m.phone || ''}?body=${encodeURIComponent(msg)}`;
+                    Linking.openURL(url).catch(() => {});
+                  }
+                }}>
+                  <Ionicons name="chatbubble-outline" size={14} color="#34C759" /><Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>Text</Text>
                 </TouchableOpacity>
                 {Platform.OS === 'web' && (
                   <TouchableOpacity style={s.actionChip} onPress={downloadCSV}>
