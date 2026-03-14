@@ -99,7 +99,7 @@ export default function TabLayout() {
           shadowOpacity: 0,
         },
         tabBarItemStyle: {
-          paddingBottom: 16,
+          paddingBottom: 28,
         },
         tabBarShowLabel: true,
         tabBarActiveTintColor: partnerBranding?.primary_color || '#C9A962',
