@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -514,29 +515,39 @@ export default function OnboardingScreen() {
     try {
       await api.post('/auth/complete-onboarding', {
         user_id: user?._id,
-        // Profile verification data
         name: profileInputs.name || user?.name,
         title: profileInputs.title,
         bio: profileInputs.bio,
-        // AI persona data
         communication_style: communicationStyle,
         ai_greeting_style: aiGreeting,
         hobbies: bioInputs.hobbies,
         family_info: bioInputs.family,
         fun_facts: bioInputs.fun_facts,
       });
-      
-      updateUser({ 
-        onboarding_complete: true,
-        name: profileInputs.name || user?.name,
-      });
-      router.replace('/(tabs)/inbox');
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
-      router.replace('/(tabs)/inbox');
-    } finally {
-      setCompleting(false);
     }
+    
+    // Always mark onboarding complete locally — even if server call failed
+    updateUser({ 
+      onboarding_complete: true,
+      name: profileInputs.name || user?.name,
+    });
+    // Persist to AsyncStorage so it survives re-login
+    try {
+      const stored = await AsyncStorage.getItem('user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsed.onboarding_complete = true;
+        await AsyncStorage.setItem('user', JSON.stringify(parsed));
+      }
+    } catch {}
+    // Extra local flag as backup
+    if (user?._id) {
+      await AsyncStorage.setItem(`onboarding_done_${user._id}`, 'true').catch(() => {});
+    }
+    setCompleting(false);
+    router.replace('/(tabs)/inbox');
   };
 
   const renderDemoComponent = () => {

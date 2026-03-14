@@ -102,6 +102,23 @@ interface AuthState {
 // Singleton promise to prevent concurrent loadAuth calls
 let _loadAuthPromise: Promise<void> | null = null;
 
+// Centralized cookie-based session restore
+async function _restoreFromCookie(set: any) {
+  try {
+    const { default: api } = await import('../services/api');
+    const res = await api.get('/auth/me');
+    if (res.data?.user && res.data?.token) {
+      await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
+      await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
+      _idbSet('imos_user', JSON.stringify(res.data.user)).catch(() => {});
+      _idbSet('imos_token', res.data.token).catch(() => {});
+      set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
+      return;
+    }
+  } catch {}
+  set({ isLoading: false });
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
@@ -228,20 +245,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const user = safeParse(userStr);
           
           if (!user || !user._id) {
-            // Corrupted data — try cookie restore
-            try {
-              const { default: api } = await import('../services/api');
-              const res = await api.get('/auth/me');
-              if (res.data?.user && res.data?.token) {
-                await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
-                await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
-                _idbSet('imos_user', JSON.stringify(res.data.user)).catch(() => {});
-                _idbSet('imos_token', res.data.token).catch(() => {});
-                set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
-                return;
-              }
-            } catch {}
-            set({ isLoading: false });
+            await _restoreFromCookie(set);
             return;
           }
           
@@ -263,33 +267,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           set({ user, token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
         } else {
-          // No local storage — try cookie-based session restore before giving up
-          try {
-            const { default: api } = await import('../services/api');
-            const res = await api.get('/auth/me');
-            if (res.data?.user && res.data?.token) {
-              // Re-persist to local storage so next load is instant
-              await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
-              await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
-              _idbSet('imos_user', JSON.stringify(res.data.user)).catch(() => {});
-              _idbSet('imos_token', res.data.token).catch(() => {});
-              set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
-              return;
-            }
-          } catch {}
-          set({ isLoading: false });
+          // No local storage — try cookie-based session restore
+          await _restoreFromCookie(set);
         }
       } catch (error) {
         // Last resort: try cookie
-        try {
-          const { default: api } = await import('../services/api');
-          const res = await api.get('/auth/me');
-          if (res.data?.user && res.data?.token) {
-            set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
-            return;
-          }
-        } catch {}
-        set({ isLoading: false });
+        await _restoreFromCookie(set);
       }
     })();
     

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { Redirect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
@@ -61,10 +62,21 @@ export default function Index() {
     if (!isAuthenticated) {
       setRedirectPath('/auth/login');
     } else if (!isImpersonating && (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete)) {
-      setRedirectPath('/onboarding/index');
+      // Check local backup flag before showing onboarding again
+      if (user?._id) {
+        AsyncStorage.getItem(`onboarding_done_${user._id}`).then(done => {
+          if (done === 'true') {
+            setRedirectPath(getDefaultRoute(user?.role));
+            if (user?._id) registerPushOnce(user._id);
+          } else {
+            setRedirectPath('/onboarding/index');
+          }
+        }).catch(() => setRedirectPath('/onboarding/index'));
+      } else {
+        setRedirectPath('/onboarding/index');
+      }
     } else {
       setRedirectPath(getDefaultRoute(user?.role));
-      // Register for push notifications after successful auth
       if (user?._id) registerPushOnce(user._id);
     }
   }, [mounted, isLoading, isAuthenticated, user]);

@@ -389,11 +389,22 @@ async def login(credentials: dict):
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
     resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
+    # HttpOnly session cookie for /auth/me endpoint
     resp.set_cookie(
         key="imos_session",
         value=str(user['_id']),
         max_age=60 * 60 * 24 * 365 * 10,  # 10 years
         httponly=True,
+        samesite="lax",
+        secure=True,
+        path="/",
+    )
+    # JS-readable auth cookie — survives iOS storage purges
+    resp.set_cookie(
+        key="imos_uid",
+        value=str(user['_id']),
+        max_age=60 * 60 * 24 * 365 * 10,
+        httponly=False,
         samesite="lax",
         secure=True,
         path="/",
