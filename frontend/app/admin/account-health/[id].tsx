@@ -123,31 +123,34 @@ export default function AccountHealthDetail() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="back-btn">
-            <Ionicons name="arrow-back" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]}>{user.name || user.email}</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {user.role} {report.organization ? `at ${report.organization}` : ''} {report.store ? `/ ${report.store}` : ''}
-            </Text>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="back-btn">
+              <Ionicons name="arrow-back" size={22} color={colors.text} />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>{user.name || user.email}</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+                {user.role} {report.organization ? `at ${report.organization}` : ''} {report.store ? `/ ${report.store}` : ''}
+              </Text>
+            </View>
           </View>
-          {/* Send Report Button */}
-          <TouchableOpacity
-            onPress={() => setShowSendModal(true)}
-            style={[styles.sendBtn, { backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
-            data-testid="send-report-btn"
-          >
-            <Ionicons name="paper-plane" size={14} color="#C9A962" />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#C9A962' }}>Send Report</Text>
-          </TouchableOpacity>
-          <View style={styles.periodRow}>
-            {[30, 90].map(p => (
-              <TouchableOpacity key={p} onPress={() => setPeriod(p)}
-                style={[styles.periodBtn, { backgroundColor: period === p ? '#007AFF' : colors.card, borderColor: period === p ? '#007AFF' : colors.surface }]}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => setShowSendModal(true)}
+              style={[styles.sendBtn, { backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
+              data-testid="send-report-btn"
+            >
+              <Ionicons name="paper-plane" size={14} color="#C9A962" />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#C9A962' }}>Send Report</Text>
+            </TouchableOpacity>
+            <View style={styles.periodRow}>
+              {[30, 90].map(p => (
+                <TouchableOpacity key={p} onPress={() => setPeriod(p)}
+                  style={[styles.periodBtn, { backgroundColor: period === p ? '#007AFF' : colors.card, borderColor: period === p ? '#007AFF' : colors.surface }]}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
 
@@ -336,7 +339,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: 16, maxWidth: 800, alignSelf: 'center' as any, width: '100%' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' },
+  header: { marginBottom: 16 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginLeft: 48 },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 12, marginTop: 2 },
