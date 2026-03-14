@@ -67,6 +67,7 @@ class BrandKitUpdate(BaseModel):
     tagline: Optional[str] = None
     footer_text: Optional[str] = None
     social_links: Optional[dict] = None
+    page_theme: Optional[str] = None  # "dark" or "light"
 
 # ============= DEFAULT EMAIL TEMPLATES =============
 
