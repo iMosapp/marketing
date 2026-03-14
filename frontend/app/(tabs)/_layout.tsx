@@ -92,9 +92,9 @@ export default function TabLayout() {
         headerShown: false,
         sceneContainerStyle: { backgroundColor: colors.bg },
         tabBarStyle: {
-          backgroundColor: colors.bg,
-          borderTopColor: 'transparent',
-          borderTopWidth: 0,
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+          borderTopWidth: 0.5,
           elevation: 0,
           shadowOpacity: 0,
         },
