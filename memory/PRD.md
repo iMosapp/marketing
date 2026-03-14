@@ -14,81 +14,56 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## CRITICAL RULES — READ BEFORE TOUCHING ANY CODE
 
 ### Image Pipeline — DO NOT REVERT, DO NOT ADD BASE64 FALLBACKS
-- ALL images go through `utils/image_storage.py` → WebP format → served via `/api/images/`
+- ALL images go through `utils/image_storage.py` -> WebP format -> served via `/api/images/`
 - `utils/image_urls.py` resolves all photo URLs
 - Immutable caching on all `/api/images/` responses
 - All uploads use `asyncio.to_thread()` to prevent 520 timeouts
 - EXIF orientation fixed BEFORE pre-shrink in `congrats_cards.py`
-- **NEVER add `data:` / base64 fallbacks anywhere.** The entire database was migrated OFF base64. Adding it back destroys performance.
-- **NEVER serve base64 in API responses.** Gallery, contact lists, card endpoints — ONLY `/api/images/` paths and `http` URLs.
-- **NEVER add lazy migration during reads.** Gallery endpoint is pure read-only. No processing, no converting, no fallbacks.
+- **NEVER add `data:` / base64 fallbacks anywhere.**
+- **NEVER serve base64 in API responses.**
+- **NEVER add lazy migration during reads.**
 
 ### Unified Card System — DO NOT REVERT
 - ALL card types use `congrats_cards.py` only
 - `birthday_cards.py` is LEGACY — NOT registered in server.py
 
 ### General Rules for ALL Agents
-- **READ THIS PRD FIRST** before writing any code. Understand what's been built and what the constraints are.
-- **DO NOT revert completed migrations.** If data has been migrated to a new format, do NOT add backwards-compatible fallbacks to the old format.
-- **Speed is the #1 priority.** Every API response, every image load, every page render must be as fast as possible.
-- **When fixing a bug, do NOT introduce old patterns.** If you see old code that contradicts these rules, the old code is wrong — these rules are correct.
+- **READ THIS PRD FIRST** before writing any code.
+- **DO NOT revert completed migrations.**
+- **Speed is the #1 priority.**
+- **When fixing a bug, do NOT introduce old patterns.**
 
 ---
 
 ## What's Been Implemented
 
-### My Presence Visual Command Center (Mar 13, 2026) — LATEST
-- **REBUILT:** "My Account" page into "My Presence" visual hub
-- 5 presence cards with visual mini-previews: Digital Card, Showcase, Review Link, Link Page, Landing Page
-- Each card shows a styled visual representation of the page
-- **ALL Preview buttons and panel taps open the actual production customer-facing URLs in new tabs** — NOT internal config/marketing pages
-  - Digital Card → `${PROD_BASE}/card/${userId}` (matches backend `digital_card.py` route)
-  - Showcase → `${PROD_BASE}/showcase/${userId}`
-  - Review Link → `/review/${storeSlug}` (internal route, renders correct customer page)
-  - Link Page → `${PROD_BASE}/l/${userId}`
-  - Landing Page → `${PROD_BASE}/p/${userId}`
-- **FIXED:** Broken `/imos/${storeSlug}/${firstName}` URL pattern — that route never existed. Now uses `/card/${userId}` which matches the backend API.
-- Edit buttons navigate to internal settings pages
-- Copy Link buttons copy the production URL to clipboard
-- **Tested:** 95% frontend pass (iteration 203), navigation fix verified via screenshot
+### User-Specific Brand Kit & Theming (Mar 14, 2026) — LATEST
+- **Backend:** `BrandKitUpdate` Pydantic model includes `page_theme` field (dark/light)
+- **Backend:** `GET /api/card/data/{userId}` now returns `brand_kit` object with `page_theme`, `primary_color`, `secondary_color`, `accent_color`, `logo_url`, `company_name`
+- **Backend:** Brand kit cascades: user -> store -> organization fallback
+- **Frontend (Settings):** Brand Kit page at `/settings/brand-kit` has Light/Dark theme toggle with visual previews
+- **Frontend (Card):** Digital Card page at `/card/{userId}` dynamically themes based on `brand_kit.page_theme`
+- **Theming:** `buildTheme()` function creates full palette (bg, card, text, accent, etc.) for light/dark modes
+- **Theming:** `getDynamicStyles()` creates theme-dependent StyleSheet for interactive elements
+- **Accent Colors:** User's primary/accent color applied to photo borders, dividers, titles, CTA buttons, section headers
+- **Tested:** 100% backend (10 pytest tests), 100% frontend (iteration 204)
 
-### Showcase Photo Resolution Fix (Mar 13, 2026)
-- **FIXED:** `/manage/{user_id}` endpoint was generating photo URLs for ALL cards even ones without photos → 404s → grey squares
-- Now resolves photos properly: WebP `photo_path` → direct `/api/images/` URL (fastest), un-migrated `customer_photo` → `/api/showcase/photo/` endpoint (lazy migrates), no photo → null
-- Frontend shows camera icon placeholder for cards with no photo instead of broken grey squares
-- Gallery endpoint (`GET /photos/all`) ONLY serves `/api/images/` WebP paths and `http` URLs — ZERO base64
-- Added photo history tracking: when a contact's profile photo is changed, the old WebP URL is saved to `photo_history` array
-- Gallery includes historical photos going forward (only fast `/api/images/` and `http` paths)
-- `PATCH /profile-photo` clears stale `photo_path` fields via `$unset` to ensure correct photo displays
-- **Rule: NEVER add base64 data URLs to this endpoint. It was intentionally stripped out.**
+### Auth: Persistent Login (Mar 14, 2026)
+- 3-layer auth persistence: AsyncStorage, IndexedDB, readable cookie
+- Fixed onboarding loop for existing users
+- Fixed user setup wizard credentials and email invites
 
-### Instagram-Style Photo Gallery (Mar 13, 2026)
-- **REBUILT:** Contact photo gallery from scratch with Instagram-style 3-column square grid
-- Backend `/photos/all` endpoint rewritten to be pure read-only — no lazy migration during gallery load, instant response
-- Photos preloaded when contact page mounts (gallery opens instantly on tap)
-- Grid uses `onLayout` to measure actual container width for precise pixel-based tile sizing
-- Gallery constrained to `maxWidth: 480px` on web, centered on desktop
-- Profile photo shows gold badge overlay; non-profile photos show "Set as Profile" quick-action button
-- Shimmer skeleton placeholders while loading
-- Full-screen swipeable viewer with "Back to Grid" and "Set as Profile" actions
-- **Tested:** 13/13 backend + 100% frontend (iteration 202)
+### UI/UX Fixes (Mar 14, 2026)
+- Bottom nav bar stabilized with standard iOS styling
+- Contacts page header compacted
+- Removed floating action button from touchpoints
+- OG image previews fixed for all shareable links
+- Document auto-deduplication
+- Cookie/storage keys renamed from `imos_` to `imonsocial_`
 
-### EXIF Orientation Fix (Mar 13, 2026)
-- Fixed sideways iPhone photos in card upload pipeline
-- `ImageOps.exif_transpose()` now applied BEFORE pre-shrink resize in `congrats_cards.py`
-- Previously: EXIF stripped during JPEG pre-shrink → photos permanently sideways
-
-### Channel Tracking in Composer (Mar 13, 2026)
-- Added `PATCH /api/contacts/{user_id}/{contact_id}/events/latest-channel` endpoint
-- Composer's `onSent(channelId)` now patches the event with the actual channel used (messenger, whatsapp, sms, etc.)
-
-### Share Channel Tracking (Mar 13, 2026)
-- Activity feed shows colored channel badges ("SMS", "WhatsApp", "Email", etc.)
-- Backend stores `channel` field in `contact_events` via both `log_contact_event` and `find-or-create-and-log`
-- All frontend sharing flows pass `event_channel` to backend
-
-### Lead Sources API 500 Fix (Mar 13, 2026)
-- Reordered routes in `lead_sources.py` — specific paths (`team-inbox`, `user-inbox`, `stats`) before generic `/{source_id}`
+### My Presence Visual Command Center (Mar 13, 2026)
+- Rebuilt "My Account" into "My Presence" visual hub
+- 5 presence cards with mini-previews: Digital Card, Showcase, Review Link, Link Page, Landing Page
 
 ### Previous Features (see CHANGELOG.md for full history)
 - Voice Memo Intelligence + Campaign Config + Full AI Pipeline
@@ -98,20 +73,22 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - CRM Timeline Export, Duplicate Contact Merge
 - Hub Navigation, ChannelPicker, Auth Refactor (bcrypt)
 - Jessi AI Assistant v2.0, Account Health Dashboard
+- Instagram-Style Photo Gallery, EXIF Orientation Fix
 - And 50+ more features and bug fixes
 
 ---
 
 ## Key API Endpoints
+- `GET /api/card/data/{userId}` — Digital card data with brand_kit theming
+- `GET /api/email/brand-kit/{entity_type}/{entity_id}` — Get brand kit settings
+- `PUT /api/email/brand-kit/{entity_type}/{entity_id}` — Update brand kit settings (includes page_theme)
 - `GET /api/contacts/{user_id}/{contact_id}/photos/all` — Fast read-only gallery photos
-- `PATCH /api/contacts/{user_id}/{contact_id}/events/latest-channel` — Update event channel
-- `POST /api/contacts/{user_id}/{contact_id}/events` — Log event with optional `channel`
-- `POST /api/contacts/{user_id}/find-or-create-and-log` — Create/find + log with `event_channel`
+- `POST /api/contacts/{user_id}/find-or-create-and-log` — Create/find + log with event_channel
 
 ## Key DB Collections
+- `users.email_brand_kit` — Stores `page_theme`, `primary_color`, `secondary_color`, `accent_color`, etc.
 - `contact_events` — Stores `channel` field (sms, whatsapp, email, messenger, etc.)
 - `congrats_cards` — Photo paths used by gallery
-- `birthday_cards` — Photo paths used by gallery
 
 ---
 
@@ -119,8 +96,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### P1
 - Onboarding Task List for new salespeople
-- Voice Help Assistant
-- Google Places API Integration
+- Gamification & Leaderboards
+- AI-Powered Outreach (contextual follow-up on "sold" tag)
+- Lead Notification System Phase 2 (push notifications)
+- Voice Help Assistant Backend
 
 ### P2
 - Full Twilio Integration (currently MOCK)
@@ -128,6 +107,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Training Hub video content
 - Inventory Management Module
 - Refactor large files (admin.py 3600+ lines, contact/[id].tsx 5600+ lines)
+- Extend theming to other public pages (Link Page /l/{userId}, Landing Page /p/{userId}, Showcase)
 
 ## Known Issues
 - P2: Mobile tags sync
