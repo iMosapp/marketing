@@ -391,7 +391,7 @@ async def login(credentials: dict):
     resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
     # HttpOnly session cookie for /auth/me endpoint
     resp.set_cookie(
-        key="imos_session",
+        key="imonsocial_session",
         value=str(user['_id']),
         max_age=60 * 60 * 24 * 365 * 10,  # 10 years
         httponly=True,
@@ -401,7 +401,7 @@ async def login(credentials: dict):
     )
     # JS-readable auth cookie — survives iOS storage purges
     resp.set_cookie(
-        key="imos_uid",
+        key="imonsocial_uid",
         value=str(user['_id']),
         max_age=60 * 60 * 24 * 365 * 10,
         httponly=False,
@@ -415,7 +415,7 @@ async def login(credentials: dict):
 @router.get("/me")
 async def get_current_user(request: Request):
     """Restore session from persistent cookie when localStorage is cleared"""
-    session_id = request.cookies.get("imos_session")
+    session_id = request.cookies.get("imonsocial_session")
     if not session_id:
         raise HTTPException(status_code=401, detail="No session")
     try:
@@ -449,7 +449,7 @@ async def logout_session():
     """Clear the persistent session cookie"""
     from fastapi.responses import JSONResponse
     resp = JSONResponse(content={"success": True})
-    resp.delete_cookie("imos_session")
+    resp.delete_cookie("imonsocial_session")
     return resp
 
 @router.post("/forgot-password/request")

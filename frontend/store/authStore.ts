@@ -110,8 +110,8 @@ async function _restoreFromCookie(set: any) {
     if (res.data?.user && res.data?.token) {
       await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
       await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
-      _idbSet('imos_user', JSON.stringify(res.data.user)).catch(() => {});
-      _idbSet('imos_token', res.data.token).catch(() => {});
+      _idbSet('imonsocial_user', JSON.stringify(res.data.user)).catch(() => {});
+      _idbSet('imonsocial_token', res.data.token).catch(() => {});
       set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
       return;
     }
@@ -146,8 +146,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await AsyncStorage.setItem('auth_token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       // Backup to IndexedDB (survives iOS PWA localStorage purges)
-      _idbSet('imos_token', token).catch(() => {});
-      _idbSet('imos_user', JSON.stringify(user)).catch(() => {});
+      _idbSet('imonsocial_token', token).catch(() => {});
+      _idbSet('imonsocial_user', JSON.stringify(user)).catch(() => {});
       if (partner_branding) {
         await AsyncStorage.setItem('partner_branding', JSON.stringify(partner_branding));
       } else {
@@ -230,8 +230,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Fallback: try IndexedDB if AsyncStorage is empty
         if ((!token || !userStr) && typeof window !== 'undefined' && window.indexedDB) {
           try {
-            const idbToken = await _idbGet('imos_token');
-            const idbUser = await _idbGet('imos_user');
+            const idbToken = await _idbGet('imonsocial_token');
+            const idbUser = await _idbGet('imonsocial_user');
             if (idbToken && idbUser) {
               token = idbToken;
               userStr = idbUser;
