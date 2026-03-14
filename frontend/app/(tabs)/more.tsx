@@ -1266,7 +1266,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     zIndex: 9999,
   },
   scrollContent: {
-    paddingBottom: 8,
+    paddingBottom: 0,
   },
   header: {
     padding: 16,

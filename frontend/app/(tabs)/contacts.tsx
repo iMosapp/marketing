@@ -909,7 +909,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
 
   // Master feed
-  feedContainer: { paddingBottom: 8 },
+  feedContainer: { paddingBottom: 0 },
   feedSection: { marginBottom: 8 },
   feedSectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8,

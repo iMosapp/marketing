@@ -924,7 +924,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, zIndex: 10000, position: 'relative' },
   userName: { fontSize: 18, fontWeight: '700' },
   scroll: { flex: 1, zIndex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 8 },
+  scrollContent: { padding: 16, paddingBottom: 0 },
   tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: { width: '48%', flexBasis: '47%', flexGrow: 1, borderRadius: 14, padding: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, minHeight: 88 },
   tileIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },

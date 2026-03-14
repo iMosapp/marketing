@@ -1769,7 +1769,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 8,
+    paddingBottom: 0,
     paddingHorizontal: 12,
     paddingTop: 8,
     flexGrow: 1,
