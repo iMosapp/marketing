@@ -168,7 +168,7 @@ export default function LoginScreen() {
     
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password);
       
       // Save or clear remembered email based on checkbox
       await saveRememberedEmail(email);

@@ -247,11 +247,22 @@ async def signup(user_data: UserCreate):
 @router.post("/login")
 async def login(credentials: dict):
     """Login with email and password"""
-    email = credentials.get('email')
-    password = credentials.get('password')
+    import re
+    email = (credentials.get('email') or '').strip().lower()
+    password = credentials.get('password') or ''
     
-    user = await get_db().users.find_one({"email": email})
-    if not user or not verify_password(password, user.get('password', '')):
+    if not email or not password:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Case-insensitive email lookup (escape regex special chars in email)
+    escaped_email = re.escape(email)
+    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
+    if not user:
+        logger.warning(f"Login failed: no user found for email '{email}'")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not verify_password(password, user.get('password', '')):
+        logger.warning(f"Login failed: wrong password for email '{email}'")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Auto-upgrade legacy plain-text passwords to bcrypt
@@ -455,11 +466,13 @@ async def logout_session():
 @router.post("/forgot-password/request")
 async def request_password_reset(data: dict):
     """Request a password reset code"""
-    email = data.get('email')
+    email = (data.get('email') or '').strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     
-    user = await get_db().users.find_one({"email": email})
+    import re
+    escaped_email = re.escape(email)
+    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
     if not user:
         # Don't reveal if email exists
         return {"message": "If an account exists with this email, a reset code has been sent"}
@@ -547,9 +560,11 @@ async def reset_password(data: dict):
     if not stored or stored['code'] != code:
         raise HTTPException(status_code=400, detail="Invalid or expired reset code")
     
+    import re
+    escaped_email = re.escape(email)
     # Update password and clear the temp password flag
     result = await get_db().users.update_one(
-        {"email": email},
+        {"email": {"$regex": f"^{escaped_email}$", "$options": "i"}},
         {"$set": {"password": hash_password(new_password), "needs_password_change": False}}
     )
     
