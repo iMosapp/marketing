@@ -263,7 +263,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           set({ user, token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
         } else {
-          // No local session at all — go straight to login, no network request needed
+          // No local storage — try cookie-based session restore before giving up
+          try {
+            const { default: api } = await import('../services/api');
+            const res = await api.get('/auth/me');
+            if (res.data?.user && res.data?.token) {
+              // Re-persist to local storage so next load is instant
+              await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
+              await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
+              _idbSet('imos_user', JSON.stringify(res.data.user)).catch(() => {});
+              _idbSet('imos_token', res.data.token).catch(() => {});
+              set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
+              return;
+            }
+          } catch {}
           set({ isLoading: false });
         }
       } catch (error) {
