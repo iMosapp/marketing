@@ -27,15 +27,29 @@ import { useThemeStore } from '../../store/themeStore';
 const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30',
   org_admin: '#FF9500',
+  admin: '#FF9500',
   store_manager: '#34C759',
+  manager: '#34C759',
   user: '#007AFF',
 };
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   org_admin: 'Admin',
+  admin: 'Admin',
   store_manager: 'Manager',
+  manager: 'Manager',
   user: 'User',
+};
+
+// Map legacy/variant roles to their canonical group for display
+const ROLE_GROUP_MAP: Record<string, string> = {
+  super_admin: 'super_admin',
+  org_admin: 'org_admin',
+  admin: 'org_admin',
+  store_manager: 'store_manager',
+  manager: 'store_manager',
+  user: 'user',
 };
 
 const ROLE_ORDER = ['super_admin', 'org_admin', 'store_manager', 'user'];
@@ -224,7 +238,8 @@ export default function UsersScreen() {
     const grouped: Record<string, any[]> = {};
     
     activeUsers.forEach(user => {
-      const role = user.role || 'user';
+      // Map variant roles to their canonical group
+      const role = ROLE_GROUP_MAP[user.role] || 'user';
       if (!grouped[role]) {
         grouped[role] = [];
       }
