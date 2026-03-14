@@ -47,6 +47,59 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 40;
 const CARD_HEIGHT = 480;
 
+// Theme palettes
+type ThemePalette = {
+  bg: string;
+  card: string;
+  cardBorder: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  accent: string;
+  divider: string;
+  inputBg: string;
+  inputBorder: string;
+  overlay: string;
+  surface: string;
+  shadow: string;
+};
+
+const buildTheme = (mode: 'dark' | 'light', brandKit?: any): ThemePalette => {
+  const accent = brandKit?.accent_color || brandKit?.primary_color || '#C9A962';
+  if (mode === 'light') {
+    return {
+      bg: '#F8F7F4',
+      card: '#FFFFFF',
+      cardBorder: '#E8E4DC',
+      text: '#1A1A1A',
+      textSecondary: '#6B6B6B',
+      textMuted: '#999999',
+      accent,
+      divider: accent,
+      inputBg: '#F0EDE6',
+      inputBorder: '#DDD8CE',
+      overlay: 'rgba(0, 0, 0, 0.5)',
+      surface: '#EDEAE3',
+      shadow: accent,
+    };
+  }
+  return {
+    bg: '#0D0D0D',
+    card: '#1A1A1A',
+    cardBorder: '#333',
+    text: '#FFFFFF',
+    textSecondary: '#CCC',
+    textMuted: '#888',
+    accent,
+    divider: accent,
+    inputBg: '#111',
+    inputBorder: '#2A2A2C',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    surface: '#2A2A2A',
+    shadow: accent,
+  };
+};
+
 // Social platform icons with brand colors
 const SOCIAL_PLATFORMS = [
   { key: 'website', icon: 'globe-outline', color: '#34C759', baseUrl: '' },
@@ -80,6 +133,11 @@ export default function DigitalCardPage() {
   const [matchModalVisible, setMatchModalVisible] = useState(false);
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [pendingShareAction, setPendingShareAction] = useState<{platform: string; payload: any} | null>(null);
+  
+  // Derive theme from brand kit
+  const themeMode = (cardData?.brand_kit?.page_theme === 'light') ? 'light' : 'dark';
+  const theme = buildTheme(themeMode, cardData?.brand_kit);
+  const dynamicStyles = getDynamicStyles(theme);
   
   // Tracking context — only track when NOT the owner (customer viewing)
   const trackCtx = {
@@ -403,7 +461,7 @@ export default function DigitalCardPage() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: '#0D0D0D' }]}>
         <ActivityIndicator size="large" color="#C9A962" />
         <Text style={styles.loadingText}>Loading card...</Text>
       </View>
@@ -412,7 +470,7 @@ export default function DigitalCardPage() {
 
   if (!cardData) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { backgroundColor: '#0D0D0D' }]}>
         <Ionicons name="alert-circle" size={64} color="#FF3B30" />
         <Text style={styles.errorTitle}>Card Not Found</Text>
         <Text style={styles.errorText}>This digital card doesn't exist.</Text>
@@ -430,12 +488,12 @@ export default function DigitalCardPage() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: theme.cardBorder }]}>
           <View style={{ width: 28 }} />
-          <Text style={styles.headerTitle}>My Digital Card</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>My Digital Card</Text>
           <View style={{ width: 28 }} />
         </View>
         <ScrollView 
@@ -446,17 +504,22 @@ export default function DigitalCardPage() {
           {/* Flip Card Container */}
           <View style={styles.cardContainer}>
             {/* Front of Card */}
-            <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
+            <Animated.View style={[
+              styles.card,
+              styles.cardFront,
+              frontAnimatedStyle,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: theme.shadow },
+            ]}>
               {/* Flip indicator - top right corner */}
               <TouchableOpacity 
                 style={styles.flipCorner} 
                 onPress={flipCard}
                 data-testid="flip-card-btn"
               >
-                <View style={styles.flipCornerInner}>
-                  <Ionicons name="qr-code" size={16} color="#C9A962" />
+                <View style={[styles.flipCornerInner, { backgroundColor: `${theme.accent}25` }]}>
+                  <Ionicons name="qr-code" size={16} color={theme.accent} />
                 </View>
-                <View style={styles.cornerFold} />
+                <View style={[styles.cornerFold, { borderRightColor: theme.accent }]} />
               </TouchableOpacity>
 
               {/* Store Logo */}
@@ -473,25 +536,25 @@ export default function DigitalCardPage() {
                 {user.photo_url ? (
                   <Image 
                     source={{ uri: user.photo_url }} 
-                    style={styles.photo}
+                    style={[styles.photo, { borderColor: theme.accent }]}
                   />
                 ) : (
-                  <View style={styles.photoPlaceholder}>
-                    <Ionicons name="person" size={48} color="#666" />
+                  <View style={[styles.photoPlaceholder, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
+                    <Ionicons name="person" size={48} color={theme.textMuted} />
                   </View>
                 )}
               </View>
               
               {/* Name & Title */}
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userTitle}>{user.title || 'Sales Professional'}</Text>
+              <Text style={[styles.userName, { color: theme.text }]}>{user.name}</Text>
+              <Text style={[styles.userTitle, { color: theme.accent }]}>{user.title || 'Sales Professional'}</Text>
               
               {store?.name && (
-                <Text style={styles.storeName}>{store.name}</Text>
+                <Text style={[styles.storeName, { color: theme.textMuted }]}>{store.name}</Text>
               )}
 
               {/* Divider */}
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
               {/* Social Links */}
               {activeSocialLinks.length > 0 && (
@@ -509,7 +572,7 @@ export default function DigitalCardPage() {
                     return (
                       <TouchableOpacity
                         key={platform.key}
-                        style={styles.socialIcon}
+                        style={[styles.socialIcon, { backgroundColor: theme.surface }]}
                         onPress={() => {
                           track('social_clicked', { platform: platform.key, url });
                           Linking.openURL(url);
@@ -525,20 +588,25 @@ export default function DigitalCardPage() {
             </Animated.View>
 
             {/* Back of Card - QR Code */}
-            <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
+            <Animated.View style={[
+              styles.card,
+              styles.cardBack,
+              backAnimatedStyle,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: theme.shadow },
+            ]}>
               {/* Flip back indicator - top right corner */}
               <TouchableOpacity 
                 style={styles.flipCorner} 
                 onPress={flipCard}
                 data-testid="flip-back-btn"
               >
-                <View style={styles.flipCornerInner}>
-                  <Ionicons name="person" size={16} color="#C9A962" />
+                <View style={[styles.flipCornerInner, { backgroundColor: `${theme.accent}25` }]}>
+                  <Ionicons name="person" size={16} color={theme.accent} />
                 </View>
-                <View style={styles.cornerFold} />
+                <View style={[styles.cornerFold, { borderRightColor: theme.accent }]} />
               </TouchableOpacity>
 
-              <Text style={styles.qrTitle}>Scan to Connect</Text>
+              <Text style={[styles.qrTitle, { color: theme.accent }]}>Scan to Connect</Text>
               
               <View style={styles.qrContainer}>
                 <QRCode
@@ -550,26 +618,26 @@ export default function DigitalCardPage() {
                 />
               </View>
 
-              <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
-              <Text style={styles.userTitle}>{user.title || 'Sales Professional'}</Text>
+              <Text style={[styles.userName, { color: theme.text }]} numberOfLines={1}>{user.name}</Text>
+              <Text style={[styles.userTitle, { color: theme.accent }]}>{user.title || 'Sales Professional'}</Text>
 
               {/* QR Action Buttons */}
               <View style={styles.qrActions}>
                 <TouchableOpacity 
-                  style={styles.qrActionBtn}
+                  style={[styles.qrActionBtn, { backgroundColor: theme.accent }]}
                   onPress={handleShareQR}
                   data-testid="share-qr-btn"
                 >
-                  <Ionicons name="share-outline" size={20} color="#FFF" />
-                  <Text style={styles.qrActionText}>Share</Text>
+                  <Ionicons name="share-outline" size={20} color={themeMode === 'dark' ? '#FFF' : '#FFF'} />
+                  <Text style={[styles.qrActionText, { color: themeMode === 'light' ? '#FFF' : '#1A1A1A' }]}>Share</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={styles.qrActionBtn}
+                  style={[styles.qrActionBtn, { backgroundColor: theme.accent }]}
                   onPress={handleDownloadQR}
                   data-testid="download-qr-btn"
                 >
-                  <Ionicons name="download-outline" size={20} color="#FFF" />
-                  <Text style={styles.qrActionText}>Download</Text>
+                  <Ionicons name="download-outline" size={20} color={themeMode === 'dark' ? '#FFF' : '#FFF'} />
+                  <Text style={[styles.qrActionText, { color: themeMode === 'light' ? '#FFF' : '#1A1A1A' }]}>Download</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
@@ -577,25 +645,25 @@ export default function DigitalCardPage() {
 
           {/* Share Contact Button - Below Card */}
           <TouchableOpacity
-            style={[styles.saveButton, saved && styles.saveButtonSaved]}
+            style={[dynamicStyles.saveButton, saved && dynamicStyles.saveButtonSaved]}
             onPress={isOwner ? () => setShowShareModal(true) : handleSaveContact}
             disabled={saving}
             data-testid="share-contact-btn"
           >
             {saved ? (
               <>
-                <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>{isOwner ? 'Contact Shared!' : 'Contact Saved!'}</Text>
+                <Ionicons name="checkmark-circle" size={22} color={themeMode === 'light' ? '#FFF' : '#1A1A1A'} />
+                <Text style={dynamicStyles.saveButtonText}>{isOwner ? 'Contact Shared!' : 'Contact Saved!'}</Text>
               </>
             ) : saving ? (
               <>
-                <ActivityIndicator size="small" color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>Saving...</Text>
+                <ActivityIndicator size="small" color={themeMode === 'light' ? '#FFF' : '#1A1A1A'} />
+                <Text style={dynamicStyles.saveButtonText}>Saving...</Text>
               </>
             ) : (
               <>
-                <Ionicons name={isOwner ? "share-social" : "download-outline"} size={22} color="#1A1A1A" />
-                <Text style={styles.saveButtonText}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
+                <Ionicons name={isOwner ? "share-social" : "download-outline"} size={22} color={themeMode === 'light' ? '#FFF' : '#1A1A1A'} />
+                <Text style={dynamicStyles.saveButtonText}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -611,10 +679,10 @@ export default function DigitalCardPage() {
                 }}
                 data-testid="quick-call-btn"
               >
-                <View style={styles.quickActionIcon}>
+                <View style={[styles.quickActionIcon, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
                   <Ionicons name="call" size={22} color="#34C759" />
                 </View>
-                <Text style={styles.quickActionLabel}>Call</Text>
+                <Text style={[styles.quickActionLabel, { color: theme.textMuted }]}>Call</Text>
               </TouchableOpacity>
             )}
             
@@ -627,10 +695,10 @@ export default function DigitalCardPage() {
                 }}
                 data-testid="quick-text-btn"
               >
-                <View style={styles.quickActionIcon}>
+                <View style={[styles.quickActionIcon, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
                   <Ionicons name="chatbubble" size={22} color="#007AFF" />
                 </View>
-                <Text style={styles.quickActionLabel}>Text</Text>
+                <Text style={[styles.quickActionLabel, { color: theme.textMuted }]}>Text</Text>
               </TouchableOpacity>
             )}
             
@@ -643,10 +711,10 @@ export default function DigitalCardPage() {
                 }}
                 data-testid="quick-email-btn"
               >
-                <View style={styles.quickActionIcon}>
+                <View style={[styles.quickActionIcon, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
                   <Ionicons name="mail" size={22} color="#FF9500" />
                 </View>
-                <Text style={styles.quickActionLabel}>Email</Text>
+                <Text style={[styles.quickActionLabel, { color: theme.textMuted }]}>Email</Text>
               </TouchableOpacity>
             )}
 
@@ -655,19 +723,18 @@ export default function DigitalCardPage() {
               onPress={flipCard}
               data-testid="quick-qr-btn"
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="qr-code" size={22} color="#C9A962" />
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                <Ionicons name="qr-code" size={22} color={theme.accent} />
               </View>
-              <Text style={styles.quickActionLabel}>QR Code</Text>
+              <Text style={[styles.quickActionLabel, { color: theme.textMuted }]}>QR Code</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Leave a Review — Two-step: internal first, then nudge to Google */}
+          {/* Leave a Review */}
           <View style={styles.section}>
             {feedbackSubmitted ? (
-              /* After internal review: nudge toward public/Google review */
               <TouchableOpacity 
-                style={[styles.reviewCTABanner, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
+                style={[dynamicStyles.reviewCTABanner, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
                 onPress={() => {
                   track('online_review_clicked');
                   const slug = cardData?.store?.slug;
@@ -679,16 +746,15 @@ export default function DigitalCardPage() {
               >
                 <Ionicons name="globe-outline" size={22} color="#34C759" />
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.reviewCTABannerTitle}>Thanks! Want to share it online?</Text>
+                  <Text style={[styles.reviewCTABannerTitle, { color: theme.text }]}>Thanks! Want to share it online?</Text>
                   <Text style={[styles.reviewCTABannerSub, { color: '#34C759' }]}>Leave a Google review — it means the world</Text>
                 </View>
                 <Ionicons name="open-outline" size={20} color="#34C759" />
               </TouchableOpacity>
             ) : (
-              /* Before review: show internal review form */
               <>
                 <TouchableOpacity 
-                  style={styles.reviewCTABanner}
+                  style={dynamicStyles.reviewCTABanner}
                   onPress={() => {
                     track('review_clicked');
                     setShowReviewForm(!showReviewForm);
@@ -697,28 +763,28 @@ export default function DigitalCardPage() {
                 >
                   <Ionicons name="star" size={22} color="#FFD60A" />
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.reviewCTABannerTitle}>Had a great experience?</Text>
-                    <Text style={styles.reviewCTABannerSub}>Tap to leave a review</Text>
+                    <Text style={[styles.reviewCTABannerTitle, { color: theme.text }]}>Had a great experience?</Text>
+                    <Text style={[styles.reviewCTABannerSub, { color: theme.accent }]}>Tap to leave a review</Text>
                   </View>
-                  <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={20} color="#C9A962" />
+                  <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={20} color={theme.accent} />
                 </TouchableOpacity>
 
                 {showReviewForm && (
-                  <View style={styles.feedbackCard}>
-                    <Text style={styles.feedbackLabel}>How was your experience?</Text>
+                  <View style={dynamicStyles.feedbackCard}>
+                    <Text style={[styles.feedbackLabel, { color: theme.textSecondary }]}>How was your experience?</Text>
                     <View style={styles.starRow} data-testid="feedback-stars">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <TouchableOpacity key={star} onPress={() => setFeedbackRating(star)} data-testid={`star-${star}`}>
-                          <Ionicons name={star <= feedbackRating ? 'star' : 'star-outline'} size={36} color={star <= feedbackRating ? '#FFD60A' : '#3A3A3C'} />
+                          <Ionicons name={star <= feedbackRating ? 'star' : 'star-outline'} size={36} color={star <= feedbackRating ? '#FFD60A' : theme.cardBorder} />
                         </TouchableOpacity>
                       ))}
                     </View>
                     {feedbackRating > 0 && (
                       <>
-                        <TextInput style={styles.feedbackInput} placeholder="Your name (optional)" placeholderTextColor="#6E6E73" value={feedbackName} onChangeText={setFeedbackName} data-testid="feedback-name" />
-                        <TextInput style={[styles.feedbackInput, styles.feedbackTextArea]} placeholder="Tell us about your experience..." placeholderTextColor="#6E6E73" value={feedbackText} onChangeText={setFeedbackText} multiline numberOfLines={3} data-testid="feedback-text" />
-                        <TouchableOpacity style={styles.feedbackSubmitBtn} onPress={handleSubmitFeedback} disabled={submittingFeedback} data-testid="feedback-submit">
-                          {submittingFeedback ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.feedbackSubmitText}>Submit Review</Text>}
+                        <TextInput style={dynamicStyles.feedbackInput} placeholder="Your name (optional)" placeholderTextColor={theme.textMuted} value={feedbackName} onChangeText={setFeedbackName} data-testid="feedback-name" />
+                        <TextInput style={[dynamicStyles.feedbackInput, styles.feedbackTextArea]} placeholder="Tell us about your experience..." placeholderTextColor={theme.textMuted} value={feedbackText} onChangeText={setFeedbackText} multiline numberOfLines={3} data-testid="feedback-text" />
+                        <TouchableOpacity style={[dynamicStyles.feedbackSubmitBtn]} onPress={handleSubmitFeedback} disabled={submittingFeedback} data-testid="feedback-submit">
+                          {submittingFeedback ? <ActivityIndicator size="small" color={themeMode === 'light' ? '#FFF' : '#000'} /> : <Text style={dynamicStyles.feedbackSubmitText}>Submit Review</Text>}
                         </TouchableOpacity>
                       </>
                     )}
@@ -731,7 +797,7 @@ export default function DigitalCardPage() {
           {/* Refer a Friend */}
           <View style={styles.section}>
             <TouchableOpacity
-              style={styles.referralBanner}
+              style={dynamicStyles.referralBanner}
               onPress={() => {
                 track('refer_clicked');
                 const shareText = `Check out ${user.name || 'my contact'}! ${typeof window !== 'undefined' ? window.location.href : ''}`;
@@ -750,7 +816,7 @@ export default function DigitalCardPage() {
             >
               <Ionicons name="people" size={22} color="#34C759" />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.referralBannerTitle}>Know someone who could use my services?</Text>
+                <Text style={[styles.referralBannerTitle, { color: theme.text }]}>Know someone who could use my services?</Text>
                 <Text style={styles.referralBannerSub}>Tap to refer a friend</Text>
               </View>
               <Ionicons name="share-outline" size={20} color="#34C759" />
@@ -760,33 +826,33 @@ export default function DigitalCardPage() {
           {/* Bio Section */}
           {user.bio && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>About Me</Text>
-              <View style={styles.infoCard}>
-                <Text style={styles.bioText}>{user.bio}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.accent }]}>About Me</Text>
+              <View style={[dynamicStyles.infoCard]}>
+                <Text style={[styles.bioText, { color: theme.textSecondary }]}>{user.bio}</Text>
               </View>
             </View>
           )}
 
           {/* Contact Info Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact Information</Text>
-            <View style={styles.infoCard}>
+            <Text style={[styles.sectionTitle, { color: theme.accent }]}>Contact Information</Text>
+            <View style={dynamicStyles.infoCard}>
               {user.phone && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="call-outline" size={20} color="#C9A962" />
-                  <Text style={styles.infoText}>{user.phone}</Text>
+                <View style={[styles.infoRow, { borderBottomColor: theme.surface }]}>
+                  <Ionicons name="call-outline" size={20} color={theme.accent} />
+                  <Text style={[styles.infoText, { color: theme.text }]}>{user.phone}</Text>
                 </View>
               )}
               {user.email && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="mail-outline" size={20} color="#C9A962" />
-                  <Text style={styles.infoText}>{user.email}</Text>
+                <View style={[styles.infoRow, { borderBottomColor: theme.surface }]}>
+                  <Ionicons name="mail-outline" size={20} color={theme.accent} />
+                  <Text style={[styles.infoText, { color: theme.text }]}>{user.email}</Text>
                 </View>
               )}
               {store?.address && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="location-outline" size={20} color="#C9A962" />
-                  <Text style={styles.infoText}>
+                <View style={[styles.infoRow, { borderBottomColor: theme.surface }]}>
+                  <Ionicons name="location-outline" size={20} color={theme.accent} />
+                  <Text style={[styles.infoText, { color: theme.text }]}>
                     {store.address}{store.city ? `, ${store.city}` : ''}{store.state ? `, ${store.state}` : ''}
                   </Text>
                 </View>
@@ -800,8 +866,8 @@ export default function DigitalCardPage() {
                     openProtocolUrl(url);
                   }}
                 >
-                  <Ionicons name="globe-outline" size={20} color="#C9A962" />
-                  <Text style={[styles.infoText, styles.linkText]}>{store.website}</Text>
+                  <Ionicons name="globe-outline" size={20} color={theme.accent} />
+                  <Text style={[styles.infoText, styles.linkText, { color: theme.accent }]}>{store.website}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -810,15 +876,15 @@ export default function DigitalCardPage() {
           {/* Testimonials */}
           {testimonials && testimonials.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What Customers Say</Text>
+              <Text style={[styles.sectionTitle, { color: theme.accent }]}>What Customers Say</Text>
               {testimonials.map((t: any) => (
-                <View key={t.id} style={styles.testimonialCard}>
+                <View key={t.id} style={dynamicStyles.testimonialCard}>
                   <View style={styles.testimonialHeader}>
-                    <Text style={styles.testimonialName}>{t.customer_name}</Text>
+                    <Text style={[styles.testimonialName, { color: theme.text }]}>{t.customer_name}</Text>
                     {renderStars(t.rating)}
                   </View>
                   {t.text && (
-                    <Text style={styles.testimonialText}>"{t.text}"</Text>
+                    <Text style={[styles.testimonialText, { color: theme.textMuted }]}>"{t.text}"</Text>
                   )}
                 </View>
               ))}
@@ -838,41 +904,41 @@ export default function DigitalCardPage() {
         onRequestClose={() => setShowShareModal(false)}
       >
         <TouchableOpacity 
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}
           activeOpacity={1}
           onPress={() => setShowShareModal(false)}
         >
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View style={styles.shareModal}>
-            <View style={styles.shareModalHandle} />
-            <Text style={styles.shareModalTitle}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
-            <Text style={styles.shareModalSubtitle}>Choose how to share your digital card</Text>
+          <View style={dynamicStyles.shareModal}>
+            <View style={dynamicStyles.shareModalHandle} />
+            <Text style={[styles.shareModalTitle, { color: theme.text }]}>{isOwner ? 'Share My Contact' : 'Save My Contact'}</Text>
+            <Text style={[styles.shareModalSubtitle, { color: theme.textMuted }]}>Choose how to share your digital card</Text>
             
             {/* Recipient Info */}
             {isOwner && (
               <View style={styles.recipientSection}>
-                <Text style={styles.recipientLabel}>SEND TO (OPTIONAL)</Text>
+                <Text style={[styles.recipientLabel, { color: theme.textMuted }]}>SEND TO (OPTIONAL)</Text>
                 <TextInput
-                  style={styles.recipientInput}
+                  style={[dynamicStyles.recipientInput]}
                   placeholder="Recipient Name"
-                  placeholderTextColor="#6E6E73"
+                  placeholderTextColor={theme.textMuted}
                   value={shareRecipientName}
                   onChangeText={setShareRecipientName}
                   data-testid="card-share-name"
                 />
                 <TextInput
-                  style={styles.recipientInput}
+                  style={[dynamicStyles.recipientInput]}
                   placeholder="Phone"
-                  placeholderTextColor="#6E6E73"
+                  placeholderTextColor={theme.textMuted}
                   value={shareRecipientPhone}
                   onChangeText={setShareRecipientPhone}
                   keyboardType="phone-pad"
                   data-testid="card-share-phone"
                 />
                 <TextInput
-                  style={styles.recipientInput}
+                  style={[dynamicStyles.recipientInput]}
                   placeholder="Email"
-                  placeholderTextColor="#6E6E73"
+                  placeholderTextColor={theme.textMuted}
                   value={shareRecipientEmail}
                   onChangeText={setShareRecipientEmail}
                   keyboardType="email-address"
@@ -891,7 +957,7 @@ export default function DigitalCardPage() {
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#007AFF20' }]}>
                   <Ionicons name="share-outline" size={24} color="#007AFF" />
                 </View>
-                <Text style={styles.shareOptionText}>Share Link</Text>
+                <Text style={[styles.shareOptionText, { color: theme.text }]}>Share Link</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -902,7 +968,7 @@ export default function DigitalCardPage() {
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#5856D620' }]}>
                   <Ionicons name="copy-outline" size={24} color="#5856D6" />
                 </View>
-                <Text style={styles.shareOptionText}>Copy Link</Text>
+                <Text style={[styles.shareOptionText, { color: theme.text }]}>Copy Link</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -913,7 +979,7 @@ export default function DigitalCardPage() {
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#34C75920' }]}>
                   <Ionicons name="chatbubble-outline" size={24} color="#34C759" />
                 </View>
-                <Text style={styles.shareOptionText}>Via Text</Text>
+                <Text style={[styles.shareOptionText, { color: theme.text }]}>Via Text</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -924,7 +990,7 @@ export default function DigitalCardPage() {
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#FF950020' }]}>
                   <Ionicons name="mail-outline" size={24} color="#FF9500" />
                 </View>
-                <Text style={styles.shareOptionText}>Via Email</Text>
+                <Text style={[styles.shareOptionText, { color: theme.text }]}>Via Email</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -933,14 +999,14 @@ export default function DigitalCardPage() {
                 disabled={saving}
                 data-testid="download-vcard"
               >
-                <View style={[styles.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
+                <View style={[styles.shareOptionIcon, { backgroundColor: `${theme.accent}20` }]}>
                   {saving ? (
-                    <ActivityIndicator size="small" color="#C9A962" />
+                    <ActivityIndicator size="small" color={theme.accent} />
                   ) : (
-                    <Ionicons name="download-outline" size={24} color="#C9A962" />
+                    <Ionicons name="download-outline" size={24} color={theme.accent} />
                   )}
                 </View>
-                <Text style={styles.shareOptionText}>Save vCard</Text>
+                <Text style={[styles.shareOptionText, { color: theme.text }]}>Save vCard</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -951,12 +1017,12 @@ export default function DigitalCardPage() {
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#AF52DE20' }]}>
                   <Ionicons name="qr-code-outline" size={24} color="#AF52DE" />
                 </View>
-                <Text style={styles.shareOptionText}>Show QR</Text>
+                <Text style={[styles.shareOptionText, { color: theme.text }]}>Show QR</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity 
-              style={styles.shareModalCancel}
+              style={dynamicStyles.shareModalCancel}
               onPress={() => setShowShareModal(false)}
             >
               <Text style={styles.shareModalCancelText}>Cancel</Text>
@@ -969,41 +1035,41 @@ export default function DigitalCardPage() {
       {/* Contact Match Modal */}
       {matchModalVisible && matchInfo && (
         <View style={styles.matchOverlay}>
-          <View style={styles.matchModal} data-testid="contact-match-modal">
+          <View style={[styles.matchModal, { backgroundColor: theme.card }]} data-testid="contact-match-modal">
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF950015', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="person-circle" size={44} color="#FF9500" />
               </View>
             </View>
-            <Text style={styles.matchTitle}>Contact Already Exists</Text>
-            <Text style={styles.matchSubtitle}>A contact with this number already exists:</Text>
-            <View style={styles.matchCard}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>{matchInfo.existing_name}</Text>
-              {matchInfo.phone ? <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{matchInfo.phone}</Text> : null}
+            <Text style={[styles.matchTitle, { color: theme.text }]}>Contact Already Exists</Text>
+            <Text style={[styles.matchSubtitle, { color: theme.textMuted }]}>A contact with this number already exists:</Text>
+            <View style={[styles.matchCard, { backgroundColor: theme.surface }]}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: theme.textMuted, letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>{matchInfo.existing_name}</Text>
+              {matchInfo.phone ? <Text style={{ fontSize: 13, color: theme.textMuted, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
-              <Text style={{ fontSize: 12, color: '#6E6E73', marginHorizontal: 12 }}>You entered</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: '#2C2C2E' }} />
+              <View style={{ flex: 1, height: 1, backgroundColor: theme.cardBorder }} />
+              <Text style={{ fontSize: 12, color: theme.textMuted, marginHorizontal: 12 }}>You entered</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: theme.cardBorder }} />
             </View>
-            <View style={[styles.matchCard, { marginBottom: 20 }]}>
+            <View style={[styles.matchCard, { backgroundColor: theme.surface, marginBottom: 20 }]}>
               <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
             </View>
-            <TouchableOpacity style={styles.matchActionBtn} onPress={() => resolveMatchAction('use_existing')} data-testid="match-use-existing">
+            <TouchableOpacity style={[styles.matchActionBtn, { backgroundColor: theme.surface }]} onPress={() => resolveMatchAction('use_existing')} data-testid="match-use-existing">
               <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-              <Text style={styles.matchActionText}>Use Existing Contact</Text>
+              <Text style={[styles.matchActionText, { color: theme.text }]}>Use Existing Contact</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.matchActionBtn} onPress={() => resolveMatchAction('update_name')} data-testid="match-update-name">
+            <TouchableOpacity style={[styles.matchActionBtn, { backgroundColor: theme.surface }]} onPress={() => resolveMatchAction('update_name')} data-testid="match-update-name">
               <Ionicons name="create" size={20} color="#007AFF" />
-              <Text style={styles.matchActionText}>Update to "{matchInfo.provided_name}"</Text>
+              <Text style={[styles.matchActionText, { color: theme.text }]}>Update to "{matchInfo.provided_name}"</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.matchActionBtn} onPress={() => resolveMatchAction('create_new')} data-testid="match-create-new">
+            <TouchableOpacity style={[styles.matchActionBtn, { backgroundColor: theme.surface }]} onPress={() => resolveMatchAction('create_new')} data-testid="match-create-new">
               <Ionicons name="person-add" size={20} color="#FF9500" />
-              <Text style={styles.matchActionText}>Create New Contact</Text>
+              <Text style={[styles.matchActionText, { color: theme.text }]}>Create New Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 12, padding: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, color: '#8E8E93' }}>Cancel</Text>
+              <Text style={{ fontSize: 15, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1012,10 +1078,127 @@ export default function DigitalCardPage() {
   );
 }
 
+// Dynamic styles that depend on theme
+const getDynamicStyles = (theme: ThemePalette) => StyleSheet.create({
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.accent,
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    gap: 10,
+  },
+  saveButtonSaved: {
+    backgroundColor: '#34C759',
+  },
+  saveButtonText: {
+    color: theme.bg === '#0D0D0D' ? '#1A1A1A' : '#FFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  infoCard: {
+    backgroundColor: theme.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: theme.surface,
+  },
+  testimonialCard: {
+    backgroundColor: theme.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.surface,
+  },
+  reviewCTABanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: `${theme.accent}40`,
+  },
+  referralBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#34C75940',
+  },
+  feedbackCard: {
+    backgroundColor: theme.card,
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: theme.surface,
+  },
+  feedbackInput: {
+    backgroundColor: theme.inputBg,
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    color: theme.text,
+    borderWidth: 1,
+    borderColor: theme.inputBorder,
+    marginBottom: 10,
+  },
+  feedbackSubmitBtn: {
+    backgroundColor: theme.accent,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  feedbackSubmitText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.bg === '#0D0D0D' ? '#000' : '#FFF',
+  },
+  shareModal: {
+    backgroundColor: theme.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  shareModalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: theme.cardBorder,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  shareModalCancel: {
+    marginTop: 24,
+    paddingVertical: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+  },
+  recipientInput: {
+    backgroundColor: theme.inputBg,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: theme.text,
+    borderWidth: 1.5,
+    borderColor: theme.cardBorder,
+    minWidth: 0,
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
   },
   header: {
     flexDirection: 'row',
@@ -1023,7 +1206,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C1E',
   },
   backButton: {
     padding: 4,
@@ -1031,11 +1213,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1046,7 +1226,6 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1086,11 +1265,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backfaceVisibility: 'hidden',
     position: 'absolute',
-    // Luxury dark card styling
-    backgroundColor: '#1A1A1A',
     borderWidth: 1,
-    borderColor: '#333',
-    shadowColor: '#C9A962',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -1118,7 +1293,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(201, 169, 98, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1131,7 +1305,6 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
     borderRightWidth: 24,
     borderTopWidth: 24,
-    borderRightColor: '#C9A962',
     borderTopColor: 'transparent',
     borderRadius: 4,
     transform: [{ rotate: '90deg' }],
@@ -1158,28 +1331,23 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 20,
     borderWidth: 3,
-    borderColor: '#C9A962',
   },
   photoPlaceholder: {
     width: 160,
     height: 160,
     borderRadius: 20,
-    backgroundColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#C9A962',
   },
   userName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   userTitle: {
     fontSize: 14,
-    color: '#C9A962',
     marginTop: 4,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
@@ -1187,13 +1355,11 @@ const styles = StyleSheet.create({
   },
   storeName: {
     fontSize: 13,
-    color: '#888',
     marginTop: 6,
   },
   divider: {
     width: 60,
     height: 2,
-    backgroundColor: '#C9A962',
     marginVertical: 10,
     borderRadius: 1,
   },
@@ -1220,7 +1386,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 6,
@@ -1229,7 +1394,6 @@ const styles = StyleSheet.create({
   qrTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#C9A962',
     marginBottom: 20,
     textTransform: 'uppercase',
     letterSpacing: 2,
@@ -1248,37 +1412,16 @@ const styles = StyleSheet.create({
   qrActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#C9A962',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,
     gap: 8,
   },
   qrActionText: {
-    color: '#1A1A1A',
     fontSize: 14,
     fontWeight: '600',
   },
-  // Save Button
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#C9A962',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 24,
-    gap: 10,
-  },
-  saveButtonSaved: {
-    backgroundColor: '#34C759',
-  },
-  saveButtonText: {
-    color: '#1A1A1A',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
+  // Save Button (static parts only)
   // Quick Actions
   quickActionsRow: {
     flexDirection: 'row',
@@ -1292,15 +1435,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1A1A1A',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#333',
     marginBottom: 8,
   },
   quickActionLabel: {
-    color: '#888',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -1311,48 +1451,39 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#C9A962',
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   infoCard: {
-    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
   },
   infoText: {
-    color: '#FFF',
     fontSize: 14,
     marginLeft: 12,
     flex: 1,
   },
   linkText: {
-    color: '#C9A962',
     textDecorationLine: 'underline',
   },
   bioText: {
-    color: '#CCC',
     fontSize: 14,
     lineHeight: 22,
   },
   // Testimonials
   testimonialCard: {
-    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
   },
   testimonialHeader: {
     flexDirection: 'row',
@@ -1361,7 +1492,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   testimonialName: {
-    color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1369,7 +1499,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   testimonialText: {
-    color: '#888',
     fontSize: 13,
     fontStyle: 'italic',
     lineHeight: 20,
@@ -1389,36 +1518,29 @@ const styles = StyleSheet.create({
   reviewCTABanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1C',
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#C9A96240',
   },
-  reviewCTABannerTitle: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  reviewCTABannerSub: { color: '#C9A962', fontSize: 13, marginTop: 2, fontWeight: '500' },
+  reviewCTABannerTitle: { fontSize: 16, fontWeight: '700' },
+  reviewCTABannerSub: { fontSize: 13, marginTop: 2, fontWeight: '500' },
   referralBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1C',
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#34C75940',
   },
-  referralBannerTitle: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  referralBannerTitle: { fontSize: 16, fontWeight: '700' },
   referralBannerSub: { color: '#34C759', fontSize: 13, marginTop: 2, fontWeight: '500' },
   feedbackCard: {
-    backgroundColor: '#1A1A1C',
     borderRadius: 12,
     padding: 20,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#2A2A2C',
   },
   feedbackLabel: {
     fontSize: 15,
-    color: '#CCC',
     textAlign: 'center',
     marginBottom: 14,
   },
@@ -1429,13 +1551,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   feedbackInput: {
-    backgroundColor: '#111',
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#FFF',
     borderWidth: 1,
-    borderColor: '#2A2A2C',
     marginBottom: 10,
   },
   feedbackTextArea: {
@@ -1444,7 +1563,6 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   feedbackSubmitBtn: {
-    backgroundColor: '#C9A962',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1453,7 +1571,6 @@ const styles = StyleSheet.create({
   feedbackSubmitText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
   },
   feedbackSuccess: {
     alignItems: 'center',
@@ -1473,11 +1590,9 @@ const styles = StyleSheet.create({
   // Share Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   shareModal: {
-    backgroundColor: '#1C1C1E',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1486,7 +1601,6 @@ const styles = StyleSheet.create({
   shareModalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#3A3A3C',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 20,
@@ -1494,13 +1608,11 @@ const styles = StyleSheet.create({
   shareModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   shareModalSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -1525,13 +1637,11 @@ const styles = StyleSheet.create({
   shareOptionText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#FFF',
     textAlign: 'center',
   },
   shareModalCancel: {
     marginTop: 24,
     paddingVertical: 16,
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
   },
   shareModalCancelText: {
@@ -1553,14 +1663,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   recipientInput: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#FFF',
     borderWidth: 1.5,
-    borderColor: '#3A3A3C',
     minWidth: 0,
   },
   recipientRow: {
@@ -1577,15 +1684,14 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   matchModal: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 24,
     width: '90%',
     maxWidth: 380,
   },
-  matchTitle: { fontSize: 18, fontWeight: '700' as any, color: '#FFF', textAlign: 'center' as any, marginBottom: 8 },
-  matchSubtitle: { fontSize: 14, color: '#8E8E93', textAlign: 'center' as any, marginBottom: 16 },
-  matchCard: { backgroundColor: '#2C2C2E', borderRadius: 10, padding: 14, alignItems: 'center' as any },
-  matchActionBtn: { flexDirection: 'row' as any, alignItems: 'center' as any, backgroundColor: '#2C2C2E', padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 },
-  matchActionText: { fontSize: 15, color: '#FFF', fontWeight: '500' as any, flex: 1 },
+  matchTitle: { fontSize: 18, fontWeight: '700' as any, textAlign: 'center' as any, marginBottom: 8 },
+  matchSubtitle: { fontSize: 14, textAlign: 'center' as any, marginBottom: 16 },
+  matchCard: { borderRadius: 10, padding: 14, alignItems: 'center' as any },
+  matchActionBtn: { flexDirection: 'row' as any, alignItems: 'center' as any, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 },
+  matchActionText: { fontSize: 15, fontWeight: '500' as any, flex: 1 },
 });

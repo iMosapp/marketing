@@ -44,6 +44,7 @@ const { showToast } = useToast();
   const [companyName, setCompanyName] = useState('');
   const [tagline, setTagline] = useState('');
   const [footerText, setFooterText] = useState("i'M On Social");
+  const [pageTheme, setPageTheme] = useState<'light' | 'dark'>('dark');
   const [socialLinks, setSocialLinks] = useState({
     website: '',
     facebook: '',
@@ -77,6 +78,7 @@ const { showToast } = useToast();
         setCompanyName(brandKit.company_name || '');
         setTagline(brandKit.tagline || '');
         setFooterText(brandKit.footer_text || "i'M On Social");
+        setPageTheme(brandKit.page_theme === 'light' ? 'light' : 'dark');
         setSocialLinks(brandKit.social_links || {});
       }
     } catch (error) {
@@ -102,6 +104,7 @@ const { showToast } = useToast();
         tagline: tagline,
         footer_text: footerText,
         social_links: socialLinks,
+        page_theme: pageTheme,
       });
 
       // Also sync logo_url to the store so emails pick it up
@@ -307,6 +310,50 @@ const { showToast } = useToast();
           />
         </View>
 
+        {/* Page Theme Toggle */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Public Page Theme</Text>
+          <Text style={[styles.inputHelper, { color: colors.textSecondary, marginBottom: 12 }]}>
+            Controls the look of your Digital Card, Link Page, and other public pages
+          </Text>
+          <View style={styles.themeToggleRow}>
+            <TouchableOpacity
+              style={[
+                styles.themeToggleOption,
+                pageTheme === 'dark' && styles.themeToggleActive,
+                pageTheme === 'dark' && { borderColor: primaryColor },
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setPageTheme('dark');
+              }}
+              data-testid="theme-toggle-dark"
+            >
+              <View style={[styles.themePreviewDark]}>
+                <View style={[styles.themePreviewAccent, { backgroundColor: primaryColor }]} />
+              </View>
+              <Text style={[styles.themeToggleLabel, pageTheme === 'dark' && { color: colors.text, fontWeight: '700' }]}>Dark</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.themeToggleOption,
+                pageTheme === 'light' && styles.themeToggleActive,
+                pageTheme === 'light' && { borderColor: primaryColor },
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setPageTheme('light');
+              }}
+              data-testid="theme-toggle-light"
+            >
+              <View style={[styles.themePreviewLight]}>
+                <View style={[styles.themePreviewAccent, { backgroundColor: primaryColor }]} />
+              </View>
+              <Text style={[styles.themeToggleLabel, pageTheme === 'light' && { color: colors.text, fontWeight: '700' }]}>Light</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Colors */}
         <ColorPicker label="Primary Color" value={primaryColor} onSelect={setPrimaryColor} />
         <ColorPicker label="Secondary Color" value={secondaryColor} onSelect={setSecondaryColor} />
@@ -406,8 +453,8 @@ const { showToast } = useToast();
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
-            Your brand kit will be applied to all emails sent from iMos. 
-            The preview above shows how your email header and footer will look.
+            Your brand kit is applied to emails and public-facing pages like your Digital Card. 
+            Use the Page Theme toggle to switch between light and dark looks.
           </Text>
         </View>
       </ScrollView>
@@ -642,5 +689,56 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+
+  // Theme Toggle
+  themeToggleRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  themeToggleOption: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    padding: 12,
+    backgroundColor: colors.card,
+  },
+  themeToggleActive: {
+    borderWidth: 2,
+  },
+  themeToggleLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    marginTop: 8,
+  },
+  themePreviewDark: {
+    width: '100%',
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: 8,
+    overflow: 'hidden',
+  },
+  themePreviewLight: {
+    width: '100%',
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  themePreviewAccent: {
+    width: '60%',
+    height: 6,
+    borderRadius: 3,
   },
 });

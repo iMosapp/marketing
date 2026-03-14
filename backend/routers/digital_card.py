@@ -126,6 +126,19 @@ async def get_card_data(user_id: str, cid: str = None):
             pass
 
     from utils.image_urls import resolve_user_photo, resolve_store_logo
+
+    # Get user's brand kit for public page theming
+    user_brand_kit = user.get("email_brand_kit", {})
+    # Fallback to store/org brand kit if user doesn't have one
+    if not user_brand_kit and store:
+        user_brand_kit = store.get("email_brand_kit", {})
+    if not user_brand_kit and user.get("organization_id"):
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])})
+            if org:
+                user_brand_kit = org.get("email_brand_kit", {})
+        except Exception:
+            pass
     
     result = {
         "user": {
@@ -149,7 +162,15 @@ async def get_card_data(user_id: str, cid: str = None):
             "state": store.get("state") if store else None,
             "website": store.get("website") if store else None,
         } if store else None,
-        "testimonials": formatted_testimonials
+        "testimonials": formatted_testimonials,
+        "brand_kit": {
+            "page_theme": user_brand_kit.get("page_theme", "dark"),
+            "primary_color": user_brand_kit.get("primary_color"),
+            "secondary_color": user_brand_kit.get("secondary_color"),
+            "accent_color": user_brand_kit.get("accent_color"),
+            "logo_url": user_brand_kit.get("logo_url"),
+            "company_name": user_brand_kit.get("company_name"),
+        }
     }
     if partner_branding_data:
         result["partner_branding"] = partner_branding_data
