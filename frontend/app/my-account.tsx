@@ -33,6 +33,7 @@ export default function MyAccountScreen() {
   const [photoUrl, setPhotoUrl] = useState(user?.photo_url || null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [activityPeriod, setActivityPeriod] = useState('month');
   const [activityData, setActivityData] = useState<any>(null);
@@ -46,11 +47,6 @@ export default function MyAccountScreen() {
 
   // All available tools & settings — single source of truth, no duplication
   const ALL_TOOLS: { icon: string; label: string; color: string; route: string }[] = [
-    { icon: 'storefront', label: 'Store Profile', color: '#34C759', route: '/settings/store-profile' },
-    { icon: 'star', label: 'Review Links', color: '#FFD60A', route: '/settings/review-links' },
-    { icon: 'chatbubbles', label: 'Showcase Approvals', color: '#FF9500', route: '/settings/showcase-approvals' },
-    { icon: 'images', label: 'Brand Assets', color: '#AF52DE', route: '/admin/brand-assets' },
-    { icon: 'link', label: 'Edit Link Page', color: '#C9A962', route: '/settings/link-page' },
     { icon: 'paper-plane', label: 'Send Card', color: '#32ADE6', route: '/settings/create-card' },
     { icon: 'sparkles', label: 'Ask Jessi', color: '#C9A962', route: '/jessie' },
     { icon: 'bar-chart', label: 'My Activity', color: '#5AC8FA', route: '/reports/activity' },
@@ -61,6 +57,7 @@ export default function MyAccountScreen() {
     { icon: 'school', label: 'Training Hub', color: '#FF9500', route: '/training-hub' },
     { icon: 'mail', label: 'Email Analytics', color: '#5856D6', route: '/settings/email-analytics' },
     { icon: 'calendar', label: 'Date Triggers', color: '#FF3B30', route: '/settings/date-triggers' },
+    { icon: 'link', label: 'Edit Link Page', color: '#C9A962', route: '/settings/link-page' },
   ];
 
   const loadActivity = useCallback(async (period: string, startDate?: string, endDate?: string) => {
@@ -109,11 +106,12 @@ export default function MyAccountScreen() {
         headers: { 'X-User-ID': user?._id }
       });
       const slug = res.data?.slug;
+      const name = res.data?.name;
+      if (name) setStoreName(name);
       if (slug) {
         setStoreSlug(slug);
-      } else if (res.data?.name) {
-        // Auto-generate from name
-        const generated = res.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      } else if (name) {
+        const generated = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         setStoreSlug(generated);
       }
     } catch (e) {}
@@ -869,6 +867,78 @@ export default function MyAccountScreen() {
 
           {/* --- AI Persona & Voice — moved to My Profile section above --- */}
         </View>
+
+        {/* ====== STORE MANAGEMENT — Only for admin/manager roles ====== */}
+        {user?.role && ['super_admin', 'org_admin', 'store_manager'].includes(user.role) && user?.store_id && (
+          <View style={styles.section}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="storefront" size={14} color="#34C759" />
+              </View>
+              <Text style={[styles.sectionTitle, { color: '#34C759', marginBottom: 0 }]}>
+                {storeName || user?.store_name || 'Store'} Management
+              </Text>
+            </View>
+            <View style={[styles.menuList, { backgroundColor: colors.card, borderWidth: 1, borderColor: '#34C75930' }]}>
+              {[
+                { icon: 'storefront', title: 'Edit Store Profile', subtitle: 'Name, logo, address, hours', color: '#34C759', route: '/settings/store-profile' },
+                { icon: 'globe-outline', title: 'Store Landing Page', subtitle: storeSlug ? `${PROD_BASE}/p/store/${storeSlug}` : 'Store public page', color: '#AF52DE', route: '/settings/store-profile', 
+                  onPreview: () => { if (storeSlug && Platform.OS === 'web') window.open(`${PROD_BASE}/p/store/${storeSlug}`, '_blank'); },
+                  onCopy: () => { const url = `${PROD_BASE}/p/store/${storeSlug}`; if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(url); showSimpleAlert('Copied!', 'Store landing page link copied'); } }
+                },
+                { icon: 'card-outline', title: 'Store Business Card', subtitle: storeSlug ? `${PROD_BASE}/card/store/${storeSlug}` : 'Store digital card', color: '#007AFF', route: '/settings/store-profile',
+                  onPreview: () => { if (storeSlug && Platform.OS === 'web') window.open(`${PROD_BASE}/card/store/${storeSlug}`, '_blank'); },
+                  onCopy: () => { const url = `${PROD_BASE}/card/store/${storeSlug}`; if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(url); showSimpleAlert('Copied!', 'Store business card link copied'); } }
+                },
+                { icon: 'checkmark-circle-outline', title: 'Showcase Approvals', subtitle: 'Approve customer photos & reviews', color: '#FF9500', route: '/settings/showcase-approvals' },
+                { icon: 'star-outline', title: 'Store Review Links', subtitle: 'Google, Facebook, Yelp review links', color: '#FFD60A', route: '/settings/review-links' },
+                { icon: 'images-outline', title: 'Brand Assets', subtitle: 'Logos, images, marketing materials', color: '#5856D6', route: '/admin/brand-assets' },
+                { icon: 'color-palette-outline', title: 'Store Brand Kit', subtitle: 'Colors, logo, theme for store pages', color: '#C9A962', route: '/settings/brand-kit' },
+              ].map((item: any, index, arr) => (
+                <View key={item.title}>
+                  <TouchableOpacity
+                    style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && !item.onPreview && { borderBottomWidth: 0 }]}
+                    onPress={() => router.push(item.route as any)}
+                    data-testid={`store-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+                      <Ionicons name={item.icon as any} size={22} color={item.color} />
+                    </View>
+                    <View style={styles.menuContent}>
+                      <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+                      <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>{item.subtitle}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                  {item.onPreview && storeSlug && (
+                    <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: index === arr.length - 1 ? 0 : 1, borderBottomColor: colors.border }}>
+                      <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: `${item.color}15`, flex: 1 }]} onPress={item.onPreview}>
+                        <Ionicons name="eye-outline" size={14} color={item.color} />
+                        <Text style={[styles.presenceBtnText, { color: item.color }]}>Preview</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF950015', flex: 1 }]} onPress={item.onCopy}>
+                        <Ionicons name="copy-outline" size={14} color="#FF9500" />
+                        <Text style={[styles.presenceBtnText, { color: '#FF9500' }]}>Copy Link</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#34C75915', flex: 1 }]} onPress={() => {
+                        const url = item.title.includes('Landing') ? `${PROD_BASE}/p/store/${storeSlug}` : `${PROD_BASE}/card/store/${storeSlug}`;
+                        if (Platform.OS === 'web' && navigator.share) {
+                          navigator.share({ title: `${storeName || 'Store'} - ${item.title}`, url });
+                        } else if (Platform.OS === 'web' && navigator.clipboard) {
+                          navigator.clipboard.writeText(url);
+                          showSimpleAlert('Copied!', 'Link copied to clipboard');
+                        }
+                      }}>
+                        <Ionicons name="share-outline" size={14} color="#34C759" />
+                        <Text style={[styles.presenceBtnText, { color: '#34C759' }]}>Share</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* ====== ALL TOOLS & SETTINGS — Collapsible card ====== */}
         <View style={styles.section}>
