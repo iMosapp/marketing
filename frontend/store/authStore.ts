@@ -102,6 +102,20 @@ interface AuthState {
 // Singleton promise to prevent concurrent loadAuth calls
 let _loadAuthPromise: Promise<void> | null = null;
 
+// Normalize legacy role names to canonical ones
+// DB may have 'admin' or 'manager' but frontend expects 'org_admin' or 'store_manager'
+function normalizeUser(user: User | null): User | null {
+  if (!user) return null;
+  const ROLE_MAP: Record<string, string> = {
+    admin: 'org_admin',
+    manager: 'store_manager',
+  };
+  if (user.role && ROLE_MAP[user.role]) {
+    return { ...user, role: ROLE_MAP[user.role] as any };
+  }
+  return user;
+}
+
 // Centralized cookie-based session restore
 async function _restoreFromCookie(set: any) {
   try {
@@ -112,7 +126,7 @@ async function _restoreFromCookie(set: any) {
       await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
       _idbSet('imonsocial_user', JSON.stringify(res.data.user)).catch(() => {});
       _idbSet('imonsocial_token', res.data.token).catch(() => {});
-      set({ user: res.data.user, token: res.data.token, isAuthenticated: true, isLoading: false });
+      set({ user: normalizeUser(res.data.user), token: res.data.token, isAuthenticated: true, isLoading: false });
       return;
     }
   } catch {}
@@ -129,7 +143,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   originalUser: null,
   originalToken: null,
   
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setUser: (user) => set({ user: normalizeUser(user), isAuthenticated: !!user }),
   
   setToken: (token) => set({ token }),
   
@@ -154,7 +168,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await AsyncStorage.removeItem('partner_branding');
       }
       
-      set({ user, token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
+      set({ user: normalizeUser(user), token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -170,7 +184,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await AsyncStorage.setItem('auth_token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       
-      set({ user, token, isAuthenticated: true, isLoading: false });
+      set({ user: normalizeUser(user), token, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -265,7 +279,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
           }
           
-          set({ user, token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
+          set({ user: normalizeUser(user), token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
         } else {
           // No local storage — try cookie-based session restore
           await _restoreFromCookie(set);
@@ -290,7 +304,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await AsyncStorage.setItem('user', JSON.stringify({ ...impersonatedUser, isImpersonating: true }));
     
     set({
-      user: { ...impersonatedUser, isImpersonating: true },
+      user: normalizeUser({ ...impersonatedUser, isImpersonating: true }),
       token: impersonationToken,
       isImpersonating: true,
       originalUser: user,
