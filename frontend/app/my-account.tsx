@@ -42,56 +42,26 @@ export default function MyAccountScreen() {
   const [customEndDate, setCustomEndDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [editingQuickActions, setEditingQuickActions] = useState(false);
-  const [quickActionIds, setQuickActionIds] = useState<string[]>([]);
+  const [toolsExpanded, setToolsExpanded] = useState(false);
 
-  // All available Quick Action items
-  const ALL_ACTIONS: { id: string; icon: string; label: string; color: string; route: string }[] = [
-    { id: 'account_setup', icon: 'storefront', label: 'Account Setup', color: '#34C759', route: '/settings/store-profile' },
-    { id: 'brand_kit', icon: 'color-palette', label: 'Brand Kit', color: '#C9A962', route: '/settings/brand-kit' },
-    { id: 'review_links', icon: 'star', label: 'Review Links', color: '#FFD60A', route: '/settings/review-links' },
-    { id: 'brand_assets', icon: 'images', label: 'Brand Assets', color: '#AF52DE', route: '/admin/brand-assets' },
-    { id: 'approvals', icon: 'chatbubbles', label: 'Approvals', color: '#FF9500', route: '/settings/review-approvals' },
-    { id: 'edit_card', icon: 'create', label: 'Edit Card', color: '#007AFF', route: '/settings/store-profile' },
-    { id: 'leaderboard', icon: 'trophy', label: 'Leaderboard', color: '#FFD700', route: '/admin/leaderboard' },
-    { id: 'link_page', icon: 'link', label: 'Link Page', color: '#C9A962', route: '/settings/link-page' },
-    { id: 'digital_card', icon: 'card', label: 'Digital Card', color: '#007AFF', route: '/settings/store-profile' },
-    { id: 'ai_persona', icon: 'person', label: 'AI Persona', color: '#AF52DE', route: '/settings/persona' },
-    { id: 'voice_training', icon: 'mic', label: 'Voice Training', color: '#FF3B30', route: '/voice-training' },
-    { id: 'send_card', icon: 'paper-plane', label: 'Send Card', color: '#32ADE6', route: '/settings/create-card' },
-    { id: 'ask_jessi', icon: 'sparkles', label: 'Ask Jessi', color: '#C9A962', route: '/jessie' },
-    { id: 'my_activity', icon: 'bar-chart', label: 'My Activity', color: '#5AC8FA', route: '/reports/activity' },
-    { id: 'tasks', icon: 'checkmark-done', label: 'Tasks', color: '#34C759', route: '/tasks' },
-    { id: 'analytics', icon: 'stats-chart', label: 'Analytics', color: '#34C759', route: '/analytics' },
-    { id: 'templates', icon: 'document-text', label: 'Templates', color: '#FFD60A', route: '/settings/templates' },
-    { id: 'training', icon: 'school', label: 'Training', color: '#FF9500', route: '/training-hub' },
+  // All available tools & settings — single source of truth, no duplication
+  const ALL_TOOLS: { icon: string; label: string; color: string; route: string }[] = [
+    { icon: 'storefront', label: 'Store Profile', color: '#34C759', route: '/settings/store-profile' },
+    { icon: 'star', label: 'Review Links', color: '#FFD60A', route: '/settings/review-links' },
+    { icon: 'chatbubbles', label: 'Showcase Approvals', color: '#FF9500', route: '/settings/showcase-approvals' },
+    { icon: 'images', label: 'Brand Assets', color: '#AF52DE', route: '/admin/brand-assets' },
+    { icon: 'link', label: 'Edit Link Page', color: '#C9A962', route: '/settings/link-page' },
+    { icon: 'paper-plane', label: 'Send Card', color: '#32ADE6', route: '/settings/create-card' },
+    { icon: 'sparkles', label: 'Ask Jessi', color: '#C9A962', route: '/jessie' },
+    { icon: 'bar-chart', label: 'My Activity', color: '#5AC8FA', route: '/reports/activity' },
+    { icon: 'checkmark-done', label: 'Tasks', color: '#34C759', route: '/tasks' },
+    { icon: 'stats-chart', label: 'Analytics', color: '#34C759', route: '/analytics' },
+    { icon: 'document-text', label: 'Templates', color: '#FFD60A', route: '/settings/templates' },
+    { icon: 'trophy', label: 'Leaderboard', color: '#FFD700', route: '/admin/leaderboard' },
+    { icon: 'school', label: 'Training Hub', color: '#FF9500', route: '/training-hub' },
+    { icon: 'mail', label: 'Email Analytics', color: '#5856D6', route: '/settings/email-analytics' },
+    { icon: 'calendar', label: 'Date Triggers', color: '#FF3B30', route: '/settings/date-triggers' },
   ];
-
-  const DEFAULT_QUICK_IDS = ['account_setup', 'brand_kit', 'review_links', 'brand_assets', 'approvals', 'edit_card'];
-
-  useEffect(() => {
-    AsyncStorage.getItem('quick_action_ids').then(val => {
-      if (val) {
-        try { setQuickActionIds(JSON.parse(val)); } catch { setQuickActionIds(DEFAULT_QUICK_IDS); }
-      } else {
-        setQuickActionIds(DEFAULT_QUICK_IDS);
-      }
-    });
-  }, []);
-
-  const saveQuickActions = (ids: string[]) => {
-    setQuickActionIds(ids);
-    AsyncStorage.setItem('quick_action_ids', JSON.stringify(ids));
-  };
-
-  const toggleQuickAction = (id: string) => {
-    if (quickActionIds.includes(id)) {
-      saveQuickActions(quickActionIds.filter(i => i !== id));
-    } else if (quickActionIds.length < 6) {
-      saveQuickActions([...quickActionIds, id]);
-    } else {
-      showSimpleAlert('Limit Reached', 'You can have up to 6 Quick Actions. Remove one first.');
-    }
-  };
 
   const loadActivity = useCallback(async (period: string, startDate?: string, endDate?: string) => {
     if (!user?._id) return;
@@ -869,17 +839,23 @@ export default function MyAccountScreen() {
             </View>
           </View>
 
-          {/* --- AI Persona & Voice --- */}
-          <View style={[styles.menuList, { backgroundColor: colors.card, marginTop: 12 }]}>
+          {/* --- AI Persona & Voice — moved to My Profile section above --- */}
+        </View>
+
+        {/* ====== MY PROFILE — Top priority section ====== */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Profile</Text>
+          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
             {[
-              { icon: 'person', title: 'AI Persona', subtitle: 'How AI communicates as you', color: '#AF52DE', route: '/settings/persona' },
+              { icon: 'person', title: 'Edit Profile & Bio', subtitle: 'Name, bio, photo, social links', color: '#007AFF', route: '/settings/persona' },
+              { icon: 'color-palette', title: 'My Brand Kit', subtitle: 'Colors, logo, page theme', color: '#C9A962', route: '/settings/brand-kit' },
               { icon: 'mic', title: 'Voice Training', subtitle: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
             ].map((item, index, arr) => (
               <TouchableOpacity
                 key={item.title}
                 style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={() => router.push(item.route as any)}
-                data-testid={`presence-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`profile-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
                   <Ionicons name={item.icon as any} size={22} color={item.color} />
@@ -894,59 +870,35 @@ export default function MyAccountScreen() {
           </View>
         </View>
 
-        {/* ====== QUICK ACTIONS — Home screen shortcuts ====== */}
+        {/* ====== ALL TOOLS & SETTINGS — Collapsible, everything in one place ====== */}
         <View style={styles.section}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <Text style={[styles.sectionTitle, { color: colors.textTertiary, marginBottom: 0 }]}>Quick Actions</Text>
-            <TouchableOpacity onPress={() => setEditingQuickActions(!editingQuickActions)} data-testid="edit-quick-actions-btn">
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>{editingQuickActions ? 'Done' : 'Customize'}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: toolsExpanded ? 10 : 0 }}
+            onPress={() => setToolsExpanded(!toolsExpanded)}
+            data-testid="tools-toggle"
+          >
+            <Text style={[styles.sectionTitle, { color: colors.textTertiary, marginBottom: 0 }]}>All Tools & Settings</Text>
+            <Ionicons name={toolsExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
 
-          {!editingQuickActions ? (
+          {toolsExpanded && (
             <View style={[styles.menuList, { backgroundColor: colors.card }]}>
-              {quickActionIds.map((id, index) => {
-                const action = ALL_ACTIONS.find(a => a.id === id);
-                if (!action) return null;
-                return (
-                  <TouchableOpacity
-                    key={id}
-                    style={[styles.menuItem, { borderBottomColor: colors.border }, index === quickActionIds.length - 1 && { borderBottomWidth: 0 }]}
-                    onPress={() => router.push(action.route as any)}
-                    data-testid={`qa-${id}`}
-                  >
-                    <View style={[styles.menuIcon, { backgroundColor: `${action.color}20` }]}>
-                      <Ionicons name={action.icon as any} size={22} color={action.color} />
-                    </View>
-                    <View style={styles.menuContent}>
-                      <Text style={[styles.menuTitle, { color: colors.text }]}>{action.label}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : (
-            <View style={[styles.editPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>Tap to add/remove (max 6)</Text>
-              <View style={styles.editGrid}>
-                {ALL_ACTIONS.map(action => {
-                  const isSelected = quickActionIds.includes(action.id);
-                  return (
-                    <TouchableOpacity key={action.id} style={[styles.editItem, { backgroundColor: isSelected ? `${action.color}12` : 'transparent', borderColor: isSelected ? `${action.color}40` : colors.border }]} onPress={() => toggleQuickAction(action.id)} data-testid={`qa-edit-${action.id}`}>
-                      <View style={[styles.editIconBox, { backgroundColor: `${action.color}20` }]}>
-                        <Ionicons name={action.icon as any} size={16} color={action.color} />
-                        {isSelected && (
-                          <View style={[styles.editBadge, { backgroundColor: '#34C759' }]}>
-                            <Ionicons name="checkmark" size={10} color="#FFF" />
-                          </View>
-                        )}
-                      </View>
-                      <Text style={[styles.editLabel, { color: isSelected ? action.color : colors.textSecondary }]} numberOfLines={1}>{action.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              {ALL_TOOLS.map((item, index, arr) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
+                  onPress={() => router.push(item.route as any)}
+                  data-testid={`tool-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+                    <Ionicons name={item.icon as any} size={22} color={item.color} />
+                  </View>
+                  <View style={styles.menuContent}>
+                    <Text style={[styles.menuTitle, { color: colors.text }]}>{item.label}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ))}
             </View>
           )}
         </View>

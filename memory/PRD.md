@@ -1,4 +1,4 @@
-# i'M On Social — Product Requirements Document
+# i'M On Social - Product Requirements Document
 
 ## Original Problem Statement
 Build a Relationship Management System (RMS) / CRM for automotive sales professionals. AI-powered, human-to-human relationship building where every follow-up is deliberate, meaningful, and personal.
@@ -11,84 +11,73 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-## CRITICAL RULES — READ BEFORE TOUCHING ANY CODE
+## CRITICAL RULES
 
-### Image Pipeline — DO NOT REVERT, DO NOT ADD BASE64 FALLBACKS
-- ALL images go through `utils/image_storage.py` -> WebP format -> served via `/api/images/`
-- `utils/image_urls.py` resolves all photo URLs
-- Immutable caching on all `/api/images/` responses
-- All uploads use `asyncio.to_thread()` to prevent 520 timeouts
-- EXIF orientation fixed BEFORE pre-shrink in `congrats_cards.py`
-- **NEVER add `data:` / base64 fallbacks anywhere.**
-- **NEVER serve base64 in API responses.**
-- **NEVER add lazy migration during reads.**
+### Image Pipeline
+- ALL images → `utils/image_storage.py` → WebP → `/api/images/`
+- NEVER add base64 fallbacks. NEVER serve base64 in responses.
 
-### Unified Card System — DO NOT REVERT
-- ALL card types use `congrats_cards.py` only
-- `birthday_cards.py` is LEGACY — NOT registered in server.py
+### Role System
+- DB may have legacy roles: `admin` (= `org_admin`), `manager` (= `store_manager`)
+- Backend `permissions.py` maps both legacy and canonical role names
+- Frontend `authStore.ts` normalizes roles via `normalizeUser()` on every user load
+- NEVER add role checks that only match canonical names — always handle both
 
-### General Rules for ALL Agents
-- **READ THIS PRD FIRST** before writing any code.
-- **DO NOT revert completed migrations.**
-- **Speed is the #1 priority.**
-- **When fixing a bug, do NOT introduce old patterns.**
+### Auth Persistence (iOS PWA)
+- 3-layer: AsyncStorage → IndexedDB → Cookie (`imonsocial_session`)
+- `/auth/me` returns COMPLETE user data (same as login: permissions, store_slug, org_slug, partner_branding)
+- Cookies refreshed on every `/auth/me` call
+- Cookie restore retries once on network failure (cold-start resilience)
+- Login does case-insensitive, trimmed email lookup
 
 ---
 
-## What's Been Implemented
+## What's Been Implemented (Latest Session - Mar 15, 2026)
 
-### User-Specific Brand Kit & Theming (Mar 14, 2026) — LATEST
-- **Backend:** `BrandKitUpdate` Pydantic model includes `page_theme` field (dark/light)
-- **Backend:** `GET /api/card/data/{userId}` now returns `brand_kit` object with `page_theme`, `primary_color`, `secondary_color`, `accent_color`, `logo_url`, `company_name`
-- **Backend:** Brand kit cascades: user -> store -> organization fallback
-- **Frontend (Settings):** Brand Kit page at `/settings/brand-kit` has Light/Dark theme toggle with visual previews
-- **Frontend (Card):** Digital Card page at `/card/{userId}` dynamically themes based on `brand_kit.page_theme`
-- **Theming:** `buildTheme()` function creates full palette (bg, card, text, accent, etc.) for light/dark modes
-- **Theming:** `getDynamicStyles()` creates theme-dependent StyleSheet for interactive elements
-- **Accent Colors:** User's primary/accent color applied to photo borders, dividers, titles, CTA buttons, section headers
-- **Tested:** 100% backend (10 pytest tests), 100% frontend (iteration 204)
+### My Account Page Restructure
+- **"My Profile" section** moved to top: Edit Profile & Bio, My Brand Kit, Voice Training
+- **"All Tools & Settings"** collapsible section replaces old Quick Actions — no 6-item limit, shows everything
+- Removed old grid pill layout, customize mode, and duplication
 
-### Auth: Persistent Login (Mar 14, 2026)
-- 3-layer auth persistence: AsyncStorage, IndexedDB, readable cookie
-- Fixed onboarding loop for existing users
-- Fixed user setup wizard credentials and email invites
+### Role & Permission Fixes (Critical)
+- `permissions.py`: Added `admin` → `org_admin` and `manager` → `store_manager` mapping
+- `admin.py` impersonate endpoint: Now returns complete user data (feature_permissions, store_slug, org_slug, onboarding_complete, etc.)
+- `authStore.ts`: `normalizeUser()` maps legacy roles at every user-set point
+- `admin/users.tsx`: `ROLE_GROUP_MAP` ensures all users appear in the list regardless of role name
+- `admin/users/[id].tsx`: `is_active` checks use `!== false` (treats undefined as active)
 
-### UI/UX Fixes (Mar 14, 2026)
-- Bottom nav bar stabilized with standard iOS styling
-- Contacts page header compacted
-- Removed floating action button from touchpoints
-- OG image previews fixed for all shareable links
-- Document auto-deduplication
-- Cookie/storage keys renamed from `imos_` to `imonsocial_`
+### Auth & Login Fixes
+- Case-insensitive + trimmed email lookup in login, forgot-password, and reset-password
+- `/auth/me` now returns complete user data matching login response
+- Cookie refresh on every `/auth/me` call
+- Retry logic for cold-start network failures
 
-### My Presence Visual Command Center (Mar 13, 2026)
-- Rebuilt "My Account" into "My Presence" visual hub
-- 5 presence cards with mini-previews: Digital Card, Showcase, Review Link, Link Page, Landing Page
+### Onboarding Fix
+- `(tabs)/_layout.tsx`: Added `isImpersonating` guard to onboarding redirect
 
-### Previous Features (see CHANGELOG.md for full history)
-- Voice Memo Intelligence + Campaign Config + Full AI Pipeline
-- AI-Powered Outreach + Sold Campaign Intelligence
-- Card Analytics Dashboard, Digital Card Sharing with QR codes
-- Performance Dashboard with clickable tiles
-- CRM Timeline Export, Duplicate Contact Merge
-- Hub Navigation, ChannelPicker, Auth Refactor (bcrypt)
-- Jessi AI Assistant v2.0, Account Health Dashboard
-- Instagram-Style Photo Gallery, EXIF Orientation Fix
-- And 50+ more features and bug fixes
+### UI Fixes
+- "Manage Permissions" button: purple → orange for visibility
+- Account Health header: name + buttons split into two rows (prevents text fragmentation)
+
+### User-Specific Brand Kit & Theming (Mar 14, 2026)
+- Backend: `page_theme` field in BrandKit, returned via `/api/card/data/{userId}`
+- Frontend: Light/Dark toggle in Brand Kit settings
+- Digital Card page dynamically themes based on brand_kit
 
 ---
 
 ## Key API Endpoints
+- `POST /api/auth/login` — Case-insensitive email, trimmed
+- `GET /api/auth/me` — Full session restore from cookie (complete user data)
+- `POST /api/admin/users/{id}/impersonate` — Returns complete user data with permissions
 - `GET /api/card/data/{userId}` — Digital card data with brand_kit theming
-- `GET /api/email/brand-kit/{entity_type}/{entity_id}` — Get brand kit settings
-- `PUT /api/email/brand-kit/{entity_type}/{entity_id}` — Update brand kit settings (includes page_theme)
-- `GET /api/contacts/{user_id}/{contact_id}/photos/all` — Fast read-only gallery photos
-- `POST /api/contacts/{user_id}/find-or-create-and-log` — Create/find + log with event_channel
+- `PUT /api/email/brand-kit/{entity_type}/{entity_id}` — Update brand kit (includes page_theme)
 
-## Key DB Collections
-- `users.email_brand_kit` — Stores `page_theme`, `primary_color`, `secondary_color`, `accent_color`, etc.
-- `contact_events` — Stores `channel` field (sms, whatsapp, email, messenger, etc.)
-- `congrats_cards` — Photo paths used by gallery
+## Key DB Schema
+- `users.role` — May be: super_admin, org_admin, admin, store_manager, manager, user
+- `users.email_brand_kit` — page_theme, primary_color, secondary_color, accent_color
+- `users.feature_permissions` — Merged with role defaults via `merge_permissions()`
+- `users.is_active` — May be true, false, or undefined (undefined = active)
 
 ---
 
@@ -100,14 +89,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - AI-Powered Outreach (contextual follow-up on "sold" tag)
 - Lead Notification System Phase 2 (push notifications)
 - Voice Help Assistant Backend
+- Extend theming to other public pages (Link Page, Landing Page, Showcase)
 
 ### P2
 - Full Twilio Integration (currently MOCK)
 - WhatsApp Integration
 - Training Hub video content
 - Inventory Management Module
-- Refactor large files (admin.py 3600+ lines, contact/[id].tsx 5600+ lines)
-- Extend theming to other public pages (Link Page /l/{userId}, Landing Page /p/{userId}, Showcase)
+- Refactor large files (admin.py 3700+ lines, contact/[id].tsx)
 
 ## Known Issues
 - P2: Mobile tags sync
@@ -115,13 +104,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
-- Contact with photos: `69a0c06f7626f14d125f8c34`
 
 ## 3rd Party Integrations
 - **Resend:** Transactional emails
 - **MongoDB Atlas:** Primary database
 - **Twilio:** MOCK mode
 - **OpenAI:** AI features via emergentintegrations
-- **Pillow + ImageOps:** Image processing with EXIF handling
+- **Pillow + ImageOps:** Image processing
 - **qrcode:** QR code generation
 - **apscheduler:** Backend job scheduling
