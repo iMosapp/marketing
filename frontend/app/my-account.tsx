@@ -902,21 +902,26 @@ export default function MyAccountScreen() {
               <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>{editingQuickActions ? 'Done' : 'Customize'}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, marginTop: -4, paddingHorizontal: 2 }}>
-            Shortcuts on your home screen — tap Customize to change
-          </Text>
 
           {!editingQuickActions ? (
-            <View style={styles.tileRow}>
-              {quickActionIds.map(id => {
+            <View style={[styles.menuList, { backgroundColor: colors.card }]}>
+              {quickActionIds.map((id, index) => {
                 const action = ALL_ACTIONS.find(a => a.id === id);
                 if (!action) return null;
                 return (
-                  <TouchableOpacity key={id} style={[styles.tileBtnThird, { backgroundColor: colors.card }]} onPress={() => router.push(action.route as any)} data-testid={`qa-${id}`}>
-                    <View style={[styles.tileIcon, { backgroundColor: `${action.color}20` }]}>
-                      <Ionicons name={action.icon as any} size={20} color={action.color} />
+                  <TouchableOpacity
+                    key={id}
+                    style={[styles.menuItem, { borderBottomColor: colors.border }, index === quickActionIds.length - 1 && { borderBottomWidth: 0 }]}
+                    onPress={() => router.push(action.route as any)}
+                    data-testid={`qa-${id}`}
+                  >
+                    <View style={[styles.menuIcon, { backgroundColor: `${action.color}20` }]}>
+                      <Ionicons name={action.icon as any} size={22} color={action.color} />
                     </View>
-                    <Text style={[styles.tileLabel, { color: colors.text }]} numberOfLines={1}>{action.label}</Text>
+                    <View style={styles.menuContent}>
+                      <Text style={[styles.menuTitle, { color: colors.text }]}>{action.label}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                   </TouchableOpacity>
                 );
               })}

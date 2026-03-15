@@ -1394,6 +1394,42 @@ async def impersonate_user(user_id: str):
     })
     
     # Prepare user data (same format as login response)
+    from permissions import merge_permissions
+    
+    # Merge feature permissions with role-based defaults
+    feature_permissions = merge_permissions(
+        user.get('feature_permissions'), 
+        user.get('role', 'user')
+    )
+    
+    # Resolve store slug
+    store_slug = None
+    if user.get('store_id'):
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
+            if store:
+                slug = store.get('slug')
+                if not slug and store.get('name'):
+                    import re as re_mod
+                    slug = re_mod.sub(r'[^a-z0-9]+', '-', store['name'].lower()).strip('-')
+                store_slug = slug
+        except Exception:
+            pass
+    
+    # Resolve org slug
+    org_slug = None
+    if user.get('organization_id'):
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(user['organization_id'])}, {"slug": 1, "name": 1})
+            if org:
+                o_slug = org.get('slug')
+                if not o_slug and org.get('name'):
+                    import re as re_mod
+                    o_slug = re_mod.sub(r'[^a-z0-9]+', '-', org['name'].lower()).strip('-')
+                org_slug = o_slug
+        except Exception:
+            pass
+    
     user_data = {
         "_id": str(user["_id"]),
         "email": user.get("email"),
@@ -1402,14 +1438,31 @@ async def impersonate_user(user_id: str):
         "store_id": user.get("store_id"),
         "store_ids": user.get("store_ids", []),
         "organization_id": user.get("organization_id"),
+        "organization_name": user.get("organization_name"),
         "title": user.get("title"),
         "phone": user.get("phone"),
         "photo_url": user.get("photo_url"),
         "bio": user.get("bio"),
+        "username": user.get("username"),
+        "social_links": user.get("social_links", {}),
+        "persona": user.get("persona", {}),
         "is_active": user.get("is_active", True),
+        "onboarding_complete": user.get("onboarding_complete", True),
         "twilio_phone_number": user.get("twilio_phone_number"),
-        "isImpersonating": True,  # Flag to indicate this is an impersonation session
+        "mvpline_number": user.get("mvpline_number"),
+        "feature_permissions": feature_permissions,
+        "email_brand_kit": user.get("email_brand_kit", {}),
+        "isImpersonating": True,
     }
+    if store_slug:
+        user_data["store_slug"] = store_slug
+    if org_slug:
+        user_data["org_slug"] = org_slug
+    
+    # Convert any remaining ObjectIds to strings
+    for k, v in user_data.items():
+        if isinstance(v, ObjectId):
+            user_data[k] = str(v)
     
     return {
         "success": True,

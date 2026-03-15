@@ -188,7 +188,9 @@ _SUPER_ADMIN_PERMISSIONS = {
 ROLE_PERMISSIONS = {
     "user": _USER_PERMISSIONS,
     "store_manager": _STORE_MANAGER_PERMISSIONS,
+    "manager": _STORE_MANAGER_PERMISSIONS,        # Legacy alias
     "org_admin": _ORG_ADMIN_PERMISSIONS,
+    "admin": _ORG_ADMIN_PERMISSIONS,              # Legacy alias
     "super_admin": _SUPER_ADMIN_PERMISSIONS,
 }
 
