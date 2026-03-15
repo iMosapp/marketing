@@ -35,6 +35,8 @@ export default function MyAccountScreen() {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'personal' | 'store'>('personal');
+  const isManager = user?.role && ['super_admin', 'org_admin', 'store_manager'].includes(user.role);
   const [activityPeriod, setActivityPeriod] = useState('month');
   const [activityData, setActivityData] = useState<any>(null);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -489,6 +491,31 @@ export default function MyAccountScreen() {
           )}
         </View>
 
+        {/* ====== CONTEXT TOGGLE — Personal vs Store ====== */}
+        {isManager && user?.store_id && (
+          <View style={[styles.toggleContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewMode === 'personal' && styles.toggleBtnActive, viewMode === 'personal' && { backgroundColor: '#007AFF' }]}
+              onPress={() => setViewMode('personal')}
+              data-testid="toggle-personal"
+            >
+              <Ionicons name="person" size={16} color={viewMode === 'personal' ? '#FFF' : colors.textSecondary} />
+              <Text style={[styles.toggleBtnText, viewMode === 'personal' && { color: '#FFF', fontWeight: '700' }]}>Personal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewMode === 'store' && styles.toggleBtnActive, viewMode === 'store' && { backgroundColor: '#34C759' }]}
+              onPress={() => setViewMode('store')}
+              data-testid="toggle-store"
+            >
+              <Ionicons name="storefront" size={16} color={viewMode === 'store' ? '#FFF' : colors.textSecondary} />
+              <Text style={[styles.toggleBtnText, viewMode === 'store' && { color: '#FFF', fontWeight: '700' }]}>{storeName || user?.store_name || 'Store'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ====== PERSONAL VIEW ====== */}
+        {viewMode === 'personal' && (
+          <>
         {/* ====== MY PROFILE — First thing after header ====== */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Profile</Text>
@@ -868,17 +895,18 @@ export default function MyAccountScreen() {
           {/* --- AI Persona & Voice — moved to My Profile section above --- */}
         </View>
 
-        {/* ====== STORE MANAGEMENT — Only for admin/manager roles ====== */}
-        {user?.role && ['super_admin', 'org_admin', 'store_manager'].includes(user.role) && user?.store_id && (
+        {/* Close personal view conditional */}
+        </>
+        )}
+
+        {/* ====== STORE VIEW ====== */}
+        {viewMode === 'store' && isManager && user?.store_id && (
+          <>
+        {/* ====== STORE MANAGEMENT ====== */}
           <View style={styles.section}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="storefront" size={14} color="#34C759" />
-              </View>
-              <Text style={[styles.sectionTitle, { color: '#34C759', marginBottom: 0 }]}>
-                {storeName || user?.store_name || 'Store'} Management
-              </Text>
-            </View>
+            <Text style={[styles.sectionTitle, { color: '#34C759' }]}>
+              {storeName || user?.store_name || 'Store'} Profile & Presence
+            </Text>
             <View style={[styles.menuList, { backgroundColor: colors.card, borderWidth: 1, borderColor: '#34C75930' }]}>
               {[
                 { icon: 'storefront', title: 'Edit Store Profile', subtitle: 'Name, logo, address, hours', color: '#34C759', route: '/settings/store-profile' },
@@ -938,9 +966,12 @@ export default function MyAccountScreen() {
               ))}
             </View>
           </View>
+
+        {/* Close store view conditional */}
+        </>
         )}
 
-        {/* ====== ALL TOOLS & SETTINGS — Collapsible card ====== */}
+        {/* ====== ALL TOOLS & SETTINGS — Collapsible card (always visible) ====== */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={[styles.menuList, { backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', padding: 16 }]}
@@ -1126,6 +1157,31 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 32,
+  },
+  // Context toggle (Personal / Store)
+  toggleContainer: {
+    flexDirection: 'row',
+    padding: 6,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  toggleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  toggleBtnActive: {},
+  toggleBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
   photoSection: {
     alignItems: 'center',
