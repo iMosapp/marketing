@@ -491,6 +491,34 @@ export default function MyAccountScreen() {
           )}
         </View>
 
+        {/* ====== MY PROFILE — First thing after header ====== */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Profile</Text>
+          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
+            {[
+              { icon: 'person', title: 'Edit Profile & Bio', subtitle: 'Name, bio, photo, social links', color: '#007AFF', route: '/settings/persona' },
+              { icon: 'color-palette', title: 'My Brand Kit', subtitle: 'Colors, logo, page theme', color: '#C9A962', route: '/settings/brand-kit' },
+              { icon: 'mic', title: 'Voice Training', subtitle: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
+            ].map((item, index, arr) => (
+              <TouchableOpacity
+                key={item.title}
+                style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
+                onPress={() => router.push(item.route as any)}
+                data-testid={`profile-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+                  <Ionicons name={item.icon as any} size={22} color={item.color} />
+                </View>
+                <View style={styles.menuContent}>
+                  <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* ====== MY PRESENCE — Everything you send out ====== */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Presence</Text>
@@ -842,47 +870,26 @@ export default function MyAccountScreen() {
           {/* --- AI Persona & Voice — moved to My Profile section above --- */}
         </View>
 
-        {/* ====== MY PROFILE — Top priority section ====== */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Profile</Text>
-          <View style={[styles.menuList, { backgroundColor: colors.card }]}>
-            {[
-              { icon: 'person', title: 'Edit Profile & Bio', subtitle: 'Name, bio, photo, social links', color: '#007AFF', route: '/settings/persona' },
-              { icon: 'color-palette', title: 'My Brand Kit', subtitle: 'Colors, logo, page theme', color: '#C9A962', route: '/settings/brand-kit' },
-              { icon: 'mic', title: 'Voice Training', subtitle: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
-            ].map((item, index, arr) => (
-              <TouchableOpacity
-                key={item.title}
-                style={[styles.menuItem, { borderBottomColor: colors.border }, index === arr.length - 1 && { borderBottomWidth: 0 }]}
-                onPress={() => router.push(item.route as any)}
-                data-testid={`profile-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={22} color={item.color} />
-                </View>
-                <View style={styles.menuContent}>
-                  <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
-                  <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* ====== ALL TOOLS & SETTINGS — Collapsible, everything in one place ====== */}
+        {/* ====== ALL TOOLS & SETTINGS — Collapsible card ====== */}
         <View style={styles.section}>
           <TouchableOpacity 
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: toolsExpanded ? 10 : 0 }}
+            style={[styles.menuList, { backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', padding: 16 }]}
             onPress={() => setToolsExpanded(!toolsExpanded)}
+            activeOpacity={0.7}
             data-testid="tools-toggle"
           >
-            <Text style={[styles.sectionTitle, { color: colors.textTertiary, marginBottom: 0 }]}>All Tools & Settings</Text>
+            <View style={[styles.menuIcon, { backgroundColor: '#5856D620' }]}>
+              <Ionicons name="grid" size={22} color="#5856D6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuTitle, { color: colors.text }]}>All Tools & Settings</Text>
+              <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{ALL_TOOLS.length} tools available</Text>
+            </View>
             <Ionicons name={toolsExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
           </TouchableOpacity>
 
           {toolsExpanded && (
-            <View style={[styles.menuList, { backgroundColor: colors.card }]}>
+            <View style={[styles.menuList, { backgroundColor: colors.card, marginTop: 8 }]}>
               {ALL_TOOLS.map((item, index, arr) => (
                 <TouchableOpacity
                   key={item.label}
