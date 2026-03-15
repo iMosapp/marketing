@@ -449,10 +449,105 @@ async def get_current_user(request: Request):
     from permissions import merge_permissions
     user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
 
-    return {
+    # Include store slug (same as login)
+    if user.get('store_id'):
+        try:
+            store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
+            if store:
+                slug = store.get('slug')
+                if not slug and store.get('name'):
+                    import re
+                    slug = re.sub(r'[^a-z0-9]+', '-', store['name'].lower()).strip('-')
+                if slug:
+                    user['store_slug'] = slug
+        except Exception:
+            pass
+
+    # Include org slug (same as login)
+    if user.get('organization_id'):
+        try:
+            org = await get_db().organizations.find_one({"_id": ObjectId(user['organization_id'])}, {"slug": 1, "name": 1})
+            if org:
+                org_slug = org.get('slug')
+                if not org_slug and org.get('name'):
+                    import re
+                    org_slug = re.sub(r'[^a-z0-9]+', '-', org['name'].lower()).strip('-')
+                if org_slug:
+                    user['org_slug'] = org_slug
+        except Exception:
+            pass
+
+    # Resolve partner branding (same as login)
+    partner_branding = None
+    try:
+        org_id = user.get('organization_id')
+        store_id = user.get('store_id')
+        pid = None
+        if org_id:
+            try:
+                org_doc = await get_db().organizations.find_one({"_id": ObjectId(org_id)}, {"partner_id": 1})
+                if org_doc and org_doc.get("partner_id"):
+                    pid = org_doc["partner_id"]
+            except Exception:
+                pass
+        if not pid and store_id:
+            try:
+                store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1})
+                if store_doc and store_doc.get("partner_id"):
+                    pid = store_doc["partner_id"]
+            except Exception:
+                pass
+        if pid:
+            partner = await get_db().partners.find_one({"_id": ObjectId(pid) if not isinstance(pid, ObjectId) else pid})
+            if partner:
+                partner["_id"] = str(partner["_id"])
+                for pk in list(partner.keys()):
+                    if isinstance(partner[pk], ObjectId):
+                        partner[pk] = str(partner[pk])
+                    if isinstance(partner[pk], datetime):
+                        partner[pk] = partner[pk].isoformat()
+                partner_branding = partner
+    except Exception:
+        pass
+
+    response_data = {
         "token": f"mock_token_{user['_id']}",
         "user": user
     }
+    if partner_branding:
+        response_data["partner_branding"] = partner_branding
+
+    # Re-set the session cookies to keep them fresh
+    from fastapi.responses import JSONResponse
+    import json as json_mod
+
+    def _serialize(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
+    resp.set_cookie(
+        key="imonsocial_session",
+        value=str(user['_id']),
+        max_age=60 * 60 * 24 * 365 * 10,
+        httponly=True,
+        samesite="lax",
+        secure=True,
+        path="/",
+    )
+    resp.set_cookie(
+        key="imonsocial_uid",
+        value=str(user['_id']),
+        max_age=60 * 60 * 24 * 365 * 10,
+        httponly=False,
+        samesite="lax",
+        secure=True,
+        path="/",
+    )
+    return resp
 
 
 @router.post("/logout")

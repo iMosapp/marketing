@@ -116,6 +116,13 @@ function normalizeUser(user: User | null): User | null {
   return user;
 }
 
+// Read the JS-readable cookie synchronously (instant, no network)
+function _getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+}
+
 // Centralized cookie-based session restore
 async function _restoreFromCookie(set: any) {
   try {
@@ -129,7 +136,9 @@ async function _restoreFromCookie(set: any) {
       set({ user: normalizeUser(res.data.user), token: res.data.token, isAuthenticated: true, isLoading: false });
       return;
     }
-  } catch {}
+  } catch (e) {
+    // Network error or 401 — cookie may be expired or invalid
+  }
   set({ isLoading: false });
 }
 
@@ -218,10 +227,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Prevent concurrent loadAuth calls — share the same promise
     if (_loadAuthPromise) return _loadAuthPromise;
     
-    const isIOS_PWA = typeof window !== 'undefined' && 
-      Platform.OS === 'web' && 
-      (window.navigator as any).standalone === true;
-    
     _loadAuthPromise = (async () => {
       // Helper: safely parse JSON without throwing
       const safeParse = (str: string | null): any => {
@@ -230,18 +235,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
 
       try {
-        // Fast path: single read from AsyncStorage (no retries on desktop)
+        // === LAYER 1: AsyncStorage (fastest local read) ===
         let token = await AsyncStorage.getItem('auth_token');
         let userStr = await AsyncStorage.getItem('user');
         
-        // Only retry on iOS PWA where cold boot can cause slow reads
-        if ((!token || !userStr) && isIOS_PWA) {
-          await new Promise(r => setTimeout(r, 300));
+        // On iOS PWA, cold boot can cause slow reads — retry once
+        if ((!token || !userStr) && Platform.OS === 'web') {
+          await new Promise(r => setTimeout(r, 200));
           if (!token) token = await AsyncStorage.getItem('auth_token');
           if (!userStr) userStr = await AsyncStorage.getItem('user');
         }
         
-        // Fallback: try IndexedDB if AsyncStorage is empty
+        // === LAYER 2: IndexedDB (survives iOS localStorage purges) ===
         if ((!token || !userStr) && typeof window !== 'undefined' && window.indexedDB) {
           try {
             const idbToken = await _idbGet('imonsocial_token');
@@ -280,10 +285,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
           
           set({ user: normalizeUser(user), token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
-        } else {
-          // No local storage — try cookie-based session restore
-          await _restoreFromCookie(set);
+          return;
         }
+        
+        // === LAYER 3: Cookie-based session restore ===
+        // Check if the JS-readable cookie exists before making a network call
+        const uidCookie = _getCookie('imonsocial_uid');
+        if (uidCookie) {
+          // Cookie exists — call /auth/me to get full user data
+          // Retry up to 2 times for flaky cold-start network
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const { default: api } = await import('../services/api');
+              const res = await api.get('/auth/me');
+              if (res.data?.user && res.data?.token) {
+                await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
+                await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
+                _idbSet('imonsocial_user', JSON.stringify(res.data.user)).catch(() => {});
+                _idbSet('imonsocial_token', res.data.token).catch(() => {});
+                set({ user: normalizeUser(res.data.user), token: res.data.token, isAuthenticated: true, isLoading: false });
+                return;
+              }
+            } catch {
+              // First attempt failed — wait and retry
+              if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+            }
+          }
+        }
+        
+        // No local storage AND no cookie — user genuinely not logged in
+        set({ isLoading: false });
       } catch (error) {
         // Last resort: try cookie
         await _restoreFromCookie(set);
