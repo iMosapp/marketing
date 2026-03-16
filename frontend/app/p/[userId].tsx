@@ -113,37 +113,34 @@ export default function PublicLandingPage() {
     }
   };
 
-  // Web-safe URL opener - Linking.openURL uses window.open('_blank')
-  // which popup blockers intercept for sms: and mailto: protocols.
-  const openProtocolUrl = (url: string) => {
+  // Native anchor tag wrapper for web — avoids Safari "trying to open another app" popup
+  // by rendering a real <a> link that the browser trusts as a direct user click.
+  const NativeLink = ({ href, style, children, ...props }: { href: string; style: any; children: React.ReactNode; [key: string]: any }) => {
     if (Platform.OS === 'web') {
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_self';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } else {
-      Linking.openURL(url);
+      return (
+        <View style={style} {...props}>
+          <a
+            href={href}
+            style={{
+              display: 'flex',
+              flexDirection: 'column' as const,
+              alignItems: 'center',
+              justifyContent: 'center',
+              textDecoration: 'none',
+              width: '100%',
+              height: '100%',
+            }}
+          >
+            {children}
+          </a>
+        </View>
+      );
     }
-  };
-
-  const handleCall = () => {
-    if (data?.user.phone) {
-      openProtocolUrl(`tel:${data.user.phone}`);
-    }
-  };
-
-  const handleText = () => {
-    if (data?.user.phone) {
-      openProtocolUrl(`sms:${data.user.phone}`);
-    }
-  };
-
-  const handleEmail = () => {
-    if (data?.user.email) {
-      openProtocolUrl(`mailto:${data.user.email}`);
-    }
+    return (
+      <TouchableOpacity style={style} onPress={() => Linking.openURL(href)} {...props}>
+        {children}
+      </TouchableOpacity>
+    );
   };
 
   const openSocialLink = (url: string) => {
@@ -318,32 +315,38 @@ export default function PublicLandingPage() {
 
       {/* Quick Actions */}
       <View style={styles.actionsContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: primaryColor }]}
-          onPress={handleCall}
-          data-testid="landing-call-btn"
-        >
-          <Ionicons name="call" size={24} color="#FFF" />
-          <Text style={styles.actionButtonText}>Call</Text>
-        </TouchableOpacity>
+        {data?.user.phone && (
+          <NativeLink
+            href={`tel:${data.user.phone}`}
+            style={[styles.actionButton, { backgroundColor: primaryColor }]}
+            data-testid="landing-call-btn"
+          >
+            <Ionicons name="call" size={24} color="#FFF" />
+            <Text style={styles.actionButtonText}>Call</Text>
+          </NativeLink>
+        )}
         
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: primaryColor }]}
-          onPress={handleText}
-          data-testid="landing-text-btn"
-        >
-          <Ionicons name="chatbubble" size={24} color="#FFF" />
-          <Text style={styles.actionButtonText}>Text</Text>
-        </TouchableOpacity>
+        {data?.user.phone && (
+          <NativeLink
+            href={`sms:${data.user.phone}`}
+            style={[styles.actionButton, { backgroundColor: primaryColor }]}
+            data-testid="landing-text-btn"
+          >
+            <Ionicons name="chatbubble" size={24} color="#FFF" />
+            <Text style={styles.actionButtonText}>Text</Text>
+          </NativeLink>
+        )}
         
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: primaryColor }]}
-          onPress={handleEmail}
-          data-testid="landing-email-btn"
-        >
-          <Ionicons name="mail" size={24} color="#FFF" />
-          <Text style={styles.actionButtonText}>Email</Text>
-        </TouchableOpacity>
+        {data?.user.email && (
+          <NativeLink
+            href={`mailto:${data.user.email}`}
+            style={[styles.actionButton, { backgroundColor: primaryColor }]}
+            data-testid="landing-email-btn"
+          >
+            <Ionicons name="mail" size={24} color="#FFF" />
+            <Text style={styles.actionButtonText}>Email</Text>
+          </NativeLink>
+        )}
       </View>
 
       {/* About Section */}

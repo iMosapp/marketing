@@ -73,9 +73,12 @@ export default function RootLayout() {
   
   // Hide Jessi on auth/public/customer-facing screens
   // These are ALL routes where a customer/public visitor could land
-  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos'];
+  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide'];
   const isPublicScreen = !segments.length || publicRoutes.includes(segments[0]);
-  const showJessi = isAuthenticated && !!user?._id && !isPublicScreen;
+  // Double-check with pathname for routes that sometimes resolve differently
+  const pathname = segments.join('/');
+  const isPublicPath = pathname.startsWith('p/') || pathname.startsWith('congrats/') || pathname.startsWith('card/') || pathname === 'import-guide';
+  const showJessi = isAuthenticated && !!user?._id && !isPublicScreen && !isPublicPath;
   
   usePWAMetaTags();
   
