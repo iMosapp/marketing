@@ -34,13 +34,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented (Latest Session - Mar 16, 2026)
 
-### CSV Contact Import (Mar 16, 2026)
-- Built backend CSV parser for Google Contacts format (`/api/contacts/{user_id}/import-csv/preview` and `/confirm`)
+### CSV and VCF Contact Import (Mar 16, 2026)
+- Built backend parsers for both Google Contacts CSV and Apple/Google VCF formats
+- Auto-detect endpoint (`/api/contacts/{user_id}/import/preview`) routes by file extension
 - Smart name splitting, phone label priority (Mobile > Work > Home), birthday parsing, duplicate detection
-- New fields added to Contact model: `organization_name`, `phones[]`, `emails[]` (with label/value)
-- Updated contact detail page to show/edit organization name, additional phones, and additional emails
-- Frontend import page (`/contacts/import`) rewritten to use backend parser with preview stats and duplicate badges
-- All 18 backend tests passed (100% success rate)
+- VCF parser handles Apple's `item1.` prefix, line folding, escaped characters, structured names (N:Last;First)
+- New fields on Contact model: `organization_name`, `phones[]`, `emails[]` (with label/value)
+- All imported contacts set `ownership_type: "personal"` so they stay with the user, not the org
+- Frontend import page supports both file types with preview stats and duplicate badges
+- 40 total backend tests passed (18 CSV + 22 VCF, 100% success rate)
 
 ### Personalized OG Image for Landing Pages (Mar 16, 2026)
 - Rewrote `GET /api/s/og-image/{user_id}` to generate a branded 1200x630 PNG using Pillow
