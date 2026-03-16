@@ -147,7 +147,7 @@ def _parse_row(row: dict) -> dict:
         'address_zip': address_zip or None,
         'address_country': address_country or None,
         'birthday': birthday,
-        'notes': notes or None,
+        'notes': notes or '',
     }
 
 

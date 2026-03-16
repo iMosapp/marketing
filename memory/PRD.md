@@ -34,6 +34,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented (Latest Session - Mar 16, 2026)
 
+### CSV Contact Import (Mar 16, 2026)
+- Built backend CSV parser for Google Contacts format (`/api/contacts/{user_id}/import-csv/preview` and `/confirm`)
+- Smart name splitting, phone label priority (Mobile > Work > Home), birthday parsing, duplicate detection
+- New fields added to Contact model: `organization_name`, `phones[]`, `emails[]` (with label/value)
+- Updated contact detail page to show/edit organization name, additional phones, and additional emails
+- Frontend import page (`/contacts/import`) rewritten to use backend parser with preview stats and duplicate badges
+- All 18 backend tests passed (100% success rate)
+
 ### Personalized OG Image for Landing Pages (Mar 16, 2026)
 - Rewrote `GET /api/s/og-image/{user_id}` to generate a branded 1200x630 PNG using Pillow
 - Image includes: circular salesperson photo, name, title, store name, store logo, accent color branding
