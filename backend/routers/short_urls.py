@@ -458,13 +458,13 @@ async def get_og_image(user_id: str):
     # Bottom accent bar
     draw.rectangle([0, H - 6, W, H], fill=accent)
 
-    # --- Encode and return ---
+    # --- Encode and return as WebP for fast loading ---
     buf = BytesIO()
-    img.save(buf, format="PNG", quality=90)
+    img.save(buf, format="WEBP", quality=85)
     buf.seek(0)
     return Response(
         content=buf.read(),
-        media_type="image/png",
+        media_type="image/webp",
         headers={"Cache-Control": "public, max-age=3600"}
     )
 
