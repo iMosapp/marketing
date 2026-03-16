@@ -173,6 +173,7 @@ async def upload_photo(user_id: str, file: UploadFile = File(...)):
         "photo_thumb_path": result["thumbnail_path"],
         "photo_avatar_path": result["avatar_path"],
         "updated_at": datetime.utcnow(),
+        "og_image_path": None,  # Invalidate cached OG image so it regenerates with new photo
     }
     
     r = await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update})

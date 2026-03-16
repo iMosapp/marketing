@@ -309,8 +309,12 @@ async def _fetch_image(url: str, app_url: str) -> "Image.Image | None":
 
 
 async def _generate_og_image_bytes(user_doc, store_doc, app_url) -> bytes:
-    """Generate the 1200x630 OG image and return raw WebP bytes."""
-    from PIL import ImageDraw  # noqa: F811
+    """Generate a photo-dominant 1200x630 OG image in WebP.
+
+    Layout: salesperson photo fills left ~60% of frame, name/title overlaid
+    at the bottom with a gradient scrim. Store logo in the bottom-right.
+    """
+    from PIL import ImageDraw, ImageFilter
     from utils.image_urls import resolve_user_photo, resolve_store_logo
 
     user_photo_url = resolve_user_photo(user_doc)
@@ -330,45 +334,67 @@ async def _generate_og_image_bytes(user_doc, store_doc, app_url) -> bytes:
     img = Image.new("RGB", (W, H), bg)
     draw = ImageDraw.Draw(img)
 
-    draw.rectangle([0, 0, W, 6], fill=accent)
-
+    # --- Photo: fill the left ~55% of the frame ---
     photo_img = await _fetch_image(user_photo_url, app_url)
-    photo_size = 260
-    photo_x = 80
-    photo_cy = H // 2
+    photo_area_w = 660  # left portion for the photo
 
     if photo_img:
-        mn = min(photo_img.size)
-        left = (photo_img.width - mn) // 2
-        top = (photo_img.height - mn) // 2
-        photo_img = photo_img.crop((left, top, left + mn, top + mn))
-        photo_img = photo_img.resize((photo_size, photo_size), Image.LANCZOS)
-        mask = Image.new("L", (photo_size, photo_size), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse([0, 0, photo_size, photo_size], fill=255)
-        ring_pad = 5
-        ring_size = photo_size + ring_pad * 2
-        ring_y = photo_cy - ring_size // 2
-        draw.ellipse([photo_x - ring_pad, ring_y, photo_x + photo_size + ring_pad, ring_y + ring_size], fill=accent)
-        photo_y = photo_cy - photo_size // 2
-        img.paste(photo_img.convert("RGB"), (photo_x, photo_y), mask)
+        pw, ph = photo_img.size
+        # Crop to fill the photo area (cover fit)
+        target_ratio = photo_area_w / H
+        source_ratio = pw / ph
+        if source_ratio > target_ratio:
+            # Source is wider — crop sides
+            new_w = int(ph * target_ratio)
+            left = (pw - new_w) // 2
+            photo_img = photo_img.crop((left, 0, left + new_w, ph))
+        else:
+            # Source is taller — crop top/bottom
+            new_h = int(pw / target_ratio)
+            top = (ph - new_h) // 2
+            photo_img = photo_img.crop((0, top, pw, top + new_h))
+        photo_img = photo_img.resize((photo_area_w, H), Image.LANCZOS)
+        img.paste(photo_img.convert("RGB"), (0, 0))
+
+        # Gradient scrim over the photo bottom for text legibility
+        gradient = Image.new("RGBA", (photo_area_w, 200), (0, 0, 0, 0))
+        gd = ImageDraw.Draw(gradient)
+        for y in range(200):
+            alpha = int(200 * (y / 200))
+            gd.line([(0, y), (photo_area_w, y)], fill=(0, 0, 0, alpha))
+        img.paste(Image.alpha_composite(
+            img.crop((0, H - 200, photo_area_w, H)).convert("RGBA"), gradient
+        ).convert("RGB"), (0, H - 200))
+
+        # Soft fade from photo edge into the dark right panel
+        fade_w = 80
+        fade_start = photo_area_w - fade_w
+        for x_off in range(fade_w):
+            alpha = int(255 * (x_off / fade_w))
+            draw.line([(fade_start + x_off, 0), (fade_start + x_off, H)], fill=(bg[0], bg[1], bg[2], alpha))
     else:
-        photo_y = photo_cy - photo_size // 2
-        draw.ellipse([photo_x - 5, photo_y - 5, photo_x + photo_size + 5, photo_y + photo_size + 5], fill=accent)
-        draw.ellipse([photo_x, photo_y, photo_x + photo_size, photo_y + photo_size], fill=(30, 30, 30))
+        # No photo — draw a large circle with initials
+        cx, cy = photo_area_w // 2, H // 2
+        radius = 200
+        draw.ellipse([cx - radius - 4, cy - radius - 4, cx + radius + 4, cy + radius + 4], fill=accent)
+        draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius], fill=(30, 30, 30))
         if user_name:
             initials = "".join(w[0].upper() for w in user_name.split()[:2])
-            fi = _load_font(True, 72)
+            fi = _load_font(True, 96)
             bbox = draw.textbbox((0, 0), initials, font=fi)
-            iw = bbox[2] - bbox[0]
-            ih = bbox[3] - bbox[1]
-            draw.text((photo_x + (photo_size - iw) // 2, photo_y + (photo_size - ih) // 2 - 8), initials, fill=accent, font=fi)
+            iw, ih = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            draw.text((cx - iw // 2, cy - ih // 2 - 8), initials, fill=accent, font=fi)
 
-    text_x = photo_x + photo_size + 70
-    text_max_w = W - text_x - 60
+    # --- Accent stripe at top ---
+    draw.rectangle([0, 0, W, 5], fill=accent)
 
-    f_name = _load_font(True, 48)
-    name_y = photo_cy - 80
+    # --- Right panel: name, title, store name ---
+    text_x = photo_area_w + 40
+    text_max_w = W - text_x - 40
+
+    # Name (large, bold)
+    f_name = _load_font(True, 44)
+    name_y = H // 2 - 70
     if user_name:
         display_name = user_name
         bbox = draw.textbbox((0, 0), display_name, font=f_name)
@@ -377,19 +403,28 @@ async def _generate_og_image_bytes(user_doc, store_doc, app_url) -> bytes:
             bbox = draw.textbbox((0, 0), display_name, font=f_name)
         draw.text((text_x, name_y), display_name, fill=(255, 255, 255), font=f_name)
 
-    f_title = _load_font(False, 28)
-    title_y = name_y + 62
+    # Title
+    f_title = _load_font(False, 26)
+    title_y = name_y + 58
     if user_title:
-        draw.text((text_x, title_y), user_title, fill=accent, font=f_title)
+        title_text = user_title
+        bbox = draw.textbbox((0, 0), title_text, font=f_title)
+        while bbox[2] - bbox[0] > text_max_w and len(title_text) > 10:
+            title_text = title_text[:-2] + "..."
+            bbox = draw.textbbox((0, 0), title_text, font=f_title)
+        draw.text((text_x, title_y), title_text, fill=accent, font=f_title)
 
-    f_store = _load_font(False, 24)
-    store_y = title_y + 44
+    # Store name
+    f_store = _load_font(False, 22)
+    store_y = title_y + 40
     if store_name:
         draw.text((text_x, store_y), store_name, fill=(140, 140, 140), font=f_store)
 
-    divider_y = store_y + 44
-    draw.rectangle([text_x, divider_y, text_x + 80, divider_y + 3], fill=accent)
+    # Divider
+    div_y = store_y + 38
+    draw.rectangle([text_x, div_y, text_x + 60, div_y + 3], fill=accent)
 
+    # --- Store logo (bottom-right) ---
     logo_img = await _fetch_image(store_logo_url, app_url)
     if logo_img:
         lw, lh = logo_img.size
@@ -397,9 +432,140 @@ async def _generate_og_image_bytes(user_doc, store_doc, app_url) -> bytes:
         scale = min(max_logo_w / lw, max_logo_h / lh, 1.0)
         logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.LANCZOS)
         lw, lh = logo_img.size
-        img.paste(logo_img.convert("RGB"), (W - lw - 40, H - lh - 30), logo_img if logo_img.mode == "RGBA" else None)
+        img.paste(logo_img.convert("RGB"), (W - lw - 30, H - lh - 25),
+                  logo_img if logo_img.mode == "RGBA" else None)
 
-    draw.rectangle([0, H - 6, W, H], fill=accent)
+    # Bottom accent stripe
+    draw.rectangle([0, H - 5, W, H], fill=accent)
+
+    buf = BytesIO()
+    img.save(buf, format="WEBP", quality=85)
+    return buf.getvalue()
+
+
+async def _generate_customer_og_image_bytes(card_doc, store_doc, app_url) -> bytes:
+    """Generate a photo-dominant 1200x630 OG image for a customer card.
+
+    The customer's photo fills the left side, their name and card context
+    appear on the right. Cached as WebP for fast delivery.
+    """
+    from PIL import ImageDraw
+    from utils.image_urls import resolve_store_logo
+
+    customer_name = (card_doc.get("customer_name") or "").strip().title()
+    salesman_name = card_doc.get("salesman_name", "")
+    store_name = card_doc.get("store_name", "")
+    card_type = card_doc.get("card_type", "congrats")
+
+    store_logo_url = resolve_store_logo(store_doc) if store_doc else None
+
+    brand_kit = (store_doc or {}).get("email_brand_kit") or {}
+    accent_hex = brand_kit.get("primary_color") or (store_doc.get("primary_color") if store_doc else None) or "#C9A962"
+    accent = _hex_to_rgb(accent_hex)
+
+    # Resolve customer photo
+    photo_url = (card_doc.get("photo_url") or card_doc.get("customer_photo") or
+                 card_doc.get("optimized_photo_url") or "")
+    if photo_url.startswith("data:"):
+        photo_url = ""
+
+    W, H = 1200, 630
+    bg = (17, 17, 17)
+    img = Image.new("RGB", (W, H), bg)
+    draw = ImageDraw.Draw(img)
+
+    # --- Customer photo: fill left ~55% ---
+    photo_area_w = 660
+    photo_img = await _fetch_image(photo_url, app_url) if photo_url else None
+
+    if photo_img:
+        pw, ph = photo_img.size
+        target_ratio = photo_area_w / H
+        source_ratio = pw / ph
+        if source_ratio > target_ratio:
+            new_w = int(ph * target_ratio)
+            left = (pw - new_w) // 2
+            photo_img = photo_img.crop((left, 0, left + new_w, ph))
+        else:
+            new_h = int(pw / target_ratio)
+            top = (ph - new_h) // 2
+            photo_img = photo_img.crop((0, top, pw, top + new_h))
+        photo_img = photo_img.resize((photo_area_w, H), Image.LANCZOS)
+        img.paste(photo_img.convert("RGB"), (0, 0))
+
+        # Soft fade into dark panel
+        fade_w = 80
+        for x_off in range(fade_w):
+            alpha = int(255 * (x_off / fade_w))
+            draw.line([(photo_area_w - fade_w + x_off, 0),
+                       (photo_area_w - fade_w + x_off, H)],
+                      fill=(bg[0], bg[1], bg[2], alpha))
+    else:
+        # No photo — large initials
+        cx, cy = photo_area_w // 2, H // 2
+        radius = 200
+        draw.ellipse([cx - radius - 4, cy - radius - 4, cx + radius + 4, cy + radius + 4], fill=accent)
+        draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius], fill=(30, 30, 30))
+        if customer_name:
+            initials = "".join(w[0].upper() for w in customer_name.split()[:2])
+            fi = _load_font(True, 96)
+            bbox = draw.textbbox((0, 0), initials, font=fi)
+            iw, ih = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            draw.text((cx - iw // 2, cy - ih // 2 - 8), initials, fill=accent, font=fi)
+
+    # Top accent
+    draw.rectangle([0, 0, W, 5], fill=accent)
+
+    # --- Right panel ---
+    text_x = photo_area_w + 40
+    text_max_w = W - text_x - 40
+
+    # Card type headline
+    first_name = customer_name.split()[0] if customer_name else ""
+    card_titles = {
+        "congrats": f"Congrats\n{customer_name}!" if customer_name else "Congratulations!",
+        "birthday": f"Happy Birthday\n{first_name}!" if first_name else "Happy Birthday!",
+        "anniversary": f"Happy Anniversary\n{first_name}!" if first_name else "Happy Anniversary!",
+        "thankyou": f"Thank You\n{first_name}!" if first_name else "Thank You!",
+        "thank_you": f"Thank You\n{first_name}!" if first_name else "Thank You!",
+        "welcome": f"Welcome\n{first_name}!" if first_name else "Welcome!",
+        "holiday": f"Happy Holidays\n{first_name}!" if first_name else "Happy Holidays!",
+    }
+    headline = card_titles.get(card_type, f"A Card for\n{customer_name}!" if customer_name else "You've received a card!")
+
+    f_headline = _load_font(True, 40)
+    headline_y = H // 2 - 80
+    for i, line in enumerate(headline.split("\n")):
+        draw.text((text_x, headline_y + i * 52), line, fill=(255, 255, 255), font=f_headline)
+
+    # "From" line
+    from_line = ""
+    if salesman_name and store_name:
+        from_line = f"From {salesman_name}\nat {store_name}"
+    elif salesman_name:
+        from_line = f"From {salesman_name}"
+    elif store_name:
+        from_line = f"From {store_name}"
+
+    if from_line:
+        f_from = _load_font(False, 22)
+        from_y = headline_y + len(headline.split("\n")) * 52 + 20
+        for i, line in enumerate(from_line.split("\n")):
+            draw.text((text_x, from_y + i * 30), line, fill=(160, 160, 160), font=f_from)
+
+    # Store logo bottom-right
+    logo_img = await _fetch_image(store_logo_url, app_url) if store_logo_url else None
+    if logo_img:
+        lw, lh = logo_img.size
+        max_logo_w, max_logo_h = 140, 50
+        scale = min(max_logo_w / lw, max_logo_h / lh, 1.0)
+        logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.LANCZOS)
+        lw, lh = logo_img.size
+        img.paste(logo_img.convert("RGB"), (W - lw - 30, H - lh - 25),
+                  logo_img if logo_img.mode == "RGBA" else None)
+
+    # Bottom accent
+    draw.rectangle([0, H - 5, W, H], fill=accent)
 
     buf = BytesIO()
     img.save(buf, format="WEBP", quality=85)
@@ -486,6 +652,74 @@ async def get_og_image(user_id: str):
         headers={"Cache-Control": "public, max-age=86400"}
     )
 
+
+@router.get("/og-card-image/{card_id}")
+async def get_card_og_image(card_id: str):
+    """Serve a photo-dominant 1200x630 OG image for customer card links.
+
+    Uses the customer's photo prominently (not the full heavy card image).
+    Same caching strategy as the salesperson OG image.
+    """
+    db = get_db()
+
+    card_doc = await db.congrats_cards.find_one({"card_id": card_id})
+    if not card_doc:
+        card_doc = await db.birthday_cards.find_one({"card_id": card_id})
+    if not card_doc:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    # Check for cached version
+    cached_path = card_doc.get("og_image_path")
+    if cached_path:
+        try:
+            from utils.image_storage import get_object
+            data, ct = get_object(cached_path)
+            return Response(content=data, media_type=ct,
+                            headers={"Cache-Control": "public, max-age=86400"})
+        except Exception:
+            pass
+
+    app_url = os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL", "https://app.imonsocial.com")
+    app_url = app_url.rstrip("/")
+
+    # Get store doc for branding
+    store_doc = None
+    store_id = card_doc.get("store_id")
+    if store_id:
+        try:
+            store_doc = await db.stores.find_one(
+                {"_id": ObjectId(store_id)},
+                {"name": 1, "logo_url": 1, "logo_avatar_url": 1,
+                 "logo_path": 1, "primary_color": 1, "email_brand_kit": 1}
+            )
+        except Exception:
+            pass
+
+    image_bytes = await _generate_customer_og_image_bytes(card_doc, store_doc, app_url)
+
+    # Cache in object storage (fire-and-forget)
+    import asyncio
+    collection_name = "congrats_cards" if await db.congrats_cards.find_one({"card_id": card_id}) else "birthday_cards"
+
+    async def _store_card_og():
+        try:
+            from utils.image_storage import put_object
+            og_path = f"imos/og/cards/{card_id}/og_preview.webp"
+            await asyncio.to_thread(put_object, og_path, image_bytes, "image/webp")
+            await db[collection_name].update_one(
+                {"card_id": card_id},
+                {"$set": {"og_image_path": og_path}}
+            )
+        except Exception:
+            pass
+
+    asyncio.create_task(_store_card_og())
+
+    return Response(
+        content=image_bytes,
+        media_type="image/webp",
+        headers={"Cache-Control": "public, max-age=86400"}
+    )
 
 
 @router.get("/{short_code}")
@@ -599,20 +833,11 @@ async def redirect_short_url(short_code: str, request: Request):
             elif salesman_name:
                 og_description = f"From {salesman_name}"
 
-            # OG Image priority: customer photo (object storage) > generated card image > store logo
-            photo_url = card_doc.get("photo_url") or card_doc.get("customer_photo") or card_doc.get("optimized_photo_url")
-            if photo_url and not photo_url.startswith("data:"):
-                # Resolve relative URLs to absolute
-                if photo_url.startswith("/"):
-                    og_image = f"{base_url}{photo_url}"
-                else:
-                    og_image = photo_url
-            else:
-                # Use the generated card image (includes customer photo, QR code, branding)
-                og_image = f"{base_url}/api/congrats/card/{ref_id}/image"
+            # OG Image: use the new photo-dominant card OG image (fast WebP, cached)
+            og_image = f"{base_url}/api/s/og-card-image/{ref_id}"
         else:
-            # Card not found in DB, still try the image endpoint
-            og_image = f"{base_url}/api/congrats/card/{ref_id}/image"
+            # Card not found in DB, still try the card OG image endpoint
+            og_image = f"{base_url}/api/s/og-card-image/{ref_id}"
             meta_name = doc_metadata.get("customer_name", "")
             if meta_name:
                 ct = link_type.replace("_card", "")
