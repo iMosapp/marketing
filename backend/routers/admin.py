@@ -1402,30 +1402,35 @@ async def impersonate_user(user_id: str):
         user.get('role', 'user')
     )
     
-    # Resolve store slug
+    # Resolve store slug and name
     store_slug = None
+    store_name = None
     if user.get('store_id'):
         try:
             store = await db.stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
             if store:
+                store_name = store.get('name')
                 slug = store.get('slug')
-                if not slug and store.get('name'):
+                if not slug and store_name:
                     import re as re_mod
-                    slug = re_mod.sub(r'[^a-z0-9]+', '-', store['name'].lower()).strip('-')
+                    slug = re_mod.sub(r'[^a-z0-9]+', '-', store_name.lower()).strip('-')
                 store_slug = slug
         except Exception:
             pass
     
-    # Resolve org slug
+    # Resolve org slug and name — check both org_id and organization_id fields
     org_slug = None
-    if user.get('organization_id'):
+    org_name = None
+    org_id = user.get('organization_id') or user.get('org_id')
+    if org_id:
         try:
-            org = await db.organizations.find_one({"_id": ObjectId(user['organization_id'])}, {"slug": 1, "name": 1})
+            org = await db.organizations.find_one({"_id": ObjectId(org_id)}, {"slug": 1, "name": 1})
             if org:
+                org_name = org.get('name')
                 o_slug = org.get('slug')
-                if not o_slug and org.get('name'):
+                if not o_slug and org_name:
                     import re as re_mod
-                    o_slug = re_mod.sub(r'[^a-z0-9]+', '-', org['name'].lower()).strip('-')
+                    o_slug = re_mod.sub(r'[^a-z0-9]+', '-', org_name.lower()).strip('-')
                 org_slug = o_slug
         except Exception:
             pass
@@ -1437,8 +1442,10 @@ async def impersonate_user(user_id: str):
         "role": user.get("role"),
         "store_id": user.get("store_id"),
         "store_ids": user.get("store_ids", []),
-        "organization_id": user.get("organization_id"),
-        "organization_name": user.get("organization_name"),
+        "store_name": store_name or user.get("store_name"),
+        "organization_id": user.get("organization_id") or user.get("org_id"),
+        "org_id": user.get("organization_id") or user.get("org_id"),
+        "organization_name": org_name or user.get("organization_name"),
         "title": user.get("title"),
         "phone": user.get("phone"),
         "photo_url": user.get("photo_url"),

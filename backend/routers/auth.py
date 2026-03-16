@@ -278,15 +278,19 @@ async def login(credentials: dict):
     # Remove password from response
     user.pop('password', None)
     
-    # Convert ObjectIds to strings
-    if user.get('organization_id'):
-        user['organization_id'] = str(user['organization_id'])
+    # Convert ObjectIds to strings and resolve org from both org_id and organization_id
+    effective_org_id = user.get('organization_id') or user.get('org_id')
+    if effective_org_id:
+        user['organization_id'] = str(effective_org_id)
+        user['org_id'] = str(effective_org_id)
     if user.get('store_id'):
         user['store_id'] = str(user['store_id'])
-        # Include store slug for review link generation
+        # Include store slug and name for review link generation
         try:
             store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
             if store:
+                if store.get('name'):
+                    user['store_name'] = store['name']
                 slug = store.get('slug')
                 # Auto-generate slug from store name if missing
                 if not slug and store.get('name'):
@@ -301,17 +305,19 @@ async def login(credentials: dict):
         except Exception:
             pass
     
-    # Include org slug for org-level features
-    if user.get('organization_id'):
+    # Include org slug and name
+    if effective_org_id:
         try:
-            org = await get_db().organizations.find_one({"_id": ObjectId(user['organization_id'])}, {"slug": 1, "name": 1})
+            org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1})
             if org:
+                if org.get('name'):
+                    user['organization_name'] = org['name']
                 org_slug = org.get('slug')
                 if not org_slug and org.get('name'):
                     import re
                     org_slug = re.sub(r'[^a-z0-9]+', '-', org['name'].lower()).strip('-')
                     await get_db().organizations.update_one(
-                        {"_id": ObjectId(user['organization_id'])},
+                        {"_id": ObjectId(effective_org_id)},
                         {"$set": {"slug": org_slug}}
                     )
                 if org_slug:
@@ -449,11 +455,13 @@ async def get_current_user(request: Request):
     from permissions import merge_permissions
     user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
 
-    # Include store slug (same as login)
+    # Include store slug and name (same as login)
     if user.get('store_id'):
         try:
             store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
             if store:
+                if store.get('name'):
+                    user['store_name'] = store['name']
                 slug = store.get('slug')
                 if not slug and store.get('name'):
                     import re
@@ -463,11 +471,16 @@ async def get_current_user(request: Request):
         except Exception:
             pass
 
-    # Include org slug (same as login)
-    if user.get('organization_id'):
+    # Include org slug and name — check both org_id and organization_id
+    effective_org_id = user.get('organization_id') or user.get('org_id')
+    if effective_org_id:
+        user['organization_id'] = effective_org_id
+        user['org_id'] = effective_org_id
         try:
-            org = await get_db().organizations.find_one({"_id": ObjectId(user['organization_id'])}, {"slug": 1, "name": 1})
+            org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1})
             if org:
+                if org.get('name'):
+                    user['organization_name'] = org['name']
                 org_slug = org.get('slug')
                 if not org_slug and org.get('name'):
                     import re
