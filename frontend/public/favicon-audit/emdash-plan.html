@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html><head><title>Em Dash Replacements - Before & After</title>
+<style>
+body { font-family: system-ui; background: #f5f5f5; padding: 30px; }
+h1 { margin-bottom: 8px; }
+p.info { color: #666; margin-bottom: 24px; line-height: 1.6; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+th { background: #333; color: white; text-align: left; padding: 12px; font-size: 13px; position: sticky; top: 0; }
+td { padding: 10px 12px; border-bottom: 1px solid #eee; vertical-align: top; font-size: 13px; line-height: 1.5; }
+td.file { font-family: monospace; font-size: 11px; color: #888; white-space: nowrap; }
+td.before { background: #fff5f5; }
+td.after { background: #f5fff5; }
+.em { background: #ffe0e0; color: #c00; font-weight: bold; padding: 1px 4px; border-radius: 3px; }
+tr:hover { background: #f0f0f0; }
+tr.unchanged td.after { color: #c00; }
+.legend { display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; }
+.legend span { padding: 4px 12px; border-radius: 6px; }
+.leg-before { background: #fff5f5; border: 1px solid #fcc; }
+.leg-after { background: #f5fff5; border: 1px solid #cfc; }
+</style></head>
+<body>
+<h1>Em Dash Replacement Plan</h1>
+<p class="info">
+<strong>Rules applied:</strong><br>
+1. Page titles: <code>—</code> replaced with <code>-</code> (standard title separator)<br>
+2. Body text before "all", "and": <code>—</code> replaced with <code>,</code><br>
+3. Body text before a capital letter (new sentence): <code>—</code> replaced with <code>.</code><br>
+4. Body text continuation (lowercase): <code>—</code> replaced with <code>,</code>
+</p>
+<div class="legend">
+<span class="leg-before">Before (red background)</span>
+<span class="leg-after">After (green background)</span>
+</div>
+<table>
+<tr><th>#</th><th>File</th><th>Before</th><th>After</th></tr>
+<tr class="changed">
+<td>1</td>
+<td class="file">index.html:269</td>
+<td class="before">One link for everything. Instagram, TikTok, Google reviews, your digital card <span class="em">—</span> all on your own personal My Links page.</td>
+<td class="after">One link for everything. Instagram, TikTok, Google reviews, your digital card, all on your own personal My Links page.</td>
+</tr>
+<tr class="changed">
+<td>2</td>
+<td class="file">index.html:301</td>
+<td class="before">Every salesperson deserves credit for the relationships they build. Personal reviews are tied to the person <span class="em">—</span> portable across jobs and companies. And every review request also links to the store&#x27;s Google, Yelp, and social pages, so the business grows its reputation too.</td>
+<td class="after">Every salesperson deserves credit for the relationships they build. Personal reviews are tied to the person, portable across jobs and companies. And every review request also links to the store&#x27;s Google, Yelp, and social pages, so the business grows its reputation too.</td>
+</tr>
+<tr class="changed">
+<td>3</td>
+<td class="file">install.html:137</td>
+<td class="before">Your relationship management portal. Add it to your home screen <span class="em">—</span> it works just like an app.</td>
+<td class="after">Your relationship management portal. Add it to your home screen, it works just like an app.</td>
+</tr>
+<tr class="changed">
+<td>4</td>
+<td class="file">install.html:153</td>
+<td class="before">iPhone <span class="em">—</span> 3 Easy Steps</td>
+<td class="after">iPhone, 3 Easy Steps</td>
+</tr>
+<tr class="changed">
+<td>5</td>
+<td class="file">install.html:172</td>
+<td class="before">Hit &quot;Add&quot; in the top right. That&#x27;s it <span class="em">—</span> the app icon will appear on your home screen.</td>
+<td class="after">Hit &quot;Add&quot; in the top right. That&#x27;s it, the app icon will appear on your home screen.</td>
+</tr>
+<tr class="changed">
+<td>6</td>
+<td class="file">install.html:179</td>
+<td class="before">Android <span class="em">—</span> 2 Easy Steps</td>
+<td class="after">Android, 2 Easy Steps</td>
+</tr>
+<tr class="changed">
+<td>7</td>
+<td class="file">install.html:198</td>
+<td class="before">Desktop <span class="em">—</span> Quick Install</td>
+<td class="after">Desktop. Quick Install</td>
+</tr>
+<tr class="changed">
+<td>8</td>
+<td class="file">install.html:236</td>
+<td class="before">No browser bar <span class="em">—</span> feels native</td>
+<td class="after">No browser bar, feels native</td>
+</tr>
+<tr class="changed">
+<td>9</td>
+<td class="file">landing.html:6</td>
+<td class="before">i&#x27;M On Social <span class="em">—</span> Build Relationships That Drive Revenue</td>
+<td class="after">i&#x27;M On Social - Build Relationships That Drive Revenue</td>
+</tr>
+<tr class="changed">
+<td>10</td>
+<td class="file">landing.html:451</td>
+<td class="before">SMS and email campaigns that run on autopilot. Birthday messages, follow-ups, and promotions <span class="em">—</span> all scheduled and tracked.</td>
+<td class="after">SMS and email campaigns that run on autopilot. Birthday messages, follow-ups, and promotions, all scheduled and tracked.</td>
+</tr>
+<tr class="changed">
+<td>11</td>
+<td class="file">landing.html:603</td>
+<td class="before">It&#x27;s a relationship management platform built for sales teams and businesses that grow through personal connections. Think of it as a CRM that actually helps you stay in touch <span class="em">—</span> with digital business cards, AI-powered messaging, automated campaigns, and team leaderboards.</td>
+<td class="after">It&#x27;s a relationship management platform built for sales teams and businesses that grow through personal connections. Think of it as a CRM that actually helps you stay in touch, with digital business cards, AI-powered messaging, automated campaigns, and team leaderboards.</td>
+</tr>
+<tr class="changed">
+<td>12</td>
+<td class="file">landing.html:607</td>
+<td class="before">Most CRMs are built for data entry. i&#x27;M On Social is built for action. Every feature <span class="em">—</span> from digital cards to AI follow-ups <span class="em">—</span> is designed to help you DO something, not just log information. Plus, it works as a mobile app your team will actually use.</td>
+<td class="after">Most CRMs are built for data entry. i&#x27;M On Social is built for action. Every feature, from digital cards to AI follow-ups, is designed to help you DO something, not just log information. Plus, it works as a mobile app your team will actually use.</td>
+</tr>
+<tr class="changed">
+<td>13</td>
+<td class="file">landing.html:619</td>
+<td class="before">We&#x27;ll walk you through the platform, show you how it works for your specific business, answer all your questions, and help you understand the ROI. No pressure, no sales tricks <span class="em">—</span> just a conversation about whether it&#x27;s a fit.</td>
+<td class="after">We&#x27;ll walk you through the platform, show you how it works for your specific business, answer all your questions, and help you understand the ROI. No pressure, no sales tricks, just a conversation about whether it&#x27;s a fit.</td>
+</tr>
+<tr class="changed">
+<td>14</td>
+<td class="file">organizations/index.html:5</td>
+<td class="before">For Organizations <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">For Organizations - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>15</td>
+<td class="file">organizations/index.html:188</td>
+<td class="before">Manage your entire organization <span class="em">—</span> stores, managers, and salespeople <span class="em">—</span> all under one roof. Consistent branding, centralized analytics, and full control over who does what.</td>
+<td class="after">Manage your entire organization, stores, managers, and salespeople, all under one roof. Consistent branding, centralized analytics, and full control over who does what.</td>
+</tr>
+<tr class="changed">
+<td>16</td>
+<td class="file">jessi/index.html:5</td>
+<td class="before">Jessi AI Assistant <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Jessi AI Assistant - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>17</td>
+<td class="file">jessi/index.html:205</td>
+<td class="before">Not just answers <span class="em">—</span> Jessi tells you exactly what to do next and why.</td>
+<td class="after">Not just answers. Jessi tells you exactly what to do next and why.</td>
+</tr>
+<tr class="changed">
+<td>18</td>
+<td class="file">demo/index.html:5</td>
+<td class="before">Schedule a Demo <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Schedule a Demo - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>19</td>
+<td class="file">demo/index.html:188</td>
+<td class="before">We&#x27;ll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment <span class="em">—</span> just a conversation about how to build your brand.</td>
+<td class="after">We&#x27;ll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment, just a conversation about how to build your brand.</td>
+</tr>
+<tr class="changed">
+<td>20</td>
+<td class="file">demo/index.html:205</td>
+<td class="before">Pricing, setup, integrations, team rollout <span class="em">—</span> nothing is off limits.</td>
+<td class="after">Pricing, setup, integrations, team rollout, nothing is off limits.</td>
+</tr>
+<tr class="changed">
+<td>21</td>
+<td class="file">digital-card/index.html:5</td>
+<td class="before">Digital Business Cards <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Digital Business Cards - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>22</td>
+<td class="file">digital-card/index.html:205</td>
+<td class="before">Reviews, social profiles, contact info, showcase page <span class="em">—</span> all connected in one tap.</td>
+<td class="after">Reviews, social profiles, contact info, showcase page, all connected in one tap.</td>
+</tr>
+<tr class="changed">
+<td>23</td>
+<td class="file">leaderboard/index.html:5</td>
+<td class="before">Leaderboards <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Leaderboards - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>24</td>
+<td class="file">leaderboard/index.html:188</td>
+<td class="before">Cards shared, reviews collected, engagement driven <span class="em">—</span> all tracked. Store-level, org-level, and individual rankings that reward the salespeople who do the work.</td>
+<td class="after">Cards shared, reviews collected, engagement driven, all tracked. Store-level, org-level, and individual rankings that reward the salespeople who do the work.</td>
+</tr>
+<tr class="changed">
+<td>25</td>
+<td class="file">leaderboard/index.html:195</td>
+<td class="before">See who&#x27;s on top. Cards shared, reviews earned, messages sent <span class="em">—</span> all ranked.</td>
+<td class="after">See who&#x27;s on top. Cards shared, reviews earned, messages sent, all ranked.</td>
+</tr>
+<tr class="changed">
+<td>26</td>
+<td class="file">presentation/index.html:5</td>
+<td class="before">Sales Deck <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Sales Deck - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>27</td>
+<td class="file">presentation/index.html:188</td>
+<td class="before">A quick overview of everything i&#x27;M On Social offers <span class="em">—</span> from digital cards to automated outreach to AI powered insights. Share it with your team or your boss.</td>
+<td class="after">A quick overview of everything i&#x27;M On Social offers, from digital cards to automated outreach to AI powered insights. Share it with your team or your boss.</td>
+</tr>
+<tr class="changed">
+<td>28</td>
+<td class="file">hub/index.html:5</td>
+<td class="before">Sales Teams <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Sales Teams - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>29</td>
+<td class="file">hub/index.html:188</td>
+<td class="before">Whether you run a 5-person office or a 500-person sales floor, i&#x27;M On Social scales with you. Give every salesperson the tools to build relationships <span class="em">—</span> and give managers the visibility to track it.</td>
+<td class="after">Whether you run a 5-person office or a 500-person sales floor, i&#x27;M On Social scales with you. Give every salesperson the tools to build relationships, and give managers the visibility to track it.</td>
+</tr>
+<tr class="changed">
+<td>30</td>
+<td class="file">reviews/index.html:5</td>
+<td class="before">Personal Reviews <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Personal Reviews - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>31</td>
+<td class="file">reviews/index.html:205</td>
+<td class="before">After every sale, automatically invite customers to leave a review. They can leave one for the salesperson, the store, or both <span class="em">—</span> all from one simple link.</td>
+<td class="after">After every sale, automatically invite customers to leave a review. They can leave one for the salesperson, the store, or both, all from one simple link.</td>
+</tr>
+<tr class="changed">
+<td>32</td>
+<td class="file">inbox/index.html:5</td>
+<td class="before">Inbox &amp; Messaging <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Inbox &amp; Messaging - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>33</td>
+<td class="file">inbox/index.html:188</td>
+<td class="before">SMS, email, automated messages <span class="em">—</span> all in one unified thread per contact. Track opens, clicks, and replies. Know exactly when to follow up and what to say.</td>
+<td class="after">SMS, email, automated messages, all in one unified thread per contact. Track opens, clicks, and replies. Know exactly when to follow up and what to say.</td>
+</tr>
+<tr class="changed">
+<td>34</td>
+<td class="file">help/index.html:5</td>
+<td class="before">Help Center <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Help Center - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>35</td>
+<td class="file">help/index.html:188</td>
+<td class="before">Guides, FAQs, and direct support for everything you need. If you can&#x27;t find it here, just ask <span class="em">—</span> we&#x27;re real people and we respond fast.</td>
+<td class="after">Guides, FAQs, and direct support for everything you need. If you can&#x27;t find it here, just ask, we&#x27;re real people and we respond fast.</td>
+</tr>
+<tr class="changed">
+<td>36</td>
+<td class="file">features/index.html:5</td>
+<td class="before">All Features <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">All Features - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>37</td>
+<td class="file">features/index.html:205</td>
+<td class="before">Birthdays, anniversaries, follow-ups <span class="em">—</span> all on autopilot.</td>
+<td class="after">Birthdays, anniversaries, follow-ups, all on autopilot.</td>
+</tr>
+<tr class="changed">
+<td>38</td>
+<td class="file">pricing/index.html:5</td>
+<td class="before">Pricing <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Pricing - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>39</td>
+<td class="file">showcase/index.html:5</td>
+<td class="before">Link Pages &amp; Showcase <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Link Pages &amp; Showcase - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>40</td>
+<td class="file">showcase/index.html:188</td>
+<td class="before">Your Instagram, TikTok, Google reviews, YouTube, digital card, and more <span class="em">—</span> all in one beautiful, shareable link page. Your own personal My Links page, designed for the way salespeople actually work.</td>
+<td class="after">Your Instagram, TikTok, Google reviews, YouTube, digital card, and more, all in one beautiful, shareable link page. Your own personal My Links page, designed for the way salespeople actually work.</td>
+</tr>
+<tr class="changed">
+<td>41</td>
+<td class="file">training/index.html:5</td>
+<td class="before">Training Hub <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Training Hub - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>42</td>
+<td class="file">privacy/index.html:5</td>
+<td class="before">Privacy Policy <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Privacy Policy - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>43</td>
+<td class="file">salespresentation/index.html:5</td>
+<td class="before">Automotive <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Automotive - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>44</td>
+<td class="file">salespresentation/index.html:188</td>
+<td class="before">Sell a car. Send a congrats card. Earn a review. Get a referral. Repeat. i&#x27;M On Social turns every sale into a long-term relationship that brings customers back <span class="em">—</span> and brings their friends.</td>
+<td class="after">Sell a car. Send a congrats card. Earn a review. Get a referral. Repeat. i&#x27;M On Social turns every sale into a long-term relationship that brings customers back, and brings their friends.</td>
+</tr>
+<tr class="changed">
+<td>45</td>
+<td class="file">salespresentation/index.html:210</td>
+<td class="before">Birthday texts, service reminders, anniversary messages <span class="em">—</span> all automatic.</td>
+<td class="after">Birthday texts, service reminders, anniversary messages, all automatic.</td>
+</tr>
+<tr class="changed">
+<td>46</td>
+<td class="file">congrats-template/index.html:5</td>
+<td class="before">Congrats Cards <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Congrats Cards - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>47</td>
+<td class="file">congrats-template/index.html:188</td>
+<td class="before">Every time you close a deal, a branded congrats card gets sent to your customer. It links to your review page, social profiles, and digital card <span class="em">—</span> turning every sale into a referral machine.</td>
+<td class="after">Every time you close a deal, a branded congrats card gets sent to your customer. It links to your review page, social profiles, and digital card, turning every sale into a referral machine.</td>
+</tr>
+<tr class="changed">
+<td>48</td>
+<td class="file">date-triggers/index.html:5</td>
+<td class="before">Automated Campaigns <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Automated Campaigns - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>49</td>
+<td class="file">date-triggers/index.html:195</td>
+<td class="before">Never miss a birthday again. Automatic, personal, and on time <span class="em">—</span> every single year.</td>
+<td class="after">Never miss a birthday again. Automatic, personal, and on time, every single year.</td>
+</tr>
+<tr class="changed">
+<td>50</td>
+<td class="file">date-triggers/index.html:205</td>
+<td class="before">Thanksgiving, Christmas, New Year&#x27;s <span class="em">—</span> stay top of mind during every holiday.</td>
+<td class="after">Thanksgiving, Christmas, New Year&#x27;s, stay top of mind during every holiday.</td>
+</tr>
+<tr class="changed">
+<td>51</td>
+<td class="file">individuals/index.html:5</td>
+<td class="before">For Individuals <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">For Individuals - i&#x27;M On Social</td>
+</tr>
+<tr class="changed">
+<td>52</td>
+<td class="file">individuals/index.html:188</td>
+<td class="before">You don&#x27;t need a company behind you. i&#x27;M On Social gives every individual salesperson the same tools the big teams use <span class="em">—</span> digital cards, personal reviews, automated outreach, and analytics.</td>
+<td class="after">You don&#x27;t need a company behind you. i&#x27;M On Social gives every individual salesperson the same tools the big teams use, digital cards, personal reviews, automated outreach, and analytics.</td>
+</tr>
+<tr class="changed">
+<td>53</td>
+<td class="file">individuals/index.html:195</td>
+<td class="before">Digital card, review page, and link page <span class="em">—</span> all yours, all free to start.</td>
+<td class="after">Digital card, review page, and link page, all yours, all free to start.</td>
+</tr>
+<tr class="changed">
+<td>54</td>
+<td class="file">individuals/index.html:205</td>
+<td class="before">Birthday messages, anniversaries, congrats cards <span class="em">—</span> all on autopilot.</td>
+<td class="after">Birthday messages, anniversaries, congrats cards, all on autopilot.</td>
+</tr>
+<tr class="changed">
+<td>55</td>
+<td class="file">terms/index.html:5</td>
+<td class="before">Terms of Service <span class="em">—</span> i&#x27;M On Social</td>
+<td class="after">Terms of Service - i&#x27;M On Social</td>
+</tr>
+
+</table>
+</body></html>
