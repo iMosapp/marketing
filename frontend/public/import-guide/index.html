@@ -23,7 +23,8 @@
   .step-number.google { background: #4285f4; }
   .step-title { font-size: 17px; font-weight: 600; }
   .step-desc { color: #aaa; font-size: 14px; margin-bottom: 12px; padding-left: 44px; }
-  .step-img { width: 100%; border-radius: 10px; border: 1px solid #222; margin-top: 8px; }
+  .step-img { width: 100%; max-width: 700px; border-radius: 10px; border: 1px solid #222; margin-top: 8px; }
+  .step-img.compact { width: auto; max-width: 360px; display: block; margin-left: 44px; }
   .callout { background: #1a2a1a; border: 1px solid #2a4a2a; border-radius: 10px; padding: 14px 16px; margin: 24px 0; font-size: 14px; color: #8fbc8f; }
   .callout b { color: #a5d6a5; }
   .callout.warn { background: #2a2a1a; border-color: #4a4a2a; color: #bcbc8f; }
@@ -77,24 +78,15 @@
     <div class="step">
       <div class="step-header">
         <div class="step-number apple">2</div>
-        <div class="step-title">Select All Contacts</div>
+        <div class="step-title">Select All, then Export</div>
       </div>
-      <div class="step-desc">Once you're in iCloud Contacts, click the <b>settings icon</b> (gear) in the top area, then click <b>"Select All Contacts"</b> from the dropdown menu.</div>
-      <img src="icloud_step1.webp" alt="iCloud - Select All Contacts" class="step-img" loading="lazy">
+      <div class="step-desc">Once you're in iCloud Contacts, click the <b>settings icon</b> (gear) at the top left, then click <b>"Select All Contacts"</b>. Once all contacts are highlighted, click the <b>share icon</b> (box with arrow) at the top right and choose <b>"Export vCard"</b>. A <b>.vcf</b> file will download to your computer.</div>
+      <img src="icloud_step1.webp" alt="iCloud - Select All Contacts and Export vCard" class="step-img" loading="lazy">
     </div>
 
     <div class="step">
       <div class="step-header">
         <div class="step-number apple">3</div>
-        <div class="step-title">Export as vCard</div>
-      </div>
-      <div class="step-desc">With all contacts selected, click the <b>share icon</b> (box with an upward arrow) in the top-right area, then click <b>"Export vCard"</b> from the dropdown. A <b>.vcf</b> file will download to your computer.</div>
-      <img src="icloud_step2.webp" alt="iCloud - Export vCard" class="step-img" loading="lazy">
-    </div>
-
-    <div class="step">
-      <div class="step-header">
-        <div class="step-number apple">4</div>
         <div class="step-title">Upload to i'M On Social</div>
       </div>
       <div class="step-desc">Go back to the Import Contacts screen in i'M On Social, tap <b>"From File (CSV or VCF)"</b>, and select the .vcf file you just downloaded. You'll see a preview of all your contacts before importing.</div>
@@ -136,7 +128,7 @@
         <br><br>
         Either format works. Click <b>"Export"</b> and the file will download.
       </div>
-      <img src="google_step2.webp" alt="Google Contacts - Export dialog" class="step-img" loading="lazy">
+      <img src="google_step2.webp" alt="Google Contacts - Export dialog" class="step-img compact" loading="lazy">
     </div>
 
     <div class="step">
