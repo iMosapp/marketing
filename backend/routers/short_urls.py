@@ -795,11 +795,18 @@ async def redirect_short_url(short_code: str, request: Request):
     base_url = base_url.rstrip("/")
 
     # Detect if this is ANY type of card link
-    card_link_types = {"congrats_card", "birthday_card", "thank_you_card", "thankyou_card",
-                       "holiday_card", "welcome_card", "anniversary_card"}
+    # Detect ANY card type generically — any link_type ending in "_card" except "business_card"
+    is_customer_card = "_card" in link_type and link_type != "business_card"
     ref_id = doc.get("reference_id", "")
 
-    if link_type in card_link_types and ref_id:
+    # If no ref_id, try to extract card_id from the original URL
+    if is_customer_card and not ref_id:
+        import re
+        url_match = re.search(r'/([a-f0-9]{8}-[a-f0-9]{3,})', doc.get("original_url", ""))
+        if url_match:
+            ref_id = url_match.group(1)
+
+    if is_customer_card and ref_id:
         # === CARD LINK: Use customer photo + contextual title ===
         card_doc = await db.congrats_cards.find_one({"card_id": ref_id})
         if not card_doc:
@@ -855,6 +862,21 @@ async def redirect_short_url(short_code: str, request: Request):
                 og_title = ct_titles.get(ct, f"A special card for {meta_name}!")
             else:
                 og_title = "You've received a card!"
+
+    elif is_customer_card and user_id:
+        # Card type but no ref_id found — use salesperson OG as fallback
+        # (This handles test links and edge cases where card data is missing)
+        personalized_og = f"{base_url}/api/s/og-image/{user_id}"
+        ct = link_type.replace("_card", "")
+        ct_titles = {
+            "congrats": "Congratulations!", "birthday": "Happy Birthday!",
+            "anniversary": "Happy Anniversary!", "thankyou": "Thank You!",
+            "thank_you": "Thank You!", "welcome": "Welcome!",
+            "holiday": "Happy Holidays!",
+        }
+        og_title = ct_titles.get(ct, "You've received a card!")
+        og_description = "Open to see your special card"
+        og_image = personalized_og
 
     elif user_id:
         # === NON-CARD LINK: Use store branding ===
