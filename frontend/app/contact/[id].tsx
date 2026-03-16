@@ -274,7 +274,9 @@ export default function ContactDetailScreen() {
     first_name: '', last_name: '', phone: '', email: '',
     photo: null as string | null, photo_thumbnail: null as string | null,
     notes: '', vehicle: '', tags: [] as string[],
-    occupation: '', employer: '',
+    occupation: '', employer: '', organization_name: '',
+    phones: [] as { label: string; value: string }[],
+    emails: [] as { label: string; value: string }[],
     referred_by: null as string | null, referred_by_name: null as string | null,
     referral_notes: '', referral_count: 0,
     birthday: null as Date | null, anniversary: null as Date | null,
@@ -630,6 +632,9 @@ export default function ContactDetailScreen() {
         notes: data.notes || '', vehicle: data.vehicle || '',
         tags: data.tags || [],
         occupation: data.occupation || '', employer: data.employer || '',
+        organization_name: data.organization_name || '',
+        phones: data.phones || [],
+        emails: data.emails || [],
         referred_by: data.referred_by || null,
         referred_by_name: data.referred_by_name || null,
         referral_notes: data.referral_notes || '',
@@ -2681,10 +2686,10 @@ export default function ContactDetailScreen() {
                       <Text style={s.heroMetaText}>{[contact.address_city, contact.address_state].filter(Boolean).join(', ')}</Text>
                     </View>
                   ) : null}
-                  {(contact.occupation || contact.employer) ? (
+                  {(contact.occupation || contact.employer || contact.organization_name) ? (
                     <View style={s.heroMetaItem}>
                       <Ionicons name="briefcase-outline" size={11} color={colors.textTertiary} />
-                      <Text style={s.heroMetaText}>{[contact.occupation, contact.employer].filter(Boolean).join(' at ')}</Text>
+                      <Text style={s.heroMetaText}>{[contact.occupation, contact.employer || contact.organization_name].filter(Boolean).join(' at ')}</Text>
                     </View>
                   ) : null}
                   {!isNewContact && (
@@ -2957,6 +2962,11 @@ export default function ContactDetailScreen() {
                   <View style={s.section}>
                     <Text style={s.sectionHeader}>Employment</Text>
                     <View style={s.inputGroup}>
+                      <Text style={s.inputLabel}>Organization Name</Text>
+                      <TextInput style={s.input} placeholder="e.g., Hertz, Goldman Sachs" placeholderTextColor={colors.textTertiary}
+                        value={contact.organization_name} onChangeText={t => setContact({ ...contact, organization_name: t })} data-testid="input-organization-name" />
+                    </View>
+                    <View style={s.inputGroup}>
                       <Text style={s.inputLabel}>Job Title / Occupation</Text>
                       <TextInput style={s.input} placeholder="e.g., Senior Manager" placeholderTextColor={colors.textTertiary}
                         value={contact.occupation} onChangeText={t => setContact({ ...contact, occupation: t })} data-testid="input-occupation" />
@@ -2967,6 +2977,44 @@ export default function ContactDetailScreen() {
                         value={contact.employer} onChangeText={t => setContact({ ...contact, employer: t })} data-testid="input-employer" />
                     </View>
                   </View>
+
+                  {/* Additional Phone Numbers */}
+                  {contact.phones.length > 0 && (
+                    <View style={s.section}>
+                      <Text style={s.sectionHeader}>Additional Phone Numbers</Text>
+                      {contact.phones.map((p, idx) => (
+                        <View key={`phone-${idx}`} style={s.inputGroup}>
+                          <Text style={s.inputLabel}>{p.label || 'Phone'}</Text>
+                          <TextInput style={s.input} value={p.value} keyboardType="phone-pad"
+                            onChangeText={t => {
+                              const updated = [...contact.phones];
+                              updated[idx] = { ...updated[idx], value: t };
+                              setContact({ ...contact, phones: updated });
+                            }}
+                            data-testid={`input-phone-${idx}`} />
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Additional Email Addresses */}
+                  {contact.emails.length > 0 && (
+                    <View style={s.section}>
+                      <Text style={s.sectionHeader}>Additional Email Addresses</Text>
+                      {contact.emails.map((e, idx) => (
+                        <View key={`email-${idx}`} style={s.inputGroup}>
+                          <Text style={s.inputLabel}>{e.label || 'Email'}</Text>
+                          <TextInput style={s.input} value={e.value} keyboardType="email-address" autoCapitalize="none"
+                            onChangeText={t => {
+                              const updated = [...contact.emails];
+                              updated[idx] = { ...updated[idx], value: t };
+                              setContact({ ...contact, emails: updated });
+                            }}
+                            data-testid={`input-email-${idx}`} />
+                        </View>
+                      ))}
+                    </View>
+                  )}
 
                   {/* Address Section */}
                   <View style={s.section}>

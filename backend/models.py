@@ -226,6 +226,16 @@ class CustomDateField(BaseModel):
     name: str  # e.g., "Lease Expiration", "Next Service"
     date: Optional[datetime] = None
     
+class PhoneEntry(BaseModel):
+    label: str = ""  # Mobile, Work, Home, etc.
+    value: str = ""  # The phone number
+
+
+class EmailEntry(BaseModel):
+    label: str = ""  # Personal, Work, etc.
+    value: str = ""  # The email address
+
+
 class Contact(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user_id: str
@@ -234,6 +244,9 @@ class Contact(BaseModel):
     phone: str
     email: Optional[str] = None
     email_work: Optional[str] = None
+    organization_name: Optional[str] = None
+    phones: List[PhoneEntry] = []  # All phone numbers with labels
+    emails: List[EmailEntry] = []  # All email addresses with labels
     photo: Optional[str] = None  # high-res photo (excluded from list queries)
     photo_thumbnail: Optional[str] = None  # tiny avatar for fast loading (~3-5KB)
     photo_url: Optional[str] = None  # thumbnail for display
@@ -306,6 +319,9 @@ class ContactCreate(BaseModel):
     phone: Optional[str] = ""
     email: Optional[str] = None
     email_work: Optional[str] = None
+    organization_name: Optional[str] = None
+    phones: List[PhoneEntry] = []
+    emails: List[EmailEntry] = []
     photo: Optional[str] = None  # base64 encoded image
     tags: List[str] = []
     notes: str = ""
