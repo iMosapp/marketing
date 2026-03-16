@@ -34,6 +34,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented (Latest Session - Mar 17, 2026)
 
+### Photo-Dominant OG Images (Mar 16, 2026)
+- Rewrote the salesperson OG image generator: profile photo now fills ~55% of the 1200x630 frame with name/title on the right panel (was a small 260px circle)
+- Created new customer card OG image endpoint (`/api/s/og-card-image/{card_id}`) — lightweight WebP (12KB) instead of the heavy 1080x1350 PNG card image
+- Both cached in object storage + LRU memory cache, served as WebP at 85% quality
+- OG cache invalidated automatically when salesperson updates their profile photo
+- Salesperson OG: ~40KB, Customer card OG: ~12KB — both under 50KB for fast SMS previews
+
 ### Contact Import Guide Fix (Mar 17, 2026)
 - Fixed inaccurate import guide at `/import-guide/`
 - iCloud: Added crucial Step 1 "Open iCloud on a Computer" specifying `icloud.com` login on desktop
