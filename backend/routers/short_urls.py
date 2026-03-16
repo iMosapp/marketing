@@ -12,7 +12,7 @@ import random
 import string
 import httpx
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from .database import get_db
 
@@ -277,48 +277,196 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
         pass
 
 
+def _load_font(bold=False, size=40):
+    """Load DejaVu font with fallback to default."""
+    name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    try:
+        from PIL import ImageFont
+        return ImageFont.truetype(f"/usr/share/fonts/truetype/dejavu/{name}", size)
+    except Exception:
+        from PIL import ImageFont
+        return ImageFont.load_default()
+
+
+def _hex_to_rgb(hex_color: str) -> tuple:
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+
+async def _fetch_image(url: str, app_url: str) -> "Image.Image | None":
+    """Fetch an image from a URL (handles relative /api/ paths)."""
+    if not url or url.startswith("data:"):
+        return None
+    full_url = f"{app_url}{url}" if url.startswith("/") else url
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(full_url)
+            if resp.status_code == 200:
+                return Image.open(BytesIO(resp.content)).convert("RGBA")
+    except Exception:
+        pass
+    return None
+
+
 @router.get("/og-image/{user_id}")
 async def get_og_image(user_id: str):
-    """Serve a store logo composited onto a white background for OG previews."""
+    """Generate a personalized 1200x630 OG preview image for social sharing.
+    
+    Includes: salesperson photo, name, title, store name, store logo, accent branding.
+    Falls back to a generic image if user data is unavailable.
+    """
+    from PIL import ImageDraw  # noqa: F811
     db = get_db()
-    og_image_url = None
+    app_url = os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL", "https://app.imonsocial.com")
+    app_url = app_url.rstrip("/")
+
+    # Fetch user + store data
+    user_doc = None
+    store_doc = None
     try:
-        user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+        user_doc = await db.users.find_one(
+            {"_id": ObjectId(user_id)},
+            {"name": 1, "title": 1, "store_id": 1, "photo_url": 1,
+             "photo_path": 1, "photo_avatar_path": 1, "email_brand_kit": 1}
+        )
         if user_doc and user_doc.get("store_id"):
-            store = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"logo_url": 1, "logo_avatar_url": 1})
-            if store:
-                og_image_url = store.get("logo_url") or store.get("logo_avatar_url")
+            store_doc = await db.stores.find_one(
+                {"_id": ObjectId(user_doc["store_id"])},
+                {"name": 1, "logo_url": 1, "logo_avatar_url": 1,
+                 "logo_path": 1, "primary_color": 1, "email_brand_kit": 1}
+            )
     except Exception:
         pass
 
-    if not og_image_url or og_image_url.startswith("data:"):
+    if not user_doc:
+        # Fallback to static OG image
         static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
         if os.path.exists(static_path):
             with open(static_path, "rb") as f:
-                return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+                return Response(content=f.read(), media_type="image/png",
+                                headers={"Cache-Control": "public, max-age=86400"})
         raise HTTPException(status_code=404, detail="OG image not found")
 
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(og_image_url)
-            resp.raise_for_status()
-        logo = Image.open(BytesIO(resp.content)).convert("RGBA")
-        size = (512, 512)
-        white_bg = Image.new("RGB", size, (255, 255, 255))
-        logo.thumbnail(size, Image.LANCZOS)
-        x = (size[0] - logo.width) // 2
-        y = (size[1] - logo.height) // 2
-        white_bg.paste(logo, (x, y), logo)
-        buf = BytesIO()
-        white_bg.save(buf, format="PNG", quality=95)
-        buf.seek(0)
-        return Response(content=buf.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
-    except Exception:
-        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
-        if os.path.exists(static_path):
-            with open(static_path, "rb") as f:
-                return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
-        raise HTTPException(status_code=500, detail="Failed to generate OG image")
+    # Resolve URLs
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
+    user_photo_url = resolve_user_photo(user_doc)
+    store_logo_url = resolve_store_logo(store_doc) if store_doc else None
+
+    user_name = user_doc.get("name", "")
+    user_title = user_doc.get("title", "")
+    store_name = store_doc.get("name", "") if store_doc else ""
+
+    # Accent color from brand kit or store
+    brand_kit = user_doc.get("email_brand_kit") or {}
+    if not brand_kit and store_doc:
+        brand_kit = store_doc.get("email_brand_kit") or {}
+    accent_hex = brand_kit.get("primary_color") or (store_doc.get("primary_color") if store_doc else None) or "#C9A962"
+    accent = _hex_to_rgb(accent_hex)
+
+    # --- Build 1200x630 OG image ---
+    W, H = 1200, 630
+    bg = (17, 17, 17)  # #111111
+    img = Image.new("RGB", (W, H), bg)
+    draw = ImageDraw.Draw(img)
+
+    # Top accent bar
+    draw.rectangle([0, 0, W, 6], fill=accent)
+
+    # --- Left side: Photo ---
+    photo_img = await _fetch_image(user_photo_url, app_url)
+    photo_size = 260
+    photo_x = 80
+    photo_cy = H // 2  # vertically centered
+
+    if photo_img:
+        # Crop to square and resize
+        mn = min(photo_img.size)
+        left = (photo_img.width - mn) // 2
+        top = (photo_img.height - mn) // 2
+        photo_img = photo_img.crop((left, top, left + mn, top + mn))
+        photo_img = photo_img.resize((photo_size, photo_size), Image.LANCZOS)
+        # Circular mask
+        mask = Image.new("L", (photo_size, photo_size), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.ellipse([0, 0, photo_size, photo_size], fill=255)
+        # Accent ring
+        ring_pad = 5
+        ring_size = photo_size + ring_pad * 2
+        ring_y = photo_cy - ring_size // 2
+        draw.ellipse([photo_x - ring_pad, ring_y, photo_x + photo_size + ring_pad, ring_y + ring_size], fill=accent)
+        # Paste photo
+        photo_y = photo_cy - photo_size // 2
+        img.paste(photo_img.convert("RGB"), (photo_x, photo_y), mask)
+    else:
+        # Draw initials circle placeholder
+        photo_y = photo_cy - photo_size // 2
+        draw.ellipse([photo_x - 5, photo_y - 5, photo_x + photo_size + 5, photo_y + photo_size + 5], fill=accent)
+        draw.ellipse([photo_x, photo_y, photo_x + photo_size, photo_y + photo_size], fill=(30, 30, 30))
+        if user_name:
+            initials = "".join(w[0].upper() for w in user_name.split()[:2])
+            fi = _load_font(True, 72)
+            bbox = draw.textbbox((0, 0), initials, font=fi)
+            iw = bbox[2] - bbox[0]
+            ih = bbox[3] - bbox[1]
+            draw.text((photo_x + (photo_size - iw) // 2, photo_y + (photo_size - ih) // 2 - 8), initials, fill=accent, font=fi)
+
+    # --- Right side: Text ---
+    text_x = photo_x + photo_size + 70
+    text_max_w = W - text_x - 60
+
+    # Name
+    f_name = _load_font(True, 48)
+    name_y = photo_cy - 80
+    if user_name:
+        # Truncate if too wide
+        display_name = user_name
+        bbox = draw.textbbox((0, 0), display_name, font=f_name)
+        while bbox[2] - bbox[0] > text_max_w and len(display_name) > 10:
+            display_name = display_name[:-2] + "..."
+            bbox = draw.textbbox((0, 0), display_name, font=f_name)
+        draw.text((text_x, name_y), display_name, fill=(255, 255, 255), font=f_name)
+
+    # Title
+    f_title = _load_font(False, 28)
+    title_y = name_y + 62
+    if user_title:
+        draw.text((text_x, title_y), user_title, fill=accent, font=f_title)
+
+    # Store name
+    f_store = _load_font(False, 24)
+    store_y = title_y + 44
+    if store_name:
+        dim_txt = (140, 140, 140)
+        draw.text((text_x, store_y), store_name, fill=dim_txt, font=f_store)
+
+    # Accent divider line
+    divider_y = store_y + 44
+    draw.rectangle([text_x, divider_y, text_x + 80, divider_y + 3], fill=accent)
+
+    # --- Store logo (bottom-right corner) ---
+    logo_img = await _fetch_image(store_logo_url, app_url)
+    if logo_img:
+        lw, lh = logo_img.size
+        max_logo_w, max_logo_h = 140, 50
+        scale = min(max_logo_w / lw, max_logo_h / lh, 1.0)
+        logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.LANCZOS)
+        lw, lh = logo_img.size
+        logo_x = W - lw - 40
+        logo_y = H - lh - 30
+        img.paste(logo_img.convert("RGB"), (logo_x, logo_y), logo_img if logo_img.mode == "RGBA" else None)
+
+    # Bottom accent bar
+    draw.rectangle([0, H - 6, W, H], fill=accent)
+
+    # --- Encode and return ---
+    buf = BytesIO()
+    img.save(buf, format="PNG", quality=90)
+    buf.seek(0)
+    return Response(
+        content=buf.read(),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=3600"}
+    )
 
 
 
@@ -481,13 +629,15 @@ async def redirect_short_url(short_code: str, request: Request):
                             return f"{base_url}{url}" if url.startswith("/") else url
                         return ""
 
-                    salesperson_photo = _abs(user_doc.get("photo_url"))
                     store_logo = _abs(store.get("logo_url") or store.get("logo_avatar_url"))
+
+                    # Use the personalized OG image generator for personal link types
+                    personalized_og = f"{base_url}/api/s/og-image/{user_id}"
 
                     if link_type == "business_card":
                         og_title = f"{user_name}'s Digital Card" if user_name else "Digital Business Card"
                         og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
-                        og_image = salesperson_photo
+                        og_image = personalized_og
                     elif link_type == "referral":
                         sp_title = doc_metadata.get("salesman_title") or ""
                         if user_name and sp_title:
@@ -497,23 +647,23 @@ async def redirect_short_url(short_code: str, request: Request):
                         else:
                             og_title = "You've been referred!"
                         og_description = f"Connect with {user_name} at {store_name}" if store_name else f"Connect with {user_name}"
-                        og_image = _abs(doc_metadata.get("photo_url")) or salesperson_photo
+                        og_image = personalized_og
                     elif link_type in ("review_request", "review_invite", "review"):
                         og_title = f"Share Your Experience with {store_name}" if store_name else "We'd Love Your Feedback!"
                         og_description = f"{user_name} would love to hear about your experience" if user_name else "Your feedback means the world to us"
-                        og_image = store_logo
+                        og_image = store_logo or personalized_og
                     elif link_type == "showcase":
                         og_title = f"{store_name} — Happy Customers" if store_name else "Our Happy Customers"
                         og_description = f"See what customers are saying about {store_name}" if store_name else "Check out our showcase"
-                        og_image = salesperson_photo
+                        og_image = personalized_og
                     elif link_type == "link_page":
                         og_title = f"{user_name}'s Links" if user_name else "Connect With Us"
                         og_description = f"Find all of {user_name}'s links at {store_name}" if store_name else f"Find all of {user_name}'s links"
-                        og_image = salesperson_photo
+                        og_image = personalized_og
                     else:
                         og_title = store_name or "Check this out!"
                         og_description = f"Shared by {user_name}" if user_name else ""
-                        og_image = store_logo or salesperson_photo
+                        og_image = personalized_og
 
                     # Final fallback: use store logo if no image was set
                     if not og_image:
@@ -530,6 +680,8 @@ async def redirect_short_url(short_code: str, request: Request):
     if og_image:
         if "/congrats/card/" in og_image and "/image" in og_image:
             img_w, img_h = "1080", "1350"
+        elif "/og-image/" in og_image:
+            img_w, img_h = "1200", "630"
         else:
             img_w, img_h = "800", "800"
         og_image_tags = f"""<meta property="og:image" content="{og_image}" />
