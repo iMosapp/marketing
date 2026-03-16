@@ -107,7 +107,7 @@ const { showToast } = useToast();
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [user?._id]);
 
   const loadSettings = async () => {
     if (!user?._id) return;
@@ -145,7 +145,7 @@ const { showToast } = useToast();
       // Save settings first
       await api.put(`/users/${user._id}/persona`, settings);
       // Generate AI bio
-      const res = await api.post(`/users/${user._id}/generate-bio`, {
+      const res = await api.post(`/profile/${user._id}/generate-bio`, {
         name: user.name,
         title: user.title,
         hobbies: settings.hobbies,
