@@ -102,6 +102,8 @@ const { showToast } = useToast();
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newHobby, setNewHobby] = useState('');
   const [newFunFact, setNewFunFact] = useState('');
+  const [generatedBio, setGeneratedBio] = useState('');
+  const [retraining, setRetraining] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -134,6 +136,49 @@ const { showToast } = useToast();
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRetrain = async () => {
+    if (!user?._id) return;
+    try {
+      setRetraining(true);
+      // Save settings first
+      await api.put(`/users/${user._id}/persona`, settings);
+      // Generate AI bio
+      const res = await api.post(`/users/${user._id}/generate-bio`, {
+        name: user.name,
+        title: user.title,
+        hobbies: settings.hobbies,
+        family_info: settings.family_info,
+        hometown: settings.hometown,
+        years_experience: settings.years_experience,
+        fun_facts: settings.fun_facts,
+        personal_motto: settings.personal_motto,
+      });
+      if (res.data?.bio) {
+        // Strip em dashes from AI output
+        const cleanBio = res.data.bio.replace(/—/g, ',');
+        setGeneratedBio(cleanBio);
+        showToast('AI bio generated! Review it below.');
+      }
+    } catch (error: any) {
+      console.error('Error retraining:', error);
+      Alert.alert('Error', error?.response?.data?.detail || 'Failed to generate bio');
+    } finally {
+      setRetraining(false);
+    }
+  };
+
+  const handleAcceptBio = async () => {
+    if (!user?._id || !generatedBio) return;
+    setSettings(prev => ({ ...prev, bio: generatedBio }));
+    try {
+      await api.put(`/users/${user._id}/persona`, { ...settings, bio: generatedBio });
+      showToast('AI bio saved as your About You');
+    } catch (error) {
+      console.error('Error saving bio:', error);
+    }
+    setGeneratedBio('');
   };
 
   const addKeyword = () => {
@@ -429,12 +474,13 @@ const { showToast } = useToast();
           <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 12 }]}>ABOUT YOU</Text>
           <View style={styles.voiceInputRow}>
             <TextInput
-              style={[styles.addInput, { minHeight: 280, textAlignVertical: 'top', flex: 1 }]}
+              style={[styles.addInput, { minHeight: 120, textAlignVertical: 'top', flex: 1 }]}
               value={settings.bio}
               onChangeText={(text) => setSettings(prev => ({ ...prev, bio: text }))}
               placeholder="Tell us about yourself... e.g., I've been in auto sales for 15 years, started as a lot porter..."
               placeholderTextColor={colors.textSecondary}
               multiline
+              scrollEnabled={false}
             />
             <VoiceInput
               onTranscription={(text) => setSettings(prev => ({ ...prev, bio: prev.bio ? prev.bio + ' ' + text : text }))}
@@ -588,12 +634,45 @@ const { showToast } = useToast();
 
         {/* Retrain Button */}
         <TouchableOpacity 
-          style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 16 }]}
-          onPress={handleSave}
+          style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 16, opacity: retraining ? 0.6 : 1 }]}
+          onPress={handleRetrain}
+          disabled={retraining}
         >
-          <Ionicons name="refresh" size={20} color={colors.text} style={{ marginRight: 8 }} />
-          <Text style={styles.saveButtonLargeText}>Retrain My AI</Text>
+          {retraining ? (
+            <ActivityIndicator size="small" color={colors.text} style={{ marginRight: 8 }} />
+          ) : (
+            <Ionicons name="refresh" size={20} color={colors.text} style={{ marginRight: 8 }} />
+          )}
+          <Text style={styles.saveButtonLargeText}>{retraining ? 'Generating...' : 'Retrain My AI'}</Text>
         </TouchableOpacity>
+
+        {/* AI Generated Bio Preview */}
+        {generatedBio ? (
+          <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#34C759' }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
+            <TextInput
+              style={[styles.addInput, { minHeight: 100, textAlignVertical: 'top', marginBottom: 12 }]}
+              value={generatedBio}
+              onChangeText={setGeneratedBio}
+              multiline
+              scrollEnabled={false}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, padding: 12, alignItems: 'center' }}
+                onPress={handleAcceptBio}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Use This Bio</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: colors.card, borderRadius: 10, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.textSecondary }}
+                onPress={() => setGeneratedBio('')}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 15 }}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
         <View style={{ height: 40 }} />
       </ScrollView>
