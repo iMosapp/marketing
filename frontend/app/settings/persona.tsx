@@ -429,7 +429,7 @@ const { showToast } = useToast();
           <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 12 }]}>ABOUT YOU</Text>
           <View style={styles.voiceInputRow}>
             <TextInput
-              style={[styles.addInput, { minHeight: 160, textAlignVertical: 'top', flex: 1 }]}
+              style={[styles.addInput, { minHeight: 280, textAlignVertical: 'top', flex: 1 }]}
               value={settings.bio}
               onChangeText={(text) => setSettings(prev => ({ ...prev, bio: text }))}
               placeholder="Tell us about yourself... e.g., I've been in auto sales for 15 years, started as a lot porter..."
