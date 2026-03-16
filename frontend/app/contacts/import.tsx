@@ -106,27 +106,39 @@ export default function ImportContactsScreen() {
     if (!user?._id) return;
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/csv', 'text/comma-separated-values', 'application/csv', '*/*'],
+        type: ['text/csv', 'text/comma-separated-values', 'application/csv', 'text/vcard', 'text/x-vcard', '*/*'],
         copyToCacheDirectory: true,
       });
       if (result.canceled) return;
       const file = result.assets[0];
       if (!file.uri) return;
 
+      const fileName = (file.name || '').toLowerCase();
+      const isVcf = fileName.endsWith('.vcf') || fileName.endsWith('.vcard');
+      const isCsv = fileName.endsWith('.csv');
+      if (!isVcf && !isCsv) {
+        showSimpleAlert('Unsupported File', 'Please pick a .csv or .vcf file');
+        return;
+      }
+
       setLoading(true);
 
-      // Upload to backend for parsing
+      // Upload to backend for parsing (auto-detect endpoint)
       const formData = new FormData();
       if (Platform.OS === 'web') {
         const response = await fetch(file.uri);
         const blob = await response.blob();
-        formData.append('file', blob, file.name || 'contacts.csv');
+        formData.append('file', blob, file.name || (isVcf ? 'contacts.vcf' : 'contacts.csv'));
       } else {
-        formData.append('file', { uri: file.uri, name: file.name || 'contacts.csv', type: 'text/csv' } as any);
+        formData.append('file', { uri: file.uri, name: file.name || (isVcf ? 'contacts.vcf' : 'contacts.csv'), type: isVcf ? 'text/vcard' : 'text/csv' } as any);
       }
 
+      const endpoint = isVcf
+        ? `${API_URL}/api/contacts/${user._id}/import-vcf/preview`
+        : `${API_URL}/api/contacts/${user._id}/import-csv/preview`;
+
       const res = await axios.post(
-        `${API_URL}/api/contacts/${user._id}/import-csv/preview`,
+        endpoint,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -251,15 +263,15 @@ export default function ImportContactsScreen() {
               <Ionicons name="document-text" size={32} color="#34C759" />
             </View>
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>From CSV File</Text>
-              <Text style={styles.optionDesc}>Google Contacts, Apple Contacts, or any CSV export</Text>
+              <Text style={styles.optionTitle}>From File (CSV or VCF)</Text>
+              <Text style={styles.optionDesc}>Google Contacts CSV, Apple Contacts VCF, or any standard export</Text>
             </View>
             <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           <View style={styles.csvHint}>
             <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
             <Text style={styles.csvHintText}>
-              Export your contacts from Google Contacts or Apple Contacts as CSV. We'll automatically detect names, phone numbers, emails, birthdays, and addresses.
+              Export your contacts from Google Contacts (.csv) or Apple Contacts (.vcf). We'll automatically detect names, phone numbers, emails, birthdays, and addresses. Personal imports stay with you, not the organization.
             </Text>
           </View>
         </View>
