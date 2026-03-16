@@ -2,5 +2,5 @@
   "buildCommand": "",
   "outputDirectory": "build",
   "cleanUrls": true,
-  "trailingSlash": true
+  "trailingSlash": false
 }

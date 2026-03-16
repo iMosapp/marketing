@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--accent:#007AFF;--bg:#FFFFFF;--card:#F8F9FB;--border:#E5E5EA;--text:#1D1D1F;--muted:#6E6E73}
+    :root{--gold:#C9A962;--bg:#000;--card:#0D0D0D;--border:#1A1A1A;--text:#FFF;--muted:#8E8E93}
     html,body{height:100%;overflow:hidden}
     body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center}
 
@@ -25,12 +25,12 @@
     /* Phone mockup area */
     .phone-area{
       flex:1;display:flex;align-items:center;justify-content:center;
-      position:relative;overflow:hidden;background:#F8F9FB;
+      position:relative;overflow:hidden;background:#000;
     }
     .phone-frame{
       width:85%;max-width:340px;aspect-ratio:9/19;border-radius:36px;overflow:hidden;
-      border:3px solid #E5E5EA;background:#FFF;position:relative;
-      box-shadow:0 8px 40px rgba(0,0,0,0.08);
+      border:3px solid #2C2C2E;background:#000;position:relative;
+      box-shadow:0 0 60px rgba(201,169,98,0.15);
     }
     .slide{
       position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;
@@ -60,15 +60,15 @@
     }
     .play-row{display:flex;align-items:center;gap:12px}
     .play-btn{
-      width:48px;height:48px;border-radius:50%;background:var(--accent);
+      width:48px;height:48px;border-radius:50%;background:var(--gold);
       display:flex;align-items:center;justify-content:center;cursor:pointer;
       flex-shrink:0;border:none;transition:transform 0.2s;
     }
     .play-btn:hover{transform:scale(1.05)}
     .play-btn svg{width:20px;height:20px;margin-left:2px}
     .progress-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
-    .progress-bar{height:4px;background:#E5E5EA;border-radius:2px;overflow:hidden}
-    .progress-fill{height:100%;width:0%;background:var(--accent);transition:width 0.3s linear}
+    .progress-bar{height:4px;background:#1C1C1E;border-radius:2px;overflow:hidden}
+    .progress-fill{height:100%;width:0%;background:var(--gold);transition:width 0.3s linear}
     .progress-label{font-size:11px;color:var(--muted)}
 
     /* CTA */
@@ -77,31 +77,31 @@
       background:var(--bg);
     }
     .cta-btn{
-      display:block;width:100%;padding:16px;background:var(--accent);color:#000;
+      display:block;width:100%;padding:16px;background:var(--gold);color:#000;
       font-size:16px;font-weight:800;text-align:center;border-radius:50px;
       text-decoration:none;transition:box-shadow 0.3s;
     }
-    .cta-btn:hover{box-shadow:0 4px 24px rgba(0,122,255,0.3)}
+    .cta-btn:hover{box-shadow:0 4px 24px rgba(201,169,98,0.4)}
     .brand-line{
       display:flex;align-items:center;justify-content:center;gap:8px;
       padding:4px 0;
     }
     .brand-line img{height:24px;border-radius:6px}
-    .brand-line span{font-size:13px;font-weight:700;color:#1D1D1F}
+    .brand-line span{font-size:13px;font-weight:700;color:var(--gold)}
 
     /* End card overlay */
     .end-card{
       position:absolute;top:0;left:0;right:0;bottom:0;
-      background:rgba(255,255,255,0.95);display:none;flex-direction:column;
+      background:rgba(0,0,0,0.92);display:none;flex-direction:column;
       align-items:center;justify-content:center;z-index:10;gap:16px;
       padding:32px;text-align:center;
     }
     .end-card.active{display:flex}
     .end-card img{height:64px;border-radius:16px}
-    .end-card h3{font-size:24px;font-weight:900;color:#1D1D1F}
+    .end-card h3{font-size:24px;font-weight:900;color:var(--gold)}
     .end-card p{font-size:14px;color:var(--muted)}
     .end-card a{
-      margin-top:8px;padding:14px 36px;background:var(--accent);color:#000;
+      margin-top:8px;padding:14px 36px;background:var(--gold);color:#000;
       font-weight:800;border-radius:50px;text-decoration:none;font-size:15px;
     }
 
@@ -130,7 +130,7 @@
       </div>
     </div>
     <div class="end-card" id="endCard">
-      <img src="/logo192.png" alt="i'M On Social"/>
+      <img src="/logo192.png" alt="iMOs"/>
       <h3>i'M On Social</h3>
       <p>Digital cards that build real relationships</p>
       <a href="https://imonsocial.com">Get Started</a>
