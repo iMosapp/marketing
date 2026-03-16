@@ -45,7 +45,7 @@ export default function StorePublicPage() {
   useEffect(() => {
     const fetchStore = async () => {
       try {
-        const res = await api.get(`/api/p/store/data/${slug}`);
+        const res = await api.get(`/p/store/data/${slug}`);
         setData(res.data);
       } catch (e: any) {
         setError(e?.response?.data?.detail || 'Store not found');
