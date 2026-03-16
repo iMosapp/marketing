@@ -317,7 +317,7 @@ NAV_HTML = """<nav>
 FOOTER_HTML = """<footer>
   <div class="ft-inner">
     <div class="ft-brand"><div class="ft-logo"><img src="/logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
-      <div class="ft-social"><a href="#"><i class="fa-brands fa-instagram"></i></a><a href="#"><i class="fa-brands fa-linkedin-in"></i></a><a href="#"><i class="fa-brands fa-facebook-f"></i></a><a href="#"><i class="fa-brands fa-tiktok"></i></a></div>
+      <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="#"><i class="fa-brands fa-linkedin-in"></i></a><a href="#"><i class="fa-brands fa-facebook-f"></i></a><a href="#"><i class="fa-brands fa-tiktok"></i></a></div>
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card">Digital Cards</a><a href="/reviews">Personal Reviews</a><a href="/inbox">Inbox</a><a href="/date-triggers">Automations</a><a href="/leaderboard">Leaderboards</a><a href="/jessi">Jessi AI</a></div>
     <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations">For Teams</a><a href="/pricing">Pricing</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
