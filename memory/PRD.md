@@ -32,7 +32,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-## What's Been Implemented (Latest Session - Mar 16, 2026)
+## What's Been Implemented (Latest Session - Mar 17, 2026)
+
+### Contact Import Guide Fix (Mar 17, 2026)
+- Fixed inaccurate import guide at `/import-guide/`
+- iCloud: Added crucial Step 1 "Open iCloud on a Computer" specifying `icloud.com` login on desktop
+- Google: Text correctly references `contacts.google.com` and Export button in "top-right area"
+- Replaced generated/fake screenshots with actual user screenshots annotated with red circles pointing to correct buttons
+- Guide is mobile-responsive and covers both Apple (VCF) and Google (CSV) export flows
 
 ### CSV and VCF Contact Import (Mar 16, 2026)
 - Built backend parsers for both Google Contacts CSV and Apple/Google VCF formats
