@@ -304,24 +304,34 @@ async def get_store_showcase(store_id: str):
     """Public endpoint: Get showcase data for an entire store."""
     db = get_db()
 
-    store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"logo_url": 0})
+    # Support both ObjectId and slug lookup
+    store = None
+    try:
+        store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"logo_url": 0})
+    except Exception:
+        pass
+    if not store:
+        store = await db.stores.find_one({"slug": store_id})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
+    
+    # Use the actual ObjectId for queries below
+    actual_store_id = str(store["_id"])
 
     # Use optimized logo path if migrated
     store_logo_doc = await db.stores.find_one(
-        {"_id": ObjectId(store_id), "logo_url": {"$exists": True, "$nin": [None, ""]}},
+        {"_id": ObjectId(actual_store_id), "logo_url": {"$exists": True, "$nin": [None, ""]}},
         {"logo_path": 1}
     )
     if store_logo_doc and store_logo_doc.get("logo_path"):
         store_logo_url = f"/api/images/{store_logo_doc['logo_path']}"
     elif store_logo_doc:
-        store_logo_url = f"/api/showcase/store-logo/{store_id}"
+        store_logo_url = f"/api/showcase/store-logo/{actual_store_id}"
     else:
         store_logo_url = None
 
     # Get all users in this store
-    users = await db.users.find({"store_id": store_id}, {"password": 0, "photo_url": 0}).to_list(200)
+    users = await db.users.find({"store_id": actual_store_id}, {"password": 0, "photo_url": 0}).to_list(200)
     user_ids = [str(u["_id"]) for u in users]
 
     entries = await _build_showcase_entries(
@@ -329,7 +339,7 @@ async def get_store_showcase(store_id: str):
         query_filter={"salesman_id": {"$in": user_ids}},
         feedback_filter={"$or": [
             {"salesperson_id": {"$in": user_ids}},
-            {"store_id": store_id},
+            {"store_id": actual_store_id},
         ]},
     )
 
