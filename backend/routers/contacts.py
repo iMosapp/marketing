@@ -300,12 +300,28 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
     
     # Determine sort order
     if sort_by == "recent":
-        sort_spec = [("updated_at", -1), ("created_at", -1)]
+        # Sort by most recent ACTIVITY (text, email, call, etc.) — not just updated_at
+        # Aggregate contact_events to find latest interaction per contact
+        activity_pipeline = [
+            {"$match": {"user_id": user_id}},
+            {"$group": {"_id": "$contact_id", "last_activity": {"$max": "$timestamp"}}},
+        ]
+        activity_results = await db.contact_events.aggregate(activity_pipeline).to_list(1000)
+        activity_map = {r["_id"]: r["last_activity"] for r in activity_results}
+
+        contacts = await db.contacts.find(query, {"photo": 0}).limit(500).to_list(500)
+
+        # Sort: contacts with recent activity first, then by updated_at as fallback
+        epoch = datetime(2000, 1, 1)
+        for c in contacts:
+            cid = str(c.get("_id", ""))
+            c["_last_activity"] = activity_map.get(cid, c.get("updated_at", c.get("created_at", epoch)))
+        contacts.sort(key=lambda c: c.get("_last_activity", epoch), reverse=True)
+        for c in contacts:
+            c.pop("_last_activity", None)
     else:
         sort_spec = [("first_name", 1), ("last_name", 1)]
-
-    # Exclude heavy 'photo' field from list queries  - use photo_thumbnail instead
-    contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).limit(500).to_list(500)
+        contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).limit(500).to_list(500)
     
     # For team view: enrich with salesperson names
     salesperson_map = {}
