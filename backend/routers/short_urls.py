@@ -894,7 +894,7 @@ async def redirect_short_url(short_code: str, request: Request):
                     elif link_type in ("review_request", "review_invite", "review"):
                         og_title = f"Share Your Experience with {store_name}" if store_name else "We'd Love Your Feedback!"
                         og_description = f"{user_name} would love to hear about your experience" if user_name else "Your feedback means the world to us"
-                        og_image = store_logo or personalized_og
+                        og_image = personalized_og
                     elif link_type == "showcase":
                         og_title = f"{store_name} — Happy Customers" if store_name else "Our Happy Customers"
                         og_description = f"See what customers are saying about {store_name}" if store_name else "Check out our showcase"
@@ -923,7 +923,7 @@ async def redirect_short_url(short_code: str, request: Request):
     if og_image:
         if "/congrats/card/" in og_image and "/image" in og_image:
             img_w, img_h = "1080", "1350"
-        elif "/og-image/" in og_image:
+        elif "/og-image/" in og_image or "/og-card-image/" in og_image:
             img_w, img_h = "1200", "630"
         else:
             img_w, img_h = "800", "800"
