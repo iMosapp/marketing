@@ -308,97 +308,51 @@ async def _fetch_image(url: str, app_url: str) -> "Image.Image | None":
     return None
 
 
-@router.get("/og-image/{user_id}")
-async def get_og_image(user_id: str):
-    """Generate a personalized 1200x630 OG preview image for social sharing.
-    
-    Includes: salesperson photo, name, title, store name, store logo, accent branding.
-    Falls back to a generic image if user data is unavailable.
-    """
+async def _generate_og_image_bytes(user_doc, store_doc, app_url) -> bytes:
+    """Generate the 1200x630 OG image and return raw WebP bytes."""
     from PIL import ImageDraw  # noqa: F811
-    db = get_db()
-    app_url = os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL", "https://app.imonsocial.com")
-    app_url = app_url.rstrip("/")
-
-    # Fetch user + store data
-    user_doc = None
-    store_doc = None
-    try:
-        user_doc = await db.users.find_one(
-            {"_id": ObjectId(user_id)},
-            {"name": 1, "title": 1, "store_id": 1, "photo_url": 1,
-             "photo_path": 1, "photo_avatar_path": 1, "email_brand_kit": 1}
-        )
-        if user_doc and user_doc.get("store_id"):
-            store_doc = await db.stores.find_one(
-                {"_id": ObjectId(user_doc["store_id"])},
-                {"name": 1, "logo_url": 1, "logo_avatar_url": 1,
-                 "logo_path": 1, "primary_color": 1, "email_brand_kit": 1}
-            )
-    except Exception:
-        pass
-
-    if not user_doc:
-        # Fallback to static OG image
-        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
-        if os.path.exists(static_path):
-            with open(static_path, "rb") as f:
-                return Response(content=f.read(), media_type="image/png",
-                                headers={"Cache-Control": "public, max-age=86400"})
-        raise HTTPException(status_code=404, detail="OG image not found")
-
-    # Resolve URLs
     from utils.image_urls import resolve_user_photo, resolve_store_logo
+
     user_photo_url = resolve_user_photo(user_doc)
     store_logo_url = resolve_store_logo(store_doc) if store_doc else None
-
     user_name = user_doc.get("name", "")
     user_title = user_doc.get("title", "")
     store_name = store_doc.get("name", "") if store_doc else ""
 
-    # Accent color from brand kit or store
     brand_kit = user_doc.get("email_brand_kit") or {}
     if not brand_kit and store_doc:
         brand_kit = store_doc.get("email_brand_kit") or {}
     accent_hex = brand_kit.get("primary_color") or (store_doc.get("primary_color") if store_doc else None) or "#C9A962"
     accent = _hex_to_rgb(accent_hex)
 
-    # --- Build 1200x630 OG image ---
     W, H = 1200, 630
-    bg = (17, 17, 17)  # #111111
+    bg = (17, 17, 17)
     img = Image.new("RGB", (W, H), bg)
     draw = ImageDraw.Draw(img)
 
-    # Top accent bar
     draw.rectangle([0, 0, W, 6], fill=accent)
 
-    # --- Left side: Photo ---
     photo_img = await _fetch_image(user_photo_url, app_url)
     photo_size = 260
     photo_x = 80
-    photo_cy = H // 2  # vertically centered
+    photo_cy = H // 2
 
     if photo_img:
-        # Crop to square and resize
         mn = min(photo_img.size)
         left = (photo_img.width - mn) // 2
         top = (photo_img.height - mn) // 2
         photo_img = photo_img.crop((left, top, left + mn, top + mn))
         photo_img = photo_img.resize((photo_size, photo_size), Image.LANCZOS)
-        # Circular mask
         mask = Image.new("L", (photo_size, photo_size), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse([0, 0, photo_size, photo_size], fill=255)
-        # Accent ring
         ring_pad = 5
         ring_size = photo_size + ring_pad * 2
         ring_y = photo_cy - ring_size // 2
         draw.ellipse([photo_x - ring_pad, ring_y, photo_x + photo_size + ring_pad, ring_y + ring_size], fill=accent)
-        # Paste photo
         photo_y = photo_cy - photo_size // 2
         img.paste(photo_img.convert("RGB"), (photo_x, photo_y), mask)
     else:
-        # Draw initials circle placeholder
         photo_y = photo_cy - photo_size // 2
         draw.ellipse([photo_x - 5, photo_y - 5, photo_x + photo_size + 5, photo_y + photo_size + 5], fill=accent)
         draw.ellipse([photo_x, photo_y, photo_x + photo_size, photo_y + photo_size], fill=(30, 30, 30))
@@ -410,15 +364,12 @@ async def get_og_image(user_id: str):
             ih = bbox[3] - bbox[1]
             draw.text((photo_x + (photo_size - iw) // 2, photo_y + (photo_size - ih) // 2 - 8), initials, fill=accent, font=fi)
 
-    # --- Right side: Text ---
     text_x = photo_x + photo_size + 70
     text_max_w = W - text_x - 60
 
-    # Name
     f_name = _load_font(True, 48)
     name_y = photo_cy - 80
     if user_name:
-        # Truncate if too wide
         display_name = user_name
         bbox = draw.textbbox((0, 0), display_name, font=f_name)
         while bbox[2] - bbox[0] > text_max_w and len(display_name) > 10:
@@ -426,24 +377,19 @@ async def get_og_image(user_id: str):
             bbox = draw.textbbox((0, 0), display_name, font=f_name)
         draw.text((text_x, name_y), display_name, fill=(255, 255, 255), font=f_name)
 
-    # Title
     f_title = _load_font(False, 28)
     title_y = name_y + 62
     if user_title:
         draw.text((text_x, title_y), user_title, fill=accent, font=f_title)
 
-    # Store name
     f_store = _load_font(False, 24)
     store_y = title_y + 44
     if store_name:
-        dim_txt = (140, 140, 140)
-        draw.text((text_x, store_y), store_name, fill=dim_txt, font=f_store)
+        draw.text((text_x, store_y), store_name, fill=(140, 140, 140), font=f_store)
 
-    # Accent divider line
     divider_y = store_y + 44
     draw.rectangle([text_x, divider_y, text_x + 80, divider_y + 3], fill=accent)
 
-    # --- Store logo (bottom-right corner) ---
     logo_img = await _fetch_image(store_logo_url, app_url)
     if logo_img:
         lw, lh = logo_img.size
@@ -451,21 +397,93 @@ async def get_og_image(user_id: str):
         scale = min(max_logo_w / lw, max_logo_h / lh, 1.0)
         logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.LANCZOS)
         lw, lh = logo_img.size
-        logo_x = W - lw - 40
-        logo_y = H - lh - 30
-        img.paste(logo_img.convert("RGB"), (logo_x, logo_y), logo_img if logo_img.mode == "RGBA" else None)
+        img.paste(logo_img.convert("RGB"), (W - lw - 40, H - lh - 30), logo_img if logo_img.mode == "RGBA" else None)
 
-    # Bottom accent bar
     draw.rectangle([0, H - 6, W, H], fill=accent)
 
-    # --- Encode and return as WebP for fast loading ---
     buf = BytesIO()
     img.save(buf, format="WEBP", quality=85)
-    buf.seek(0)
+    return buf.getvalue()
+
+
+@router.get("/og-image/{user_id}")
+async def get_og_image(user_id: str):
+    """Serve a personalized 1200x630 OG preview image for social sharing.
+
+    Generated once, then stored in object storage and served from the
+    in-memory LRU cache on all subsequent requests — same speed as any
+    other image on the site.
+    """
+    db = get_db()
+
+    # --- 1. Try serving from object storage cache ---
+    user_doc = None
+    try:
+        user_doc = await db.users.find_one(
+            {"_id": ObjectId(user_id)},
+            {"name": 1, "title": 1, "store_id": 1, "photo_url": 1,
+             "photo_path": 1, "photo_avatar_path": 1, "email_brand_kit": 1,
+             "og_image_path": 1}
+        )
+    except Exception:
+        pass
+
+    if not user_doc:
+        static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "og-image.png")
+        if os.path.exists(static_path):
+            with open(static_path, "rb") as f:
+                return Response(content=f.read(), media_type="image/png",
+                                headers={"Cache-Control": "public, max-age=86400"})
+        raise HTTPException(status_code=404, detail="OG image not found")
+
+    cached_path = user_doc.get("og_image_path")
+    if cached_path:
+        try:
+            from utils.image_storage import get_object
+            data, ct = get_object(cached_path)
+            return Response(content=data, media_type=ct,
+                            headers={"Cache-Control": "public, max-age=86400"})
+        except Exception:
+            # Cache miss or storage error — regenerate below
+            pass
+
+    # --- 2. Generate the image ---
+    app_url = os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL", "https://app.imonsocial.com")
+    app_url = app_url.rstrip("/")
+
+    store_doc = None
+    if user_doc.get("store_id"):
+        try:
+            store_doc = await db.stores.find_one(
+                {"_id": ObjectId(user_doc["store_id"])},
+                {"name": 1, "logo_url": 1, "logo_avatar_url": 1,
+                 "logo_path": 1, "primary_color": 1, "email_brand_kit": 1}
+            )
+        except Exception:
+            pass
+
+    image_bytes = await _generate_og_image_bytes(user_doc, store_doc, app_url)
+
+    # --- 3. Upload to object storage (fire-and-forget to not slow response) ---
+    import asyncio
+    async def _store_og_image():
+        try:
+            from utils.image_storage import put_object
+            og_path = f"imos/og/{user_id}/og_preview.webp"
+            await asyncio.to_thread(put_object, og_path, image_bytes, "image/webp")
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"og_image_path": og_path}}
+            )
+        except Exception:
+            pass
+
+    asyncio.create_task(_store_og_image())
+
     return Response(
-        content=buf.read(),
+        content=image_bytes,
         media_type="image/webp",
-        headers={"Cache-Control": "public, max-age=3600"}
+        headers={"Cache-Control": "public, max-age=86400"}
     )
 
 
