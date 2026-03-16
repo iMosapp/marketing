@@ -841,10 +841,10 @@ async def redirect_short_url(short_code: str, request: Request):
                 og_description = f"From {salesman_name}"
 
             # OG Image: use the new photo-dominant card OG image (fast WebP, cached)
-            og_image = f"{base_url}/api/s/og-card-image/{ref_id}"
+            og_image = f"{base_url}/api/s/og-card-image/{ref_id}?v=2"
         else:
             # Card not found in DB, still try the card OG image endpoint
-            og_image = f"{base_url}/api/s/og-card-image/{ref_id}"
+            og_image = f"{base_url}/api/s/og-card-image/{ref_id}?v=2"
             meta_name = doc_metadata.get("customer_name", "")
             if meta_name:
                 ct = link_type.replace("_card", "")
@@ -866,7 +866,7 @@ async def redirect_short_url(short_code: str, request: Request):
     elif is_customer_card and user_id:
         # Card type but no ref_id found — use salesperson OG as fallback
         # (This handles test links and edge cases where card data is missing)
-        personalized_og = f"{base_url}/api/s/og-image/{user_id}"
+        personalized_og = f"{base_url}/api/s/og-image/{user_id}?v=2"
         ct = link_type.replace("_card", "")
         ct_titles = {
             "congrats": "Congratulations!", "birthday": "Happy Birthday!",
@@ -897,7 +897,8 @@ async def redirect_short_url(short_code: str, request: Request):
                     store_logo = _abs(store.get("logo_url") or store.get("logo_avatar_url"))
 
                     # Use the personalized OG image generator for personal link types
-                    personalized_og = f"{base_url}/api/s/og-image/{user_id}"
+                    # ?v=2 busts iMessage's aggressive URL-level cache for old OG images
+                    personalized_og = f"{base_url}/api/s/og-image/{user_id}?v=2"
 
                     if link_type == "business_card":
                         og_title = f"{user_name}'s Digital Card" if user_name else "Digital Business Card"
