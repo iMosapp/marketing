@@ -113,21 +113,36 @@ export default function PublicLandingPage() {
     }
   };
 
+  // Web-safe URL opener - Linking.openURL uses window.open('_blank')
+  // which popup blockers intercept for sms: and mailto: protocols.
+  const openProtocolUrl = (url: string) => {
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      Linking.openURL(url);
+    }
+  };
+
   const handleCall = () => {
     if (data?.user.phone) {
-      Linking.openURL(`tel:${data.user.phone}`);
+      openProtocolUrl(`tel:${data.user.phone}`);
     }
   };
 
   const handleText = () => {
     if (data?.user.phone) {
-      Linking.openURL(`sms:${data.user.phone}`);
+      openProtocolUrl(`sms:${data.user.phone}`);
     }
   };
 
   const handleEmail = () => {
     if (data?.user.email) {
-      Linking.openURL(`mailto:${data.user.email}`);
+      openProtocolUrl(`mailto:${data.user.email}`);
     }
   };
 
