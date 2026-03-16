@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Export Your Contacts</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif; background: #0a0a0a; color: #f5f5f5; line-height: 1.6; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 20px 60px; }
+  h1 { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #888; font-size: 15px; margin-bottom: 40px; }
+  .tab-bar { display: flex; gap: 0; margin-bottom: 32px; background: #1a1a1a; border-radius: 12px; padding: 4px; }
+  .tab { flex: 1; text-align: center; padding: 12px; font-size: 15px; font-weight: 600; color: #888; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+  .tab.active { background: #222; color: #fff; }
+  .tab:hover:not(.active) { color: #ccc; }
+  .tab-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .step { margin-bottom: 32px; }
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .step-number { width: 32px; height: 32px; border-radius: 50%; background: #007AFF; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-number.apple { background: #333; }
+  .step-number.google { background: #4285f4; }
+  .step-title { font-size: 17px; font-weight: 600; }
+  .step-desc { color: #aaa; font-size: 14px; margin-bottom: 12px; padding-left: 44px; }
+  .step-img { width: 100%; border-radius: 10px; border: 1px solid #222; margin-top: 8px; }
+  .callout { background: #1a2a1a; border: 1px solid #2a4a2a; border-radius: 10px; padding: 14px 16px; margin: 24px 0; font-size: 14px; color: #8fbc8f; }
+  .callout b { color: #a5d6a5; }
+  .callout.warn { background: #2a2a1a; border-color: #4a4a2a; color: #bcbc8f; }
+  .callout.warn b { color: #d6d6a5; }
+  .formats { display: flex; gap: 12px; margin: 20px 0; }
+  .format-card { flex: 1; background: #1a1a1a; border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #222; }
+  .format-card .ext { font-size: 24px; font-weight: 700; color: #007AFF; }
+  .format-card .label { font-size: 12px; color: #888; margin-top: 4px; }
+  .format-card .source { font-size: 13px; color: #aaa; margin-top: 8px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #007AFF; text-decoration: none; font-size: 15px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="javascript:history.back()" class="back-link">&larr; Back to Import</a>
+  <h1>How to Export Your Contacts</h1>
+  <p class="subtitle">Follow these steps to get your contacts file, then upload it to i'M On Social</p>
+
+  <div class="formats">
+    <div class="format-card">
+      <div class="ext">.VCF</div>
+      <div class="label">vCard File</div>
+      <div class="source">From Apple / iCloud</div>
+    </div>
+    <div class="format-card">
+      <div class="ext">.CSV</div>
+      <div class="label">Spreadsheet File</div>
+      <div class="source">From Google Contacts</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('apple')" id="tab-apple">
+      <span class="tab-icon">&#63743;</span>Apple / iCloud
+    </div>
+    <div class="tab" onclick="switchTab('google')" id="tab-google">
+      <span class="tab-icon">G</span>Google Contacts
+    </div>
+  </div>
+
+  <!-- APPLE SECTION -->
+  <div class="section active" id="section-apple">
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number apple">1</div>
+        <div class="step-title">Go to iCloud Contacts</div>
+      </div>
+      <div class="step-desc">Open <b>icloud.com/contacts</b> in your browser and sign in with your Apple ID.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number apple">2</div>
+        <div class="step-title">Select All Contacts</div>
+      </div>
+      <div class="step-desc">Click the <b>gear icon</b> at the top, then click <b>"Select All Contacts"</b> from the dropdown menu.</div>
+      <img src="icloud_step1.webp" alt="iCloud - Select All Contacts" class="step-img" loading="lazy">
+    </div>
+
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number apple">3</div>
+        <div class="step-title">Export as vCard</div>
+      </div>
+      <div class="step-desc">With all contacts highlighted, click the <b>share icon</b> (box with arrow) at the top right, then select <b>"Export vCard..."</b>. A <b>.vcf</b> file will download to your computer.</div>
+      <img src="icloud_step2.webp" alt="iCloud - Export vCard" class="step-img" loading="lazy">
+    </div>
+
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number apple">4</div>
+        <div class="step-title">Upload to i'M On Social</div>
+      </div>
+      <div class="step-desc">Go back to the Import Contacts screen, tap <b>"From File (CSV or VCF)"</b>, and select the .vcf file you just downloaded. You'll see a preview of all your contacts before importing.</div>
+    </div>
+
+    <div class="callout">
+      <b>Tip:</b> Your contacts will be imported as personal contacts, meaning they stay with you even if you move to a different organization.
+    </div>
+  </div>
+
+  <!-- GOOGLE SECTION -->
+  <div class="section" id="section-google">
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number google">1</div>
+        <div class="step-title">Go to Google Contacts</div>
+      </div>
+      <div class="step-desc">Open <b>contacts.google.com</b> in your browser and sign in with your Google account.</div>
+      <img src="google_step1.webp" alt="Google Contacts" class="step-img" loading="lazy">
+    </div>
+
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number google">2</div>
+        <div class="step-title">Click Export</div>
+      </div>
+      <div class="step-desc">Click the <b>"Export"</b> button near the top right of the contacts list.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number google">3</div>
+        <div class="step-title">Choose your format and export</div>
+      </div>
+      <div class="step-desc">In the Export dialog, make sure <b>"Contacts"</b> is selected at the top. Then choose either:
+        <br><br>
+        <b>"Google CSV"</b> for a spreadsheet file, or<br>
+        <b>"vCard (for Android or iOS)"</b> for a vCard file.
+        <br><br>
+        Either format works. Click <b>"Export"</b> and the file will download.
+      </div>
+      <img src="google_step2.webp" alt="Google Contacts - Export dialog" class="step-img" loading="lazy">
+    </div>
+
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number google">4</div>
+        <div class="step-title">Upload to i'M On Social</div>
+      </div>
+      <div class="step-desc">Go back to the Import Contacts screen, tap <b>"From File (CSV or VCF)"</b>, and select the file you just downloaded. You'll see a preview of all your contacts before importing.</div>
+    </div>
+
+    <div class="callout">
+      <b>Tip:</b> Your contacts will be imported as personal contacts, meaning they stay with you even if you move to a different organization.
+    </div>
+
+    <div class="callout warn">
+      <b>Note:</b> We'll automatically detect and match names, phone numbers, email addresses, birthdays, organizations, and addresses. Any duplicates will be flagged so you can choose whether to import them.
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('section-' + tab).classList.add('active');
+}
+</script>
+</body></html>

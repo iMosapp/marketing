@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -274,6 +275,17 @@ export default function ImportContactsScreen() {
               Export your contacts from Google Contacts (.csv) or Apple Contacts (.vcf). We'll automatically detect names, phone numbers, emails, birthdays, and addresses. Personal imports stay with you, not the organization.
             </Text>
           </View>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, padding: 14, backgroundColor: colors.card, borderRadius: 12 }}
+            onPress={() => {
+              if (Platform.OS === 'web') { window.open('/import-guide/', '_blank'); }
+              else { Linking.openURL(`${API_URL}/import-guide/`); }
+            }}
+            data-testid="how-to-export-guide"
+          >
+            <Ionicons name="help-circle-outline" size={20} color="#007AFF" />
+            <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '600' }}>How to Export Your Contacts (Step-by-Step Guide)</Text>
+          </TouchableOpacity>
         </View>
         {loading && (
           <View style={styles.loadingOverlay}>
