@@ -224,7 +224,7 @@ PREBUILT_TEMPLATES = [
     {
         "id": "vip_customer_care",
         "name": "VIP Customer Experience",
-        "description": "Premium touchpoints for your best customers. These are the ones who buy, refer, and advocate for you. Treat them like the rockstars they are.",
+        "description": "Premium touchpoints for your best customers. These are the ones who buy, refer, and advocate for you. Treat them like the unforgettable people they are.",
         "type": "custom",
         "trigger_tag": "vip",
         "icon": "diamond",
