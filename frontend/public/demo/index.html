@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Schedule a Demo i'M On Social</title>
-  <meta name="description" content="We'll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment just a conversation about how to build your brand."/>
+  <title>Schedule a Demo — i'M On Social</title>
+  <meta name="description" content="We'll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment — just a conversation about how to build your brand."/>
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 nav{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
 nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
 .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
-.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:72px;width:auto}
+.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:52px;width:auto}
 .nav-links{display:flex;align-items:center;gap:2px}
 .nav-item{position:relative}
 .nav-item>a,.nav-trigger{font-size:14px;font-weight:500;color:var(--text-2);text-decoration:none;padding:8px 16px;border-radius:10px;display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:inherit;transition:all .2s}
@@ -37,21 +37,10 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
 .hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
 .mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px}
-.mob-menu{padding:8px 24px 20px}
-
+.mob-menu a{display:block;padding:14px 0;font-size:16px;font-weight:500;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+.mob-menu a:last-of-type{border-bottom:none}
 .mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
-
-    .mob-group{border-bottom:1px solid var(--border)}
-    .mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}
-    .mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}
-    .mob-group.open .mob-chev{transform:rotate(180deg)}
-    .mob-sub{display:none;padding:0 0 12px 16px}
-    .mob-group.open .mob-sub{display:block}
-    .mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none;border-bottom:none}
-    .mob-sub a:hover{color:var(--blue)}
-    .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
-    .mob-direct:hover{color:var(--blue)}
-    @media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
+@media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
 .page-hero{padding:160px 24px 80px;text-align:center;max-width:820px;margin:0 auto}
 .page-hero h1{font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-.035em;margin-bottom:20px}
 .page-hero-sub{font-size:19px;color:var(--text-2);line-height:1.6;max-width:600px;margin:0 auto 40px}
@@ -98,7 +87,18 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 @media(max-width:480px){.ft-inner{grid-template-columns:1fr}.ft-brand{grid-column:span 1}}
 .rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
 .rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}
-</style>
+
+    .mob-group{border-bottom:1px solid var(--border)}
+    .mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}
+    .mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}
+    .mob-group.open .mob-chev{transform:rotate(180deg)}
+    .mob-sub{display:none;padding:0 0 12px 16px}
+    .mob-group.open .mob-sub{display:block}
+    .mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none;border-bottom:none}
+    .mob-sub a:hover{color:var(--blue)}
+    .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-direct:hover{color:var(--blue)}
+  </style>
 </head>
 <body>
 <nav>
@@ -113,7 +113,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
           <a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:#34C759"></i></div><div class="dd-txt"><strong>Link Pages</strong><span>All your socials in one link</span></div></a>
           <div class="nav-dd-label">Engagement</div>
           <a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a>
-          <a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow ups, on autopilot</span></div></a>
+          <a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a>
           <a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, email, all in one place</span></div></a>
           <div class="nav-dd-label">Intelligence</div>
           <a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI powered relationship insights</span></div></a>
@@ -141,7 +141,8 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     </div>
     <div class="nav-cta">
       <a href="/demo/" class="btn-sign">Book a Demo</a>
-      <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>    </div>
+      <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
+    </div>
     <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
   </div>
   <div class="mob-menu" id="mob">
@@ -153,6 +154,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
         <a href="/showcase/">Showcase Pages</a>
         <a href="/inbox/">Unified Inbox</a>
         <a href="/date-triggers/">Automated Campaigns</a>
+        <a href="/congrats-template/">Congrats Cards</a>
         <a href="/jessi/">Jessi AI</a>
         <a href="/leaderboard/">Leaderboards</a>
       </div>
@@ -162,6 +164,8 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="mob-sub">
         <a href="/organizations/">For Organizations</a>
         <a href="/individuals/">For Individuals</a>
+        <a href="/salespresentation/">Automotive</a>
+        <a href="/hub/">Sales Teams</a>
         <a href="/features/">All Features</a>
       </div>
     </div>
@@ -170,7 +174,8 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="mob-sub">
         <a href="/training/">Training Hub</a>
         <a href="/help/">Help Center</a>
-</div>
+        <a href="/presentation/">Sales Deck</a>
+      </div>
     </div>
     <a href="/pricing/" class="mob-direct">Pricing</a>
     <a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
@@ -180,99 +185,39 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 <section class="page-hero rv">
   <div class="sec-tag" style="color:#007AFF">SCHEDULE A DEMO</div>
   <h1>See how it works in 15 minutes.</h1>
-  <p class="page-hero-sub">Fill out the form below and we'll reach out to schedule a personalized walkthrough. No pressure, no commitment.</p>
-</section>
-<section class="sec" style="max-width:640px;margin:0 auto;padding-top:0">
-  <div id="demo-form" class="rv" style="background:#F8F9FB;border:1px solid #E5E5EA;border-radius:20px;padding:40px">
-    <div id="source-badge" style="display:none;margin-bottom:20px;text-align:center">
-      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,122,255,.08);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;color:#007AFF">
-        <i class="fa-solid fa-location-dot"></i> <span id="source-label"></span>
-      </span>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:20px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Full Name *</label>
-          <input id="f-name" type="text" placeholder="John Smith" style="width:100%;padding:14px 16px;border:1px solid #E5E5EA;border-radius:12px;font-size:15px;font-family:inherit;outline:none;transition:border .2s" onfocus="this.style.borderColor='#007AFF'" onblur="this.style.borderColor='#E5E5EA'"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Company</label>
-          <input id="f-company" type="text" placeholder="Acme Motors" style="width:100%;padding:14px 16px;border:1px solid #E5E5EA;border-radius:12px;font-size:15px;font-family:inherit;outline:none;transition:border .2s" onfocus="this.style.borderColor='#007AFF'" onblur="this.style.borderColor='#E5E5EA'"/>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Email *</label>
-          <input id="f-email" type="email" placeholder="john@company.com" style="width:100%;padding:14px 16px;border:1px solid #E5E5EA;border-radius:12px;font-size:15px;font-family:inherit;outline:none;transition:border .2s" onfocus="this.style.borderColor='#007AFF'" onblur="this.style.borderColor='#E5E5EA'"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Phone</label>
-          <input id="f-phone" type="tel" placeholder="(555) 123-4567" style="width:100%;padding:14px 16px;border:1px solid #E5E5EA;border-radius:12px;font-size:15px;font-family:inherit;outline:none;transition:border .2s" onfocus="this.style.borderColor='#007AFF'" onblur="this.style.borderColor='#E5E5EA'"/>
-        </div>
-      </div>
-      <div>
-        <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Team Size</label>
-        <select id="f-team" style="width:100%;padding:14px 16px;border:1px solid #E5E5EA;border-radius:12px;font-size:15px;font-family:inherit;outline:none;background:#FFF;cursor:pointer">
-          <option value="">Select team size</option>
-          <option value="1-5">1-5 people</option>
-          <option value="6-20">6-20 people</option>
-          <option value="21-50">21-50 people</option>
-          <option value="51-100">51-100 people</option>
-          <option value="100+">100+ people</option>
-        </select>
-      </div>
-      <div>
-        <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px">What are you most interested in?</label>
-        <textarea id="f-message" rows="3" placeholder="Tell us about your team, goals, or any questions you have..." style="width:100%;padding:14px 16px;border:1px solid #E5E5EA;border-radius:12px;font-size:15px;font-family:inherit;outline:none;resize:vertical;transition:border .2s" onfocus="this.style.borderColor='#007AFF'" onblur="this.style.borderColor='#E5E5EA'"></textarea>
-      </div>
-      <button id="submit-btn" onclick="submitDemo()" style="width:100%;padding:16px;background:#007AFF;color:#FFF;font-size:16px;font-weight:700;border:none;border-radius:980px;cursor:pointer;font-family:inherit;transition:all .25s;box-shadow:0 4px 20px rgba(0,122,255,.3)">
-        <i class="fa-regular fa-calendar"></i>&nbsp; Request My Demo
-      </button>
-      <p style="text-align:center;font-size:12px;color:#888">We'll respond within 1 business day. No spam, ever.</p>
-    </div>
-  </div>
-  <div id="demo-success" style="display:none;text-align:center;padding:80px 20px" class="rv">
-    <div style="width:80px;height:80px;border-radius:40px;background:rgba(52,199,89,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 24px"><i class="fa-solid fa-check" style="font-size:36px;color:#34C759"></i></div>
-    <h2 style="font-size:32px;font-weight:800;margin-bottom:12px">You're on the list!</h2>
-    <p style="font-size:17px;color:#555;max-width:420px;margin:0 auto 32px;line-height:1.6">We received your demo request and will reach out shortly to schedule a time that works for you.</p>
-    <a href="/" style="color:#007AFF;font-weight:600;text-decoration:none;font-size:15px"><i class="fa-solid fa-arrow-left"></i> Back to Homepage</a>
-  </div>
+  <p class="page-hero-sub">We'll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment — just a conversation about how to build your brand.</p>
 </section>
 <section class="sec alt">
-  <div style="text-align:center;max-width:680px;margin:0 auto 48px">
-    <div class="sec-tag" style="color:#007AFF">WHAT TO EXPECT</div>
-    <h2 style="font-size:36px;font-weight:900;line-height:1.1;letter-spacing:-.02em">A demo built around you</h2>
-  </div>
   <div class="feat-grid">
     <div class="feat-card rv rv-1">
       <div class="feat-ico" style="background:#007AFF14"><i class="fa-solid fa-clock" style="color:#007AFF"></i></div>
       <h3>15 minutes</h3>
-      <p>Quick, focused, and respectful of your time.</p>
+      <p>Quick, focused, and respectful of your time. We get right to what matters to you.</p>
     </div>
     <div class="feat-card rv rv-2">
       <div class="feat-ico" style="background:#34C75914"><i class="fa-solid fa-user-check" style="color:#34C759"></i></div>
       <h3>Personalized walkthrough</h3>
-      <p>We show you what matters for YOUR role.</p>
+      <p>We show you the features that matter most for YOUR role and industry.</p>
     </div>
     <div class="feat-card rv rv-3">
       <div class="feat-ico" style="background:#FF950014"><i class="fa-solid fa-question" style="color:#FF9500"></i></div>
       <h3>Ask anything</h3>
-      <p>Pricing, setup, integrations — nothing is off limits.</p>
+      <p>Pricing, setup, integrations, team rollout — nothing is off limits.</p>
     </div>
     <div class="feat-card rv">
       <div class="feat-ico" style="background:#AF52DE14"><i class="fa-solid fa-handshake" style="color:#AF52DE"></i></div>
       <h3>No pressure</h3>
-      <p>We help you decide if it's right. That's it.</p>
+      <p>We're not here to hard sell you. We're here to help you decide if this is right.</p>
     </div>
     <div class="feat-card rv">
       <div class="feat-ico" style="background:#FF2D5514"><i class="fa-solid fa-rocket" style="color:#FF2D55"></i></div>
       <h3>Start same day</h3>
-      <p>Love it? Be live the same day.</p>
+      <p>If you love it, you can be live the same day. It's that fast.</p>
     </div>
     <div class="feat-card rv">
       <div class="feat-ico" style="background:#FFD60A14"><i class="fa-solid fa-gift" style="color:#FFD60A"></i></div>
       <h3>Free trial included</h3>
-      <p>Every demo comes with a free trial.</p>
+      <p>Every demo comes with access to a free trial. Try before you buy.</p>
     </div>
   </div>
 </section>
@@ -286,8 +231,8 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="ft-social"><a href="#"><i class="fa-brands fa-instagram"></i></a><a href="#"><i class="fa-brands fa-linkedin-in"></i></a><a href="#"><i class="fa-brands fa-facebook-f"></i></a><a href="#"><i class="fa-brands fa-tiktok"></i></a></div>
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/inbox/">Inbox</a><a href="/date-triggers/">Automations</a><a href="/leaderboard/">Leaderboards</a><a href="/jessi/">Jessi AI</a></div>
-    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy Policy</a><a href="/terms/">Terms of Service</a><a href="/landing.html">Why i'M On Social</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
-    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo/?source=demo_page_footer">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a><a href="https://app.imonsocial.com/install.html">Install App</a></div>
+    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo/">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a></div>
   </div>
   <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
 </footer>
@@ -295,57 +240,6 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});
 document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
-
-// Show source badge
-(function(){
-  const p=new URLSearchParams(window.location.search);
-  const s=p.get('source');
-  const r=p.get('ref');
-  let label='';
-  if(s) label='From: '+s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-  if(r) label+=(label?' | ':'')+'Ref: '+r;
-  if(label){
-    document.getElementById('source-label').textContent=label;
-    document.getElementById('source-badge').style.display='block';
-  }
-})();
-
-async function submitDemo(){
-  const name=document.getElementById('f-name').value.trim();
-  const email=document.getElementById('f-email').value.trim();
-  const company=document.getElementById('f-company').value.trim();
-  const phone=document.getElementById('f-phone').value.trim();
-  const team=document.getElementById('f-team').value;
-  const message=document.getElementById('f-message').value.trim();
-  if(!name||!email){alert('Please fill in your name and email.');return;}
-  if(!email.includes('@')){alert('Please enter a valid email.');return;}
-  const btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Sending...';
-  const p=new URLSearchParams(window.location.search);
-  const urlSource=p.get('source')||'marketing_site_demo';
-  const payload={name,email,company,phone,team_size:team,message,source:urlSource,
-    utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',
-    utm_campaign:p.get('utm_campaign')||'',utm_content:p.get('utm_content')||'',
-    utm_term:p.get('utm_term')||'',ref:p.get('ref')||'',referrer:document.referrer||''};
-  try{
-    const res=await fetch('https://app.imonsocial.com/api/demo-requests',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
-    if(res.ok){
-      document.getElementById('demo-form').style.display='none';
-      document.getElementById('demo-success').style.display='block';
-      document.getElementById('demo-success').classList.add('vis');
-    }else{
-      btn.disabled=false;btn.innerHTML='<i class="fa-regular fa-calendar"></i>&nbsp; Request My Demo';
-      alert('Something went wrong. Please email forest@imonsocial.com directly.');
-    }
-  }catch(e){
-    btn.disabled=false;btn.innerHTML='<i class="fa-regular fa-calendar"></i>&nbsp; Request My Demo';
-    // Fallback: open mailto
-    window.location.href='mailto:forest@imonsocial.com?subject=Demo Request&body=Name: '+name+'%0AEmail: '+email+'%0ACompany: '+company+'%0APhone: '+phone+'%0ATeam: '+team+'%0AMessage: '+message;
-  }
-}
 </script>
 </body>
 </html>

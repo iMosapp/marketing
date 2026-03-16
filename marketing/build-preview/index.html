@@ -53,20 +53,9 @@
     .btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
     .hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
     .mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px}
-    .mob-menu{padding:8px 24px 20px}
-    
+    .mob-menu a{display:block;padding:14px 0;font-size:16px;font-weight:500;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-menu a:last-of-type{border-bottom:none}
     .mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
-    
-    .mob-group{border-bottom:1px solid var(--border)}
-    .mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}
-    .mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}
-    .mob-group.open .mob-chev{transform:rotate(180deg)}
-    .mob-sub{display:none;padding:0 0 12px 16px}
-    .mob-group.open .mob-sub{display:block}
-    .mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none;border-bottom:none}
-    .mob-sub a:hover{color:var(--blue)}
-    .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
-    .mob-direct:hover{color:var(--blue)}
     @media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
 
     /* HERO */
@@ -230,42 +219,20 @@
       <div class="nav-item"><a href="/pricing/">Pricing</a></div>
     </div>
     <div class="nav-cta">
+      <a href="/demo/" class="btn-sign">Book a Demo</a>
       <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
+      
     </div>
     <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
   </div>
   <div class="mob-menu" id="mob">
-    <div class="mob-group">
-      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button>
-      <div class="mob-sub">
-        <a href="/digital-card/">Digital Cards</a>
-        <a href="/reviews/">Personal Reviews</a>
-        <a href="/showcase/">Showcase Pages</a>
-        <a href="/inbox/">Unified Inbox</a>
-        <a href="/date-triggers/">Automated Campaigns</a>
-        <a href="/jessi/">Jessi AI</a>
-        <a href="/leaderboard/">Leaderboards</a>
-      </div>
-    </div>
-    <div class="mob-group">
-      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Solutions <i class="fa-solid fa-chevron-down mob-chev"></i></button>
-      <div class="mob-sub">
-        <a href="/organizations/">For Organizations</a>
-        <a href="/individuals/">For Individuals</a>
-        <a href="/features/">All Features</a>
-      </div>
-    </div>
-    <div class="mob-group">
-      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Resources <i class="fa-solid fa-chevron-down mob-chev"></i></button>
-      <div class="mob-sub">
-        <a href="/training/">Training Hub</a>
-        <a href="/help/">Help Center</a>
-        <a href="/demo/">Schedule a Demo</a>
-      </div>
-    </div>
-    <a href="/pricing/" class="mob-direct">Pricing</a>
-    <a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
-    <a href="/demo/" class="mob-cta">Get a Demo</a>
+    <a href="/digital-card/">Digital Cards</a>
+    <a href="/reviews/">Personal Reviews</a>
+    <a href="/inbox/">Inbox</a>
+    <a href="/organizations/">For Organizations</a>
+    <a href="/pricing/">Pricing</a>
+    <a href="https://app.imonsocial.com">Sign In</a>
+    <a href="/demo/" class="mob-cta">Book a Demo</a>
   </div>
 </nav>
 
@@ -274,9 +241,6 @@
   <div class="hero-tag"><i class="fa-solid fa-bolt" style="color:var(--yellow)"></i> Built for sales professionals</div>
   <h1>The backend work that makes you a rockstar.</h1>
   <p>Every customer you've ever helped is a referral waiting to happen. They just need a reason to remember your name. We give them that reason , on autopilot.</p>
-  <div class="hero-btns">
-    <a href="https://app.imonsocial.com/auth/signup" class="btn-lg ghost">Start 14-Day Free Trial <i class="fa-solid fa-arrow-right"></i></a>
-  </div>
 </section>
 
 <!-- WHAT WE DO - Product Grid -->
@@ -290,7 +254,7 @@
     <a href="/digital-card/" class="prod-card rv rv-1">
       <div class="prod-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
       <h3>Digital Business Cards</h3>
-      <p>Shareable via text, email, WhatsApp, or Messenger. Embedded QR codes track every view and which channel was used. Links to your reviews, socials, and contact info.</p>
+      <p>Shareable via text, email, or QR. Tracks every view. Links to your reviews, socials, and contact info. Paper is dead.</p>
       <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
     </a>
     <a href="/reviews/" class="prod-card rv rv-2">
@@ -301,14 +265,14 @@
     </a>
     <a href="/showcase/" class="prod-card rv rv-3">
       <div class="prod-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:var(--green)"></i></div>
-      <h3>Showcase & Link Pages</h3>
-      <p>A photo showcase of your happy customers, plus a personal link page for all your socials. Customers see your best work before they even meet you.</p>
+      <h3>Link Pages & Showcase</h3>
+      <p>One link for everything. Instagram, TikTok, Google reviews, your digital card. Like a Linktree built for salespeople.</p>
       <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
     </a>
     <a href="/congrats-template/" class="prod-card rv rv-1">
       <div class="prod-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
       <h3>Congrats Cards</h3>
-      <p>Every sale triggers a branded image card with your photo, logo, and an embedded QR code. Customers save it to their phone, share it with friends, and scan it to leave reviews or visit your digital card.</p>
+      <p>Every sale triggers a branded card to your customer. It links to your review page, socials, and digital card , all in one tap.</p>
       <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
     </a>
     <a href="/date-triggers/" class="prod-card rv rv-2">
@@ -320,7 +284,7 @@
     <a href="/inbox/" class="prod-card rv rv-3">
       <div class="prod-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div>
       <h3>Inbox & Messaging</h3>
-      <p>SMS, email, WhatsApp, and Messenger — all in one thread. Track opens, clicks, replies, and sharing channels. Know exactly when and how to follow up.</p>
+      <p>SMS, email, all in one thread. Track opens, clicks, and replies. Know exactly when to follow up and what to say.</p>
       <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
     </a>
   </div>
@@ -356,7 +320,7 @@
     <div class="feat-checks">
       <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Date triggered campaigns on autopilot</span></div>
       <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Congrats cards on every sale</span></div>
-      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Channel-aware tracking on every send</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Pause or customize per contact</span></div>
     </div>
     <a href="/date-triggers/" class="feat-cta">See how automations work <i class="fa-solid fa-arrow-right"></i></a>
   </div>
@@ -370,11 +334,11 @@
   <div>
     <div class="feat-tag" style="color:var(--blue)">Teams & Leaderboards</div>
     <h3>See who's actually building relationships.</h3>
-    <p>Cards shared, reviews collected, channels tracked, engagement driven — all in an interactive performance dashboard. Store-level, org-level, and individual rankings that reward the salespeople who do the work.</p>
+    <p>Cards shared, reviews collected, engagement driven , all tracked. Store-level, org-level, and individual rankings that reward the salespeople who do the work.</p>
     <div class="feat-checks">
       <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Multi store, multi team management</span></div>
       <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Role based permissions</span></div>
-      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Interactive performance dashboards</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Performance leaderboards</span></div>
     </div>
     <a href="/leaderboard/" class="feat-cta">See leaderboards <i class="fa-solid fa-arrow-right"></i></a>
   </div>
@@ -474,8 +438,8 @@
     </a>
     <a href="/training/" class="prod-card rv rv-3">
       <div class="prod-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-graduation-cap" style="color:var(--green)"></i></div>
-      <h3>Training Hub & SOPs</h3>
-      <p>Standard operating procedures for every department — sales, support, onboarding, admin, and management. Plus training courses and best practices. Get your team productive in minutes.</p>
+      <h3>Training Hub</h3>
+      <p>Courses, videos, and best practices to get the most out of every feature. Onboard your team in minutes.</p>
       <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
     </a>
   </div>
@@ -485,9 +449,6 @@
 <section class="cta-bottom">
   <h2>You just need help remembering who you know.</h2>
   <p>Be the one they never forget. Start building your reputation today.</p>
-  <div class="cta-btns">
-    <a href="https://app.imonsocial.com/auth/signup" class="btn-gw">Start 14-Day Free Trial <i class="fa-solid fa-arrow-right"></i></a>
-  </div>
 </section>
 
 <!-- FOOTER -->
@@ -523,8 +484,7 @@
     </div>
     <div class="ft-col">
       <div class="ft-col-t">Get Started</div>
-      <a href="/demo/?source=homepage_footer">Schedule a Demo</a>
-      <a href="https://app.imonsocial.com/auth/signup">Start 14-Day Free Trial</a>
+      <a href="/demo/">Schedule a Demo</a>
       <a href="https://app.imonsocial.com">Sign In</a>
       <a href="/training/">Training</a>
       <a href="/help/">Help Center</a>
