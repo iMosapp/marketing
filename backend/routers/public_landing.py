@@ -15,6 +15,73 @@ from routers.database import get_db
 router = APIRouter(prefix="/p", tags=["public-landing"])
 
 
+@router.get("/store/data/{slug}")
+async def get_store_landing_page(slug: str):
+    """Get store landing page data by slug"""
+    db = get_db()
+    
+    store = await db.stores.find_one({"slug": slug})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    store_id = str(store["_id"])
+    
+    # Get team members for this store
+    team_members = await db.users.find(
+        {"store_id": store_id, "is_active": {"$ne": False}},
+        {"password": 0}
+    ).to_list(100)
+    
+    from utils.image_urls import resolve_user_photo, resolve_store_logo
+    
+    formatted_team = []
+    for m in team_members:
+        formatted_team.append({
+            "id": str(m["_id"]),
+            "name": m.get("name", ""),
+            "title": m.get("title", "Sales Professional"),
+            "photo_url": resolve_user_photo(m),
+        })
+    
+    # Get store reviews
+    reviews = await db.customer_feedback.find({
+        "store_id": store_id,
+        "approved": True,
+        "rating": {"$gte": 4}
+    }).sort("created_at", -1).limit(20).to_list(20)
+    
+    formatted_reviews = []
+    for r in reviews:
+        formatted_reviews.append({
+            "id": str(r["_id"]),
+            "customer_name": r.get("customer_name", "Happy Customer"),
+            "rating": r.get("rating", 5),
+            "text": r.get("text_review", ""),
+            "created_at": r.get("created_at").isoformat() if r.get("created_at") else None,
+        })
+    
+    return {
+        "store": {
+            "id": store_id,
+            "name": store.get("name", ""),
+            "logo_url": resolve_store_logo(store),
+            "primary_color": store.get("primary_color", "#C9A962"),
+            "phone": store.get("phone"),
+            "address": store.get("address"),
+            "city": store.get("city"),
+            "state": store.get("state"),
+            "zip_code": store.get("zip_code"),
+            "website": store.get("website"),
+            "description": store.get("description", ""),
+            "hours": store.get("hours", ""),
+            "review_links": store.get("review_links", {}),
+        },
+        "team": formatted_team,
+        "reviews": formatted_reviews,
+    }
+
+
+
 @router.get("/data/{user_id}")
 async def get_landing_page_data(user_id: str):
     """

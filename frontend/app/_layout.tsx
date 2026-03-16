@@ -71,9 +71,9 @@ export default function RootLayout() {
   const segments = useSegments();
   const [mounted, setMounted] = useState(false);
   
-  // Hide Jessi on auth/public screens
-  const isAuthScreen = !segments.length || segments[0] === 'auth' || segments[0] === 'index' || segments[0] === 'onboarding';
-  const showJessi = isAuthenticated && !!user?._id && !isAuthScreen;
+  // Hide Jessi on auth/public/customer-facing screens
+  const isPublicScreen = !segments.length || segments[0] === 'auth' || segments[0] === 'index' || segments[0] === 'onboarding' || segments[0] === 'p' || segments[0] === 'congrats' || segments[0] === 'opt-in' || segments[0] === 'review' || segments[0] === 'showcase';
+  const showJessi = isAuthenticated && !!user?._id && !isPublicScreen;
   
   usePWAMetaTags();
   
