@@ -32,7 +32,17 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-## What's Been Implemented (Latest Session - Mar 15, 2026)
+## What's Been Implemented (Latest Session - Mar 16, 2026)
+
+### Marketing Site CTA Cleanup (Mar 16, 2026)
+- Removed blue "Get a Demo" button from desktop nav bar on ALL pages (homepage + 20 feature pages + app directory)
+- Removed "Schedule a Demo" primary CTA from hero sections on ALL pages
+- Kept "Schedule a Demo" ONLY in: hamburger mobile menu + black bottom CTA section + footer
+- Hero now shows only subtle "Start Free Trial" outline button
+- Files changed: `public/index.html`, `generate_pages.py`, `build/appdirectory/index.html`, `src/App.js`
+- React homepage: removed CTA section component, simplified hero to single outline button
+
+### Previous Session - Mar 15, 2026
 
 ### My Account Page Restructure
 - **"My Profile" section** moved to top: Edit Profile & Bio, My Brand Kit, Voice Training

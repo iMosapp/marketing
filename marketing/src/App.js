@@ -64,9 +64,6 @@ const Navigation = () => {
         
         <div className="nav-buttons">
           <a href="https://app.imosapp.com" className="btn btn-ghost">Sign In</a>
-          <a href="https://app.imosapp.com/auth/signup" className="btn btn-primary">
-            Get Started <ArrowRight size={16} />
-          </a>
         </div>
         
         <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -108,11 +105,8 @@ const Hero = () => (
       </p>
       
       <div className="hero-buttons">
-        <a href="https://app.imosapp.com/auth/signup" className="btn btn-primary btn-lg">
+        <a href="https://app.imosapp.com/auth/signup" className="btn btn-outline btn-lg">
           Start Free Trial <ArrowRight size={18} />
-        </a>
-        <a href="#demo-form" className="btn btn-outline btn-lg demo-link">
-          Schedule a Demo
         </a>
       </div>
       
@@ -365,10 +359,10 @@ const Pricing = () => (
               ))}
             </ul>
             <a 
-              href={plan.price === 'Custom' ? '#demo-form' : 'https://app.imosapp.com/auth/signup'}
+              href='https://app.imosapp.com/auth/signup'
               className={`btn ${plan.popular ? 'btn-primary' : 'btn-outline'} btn-full`}
             >
-              {plan.price === 'Custom' ? 'Contact Sales' : 'Start Free Trial'}
+              {plan.price === 'Custom' ? 'Contact Us' : 'Start Free Trial'}
             </a>
           </div>
         ))}
@@ -508,31 +502,7 @@ const FAQ = () => {
   );
 };
 
-// CTA Section
-const CTA = () => (
-  <section className="cta">
-    <div className="container">
-      <div className="cta-content">
-        <div className="cta-icon">
-          <Sparkles size={32} />
-        </div>
-        <h2 className="cta-title">Ready to transform your sales?</h2>
-        <p className="cta-subtitle">
-          Join thousands of sales professionals who are closing more deals with iMos.
-        </p>
-        <div className="cta-buttons">
-          <a href="https://app.imosapp.com/auth/signup" className="btn btn-white btn-lg">
-            Start Your Free Trial <ArrowRight size={18} />
-          </a>
-          <a href="#" className="btn btn-ghost-white btn-lg">
-            Schedule a Demo
-          </a>
-        </div>
-        <p className="cta-note">No credit card required. 14-day free trial.</p>
-      </div>
-    </div>
-  </section>
-);
+// CTA Section — removed, demo form + footer handle this
 
 // Footer
 const Footer = () => (
@@ -756,7 +726,6 @@ function App() {
       <Testimonials />
       <FAQ />
       <DemoForm />
-      <CTA />
       <Footer />
     </div>
   );
