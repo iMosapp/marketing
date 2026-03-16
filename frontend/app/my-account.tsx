@@ -918,6 +918,10 @@ export default function MyAccountScreen() {
                   onPreview: () => { if (storeSlug && Platform.OS === 'web') window.open(`${PROD_BASE}/card/store/${storeSlug}`, '_blank'); },
                   onCopy: () => { const url = `${PROD_BASE}/card/store/${storeSlug}`; if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(url); showSimpleAlert('Copied!', 'Store business card link copied'); } }
                 },
+                { icon: 'sparkles-outline', title: 'Store Showcase', subtitle: storeSlug ? `${PROD_BASE}/showcase/store/${storeSlug}` : 'Store showcase page', color: '#FF2D55', route: '/settings/store-profile',
+                  onPreview: () => { if (storeSlug && Platform.OS === 'web') window.open(`${PROD_BASE}/showcase/store/${storeSlug}`, '_blank'); },
+                  onCopy: () => { const url = `${PROD_BASE}/showcase/store/${storeSlug}`; if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(url); showSimpleAlert('Copied!', 'Store showcase link copied'); } }
+                },
                 { icon: 'checkmark-circle-outline', title: 'Showcase Approvals', subtitle: 'Approve customer photos & reviews', color: '#FF9500', route: '/settings/showcase-approvals' },
                 { icon: 'star-outline', title: 'Store Review Links', subtitle: 'Google, Facebook, Yelp review links', color: '#FFD60A', route: '/settings/review-links' },
                 { icon: 'images-outline', title: 'Brand Assets', subtitle: 'Logos, images, marketing materials', color: '#5856D6', route: '/admin/brand-assets' },
