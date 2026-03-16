@@ -44,6 +44,7 @@ export default function ContactsScreen() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked'>('all');
   const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
+  const [sortMode, setSortMode] = useState<'alpha' | 'recent'>('recent');
   
   // Add Contact navigation (unified with home page)
   
@@ -70,7 +71,7 @@ export default function ContactsScreen() {
       loadTags();
       initialLoadDone.current = true;
     }
-  }, [userId, isPending, viewMode]);
+  }, [userId, isPending, viewMode, sortMode]);
 
   // Auto-refresh when tab gains focus (e.g. after adding a new contact)
   useFocusEffect(
@@ -120,14 +121,14 @@ export default function ContactsScreen() {
     
     try {
       if (!initialLoadDone.current) setLoading(true);
-      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined);
+      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
       setContacts(data);
     } catch (error) {
       console.error('Failed to load contacts:', error);
     } finally {
       setLoading(false);
     }
-  }, [userId, search, viewMode]);
+  }, [userId, search, viewMode, sortMode]);
   
   const onRefresh = async () => {
     setRefreshing(true);
@@ -142,7 +143,7 @@ export default function ContactsScreen() {
     searchTimer.current = setTimeout(async () => {
       if (text.length > 2 || text.length === 0) {
         try {
-          const data = await contactsAPI.getAll(userId || '', text || undefined, viewMode === 'team' ? 'team' : undefined);
+          const data = await contactsAPI.getAll(userId || '', text || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
           setContacts(data);
         } catch (error) {
           console.error('Search failed:', error);
@@ -525,6 +526,32 @@ export default function ContactsScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Sort Toggle: A-Z / Recent */}
+      <View style={{ flexDirection: 'row', marginHorizontal: 16, marginBottom: 6, backgroundColor: colors.card, borderRadius: 8, padding: 2 }} data-testid="sort-mode-toggle">
+        <TouchableOpacity
+          style={{
+            flex: 1, paddingVertical: 5, borderRadius: 6, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 4,
+            backgroundColor: sortMode === 'recent' ? '#C9A962' : 'transparent',
+          }}
+          onPress={() => setSortMode('recent')}
+          data-testid="sort-mode-recent"
+        >
+          <Ionicons name="time-outline" size={13} color={sortMode === 'recent' ? '#000' : colors.textSecondary} />
+          <Text style={{ fontSize: 12, fontWeight: '600', color: sortMode === 'recent' ? '#000' : colors.textSecondary }}>Recent</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            flex: 1, paddingVertical: 5, borderRadius: 6, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 4,
+            backgroundColor: sortMode === 'alpha' ? '#C9A962' : 'transparent',
+          }}
+          onPress={() => setSortMode('alpha')}
+          data-testid="sort-mode-alpha"
+        >
+          <Ionicons name="text-outline" size={13} color={sortMode === 'alpha' ? '#000' : colors.textSecondary} />
+          <Text style={{ fontSize: 12, fontWeight: '600', color: sortMode === 'alpha' ? '#000' : colors.textSecondary }}>A - Z</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Combined Tag + CRM Filters — single scrollable row */}
       <View style={styles.tagFilterContainer}>

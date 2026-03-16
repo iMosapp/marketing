@@ -241,7 +241,7 @@ async def check_duplicate_contact(user_id: str, phone: Optional[str] = None, ema
     ]}
 
 @router.get("/{user_id}", response_model=List[Contact])
-async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Optional[str] = None):
+async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Optional[str] = None, sort_by: Optional[str] = None):
     """Get contacts based on view mode.
     
     view_mode:
@@ -298,8 +298,14 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
     else:
         query = privacy_filter
     
+    # Determine sort order
+    if sort_by == "recent":
+        sort_spec = [("updated_at", -1), ("created_at", -1)]
+    else:
+        sort_spec = [("first_name", 1), ("last_name", 1)]
+
     # Exclude heavy 'photo' field from list queries  - use photo_thumbnail instead
-    contacts = await db.contacts.find(query, {"photo": 0}).sort("first_name", 1).limit(500).to_list(500)
+    contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).limit(500).to_list(500)
     
     # For team view: enrich with salesperson names
     salesperson_map = {}

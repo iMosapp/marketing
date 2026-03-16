@@ -172,10 +172,11 @@ export const onboardingAPI = {
 
 // ============= CONTACTS API =============
 export const contactsAPI = {
-  getAll: async (userId: string, search?: string, viewMode?: string) => {
+  getAll: async (userId: string, search?: string, viewMode?: string, sortBy?: string) => {
     const params: any = {};
     if (search) params.search = search;
     if (viewMode) params.view_mode = viewMode;
+    if (sortBy) params.sort_by = sortBy;
     const response = await api.get(`/contacts/${userId}`, { params });
     return response.data;
   },
