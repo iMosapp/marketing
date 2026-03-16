@@ -34,6 +34,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented (Latest Session - Mar 16, 2026)
 
+### Personalized OG Image for Landing Pages (Mar 16, 2026)
+- Rewrote `GET /api/s/og-image/{user_id}` to generate a branded 1200x630 PNG using Pillow
+- Image includes: circular salesperson photo, name, title, store name, store logo, accent color branding
+- Dark theme with accent bars, divider lines, and professional layout
+- Falls back to static OG image if user not found
+- Updated OG tag logic in short URL redirect handler to use this endpoint for all personal link types (business_card, referral, showcase, link_page)
+- OG meta tags now include correct `og:image:width` (1200) and `og:image:height` (630)
+- All 13 backend tests passed (100% success rate)
+
 ### Marketing Site CTA Cleanup (Mar 16, 2026)
 - Removed blue "Get a Demo" button from desktop nav bar on ALL pages (homepage + 20 feature pages + app directory)
 - Removed "Schedule a Demo" primary CTA from hero sections on ALL pages
@@ -82,6 +91,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - `POST /api/admin/users/{id}/impersonate` — Returns complete user data with permissions
 - `GET /api/card/data/{userId}` — Digital card data with brand_kit theming
 - `PUT /api/email/brand-kit/{entity_type}/{entity_id}` — Update brand kit (includes page_theme)
+- `GET /api/s/og-image/{user_id}` — Personalized 1200x630 OG preview image (Pillow-generated)
 
 ## Key DB Schema
 - `users.role` — May be: super_admin, org_admin, admin, store_manager, manager, user
