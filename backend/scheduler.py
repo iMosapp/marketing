@@ -401,25 +401,29 @@ async def process_pending_campaign_steps():
                 user_id = enrollment.get("user_id", "")
                 contact_phone = enrollment.get("contact_phone", "")
 
-                # Check campaign config to determine message mode
-                use_ai = ai_generated  # Default from campaign step
-                try:
-                    from routers.campaign_config import get_effective_config
-                    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "organization_id": 1})
-                    if user_doc:
-                        config = await get_effective_config(
-                            user_id=user_id,
-                            store_id=user_doc.get("store_id"),
-                            org_id=user_doc.get("organization_id"),
-                        )
-                        msg_mode = config.get("message_mode", "ai_suggested")
-                        if msg_mode == "template":
-                            use_ai = False  # Store configured to use templates only
-                        elif msg_mode == "ai_suggested":
-                            use_ai = True  # Override to always use AI
-                        # "hybrid" respects the step's own ai_generated flag
-                except Exception as e:
-                    logger.warning(f"[Scheduler] Campaign config lookup failed: {e}")
+                # Determine whether to use AI for this step
+                # Campaign's ai_enabled toggle is the primary control
+                campaign_ai_enabled = campaign.get("ai_enabled", False)
+                use_ai = campaign_ai_enabled and ai_generated
+                if campaign_ai_enabled:
+                    # Check store-level config for overrides only when campaign has AI on
+                    try:
+                        from routers.campaign_config import get_effective_config
+                        user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "organization_id": 1})
+                        if user_doc:
+                            config = await get_effective_config(
+                                user_id=user_id,
+                                store_id=user_doc.get("store_id"),
+                                org_id=user_doc.get("organization_id"),
+                            )
+                            msg_mode = config.get("message_mode", "ai_suggested")
+                            if msg_mode == "template":
+                                use_ai = False  # Store forces templates only
+                            elif msg_mode == "ai_suggested":
+                                use_ai = True  # AI for all steps when campaign AI is on
+                            # "hybrid" respects the step's own ai_generated flag
+                    except Exception as e:
+                        logger.warning(f"[Scheduler] Campaign config lookup failed: {e}")
 
                 # AI message generation if enabled
                 if use_ai and contact_id and user_id:
