@@ -171,6 +171,47 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - P2: Mobile tags sync
 - P2: React Hydration Error #418
 
+---
+
+## CRITICAL RECURRING ISSUE: Card Event Tracking / Attribution
+
+**Status:** RECURRING — requires extra vigilance on EVERY card-related change.
+
+**Problem:** Customer-facing card actions (view, download, share) have repeatedly produced phantom events, duplicate events, and misattributed card types. This is the #1 source of inaccurate dashboard data.
+
+**History of failures:**
+1. OG images regressed multiple times (wrong image, red background, stale iMessage cache)
+2. Card download tracking hardcoded `'congrats'` for ALL card types → phantom "Congrats Card Downloaded" events
+3. Two separate tracking pathways (`trackAction` + `track`) both fired on download/share → duplicate events per click
+4. `ACTION_CONFIG` only had `("congrats", ...)` entries → welcome/birthday/holiday/etc. actions unrecognized
+
+**Architecture (understand before touching):**
+- **Pathway A — Card-specific:** Frontend `trackAction(action)` → `POST /api/congrats/card/{cardId}/track` → backend looks up actual `card_type` from DB → logs correct event. Also increments download/share counters on the card document.
+- **Pathway B — Universal tracker:** Frontend `track(action)` → `POST /api/tracking/event` → backend uses `ACTION_CONFIG[(page, action)]` to resolve event type. The `page` param MUST match the card's actual `card_type`.
+- **Single source of truth:** `/app/backend/utils/event_types.py` — all event type constants, labels, and resolution logic.
+
+**Rules for any future card changes:**
+1. NEVER hardcode a card type string in frontend tracking — always use `cardData.card_type`
+2. NEVER fire both `trackAction()` AND `track()` for the same user action (download, share) — pick ONE pathway
+3. If adding a new card type, you MUST add entries to ALL of these:
+   - `ACTION_CONFIG` in `/app/backend/routers/tracking.py` (page+action → event_type)
+   - `CARD_TYPE_SENT_INFO` + `CARD_TYPE_VIEWED_INFO` in `/app/backend/utils/event_types.py`
+   - `EVENT_TYPE_LABELS` in `/app/backend/utils/event_types.py`
+   - `EVENT_TYPE_LABELS` + `EVENT_TYPE_ICONS` in `/app/frontend/utils/eventTypes.ts`
+   - `LINK_TYPE_TO_EVENT` in `/app/backend/utils/event_types.py`
+4. The card API (`GET /api/congrats/card/{cardId}`) MUST return `card_type` in the response
+5. After ANY card tracking change, verify by: creating a non-congrats card (e.g., welcome), downloading it, and checking `contact_events` collection — ZERO "congrats" events should appear
+
+**Files involved:**
+- `/app/frontend/app/congrats/[cardId].tsx` — customer-facing card page, `track()` + `trackAction()` helpers
+- `/app/frontend/services/tracking.ts` — `trackCustomerAction()` sends to universal tracker
+- `/app/backend/routers/tracking.py` — universal tracker endpoint + `ACTION_CONFIG`
+- `/app/backend/routers/congrats_cards.py` — card-specific track endpoint (`/card/{id}/track`)
+- `/app/backend/utils/event_types.py` — SINGLE SOURCE OF TRUTH for event types
+- `/app/frontend/utils/eventTypes.ts` — frontend event labels
+
+---
+
 ### Card Event Tracking Fix (Mar 17, 2026)
 - **ROOT CAUSE:** Three bugs causing phantom "Congrats Card Downloaded" events when downloading Welcome/Birthday/etc cards:
   1. Frontend `track()` helper hardcoded `'congrats'` as the page parameter for ALL card types
