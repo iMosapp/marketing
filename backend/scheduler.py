@@ -488,90 +488,105 @@ async def process_pending_campaign_steps():
                     )
 
                 else:
-                    # MANUAL: Create a pending send record
-                    pending_result = await db.campaign_pending_sends.insert_one({
-                        "user_id": user_id,
-                        "contact_id": contact_id,
-                        "contact_name": enrollment.get("contact_name", ""),
-                        "contact_phone": contact_phone,
-                        "contact_email": enrollment.get("contact_email", ""),
-                        "campaign_id": enrollment["campaign_id"],
-                        "campaign_name": campaign.get("name", ""),
-                        "step": current_step,
-                        "channel": channel,
-                        "message": message_content,
-                        "media_urls": step.get("media_urls", []),
-                        "relationship_brief": relationship_brief,
-                        "ai_generated": bool(ai_generated),
-                        "step_context": step.get("step_context", ""),
-                        "status": "pending",
-                        "created_at": now,
-                    })
-
-                    # Create a TASK on the user's to-do list
+                    # MANUAL: Create a pending send + task for the user's to-do list
                     action_type = step.get("action_type", "message")
                     contact_display = enrollment.get("contact_name", "contact")
-                    if action_type == "send_card":
-                        card_type = step.get("card_type", "congrats")
-                        task_title = f"Send {card_type.title()} Card to {contact_display}"
-                        task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_type} card to {contact_display}."
+                    idem_key = f"campaign_{enrollment['campaign_id']}_{contact_id}_{current_step}"
+
+                    # Check if task already exists for this step (prevents stuck enrollments)
+                    existing_task = await db.tasks.find_one({"idempotency_key": idem_key})
+                    if existing_task:
+                        # Task already exists (from a previous partial run or immediate processing)
+                        # If it's still pending, just skip. If completed, still advance the enrollment.
+                        logger.info(
+                            f"[Scheduler] Task already exists for step {current_step} (status={existing_task.get('status')}), advancing enrollment"
+                        )
                     else:
-                        task_title = f"Send {channel.upper()} to {contact_display}"
-                        task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
+                        # Create pending send record
+                        pending_result = await db.campaign_pending_sends.insert_one({
+                            "user_id": user_id,
+                            "contact_id": contact_id,
+                            "contact_name": enrollment.get("contact_name", ""),
+                            "contact_phone": contact_phone,
+                            "contact_email": enrollment.get("contact_email", ""),
+                            "campaign_id": enrollment["campaign_id"],
+                            "campaign_name": campaign.get("name", ""),
+                            "step": current_step,
+                            "channel": channel,
+                            "message": message_content,
+                            "media_urls": step.get("media_urls", []),
+                            "relationship_brief": relationship_brief,
+                            "ai_generated": bool(ai_generated),
+                            "step_context": step.get("step_context", ""),
+                            "status": "pending",
+                            "created_at": now,
+                        })
 
-                    # Replace template variables in the message
-                    contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
-                    clean_message = message_content
-                    clean_message = clean_message.replace("{name}", contact_first)
-                    clean_message = clean_message.replace("{first_name}", contact_first)
-                    clean_message = clean_message.replace("{last_name}", enrollment.get("contact_name", "").split()[-1] if enrollment.get("contact_name") else "")
-                    clean_message = clean_message.replace("{contact_name}", enrollment.get("contact_name", ""))
+                        if action_type == "send_card":
+                            card_type = step.get("card_type", "congrats")
+                            task_title = f"Send {card_type.title()} Card to {contact_display}"
+                            task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_type} card to {contact_display}."
+                        else:
+                            task_title = f"Send {channel.upper()} to {contact_display}"
+                            task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
 
-                    await db.tasks.insert_one({
-                        "user_id": user_id,
-                        "contact_id": contact_id,
-                        "contact_name": enrollment.get("contact_name", ""),
-                        "contact_phone": enrollment.get("contact_phone", ""),
-                        "type": "campaign_send",
-                        "title": task_title,
-                        "description": task_desc,
-                        "suggested_message": clean_message,
-                        "relationship_brief": relationship_brief,
-                        "ai_generated": bool(ai_generated),
-                        "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
-                        "due_date": now,
-                        "priority": "high",
-                        "priority_order": 1,
-                        "status": "pending",
-                        "completed": False,
-                        "source": "campaign",
-                        "campaign_id": enrollment["campaign_id"],
-                        "campaign_name": campaign.get("name", ""),
-                        "pending_send_id": str(pending_result.inserted_id),
-                        "channel": channel,
-                        "created_at": now,
-                        "idempotency_key": f"campaign_{enrollment['campaign_id']}_{contact_id}_{current_step}",
-                    })
+                        # Replace template variables in the message
+                        contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
+                        clean_message = message_content
+                        clean_message = clean_message.replace("{name}", contact_first)
+                        clean_message = clean_message.replace("{first_name}", contact_first)
+                        clean_message = clean_message.replace("{last_name}", enrollment.get("contact_name", "").split()[-1] if enrollment.get("contact_name") else "")
+                        clean_message = clean_message.replace("{contact_name}", enrollment.get("contact_name", ""))
 
-                    # Create a notification (bell alert)
-                    await db.notifications.insert_one({
-                        "user_id": user_id,
-                        "type": "campaign_send",
-                        "title": f"Campaign: {campaign.get('name', '')}",
-                        "message": f"Time to send step {current_step} to {contact_display}",
-                        "contact_name": enrollment.get("contact_name", ""),
-                        "contact_id": contact_id,
-                        "campaign_id": enrollment["campaign_id"],
-                        "pending_send_step": current_step,
-                        "action_required": True,
-                        "read": False,
-                        "dismissed": False,
-                        "created_at": now,
-                    })
+                        try:
+                            await db.tasks.insert_one({
+                                "user_id": user_id,
+                                "contact_id": contact_id,
+                                "contact_name": enrollment.get("contact_name", ""),
+                                "contact_phone": enrollment.get("contact_phone", ""),
+                                "type": "campaign_send",
+                                "title": task_title,
+                                "description": task_desc,
+                                "suggested_message": clean_message,
+                                "relationship_brief": relationship_brief,
+                                "ai_generated": bool(ai_generated),
+                                "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
+                                "due_date": now,
+                                "priority": "high",
+                                "priority_order": 1,
+                                "status": "pending",
+                                "completed": False,
+                                "source": "campaign",
+                                "campaign_id": enrollment["campaign_id"],
+                                "campaign_name": campaign.get("name", ""),
+                                "pending_send_id": str(pending_result.inserted_id),
+                                "channel": channel,
+                                "created_at": now,
+                                "idempotency_key": idem_key,
+                            })
+                        except Exception as task_err:
+                            # DuplicateKeyError or other - log but continue to advance enrollment
+                            logger.warning(f"[Scheduler] Task insert failed (will still advance): {task_err}")
 
-                    logger.info(
-                        f"[Scheduler] MANUAL task + notification created for step {current_step} to {enrollment.get('contact_name', 'unknown')}"
-                    )
+                        # Create a notification (bell alert)
+                        await db.notifications.insert_one({
+                            "user_id": user_id,
+                            "type": "campaign_send",
+                            "title": f"Campaign: {campaign.get('name', '')}",
+                            "message": f"Time to send step {current_step} to {contact_display}",
+                            "contact_name": enrollment.get("contact_name", ""),
+                            "contact_id": contact_id,
+                            "campaign_id": enrollment["campaign_id"],
+                            "pending_send_step": current_step,
+                            "action_required": True,
+                            "read": False,
+                            "dismissed": False,
+                            "created_at": now,
+                        })
+
+                        logger.info(
+                            f"[Scheduler] MANUAL task + notification created for step {current_step} to {enrollment.get('contact_name', 'unknown')}"
+                        )
 
                 # Advance enrollment
                 if current_step < len(sequences):

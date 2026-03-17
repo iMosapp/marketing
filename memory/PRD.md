@@ -35,23 +35,33 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
+### Campaign Task Catch-Up Mechanism (Mar 17, 2026)
+- **CRITICAL FIX:** Overdue campaign steps now create tasks in Today's Touchpoints even if the scheduler missed them
+- Added `_catchup_overdue_campaign_tasks()` function in `tasks.py` that runs on home screen load
+- Detects active enrollments with `next_send_at <= now` that have no corresponding pending task
+- Creates missing tasks with proper idempotency keys and pending_send records
+- Called from both `GET /tasks/{user_id}/summary` and `GET /tasks/{user_id}?filter=today`
+
+### Scheduler DuplicateKeyError Fix (Mar 17, 2026)
+- **CRITICAL FIX:** Scheduler no longer gets permanently stuck when a task already exists for a campaign step
+- Before: DuplicateKeyError on `tasks.insert_one` would prevent enrollment advancement, causing infinite retry loop
+- After: Checks for existing task first; if found, logs and skips task creation but STILL advances enrollment to next step
+- Prevents orphaned `campaign_pending_sends` from accumulating
+
 ### PRD in Company Docs (Mar 17, 2026)
-- **NEW FEATURE:** PRD document viewable and editable inside the app under Company Docs > PRD tab
-- Backend: `GET /api/docs/prd` fetches PRD (auto-seeds from PRD.md if not in DB), `PUT /api/docs/prd` updates content
+- PRD document viewable and editable inside the app under Company Docs > PRD tab
+- Backend: `GET /api/docs/prd` (auto-seeds from PRD.md), `PUT /api/docs/prd` updates content
 - Frontend: Dedicated PRD page at `/admin/docs/prd` with rendered markdown view and edit mode
-- Markdown renderer supports H1/H2/H3 headings, bullet lists, inline code, bold text, horizontal rules
-- Edit mode: textarea with raw markdown, Cancel/Save toolbar, Save disabled until changes detected
-- PRD stored in `company_docs` collection with slug `product-requirements-document`
+- Auto-sync on server startup: reads PRD.md and updates DB if content changed
 
 ### Campaign Scheduler Hourly Delay Bug Fix (Mar 17, 2026)
-- **CRITICAL FIX:** Campaign steps with hourly delays not firing on schedule
 - Randomization now only applies when `delay_days > 0` or `delay_months > 0`
 
 ### Campaign AI Toggle Fix (Mar 17, 2026)
 - Per-campaign `ai_enabled` flag is now the primary control
 
 ### Campaign Journey on Contact Page (Mar 17, 2026)
-- **NEW FEATURE:** Campaign progress timeline on contact detail page
+- Campaign progress timeline on contact detail page
 - Backend endpoint: `GET /api/contacts/{user_id}/{contact_id}/campaign-journey`
 
 ### Logout Cookie Cleanup Fix (Mar 17, 2026)
@@ -62,6 +72,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Key API Endpoints
 - `GET /api/docs/prd` -- PRD document (auto-seeds from PRD.md)
 - `PUT /api/docs/prd` -- Update PRD content
+- `GET /api/tasks/{user_id}/summary` -- Daily summary (now includes catch-up)
+- `GET /api/tasks/{user_id}?filter=today` -- Today's tasks (now includes catch-up)
+- `POST /api/scheduler/trigger/campaign-steps` -- Manual scheduler trigger
 - `GET /api/contacts/{user_id}/{contact_id}/campaign-journey` -- Campaign progress timeline
 - `POST /api/auth/login` -- Case-insensitive email, trimmed
 - `GET /api/auth/me` -- Full session restore from cookie
@@ -70,6 +83,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Key DB Schema
 - `users.role` -- May be: super_admin, org_admin, admin, store_manager, manager, user
 - `company_docs` -- slug: "product-requirements-document" stores the PRD
+- `campaign_enrollments` -- status, current_step, next_send_at drive the scheduler
+- `tasks.idempotency_key` -- Unique partial index, prevents duplicate campaign tasks
 
 ---
 

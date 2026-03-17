@@ -21,6 +21,112 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
 
 
+async def _catchup_overdue_campaign_tasks(user_id: str):
+    """Create missing tasks for overdue campaign enrollments.
+    This ensures campaign steps that the scheduler missed still appear in Today's Touchpoints.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc)
+
+    try:
+        overdue_enrollments = await db.campaign_enrollments.find({
+            "user_id": user_id,
+            "status": "active",
+            "next_send_at": {"$lte": now},
+        }).to_list(50)
+
+        created = 0
+        for enrollment in overdue_enrollments:
+            campaign_id = enrollment.get("campaign_id", "")
+            contact_id = enrollment.get("contact_id", "")
+            current_step = enrollment.get("current_step", 1)
+            idem_key = f"campaign_{campaign_id}_{contact_id}_{current_step}"
+
+            # Skip if task already exists for this step
+            existing = await db.tasks.find_one({"idempotency_key": idem_key})
+            if existing:
+                continue
+
+            # Load campaign to get step details
+            campaign = None
+            try:
+                campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+            except Exception:
+                pass
+            if not campaign or not campaign.get("active", False):
+                continue
+
+            sequences = campaign.get("sequences", [])
+            if current_step > len(sequences):
+                continue
+
+            step = sequences[current_step - 1]
+            channel = step.get("channel", "sms")
+            message_content = step.get("message_template", "") or step.get("message", "")
+            contact_display = enrollment.get("contact_name", "contact")
+            action_type = step.get("action_type", "message")
+
+            if action_type == "send_card":
+                card_type = step.get("card_type", "congrats")
+                task_title = f"Send {card_type.title()} Card to {contact_display}"
+                task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_type} card."
+            else:
+                task_title = f"Send {channel.upper()} to {contact_display}"
+                task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
+
+            # Create pending send
+            pending_result = await db.campaign_pending_sends.insert_one({
+                "user_id": user_id,
+                "campaign_id": campaign_id,
+                "campaign_name": campaign.get("name", ""),
+                "contact_id": contact_id,
+                "contact_name": enrollment.get("contact_name", ""),
+                "contact_phone": enrollment.get("contact_phone", ""),
+                "step": current_step,
+                "channel": channel,
+                "message": message_content,
+                "status": "pending",
+                "created_at": now,
+            })
+
+            # Replace template variables
+            contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
+            clean_message = message_content.replace("{name}", contact_first).replace("{first_name}", contact_first)
+
+            try:
+                await db.tasks.insert_one({
+                    "user_id": user_id,
+                    "contact_id": contact_id,
+                    "contact_name": enrollment.get("contact_name", ""),
+                    "contact_phone": enrollment.get("contact_phone", ""),
+                    "type": "campaign_send",
+                    "title": task_title,
+                    "description": task_desc,
+                    "suggested_message": clean_message,
+                    "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
+                    "due_date": now,
+                    "priority": "high",
+                    "priority_order": 1,
+                    "status": "pending",
+                    "completed": False,
+                    "source": "campaign",
+                    "campaign_id": campaign_id,
+                    "campaign_name": campaign.get("name", ""),
+                    "pending_send_id": str(pending_result.inserted_id),
+                    "channel": channel,
+                    "created_at": now,
+                    "idempotency_key": idem_key,
+                })
+                created += 1
+            except Exception:
+                pass  # DuplicateKeyError or other - skip silently
+
+        if created > 0:
+            logger.info(f"[Tasks] Catch-up: created {created} missing campaign tasks for user {user_id}")
+    except Exception as e:
+        logger.warning(f"[Tasks] Catch-up check failed: {e}")
+
+
 async def get_user_day_bounds(user_id: str, period: str = "today"):
     """
     Calculate the start/end of 'today', 'week', or 'month' in the user's local timezone,
@@ -131,6 +237,11 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
     Get tasks. Filters: today (due today + overdue), overdue, upcoming, completed, all
     """
     db = get_db()
+
+    # Catch-up: create tasks for overdue campaign steps when viewing today's tasks
+    if filter in ("today", "overdue"):
+        await _catchup_overdue_campaign_tasks(user_id)
+
     today_start, today_end = await get_user_day_bounds(user_id, "today")
     now = datetime.now(timezone.utc)
 
@@ -175,6 +286,10 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
 async def get_task_summary(user_id: str):
     """Daily summary for scoreboard + progress bar."""
     db = get_db()
+
+    # Catch-up: create tasks for overdue campaign steps that the scheduler missed
+    await _catchup_overdue_campaign_tasks(user_id)
+
     today_start, today_end = await get_user_day_bounds(user_id, "today")
     now = datetime.now(timezone.utc)
 
