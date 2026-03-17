@@ -249,29 +249,46 @@ async def get_prd_pdf(x_user_id: str = Header(None, alias="X-User-ID")):
     pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
 
+    in_code_block = False
     for line in content.split("\n"):
         stripped = line.strip()
+        indent = len(line) - len(line.lstrip())
 
         if not stripped:
             pdf.ln(3)
             continue
 
+        # Skip code fence markers but render content inside them as monospace
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+
+        if in_code_block:
+            pdf.set_font("Courier", "", 9)
+            pdf.set_text_color(80, 80, 80)
+            pdf.set_x(10)
+            pdf.multi_cell(190, 5, sanitize(stripped))
+            continue
+
+        # Reset x to left margin for every line
+        pdf.set_x(10)
+
         if stripped.startswith("# ") and not stripped.startswith("## "):
             pdf.set_font("Helvetica", "B", 18)
             pdf.set_text_color(30, 30, 30)
-            pdf.multi_cell(0, 9, sanitize(stripped[2:]))
+            pdf.multi_cell(190, 9, sanitize(stripped[2:]))
             pdf.ln(3)
         elif stripped.startswith("## "):
             pdf.ln(2)
             pdf.set_font("Helvetica", "B", 14)
             pdf.set_text_color(50, 50, 50)
-            pdf.multi_cell(0, 8, sanitize(stripped[3:]))
+            pdf.multi_cell(190, 8, sanitize(stripped[3:]))
             pdf.ln(2)
         elif stripped.startswith("### "):
             pdf.ln(1)
             pdf.set_font("Helvetica", "B", 11)
             pdf.set_text_color(120, 50, 180)
-            pdf.multi_cell(0, 7, sanitize(stripped[4:]))
+            pdf.multi_cell(190, 7, sanitize(stripped[4:]))
             pdf.ln(1)
         elif stripped == "---":
             pdf.ln(3)
@@ -282,25 +299,31 @@ async def get_prd_pdf(x_user_id: str = Header(None, alias="X-User-ID")):
             text = stripped[2:]
             text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
             text = re.sub(r"`(.+?)`", r"\1", text)
-            pdf.set_font("Helvetica", "", 10)
-            pdf.set_text_color(60, 60, 60)
-            pdf.set_x(15)
-            pdf.multi_cell(180, 6, sanitize(f"- {text}"))
-        elif stripped.startswith("  - "):
-            text = stripped[4:]
-            text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
-            text = re.sub(r"`(.+?)`", r"\1", text)
-            pdf.set_font("Helvetica", "", 9)
-            pdf.set_text_color(100, 100, 100)
-            pdf.set_x(22)
-            pdf.multi_cell(170, 5, sanitize(f"- {text}"))
+            if indent >= 4:
+                # Deep nested bullet
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(100, 100, 100)
+                pdf.set_x(22)
+                pdf.multi_cell(175, 5, sanitize(f"- {text}"))
+            elif indent >= 2:
+                # Sub-bullet
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(100, 100, 100)
+                pdf.set_x(18)
+                pdf.multi_cell(180, 5, sanitize(f"- {text}"))
+            else:
+                # Top-level bullet
+                pdf.set_font("Helvetica", "", 10)
+                pdf.set_text_color(60, 60, 60)
+                pdf.set_x(14)
+                pdf.multi_cell(184, 6, sanitize(f"- {text}"))
         else:
             text = stripped
             text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
             text = re.sub(r"`(.+?)`", r"\1", text)
             pdf.set_font("Helvetica", "", 10)
             pdf.set_text_color(60, 60, 60)
-            pdf.multi_cell(0, 6, sanitize(text))
+            pdf.multi_cell(190, 6, sanitize(text))
 
     pdf_bytes = pdf.output()
     return Response(
