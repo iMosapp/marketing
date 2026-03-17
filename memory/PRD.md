@@ -43,6 +43,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **FIX:** Randomization now only applies when `delay_days > 0` or `delay_months > 0`. UTC-to-local conversion fixed using `.replace(tzinfo=timezone.utc)` then `.astimezone(user_tz)`. Added future-time guard to prevent randomized times from landing in the past.
 - **Verified:** 4-step hourly campaign completes with exact ~1.0 hour intervals between steps. Daily campaigns still randomize correctly to 10-12 AM local time.
 
+### Campaign AI Toggle Fix (Mar 17, 2026)
+- **FIXED:** The per-campaign AI toggle (`ai_enabled`) was being overridden by the store-level `campaign_config` default (`message_mode: "ai_suggested"`), which forced AI ON for all campaigns regardless of the user's toggle setting.
+- **FIX:** The campaign's `ai_enabled` flag is now the primary control. Store-level config only fine-tunes behavior (template/ai_suggested/hybrid) when the campaign has AI enabled. If `ai_enabled: false`, AI is always off.
+
+### Campaign Journey on Contact Page (Mar 17, 2026)
+- **NEW FEATURE:** "Campaign Journey" section on the contact detail page showing campaign progress timeline.
+- Backend endpoint: `GET /api/contacts/{user_id}/{contact_id}/campaign-journey`
+- Shows: active/completed campaigns, progress bar (Step X of Y), timeline with sent/next/upcoming steps
+- Sent steps show timestamps, next step highlighted in orange with "Scheduled in X days/hours"
+- Future steps show delay badges (+14d, +30d, etc.)
+- Auto-expands active campaigns, collapsible with tap
+- Returns empty (hidden) for contacts with no campaign enrollments
+
 ### Logout Cookie Cleanup Fix (Mar 17, 2026)
 - **FIXED:** `/auth/logout` now clears both `imonsocial_session` AND `imonsocial_uid` cookies (previously only cleared `imonsocial_session`, causing unnecessary `/auth/me` calls after logout)
 
@@ -146,6 +159,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ---
 
 ## Key API Endpoints
+- `GET /api/contacts/{user_id}/{contact_id}/campaign-journey` -- Campaign progress timeline for a contact
 - `POST /api/auth/login` -- Case-insensitive email, trimmed
 - `GET /api/auth/me` -- Full session restore from cookie (complete user data)
 - `POST /api/auth/logout` -- Clears both imonsocial_session and imonsocial_uid cookies
