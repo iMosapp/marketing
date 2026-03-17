@@ -574,19 +574,33 @@ async def process_pending_campaign_steps():
                     next_step = sequences[current_step]
                     next_send = calculate_next_send_date(next_step)
 
-                    # Randomize send time between 10AM-12PM in user's timezone
-                    try:
-                        import pytz
-                        user_doc = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)})
-                        user_tz_str = (user_doc or {}).get("timezone", "America/Denver")
-                        user_tz = pytz.timezone(user_tz_str)
-                        local_send = next_send.astimezone(user_tz) if next_send.tzinfo else user_tz.localize(next_send)
-                        random_hour = random.randint(10, 11)
-                        random_minute = random.randint(0, 59)
-                        local_send = local_send.replace(hour=random_hour, minute=random_minute, second=0)
-                        next_send = local_send.astimezone(timezone.utc).replace(tzinfo=None)
-                    except Exception:
-                        pass
+                    # Only randomize send time for daily+ delays (not hourly)
+                    # This prevents breaking campaigns with short intervals
+                    step_delay_hours = next_step.get('delay_hours', 0)
+                    step_delay_days = next_step.get('delay_days', 0)
+                    step_delay_months = next_step.get('delay_months', 0)
+                    is_daily_or_longer = step_delay_days > 0 or step_delay_months > 0
+
+                    if is_daily_or_longer:
+                        try:
+                            import pytz
+                            user_doc = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)})
+                            user_tz_str = (user_doc or {}).get("timezone", "America/Denver")
+                            user_tz = pytz.timezone(user_tz_str)
+                            # Properly convert naive UTC datetime to local time
+                            utc_aware = next_send.replace(tzinfo=timezone.utc)
+                            local_send = utc_aware.astimezone(user_tz)
+                            random_hour = random.randint(10, 11)
+                            random_minute = random.randint(0, 59)
+                            local_send = local_send.replace(hour=random_hour, minute=random_minute, second=0)
+                            candidate = local_send.astimezone(timezone.utc).replace(tzinfo=None)
+                            # Ensure the randomized time is in the future
+                            now_naive = datetime.utcnow()
+                            if candidate <= now_naive:
+                                candidate = candidate + timedelta(days=1)
+                            next_send = candidate
+                        except Exception:
+                            pass
 
                     await db.campaign_enrollments.update_one(
                         {"_id": enrollment["_id"]},

@@ -35,6 +35,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented (Latest Session - Mar 17, 2026)
 
+### Campaign Scheduler Hourly Delay Bug Fix (Mar 17, 2026)
+- **CRITICAL FIX:** Campaign steps with hourly delays (`delay_hours`) were not firing on schedule. Steps 3+ in hourly campaigns would be delayed by 6-13+ hours instead of the configured 1-hour intervals.
+- **ROOT CAUSE:** The scheduler's time randomization feature had two bugs:
+  1. It applied to ALL campaigns including hourly ones (should only apply to daily+ delays)
+  2. It treated naive UTC datetimes as local timezone datetimes via `user_tz.localize()`, shifting the scheduled time by the entire timezone offset
+- **FIX:** Randomization now only applies when `delay_days > 0` or `delay_months > 0`. UTC-to-local conversion fixed using `.replace(tzinfo=timezone.utc)` then `.astimezone(user_tz)`. Added future-time guard to prevent randomized times from landing in the past.
+- **Verified:** 4-step hourly campaign completes with exact ~1.0 hour intervals between steps. Daily campaigns still randomize correctly to 10-12 AM local time.
+
 ### Logout Cookie Cleanup Fix (Mar 17, 2026)
 - **FIXED:** `/auth/logout` now clears both `imonsocial_session` AND `imonsocial_uid` cookies (previously only cleared `imonsocial_session`, causing unnecessary `/auth/me` calls after logout)
 
