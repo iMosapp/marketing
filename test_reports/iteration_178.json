@@ -38,7 +38,7 @@
   },
   "test_credentials": {
     "user_id": "69a0b7095fddcede09591667",
-    "api_url": "https://rms-polish.preview.emergentagent.com"
+    "api_url": "https://scheduler-update-1.preview.emergentagent.com"
   },
   "seed_data_creation": "None - used existing test user with card send events",
   "retest_needed": false,

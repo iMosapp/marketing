@@ -102,6 +102,7 @@ async def list_docs(
 async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
     await verify_admin_access(x_user_id)
     return [
+        {"id": "prd", "name": "PRD", "icon": "clipboard", "color": "#AF52DE"},
         {"id": "operations", "name": "Operations Manual", "icon": "book", "color": "#00C7BE"},
         {"id": "signed", "name": "Signed Documents", "icon": "checkmark-done-circle", "color": "#34C759"},
         {"id": "security", "name": "Cyber Security", "icon": "shield-checkmark", "color": "#FF3B30"},
@@ -110,6 +111,92 @@ async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
         {"id": "training", "name": "Training", "icon": "school", "color": "#34C759"},
         {"id": "integrations", "name": "Integrations", "icon": "git-network", "color": "#FF9500"},
     ]
+
+
+@router.get("/prd")
+async def get_prd(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Get the PRD document. Auto-seeds from PRD.md if not in DB yet."""
+    await verify_admin_access(x_user_id)
+    db = get_db()
+
+    doc = await db.company_docs.find_one({"slug": "product-requirements-document"}, {"_id": 0})
+    if not doc:
+        # Auto-seed from PRD.md
+        prd_path = "/app/memory/PRD.md"
+        content = ""
+        try:
+            with open(prd_path, "r") as f:
+                content = f.read()
+        except FileNotFoundError:
+            content = "# Product Requirements Document\n\nNo PRD content found. Please add your PRD here."
+
+        now = datetime.utcnow()
+        doc = {
+            "title": "Product Requirements Document",
+            "summary": "Complete PRD for the i'M On Social platform - features, architecture, backlog, and known issues.",
+            "category": "prd",
+            "icon": "clipboard",
+            "slug": "product-requirements-document",
+            "content": content,
+            "version": "1.0",
+            "is_published": True,
+            "sort_order": 0,
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        }
+        await db.company_docs.insert_one({**doc, "slug": "product-requirements-document"})
+        # Remove the _id that insert_one added to the dict
+        doc.pop("_id", None)
+
+    # Ensure dates are strings
+    for k in ("created_at", "updated_at"):
+        if isinstance(doc.get(k), datetime):
+            doc[k] = doc[k].isoformat()
+
+    return doc
+
+
+@router.put("/prd")
+async def update_prd(
+    body: dict,
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Update the PRD document content."""
+    await verify_admin_access(x_user_id)
+    db = get_db()
+
+    content = body.get("content")
+    if content is None:
+        raise HTTPException(status_code=400, detail="content field is required")
+
+    now = datetime.utcnow()
+    result = await db.company_docs.find_one_and_update(
+        {"slug": "product-requirements-document"},
+        {"$set": {
+            "content": content,
+            "updated_at": now,
+        }},
+        return_document=False,
+    )
+
+    if not result:
+        # Create if doesn't exist
+        doc = {
+            "title": "Product Requirements Document",
+            "summary": "Complete PRD for the i'M On Social platform.",
+            "category": "prd",
+            "icon": "clipboard",
+            "slug": "product-requirements-document",
+            "content": content,
+            "version": "1.0",
+            "is_published": True,
+            "sort_order": 0,
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.company_docs.insert_one(doc)
+
+    return {"success": True, "updated_at": now.isoformat()}
 
 
 @router.get("/signed-documents")

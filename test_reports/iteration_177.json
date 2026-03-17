@@ -31,7 +31,7 @@
   },
   "test_credentials": {
     "crm_token": "c873848e-0ab2-435e-8418-de3ff4c3cb85",
-    "api_url": "https://rms-polish.preview.emergentagent.com"
+    "api_url": "https://scheduler-update-1.preview.emergentagent.com"
   },
   "seed_data_creation": "None - used existing test contact with token c873848e-0ab2-435e-8418-de3ff4c3cb85",
   "retest_needed": false,

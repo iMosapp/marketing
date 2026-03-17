@@ -18,7 +18,7 @@ import os
 from datetime import datetime, timezone
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com').rstrip('/')
 
 # Test credentials from bug report
 USER_ID = "69a0b7095fddcede09591667"

@@ -81,7 +81,7 @@
     "feature_5_card_type_picker_returnToThread": {
       "status": "PASS",
       "verification": "Clicked Attach Photo → Create Card → Congrats Card → URL included returnToThread=69a1354f2c0649ac6fb7f3f1",
-      "full_url": "https://rms-polish.preview.emergentagent.com/settings/create-card?type=congrats&prefillName=API%20Test&prefillPhone=%2B15551234567&returnToThread=69a1354f2c0649ac6fb7f3f1",
+      "full_url": "https://scheduler-update-1.preview.emergentagent.com/settings/create-card?type=congrats&prefillName=API%20Test&prefillPhone=%2B15551234567&returnToThread=69a1354f2c0649ac6fb7f3f1",
       "code_location": "/app/frontend/app/thread/[id].tsx line 2705"
     }
   },

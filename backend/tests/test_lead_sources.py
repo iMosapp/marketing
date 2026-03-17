@@ -7,7 +7,7 @@ import requests
 import os
 import secrets
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "forestward@gmail.com"

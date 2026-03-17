@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
 if BASE_URL and not BASE_URL.endswith('/api'):
     BASE_URL = BASE_URL.rstrip('/') + '/api'
 

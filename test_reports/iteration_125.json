@@ -33,7 +33,7 @@
       "lines": "1112-1118",
       "implementation": {
         "logic": "if (photoUrl && photoUrl.startsWith('/')) { baseUrl = IS_WEB ? window.location.origin : EXPO_PUBLIC_BACKEND_URL; absolutePhotoUrl = baseUrl + photoUrl; }",
-        "example_conversion": "/api/images/imos/general/general/xxx.png -> https://rms-polish.preview.emergentagent.com/api/images/imos/general/general/xxx.png"
+        "example_conversion": "/api/images/imos/general/general/xxx.png -> https://scheduler-update-1.preview.emergentagent.com/api/images/imos/general/general/xxx.png"
       }
     }
   },

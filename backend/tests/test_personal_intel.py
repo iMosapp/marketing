@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
 USER_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com
 CONTACT_ID = "69a8abe36a8712d026633756"  # Test contact with personal details
 

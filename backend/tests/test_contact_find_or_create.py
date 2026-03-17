@@ -11,7 +11,7 @@ import os
 import uuid
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rms-polish.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
 TEST_USER_ID = "69a0b7095fddcede09591667"  # Super Admin user ID
 
 

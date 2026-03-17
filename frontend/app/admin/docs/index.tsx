@@ -18,6 +18,7 @@ import api from '../../../services/api';
 
 import { useThemeStore } from '../../../store/themeStore';
 const CATEGORY_COLORS: Record<string, string> = {
+  prd: '#AF52DE',
   operations: '#00C7BE',
   signed: '#34C759',
   security: '#FF3B30',
@@ -28,6 +29,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
+  prd: 'clipboard',
   operations: 'book',
   signed: 'checkmark-done-circle',
   security: 'shield-checkmark',
@@ -38,6 +40,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
+  prd: 'PRD',
   operations: 'Operations Manual',
   signed: 'Signed Documents',
   security: 'Cyber Security',
@@ -48,6 +51,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  prd: 'Product requirements & roadmap',
   operations: 'Standard procedures & guidelines',
   signed: 'NDAs, agreements & contracts',
   security: 'Cybersecurity policies & protocols',
@@ -335,7 +339,13 @@ export default function DocsHubScreen() {
                 styles.filterChip,
                 isActive && { backgroundColor: CATEGORY_COLORS[cat.id] || '#007AFF' },
               ]}
-              onPress={() => setSelectedCategory(isActive ? null : cat.id)}
+              onPress={() => {
+                if (cat.id === 'prd') {
+                  router.push('/admin/docs/prd');
+                  return;
+                }
+                setSelectedCategory(isActive ? null : cat.id);
+              }}
               data-testid={`docs-filter-${cat.id}`}
             >
               <Ionicons
