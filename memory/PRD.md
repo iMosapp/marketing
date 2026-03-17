@@ -106,7 +106,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### P0 (Completed)
 - White-Label Partner Sold Workflow — IMPLEMENTED, needs production testing with Calendar Systems
-- Partner Orgs Page Fix — FIXED (Mar 17, 2026): Created missing `/admin/partner-orgs.tsx` page. The "Orgs" button on white-label page now properly navigates to the Partner Organizations & Accounts page with Create Account, Link Org, and Unlink functionality. Added `partner_id` to `StoreCreate` model.
+- Partner Orgs Page Fix — FIXED (Mar 17, 2026): Created missing `/admin/partner-orgs.tsx` page for managing partner organizations & accounts.
+- Create Partner Button Fix — FIXED (Mar 17, 2026): Two bugs: (1) `TouchableOpacity` on iOS Safari wouldn't fire clicks — replaced with native `<button>` on web. (2) Validation silently failed with no feedback when name/slug were empty — now shows alert.
 
 ### P1
 - Gamification & Leaderboards
