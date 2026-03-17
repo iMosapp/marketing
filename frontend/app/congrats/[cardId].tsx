@@ -65,7 +65,8 @@ export default function CongratsCardPage() {
   // Tracking helper — fires for every customer CTA click
   const track = (action: string, extra?: Record<string, any>) => {
     if (cardData?.salesman_id) {
-      trackCustomerAction('congrats', action, {
+      const cardType = (cardData as any)?.card_type || 'congrats';
+      trackCustomerAction(cardType, action, {
         salesperson_id: cardData.salesman_id,
         contact_id: (cid as string) || undefined,
         customer_phone: (cardData as any)?.customer_phone,
@@ -155,7 +156,6 @@ export default function CongratsCardPage() {
 
   const handleDownload = async () => {
     await trackAction('download');
-    track('download_clicked');
     const imageUrl = `${api.defaults.baseURL}/congrats/card/${cardId}/image`;
     
     if (Platform.OS === 'web') {
@@ -185,7 +185,6 @@ export default function CongratsCardPage() {
 
   const handleShare = async (platform?: string) => {
     await trackAction('share');
-    track(platform ? `share_${platform}` : 'share_clicked', { platform: platform || 'native' });
     
     // Always use the tracked short URL for sharing
     const shareUrl = cardData?.short_url || 

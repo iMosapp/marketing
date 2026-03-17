@@ -171,6 +171,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - P2: Mobile tags sync
 - P2: React Hydration Error #418
 
+### Card Event Tracking Fix (Mar 17, 2026)
+- **ROOT CAUSE:** Three bugs causing phantom "Congrats Card Downloaded" events when downloading Welcome/Birthday/etc cards:
+  1. Frontend `track()` helper hardcoded `'congrats'` as the page parameter for ALL card types
+  2. Download/share handlers called BOTH `trackAction()` AND `track()`, creating duplicate events through two separate backend pathways
+  3. Backend `ACTION_CONFIG` only had `("congrats", ...)` entries — no welcome, birthday, holiday, etc.
+- **FIX:** Card API now returns `card_type` field; frontend `track()` uses actual card type; removed duplicate `track()` calls from download/share; added all card type entries to `ACTION_CONFIG` and `EVENT_TYPE_LABELS` on both frontend and backend
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
 

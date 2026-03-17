@@ -31,6 +31,22 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   welcome_card_viewed: 'Viewed Welcome Card',
   anniversary_card_viewed: 'Viewed Anniversary Card',
   
+  // Card downloads (customer actions)
+  congrats_card_downloaded: 'Congrats Card Downloaded',
+  welcome_card_downloaded: 'Welcome Card Downloaded',
+  birthday_card_downloaded: 'Birthday Card Downloaded',
+  holiday_card_downloaded: 'Holiday Card Downloaded',
+  thankyou_card_downloaded: 'Thank You Card Downloaded',
+  anniversary_card_downloaded: 'Anniversary Card Downloaded',
+  
+  // Card shares (customer actions)
+  congrats_card_shared: 'Congrats Card Shared',
+  welcome_card_shared: 'Welcome Card Shared',
+  birthday_card_shared: 'Birthday Card Shared',
+  holiday_card_shared: 'Holiday Card Shared',
+  thankyou_card_shared: 'Thank You Card Shared',
+  anniversary_card_shared: 'Anniversary Card Shared',
+
   // Link/review clicks
   review_link_clicked: 'Clicked Review Link',
   review_page_viewed: 'Viewed Review Page',

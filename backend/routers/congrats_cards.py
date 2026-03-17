@@ -866,6 +866,7 @@ async def get_congrats_card(card_id: str):
         } if card.get("show_salesman") else None,
         "store": store_data,
         "short_url": card.get("short_url", ""),
+        "card_type": card.get("card_type", "congrats"),
         "style": {
             "background_color": card.get("background_color", "#1A1A1A"),
             "accent_color": card.get("accent_color", "#C9A962"),
