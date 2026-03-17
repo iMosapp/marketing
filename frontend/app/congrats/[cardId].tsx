@@ -60,6 +60,7 @@ export default function CongratsCardPage() {
   const [reviewText, setReviewText] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(preview === 'reviewed');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [hasExistingConsent, setHasExistingConsent] = useState(false); // show banner by default, hide after consent check
 
   // Tracking helper — fires for every customer CTA click
@@ -155,32 +156,47 @@ export default function CongratsCardPage() {
   };
 
   const handleDownload = async () => {
-    await trackAction('download');
+    if (downloading) return;
+    setDownloading(true);
+
+    // Fire tracking in background — don't block the UI
+    trackAction('download').catch(() => {});
+
     const imageUrl = `${api.defaults.baseURL}/congrats/card/${cardId}/image`;
-    
+
     if (Platform.OS === 'web') {
-      // Try Web Share API first (works on mobile browsers for "Save Image" to camera roll)
       try {
         const resp = await fetch(imageUrl);
         const blob = await resp.blob();
         const file = new File([blob], `card-${cardId}.png`, { type: 'image/png' });
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: cardData?.headline || 'Card' });
+          setDownloading(false);
           return;
         }
-      } catch {}
-      
-      // Fallback: direct download
-      const a = document.createElement('a');
-      a.href = imageUrl;
-      a.download = `card-${cardId}.png`;
-      a.target = '_self';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      } catch {
+        // Web Share failed or was cancelled — that's fine
+      }
+
+      // Fallback for desktop browsers only (not iOS Safari)
+      try {
+        const resp = await fetch(imageUrl);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `card-${cardId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        window.open(imageUrl, '_blank');
+      }
     } else {
       Linking.openURL(imageUrl);
     }
+    setDownloading(false);
   };
 
   const handleShare = async (platform?: string) => {
@@ -465,11 +481,22 @@ export default function CongratsCardPage() {
         
         {/* Download Button */}
         <TouchableOpacity
-          style={[styles.downloadButton, { backgroundColor: style.accent_color }]}
+          style={[styles.downloadButton, { backgroundColor: style.accent_color, opacity: downloading ? 0.7 : 1 }]}
           onPress={handleDownload}
+          disabled={downloading}
+          data-testid="save-card-btn"
         >
-          <Ionicons name="download-outline" size={22} color="#000" />
-          <Text style={styles.downloadButtonText}>Save Card to Photos</Text>
+          {downloading ? (
+            <>
+              <ActivityIndicator size="small" color="#000" />
+              <Text style={styles.downloadButtonText}>Preparing Image...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={22} color="#000" />
+              <Text style={styles.downloadButtonText}>Save Card to Photos</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         {/* Social Share Buttons */}
