@@ -35,24 +35,23 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
+### PRD in Company Docs with PDF Export (Mar 17, 2026)
+- PRD document viewable and editable inside the app under Company Docs > PRD tab
+- Backend: `GET /api/docs/prd` (auto-seeds from PRD.md), `PUT /api/docs/prd` updates content
+- Backend: `GET /api/docs/prd/pdf` generates downloadable PDF (5 pages, formatted headings/bullets/page numbers)
+- Frontend: Dedicated PRD page at `/admin/docs/prd` with rendered markdown view, edit mode, and download button
+- Auto-sync on server startup: reads PRD.md and updates DB if content changed
+- All navigation paths (chip, category card, doc list item) correctly route to PRD page
+
 ### Campaign Task Catch-Up Mechanism (Mar 17, 2026)
 - **CRITICAL FIX:** Overdue campaign steps now create tasks in Today's Touchpoints even if the scheduler missed them
-- Added `_catchup_overdue_campaign_tasks()` function in `tasks.py` that runs on home screen load
-- Detects active enrollments with `next_send_at <= now` that have no corresponding pending task
+- `_catchup_overdue_campaign_tasks()` runs on home screen load (GET /tasks/summary, GET /tasks?filter=today)
+- Detects active enrollments with `next_send_at <= now` without corresponding pending tasks
 - Creates missing tasks with proper idempotency keys and pending_send records
-- Called from both `GET /tasks/{user_id}/summary` and `GET /tasks/{user_id}?filter=today`
 
 ### Scheduler DuplicateKeyError Fix (Mar 17, 2026)
 - **CRITICAL FIX:** Scheduler no longer gets permanently stuck when a task already exists for a campaign step
-- Before: DuplicateKeyError on `tasks.insert_one` would prevent enrollment advancement, causing infinite retry loop
-- After: Checks for existing task first; if found, logs and skips task creation but STILL advances enrollment to next step
-- Prevents orphaned `campaign_pending_sends` from accumulating
-
-### PRD in Company Docs (Mar 17, 2026)
-- PRD document viewable and editable inside the app under Company Docs > PRD tab
-- Backend: `GET /api/docs/prd` (auto-seeds from PRD.md), `PUT /api/docs/prd` updates content
-- Frontend: Dedicated PRD page at `/admin/docs/prd` with rendered markdown view and edit mode
-- Auto-sync on server startup: reads PRD.md and updates DB if content changed
+- Checks for existing task first; if found, skips task creation but STILL advances enrollment to next step
 
 ### Campaign Scheduler Hourly Delay Bug Fix (Mar 17, 2026)
 - Randomization now only applies when `delay_days > 0` or `delay_months > 0`
@@ -62,7 +61,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### Campaign Journey on Contact Page (Mar 17, 2026)
 - Campaign progress timeline on contact detail page
-- Backend endpoint: `GET /api/contacts/{user_id}/{contact_id}/campaign-journey`
 
 ### Logout Cookie Cleanup Fix (Mar 17, 2026)
 - `/auth/logout` now clears both `imonsocial_session` AND `imonsocial_uid` cookies
@@ -72,6 +70,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Key API Endpoints
 - `GET /api/docs/prd` -- PRD document (auto-seeds from PRD.md)
 - `PUT /api/docs/prd` -- Update PRD content
+- `GET /api/docs/prd/pdf` -- Generate and download PRD as PDF
 - `GET /api/tasks/{user_id}/summary` -- Daily summary (now includes catch-up)
 - `GET /api/tasks/{user_id}?filter=today` -- Today's tasks (now includes catch-up)
 - `POST /api/scheduler/trigger/campaign-steps` -- Manual scheduler trigger

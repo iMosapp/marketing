@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TextInput,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,6 +162,7 @@ export default function PRDScreen() {
   const [editing, setEditing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -210,6 +212,30 @@ export default function PRDScreen() {
     setHasChanges(text !== content);
   };
 
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const headers = { 'X-User-ID': user?._id };
+      const res = await api.get('/docs/prd/pdf', { headers, responseType: 'blob' });
+      if (Platform.OS === 'web') {
+        const blob = new Blob([res.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'iMOnSocial_PRD.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -238,13 +264,27 @@ export default function PRDScreen() {
           ) : null}
         </View>
         {!editing ? (
-          <TouchableOpacity
-            onPress={() => setEditing(true)}
-            style={styles.editButton}
-            data-testid="prd-edit-btn"
-          >
-            <Ionicons name="create-outline" size={20} color="#AF52DE" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={handleDownloadPdf}
+              disabled={downloading}
+              style={styles.editButton}
+              data-testid="prd-download-btn"
+            >
+              {downloading ? (
+                <ActivityIndicator size="small" color="#AF52DE" />
+              ) : (
+                <Ionicons name="download-outline" size={20} color="#AF52DE" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setEditing(true)}
+              style={styles.editButton}
+              data-testid="prd-edit-btn"
+            >
+              <Ionicons name="create-outline" size={20} color="#AF52DE" />
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={{ width: 40 }} />
         )}

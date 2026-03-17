@@ -199,6 +199,119 @@ async def update_prd(
     return {"success": True, "updated_at": now.isoformat()}
 
 
+@router.get("/prd/pdf")
+async def get_prd_pdf(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Generate and return the PRD as a downloadable PDF."""
+    await verify_admin_access(x_user_id)
+    db = get_db()
+
+    doc = await db.company_docs.find_one({"slug": "product-requirements-document"}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="PRD not found")
+
+    content = doc.get("content", "")
+    updated = doc.get("updated_at", "")
+    if isinstance(updated, datetime):
+        updated = updated.strftime("%B %d, %Y")
+    elif isinstance(updated, str) and updated:
+        try:
+            updated = datetime.fromisoformat(updated.replace("Z", "+00:00")).strftime("%B %d, %Y")
+        except Exception:
+            pass
+
+    from fpdf import FPDF
+
+    def sanitize(text):
+        """Replace unicode chars not in latin-1 with safe equivalents."""
+        return text.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"').replace("\u2014", "--").replace("\u2013", "-").replace("\u2026", "...")
+
+    class PRDPdf(FPDF):
+        def header(self):
+            self.set_font("Helvetica", "B", 10)
+            self.set_text_color(130, 130, 130)
+            self.cell(0, 8, sanitize("i'M On Social - Product Requirements Document"), align="L")
+            if updated:
+                self.cell(0, 8, f"Updated: {updated}", align="R", new_x="LMARGIN", new_y="NEXT")
+            else:
+                self.ln(8)
+            self.set_draw_color(200, 200, 200)
+            self.line(10, self.get_y(), 200, self.get_y())
+            self.ln(4)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Helvetica", "I", 8)
+            self.set_text_color(150, 150, 150)
+            self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
+
+    pdf = PRDPdf()
+    pdf.alias_nb_pages()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    for line in content.split("\n"):
+        stripped = line.strip()
+
+        if not stripped:
+            pdf.ln(3)
+            continue
+
+        if stripped.startswith("# ") and not stripped.startswith("## "):
+            pdf.set_font("Helvetica", "B", 18)
+            pdf.set_text_color(30, 30, 30)
+            pdf.multi_cell(0, 9, sanitize(stripped[2:]))
+            pdf.ln(3)
+        elif stripped.startswith("## "):
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.set_text_color(50, 50, 50)
+            pdf.multi_cell(0, 8, sanitize(stripped[3:]))
+            pdf.ln(2)
+        elif stripped.startswith("### "):
+            pdf.ln(1)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_text_color(120, 50, 180)
+            pdf.multi_cell(0, 7, sanitize(stripped[4:]))
+            pdf.ln(1)
+        elif stripped == "---":
+            pdf.ln(3)
+            pdf.set_draw_color(200, 200, 200)
+            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+            pdf.ln(5)
+        elif stripped.startswith("- "):
+            text = stripped[2:]
+            text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+            text = re.sub(r"`(.+?)`", r"\1", text)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(60, 60, 60)
+            pdf.set_x(15)
+            pdf.multi_cell(180, 6, sanitize(f"- {text}"))
+        elif stripped.startswith("  - "):
+            text = stripped[4:]
+            text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+            text = re.sub(r"`(.+?)`", r"\1", text)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.set_text_color(100, 100, 100)
+            pdf.set_x(22)
+            pdf.multi_cell(170, 5, sanitize(f"- {text}"))
+        else:
+            text = stripped
+            text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+            text = re.sub(r"`(.+?)`", r"\1", text)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(60, 60, 60)
+            pdf.multi_cell(0, 6, sanitize(text))
+
+    pdf_bytes = pdf.output()
+    return Response(
+        content=bytes(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "attachment; filename=iMOnSocial_PRD.pdf",
+        },
+    )
+
+
 @router.get("/signed-documents")
 async def get_signed_documents(
     doc_type: Optional[str] = None,
