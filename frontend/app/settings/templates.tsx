@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { templatesAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import VoiceInput from '../../components/VoiceInput';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemeStore } from '../../store/themeStore';
 interface Template {
@@ -42,6 +43,7 @@ export default function TemplatesSettings() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -274,7 +276,12 @@ export default function TemplatesSettings() {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
         >
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+            {/* Ask Jessi bar — stays visible in the modal */}
+            <View style={[styles.jessiBar, { backgroundColor: colors.surface || '#F2F2F7' }]}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Have questions? Ask Jessi</Text>
+            </View>
+
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Text style={styles.cancelButton}>Cancel</Text>
@@ -508,13 +515,19 @@ const getStyles = (colors: any) => StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingTop: Platform.OS === 'ios' ? 54 : 24,
+  },
+  jessiBar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.card,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: 12,
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
