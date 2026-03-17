@@ -508,12 +508,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: colors.bg,
+    paddingTop: Platform.OS === 'ios' ? 54 : 24,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 20 : 20,
+    paddingTop: 8,
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
