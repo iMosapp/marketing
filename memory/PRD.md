@@ -34,6 +34,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented (Latest Session - Mar 17, 2026)
 
+### Campaign Creation Fix (Mar 17, 2026)
+- **FIXED:** "Create" button on New Campaign screen was non-functional due to `Alert.alert` with callbacks not reliably triggering on all platforms
+- Replaced all `Alert.alert` calls in `handleSave` with `showToast` for validation errors and success messages
+- Restyled Create button from a plain text link (`padding: 4`) to a prominent blue pill button with larger touch target
+- Changed post-save navigation from `router.back()` to `router.replace('/campaigns')` for predictable routing
+- Reduced "Ask Jessi" banner `zIndex` from 9999 to 50 to prevent potential touch interference
+- Added `delay_hours` field to backend `CampaignSequenceStep` model for completeness
+- Backend campaign creation API verified 100% working (7/7 tests passed)
+
 ### Photo-Dominant OG Images (Mar 16, 2026)
 - Rewrote the salesperson OG image generator: profile photo now fills ~55% of the 1200x630 frame with name/title on the right panel (was a small 260px circle)
 - Created new customer card OG image endpoint (`/api/s/og-card-image/{card_id}`) — lightweight WebP (12KB) instead of the heavy 1080x1350 PNG card image

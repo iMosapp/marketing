@@ -486,7 +486,7 @@ const { showToast } = useToast();
         
         <Text style={styles.headerTitle}>New Campaign</Text>
         
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={saving} data-testid="create-campaign-btn">
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={saving} testID="create-campaign-btn" data-testid="create-campaign-btn">
           {saving ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
