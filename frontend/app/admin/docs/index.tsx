@@ -156,7 +156,13 @@ export default function DocsHubScreen() {
     return (
       <TouchableOpacity
         style={styles.docCard}
-        onPress={() => router.push(`/admin/docs/${item._id}`)}
+        onPress={() => {
+          if (item.category === 'prd' || item.slug === 'product-requirements-document') {
+            router.push('/admin/docs/prd');
+          } else {
+            router.push(`/admin/docs/${item._id}`);
+          }
+        }}
         data-testid={`doc-item-${item._id}`}
       >
         <View style={[styles.docIcon, { backgroundColor: color + '20' }]}>
@@ -196,7 +202,17 @@ export default function DocsHubScreen() {
     const color = CATEGORY_COLORS[category] || colors.textSecondary;
     const count = groupedDocs[category]?.length || 0;
     return (
-      <View style={styles.categoryCard} data-testid={`category-header-${category}`}>
+      <TouchableOpacity
+        style={styles.categoryCard}
+        data-testid={`category-header-${category}`}
+        onPress={() => {
+          if (category === 'prd') {
+            router.push('/admin/docs/prd');
+          } else {
+            setSelectedCategory(category);
+          }
+        }}
+      >
         <View style={[styles.categoryCardIcon, { backgroundColor: color + '15' }]}>
           <Ionicons
             name={(CATEGORY_ICONS[category] || 'document') as any}
@@ -215,7 +231,7 @@ export default function DocsHubScreen() {
         <View style={[styles.categoryCardBadge, { backgroundColor: color + '20' }]}>
           <Text style={[styles.categoryCardBadgeText, { color }]}>{count}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
