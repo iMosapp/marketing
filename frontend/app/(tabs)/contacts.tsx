@@ -568,7 +568,10 @@ export default function ContactsScreen() {
                 styles.tagFilterChip,
                 { backgroundColor: crmFilter === f ? '#C9A962' : colors.card },
               ]}
-              onPress={() => setCrmFilter(crmFilter === f ? 'all' : f)}
+              onPress={() => {
+                setCrmFilter(crmFilter === f ? 'all' : f);
+                setSelectedTag(null);
+              }}
               data-testid={`crm-filter-${f}`}
             >
               <Text style={[
