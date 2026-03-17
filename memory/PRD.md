@@ -50,6 +50,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Duplicate starts paused (`active: false`) so user can review/customize before activating
 - After duplicate, user is redirected to the new campaign's edit page for immediate customization
 
+### Tag → Campaign Auto-Enrollment + Immediate Touchpoint (Mar 17, 2026)
+- **FIXED:** `PATCH /api/contacts/{user_id}/{contact_id}/tags` now triggers campaign enrollment check — previously only create/update contact did
+- **NEW:** When a contact is auto-enrolled in a campaign and step 1 has zero delay, the system immediately creates a task + pending_send + notification (no more waiting 15 min for the scheduler)
+- Enrollment auto-advances to step 2 after immediate processing to prevent scheduler double-fire
+- Subsequent steps are handled by the existing 15-minute scheduler with correct `delay_hours` calculations
+- Added `delay_hours` field to `CampaignSequenceStep` model
+- Backend tested 100% (9/9 tests passed)
+
 ### Photo-Dominant OG Images (Mar 16, 2026)
 - Rewrote the salesperson OG image generator: profile photo now fills ~55% of the 1200x630 frame with name/title on the right panel (was a small 260px circle)
 - Created new customer card OG image endpoint (`/api/s/og-card-image/{card_id}`) — lightweight WebP (12KB) instead of the heavy 1080x1350 PNG card image
