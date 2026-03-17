@@ -130,6 +130,8 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
                         "completed": False,
                         "source": "campaign",
                         "campaign_id": campaign_id,
+                        "contact_name": contact_name,
+                        "contact_phone": contact.get('phone', ''),
                         "pending_send_id": str(pending_result.inserted_id),
                         "channel": channel,
                         "created_at": now,

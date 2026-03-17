@@ -53,6 +53,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### Tag → Campaign Auto-Enrollment + Immediate Touchpoint (Mar 17, 2026)
 - **FIXED:** `PATCH /api/contacts/{user_id}/{contact_id}/tags` now triggers campaign enrollment check — previously only create/update contact did
 - **NEW:** When a contact is auto-enrolled in a campaign and step 1 has zero delay, the system immediately creates a task + pending_send + notification (no more waiting 15 min for the scheduler)
+- **FIXED:** Campaign tasks now include `contact_name` and `contact_phone` fields — previously missing, causing "Unknown" display and broken "Send Text" button in Today's Touchpoints
 - Enrollment auto-advances to step 2 after immediate processing to prevent scheduler double-fire
 - Subsequent steps are handled by the existing 15-minute scheduler with correct `delay_hours` calculations
 - Added `delay_hours` field to `CampaignSequenceStep` model
