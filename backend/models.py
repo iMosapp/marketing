@@ -144,6 +144,7 @@ class StoreCreate(BaseModel):
     country: str = "US"
     website: Optional[str] = None
     industry: Optional[str] = None
+    partner_id: Optional[str] = None
 
 # ============= USER MODELS (Updated with roles) =============
 
