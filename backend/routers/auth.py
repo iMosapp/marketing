@@ -565,10 +565,11 @@ async def get_current_user(request: Request):
 
 @router.post("/logout")
 async def logout_session():
-    """Clear the persistent session cookie"""
+    """Clear all persistent session cookies"""
     from fastapi.responses import JSONResponse
     resp = JSONResponse(content={"success": True})
     resp.delete_cookie("imonsocial_session")
+    resp.delete_cookie("imonsocial_uid")
     return resp
 
 @router.post("/forgot-password/request")
