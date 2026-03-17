@@ -33,6 +33,7 @@ import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
+import CampaignJourney from '../../components/CampaignJourney';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -3262,6 +3263,11 @@ export default function ContactDetailScreen() {
                   </TouchableOpacity>
                 </View>
               ) : null}
+
+              {/* Campaign Journey — upcoming campaign activities */}
+              {!isNewContact && user && (
+                <CampaignJourney userId={user._id} contactId={id as string} />
+              )}
 
               {/* Relationship Feed (Activity) */}
               <View style={[s.section, { paddingTop: 0 }]} data-testid="activity-feed">

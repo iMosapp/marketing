@@ -1230,3 +1230,87 @@ async def backfill_contact_ownership():
         "personal_contacts": personal_result.modified_count,
         "org_contacts": org_result.modified_count
     }
+
+
+
+@router.get("/{user_id}/{contact_id}/campaign-journey")
+async def get_contact_campaign_journey(user_id: str, contact_id: str):
+    """Get all campaign enrollments for a contact with full step details."""
+    db = get_db()
+
+    enrollments = await db.campaign_enrollments.find(
+        {"contact_id": contact_id, "user_id": user_id},
+        {"_id": 0}
+    ).to_list(None)
+
+    journeys = []
+    for enrollment in enrollments:
+        campaign_id = enrollment.get("campaign_id", "")
+        campaign = None
+        try:
+            campaign = await db.campaigns.find_one(
+                {"_id": ObjectId(campaign_id)},
+                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1}
+            )
+        except Exception:
+            pass
+        if not campaign:
+            # Try string ID
+            campaign = await db.campaigns.find_one(
+                {"_id": campaign_id},
+                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1}
+            )
+        if not campaign:
+            continue
+
+        sequences = campaign.get("sequences", [])
+        current_step = enrollment.get("current_step", 1)
+        messages_sent = enrollment.get("messages_sent", [])
+        status = enrollment.get("status", "active")
+
+        # Build step details
+        steps = []
+        for i, seq in enumerate(sequences):
+            step_num = i + 1
+            sent_record = next((m for m in messages_sent if m.get("step") == step_num), None)
+
+            step_info = {
+                "step": step_num,
+                "message": seq.get("message_template", "") or seq.get("message", ""),
+                "channel": seq.get("channel", "sms"),
+                "delay_hours": seq.get("delay_hours", 0),
+                "delay_days": seq.get("delay_days", 0),
+                "delay_months": seq.get("delay_months", 0),
+                "ai_generated": seq.get("ai_generated", False),
+                "step_context": seq.get("step_context", ""),
+            }
+
+            if sent_record:
+                step_info["status"] = "sent"
+                sent_at = sent_record.get("sent_at")
+                step_info["sent_at"] = sent_at.isoformat() if sent_at else None
+            elif step_num == current_step and status == "active":
+                step_info["status"] = "next"
+                next_send = enrollment.get("next_send_at")
+                step_info["scheduled_at"] = next_send.isoformat() if next_send else None
+            elif step_num > current_step or status == "active":
+                step_info["status"] = "upcoming"
+            else:
+                step_info["status"] = "upcoming"
+
+            steps.append(step_info)
+
+        journeys.append({
+            "campaign_name": campaign.get("name", enrollment.get("campaign_name", "Unknown")),
+            "campaign_type": campaign.get("type", ""),
+            "trigger_tag": campaign.get("trigger_tag", ""),
+            "ai_enabled": campaign.get("ai_enabled", False),
+            "status": status,
+            "current_step": current_step,
+            "total_steps": len(sequences),
+            "enrolled_at": enrollment.get("enrolled_at", "").isoformat() if enrollment.get("enrolled_at") else None,
+            "next_send_at": enrollment.get("next_send_at", "").isoformat() if enrollment.get("next_send_at") else None,
+            "steps": steps,
+        })
+
+    return journeys
