@@ -89,10 +89,27 @@ export const EVENT_TYPE_ICONS: Record<string, { icon: string; color: string }> =
   customer_reply: { icon: 'arrow-down', color: '#30D158' },
 };
 
-/** Get a human-readable label for any event type */
+const CARD_DISPLAY: Record<string, string> = {
+  congrats: 'Congrats', welcome: 'Welcome', birthday: 'Birthday',
+  holiday: 'Holiday', thankyou: 'Thank You', thank_you: 'Thank You',
+  anniversary: 'Anniversary',
+};
+
+/** Get a human-readable label for any event type — works for ALL card types automatically */
 export function getEventLabel(eventType: string): string {
   if (!eventType) return 'Activity';
-  return EVENT_TYPE_LABELS[eventType] || eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  if (EVENT_TYPE_LABELS[eventType]) return EVENT_TYPE_LABELS[eventType];
+  // Dynamic card event labels: e.g. "promo_card_viewed" → "Viewed Promo Card"
+  const cardParts = eventType.split('_card_');
+  if (cardParts.length === 2) {
+    const [cardType, action] = cardParts;
+    const display = CARD_DISPLAY[cardType] || cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    if (action === 'viewed') return `Viewed ${display} Card`;
+    if (action === 'download' || action === 'downloaded') return `${display} Card Downloaded`;
+    if (action === 'shared' || action === 'share') return `Shared ${display} Card`;
+    if (action === 'sent') return `${display} Card Sent`;
+  }
+  return eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 /** All card send event types — for filtering/aggregation */

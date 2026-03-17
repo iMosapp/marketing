@@ -616,6 +616,20 @@ async def get_performance(user_id: str, period: str = "week"):
         eng_total
     )
 
+    # ── Customer card engagement: count ALL *_card_viewed and *_card_download(ed) events dynamically ──
+    # This auto-includes any card type (congrats, welcome, birthday, holiday, thankyou, anniversary, and ANY future type)
+    # Excludes digital_card_* and store_card_* which are separate metrics
+    card_engagement_total = eng_signals.get("card_viewed", 0) + eng_signals.get("card_downloaded", 0)
+    for evt_key, evt_count in activity.items():
+        if ("_card_viewed" in evt_key or "_card_download" in evt_key) and not evt_key.startswith("digital_card") and not evt_key.startswith("store_card"):
+            card_engagement_total += evt_count
+
+    # ── Card shares: count ALL *_card_sent events dynamically ──
+    card_shares_total = 0
+    for evt_key, evt_count in activity.items():
+        if "_card_sent" in evt_key:
+            card_shares_total += evt_count
+
     return {
         "total_touchpoints": total_touchpoints,
         "trend_pct": trend_pct,
@@ -639,7 +653,7 @@ async def get_performance(user_id: str, period: str = "week"):
         "sharing": {
             "my_card": activity.get("digital_card_shared", 0) + activity.get("card_shared", 0) + activity.get("digital_card_sent", 0),
             "reviews": activity.get("review_invite_sent", 0) + activity.get("review_shared", 0) + activity.get("review_request_sent", 0),
-            "card_shares": activity.get("congrats_card_sent", 0) + activity.get("birthday_card_sent", 0) + activity.get("holiday_card_sent", 0) + activity.get("thank_you_card_sent", 0) + activity.get("anniversary_card_sent", 0),
+            "card_shares": card_shares_total,
             "showcase": activity.get("showroom_shared", 0),
         },
         "engagement": {
@@ -650,15 +664,7 @@ async def get_performance(user_id: str, period: str = "week"):
         },
         "click_through": {
             "my_card_views": activity.get("digital_card_viewed", 0) + eng_signals.get("digital_card_viewed", 0),
-            "customer_card_views": (
-                activity.get("congrats_card_viewed", 0) + activity.get("birthday_card_viewed", 0) +
-                activity.get("holiday_card_viewed", 0) + activity.get("thankyou_card_viewed", 0) +
-                activity.get("welcome_card_viewed", 0) + activity.get("anniversary_card_viewed", 0) +
-                activity.get("congrats_card_download", 0) + activity.get("birthday_card_download", 0) +
-                activity.get("holiday_card_download", 0) + activity.get("thankyou_card_download", 0) +
-                activity.get("welcome_card_download", 0) + activity.get("anniversary_card_download", 0) +
-                eng_signals.get("card_viewed", 0) + eng_signals.get("card_downloaded", 0)
-            ),
+            "customer_card_views": card_engagement_total,
             "review_link_clicks": activity.get("review_link_clicked", 0) + activity.get("online_review_clicked", 0) + activity.get("card_review_clicked", 0) + activity.get("card_online_review_clicked", 0) + eng_signals.get("review_link_clicked", 0),
             "showcase_views": activity.get("showcase_viewed", 0) + activity.get("showroom_viewed", 0) + eng_signals.get("showcase_viewed", 0),
             "link_page_visits": activity.get("link_page_viewed", 0) + eng_signals.get("link_page_viewed", 0),
@@ -673,18 +679,13 @@ EVENT_CATEGORY_MAP = {
     "calls": ["call_placed", "call_received"],
     "my_card": ["digital_card_shared", "card_shared", "digital_card_sent"],
     "reviews": ["review_invite_sent", "review_shared", "review_request_sent"],
-    "card_shares": ["congrats_card_sent", "birthday_card_sent", "holiday_card_sent", "thank_you_card_sent", "anniversary_card_sent", "welcome_card_sent"],
+    "card_shares": ["congrats_card_sent", "birthday_card_sent", "holiday_card_sent", "thank_you_card_sent", "anniversary_card_sent", "welcome_card_sent", "thankyou_card_sent"],
     "showcase": ["showroom_shared"],
     "link_clicks": ["link_clicked", "card_viewed"],
     "email_opens": ["email_opened"],
     "replies": ["reply_received", "sms_received"],
     "my_card_views": ["digital_card_viewed"],
-    "customer_card_views": [
-        "congrats_card_viewed", "birthday_card_viewed", "holiday_card_viewed",
-        "thankyou_card_viewed", "welcome_card_viewed", "anniversary_card_viewed",
-        "congrats_card_download", "birthday_card_download", "holiday_card_download",
-        "thankyou_card_download", "welcome_card_download", "anniversary_card_download",
-    ],
+    "customer_card_views": "__REGEX__:^(?!digital_|store_).*_card_(viewed|download)",
     "review_link_clicks": ["review_link_clicked", "online_review_clicked", "card_review_clicked", "card_online_review_clicked"],
     "showcase_views": ["showcase_viewed", "showroom_viewed"],
     "link_page_visits": ["link_page_viewed"],
@@ -694,13 +695,7 @@ EVENT_CATEGORY_MAP = {
 ENGAGEMENT_CATEGORY_MAP = {
     "link_clicks": ["link_clicked", "card_viewed", "digital_card_viewed", "showcase_viewed", "link_page_viewed", "review_link_clicked"],
     "my_card_views": ["digital_card_viewed"],
-    "customer_card_views": [
-        "card_viewed", "card_downloaded",
-        "congrats_card_viewed", "birthday_card_viewed", "holiday_card_viewed",
-        "thankyou_card_viewed", "welcome_card_viewed", "anniversary_card_viewed",
-        "congrats_card_download", "birthday_card_download", "holiday_card_download",
-        "thankyou_card_download", "welcome_card_download", "anniversary_card_download",
-    ],
+    "customer_card_views": "__REGEX__:^(?!digital_|store_).*_card_(viewed|download)",
     "review_link_clicks": ["review_link_clicked", "online_review_clicked", "card_review_clicked", "card_online_review_clicked"],
     "showcase_views": ["showcase_viewed"],
     "link_page_visits": ["link_page_viewed"],
@@ -734,20 +729,33 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
             })
         return {"events": events, "count": len(events)}
 
-    if not event_types:
+    # Build event filter — supports regex patterns for generic card-type matching
+    if isinstance(event_types, str) and event_types.startswith("__REGEX__:"):
+        regex_pattern = event_types.split(":", 1)[1]
+        event_filter = {"$regex": regex_pattern}
+    elif event_types:
+        event_filter = {"$in": event_types}
+    else:
         return {"events": []}
 
     events = await db.contact_events.find(
-        {"user_id": user_id, "event_type": {"$in": event_types}, "timestamp": {"$gte": start, "$lt": end}},
+        {"user_id": user_id, "event_type": event_filter, "timestamp": {"$gte": start, "$lt": end}},
         {"_id": 0, "event_type": 1, "channel": 1, "content": 1, "contact_id": 1, "contact_name": 1, "timestamp": 1}
     ).sort("timestamp", -1).limit(50).to_list(50)
 
     # Also pull from engagement_signals for click-through categories
     eng_types = ENGAGEMENT_CATEGORY_MAP.get(category, [])
-    if eng_types:
+    if isinstance(eng_types, str) and eng_types.startswith("__REGEX__:"):
+        eng_regex = eng_types.split(":", 1)[1]
+        eng_filter = {"$regex": eng_regex}
+    elif eng_types:
+        eng_filter = {"$in": eng_types}
+    else:
+        eng_filter = None
+    if eng_filter:
         try:
             eng_events = await db.engagement_signals.find(
-                {"user_id": user_id, "signal_type": {"$in": eng_types}, "created_at": {"$gte": start, "$lt": end}},
+                {"user_id": user_id, "signal_type": eng_filter, "created_at": {"$gte": start, "$lt": end}},
                 {"_id": 0, "signal_type": 1, "contact_id": 1, "contact_name": 1, "created_at": 1, "metadata": 1},
             ).sort("created_at", -1).limit(50).to_list(50)
             for e in eng_events:

@@ -7,6 +7,11 @@ ARCHITECTURE:
 - The frontend passes contact_id (from `cid` URL param, set by short URL redirect) for accurate attribution
 - Falls back to phone/name lookup if contact_id is not available
 - Events are logged to contact_events collection → counted in daily touchpoints, leaderboard, performance dashboard
+
+CARD TYPE HANDLING:
+- Card types are resolved DYNAMICALLY — no need to add entries for new card types
+- Any page value that isn't in NON_CARD_CONFIG is treated as a card type
+- Event types follow the pattern: {card_type}_card_{action} (e.g., "thankyou_card_viewed")
 """
 import logging
 from datetime import datetime, timezone
@@ -17,86 +22,57 @@ from utils.contact_activity import log_activity_for_customer, log_customer_activ
 router = APIRouter(prefix="/tracking", tags=["Tracking"])
 logger = logging.getLogger(__name__)
 
-# Maps (page, action) → (event_type, title template, icon, color)
+
+# ── Dynamic card action resolver ──
+# Maps action → (event_type_suffix, title_template, icon, color)
+# {name} is replaced with the display name of the card type
+CARD_SPECIFIC_ACTIONS = {
+    "viewed":           ("_card_viewed",     "Viewed {name} Card",              "eye",          "#C9A962"),
+    "download_clicked": ("_card_downloaded",  "{name} Card Downloaded",          "download",     "#34C759"),
+    "share_clicked":    ("_card_shared",      "Shared {name} Card",             "share-social",  "#007AFF"),
+    "share_facebook":   ("_card_shared",      "Shared {name} Card (Facebook)",  "logo-facebook", "#1877F2"),
+    "share_twitter":    ("_card_shared",      "Shared {name} Card (Twitter)",   "logo-twitter",  "#1DA1F2"),
+    "share_instagram":  ("_card_shared",      "Shared {name} Card (Instagram)", "logo-instagram","#E4405F"),
+    "share_linkedin":   ("_card_shared",      "Shared {name} Card (LinkedIn)",  "logo-linkedin", "#0A66C2"),
+}
+
+# Actions on card pages that are NOT card-type-specific (same event_type for all card types)
+CARD_GENERIC_ACTIONS = {
+    "internal_review_submitted": ("internal_review_submitted", "Submitted Internal Review",       "star",    "#FFD60A"),
+    "online_review_clicked":     ("online_review_clicked",     "Clicked Leave a Review Online",   "open",    "#FBBC04"),
+    "salesman_card_clicked":     ("card_salesman_clicked",     "Clicked Salesman Digital Card",   "person",  "#C9A962"),
+    "my_card_clicked":           ("card_quick_link_clicked",   "Clicked My Card Link",            "card",    "#C9A962"),
+    "my_page_clicked":           ("page_quick_link_clicked",   "Clicked My Page Link",            "globe",   "#007AFF"),
+    "showcase_clicked":          ("showcase_quick_link_clicked","Clicked Showcase Link",           "images",  "#5856D6"),
+    "links_clicked":             ("links_quick_link_clicked",  "Clicked Links Page",              "link",    "#007AFF"),
+    "opt_in_clicked":            ("opt_in_clicked",            "Clicked Opt-In for Showcase",     "star",    "#C9A962"),
+}
+
+# Known card type display names (auto-generates for unknown types via title-case)
+CARD_DISPLAY_NAMES = {
+    "congrats": "Congrats", "welcome": "Welcome", "birthday": "Birthday",
+    "holiday": "Holiday", "thankyou": "Thank You", "thank_you": "Thank You",
+    "anniversary": "Anniversary",
+}
+
+
+def resolve_card_action(card_type: str, action: str):
+    """Dynamically resolve ANY card type + action to (event_type, title, icon, color).
+    Works for all existing AND future card types without code changes."""
+    display = CARD_DISPLAY_NAMES.get(card_type, card_type.replace("_", " ").title())
+
+    if action in CARD_SPECIFIC_ACTIONS:
+        suffix, title_tpl, icon, color = CARD_SPECIFIC_ACTIONS[action]
+        return (f"{card_type}{suffix}", title_tpl.replace("{name}", display), icon, color)
+
+    if action in CARD_GENERIC_ACTIONS:
+        return CARD_GENERIC_ACTIONS[action]
+
+    return None
+
+
+# ── Non-card page configs (digital card, store card, review, link page) ──
 ACTION_CONFIG = {
-    # ── Congrats / Birthday / Holiday / Thank You / Welcome cards ──
-    ("congrats", "viewed"): ("congrats_card_viewed", "Viewed Congrats Card", "eye", "#C9A962"),
-    ("congrats", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("congrats", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("congrats", "download_clicked"): ("congrats_card_downloaded", "Congrats Card Downloaded", "download", "#34C759"),
-    ("congrats", "share_clicked"): ("congrats_card_shared", "Shared Congrats Card", "share-social", "#007AFF"),
-    ("congrats", "share_facebook"): ("congrats_card_shared", "Shared Congrats Card (Facebook)", "logo-facebook", "#1877F2"),
-    ("congrats", "share_twitter"): ("congrats_card_shared", "Shared Congrats Card (Twitter)", "logo-twitter", "#1DA1F2"),
-    ("congrats", "share_instagram"): ("congrats_card_shared", "Shared Congrats Card (Instagram)", "logo-instagram", "#E4405F"),
-    ("congrats", "share_linkedin"): ("congrats_card_shared", "Shared Congrats Card (LinkedIn)", "logo-linkedin", "#0A66C2"),
-    ("congrats", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-    ("congrats", "my_card_clicked"): ("card_quick_link_clicked", "Clicked My Card Link", "card", "#C9A962"),
-    ("congrats", "my_page_clicked"): ("page_quick_link_clicked", "Clicked My Page Link", "globe", "#007AFF"),
-    ("congrats", "showcase_clicked"): ("showcase_quick_link_clicked", "Clicked Showcase Link", "images", "#5856D6"),
-    ("congrats", "links_clicked"): ("links_quick_link_clicked", "Clicked Links Page", "link", "#007AFF"),
-    ("congrats", "opt_in_clicked"): ("opt_in_clicked", "Clicked Opt-In for Showcase", "star", "#C9A962"),
-
-    # ── Welcome cards ──
-    ("welcome", "viewed"): ("welcome_card_viewed", "Viewed Welcome Card", "eye", "#007AFF"),
-    ("welcome", "download_clicked"): ("welcome_card_downloaded", "Welcome Card Downloaded", "download", "#34C759"),
-    ("welcome", "share_clicked"): ("welcome_card_shared", "Shared Welcome Card", "share-social", "#007AFF"),
-    ("welcome", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("welcome", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("welcome", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-    ("welcome", "my_card_clicked"): ("card_quick_link_clicked", "Clicked My Card Link", "card", "#C9A962"),
-    ("welcome", "my_page_clicked"): ("page_quick_link_clicked", "Clicked My Page Link", "globe", "#007AFF"),
-    ("welcome", "showcase_clicked"): ("showcase_quick_link_clicked", "Clicked Showcase Link", "images", "#5856D6"),
-    ("welcome", "links_clicked"): ("links_quick_link_clicked", "Clicked Links Page", "link", "#007AFF"),
-    ("welcome", "opt_in_clicked"): ("opt_in_clicked", "Clicked Opt-In for Showcase", "star", "#C9A962"),
-
-    # ── Birthday cards ──
-    ("birthday", "viewed"): ("birthday_card_viewed", "Viewed Birthday Card", "eye", "#FF9500"),
-    ("birthday", "download_clicked"): ("birthday_card_downloaded", "Birthday Card Downloaded", "download", "#34C759"),
-    ("birthday", "share_clicked"): ("birthday_card_shared", "Shared Birthday Card", "share-social", "#007AFF"),
-    ("birthday", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("birthday", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("birthday", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-    ("birthday", "my_card_clicked"): ("card_quick_link_clicked", "Clicked My Card Link", "card", "#C9A962"),
-    ("birthday", "my_page_clicked"): ("page_quick_link_clicked", "Clicked My Page Link", "globe", "#007AFF"),
-    ("birthday", "showcase_clicked"): ("showcase_quick_link_clicked", "Clicked Showcase Link", "images", "#5856D6"),
-    ("birthday", "links_clicked"): ("links_quick_link_clicked", "Clicked Links Page", "link", "#007AFF"),
-    ("birthday", "opt_in_clicked"): ("opt_in_clicked", "Clicked Opt-In for Showcase", "star", "#C9A962"),
-
-    # ── Holiday cards ──
-    ("holiday", "viewed"): ("holiday_card_viewed", "Viewed Holiday Card", "eye", "#5AC8FA"),
-    ("holiday", "download_clicked"): ("holiday_card_downloaded", "Holiday Card Downloaded", "download", "#34C759"),
-    ("holiday", "share_clicked"): ("holiday_card_shared", "Shared Holiday Card", "share-social", "#007AFF"),
-    ("holiday", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("holiday", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("holiday", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-    ("holiday", "my_card_clicked"): ("card_quick_link_clicked", "Clicked My Card Link", "card", "#C9A962"),
-    ("holiday", "my_page_clicked"): ("page_quick_link_clicked", "Clicked My Page Link", "globe", "#007AFF"),
-    ("holiday", "showcase_clicked"): ("showcase_quick_link_clicked", "Clicked Showcase Link", "images", "#5856D6"),
-    ("holiday", "links_clicked"): ("links_quick_link_clicked", "Clicked Links Page", "link", "#007AFF"),
-    ("holiday", "opt_in_clicked"): ("opt_in_clicked", "Clicked Opt-In for Showcase", "star", "#C9A962"),
-
-    # ── Thank You cards ──
-    ("thank_you", "viewed"): ("thankyou_card_viewed", "Viewed Thank You Card", "eye", "#34C759"),
-    ("thank_you", "download_clicked"): ("thankyou_card_downloaded", "Thank You Card Downloaded", "download", "#34C759"),
-    ("thank_you", "share_clicked"): ("thankyou_card_shared", "Shared Thank You Card", "share-social", "#007AFF"),
-    ("thankyou", "viewed"): ("thankyou_card_viewed", "Viewed Thank You Card", "eye", "#34C759"),
-    ("thankyou", "download_clicked"): ("thankyou_card_downloaded", "Thank You Card Downloaded", "download", "#34C759"),
-    ("thankyou", "share_clicked"): ("thankyou_card_shared", "Shared Thank You Card", "share-social", "#007AFF"),
-    ("thank_you", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("thank_you", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("thank_you", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-    ("thankyou", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("thankyou", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("thankyou", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-
-    # ── Anniversary cards ──
-    ("anniversary", "viewed"): ("anniversary_card_viewed", "Viewed Anniversary Card", "eye", "#FF2D55"),
-    ("anniversary", "download_clicked"): ("anniversary_card_downloaded", "Anniversary Card Downloaded", "download", "#34C759"),
-    ("anniversary", "share_clicked"): ("anniversary_card_shared", "Shared Anniversary Card", "share-social", "#007AFF"),
-    ("anniversary", "internal_review_submitted"): ("internal_review_submitted", "Submitted Internal Review", "star", "#FFD60A"),
-    ("anniversary", "online_review_clicked"): ("online_review_clicked", "Clicked Leave a Review Online", "open", "#FBBC04"),
-    ("anniversary", "salesman_card_clicked"): ("card_salesman_clicked", "Clicked Salesman Digital Card", "person", "#C9A962"),
-
     # ── Digital business card ──
     ("card", "viewed"): ("digital_card_viewed", "Viewed Digital Card", "eye", "#007AFF"),
     ("card", "call_clicked"): ("card_call_clicked", "Clicked Call from Card", "call", "#34C759"),
@@ -132,6 +108,9 @@ ACTION_CONFIG = {
     ("link_page", "link_clicked"): ("link_page_link_clicked", "Clicked Link", "open", "#007AFF"),
 }
 
+# Pages that are NOT card types — used to distinguish card pages from other pages
+NON_CARD_PAGES = {"card", "store_card", "review", "link_page"}
+
 
 @router.post("/event")
 async def track_event(data: dict):
@@ -155,6 +134,9 @@ async def track_event(data: dict):
         return {"tracked": False, "reason": "no salesperson_id"}
 
     config = ACTION_CONFIG.get((page, action))
+    if not config and page not in NON_CARD_PAGES:
+        # Treat as a card type page — resolve dynamically
+        config = resolve_card_action(page, action)
     if not config:
         event_type = f"{page}_{action}"
         title = f"{action.replace('_', ' ').title()}"

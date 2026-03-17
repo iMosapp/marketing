@@ -108,9 +108,30 @@ CARD_TYPE_VIEWED_INFO = {
 _SHORT_CODE_RE = re.compile(r'/api/s/([A-Za-z0-9]+)')
 
 
+_CARD_DISPLAY = {
+    "congrats": "Congrats", "welcome": "Welcome", "birthday": "Birthday",
+    "holiday": "Holiday", "thankyou": "Thank You", "thank_you": "Thank You",
+    "anniversary": "Anniversary",
+}
+
 def get_event_label(event_type: str) -> str:
-    """Get a human-readable label for any event type."""
-    return EVENT_TYPE_LABELS.get(event_type, event_type.replace("_", " ").title() if event_type else "Activity")
+    """Get a human-readable label for any event type — works for ALL card types automatically."""
+    if event_type in EVENT_TYPE_LABELS:
+        return EVENT_TYPE_LABELS[event_type]
+    # Dynamic card event labels:  e.g. "promo_card_viewed" → "Viewed Promo Card"
+    parts = event_type.split("_card_")
+    if len(parts) == 2:
+        card_type, action = parts
+        display = _CARD_DISPLAY.get(card_type, card_type.replace("_", " ").title())
+        if action in ("viewed",):
+            return f"Viewed {display} Card"
+        if action in ("download", "downloaded"):
+            return f"{display} Card Downloaded"
+        if action in ("shared", "share"):
+            return f"Shared {display} Card"
+        if action in ("sent",):
+            return f"{display} Card Sent"
+    return event_type.replace("_", " ").title() if event_type else "Activity"
 
 
 def get_card_sent_info(card_type: str) -> dict:

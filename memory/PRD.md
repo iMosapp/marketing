@@ -193,12 +193,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 **Rules for any future card changes:**
 1. NEVER hardcode a card type string in frontend tracking — always use `cardData.card_type`
 2. NEVER fire both `trackAction()` AND `track()` for the same user action (download, share) — pick ONE pathway
-3. If adding a new card type, you MUST add entries to ALL of these:
-   - `ACTION_CONFIG` in `/app/backend/routers/tracking.py` (page+action → event_type)
-   - `CARD_TYPE_SENT_INFO` + `CARD_TYPE_VIEWED_INFO` in `/app/backend/utils/event_types.py`
-   - `EVENT_TYPE_LABELS` in `/app/backend/utils/event_types.py`
-   - `EVENT_TYPE_LABELS` + `EVENT_TYPE_ICONS` in `/app/frontend/utils/eventTypes.ts`
-   - `LINK_TYPE_TO_EVENT` in `/app/backend/utils/event_types.py`
+3. **NO CODE CHANGES needed for new card types.** The system auto-resolves any card type:
+   - `tracking.py` → `resolve_card_action()` dynamically generates event types for ANY card type
+   - `tasks.py` → regex-based MongoDB queries (`^(?!digital_|store_).*_card_(viewed|download)`) auto-match any card type
+   - `event_types.py` → `get_event_label()` dynamically generates human-readable labels (e.g., "promo_card_viewed" → "Viewed Promo Card")
+   - `eventTypes.ts` → `getEventLabel()` does the same on frontend
 4. The card API (`GET /api/congrats/card/{cardId}`) MUST return `card_type` in the response
 5. After ANY card tracking change, verify by: creating a non-congrats card (e.g., welcome), downloading it, and checking `contact_events` collection — ZERO "congrats" events should appear
 
