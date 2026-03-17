@@ -1,0 +1,62 @@
+{
+  "summary": "FULL REGRESSION TEST — All 12 tests PASSED (100%). Verified: auth, contacts, campaigns (create/delete/duplicate), tag→auto-enrollment with immediate task creation, card event tracking with dynamic resolver, performance dashboard (customer_card_views), card API returning card_type, and tasks endpoint with contact_name.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_full_regression_211.py",
+    "/app/test_reports/pytest/pytest_full_regression_211.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "tracking.py: Dynamic card type resolution working correctly — resolve_card_action() handles ANY card type (welcome, thankyou, etc.) without hardcoding",
+    "tasks.py: Performance endpoint correctly uses regex pattern '__REGEX__:^(?!digital_|store_).*_card_(viewed|download)' to match customer card events dynamically",
+    "campaigns.py: Campaign creation, duplication working correctly — duplicate creates '(Copy)' suffix with active=false",
+    "contacts.py: _check_tag_campaign_enrollment correctly triggers immediate task creation when step 1 has delay_hours=0",
+    "congrats_cards.py: get_congrats_card returns card_type field as expected"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_full_regression_211.py"
+  ],
+  "success_rate": {
+    "backend": "100% - 12/12 tests passed",
+    "frontend": "N/A - backend only testing requested"
+  },
+  "test_credentials": {
+    "super_admin_email": "forest@imosapp.com",
+    "super_admin_password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "Test campaigns and enrollments created and cleaned up during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Full regression test passed. Key architecture: (1) tracking.py resolve_card_action() dynamically handles ANY card type — no hardcoding needed for new card types. (2) tasks.py customer_card_views uses regex to match *_card_viewed/*_card_download excluding digital_ and store_ prefixes. (3) Tag→campaign enrollment immediately creates task+pending_send+notification when step 1 has delay=0, and advances enrollment to step 2. (4) Campaign duplication creates copy with '(Copy)' suffix and active=false.",
+  "features_tested": {
+    "backend_api": {
+      "POST /api/auth/login": "PASS - Returns user with _id",
+      "GET /api/contacts/{user_id}": "PASS - Returns contacts list",
+      "GET /api/campaigns/{user_id}": "PASS - Returns campaigns with name, type, sequences, active",
+      "GET /api/tasks/{user_id}?filter=today": "PASS - Returns tasks with contact_name",
+      "POST /api/campaigns/{user_id}": "PASS - Creates campaign with sequences and trigger_tag",
+      "DELETE /api/campaigns/{user_id}/{campaign_id}": "PASS - Deletes campaign",
+      "POST /api/campaigns/{user_id}/{campaign_id}/duplicate": "PASS - Creates copy with '(Copy)' suffix, active=false",
+      "PATCH /api/contacts/{user_id}/{contact_id}/tags": "PASS - Triggers campaign enrollment when tag matches trigger_tag",
+      "GET /api/campaigns/{user_id}/{campaign_id}/enrollments": "PASS - Returns enrollments with current_step=2 (step 1 processed)",
+      "GET /api/campaigns/{user_id}/pending-sends": "PASS - Returns pending sends for step 1",
+      "POST /api/tracking/event (welcome/download_clicked)": "PASS - Resolves to welcome_card_downloaded (NOT congrats)",
+      "POST /api/tracking/event (thankyou/viewed)": "PASS - Resolves to thankyou_card_viewed (NOT congrats)",
+      "GET /api/tasks/{user_id}/performance": "PASS - Returns click_through.customer_card_views as number >= 0",
+      "GET /api/tasks/{user_id}/performance/detail?category=customer_card_views": "PASS - No store_card or digital_card events",
+      "GET /api/congrats/card/{card_id}": "PASS - Returns card_type field"
+    }
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sending is mocked, only task/pending_send creation verified"
+  }
+}
