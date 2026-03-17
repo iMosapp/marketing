@@ -622,6 +622,34 @@ async def delete_campaign(user_id: str, campaign_id: str):
     return {"message": "Campaign deleted successfully"}
 
 
+@router.post("/{user_id}/{campaign_id}/duplicate", response_model=Campaign)
+async def duplicate_campaign(user_id: str, campaign_id: str):
+    """Duplicate a campaign — creates a copy with '(Copy)' appended to the name."""
+    permission = await check_campaign_permission(user_id, "create")
+    if not permission["allowed"]:
+        raise HTTPException(status_code=403, detail=permission["reason"])
+
+    base_filter = await get_data_filter(user_id)
+    original = await get_db().campaigns.find_one(
+        {"$and": [{"_id": ObjectId(campaign_id)}, base_filter]}
+    )
+    if not original:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Build the duplicate — strip mongo metadata, reset stats
+    dup = {k: v for k, v in original.items() if k != "_id"}
+    dup["name"] = f"{original['name']} (Copy)"
+    dup["user_id"] = user_id
+    dup["created_at"] = datetime.utcnow()
+    dup["active"] = False  # start paused so user can review
+
+    result = await get_db().campaigns.insert_one(dup)
+    dup["_id"] = result.inserted_id
+
+    logger.info(f"Campaign duplicated: '{original['name']}' → '{dup['name']}'")
+    return Campaign(**dup)
+
+
 # ============= ENROLLMENT ENDPOINTS =============
 @router.post("/{user_id}/{campaign_id}/enroll/{contact_id}")
 async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id: str):

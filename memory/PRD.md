@@ -43,6 +43,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Added `delay_hours` field to backend `CampaignSequenceStep` model for completeness
 - Backend campaign creation API verified 100% working (7/7 tests passed)
 
+### Duplicate Campaign Feature (Mar 17, 2026)
+- **NEW:** "Duplicate Campaign" button on campaign detail page — creates a copy with "(Copy)" appended to name
+- Backend: `POST /api/campaigns/{user_id}/{campaign_id}/duplicate` endpoint
+- Frontend: Blue outlined button with copy icon, placed above the Delete button
+- Duplicate starts paused (`active: false`) so user can review/customize before activating
+- After duplicate, user is redirected to the new campaign's edit page for immediate customization
+
 ### Photo-Dominant OG Images (Mar 16, 2026)
 - Rewrote the salesperson OG image generator: profile photo now fills ~55% of the 1200x630 frame with name/title on the right panel (was a small 260px circle)
 - Created new customer card OG image endpoint (`/api/s/og-card-image/{card_id}`) — lightweight WebP (12KB) instead of the heavy 1080x1350 PNG card image

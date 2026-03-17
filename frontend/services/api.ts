@@ -415,6 +415,11 @@ export const campaignsAPI = {
     return response.data;
   },
 
+  duplicate: async (userId: string, campaignId: string) => {
+    const response = await api.post(`/campaigns/${userId}/${campaignId}/duplicate`);
+    return response.data;
+  },
+
   // Enrollment methods
   enrollContact: async (userId: string, campaignId: string, contactId: string) => {
     const response = await api.post(`/campaigns/${userId}/${campaignId}/enroll/${contactId}`);

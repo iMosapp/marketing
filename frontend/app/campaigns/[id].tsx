@@ -65,6 +65,7 @@ const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [campaign, setCampaign] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   
@@ -359,6 +360,21 @@ const { showToast } = useToast();
         },
       ]
     );
+  };
+
+  const handleDuplicate = async () => {
+    if (!user || !id) return;
+    try {
+      setDuplicating(true);
+      const newCampaign = await campaignsAPI.duplicate(user._id, id);
+      showToast(`Duplicated as "${newCampaign.name}"`, 'success');
+      router.replace(`/campaigns/${newCampaign._id || newCampaign.id}`);
+    } catch (error: any) {
+      const msg = error?.response?.data?.detail || 'Failed to duplicate campaign';
+      showToast(msg, 'error');
+    } finally {
+      setDuplicating(false);
+    }
   };
   
   const handleTimeChange = (event: any, selectedDate?: Date) => {
@@ -813,6 +829,24 @@ const { showToast } = useToast();
           )}
         </View>
         
+        {/* Duplicate Button */}
+        <TouchableOpacity 
+          style={styles.duplicateButton} 
+          onPress={handleDuplicate}
+          disabled={duplicating}
+          testID="duplicate-campaign-btn"
+          data-testid="duplicate-campaign-btn"
+        >
+          {duplicating ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : (
+            <>
+              <Ionicons name="copy-outline" size={20} color="#007AFF" />
+              <Text style={styles.duplicateText}>Duplicate Campaign</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
         {/* Delete Button */}
         <TouchableOpacity 
           style={styles.deleteButton} 
@@ -1147,6 +1181,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
+  },
+  duplicateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    gap: 8,
+    marginTop: 16,
+  },
+  duplicateText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#007AFF',
   },
   deleteButton: {
     flexDirection: 'row',
