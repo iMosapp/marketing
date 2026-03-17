@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
+import { showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 export default function WhiteLabelPartnersScreen() {
@@ -33,7 +34,10 @@ export default function WhiteLabelPartnersScreen() {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.slug) return;
+    if (!form.name || !form.slug) {
+      showSimpleAlert('Missing Fields', 'Partner Name and URL Slug are required.');
+      return;
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -44,7 +48,7 @@ export default function WhiteLabelPartnersScreen() {
       setShowForm(false); setEditing(null);
       setForm({ name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B', accent_color: '#1B2A4A', powered_by_text: "i'M On Social", company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '', commission_notes: '' });
       loadPartners();
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showSimpleAlert('Error', 'Failed to save partner. Please try again.'); }
     setSaving(false);
   };
 
@@ -210,9 +214,37 @@ export default function WhiteLabelPartnersScreen() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity style={s.saveBtn} onPress={handleSave} disabled={saving}>
-              {saving ? <ActivityIndicator color={colors.text} /> : <Text style={s.saveBtnText}>{editing ? 'Update Partner' : 'Create Partner'}</Text>}
-            </TouchableOpacity>
+            {Platform.OS === 'web' ? (
+              <button
+                type="button"
+                data-testid="save-partner-btn"
+                disabled={saving}
+                onClick={() => { handleSave(); }}
+                style={{
+                  backgroundColor: '#C9A962',
+                  borderRadius: 12,
+                  padding: 16,
+                  border: 'none',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? 0.6 : 1,
+                  width: '100%',
+                  marginTop: 8,
+                  WebkitAppearance: 'none' as any,
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation' as any,
+                }}
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.text} />
+                ) : (
+                  <Text style={s.saveBtnText}>{editing ? 'Update Partner' : 'Create Partner'}</Text>
+                )}
+              </button>
+            ) : (
+              <TouchableOpacity style={s.saveBtn} onPress={handleSave} disabled={saving} data-testid="save-partner-btn">
+                {saving ? <ActivityIndicator color={colors.text} /> : <Text style={s.saveBtnText}>{editing ? 'Update Partner' : 'Create Partner'}</Text>}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
