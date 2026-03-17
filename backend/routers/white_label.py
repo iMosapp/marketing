@@ -27,7 +27,7 @@ def serialize_partner(p: dict) -> dict:
 @router.get("")
 async def list_partners():
     db = get_db()
-    partners = await db.white_label_partners.find({}, {"_id": 1, "name": 1, "slug": 1, "logo": 1, "primary_color": 1, "is_active": 1, "commission_notes": 1}).to_list(100)
+    partners = await db.white_label_partners.find({}, {"_id": 1, "name": 1, "slug": 1, "logo": 1, "primary_color": 1, "is_active": 1, "commission_notes": 1, "sold_workflow_enabled": 1, "event_delivery": 1}).to_list(100)
     for p in partners:
         p["_id"] = str(p["_id"])
     return partners
@@ -62,6 +62,16 @@ async def create_partner(data: dict):
         "company_email": data.get("company_email", ""),
         "company_website": data.get("company_website", ""),
         "is_active": True,
+        # Sold Workflow Config
+        "sold_workflow_enabled": data.get("sold_workflow_enabled", False),
+        "sold_required_fields": data.get("sold_required_fields", []),
+        "external_account_id_required": data.get("external_account_id_required", False),
+        "event_delivery": data.get("event_delivery", {
+            "enabled": False,
+            "endpoint_url": "",
+            "auth_type": "none",
+            "auth_value_encrypted": "",
+        }),
         "created_at": now,
         "updated_at": now,
     }

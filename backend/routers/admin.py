@@ -520,7 +520,9 @@ async def update_store(store_id: str, store_data: dict):
         'name', 'organization_id', 'state', 'settings', 'phone', 'address', 'city',
         'review_links', 'website', 'logo_url', 'cover_image_url', 'primary_color',
         'business_hours', 'timezone', 'social_links', 'slug', 'active',
-        'email_footer', 'industry'
+        'email_footer', 'industry',
+        # White-label partner / sold workflow fields
+        'external_account_id', 'deal_or_stock_mode', 'partner_id',
     ]
     update_dict = {k: v for k, v in store_data.items() if k in allowed_fields}
     update_dict['updated_at'] = datetime.utcnow()

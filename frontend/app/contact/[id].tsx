@@ -34,6 +34,7 @@ import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
 import CampaignJourney from '../../components/CampaignJourney';
+import { SoldWorkflowModal } from '../../components/SoldWorkflowModal';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -359,6 +360,10 @@ export default function ContactDetailScreen() {
   const [actionProgress, setActionProgress] = useState<any[]>([]);
   const [progressCompleted, setProgressCompleted] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
+
+  // Sold workflow modal
+  const [showSoldModal, setShowSoldModal] = useState(false);
+  const [soldWorkflowResult, setSoldWorkflowResult] = useState<any>(null);
 
   // Computed: filtered events for search (must come after state declarations)
   const feedQuery = feedSearch.toLowerCase().trim();
@@ -1521,8 +1526,19 @@ export default function ContactDetailScreen() {
         const updatedTags = [...contact.tags, name];
         setContact((prev: any) => ({ ...prev, tags: updatedTags }));
         try {
-          await api.patch(`/contacts/${user._id}/${id}/tags`, { tags: updatedTags });
+          const res = await api.patch(`/contacts/${user._id}/${id}/tags`, { tags: updatedTags });
           showToast(`Tag "${name}" added`);
+          
+          // Check for sold workflow response
+          if (res.data?.sold_workflow) {
+            const sw = res.data.sold_workflow;
+            if (sw.status === 'validation_failed' && sw.missing_fields?.length > 0) {
+              setSoldWorkflowResult(sw);
+              setShowSoldModal(true);
+            } else if (sw.status === 'queued') {
+              showToast('Sold workflow completed');
+            }
+          }
         } catch (e: any) {
           setContact((prev: any) => ({ ...prev, tags: prev.tags.filter((t: string) => t !== name) }));
           showSimpleAlert('Error', 'Could not add tag');
@@ -3264,6 +3280,64 @@ export default function ContactDetailScreen() {
                 </View>
               ) : null}
 
+              {/* Sold Workflow Status */}
+              {!isNewContact && contact.sold_workflow_status && contact.sold_workflow_status !== 'not_applicable' && (
+                <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid="sold-workflow-status">
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons 
+                        name={
+                          contact.sold_workflow_status === 'delivery_success' ? 'checkmark-circle' :
+                          contact.sold_workflow_status === 'delivery_pending' ? 'time' :
+                          contact.sold_workflow_status === 'validation_failed' ? 'alert-circle' :
+                          contact.sold_workflow_status === 'delivery_failed' ? 'close-circle' : 'help-circle'
+                        }
+                        size={20}
+                        color={
+                          contact.sold_workflow_status === 'delivery_success' ? '#34C759' :
+                          contact.sold_workflow_status === 'delivery_pending' ? '#FF9500' :
+                          contact.sold_workflow_status === 'validation_failed' ? '#FF9500' :
+                          '#FF3B30'
+                        }
+                      />
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+                        Sold Workflow: {contact.sold_workflow_status.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                      </Text>
+                    </View>
+                    {(contact.sold_workflow_status === 'validation_failed' || contact.sold_workflow_status === 'delivery_failed') && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (contact.sold_workflow_status === 'validation_failed') {
+                            setSoldWorkflowResult({
+                              status: 'validation_failed',
+                              event_id: contact.sold_workflow_event_id,
+                              missing_fields: contact.sold_validation_missing_fields || [],
+                            });
+                            setShowSoldModal(true);
+                          } else {
+                            // Manual retry for delivery_failed
+                            api.post(`/sold-workflow/retry/${contact.sold_workflow_event_id}`, {}, { headers: { 'X-User-ID': user?._id } })
+                              .then(() => { showToast('Delivery retry initiated'); loadContact(); })
+                              .catch(() => showSimpleAlert('Error', 'Retry failed'));
+                          }
+                        }}
+                        style={{ backgroundColor: '#FF950020', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                        data-testid="sold-workflow-retry-btn"
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#FF9500' }}>
+                          {contact.sold_workflow_status === 'validation_failed' ? 'Fix & Complete' : 'Retry'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {contact.sold_workflow_last_error && (
+                    <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 6 }}>
+                      {contact.sold_workflow_last_error}
+                    </Text>
+                  )}
+                </View>
+              )}
+
               {/* Campaign Journey — upcoming campaign activities */}
               {!isNewContact && user && (
                 <CampaignJourney userId={user._id} contactId={id as string} />
@@ -4799,6 +4873,17 @@ export default function ContactDetailScreen() {
         onSent={channelPicker.onSent}
         visible={channelPicker.visible}
         onClose={channelPicker.close}
+      />
+      <SoldWorkflowModal
+        visible={showSoldModal}
+        onClose={() => setShowSoldModal(false)}
+        onComplete={() => {
+          setShowSoldModal(false);
+          showToast('Sold workflow completed');
+          loadContact();
+        }}
+        contactId={id as string}
+        workflowResult={soldWorkflowResult}
       />
     </SafeAreaView>
   );

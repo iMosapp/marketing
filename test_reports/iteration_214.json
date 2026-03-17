@@ -1,0 +1,64 @@
+{
+  "summary": "Completed comprehensive testing of White-Label Partner Sold Workflow System. Backend: 8/8 tests passed - PATCH /api/contacts tags endpoint triggers sold workflow, returns missing_fields, revalidate endpoint works, idempotency verified, date_sold auto-set, non-partner users not affected. Frontend: Partner list shows 'Sold Workflow Active' badge, partner edit form has complete Sold Workflow config section with toggle, required fields checkboxes, and endpoint configuration.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sold_workflow_comprehensive.py",
+    "/app/test_reports/pytest/pytest_sold_workflow_comprehensive.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend sold_workflow.py correctly implements: is_sold_tag() for case-insensitive tag detection, sold_tag_just_added() for new tag detection, _resolve_partner_config() for partner lookup via store/org chain",
+    "Validation logic in _validate_sold_fields() checks: customer_name, phone_number, full_size_image, deal_or_stock_number (with mode-based logic), external_account_id",
+    "Idempotency check prevents duplicate events by checking existing events with validation_status=passed and delivery_status in [queued, sent, retrying]",
+    "date_sold and sold_tag_applied_at are auto-set only when Sold tag is first applied (not on re-application)",
+    "Scheduler runs process_sold_deliveries_job every 5 minutes to process queued deliveries with retry logic",
+    "Frontend white-label.tsx shows 'Sold Workflow Active' badge on partner cards with green checkmark icon when sold_workflow_enabled=true",
+    "Partner edit form includes complete Sold Workflow section: Enable toggle, Required Fields checkboxes (Customer Name, Phone Number, Full-Size Image, Deal or Stock Number), External Account ID Required checkbox, External Endpoint config (URL, auth type)",
+    "Contact detail page [id].tsx shows sold_workflow_status badge with status-appropriate icons and Fix & Complete / Retry buttons for failed states",
+    "SoldWorkflowModal provides form to fix missing fields and calls revalidate endpoint"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_sold_workflow_comprehensive.py"
+  ],
+  "success_rate": {
+    "backend": "100% - 8/8 tests passed",
+    "frontend": "100% - All UI elements verified"
+  },
+  "test_credentials": {
+    "login": "forest@imosapp.com / Admin123!"
+  },
+  "seed_data_creation": "Tests create temporary org/store/contact with cleanup - Calendar Systems partner already exists with sold_workflow_enabled=true",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Sold Workflow System fully implemented and tested. Backend tests verify: (1) PATCH tags endpoint triggers workflow when Sold tag applied to partner-linked user's contact, (2) Returns missing_fields list for validation failures, (3) Revalidate endpoint re-validates after fields fixed, (4) Idempotency prevents duplicate events, (5) date_sold auto-set on first Sold tag, (6) Non-partner users get null sold_workflow, (7) Partner API includes sold_workflow fields. Frontend verified: White Label Partners page shows 'Sold Workflow Active' badge on Calendar Systems, partner edit form has Sold Workflow config section with all options. Note: External endpoint delivery is not tested (endpoint URL is empty for Calendar Systems).",
+  "features_tested": {
+    "backend_api": {
+      "PATCH /api/contacts/{user_id}/{contact_id}/tags": "PASS - Triggers sold workflow when Sold tag applied, returns sold_workflow object with status and missing_fields",
+      "POST /api/sold-workflow/revalidate/{contact_id}": "PASS - Re-validates contact after fixing missing fields, returns updated status",
+      "GET /api/sold-workflow/contact/{contact_id}": "PASS - Returns events array, has_partner boolean, deal_or_stock_mode",
+      "Idempotency": "PASS - Applying Sold tag twice does not create duplicate events",
+      "date_sold auto-set": "PASS - date_sold and sold_tag_applied_at auto-set only on first Sold tag application",
+      "Non-partner user": "PASS - sold_workflow is null for users not linked to a partner",
+      "GET /api/admin/partners": "PASS - Includes sold_workflow_enabled field",
+      "GET /api/admin/partners/{id}": "PASS - Includes full sold workflow config fields"
+    },
+    "frontend_ui": {
+      "Partner list 'Sold Workflow Active' badge": "PASS - Visible on Calendar Systems card with green checkmark icon",
+      "Partner edit form Sold Workflow section": "PASS - Has Enable toggle, Required Fields checkboxes, External Endpoint config",
+      "Contact detail sold workflow status badge": "VERIFIED IN CODE - Shows status-appropriate icon and text, Fix & Complete / Retry buttons",
+      "SoldWorkflowModal": "VERIFIED IN CODE - Provides form for missing fields, calls revalidate endpoint"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": true,
+    "mocked_apis_list": ["External endpoint delivery not tested - partner endpoint_url is empty"]
+  }
+}

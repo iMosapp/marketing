@@ -308,7 +308,21 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
         })
     except Exception as e:
         logger.error(f"Failed to log new contact event: {e}")
-    
+
+    # Sold workflow hook — runs AFTER all saves, never blocks
+    sold_result = None
+    try:
+        from routers.sold_workflow import process_sold_workflow
+        sold_result = await process_sold_workflow(
+            user_id=user_id,
+            contact_id=str(result.inserted_id),
+            contact_data=contact_dict,
+            old_tags=[],  # No old tags on create
+            trigger_source="create",
+        )
+    except Exception as e:
+        logger.warning(f"Sold workflow error (non-blocking): {e}")
+
     return Contact(**contact_dict)
 
 
@@ -525,6 +539,13 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     update_dict = contact_data.dict()
     update_dict['updated_at'] = datetime.utcnow()
+
+    # Capture old tags BEFORE save for sold workflow detection
+    db = get_db()
+    _old_contact_for_tags = await db.contacts.find_one(
+        {"_id": ObjectId(contact_id)}, {"tags": 1}
+    )
+    _old_tags = _old_contact_for_tags.get("tags", []) if _old_contact_for_tags else []
     
     # Process photo if it's a new base64 upload → compress to WebP via image pipeline
     photo_val = update_dict.get('photo')
@@ -649,8 +670,25 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     # Auto-enroll in date-based campaigns if date fields were updated
     await _check_date_campaign_enrollment(user_id, contact_id, update_dict)
-    
-    return {"message": "Contact updated successfully"}
+
+    # Sold workflow hook — runs AFTER all saves, never blocks
+    sold_result = None
+    try:
+        from routers.sold_workflow import process_sold_workflow
+        sold_result = await process_sold_workflow(
+            user_id=user_id,
+            contact_id=contact_id,
+            contact_data=update_dict,
+            old_tags=_old_tags,
+            trigger_source="update",
+        )
+    except Exception as e:
+        logger.warning(f"Sold workflow error (non-blocking): {e}")
+
+    response = {"message": "Contact updated successfully"}
+    if sold_result:
+        response["sold_workflow"] = sold_result
+    return response
 
 @router.patch("/{user_id}/{contact_id}/profile-photo")
 async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...)):
@@ -812,7 +850,11 @@ async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(.
     tags = data.get("tags", [])
     if not isinstance(tags, list):
         raise HTTPException(status_code=400, detail="tags must be a list")
-    
+
+    # Capture old tags BEFORE save for sold workflow detection
+    old_contact = await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"tags": 1})
+    old_tags = old_contact.get("tags", []) if old_contact else []
+
     result = await db.contacts.update_one(
         {"_id": ObjectId(contact_id), "user_id": user_id},
         {"$set": {"tags": tags, "updated_at": datetime.now(timezone.utc)}}
@@ -826,7 +868,24 @@ async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(.
         contact["_id"] = str(contact["_id"])
         await _check_tag_campaign_enrollment(user_id, contact_id, contact)
 
-    return {"tags": tags}
+    # Sold workflow hook — runs AFTER tag save, never blocks it
+    sold_result = None
+    try:
+        from routers.sold_workflow import process_sold_workflow
+        sold_result = await process_sold_workflow(
+            user_id=user_id,
+            contact_id=contact_id,
+            contact_data={"tags": tags},
+            old_tags=old_tags,
+            trigger_source="tag_patch",
+        )
+    except Exception as e:
+        logger.warning(f"Sold workflow error (non-blocking): {e}")
+
+    response = {"tags": tags}
+    if sold_result:
+        response["sold_workflow"] = sold_result
+    return response
 
 
 

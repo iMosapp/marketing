@@ -781,6 +781,18 @@ async def run_monthly_health_reports_job():
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
 
 
+async def process_sold_deliveries_job():
+    """Wrapper for the scheduler — processes queued sold workflow deliveries."""
+    logger.info("[Scheduler] Processing queued sold deliveries...")
+    try:
+        from routers.sold_workflow import process_queued_sold_deliveries
+        await process_queued_sold_deliveries()
+    except Exception as e:
+        msg = f"[Scheduler] Error in sold deliveries: {e}"
+        logger.error(msg)
+        _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+
+
 
 def start_scheduler():
     """Register jobs and start the APScheduler."""
@@ -860,8 +872,17 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
+    # Every 5 minutes - process queued sold workflow deliveries
+    scheduler.add_job(
+        process_sold_deliveries_job,
+        IntervalTrigger(minutes=5),
+        id="sold_delivery_processor",
+        replace_existing=True,
+        misfire_grace_time=120,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 8 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC), monthly_health_reports (22:00 UTC)")
+    logger.info("[Scheduler] Started with 9 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC), monthly_health_reports (22:00 UTC), sold_delivery_processor (every 5m)")
 
 
 def stop_scheduler():
