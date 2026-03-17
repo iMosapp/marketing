@@ -212,7 +212,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-### Card Event Tracking Fix (Mar 17, 2026)
+### Performance Dashboard Card Type Fix (Mar 17, 2026)
+- **FIXED:** `customer_card_views` metric was missing `thankyou_card_viewed`, `welcome_card_viewed`, `anniversary_card_viewed` — Thank You/Welcome/Anniversary card views were invisible in performance
+- **FIXED:** Card downloads (`*_card_download`) were not counted in ANY performance metric — now included in `customer_card_views`
+- Updated `EVENT_CATEGORY_MAP` and `ENGAGEMENT_CATEGORY_MAP` with all card type variations
+- Verified: Thank You card views + downloads now appear in both performance summary and detail drill-down
 - **ROOT CAUSE:** Three bugs causing phantom "Congrats Card Downloaded" events when downloading Welcome/Birthday/etc cards:
   1. Frontend `track()` helper hardcoded `'congrats'` as the page parameter for ALL card types
   2. Download/share handlers called BOTH `trackAction()` AND `track()`, creating duplicate events through two separate backend pathways
