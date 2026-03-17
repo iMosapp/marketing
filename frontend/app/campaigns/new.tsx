@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
-  Alert,
   ActivityIndicator,
   Platform,
   Image,
@@ -315,27 +314,27 @@ const { showToast } = useToast();
   
   const handleSave = async () => {
     if (!campaign.name) {
-      Alert.alert('Error', 'Please enter a campaign name');
+      showToast('Please enter a campaign name', 'error');
       return;
     }
     
     if (sequences.some(s => !s.message.trim())) {
-      Alert.alert('Error', 'Please fill in all message templates');
+      showToast('Please fill in all message templates', 'error');
       return;
     }
     
     if (campaign.type === 'tag' && campaign.selectedTags.length === 0 && !campaign.triggerTag) {
-      Alert.alert('Error', 'Please select a trigger tag');
+      showToast('Please select a trigger tag', 'error');
       return;
     }
 
     if (campaign.type === 'date' && !campaign.dateType) {
-      Alert.alert('Error', 'Please select a date type (Birthday, Anniversary, or Sold Date)');
+      showToast('Please select a date type', 'error');
       return;
     }
     
     if (!user) {
-      Alert.alert('Error', 'Please log in to create campaigns');
+      showToast('Please log in to create campaigns', 'error');
       return;
     }
     
@@ -368,12 +367,11 @@ const { showToast } = useToast();
       
       await campaignsAPI.create(user._id, campaignData);
       
-      Alert.alert('Success', `Campaign created with ${sequences.length} message${sequences.length > 1 ? 's' : ''} in sequence!`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showToast(`Campaign created with ${sequences.length} message${sequences.length > 1 ? 's' : ''} in sequence!`, 'success');
+      router.replace('/campaigns');
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || 'Failed to create campaign';
-      Alert.alert('Error', errorMessage);
+      showToast(errorMessage, 'error');
       console.error('Create campaign error:', error);
     } finally {
       setSaving(false);
@@ -488,9 +486,9 @@ const { showToast } = useToast();
         
         <Text style={styles.headerTitle}>New Campaign</Text>
         
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={saving}>
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={saving} data-testid="create-campaign-btn">
           {saving ? (
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color="#FFF" />
           ) : (
             <Text style={styles.saveButtonText}>Create</Text>
           )}
@@ -1020,12 +1018,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   saveButton: {
-    padding: 4,
+    backgroundColor: '#007AFF',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
   },
   scrollContent: {
     padding: 16,

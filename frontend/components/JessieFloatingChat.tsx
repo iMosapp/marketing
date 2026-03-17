@@ -346,7 +346,7 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     height: 22,
-    zIndex: 9999,
+    zIndex: 50,
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,

@@ -421,6 +421,7 @@ class CampaignSequenceStep(BaseModel):
     action_type: str = "message"  # "message" or "send_card"
     card_type: str = ""  # congrats, birthday, anniversary, thankyou, welcome, holiday
     message_template: str = ""
+    delay_hours: int = 0
     delay_days: int = 0
     delay_months: int = 0
     media_urls: List[str] = []  # Media attachments for this step
