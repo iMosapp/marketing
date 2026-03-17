@@ -636,6 +636,36 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Index creation skipped: {e}")
     
+    # Auto-sync PRD.md into the database
+    try:
+        prd_path = Path(__file__).parent.parent / "memory" / "PRD.md"
+        if prd_path.exists():
+            prd_content = prd_path.read_text()
+            existing = await db.company_docs.find_one({"slug": "product-requirements-document"}, {"content": 1})
+            if not existing or existing.get("content") != prd_content:
+                await db.company_docs.update_one(
+                    {"slug": "product-requirements-document"},
+                    {"$set": {
+                        "content": prd_content,
+                        "updated_at": datetime.utcnow(),
+                        "title": "Product Requirements Document",
+                        "summary": "Complete PRD for the i'M On Social platform - features, architecture, backlog, and known issues.",
+                        "category": "prd",
+                        "icon": "clipboard",
+                        "is_published": True,
+                        "sort_order": 0,
+                    },
+                    "$setOnInsert": {
+                        "slug": "product-requirements-document",
+                        "version": "1.0",
+                        "created_at": datetime.utcnow(),
+                    }},
+                    upsert=True,
+                )
+                logger.info("PRD auto-synced from PRD.md")
+    except Exception as e:
+        logger.warning(f"PRD auto-sync skipped: {e}")
+
     # Start the background campaign scheduler
     try:
         from scheduler import start_scheduler
