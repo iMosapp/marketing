@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { trackCustomerAction } from '../../services/tracking';
+import { SEOHead } from '../../components/SEOHead';
 
 const ICON_MAP: Record<string, string> = {
   'logo-instagram': 'logo-instagram',
@@ -89,6 +90,7 @@ export default function PublicLinkPage() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: bg }} contentContainerStyle={s.page}>
+      <SEOHead type="link" id={username as string} />
       <View style={s.profile}>
         {data.photo_url ? (
           <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor: accent }]} />

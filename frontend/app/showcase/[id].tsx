@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
+import { SEOHead } from '../../components/SEOHead';
 
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
@@ -210,6 +211,7 @@ export default function ShowcasePage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <SEOHead type="card" id={id as string} />
       {/* Sticky top bar */}
       <View style={styles.topBar}>
         <View style={{ width: 32 }} />

@@ -26,6 +26,7 @@ import api from '../../services/api';
 import { trackCustomerAction } from '../../services/tracking';
 import { useAuthStore } from '../../store/authStore';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
+import { SEOHead } from '../../components/SEOHead';
 
 // Web-safe URL opener  - Linking.openURL uses window.open('_blank')
 // which popup blockers intercept for sms: and mailto: protocols.
@@ -489,6 +490,7 @@ export default function DigitalCardPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <SEOHead type="card" id={userId as string} />
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.cardBorder }]}>

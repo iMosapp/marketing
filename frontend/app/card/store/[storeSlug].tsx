@@ -16,6 +16,7 @@ import { useLocalSearchParams } from 'expo-router';
 import api from '../../../services/api';
 import { trackCustomerAction } from '../../../services/tracking';
 import { PoweredByFooter } from '../../../components/PoweredByFooter';
+import { SEOHead } from '../../../components/SEOHead';
 
 const openProtocolUrl = (url: string) => {
   if (Platform.OS === 'web') {
@@ -104,6 +105,7 @@ export default function StoreCardPage() {
 
   return (
     <View style={styles.container}>
+      <SEOHead type="store" id={storeSlug as string} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
