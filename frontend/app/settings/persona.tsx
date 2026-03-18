@@ -473,7 +473,7 @@ const { showToast } = useToast();
           {/* Bio */}
           <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 12 }]}>ABOUT YOU</Text>
           <Text style={[styles.sectionDesc, { fontSize: 12 }]}>
-            Write your story in your own words. Who are you? What drives you? This is what your AI reads to craft every message.
+            Write your story in your own words. Who are you? What drives you? This bio powers your AI messages and is displayed on your digital card, showcase page, landing page, and all personal profiles.
           </Text>
           <View style={[styles.voiceInputRow, { alignItems: 'stretch' }]}>
             <TextInput
