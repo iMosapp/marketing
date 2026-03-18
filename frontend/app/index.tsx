@@ -33,15 +33,8 @@ async function registerPushOnce(userId: string) {
 }
 
 // Helper to get the right landing page based on user role
-const getDefaultRoute = (role?: string): string => {
-  switch (role) {
-    case 'super_admin':
-    case 'org_admin':
-    case 'store_manager':
-      return '/(tabs)/more';
-    default:
-      return '/(tabs)/inbox';
-  }
+const getDefaultRoute = (_role?: string): string => {
+  return '/(tabs)/home';
 };
 
 export default function Index() {
