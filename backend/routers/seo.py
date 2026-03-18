@@ -694,3 +694,255 @@ async def seo_analytics(user_id: str):
         "total_link_clicks": total_link_clicks,
         "active_short_urls": len(short_urls),
     }
+
+
+# ─── SEO Health Score ──────────────────────────────────────────────
+
+@router.get("/health-score/{user_id}")
+async def seo_health_score(user_id: str):
+    """Calculate a comprehensive SEO/AEO health score (0-100) for a user."""
+    db = get_db()
+
+    # Validate user_id format
+    if not user_id or user_id == "undefined" or len(user_id) != 24:
+        return {"error": "Invalid user ID"}
+    
+    try:
+        user = await db.users.find_one(
+            {"_id": ObjectId(user_id)},
+            {"password": 0}
+        )
+    except Exception:
+        return {"error": "Invalid user ID format"}
+        
+    if not user:
+        return {"error": "User not found"}
+
+    store_id = user.get("store_id")
+    store = await db.stores.find_one({"store_id": store_id}) if store_id else None
+
+    # ── Factor 1: Profile Completeness (20 pts) ────────────────────
+    profile_checks = {
+        "profile_photo": bool(user.get("profile_image")),
+        "bio": bool((user.get("persona", {}) or {}).get("bio") or user.get("bio")),
+        "phone": bool(user.get("phone")),
+        "title": bool(user.get("title")),
+        "seo_slug": bool(user.get("seo_slug")),
+        "social_links": bool(user.get("social_links") and any(v for v in (user.get("social_links") or {}).values())),
+    }
+    profile_filled = sum(1 for v in profile_checks.values() if v)
+    profile_score = round((profile_filled / len(profile_checks)) * 20)
+    profile_tips = []
+    tip_map = {
+        "profile_photo": {"tip": "Add a professional profile photo", "points": 3},
+        "bio": {"tip": "Write a personal bio to help customers find you", "points": 3},
+        "phone": {"tip": "Add your phone number for direct contact", "points": 3},
+        "title": {"tip": "Set your job title (e.g., 'Sales Manager')", "points": 3},
+        "seo_slug": {"tip": "Create an SEO-friendly URL slug for your public page", "points": 4},
+        "social_links": {"tip": "Connect at least one social media profile", "points": 4},
+    }
+    for key, passed in profile_checks.items():
+        if not passed:
+            profile_tips.append(tip_map[key])
+
+    # ── Factor 2: Review Strength (20 pts) ─────────────────────────
+    reviews = await db.customer_feedback.find({
+        "salesperson_id": user_id,
+        "approved": True,
+        "rating": {"$gte": 1}
+    }).to_list(200)
+    review_count = len(reviews)
+    avg_rating = round(sum(r.get("rating", 5) for r in reviews) / review_count, 1) if review_count else 0
+
+    # Scale: 0 reviews = 0, 5+ reviews = full count points (10), 4.5+ rating = full rating points (10)
+    count_pts = min(review_count / 5, 1.0) * 10
+    rating_pts = (avg_rating / 5.0) * 10 if review_count > 0 else 0
+    review_score = round(count_pts + rating_pts)
+    review_tips = []
+    if review_count < 5:
+        review_tips.append({"tip": f"Get {5 - review_count} more reviews to reach 'Strong' status", "points": round((5 - review_count) / 5 * 10)})
+    if review_count > 0 and avg_rating < 4.5:
+        review_tips.append({"tip": "Focus on 5-star experiences to boost your average rating", "points": round((4.5 - avg_rating) / 5 * 10)})
+
+    # ── Factor 3: Content Distribution (20 pts) ────────────────────
+    card_stats = await db.seo_stats.find_one({"reference_id": user_id, "page_type": "card"})
+    card_visits = card_stats.get("total_visits", 0) if card_stats else 0
+
+    short_urls = await db.short_urls.find(
+        {"user_id": user_id}
+    ).to_list(200)
+    total_link_clicks = sum(s.get("click_count", 0) for s in short_urls)
+    active_links = len([s for s in short_urls if s.get("click_count", 0) > 0])
+
+    # card shares from tasks or messages
+    shares_count = await db.tasks.count_documents({
+        "assigned_to": user_id,
+        "type": {"$in": ["card_share", "digital_card_share"]}
+    })
+
+    # Scale: 10+ visits = full (8pts), 5+ active links = full (6pts), 5+ shares = full (6pts)
+    visit_pts = min(card_visits / 10, 1.0) * 8
+    link_pts = min(active_links / 5, 1.0) * 6
+    share_pts = min(shares_count / 5, 1.0) * 6
+    distribution_score = round(visit_pts + link_pts + share_pts)
+    distribution_tips = []
+    if card_visits < 10:
+        distribution_tips.append({"tip": "Share your digital card to drive more page views", "points": round((1 - min(card_visits / 10, 1.0)) * 8)})
+    if active_links < 5:
+        distribution_tips.append({"tip": "Create and share tracking links to monitor engagement", "points": round((1 - min(active_links / 5, 1.0)) * 6)})
+
+    # ── Factor 4: Search Visibility (20 pts) ───────────────────────
+    # Based on organic/direct visits and source diversity
+    recent_sources = card_stats.get("recent_sources", []) if card_stats else []
+    organic_visits = sum(1 for s in recent_sources if s.get("source") in ["organic", "direct", "google", "bing"])
+    unique_sources = len(set(s.get("source", "unknown") for s in recent_sources)) if recent_sources else 0
+
+    # Also check if user has schema.org data setup (store exists)
+    has_store_schema = bool(store and store.get("store_name"))
+    has_person_schema = bool(user.get("name") and user.get("seo_slug"))
+
+    # Scale: 10+ organic visits = full (8pts), 3+ unique sources = full (4pts), schema checks (8pts)
+    organic_pts = min(organic_visits / 10, 1.0) * 8
+    source_pts = min(unique_sources / 3, 1.0) * 4
+    schema_pts = (4 if has_person_schema else 0) + (4 if has_store_schema else 0)
+    visibility_score = round(organic_pts + source_pts + schema_pts)
+    visibility_tips = []
+    if not has_person_schema:
+        visibility_tips.append({"tip": "Complete your profile & SEO slug to enable Person schema markup", "points": 4})
+    if organic_visits < 10:
+        visibility_tips.append({"tip": "Boost organic traffic by sharing your public profile on social media", "points": round((1 - min(organic_visits / 10, 1.0)) * 8)})
+
+    # ── Factor 5: Freshness & Activity (20 pts) ───────────────────
+    stats = user.get("stats", {})
+    contacts_added = stats.get("contacts_added", 0)
+    messages_sent = stats.get("messages_sent", 0)
+
+    # Recent activity: contacts added in last 30 days
+    thirty_days_ago = datetime.now(timezone.utc).isoformat()[:10]
+    recent_contacts = await db.contacts.count_documents({
+        "user_id": user_id,
+        "created_at": {"$gte": thirty_days_ago}
+    })
+    recent_messages = await db.messages.count_documents({
+        "user_id": user_id,
+        "created_at": {"$gte": thirty_days_ago}
+    })
+
+    # Scale: 10+ contacts this month (8pts), 20+ messages this month (8pts), login recency (4pts)
+    contact_pts = min(recent_contacts / 10, 1.0) * 8
+    msg_pts = min(recent_messages / 20, 1.0) * 8
+    last_login = user.get("last_login")
+    login_recency = 4  # assume recent unless we know otherwise
+    if last_login:
+        try:
+            if isinstance(last_login, str):
+                ll = datetime.fromisoformat(last_login.replace("Z", "+00:00"))
+            else:
+                ll = last_login
+            days_since = (datetime.now(timezone.utc) - ll.replace(tzinfo=timezone.utc)).days
+            login_recency = max(0, 4 - days_since)  # lose 1pt per day inactive
+        except Exception:
+            login_recency = 2
+    freshness_score = round(contact_pts + msg_pts + login_recency)
+    freshness_tips = []
+    if recent_contacts < 10:
+        freshness_tips.append({"tip": f"Add {10 - recent_contacts} more contacts this month to maximize freshness", "points": round((1 - min(recent_contacts / 10, 1.0)) * 8)})
+    if recent_messages < 20:
+        freshness_tips.append({"tip": "Send more messages to show active engagement signals", "points": round((1 - min(recent_messages / 20, 1.0)) * 8)})
+
+    # ── Total Score ────────────────────────────────────────────────
+    total_score = min(profile_score + review_score + distribution_score + visibility_score + freshness_score, 100)
+
+    # Grade
+    if total_score >= 80:
+        grade = "Excellent"
+        grade_color = "#34C759"
+    elif total_score >= 60:
+        grade = "Good"
+        grade_color = "#007AFF"
+    elif total_score >= 40:
+        grade = "Fair"
+        grade_color = "#FF9500"
+    elif total_score >= 20:
+        grade = "Needs Work"
+        grade_color = "#FF3B30"
+    else:
+        grade = "Getting Started"
+        grade_color = "#8E8E93"
+
+    # Collect all tips sorted by points (highest impact first)
+    all_tips = profile_tips + review_tips + distribution_tips + visibility_tips + freshness_tips
+    all_tips.sort(key=lambda t: t["points"], reverse=True)
+
+    return {
+        "total_score": total_score,
+        "grade": grade,
+        "grade_color": grade_color,
+        "factors": {
+            "profile": {"score": profile_score, "max": 20, "label": "Profile Completeness", "checks": profile_checks},
+            "reviews": {"score": review_score, "max": 20, "label": "Review Strength", "details": {"count": review_count, "avg_rating": avg_rating}},
+            "distribution": {"score": distribution_score, "max": 20, "label": "Content Distribution", "details": {"card_visits": card_visits, "active_links": active_links, "shares": shares_count}},
+            "visibility": {"score": visibility_score, "max": 20, "label": "Search Visibility", "details": {"organic_visits": organic_visits, "unique_sources": unique_sources, "has_person_schema": has_person_schema, "has_store_schema": has_store_schema}},
+            "freshness": {"score": freshness_score, "max": 20, "label": "Activity & Freshness", "details": {"recent_contacts": recent_contacts, "recent_messages": recent_messages, "login_recency_pts": login_recency}},
+        },
+        "tips": all_tips[:6],
+        "user_name": user.get("name", ""),
+    }
+
+
+@router.get("/health-score/team/{store_id}")
+async def seo_team_scores(store_id: str):
+    """Get SEO health scores for all active team members in a store."""
+    db = get_db()
+
+    members = await db.users.find(
+        {"store_id": store_id, "is_active": True, "status": {"$ne": "deleted"}},
+        {"password": 0}
+    ).to_list(500)
+
+    results = []
+    for member in members:
+        uid = str(member["_id"])
+        # Lightweight score calculation - just the key metrics
+        profile_checks = {
+            "profile_photo": bool(member.get("profile_image")),
+            "bio": bool((member.get("persona", {}) or {}).get("bio") or member.get("bio")),
+            "phone": bool(member.get("phone")),
+            "title": bool(member.get("title")),
+            "seo_slug": bool(member.get("seo_slug")),
+            "social_links": bool(member.get("social_links") and any(v for v in (member.get("social_links") or {}).values())),
+        }
+        profile_score = round((sum(1 for v in profile_checks.values() if v) / len(profile_checks)) * 20)
+
+        reviews = await db.customer_feedback.find({"salesperson_id": uid, "approved": True, "rating": {"$gte": 1}}).to_list(200)
+        review_count = len(reviews)
+        avg_rating = round(sum(r.get("rating", 5) for r in reviews) / review_count, 1) if review_count else 0
+        review_score = round(min(review_count / 5, 1.0) * 10 + (avg_rating / 5.0) * 10) if review_count else 0
+
+        card_stats = await db.seo_stats.find_one({"reference_id": uid, "page_type": "card"})
+        card_visits = card_stats.get("total_visits", 0) if card_stats else 0
+
+        total_score = min(profile_score + review_score + min(round(card_visits / 10 * 20), 20) + 20, 100)  # simplified
+
+        if total_score >= 80:
+            grade = "Excellent"
+        elif total_score >= 60:
+            grade = "Good"
+        elif total_score >= 40:
+            grade = "Fair"
+        else:
+            grade = "Needs Work"
+
+        results.append({
+            "user_id": uid,
+            "name": member.get("name", ""),
+            "title": member.get("title", ""),
+            "photo": resolve_user_photo(member),
+            "score": total_score,
+            "grade": grade,
+            "review_count": review_count,
+            "card_visits": card_visits,
+        })
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return {"team": results}

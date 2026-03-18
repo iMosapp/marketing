@@ -579,6 +579,7 @@ export default function MoreScreen() {
       { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Where I stand on the team', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Detailed activity analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
       { permKey: 'email_analytics', icon: 'trending-up', title: 'Email Analytics', subtitle: 'Opens, clicks & engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
+      { permKey: 'my_performance', icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' },
     ]);
     if (items.length > 0) sections.push({ id: 'performance', title: 'My Performance', icon: 'stats-chart', color: '#34C759', items });
   }

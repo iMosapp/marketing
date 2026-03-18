@@ -345,6 +345,7 @@ export default function HomeScreen() {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [taskSummary, setTaskSummary] = useState<any>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const [seoScore, setSeoScore] = useState<any>(null);
 
   // Modals
   const [showContactAction, setShowContactAction] = useState(false);
@@ -371,7 +372,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?._id) { loadRecentActivity(); loadPendingTasks(); loadTaskSummary(); loadStoreSlug(); }
+      if (user?._id) { loadRecentActivity(); loadPendingTasks(); loadTaskSummary(); loadStoreSlug(); loadSeoScore(); }
     }, [user?._id])
   );
 
@@ -436,6 +437,14 @@ export default function HomeScreen() {
     try {
       const res = await api.get(`/tasks/${user._id}/summary`);
       setTaskSummary(res.data);
+    } catch {}
+  };
+
+  const loadSeoScore = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await api.get(`/seo/health-score/${user._id}`);
+      setSeoScore(res.data);
     } catch {}
   };
 
@@ -718,6 +727,27 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           {/* Activity Feed tile — demoted to smaller card */}
+
+          {/* ===== SEO HEALTH WIDGET ===== */}
+          {seoScore && (
+            <TouchableOpacity
+              onPress={() => router.push('/seo-health')}
+              activeOpacity={0.85}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 12 }}
+              data-testid="seo-health-widget"
+            >
+              <View style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 3, borderColor: seoScore.grade_color, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: seoScore.grade_color }}>{seoScore.total_score}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>SEO Health</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>{seoScore.grade}{seoScore.tips?.length > 0 ? ` \u00B7 ${seoScore.tips.length} tips to improve` : ''}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#48484A" />
+            </TouchableOpacity>
+          )}
+
+          {/* Activity Feed tile */}
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/activity-feed' as any)}
             activeOpacity={0.85}
