@@ -522,7 +522,7 @@ export default function MoreScreen() {
 
   const sections: Section[] = [];
   const isStoreManager = user?.role === 'store_manager';
-  const isPartner = user?.role === 'partner' || user?.role === 'reseller';
+  const isPartner = !!(user?.partner_id) || user?.role === 'partner' || user?.role === 'reseller';
 
   // ============================================================
   // SECTION 1: MY BRAND (Salesperson's personal command center)
@@ -612,10 +612,10 @@ export default function MoreScreen() {
     const items: MenuItem[] = [
       { icon: 'rocket', title: 'Onboarding Hub', subtitle: 'Create & onboard new accounts', onPress: () => router.push('/admin/onboarding-hub' as any), color: '#C9A962' },
       { icon: 'pulse', title: 'Account Health', subtitle: 'Retention dashboard & reports', onPress: () => router.push('/admin/account-health' as any), color: '#00C7BE' },
-      { icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'System overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
       ...(isSuperAdmin ? [
-        { icon: 'business', title: 'Organizations', subtitle: 'All organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },
+        { icon: 'shield-checkmark', title: 'Admin Dashboard', subtitle: 'System overview & activity', onPress: () => router.push('/admin'), color: '#34C759' },
       ] : []),
+      { icon: 'business', title: 'Organizations', subtitle: 'Manage organizations', onPress: () => router.push('/admin/organizations'), color: '#007AFF' },
       { icon: 'storefront', title: 'Accounts', subtitle: 'Store accounts', onPress: () => router.push('/admin/stores'), color: '#34C759' },
       { icon: 'people', title: 'All Users', subtitle: 'Cross-org user management', onPress: () => router.push('/admin/users'), color: '#FF9500' },
       ...(isSuperAdmin ? [
@@ -624,7 +624,9 @@ export default function MoreScreen() {
       ] : []),
       { icon: 'podium', title: 'Leaderboard', subtitle: 'Performance across all accounts', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { icon: 'pulse', title: 'Activity Feed', subtitle: 'Team activity across accounts', onPress: () => router.push('/(tabs)/activity-feed' as any), color: '#5856D6' },
-      { icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+      ...(isSuperAdmin ? [
+        { icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+      ] : []),
     ];
     sections.push({ id: 'account_mgmt', title: 'Account Management', icon: 'briefcase', color: '#007AFF', items });
   }

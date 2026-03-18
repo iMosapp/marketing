@@ -352,6 +352,7 @@ async def login(credentials: dict):
 
         # Fetch partner branding
         if pid:
+            user['partner_id'] = pid  # Add partner_id to user object for frontend
             try:
                 partner = await get_db().white_label_partners.find_one(
                     {"_id": ObjectId(pid), "is_active": True},
@@ -511,6 +512,7 @@ async def get_current_user(request: Request):
             except Exception:
                 pass
         if pid:
+            user['partner_id'] = pid  # Add partner_id to user object for frontend
             partner = await get_db().partners.find_one({"_id": ObjectId(pid) if not isinstance(pid, ObjectId) else pid})
             if partner:
                 partner["_id"] = str(partner["_id"])
