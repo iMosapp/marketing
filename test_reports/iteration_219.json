@@ -1,0 +1,70 @@
+{
+  "summary": "Partner Billing & Partner Admin Access testing completed. All 14 backend tests pass (100%). Frontend verified - White Label Partners page shows Billing button for each partner, Partner Billing page loads correctly with Partner Summary, Platform Billing (super admin), and Client Billing sections.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_partner_billing_access.py",
+    "/app/test_reports/pytest/pytest_partner_billing.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RBAC get_user_partner_id helper correctly resolves partner_id from user's org or store",
+    "get_scoped_organization_ids properly expands scope for org_admin when they belong to a partner",
+    "create_organization auto-links partner_id when created by partner admin",
+    "create_store auto-inherits partner_id from org",
+    "partner_billing router properly scopes client records by partner for org_admins",
+    "Frontend partner-billing.tsx correctly shows/hides platform billing section based on super_admin role"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_partner_billing_access.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (all visual tests passed)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123! (ID: 69a0b7095fddcede09591667)",
+    "partner_admin": "admin@calendarsystems.com / CalSys123! (ID: 69ba8350116fd5b3ad1691ba)",
+    "calendar_systems_partner_id": "69a10678b8e991776ed5df19"
+  },
+  "seed_data_creation": "Test created/cleaned up TEST_ prefixed orgs, stores, and billing records",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Partner billing and partner admin access features fully working. Backend: (1) Partner org_admin can list all partner-linked orgs, (2) Create new orgs auto-linked to partner, (3) Create stores that inherit partner_id from org, (4) Cannot create stores outside their partner scope. Super admin can configure platform billing per partner and view billing summary. Frontend: White Label Partners page has Billing button, Partner Billing page shows 3 sections - Summary, Platform Billing, Client Billing Records.",
+  "features_tested": {
+    "backend": {
+      "partner_admin_list_orgs": "PASS - Partner admin sees all partner-linked orgs",
+      "partner_admin_create_org": "PASS - New orgs auto-linked to partner_id",
+      "partner_admin_create_store": "PASS - Stores inherit partner_id from org",
+      "partner_admin_blocked_outside_partner": "PASS - Cannot create stores in non-partner orgs",
+      "partner_admin_list_stores": "PASS - Only sees stores in partner orgs",
+      "super_admin_set_platform_billing": "PASS - PUT /api/admin/partner-billing/platform/{partner_id}",
+      "super_admin_get_platform_billing": "PASS - GET /api/admin/partner-billing/platform/{partner_id}",
+      "super_admin_get_billing_summary": "PASS - GET /api/admin/partner-billing/platform-summary",
+      "non_super_admin_blocked_platform_billing": "PASS - 403 for partner admin viewing platform billing",
+      "create_client_billing_record": "PASS - POST /api/admin/partner-billing/client-records",
+      "partner_admin_create_client_record": "PASS - partner_id auto-set from user's org",
+      "client_records_scoped_to_partner": "PASS - GET returns only partner's records",
+      "super_admin_sees_all_records": "PASS - Super admin sees all billing records",
+      "rbac_partner_resolution": "PASS - get_user_partner_id helper works correctly"
+    },
+    "frontend": {
+      "white_label_page_billing_button": "PASS - Each partner card shows Billing button with receipt icon",
+      "partner_billing_page_loads": "PASS - Navigates to /admin/partner-billing?id={partnerId}&name={partnerName}",
+      "partner_summary_section": "PASS - Shows Orgs, Stores, Seats, Est/mo counts",
+      "platform_billing_section": "PASS - Shows Model, Rate, Carrier config (super admin only)",
+      "client_billing_section": "PASS - Shows client billing records with delete button"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": true,
+    "mocked_apis_list": ["Twilio SMS", "External sold workflow endpoint delivery"]
+  }
+}

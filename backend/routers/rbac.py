@@ -73,11 +73,33 @@ def require_role(min_role: str):
     return check_role
 
 
+async def get_user_partner_id(user: dict) -> Optional[str]:
+    """Resolve the partner_id for a user via their org or store."""
+    db = get_db()
+    org_id = user.get('organization_id')
+    if org_id:
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(org_id)}, {"partner_id": 1})
+            if org and org.get("partner_id"):
+                return org["partner_id"]
+        except Exception:
+            pass
+    store_id = user.get('store_id')
+    if store_id:
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1})
+            if store and store.get("partner_id"):
+                return store["partner_id"]
+        except Exception:
+            pass
+    return None
+
+
 async def get_scoped_organization_ids(user: dict) -> List[str]:
     """
     Get the list of organization IDs this user can access.
     - super_admin: all organizations
-    - org_admin: only their organization
+    - org_admin: their org, OR all partner-linked orgs if they belong to a partner
     - store_manager: only their organization (via their stores)
     - user: only their organization
     """
@@ -85,13 +107,22 @@ async def get_scoped_organization_ids(user: dict) -> List[str]:
     role = user.get('role', 'user')
     
     if role == 'super_admin':
-        # Super admin sees all
         orgs = await db.organizations.find({}, {"_id": 1}).limit(500).to_list(500)
         return [str(o["_id"]) for o in orgs]
     
     elif role == 'org_admin':
-        # Org admin sees their org only
         org_id = user.get('organization_id')
+        # Check if user belongs to a partner — expand scope to all partner orgs
+        partner_id = await get_user_partner_id(user)
+        if partner_id:
+            partner_orgs = await db.organizations.find(
+                {"partner_id": partner_id}, {"_id": 1}
+            ).to_list(500)
+            ids = [str(o["_id"]) for o in partner_orgs]
+            # Ensure their own org is included
+            if org_id and org_id not in ids:
+                ids.append(org_id)
+            return ids
         return [org_id] if org_id else []
     
     elif role == 'store_manager':
@@ -132,11 +163,13 @@ async def get_scoped_store_ids(user: dict) -> List[str]:
         return [str(s["_id"]) for s in stores]
     
     elif role == 'org_admin':
-        # Org admin sees all stores in their org
-        org_id = user.get('organization_id')
-        if not org_id:
+        # Org admin sees all stores in their org(s) — partner-aware
+        org_ids = await get_scoped_organization_ids(user)
+        if not org_ids:
             return []
-        stores = await db.stores.find({"organization_id": org_id}, {"_id": 1}).limit(500).to_list(500)
+        stores = await db.stores.find(
+            {"organization_id": {"$in": org_ids}}, {"_id": 1}
+        ).limit(500).to_list(500)
         return [str(s["_id"]) for s in stores]
     
     elif role == 'store_manager':
@@ -168,12 +201,19 @@ async def get_scoped_user_ids(user: dict) -> List[str]:
         return [str(u["_id"]) for u in users]
     
     elif role == 'org_admin':
-        # Org admin sees all users in their org
-        org_id = user.get('organization_id')
-        if not org_id:
+        # Org admin sees all users in their org(s) — partner-aware
+        org_ids = await get_scoped_organization_ids(user)
+        if not org_ids:
             return [user_id]
-        users = await db.users.find({"organization_id": org_id}, {"_id": 1}).to_list(10000)
-        return [str(u["_id"]) for u in users]
+        valid_oids = [ObjectId(oid) for oid in org_ids if oid]
+        users = await db.users.find(
+            {"organization_id": {"$in": [str(o) for o in valid_oids] + org_ids}},
+            {"_id": 1}
+        ).to_list(10000)
+        user_ids = [str(u["_id"]) for u in users]
+        if user_id not in user_ids:
+            user_ids.append(user_id)
+        return user_ids
     
     elif role == 'store_manager':
         # Store manager sees users in their stores

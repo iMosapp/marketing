@@ -149,17 +149,45 @@ async def create_organization(
     org_data: OrganizationCreate,
     x_user_id: str = Header(None, alias="X-User-ID")
 ):
-    """Create a new organization - super_admin only"""
+    """Create a new organization - super_admin or partner org_admin"""
     user = await get_requesting_user(x_user_id)
-    if not user or user.get('role') != 'super_admin':
-        raise HTTPException(status_code=403, detail="Only super admins can create organizations")
+    if not user:
+        raise HTTPException(status_code=403, detail="Authentication required")
+    
+    role = user.get('role', 'user')
+    partner_id = None
+    
+    if role == 'super_admin':
+        pass  # Can create any org
+    elif role == 'org_admin':
+        # Check if user belongs to a partner — allow partner admins to create orgs
+        from routers.rbac import get_user_partner_id
+        partner_id = await get_user_partner_id(user)
+        if not partner_id:
+            raise HTTPException(status_code=403, detail="Only super admins or partner admins can create organizations")
+    else:
+        raise HTTPException(status_code=403, detail="Only admins can create organizations")
     
     org_dict = org_data.dict()
     org_dict['created_at'] = datetime.utcnow()
     org_dict['active'] = True
     
+    # Auto-link to partner if created by partner admin
+    if partner_id:
+        org_dict['partner_id'] = partner_id
+    
     result = await get_db().organizations.insert_one(org_dict)
     org_dict['_id'] = str(result.inserted_id)
+    
+    # If created by partner admin, auto-assign org to partner
+    if partner_id:
+        try:
+            await get_db().white_label_partners.update_one(
+                {"_id": ObjectId(partner_id)},
+                {"$addToSet": {"organization_ids": str(result.inserted_id)}}
+            )
+        except Exception:
+            pass
     
     return org_dict
 
@@ -366,7 +394,7 @@ async def get_organization_leaderboard(
 # ============= STORE ENDPOINTS =============
 @router.post("/stores")
 async def create_store(store_data: StoreCreate, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Create a new store - super_admin or org_admin only"""
+    """Create a new store - super_admin or org_admin only (partner-aware)"""
     user = await get_requesting_user(x_user_id)
     
     if user:
@@ -374,15 +402,28 @@ async def create_store(store_data: StoreCreate, x_user_id: str = Header(None, al
         if role not in ['super_admin', 'org_admin']:
             raise HTTPException(status_code=403, detail="Only admins can create stores")
         
-        # Org admins can only create stores in their org
+        # Org admins: check they can access the target org (partner-scoped)
         if role == 'org_admin':
-            if store_data.organization_id != user.get('organization_id'):
-                raise HTTPException(status_code=403, detail="You can only create stores in your organization")
+            from routers.rbac import get_scoped_organization_ids
+            allowed_orgs = await get_scoped_organization_ids(user)
+            if store_data.organization_id and store_data.organization_id not in allowed_orgs:
+                raise HTTPException(status_code=403, detail="You can only create stores in your organizations")
     
     db = get_db()
     store_dict = store_data.dict()
     store_dict['created_at'] = datetime.utcnow()
     store_dict['active'] = True
+    
+    # Auto-link to partner if created by partner admin or if org has a partner
+    if not store_dict.get('partner_id') and store_dict.get('organization_id'):
+        try:
+            org = await db.organizations.find_one(
+                {"_id": ObjectId(store_dict['organization_id'])}, {"partner_id": 1}
+            )
+            if org and org.get('partner_id'):
+                store_dict['partner_id'] = org['partner_id']
+        except Exception:
+            pass
     
     result = await db.stores.insert_one(store_dict)
     store_id = str(result.inserted_id)
@@ -441,11 +482,15 @@ async def list_stores(
             if organization_id:
                 query['organization_id'] = organization_id
         elif role == 'org_admin':
-            # Org admin sees only their org's stores
-            user_org = user.get('organization_id')
-            if organization_id and organization_id != user_org:
-                raise HTTPException(status_code=403, detail="You can only view stores in your organization")
-            query = {'organization_id': user_org}
+            # Org admin sees stores in all their orgs (partner-aware)
+            from routers.rbac import get_scoped_organization_ids
+            allowed_orgs = await get_scoped_organization_ids(user)
+            if organization_id and organization_id not in allowed_orgs:
+                raise HTTPException(status_code=403, detail="You can only view stores in your organizations")
+            if organization_id:
+                query = {'organization_id': organization_id}
+            else:
+                query = {'organization_id': {'$in': allowed_orgs}}
         elif role == 'store_manager':
             # Store manager sees only their stores
             store_ids = await get_scoped_store_ids(user)

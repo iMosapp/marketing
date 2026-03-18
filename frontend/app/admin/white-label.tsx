@@ -297,6 +297,10 @@ export default function WhiteLabelPartnersScreen() {
                   <Ionicons name="business-outline" size={18} color="#C9A962" />
                   <Text style={[s.actionText, { color: '#C9A962' }]}>Orgs</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={s.actionBtn} onPress={() => router.push(`/admin/partner-billing?id=${p._id}&name=${p.name}`)}>
+                  <Ionicons name="receipt-outline" size={18} color="#34C759" />
+                  <Text style={[s.actionText, { color: '#34C759' }]}>Billing</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={s.actionBtn} onPress={() => handleDelete(p._id)}>
                   <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                   <Text style={[s.actionText, { color: '#FF3B30' }]}>Delete</Text>
