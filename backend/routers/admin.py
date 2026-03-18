@@ -250,8 +250,10 @@ async def update_organization(
         if role == 'super_admin':
             pass  # Can update any org
         elif role == 'org_admin':
-            if user.get('organization_id') != org_id:
-                raise HTTPException(status_code=403, detail="You can only update your own organization")
+            from routers.rbac import get_scoped_organization_ids
+            allowed_orgs = await get_scoped_organization_ids(user)
+            if org_id not in allowed_orgs:
+                raise HTTPException(status_code=403, detail="You can only update organizations in your scope")
         else:
             raise HTTPException(status_code=403, detail="Only admins can update organizations")
     
@@ -707,10 +709,12 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
         if role not in ['super_admin', 'org_admin', 'store_manager']:
             raise HTTPException(status_code=403, detail="Only admins can create users")
         
-        # Org admins can only create users in their org
+        # Org admins can only create users in their orgs (partner-scoped)
         if role == 'org_admin':
-            if user_data.get('organization_id') != requesting_user.get('organization_id'):
-                raise HTTPException(status_code=403, detail="You can only create users in your organization")
+            from routers.rbac import get_scoped_organization_ids
+            allowed_orgs = await get_scoped_organization_ids(requesting_user)
+            if user_data.get('organization_id') and user_data.get('organization_id') not in allowed_orgs:
+                raise HTTPException(status_code=403, detail="You can only create users in your organizations")
         
         # Store managers can only create users in their stores
         if role == 'store_manager':
@@ -787,11 +791,14 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     organization_id = data.get('organization_id')
     store_id = data.get('store_id')
     
-    # Non-super admins can only create users in their own org
+    # Non-super admins can only create users in their own org (partner-scoped)
     if requesting_user and requesting_user.get('role') != 'super_admin':
-        if organization_id and organization_id != requesting_user.get('organization_id'):
-            raise HTTPException(status_code=403, detail="You can only create users in your organization")
-        organization_id = requesting_user.get('organization_id')
+        from routers.rbac import get_scoped_organization_ids
+        allowed_orgs = await get_scoped_organization_ids(requesting_user)
+        if organization_id and organization_id not in allowed_orgs:
+            raise HTTPException(status_code=403, detail="You can only create users in your organizations")
+        if not organization_id:
+            organization_id = requesting_user.get('organization_id')
     
     if not name:
         raise HTTPException(status_code=400, detail="Name is required")
@@ -900,16 +907,20 @@ async def list_users(
             if store_id:
                 query['$or'] = [{"store_id": store_id}, {"store_ids": store_id}]
         elif user_role == 'org_admin':
-            # Org admin sees only their org's users
-            user_org = requesting_user.get('organization_id')
-            if organization_id and organization_id != user_org:
-                raise HTTPException(status_code=403, detail="You can only view users in your organization")
-            query = {'organization_id': user_org}
+            # Org admin sees users in all their orgs (partner-scoped)
+            from routers.rbac import get_scoped_organization_ids
+            allowed_orgs = await get_scoped_organization_ids(requesting_user)
+            if organization_id and organization_id not in allowed_orgs:
+                raise HTTPException(status_code=403, detail="You can only view users in your organizations")
+            if organization_id:
+                query = {'organization_id': organization_id}
+            else:
+                query = {'organization_id': {'$in': allowed_orgs}}
             if store_id:
-                # Verify store is in their org
+                # Verify store is in their partner orgs
                 store = await get_db().stores.find_one({"_id": ObjectId(store_id)})
-                if not store or store.get('organization_id') != user_org:
-                    raise HTTPException(status_code=403, detail="Store not in your organization")
+                if not store or store.get('organization_id') not in allowed_orgs:
+                    raise HTTPException(status_code=403, detail="Store not in your organizations")
                 query['$or'] = [{"store_id": store_id}, {"store_ids": store_id}]
         elif user_role == 'store_manager':
             # Store manager sees only users in their stores
