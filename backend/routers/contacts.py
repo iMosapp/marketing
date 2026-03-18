@@ -1345,9 +1345,15 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
             }
 
             if sent_record:
-                step_info["status"] = "sent"
-                sent_at = sent_record.get("sent_at")
-                step_info["sent_at"] = sent_at.isoformat() if sent_at else None
+                record_status = sent_record.get("status", "sent")  # default "sent" for legacy data
+                if record_status == "pending":
+                    step_info["status"] = "pending_send"
+                    queued = sent_record.get("queued_at", sent_record.get("sent_at"))
+                    step_info["queued_at"] = queued.isoformat() if queued else None
+                else:
+                    step_info["status"] = "sent"
+                    sent_at = sent_record.get("sent_at")
+                    step_info["sent_at"] = sent_at.isoformat() if sent_at else None
             elif step_num == current_step and status == "active":
                 step_info["status"] = "next"
                 next_send = enrollment.get("next_send_at")

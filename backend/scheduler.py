@@ -589,6 +589,22 @@ async def process_pending_campaign_steps():
                         )
 
                 # Advance enrollment
+                # For manual mode: mark as "pending" (user still needs to send)
+                # For automated mode: mark as "sent" (message was auto-delivered)
+                is_manual = delivery_mode == "manual"
+                msg_record = {
+                    "step": current_step,
+                    "content": message_content[:100],
+                    "channel": channel,
+                    "delivery_mode": delivery_mode,
+                }
+                if is_manual:
+                    msg_record["status"] = "pending"
+                    msg_record["queued_at"] = now
+                else:
+                    msg_record["status"] = "sent"
+                    msg_record["sent_at"] = now
+
                 if current_step < len(sequences):
                     next_step = sequences[current_step]
                     next_send = calculate_next_send_date(next_step)
@@ -621,44 +637,34 @@ async def process_pending_campaign_steps():
                         except Exception:
                             pass
 
+                    update_set = {
+                        "current_step": current_step + 1,
+                        "next_send_at": next_send,
+                    }
+                    if not is_manual:
+                        update_set["last_sent_at"] = now
+
                     await db.campaign_enrollments.update_one(
                         {"_id": enrollment["_id"]},
                         {
-                            "$set": {
-                                "current_step": current_step + 1,
-                                "last_sent_at": now,
-                                "next_send_at": next_send,
-                            },
-                            "$push": {
-                                "messages_sent": {
-                                    "step": current_step,
-                                    "sent_at": now,
-                                    "content": message_content[:100],
-                                    "channel": channel,
-                                    "delivery_mode": delivery_mode,
-                                }
-                            },
+                            "$set": update_set,
+                            "$push": {"messages_sent": msg_record},
                         },
                     )
                 else:
+                    update_set = {
+                        "current_step": current_step + 1,
+                        "next_send_at": None,
+                        "status": "completed",
+                    }
+                    if not is_manual:
+                        update_set["last_sent_at"] = now
+
                     await db.campaign_enrollments.update_one(
                         {"_id": enrollment["_id"]},
                         {
-                            "$set": {
-                                "current_step": current_step + 1,
-                                "last_sent_at": now,
-                                "next_send_at": None,
-                                "status": "completed",
-                            },
-                            "$push": {
-                                "messages_sent": {
-                                    "step": current_step,
-                                    "sent_at": now,
-                                    "content": message_content[:100],
-                                    "channel": channel,
-                                    "delivery_mode": delivery_mode,
-                                }
-                            },
+                            "$set": update_set,
+                            "$push": {"messages_sent": msg_record},
                         },
                     )
 

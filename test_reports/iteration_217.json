@@ -1,0 +1,62 @@
+{
+  "summary": "Backend testing completed for Manual Campaign Pending Status Fix. All 9 key assertions pass: (1) messages_sent has status='pending' for manual mode, (2) sent_at is NOT set initially, (3) queued_at is set, (4) last_sent_at is NOT set for manual mode, (5) Campaign Journey API returns 'pending_send', (6) Task is created with status='pending' and completed=false, (7) After task completion, messages_sent.status updates to 'sent', (8) sent_at is set after completion, (9) Journey shows 'sent' after completion. Also verified automated campaigns still work correctly with immediate status='sent' and last_sent_at set.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_manual_campaign_pending_status_direct.py",
+    "/app/test_reports/pytest/pytest_manual_campaign_pending_status_direct.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "scheduler.py lines 591-670: Correctly distinguishes manual vs automated - manual gets status='pending' and queued_at, automated gets status='sent' and sent_at",
+    "scheduler.py lines 644-645, 660-661: last_sent_at only set for automated mode (not is_manual)",
+    "tasks.py lines 536-559: Task completion correctly updates enrollment messages_sent from status='pending' to status='sent' with sent_at timestamp",
+    "contacts.py lines 1347-1356: Campaign Journey API correctly maps status='pending' to 'pending_send' for frontend display",
+    "CampaignJourney.tsx: Frontend correctly handles 'pending_send' status with 'Ready to Send' label and orange styling"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_manual_campaign_pending_status_direct.py",
+    "/app/backend/tests/test_manual_campaign_pending_status.py"
+  ],
+  "success_rate": {
+    "backend": "100% - 2/2 direct database tests passed"
+  },
+  "test_credentials": {
+    "login": "forest@imosapp.com / Admin123!"
+  },
+  "seed_data_creation": "TEST_Pending_Status_Direct campaign and contact created and cleaned up during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The manual campaign pending status fix has been verified working. Key behavior: For MANUAL delivery_mode campaigns, the scheduler now creates messages_sent entries with status='pending' and queued_at instead of status='sent' and sent_at. The last_sent_at field is NOT set at enrollment level for manual mode. When user completes the campaign_send task via PATCH /api/tasks/{user_id}/{task_id}, the enrollment's messages_sent entry is updated to status='sent'. The Campaign Journey endpoint (/api/contacts/{user_id}/{contact_id}/campaign-journey) returns 'pending_send' status for pending manual steps, which the frontend displays as 'Ready to Send'.",
+  "features_tested": {
+    "scheduler_trigger": "POST /api/campaigns/scheduler/trigger - correctly processes manual campaigns with pending status",
+    "campaign_journey": "GET /api/contacts/{user_id}/{contact_id}/campaign-journey - returns 'pending_send' for pending manual steps",
+    "task_completion": "PATCH /api/tasks/{user_id}/{task_id} with action=complete - updates enrollment messages_sent from pending to sent",
+    "enrollment_structure": "messages_sent entries have correct status/queued_at/sent_at fields based on delivery_mode",
+    "last_sent_at": "Only set for automated mode, not manual mode",
+    "automated_comparison": "Automated campaigns still work correctly with immediate status='sent'"
+  },
+  "mocked_apis": {
+    "has_mocked_apis": true,
+    "mocked_apis_list": ["Twilio SMS functionality - SMS not actually sent", "External sold workflow endpoint delivery"]
+  },
+  "bug_fix_verified": {
+    "original_issue": "For manual campaigns, step 1 showed as 'sent' in Campaign Journey even though user hadn't manually sent it yet",
+    "root_cause": "Scheduler was setting messages_sent with sent_at and status implied as 'sent', and setting last_sent_at on enrollment for manual mode",
+    "fix_applied": [
+      "messages_sent entries now have explicit status field: 'pending' for manual, 'sent' for automated",
+      "Manual mode uses queued_at instead of sent_at",
+      "last_sent_at is only set for automated mode",
+      "Task completion updates messages_sent from pending to sent",
+      "Campaign Journey endpoint checks status field to return 'pending_send' vs 'sent'"
+    ],
+    "verification_status": "VERIFIED WORKING - All 9 assertions pass"
+  }
+}

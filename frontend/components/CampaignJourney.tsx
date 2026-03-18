@@ -14,8 +14,9 @@ interface StepInfo {
   delay_months: number;
   ai_generated: boolean;
   step_context: string;
-  status: 'sent' | 'next' | 'upcoming';
+  status: 'sent' | 'pending_send' | 'next' | 'upcoming';
   sent_at?: string;
+  queued_at?: string;
   scheduled_at?: string;
 }
 
@@ -107,6 +108,7 @@ export default function CampaignJourney({ userId, contactId }: Props) {
       {journeys.map((journey, jIdx) => {
         const isExpanded = expanded[jIdx];
         const progress = journey.steps.filter(s => s.status === 'sent').length;
+        const pendingCount = journey.steps.filter(s => s.status === 'pending_send').length;
         const progressPct = journey.total_steps > 0 ? (progress / journey.total_steps) * 100 : 0;
         const isActive = journey.status === 'active';
         const accentColor = isActive ? '#007AFF' : '#34C759';
@@ -159,29 +161,30 @@ export default function CampaignJourney({ userId, contactId }: Props) {
               <View style={styles.timeline} data-testid={`journey-timeline-${jIdx}`}>
                 {journey.steps.map((step, sIdx) => {
                   const isSent = step.status === 'sent';
+                  const isPendingSend = step.status === 'pending_send';
                   const isNext = step.status === 'next';
-                  const stepColor = isSent ? '#34C759' : isNext ? '#FF9500' : colors.textTertiary || '#666';
+                  const stepColor = isSent ? '#34C759' : isPendingSend ? '#FF9500' : isNext ? '#FF9500' : colors.textTertiary || '#666';
                   const isLast = sIdx === journey.steps.length - 1;
 
                   return (
                     <View key={sIdx} style={styles.timelineStep} data-testid={`journey-step-${jIdx}-${sIdx}`}>
                       {/* Timeline connector line */}
                       <View style={styles.timelineLeft}>
-                        <View style={[styles.timelineDot, { backgroundColor: stepColor, borderColor: isSent ? '#34C75940' : isNext ? '#FF950040' : `${colors.border}` }]} />
+                        <View style={[styles.timelineDot, { backgroundColor: stepColor, borderColor: isSent ? '#34C75940' : (isPendingSend || isNext) ? '#FF950040' : `${colors.border}` }]} />
                         {!isLast && (
                           <View style={[styles.timelineLine, { backgroundColor: isSent ? '#34C75930' : colors.border }]} />
                         )}
                       </View>
 
                       {/* Step content */}
-                      <View style={[styles.timelineContent, isNext && styles.timelineContentNext, isNext && { borderColor: '#FF950040', backgroundColor: '#FF950008' }]}>
+                      <View style={[styles.timelineContent, (isNext || isPendingSend) && styles.timelineContentNext, (isNext || isPendingSend) && { borderColor: '#FF950040', backgroundColor: '#FF950008' }]}>
                         <View style={styles.stepHeaderRow}>
                           <Text style={[styles.stepLabel, { color: stepColor }]}>
-                            {isSent ? 'Sent' : isNext ? 'Next' : `Step ${step.step}`}
+                            {isSent ? 'Sent' : isPendingSend ? 'Ready to Send' : isNext ? 'Next' : `Step ${step.step}`}
                           </Text>
                           <View style={styles.stepMeta}>
                             <Ionicons name={step.channel === 'email' ? 'mail' : 'chatbubble'} size={11} color={colors.textTertiary || '#666'} />
-                            {!isSent && <Text style={[styles.delayText, { color: colors.textTertiary || '#666' }]}>{formatDelay(step)}</Text>}
+                            {!isSent && !isPendingSend && <Text style={[styles.delayText, { color: colors.textTertiary || '#666' }]}>{formatDelay(step)}</Text>}
                           </View>
                         </View>
 
@@ -193,6 +196,11 @@ export default function CampaignJourney({ userId, contactId }: Props) {
                         {isSent && step.sent_at && (
                           <Text style={[styles.timestamp, { color: colors.textTertiary || '#666' }]}>
                             {format(parseISO(step.sent_at), 'MMM d, h:mm a')}
+                          </Text>
+                        )}
+                        {isPendingSend && (
+                          <Text style={[styles.timestamp, { color: '#FF9500' }]}>
+                            In your Today's Touchpoints
                           </Text>
                         )}
                         {isNext && step.scheduled_at && (

@@ -532,6 +532,31 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
                 })
             except Exception as e:
                 logger.error(f"Failed to log task completion: {e}")
+        # When a campaign task is completed, update the enrollment's messages_sent status
+        if task.get("type") == "campaign_send" and task.get("campaign_id") and cid:
+            try:
+                pending_send_id = task.get("pending_send_id", "")
+                step_num = None
+                if pending_send_id:
+                    ps = await db.campaign_pending_sends.find_one({"_id": ObjectId(pending_send_id)})
+                    step_num = (ps or {}).get("step")
+                if step_num:
+                    await db.campaign_enrollments.update_one(
+                        {
+                            "campaign_id": task["campaign_id"],
+                            "contact_id": cid,
+                            "messages_sent.step": step_num,
+                        },
+                        {
+                            "$set": {
+                                "messages_sent.$.status": "sent",
+                                "messages_sent.$.sent_at": datetime.now(timezone.utc),
+                                "last_sent_at": datetime.now(timezone.utc),
+                            }
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to update campaign enrollment on task complete: {e}")
 
     elif action == "snooze":
         hours = update_data.get("snooze_hours", 24)

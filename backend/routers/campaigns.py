@@ -815,6 +815,8 @@ async def trigger_scheduler():
                         "description": f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_label} to {contact_display}.",
                         "due_date": now,
                         "priority": "high",
+                        "priority_order": 1,
+                        "status": "pending",
                         "completed": False,
                         "source": "campaign",
                         "campaign_id": enrollment['campaign_id'],
@@ -872,6 +874,8 @@ async def trigger_scheduler():
                         "description": f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}",
                         "due_date": now,
                         "priority": "high",
+                        "priority_order": 1,
+                        "status": "pending",
                         "completed": False,
                         "source": "campaign",
                         "campaign_id": enrollment['campaign_id'],
@@ -908,11 +912,27 @@ async def trigger_scheduler():
             # Build log entry
             step_description = step.get('card_type', '') if action_type == 'send_card' else (step.get('message_template', '')[:100])
             
+            # For manual mode: mark as "pending" (user still needs to send)
+            # For automated mode: mark as "sent" (message was auto-delivered)
+            is_manual = delivery_mode == "manual"
+            msg_record = {
+                "step": current_step,
+                "action_type": action_type,
+                "content": step_description,
+            }
+            if is_manual:
+                msg_record["status"] = "pending"
+                msg_record["queued_at"] = now
+            else:
+                msg_record["status"] = "sent"
+                msg_record["sent_at"] = now
+            
             # Update enrollment
             update_set = {
                 "current_step": current_step + 1,
-                "last_sent_at": now,
             }
+            if not is_manual:
+                update_set["last_sent_at"] = now
             if next_send:
                 update_set["next_send_at"] = next_send
             else:
@@ -923,12 +943,7 @@ async def trigger_scheduler():
                 {"_id": enrollment['_id']},
                 {
                     "$set": update_set,
-                    "$push": {"messages_sent": {
-                        "step": current_step,
-                        "action_type": action_type,
-                        "sent_at": now,
-                        "content": step_description,
-                    }}
+                    "$push": {"messages_sent": msg_record}
                 }
             )
             

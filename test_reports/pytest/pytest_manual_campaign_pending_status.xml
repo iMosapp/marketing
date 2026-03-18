@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="9" time="8.186" timestamp="2026-03-18T00:12:37.113677+00:00" hostname="agent-env-4c466a1c-dd63-4e57-8274-6f963bbd6089"><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_01_create_manual_campaign" time="0.576" /><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_02_create_test_contact" time="0.605" /><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_03_enroll_contact_in_campaign" time="0.771" /><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_04_trigger_scheduler_and_verify_pending_status" time="0.915"><failure message="AssertionError: BUG: Expected step 1 status='pending_send' for manual campaign, got 'next'&#10;assert 'next' == 'pending_send'&#10;  &#10;  - pending_send&#10;  + next">backend/tests/test_manual_campaign_pending_status.py:207: in test_04_trigger_scheduler_and_verify_pending_status
+    assert step1_status == "pending_send", \
+E   AssertionError: BUG: Expected step 1 status='pending_send' for manual campaign, got 'next'
+E   assert 'next' == 'pending_send'
+E     
+E     - pending_send
+E     + next</failure></testcase><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_05_verify_task_created_with_pending_status" time="1.197"><failure message="AssertionError: Campaign task not found for contact 69b9edf8a8a8c9bcdcf2bcfa&#10;assert None">backend/tests/test_manual_campaign_pending_status.py:246: in test_05_verify_task_created_with_pending_status
+    assert campaign_task, f"Campaign task not found for contact {self.test_contact_id}"
+E   AssertionError: Campaign task not found for contact 69b9edf8a8a8c9bcdcf2bcfa
+E   assert None</failure></testcase><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_06_verify_enrollment_last_sent_at_not_set" time="1.016" /><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_07_complete_task_and_verify_sent_status" time="1.093"><failure message="AssertionError: Campaign task not found&#10;assert None">backend/tests/test_manual_campaign_pending_status.py:351: in test_07_complete_task_and_verify_sent_status
+    assert campaign_task, "Campaign task not found"
+E   AssertionError: Campaign task not found
+E   assert None</failure></testcase><testcase classname="backend.tests.test_manual_campaign_pending_status.TestManualCampaignPendingStatus" name="test_08_full_flow_end_to_end" time="1.010"><failure message="AssertionError: Expected 'pending_send', got 'next'&#10;assert 'next' == 'pending_send'&#10;  &#10;  - pending_send&#10;  + next">backend/tests/test_manual_campaign_pending_status.py:442: in test_08_full_flow_end_to_end
+    assert step1_status == "pending_send", f"Expected 'pending_send', got '{step1_status}'"
+E   AssertionError: Expected 'pending_send', got 'next'
+E   assert 'next' == 'pending_send'
+E     
+E     - pending_send
+E     + next</failure></testcase><testcase classname="backend.tests.test_manual_campaign_pending_status.TestAutomatedCampaignComparison" name="test_automated_campaign_sets_sent_immediately" time="0.899" /></testsuite></testsuites>
