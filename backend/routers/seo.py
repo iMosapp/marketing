@@ -893,6 +893,8 @@ async def seo_health_score(user_id: str):
 @router.get("/health-score/team/{store_id}")
 async def seo_team_scores(store_id: str):
     """Get SEO health scores for all active team members in a store."""
+    if not store_id or store_id in ("undefined", "null", "None"):
+        return {"team": []}
     db = get_db()
 
     members = await db.users.find(
