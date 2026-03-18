@@ -128,6 +128,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Partner admins see: Organizations, Accounts, Users, Onboarding Hub, Account Health, Leaderboard, Activity Feed
   - Super admin-only items (Admin Dashboard, Individuals, Pending Users, Lead Attribution) hidden for partners
   - Partner admin org_admin role + partner_id = full partner-scoped access
+- Partner Dropdown on Create Organization — IMPLEMENTED (Mar 18, 2026):
+  - Super admins see a "White-Label Partner" dropdown in the Create Organization modal
+  - Dropdown fetches all partners from `GET /api/admin/partners`
+  - Selecting a partner sends `partner_id` in the create org payload
+  - Backend auto-links org to partner's `organization_ids` list
+  - "None (No Partner)" option available for standalone orgs
+  - Non-super-admin users don't see the dropdown
 
 ### P1
 - Gamification & Leaderboards
@@ -137,6 +144,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Refactor Authentication (bcrypt)
 
 ### P2
+- Rename `stores` → `accounts` throughout the codebase (user-requested)
 - Full Twilio Integration (currently MOCK)
 - WhatsApp Integration
 - Training Hub video content
