@@ -144,6 +144,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - CRITICAL FIX: All 3 user creation endpoints (/users, /users/create, /users/add-team-member) now auto-inherit partner_id from the org
   - CRITICAL FIX: Impersonation endpoint now resolves partner_id from org if not directly on the user record
   - Result: Impersonated/logged-in partner admins now correctly see the full Account Management section
+- SEO & AEO Phase 1 — IMPLEMENTED (Mar 18, 2026):
+  - Dynamic sitemap.xml at /api/seo/sitemap.xml listing all active user cards, link pages, and store pages
+  - robots.txt at /api/seo/robots.txt with proper Allow/Disallow directives
+  - Meta API at /api/seo/meta/{type}/{id} returning title, description, OG image, and Schema.org JSON-LD
+  - Schema.org types: Person (with jobTitle, worksFor, aggregateRating), LocalBusiness (with address, telephone, numberOfEmployees)
+  - SEOHead component integrated into card, link, showcase, and store pages
+  - Dynamic OG tags for social sharing (og:title, og:description, og:image, twitter:card)
 
 ### P1
 - Gamification & Leaderboards

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'expo-router/head';
+import { Platform } from 'react-native';
 import api from '../services/api';
 
 interface SEOHeadProps {
@@ -25,6 +26,19 @@ export function SEOHead({ type, id }: SEOHeadProps) {
     api.get(endpoint).then(res => setMeta(res.data)).catch(() => {});
   }, [type, id]);
 
+  // Inject JSON-LD directly into the DOM (expo-router/head doesn't support script tags)
+  useEffect(() => {
+    if (!meta?.schema || Platform.OS !== 'web') return;
+    const existing = document.querySelector('script[data-seo-jsonld]');
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-seo-jsonld', 'true');
+    script.textContent = JSON.stringify(meta.schema);
+    document.head.appendChild(script);
+    return () => { script.remove(); };
+  }, [meta?.schema]);
+
   if (!meta || meta.error) return null;
 
   return (
@@ -47,14 +61,6 @@ export function SEOHead({ type, id }: SEOHeadProps) {
 
       {/* Canonical URL */}
       <link rel="canonical" href={meta.url} />
-
-      {/* Schema.org JSON-LD */}
-      {meta.schema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(meta.schema) }}
-        />
-      )}
     </Head>
   );
 }
