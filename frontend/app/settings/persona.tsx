@@ -465,22 +465,26 @@ const { showToast } = useToast();
 
         {/* Personal Story Section - Train Your AI */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📖 YOUR PERSONAL STORY</Text>
+          <Text style={styles.sectionTitle}>YOUR BIO & PERSONAL AI</Text>
           <Text style={styles.sectionDesc}>
-            Help your AI sound more like YOU. The more it knows, the more realistic and personal your automated messages will be.
+            This is the heart of your AI. Everything here shapes how your AI writes, responds, and connects with people on your behalf. The more detail you add, the more your AI sounds like the real you — not a robot.
           </Text>
           
           {/* Bio */}
           <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 12 }]}>ABOUT YOU</Text>
-          <View style={styles.voiceInputRow}>
+          <Text style={[styles.sectionDesc, { fontSize: 12 }]}>
+            Write your story in your own words. Who are you? What drives you? This is what your AI reads to craft every message.
+          </Text>
+          <View style={[styles.voiceInputRow, { alignItems: 'stretch' }]}>
             <TextInput
-              style={[styles.addInput, { minHeight: 120, textAlignVertical: 'top', flex: 1 }]}
+              style={[styles.addInput, styles.bioInput]}
               value={settings.bio}
               onChangeText={(text) => setSettings(prev => ({ ...prev, bio: text }))}
               placeholder="Tell us about yourself... e.g., I've been in auto sales for 15 years, started as a lot porter..."
               placeholderTextColor={colors.textSecondary}
               multiline
-              scrollEnabled={false}
+              numberOfLines={10}
+              scrollEnabled={true}
             />
             <VoiceInput
               onTranscription={(text) => setSettings(prev => ({ ...prev, bio: prev.bio ? prev.bio + ' ' + text : text }))}
@@ -651,11 +655,12 @@ const { showToast } = useToast();
           <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#34C759' }}>
             <Text style={{ fontSize: 12, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
             <TextInput
-              style={[styles.addInput, { minHeight: 100, textAlignVertical: 'top', marginBottom: 12 }]}
+              style={[styles.addInput, { height: 200, textAlignVertical: 'top', marginBottom: 12, lineHeight: 22, paddingTop: 14 }]}
               value={generatedBio}
               onChangeText={setGeneratedBio}
               multiline
-              scrollEnabled={false}
+              numberOfLines={8}
+              scrollEnabled={true}
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
@@ -943,6 +948,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
     fontSize: 15,
     color: colors.text,
+  },
+  bioInput: {
+    height: 240,
+    textAlignVertical: 'top',
+    lineHeight: 22,
+    paddingTop: 14,
   },
   addButton: {
     width: 48,
