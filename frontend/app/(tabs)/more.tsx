@@ -844,23 +844,27 @@ export default function MoreScreen() {
             <Ionicons name="chevron-forward" size={18} color="#555" />
           </TouchableOpacity>
           
-          {/* Stacked Bell + Theme + Logout */}
-          <View style={styles.profileActions}>
-            <NotificationBell />
-            <TouchableOpacity
-              style={[styles.profileSignOutBtn, { backgroundColor: colors.card }]}
-              onPress={toggleTheme}
-              data-testid="theme-toggle-btn"
-            >
-              <Ionicons name={themeMode === 'dark' ? 'moon' : 'sunny'} size={18} color={themeMode === 'dark' ? '#5856D6' : '#FF9500'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.profileSignOutBtn, { backgroundColor: colors.card }]}
-              onPress={handleLogout}
-              data-testid="logout-button"
-            >
-              <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
-            </TouchableOpacity>
+          {/* Bottom action bar inside the card */}
+          <View style={[styles.profileActionsBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.profileActionsInner}>
+              <NotificationBell />
+              <TouchableOpacity
+                style={styles.profileActionBtn}
+                onPress={toggleTheme}
+                data-testid="theme-toggle-btn"
+              >
+                <Ionicons name={themeMode === 'dark' ? 'moon' : 'sunny'} size={18} color={themeMode === 'dark' ? '#5856D6' : '#FF9500'} />
+                <Text style={[styles.profileActionLabel, { color: colors.textSecondary }]}>{themeMode === 'dark' ? 'Dark' : 'Light'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.profileActionBtn}
+                onPress={handleLogout}
+                data-testid="logout-button"
+              >
+                <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
+                <Text style={[styles.profileActionLabel, { color: '#FF3B30' }]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
         
@@ -1308,36 +1312,51 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 2,
   },
   profileCardContainer: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: 'column',
     marginHorizontal: 16,
     marginBottom: 16,
-    gap: 8,
     zIndex: 10000,
   },
   profileCard: {
-    flex: 1,
     flexDirection: 'row',
     backgroundColor: '#1A1A1A',
     padding: 20,
-    borderRadius: 14,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     alignItems: 'center',
     borderWidth: 1,
+    borderBottomWidth: 0,
     borderColor: '#2A2A2A',
   },
-  profileActions: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-    zIndex: 10000,
+  profileActionsBar: {
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
-  profileSignOutBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.card,
+  profileActionsInner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    gap: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.surface,
+    paddingTop: 10,
+  },
+  profileActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  profileActionLabel: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   profileAvatarContainer: {
     position: 'relative',
