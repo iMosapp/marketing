@@ -1,0 +1,61 @@
+{
+  "summary": "White-Label Partner Full Flow Testing Complete. Backend: 12/12 tests pass (100%). All critical requirements verified: partner creation, org with partner_id, store creation, user auto-inherits partner_id from org, impersonate returns partner_id, login returns partner_id, sold_required_fields (including full_size_image) persist correctly. Frontend: Account Management section visible for impersonated partner org_admin with Organizations, Accounts, All Users links.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_white_label_full_flow.py",
+    "/app/test_reports/pytest/pytest_white_label_full_flow.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend properly auto-inherits partner_id in all user creation endpoints: /api/admin/users, /api/admin/users/create, /api/admin/users/add-team-member",
+    "Impersonation endpoint properly resolves partner_id from user record first, then falls back to org",
+    "Login endpoint properly resolves partner_id from org if not directly on user",
+    "sold_required_fields including 'full_size_image' persist correctly via PUT /api/admin/partners/{id}",
+    "Frontend more.tsx line 525 correctly determines isPartner from user.partner_id"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_white_label_full_flow.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (Account Management section verified visible)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "super_admin_user_id": "69a0b7095fddcede09591667",
+    "calendar_systems_admin": "admin@calendarsystems.com (org_admin with partner_id)"
+  },
+  "seed_data_creation": "Created TEST_ prefixed partner, org, store, user during testing. Data left in DB for verification.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Full white-label partner flow is working correctly. Key fixes verified: 1) User creation auto-inherits partner_id from org.partner_id, 2) Impersonation endpoint resolves partner_id from org if not on user record, 3) Login resolves partner_id similarly, 4) sold_required_fields persist correctly including full_size_image toggle.",
+  "features_tested": {
+    "backend": {
+      "POST /api/admin/partners": "PASS - Creates partner with sold_workflow_enabled and sold_required_fields",
+      "GET /api/admin/partners/{id}": "PASS - Returns saved fields including full_size_image",
+      "PUT /api/admin/partners/{id}": "PASS - Updates persist correctly",
+      "POST /api/admin/organizations": "PASS - Creates org with partner_id",
+      "POST /api/admin/stores": "PASS - Creates store under org",
+      "POST /api/admin/users": "PASS - User AUTO-INHERITS partner_id from org",
+      "POST /api/admin/users/create": "PASS - User with invite also inherits partner_id",
+      "POST /api/admin/users/{id}/impersonate": "PASS - Returns partner_id in user object",
+      "POST /api/auth/login": "PASS - Returns partner_id for partner org_admin"
+    },
+    "frontend": {
+      "Hub/More page - Account Management": "PASS - Section visible for partner org_admin (when impersonated or logged in with partner_id)",
+      "Account Management items": "PASS - Organizations, Accounts, All Users links present"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": true,
+    "mocked_apis_list": ["Twilio SMS"]
+  }
+}

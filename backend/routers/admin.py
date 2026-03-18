@@ -758,6 +758,18 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
         }
     }
     
+    # Auto-inherit partner_id from the organization
+    org_id = user_data.get('organization_id')
+    if org_id:
+        try:
+            org = await get_db().organizations.find_one(
+                {"_id": ObjectId(org_id)}, {"partner_id": 1}
+            )
+            if org and org.get('partner_id'):
+                user_dict['partner_id'] = org['partner_id']
+        except Exception as e:
+            logger.error(f"Failed to inherit partner_id: {e}")
+    
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
     
@@ -844,6 +856,18 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
             'compare_scope': 'state'
         }
     }
+    
+    # Auto-inherit partner_id from the organization
+    if organization_id:
+        try:
+            org = await get_db().organizations.find_one(
+                {"_id": ObjectId(organization_id)}, {"partner_id": 1}
+            )
+            if org and org.get('partner_id'):
+                user_dict['partner_id'] = org['partner_id']
+                logger.info(f"Auto-inherited partner_id {org['partner_id']} for user in org {organization_id}")
+        except Exception as e:
+            logger.error(f"Failed to inherit partner_id from org {organization_id}: {e}")
     
     result = await get_db().users.insert_one(user_dict)
     user_id = str(result.inserted_id)
@@ -1524,6 +1548,20 @@ async def impersonate_user(user_id: str):
         "email_brand_kit": user.get("email_brand_kit", {}),
         "isImpersonating": True,
     }
+    
+    # Resolve partner_id: check user record first, then fall back to org
+    partner_id = user.get("partner_id")
+    if not partner_id and org_id:
+        try:
+            org_doc = await db.organizations.find_one(
+                {"_id": ObjectId(org_id)}, {"partner_id": 1}
+            )
+            if org_doc and org_doc.get("partner_id"):
+                partner_id = org_doc["partner_id"]
+        except Exception:
+            pass
+    if partner_id:
+        user_data["partner_id"] = partner_id
     if store_slug:
         user_data["store_slug"] = store_slug
     if org_slug:
@@ -3518,6 +3556,18 @@ async def add_team_member(data: AddTeamMemberRequest):
             "deals_closed": 0
         }
     }
+    
+    # Auto-inherit partner_id from the organization
+    org_id = store.get("organization_id")
+    if org_id:
+        try:
+            org = await db.organizations.find_one(
+                {"_id": ObjectId(org_id)}, {"partner_id": 1}
+            )
+            if org and org.get('partner_id'):
+                new_user['partner_id'] = org['partner_id']
+        except Exception:
+            pass
     
     result = await db.users.insert_one(new_user)
     user_id = str(result.inserted_id)
