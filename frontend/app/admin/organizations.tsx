@@ -21,10 +21,13 @@ import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
 export default function OrganizationsScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.role === 'super_admin';
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,6 +36,8 @@ export default function OrganizationsScreen() {
   const [showSearch, setShowSearch] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [showPartnerPicker, setShowPartnerPicker] = useState(false);
   const [newOrg, setNewOrg] = useState({
     name: '',
     account_type: 'organization',
@@ -41,6 +46,7 @@ export default function OrganizationsScreen() {
     city: '',
     state: '',
     country: 'US',
+    partner_id: '',
   });
   
   useFocusEffect(
@@ -48,6 +54,22 @@ export default function OrganizationsScreen() {
       loadOrganizations();
     }, [])
   );
+  
+  // Load partners when user becomes super_admin
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      loadPartners();
+    }
+  }, [isSuperAdmin]);
+  
+  const loadPartners = async () => {
+    try {
+      const res = await api.get('/admin/partners');
+      setPartners(res.data || []);
+    } catch (error) {
+      console.error('Failed to load partners:', error);
+    }
+  };
   
   const loadOrganizations = async () => {
     try {
@@ -76,7 +98,10 @@ export default function OrganizationsScreen() {
     
     setCreating(true);
     try {
-      await adminAPI.createOrganization(newOrg);
+      const payload: any = { ...newOrg };
+      // Only include partner_id if one was selected
+      if (!payload.partner_id) delete payload.partner_id;
+      await adminAPI.createOrganization(payload);
       showSimpleAlert('Success', 'Organization created successfully');
       setShowCreateModal(false);
       setNewOrg({
@@ -87,6 +112,7 @@ export default function OrganizationsScreen() {
         city: '',
         state: '',
         country: 'US',
+        partner_id: '',
       });
       loadOrganizations();
     } catch (error: any) {
@@ -402,6 +428,53 @@ export default function OrganizationsScreen() {
                   />
                 </View>
               </View>
+
+              {/* Partner Dropdown - super_admin only */}
+              {isSuperAdmin && partners.length > 0 && (
+                <>
+                  <Text style={styles.inputLabel}>White-Label Partner</Text>
+                  <TouchableOpacity
+                    style={styles.input}
+                    onPress={() => setShowPartnerPicker(!showPartnerPicker)}
+                    data-testid="partner-dropdown-toggle"
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 16, color: newOrg.partner_id ? colors.text : colors.textSecondary }}>
+                        {newOrg.partner_id
+                          ? partners.find(p => p._id === newOrg.partner_id)?.name || 'Select Partner'
+                          : 'None (No Partner)'}
+                      </Text>
+                      <Ionicons name={showPartnerPicker ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
+                    </View>
+                  </TouchableOpacity>
+                  {showPartnerPicker && (
+                    <View style={styles.partnerPickerList}>
+                      <TouchableOpacity
+                        style={[styles.partnerPickerItem, !newOrg.partner_id && styles.partnerPickerItemActive]}
+                        onPress={() => { setNewOrg({ ...newOrg, partner_id: '' }); setShowPartnerPicker(false); }}
+                        data-testid="partner-option-none"
+                      >
+                        <Text style={[styles.partnerPickerText, !newOrg.partner_id && { color: '#007AFF', fontWeight: '600' }]}>
+                          None (No Partner)
+                        </Text>
+                      </TouchableOpacity>
+                      {partners.map(p => (
+                        <TouchableOpacity
+                          key={p._id}
+                          style={[styles.partnerPickerItem, newOrg.partner_id === p._id && styles.partnerPickerItemActive]}
+                          onPress={() => { setNewOrg({ ...newOrg, partner_id: p._id }); setShowPartnerPicker(false); }}
+                          data-testid={`partner-option-${p._id}`}
+                        >
+                          <Text style={[styles.partnerPickerText, newOrg.partner_id === p._id && { color: '#007AFF', fontWeight: '600' }]}>
+                            {p.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+
               <View style={{ height: 50 }} />
             </ScrollView>
           </SafeAreaView>
@@ -647,5 +720,26 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   halfInput: {
     flex: 1,
+  },
+  partnerPickerList: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.surface,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  partnerPickerItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surface,
+  },
+  partnerPickerItemActive: {
+    backgroundColor: '#007AFF10',
+  },
+  partnerPickerText: {
+    fontSize: 16,
+    color: colors.text,
   },
 });

@@ -172,14 +172,19 @@ async def create_organization(
     org_dict['created_at'] = datetime.utcnow()
     org_dict['active'] = True
     
-    # Auto-link to partner if created by partner admin
+    # For super_admin: use partner_id from payload if provided
+    # For partner admin: override with their own partner_id
     if partner_id:
         org_dict['partner_id'] = partner_id
+    elif role == 'super_admin' and org_dict.get('partner_id'):
+        partner_id = org_dict['partner_id']
+    else:
+        org_dict.pop('partner_id', None)
     
     result = await get_db().organizations.insert_one(org_dict)
     org_dict['_id'] = str(result.inserted_id)
     
-    # If created by partner admin, auto-assign org to partner
+    # Auto-assign org to partner's organization_ids list
     if partner_id:
         try:
             await get_db().white_label_partners.update_one(

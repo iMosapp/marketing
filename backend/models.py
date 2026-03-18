@@ -66,6 +66,7 @@ class OrganizationCreate(BaseModel):
     state: Optional[str] = None
     country: str = "US"
     hires_images: bool = False
+    partner_id: Optional[str] = None
 
 class Store(BaseModel):
     """A store/dealership under an organization"""
