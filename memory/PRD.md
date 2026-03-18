@@ -122,7 +122,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Layer 1 Billing: Super admin sets negotiated pricing per partner (per_org, per_store, per_seat, custom + carrier add-ons)
   - Layer 2 Billing: Partner admins create billing records for their clients (flexible models)
   - Billing summary dashboard shows active org/store/seat counts + estimated monthly per partner
-  - New files: /app/backend/routers/partner_billing.py, /app/frontend/app/admin/partner-billing.tsx
+- Partner Admin UI Access — FIXED (Mar 18, 2026):
+  - Login/me endpoints now include `partner_id` in user object when user belongs to a partner org
+  - Frontend More tab detects `user.partner_id` to show Account Management section
+  - Partner admins see: Organizations, Accounts, Users, Onboarding Hub, Account Health, Leaderboard, Activity Feed
+  - Super admin-only items (Admin Dashboard, Individuals, Pending Users, Lead Attribution) hidden for partners
+  - Partner admin org_admin role + partner_id = full partner-scoped access
 
 ### P1
 - Gamification & Leaderboards
