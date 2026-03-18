@@ -12,6 +12,7 @@ interface SEOHeadProps {
  * Dynamic SEO head tags for public pages.
  * Fetches meta data from /api/seo/meta/{type}/{id} and injects
  * title, description, OG tags, and Schema.org JSON-LD.
+ * Also tracks page visits with UTM parameters.
  */
 export function SEOHead({ type, id }: SEOHeadProps) {
   const [meta, setMeta] = useState<any>(null);
@@ -24,6 +25,25 @@ export function SEOHead({ type, id }: SEOHeadProps) {
         ? `/seo/meta/store/${id}`
         : `/seo/meta/card/${id}`;
     api.get(endpoint).then(res => setMeta(res.data)).catch(() => {});
+    
+    // Track UTM visit
+    if (Platform.OS === 'web') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const utm_source = params.get('utm_source');
+        if (utm_source) {
+          api.post('/seo/track-visit', {
+            page_type: type,
+            reference_id: id,
+            utm_source,
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            referrer: document.referrer || '',
+            user_agent: navigator.userAgent || '',
+          }).catch(() => {});
+        }
+      } catch {}
+    }
   }, [type, id]);
 
   // Inject JSON-LD directly into the DOM (expo-router/head doesn't support script tags)
