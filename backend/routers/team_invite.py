@@ -819,7 +819,7 @@ async def send_email_invite(data: EmailInviteRequest):
                     Hi {recipient_name},
                 </p>
                 <p style="color: #666; line-height: 1.6;">
-                    <strong>{sender_name}</strong> has invited you to join <strong>{store_name}</strong> on iMos.
+                    <strong>{sender_name}</strong> has invited you to join <strong>{store_name}</strong> on i'M On Social.
                 </p>
                 {custom_msg}
                 <p style="color: #666; line-height: 1.6;">

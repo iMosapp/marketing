@@ -8,7 +8,7 @@ router = APIRouter(prefix="/legal", tags=["legal"])
 
 # Last updated date
 LAST_UPDATED = "February 19, 2026"
-COMPANY_NAME = "iMos"
+COMPANY_NAME = "i'M On Social"
 COMPANY_EMAIL = "legal@imonsocial.com"
 COMPANY_ADDRESS = "Salt Lake City, Utah"
 
