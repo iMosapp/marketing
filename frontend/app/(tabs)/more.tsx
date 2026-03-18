@@ -841,30 +841,27 @@ export default function MoreScreen() {
                 <Text style={[styles.profilePhone, { color: colors.textSecondary }]}>{user.phone}</Text>
               )}
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#555" />
-          </TouchableOpacity>
-          
-          {/* Bottom action bar inside the card */}
-          <View style={[styles.profileActionsBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.profileActionsInner}>
+            <View style={styles.profileActions}>
               <NotificationBell />
               <TouchableOpacity
-                style={styles.profileActionBtn}
-                onPress={toggleTheme}
+                style={styles.profileActionIcon}
+                onPress={(e) => { e.stopPropagation(); toggleTheme(); }}
                 data-testid="theme-toggle-btn"
               >
                 <Ionicons name={themeMode === 'dark' ? 'moon' : 'sunny'} size={18} color={themeMode === 'dark' ? '#5856D6' : '#FF9500'} />
-                <Text style={[styles.profileActionLabel, { color: colors.textSecondary }]}>{themeMode === 'dark' ? 'Dark' : 'Light'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.profileActionBtn}
-                onPress={handleLogout}
+                style={styles.profileActionIcon}
+                onPress={(e) => { e.stopPropagation(); handleLogout(); }}
                 data-testid="logout-button"
               >
                 <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
-                <Text style={[styles.profileActionLabel, { color: '#FF3B30' }]}>Logout</Text>
               </TouchableOpacity>
             </View>
+          </TouchableOpacity>
+          <View style={styles.profileCardHint}>
+            <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+            <Text style={[styles.profileCardHintText, { color: colors.textSecondary }]}>Tap to edit profile</Text>
           </View>
         </View>
         
@@ -1312,7 +1309,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 2,
   },
   profileCardContainer: {
-    flexDirection: 'column',
     marginHorizontal: 16,
     marginBottom: 16,
     zIndex: 10000,
@@ -1321,42 +1317,34 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#1A1A1A',
     padding: 20,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderBottomWidth: 0,
     borderColor: '#2A2A2A',
   },
-  profileActionsBar: {
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  profileActions: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    marginLeft: 4,
   },
-  profileActionsInner: {
+  profileActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileCardHint: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.surface,
-    paddingTop: 10,
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 6,
   },
-  profileActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  profileActionLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+  profileCardHintText: {
+    fontSize: 11,
   },
   profileAvatarContainer: {
     position: 'relative',
