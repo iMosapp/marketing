@@ -162,6 +162,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Analytics endpoint: /api/seo/analytics/{user_id} returns visit counts, last visit, source breakdown
   - Sitemap expanded to 193 URLs including /salesperson/ and /store/ routes
 
+- Sales Deck — IMPLEMENTED (Feb 2026):
+  - Complete multi-section HTML sales presentation at /why-imonsocial/
+  - Sections: Hero, Problem, Industry Stats, Solution, 9-Feature Grid, Competitive Comparison (vs Podium/Kenect/Matador AI), Pricing, White-Label, CTA
+  - Includes generated images and industry statistics (HBR, Foureyes, DAS Technology)
+- Marketing Page Demo Form Fix — FIXED (Feb 2026):
+  - CRITICAL FIX: All "Book a Demo" / "Schedule a Demo" buttons on marketing.html now open a modal form instead of navigating to a broken /demo/ page
+  - Form submits to existing /api/demo-requests endpoint with lead_source tracking
+  - Fixed: header nav CTA, hero CTA, bottom CTA, footer link, and mobile menu links
+
 ### P1
 - Gamification & Leaderboards
 - AI-Powered Outreach (contextual follow-up on "sold" tag)
