@@ -170,6 +170,20 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - CRITICAL FIX: All "Book a Demo" / "Schedule a Demo" buttons on marketing.html now open a modal form instead of navigating to a broken /demo/ page
   - Form submits to existing /api/demo-requests endpoint with lead_source tracking
   - Fixed: header nav CTA, hero CTA, bottom CTA, footer link, and mobile menu links
+- Marketing Page Visual Fixes — FIXED (Mar 18, 2026):
+  - Removed "Schedule a Demo" from hero section (kept only "Start 14-Day Free Trial")
+  - Switched header & footer logo from logo.png (circle only) to marketing-logo.png (full "iM On Social" branding)
+- SEO Health Score Dashboard — IMPLEMENTED (Mar 18, 2026):
+  - Backend: GET /api/seo/health-score/{user_id} — calculates 0-100 score across 5 weighted factors
+  - Factors: Profile Completeness (20), Review Strength (20), Content Distribution (20), Search Visibility (20), Activity & Freshness (20)
+  - Grades: Excellent (80+), Good (60+), Fair (40+), Needs Work (20+), Getting Started (<20)
+  - Actionable tips sorted by impact (up to 6 tips shown)
+  - Backend: GET /api/seo/health-score/team/{store_id} — team leaderboard ranked by score
+  - Frontend: Dedicated /seo-health page with score circle, factor breakdown with progress bars, profile checklists, metric details, Quick Wins section, and My Score/Team tabs
+  - Frontend: SEO Health widget on Home screen showing score circle and grade
+  - Frontend: SEO Health menu item under Hub > My Performance section
+  - All users can see their own score; managers/admins see team rankings
+  - 100% test pass rate (16/16 backend, all frontend flows)
 
 ### P1
 - Gamification & Leaderboards
