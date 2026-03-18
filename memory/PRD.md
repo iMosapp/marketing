@@ -115,6 +115,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - "Copy Message" button copies to clipboard, "Mark as Sent" updates enrollment + task + activity log in one action
   - Legacy data cross-referenced with task/pending_send status for accurate display
   - New endpoint: POST /api/contacts/{uid}/{cid}/campaign-journey/mark-sent
+- Partner Admin Access & Billing System — IMPLEMENTED (Mar 18, 2026):
+  - RBAC: org_admin users linked to a partner now see ALL partner orgs, stores, and users (not just their own)
+  - New orgs created by partner admins auto-link to partner (partner_id)
+  - New stores auto-inherit partner_id from their org
+  - Layer 1 Billing: Super admin sets negotiated pricing per partner (per_org, per_store, per_seat, custom + carrier add-ons)
+  - Layer 2 Billing: Partner admins create billing records for their clients (flexible models)
+  - Billing summary dashboard shows active org/store/seat counts + estimated monthly per partner
+  - New files: /app/backend/routers/partner_billing.py, /app/frontend/app/admin/partner-billing.tsx
 
 ### P1
 - Gamification & Leaderboards
