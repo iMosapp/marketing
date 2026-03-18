@@ -1446,8 +1446,9 @@ async def mark_campaign_step_sent(user_id: str, contact_id: str, body: dict):
 
     now = datetime.now(timezone.utc)
 
-    # 1. Update enrollment messages_sent entry
-    await db.campaign_enrollments.update_one(
+    # 1. Update or create enrollment messages_sent entry
+    # Try to update existing entry first
+    result = await db.campaign_enrollments.update_one(
         {"_id": ObjectId(enrollment_id), "messages_sent.step": step_num},
         {"$set": {
             "messages_sent.$.status": "sent",
@@ -1455,6 +1456,20 @@ async def mark_campaign_step_sent(user_id: str, contact_id: str, body: dict):
             "last_sent_at": now,
         }}
     )
+    # If no existing entry matched, push a new one
+    if result.modified_count == 0:
+        await db.campaign_enrollments.update_one(
+            {"_id": ObjectId(enrollment_id)},
+            {
+                "$push": {"messages_sent": {
+                    "step": step_num,
+                    "status": "sent",
+                    "sent_at": now,
+                    "delivery_mode": "manual",
+                }},
+                "$set": {"last_sent_at": now},
+            }
+        )
 
     # 2. Update pending send
     if pending_send_id:
