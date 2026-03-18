@@ -108,6 +108,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - White-Label Partner Sold Workflow — IMPLEMENTED, needs production testing with Calendar Systems
 - Partner Orgs Page Fix — FIXED (Mar 17, 2026): Created missing `/admin/partner-orgs.tsx` page for managing partner organizations & accounts.
 - Create Partner Button Fix — FIXED (Mar 17, 2026): Two bugs: (1) `TouchableOpacity` on iOS Safari wouldn't fire clicks — replaced with native `<button>` on web. (2) Validation silently failed with no feedback when name/slug were empty — now shows alert.
+- Campaign Manual Step "Sent" Bug — FIXED (Mar 18, 2026): For manual campaigns, step 1 was incorrectly marked as "sent" when the scheduler created the task. Now uses `status: "pending"` with `queued_at` in `messages_sent` until user actually completes the task. Campaign Journey shows "Ready to Send" for pending steps. Task completion updates enrollment from pending to sent.
 
 ### P1
 - Gamification & Leaderboards
