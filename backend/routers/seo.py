@@ -905,46 +905,23 @@ async def seo_team_scores(store_id: str):
     results = []
     for member in members:
         uid = str(member["_id"])
-        # Lightweight score calculation - just the key metrics
-        profile_checks = {
-            "profile_photo": bool(member.get("profile_image")),
-            "bio": bool((member.get("persona", {}) or {}).get("bio") or member.get("bio")),
-            "phone": bool(member.get("phone")),
-            "title": bool(member.get("title")),
-            "seo_slug": bool(member.get("seo_slug")),
-            "social_links": bool(member.get("social_links") and any(v for v in (member.get("social_links") or {}).values())),
-        }
-        profile_score = round((sum(1 for v in profile_checks.values() if v) / len(profile_checks)) * 20)
-
-        reviews = await db.customer_feedback.find({"salesperson_id": uid, "approved": True, "rating": {"$gte": 1}}).to_list(200)
-        review_count = len(reviews)
-        avg_rating = round(sum(r.get("rating", 5) for r in reviews) / review_count, 1) if review_count else 0
-        review_score = round(min(review_count / 5, 1.0) * 10 + (avg_rating / 5.0) * 10) if review_count else 0
-
-        card_stats = await db.seo_stats.find_one({"reference_id": uid, "page_type": "card"})
-        card_visits = card_stats.get("total_visits", 0) if card_stats else 0
-
-        total_score = min(profile_score + review_score + min(round(card_visits / 10 * 20), 20) + 20, 100)  # simplified
-
-        if total_score >= 80:
-            grade = "Excellent"
-        elif total_score >= 60:
-            grade = "Good"
-        elif total_score >= 40:
-            grade = "Fair"
-        else:
-            grade = "Needs Work"
-
-        results.append({
-            "user_id": uid,
-            "name": member.get("name", ""),
-            "title": member.get("title", ""),
-            "photo": resolve_user_photo(member),
-            "score": total_score,
-            "grade": grade,
-            "review_count": review_count,
-            "card_visits": card_visits,
-        })
+        # Use the same scoring logic as the individual endpoint
+        try:
+            score_data = await seo_health_score(uid)
+            if "error" in score_data:
+                continue
+            results.append({
+                "user_id": uid,
+                "name": member.get("name", ""),
+                "title": member.get("title", ""),
+                "photo": resolve_user_photo(member),
+                "score": score_data["total_score"],
+                "grade": score_data["grade"],
+                "review_count": score_data["factors"]["reviews"]["details"]["count"],
+                "card_visits": score_data["factors"]["distribution"]["details"]["card_visits"],
+            })
+        except Exception:
+            continue
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"team": results}
