@@ -140,6 +140,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Fixed: quotes.tsx delete/archive actions upgraded from raw `confirm()` to `showConfirm`
   - Fixed: invite-team.tsx member removal upgraded from `window.confirm` to `showConfirm`
   - Verified all other delete actions (orgs, users, contacts, campaigns, broadcasts, tags, templates, shared inboxes) already had proper confirmation dialogs
+- White-Label Partner Admin Flow Fixed — IMPLEMENTED (Mar 18, 2026):
+  - CRITICAL FIX: All 3 user creation endpoints (/users, /users/create, /users/add-team-member) now auto-inherit partner_id from the org
+  - CRITICAL FIX: Impersonation endpoint now resolves partner_id from org if not directly on the user record
+  - Result: Impersonated/logged-in partner admins now correctly see the full Account Management section
 
 ### P1
 - Gamification & Leaderboards
