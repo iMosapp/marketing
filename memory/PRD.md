@@ -151,6 +151,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Schema.org types: Person (with jobTitle, worksFor, aggregateRating), LocalBusiness (with address, telephone, numberOfEmployees)
   - SEOHead component integrated into card, link, showcase, and store pages
   - Dynamic OG tags for social sharing (og:title, og:description, og:image, twitter:card)
+- SEO & AEO Phase 2 — IMPLEMENTED (Mar 18, 2026):
+  - SEO-friendly salesperson URLs: /salesperson/{name-city-state} (e.g., /salesperson/forest-ward-denver-co)
+  - Auto-generated seo_slug for 66 users from name + store city/state, with uniqueness collision handling
+  - Store directory pages: /store/{slug} showing store info, location, contact buttons, and full team listing
+  - Team cards include ratings (stars + count) from approved reviews
+  - Schema.org LocalBusiness + Employee structured data on store directory pages
+  - UTM parameter tracking: /api/seo/utm-link builds tracked links with utm_source/medium/campaign
+  - Visit tracking: SEOHead component auto-tracks UTM visits, stored in seo_page_visits + seo_stats collections
+  - Analytics endpoint: /api/seo/analytics/{user_id} returns visit counts, last visit, source breakdown
+  - Sitemap expanded to 193 URLs including /salesperson/ and /store/ routes
 
 ### P1
 - Gamification & Leaderboards
