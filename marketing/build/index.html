@@ -165,6 +165,22 @@
     @media(max-width:768px){.ft-inner{grid-template-columns:1fr 1fr;gap:32px}.ft-brand{grid-column:span 2}}
     @media(max-width:480px){.ft-inner{grid-template-columns:1fr}.ft-brand{grid-column:span 1}}
 
+    /* DEMO MODAL */
+    .demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+    .demo-overlay.active{display:flex}
+    .demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+    .demo-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .demo-close:hover{background:var(--border)}
+    .dm-field{margin-bottom:14px}
+    .dm-field label{display:block;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+    .dm-field input,.dm-field select,.dm-field textarea{width:100%;padding:12px 14px;background:#FFF;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+    .dm-field input:focus,.dm-field select:focus{border-color:var(--blue)}
+    .dm-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+    .dm-submit{width:100%;padding:14px;background:var(--blue);color:#FFF;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}
+    .dm-submit:hover{background:var(--blue-dark);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+    .dm-submit:disabled{opacity:.5;cursor:not-allowed}
+    @media(max-width:768px){.demo-modal{padding:28px 20px;border-radius:20px}}
+
     /* REVEAL ANIM */
     .rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
     .rv.vis{opacity:1;transform:translateY(0)}
@@ -219,7 +235,7 @@
       <div class="nav-item"><a href="/pricing/">Pricing</a></div>
     </div>
     <div class="nav-cta">
-      <a href="/demo/" class="btn-demo">Book a Demo</a>
+      <a href="#" class="btn-demo" onclick="openDemoModal(event,'homepage_nav')">Book a Demo</a>
       <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
       
     </div>
@@ -232,7 +248,7 @@
     <a href="/organizations/">For Organizations</a>
     <a href="/pricing/">Pricing</a>
     <a href="https://app.imonsocial.com">Sign In</a>
-    <a href="/demo/" class="mob-cta">Book a Demo</a>
+    <a href="#" class="mob-cta" onclick="openDemoModal(event,'mob_cta')">Book a Demo</a>
   </div>
 </nav>
 
@@ -483,7 +499,7 @@
     </div>
     <div class="ft-col">
       <div class="ft-col-t">Get Started</div>
-      <a href="/demo/">Schedule a Demo</a>
+      <a href="#" onclick="openDemoModal(event,'homepage_footer')">Schedule a Demo</a>
       <a href="https://app.imonsocial.com">Sign In</a>
       <a href="/training/">Training</a>
       <a href="/help/">Help Center</a>
@@ -495,10 +511,87 @@
   </div>
 </footer>
 
+<!-- DEMO MODAL -->
+<div class="demo-overlay" id="demoModal">
+  <div class="demo-modal">
+    <button class="demo-close" onclick="closeDemoModal()">&times;</button>
+    <div id="demoFormWrap">
+      <h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Book a Demo</h2>
+      <p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how i'M On Social can transform your business.</p>
+      <form onsubmit="submitDemoForm(event)">
+        <div class="dm-field">
+          <label>Full Name *</label>
+          <input type="text" id="dm-name" placeholder="John Smith" required/>
+        </div>
+        <div class="dm-field">
+          <label>Email *</label>
+          <input type="email" id="dm-email" placeholder="john@company.com" required/>
+        </div>
+        <div class="dm-field">
+          <label>Phone</label>
+          <input type="tel" id="dm-phone" placeholder="(555) 123-4567"/>
+        </div>
+        <div class="dm-field">
+          <label>Business Type</label>
+          <select id="dm-type">
+            <option value="">Select your industry...</option>
+            <option value="car_dealer">Car Dealership</option>
+            <option value="real_estate">Real Estate</option>
+            <option value="small_business">Small Business / Retail</option>
+            <option value="hospitality">Hospitality / Food & Beverage</option>
+            <option value="sales_team">Sales Team</option>
+            <option value="events">Events & Entertainment</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="dm-field">
+          <label>Company</label>
+          <input type="text" id="dm-company" placeholder="Your business name"/>
+        </div>
+        <button type="submit" class="dm-submit" id="dmSubmitBtn">Book My Demo</button>
+      </form>
+    </div>
+    <div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0">
+      <div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div>
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">You're In!</h3>
+      <p style="font-size:14px;color:var(--text-3)">We'll reach out within 24 hours to schedule your personalized demo. Keep an eye on your inbox.</p>
+    </div>
+  </div>
+</div>
+
 <script>
 const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')})},{threshold:.08,rootMargin:'0px 0px -32px 0px'});
 document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+
+/* Demo Modal */
+let _demoSource='';
+function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}
+function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}
+document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
+
+async function submitDemoForm(e){
+  e.preventDefault();
+  var btn=document.getElementById('dmSubmitBtn');
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    var res=await fetch('https://app.imonsocial.com/api/demo-requests',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:document.getElementById('dm-name').value,
+        email:document.getElementById('dm-email').value,
+        phone:document.getElementById('dm-phone').value,
+        business_type:document.getElementById('dm-type').value,
+        company:document.getElementById('dm-company').value,
+        lead_source:_demoSource||'marketing_page'
+      })
+    });
+    if(res.ok){
+      document.getElementById('demoFormWrap').style.display='none';
+      document.getElementById('demoSuccessWrap').style.display='block';
+    }else{throw new Error()}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}
+}
 </script>
 </body>
 </html>
