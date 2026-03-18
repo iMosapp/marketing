@@ -1,0 +1,65 @@
+{
+  "summary": "Campaign Journey feature testing completed. Backend API and Frontend UI verified. 5/6 backend tests pass. Frontend shows collapsed campaigns by default, expandable timeline with correct status indicators (SENT/NEXT UP), and working modal with Copy Message and Mark as Sent buttons.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/contacts/{user_id}/{contact_id}/campaign-journey/mark-sent",
+        "issue": "Mark-sent endpoint only updates existing messages_sent entries. If step has status='next' (no messages_sent entry yet), the update does nothing. Status remains 'next' after calling mark-sent.",
+        "priority": "MEDIUM",
+        "details": "The endpoint uses MongoDB positional operator ($) to update messages_sent.$.status but this only works if a messages_sent entry for that step already exists. For steps with 'next' status, no messages_sent entry exists yet, so the update is a no-op."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_campaign_journey_mark_sent.py",
+    "/app/test_reports/pytest/pytest_campaign_journey_mark_sent.xml"
+  ],
+  "action_items": [
+    "Fix mark-sent endpoint to handle steps that don't have messages_sent entry yet. Should use $push to add new entry if step not found, or use $upsert pattern."
+  ],
+  "critical_code_review_comments": [
+    "contacts.py L1450-1457: Update query uses 'messages_sent.step': step_num filter but won't match if no messages_sent entry exists for that step. Need to add fallback $push logic.",
+    "contacts.py L1295-1433: Campaign journey endpoint correctly returns enrollment_id, campaign_id, pending_send_id, full_message fields in steps.",
+    "CampaignJourney.tsx: Correctly implements collapsed-by-default behavior (line 70 - empty expanded state), tappable headers for expand/collapse, modal with Copy Message and Mark as Sent buttons using native HTML buttons for iOS Safari compatibility."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_campaign_journey_mark_sent.py"
+  ],
+  "success_rate": {
+    "backend": "83% (5/6 tests passed)",
+    "frontend": "100% (all visual tests passed)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "test_contact": "69b9ecc1f88c382209aebb1b (CampaignTest User)"
+  },
+  "seed_data_creation": "Multiple TEST_* campaigns and contacts created/cleaned during backend testing",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Campaign Journey feature mostly working. Key functionality verified: (1) Campaigns collapsed by default, (2) Tappable headers expand/collapse timeline, (3) Steps show correct status (SENT with green, NEXT UP with orange), (4) Modal opens with full message, Copy Message and Mark as Sent buttons. One backend issue: mark-sent doesn't work for 'next' status steps that don't have a messages_sent entry yet - needs to add entry instead of just updating.",
+  "features_tested": {
+    "backend": {
+      "campaign_journey_endpoint": "GET /api/contacts/{uid}/{cid}/campaign-journey - PASS - Returns enrollment_id, pending_send_id, full_message",
+      "mark_sent_endpoint": "POST /api/contacts/{uid}/{cid}/campaign-journey/mark-sent - PARTIAL - Works for existing messages_sent, fails for 'next' status steps",
+      "legacy_cross_reference": "PASS - Journey correctly cross-references task/pending_send status"
+    },
+    "frontend": {
+      "collapsed_by_default": "PASS - Campaign cards show collapsed with chevron-down",
+      "tappable_header": "PASS - Clicking campaign name expands/collapses timeline",
+      "pending_step_styling": "PASS - 'NEXT UP' shows in orange with scheduled time",
+      "sent_step_styling": "PASS - 'SENT' shows in green with timestamp",
+      "step_modal": "PASS - Tapping step opens modal with full message, Copy Message, Mark as Sent buttons",
+      "native_html_buttons": "PASS - Uses <button> elements for iOS Safari compatibility"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": true,
+    "mocked_apis_list": ["Twilio SMS", "External sold workflow endpoint delivery"]
+  }
+}

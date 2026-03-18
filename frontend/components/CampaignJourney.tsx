@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 import { format, formatDistanceToNow, isPast, parseISO } from 'date-fns';
+import * as Clipboard from 'expo-clipboard';
+import { showSimpleAlert } from '../services/alert';
 
 interface StepInfo {
   step: number;
@@ -18,6 +20,10 @@ interface StepInfo {
   sent_at?: string;
   queued_at?: string;
   scheduled_at?: string;
+  enrollment_id?: string;
+  campaign_id?: string;
+  pending_send_id?: string;
+  full_message?: string;
 }
 
 interface Journey {
@@ -30,6 +36,7 @@ interface Journey {
   total_steps: number;
   enrolled_at: string;
   next_send_at: string | null;
+  enrollment_id: string;
   steps: StepInfo[];
 }
 
@@ -61,35 +68,28 @@ export default function CampaignJourney({ userId, contactId }: Props) {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [selectedStep, setSelectedStep] = useState<StepInfo | null>(null);
+  const [marking, setMarking] = useState(false);
 
-  useEffect(() => {
-    loadJourneys();
-  }, [userId, contactId]);
-
-  const loadJourneys = async () => {
+  const loadJourneys = useCallback(async () => {
     try {
       const res = await api.get(`/contacts/${userId}/${contactId}/campaign-journey`);
       setJourneys(res.data);
-      // Auto-expand active campaigns
-      const exp: Record<string, boolean> = {};
-      res.data.forEach((j: Journey, i: number) => {
-        if (j.status === 'active') exp[i] = true;
-      });
-      setExpanded(exp);
+      // Collapsed by default — user explicitly taps to expand
     } catch (e) {
       console.error('Failed to load campaign journeys:', e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, contactId]);
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <ActivityIndicator size="small" color={colors.textSecondary} />
-      </View>
-    );
-  }
+  useEffect(() => { loadJourneys(); }, [loadJourneys]);
+
+  if (loading) return (
+    <View style={[s.loadingWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <ActivityIndicator size="small" color={colors.textSecondary} />
+    </View>
+  );
 
   if (journeys.length === 0) return null;
 
@@ -97,41 +97,82 @@ export default function CampaignJourney({ userId, contactId }: Props) {
     setExpanded(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
+  const handleStepTap = (step: StepInfo) => {
+    if (step.status === 'pending_send' || step.status === 'next') {
+      setSelectedStep(step);
+    }
+  };
+
+  const handleCopyMessage = async () => {
+    if (!selectedStep) return;
+    const msg = selectedStep.full_message || selectedStep.message;
+    try {
+      await Clipboard.setStringAsync(msg);
+      showSimpleAlert('Copied', 'Message copied to clipboard');
+    } catch {
+      showSimpleAlert('Error', 'Could not copy message');
+    }
+  };
+
+  const handleMarkSent = async () => {
+    if (!selectedStep?.enrollment_id) return;
+    setMarking(true);
+    try {
+      await api.post(`/contacts/${userId}/${contactId}/campaign-journey/mark-sent`, {
+        enrollment_id: selectedStep.enrollment_id,
+        step: selectedStep.step,
+        pending_send_id: selectedStep.pending_send_id || '',
+      });
+      setSelectedStep(null);
+      await loadJourneys();
+    } catch (e) {
+      console.error('Mark sent failed:', e);
+      showSimpleAlert('Error', 'Failed to mark as sent');
+    }
+    setMarking(false);
+  };
+
+  const stepMessage = selectedStep?.full_message || selectedStep?.message || '';
+
   return (
-    <View style={styles.wrapper} data-testid="campaign-journey-section">
-      <View style={styles.headerRow}>
+    <View style={s.wrapper} data-testid="campaign-journey-section">
+      <View style={s.headerRow}>
         <Ionicons name="rocket" size={16} color="#AF52DE" />
-        <Text style={[styles.headerText, { color: colors.text }]}>Campaign Journey</Text>
-        <Text style={[styles.headerCount, { color: colors.textSecondary }]}>{journeys.length}</Text>
+        <Text style={[s.headerText, { color: colors.text }]}>Campaign Journey</Text>
+        <Text style={[s.headerCount, { color: colors.textSecondary }]}>{journeys.length}</Text>
       </View>
 
       {journeys.map((journey, jIdx) => {
         const isExpanded = expanded[jIdx];
-        const progress = journey.steps.filter(s => s.status === 'sent').length;
-        const pendingCount = journey.steps.filter(s => s.status === 'pending_send').length;
-        const progressPct = journey.total_steps > 0 ? (progress / journey.total_steps) * 100 : 0;
+        const sentCount = journey.steps.filter(st => st.status === 'sent').length;
+        const pendingCount = journey.steps.filter(st => st.status === 'pending_send').length;
+        const progressPct = journey.total_steps > 0 ? (sentCount / journey.total_steps) * 100 : 0;
         const isActive = journey.status === 'active';
         const accentColor = isActive ? '#007AFF' : '#34C759';
-        const nextStep = journey.steps.find(s => s.status === 'next');
 
         return (
-          <View key={jIdx} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`journey-card-${jIdx}`}>
+          <View key={jIdx} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`journey-card-${jIdx}`}>
             {/* Campaign header — tappable to expand/collapse */}
-            <TouchableOpacity onPress={() => toggleExpand(jIdx)} activeOpacity={0.7} style={styles.cardHeader}>
-              <View style={styles.cardHeaderLeft}>
-                <View style={[styles.statusDot, { backgroundColor: accentColor }]} />
+            <TouchableOpacity onPress={() => toggleExpand(jIdx)} activeOpacity={0.7} style={s.cardHeader}>
+              <View style={s.cardHeaderLeft}>
+                <View style={[s.statusDot, { backgroundColor: accentColor }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.campaignName, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[s.campaignName, { color: colors.text }]} numberOfLines={1}>
                     {journey.campaign_name}
                   </Text>
-                  <View style={styles.metaRow}>
-                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                      {isActive ? `Step ${journey.current_step} of ${journey.total_steps}` : 'Completed'}
+                  <View style={s.metaRow}>
+                    <Text style={[s.metaText, { color: colors.textSecondary }]}>
+                      {isActive ? `${sentCount}/${journey.total_steps} sent` : 'Completed'}
                     </Text>
+                    {pendingCount > 0 && (
+                      <View style={s.pendingBadge}>
+                        <Text style={s.pendingBadgeText}>{pendingCount} to send</Text>
+                      </View>
+                    )}
                     {journey.ai_enabled && (
-                      <View style={styles.aiBadge}>
+                      <View style={s.aiBadge}>
                         <Ionicons name="sparkles" size={10} color="#FFD60A" />
-                        <Text style={styles.aiBadgeText}>AI</Text>
+                        <Text style={s.aiBadgeText}>AI</Text>
                       </View>
                     )}
                   </View>
@@ -141,75 +182,61 @@ export default function CampaignJourney({ userId, contactId }: Props) {
             </TouchableOpacity>
 
             {/* Progress bar */}
-            <View style={[styles.progressBg, { backgroundColor: colors.background }]}>
-              <View style={[styles.progressFill, { width: `${progressPct}%`, backgroundColor: accentColor }]} />
+            <View style={[s.progressBg, { backgroundColor: colors.background }]}>
+              <View style={[s.progressFill, { width: `${progressPct}%`, backgroundColor: accentColor }]} />
             </View>
-
-            {/* Next up preview (always visible if active) */}
-            {isActive && nextStep && !isExpanded && (
-              <View style={[styles.nextUpPreview, { borderTopColor: colors.border }]}>
-                <Ionicons name="time-outline" size={14} color="#FF9500" />
-                <Text style={[styles.nextUpText, { color: colors.textSecondary }]} numberOfLines={1}>
-                  Next: {nextStep.step_context || nextStep.message.slice(0, 40) + (nextStep.message.length > 40 ? '...' : '')}
-                  {nextStep.scheduled_at ? ` — ${formatScheduledTime(nextStep.scheduled_at)}` : ''}
-                </Text>
-              </View>
-            )}
 
             {/* Expanded step timeline */}
             {isExpanded && (
-              <View style={styles.timeline} data-testid={`journey-timeline-${jIdx}`}>
+              <View style={s.timeline} data-testid={`journey-timeline-${jIdx}`}>
                 {journey.steps.map((step, sIdx) => {
                   const isSent = step.status === 'sent';
-                  const isPendingSend = step.status === 'pending_send';
+                  const isPending = step.status === 'pending_send';
                   const isNext = step.status === 'next';
-                  const stepColor = isSent ? '#34C759' : isPendingSend ? '#FF9500' : isNext ? '#FF9500' : colors.textTertiary || '#666';
+                  const isTappable = isPending || isNext;
+                  const stepColor = isSent ? '#34C759' : (isPending || isNext) ? '#FF9500' : colors.textTertiary || '#666';
                   const isLast = sIdx === journey.steps.length - 1;
 
+                  const StepWrapper = isTappable ? TouchableOpacity : View;
+                  const wrapperProps = isTappable ? { onPress: () => handleStepTap(step), activeOpacity: 0.6 } : {};
+
                   return (
-                    <View key={sIdx} style={styles.timelineStep} data-testid={`journey-step-${jIdx}-${sIdx}`}>
-                      {/* Timeline connector line */}
-                      <View style={styles.timelineLeft}>
-                        <View style={[styles.timelineDot, { backgroundColor: stepColor, borderColor: isSent ? '#34C75940' : (isPendingSend || isNext) ? '#FF950040' : `${colors.border}` }]} />
+                    <StepWrapper key={sIdx} style={s.timelineStep} {...wrapperProps} data-testid={`journey-step-${jIdx}-${sIdx}`}>
+                      <View style={s.timelineLeft}>
+                        <View style={[s.timelineDot, { backgroundColor: stepColor, borderColor: isSent ? '#34C75940' : (isPending || isNext) ? '#FF950040' : `${colors.border}` }]} />
                         {!isLast && (
-                          <View style={[styles.timelineLine, { backgroundColor: isSent ? '#34C75930' : colors.border }]} />
+                          <View style={[s.timelineLine, { backgroundColor: isSent ? '#34C75930' : colors.border }]} />
                         )}
                       </View>
-
-                      {/* Step content */}
-                      <View style={[styles.timelineContent, (isNext || isPendingSend) && styles.timelineContentNext, (isNext || isPendingSend) && { borderColor: '#FF950040', backgroundColor: '#FF950008' }]}>
-                        <View style={styles.stepHeaderRow}>
-                          <Text style={[styles.stepLabel, { color: stepColor }]}>
-                            {isSent ? 'Sent' : isPendingSend ? 'Ready to Send' : isNext ? 'Next' : `Step ${step.step}`}
+                      <View style={[s.timelineContent, (isPending || isNext) && s.timelineContentActive, (isPending || isNext) && { borderColor: '#FF950040', backgroundColor: '#FF950008' }]}>
+                        <View style={s.stepHeaderRow}>
+                          <Text style={[s.stepLabel, { color: stepColor }]}>
+                            {isSent ? 'Sent' : isPending ? 'Ready to Send' : isNext ? 'Next Up' : `Step ${step.step}`}
                           </Text>
-                          <View style={styles.stepMeta}>
+                          <View style={s.stepMeta}>
                             <Ionicons name={step.channel === 'email' ? 'mail' : 'chatbubble'} size={11} color={colors.textTertiary || '#666'} />
-                            {!isSent && !isPendingSend && <Text style={[styles.delayText, { color: colors.textTertiary || '#666' }]}>{formatDelay(step)}</Text>}
+                            {!isSent && !isPending && <Text style={[s.delayText, { color: colors.textTertiary || '#666' }]}>{formatDelay(step)}</Text>}
+                            {isTappable && <Ionicons name="chevron-forward" size={14} color="#FF9500" style={{ marginLeft: 4 }} />}
                           </View>
                         </View>
-
-                        <Text style={[styles.stepMessage, { color: isSent ? colors.textSecondary : colors.text }]} numberOfLines={2}>
-                          {step.step_context ? step.step_context : step.message.slice(0, 80) + (step.message.length > 80 ? '...' : '')}
+                        <Text style={[s.stepMessage, { color: isSent ? colors.textSecondary : colors.text }]} numberOfLines={2}>
+                          {step.step_context || step.message.slice(0, 80) + (step.message.length > 80 ? '...' : '')}
                         </Text>
-
-                        {/* Timestamp */}
                         {isSent && step.sent_at && (
-                          <Text style={[styles.timestamp, { color: colors.textTertiary || '#666' }]}>
+                          <Text style={[s.timestamp, { color: colors.textTertiary || '#666' }]}>
                             {format(parseISO(step.sent_at), 'MMM d, h:mm a')}
                           </Text>
                         )}
-                        {isPendingSend && (
-                          <Text style={[styles.timestamp, { color: '#FF9500' }]}>
-                            In your Today's Touchpoints
-                          </Text>
+                        {isPending && (
+                          <Text style={[s.timestamp, { color: '#FF9500' }]}>Tap to send or mark as sent</Text>
                         )}
                         {isNext && step.scheduled_at && (
-                          <Text style={[styles.timestamp, { color: '#FF9500' }]}>
-                            Scheduled {formatScheduledTime(step.scheduled_at)}
+                          <Text style={[s.timestamp, { color: '#FF9500' }]}>
+                            {formatScheduledTime(step.scheduled_at)}
                           </Text>
                         )}
                       </View>
-                    </View>
+                    </StepWrapper>
                   );
                 })}
               </View>
@@ -217,16 +244,93 @@ export default function CampaignJourney({ userId, contactId }: Props) {
           </View>
         );
       })}
+
+      {/* Step Action Modal */}
+      <Modal visible={!!selectedStep} animationType="slide" presentationStyle="pageSheet" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContainer, { backgroundColor: colors.card }]}>
+            <View style={[s.modalHeader, { borderBottomColor: colors.surface }]}>
+              <TouchableOpacity onPress={() => setSelectedStep(null)} data-testid="modal-close-btn">
+                <Text style={s.modalClose}>Close</Text>
+              </TouchableOpacity>
+              <Text style={[s.modalTitle, { color: colors.text }]} numberOfLines={1}>
+                Step {selectedStep?.step}
+              </Text>
+              <View style={{ width: 50 }} />
+            </View>
+
+            <ScrollView style={s.modalBody}>
+              {selectedStep?.step_context ? (
+                <Text style={[s.modalContext, { color: colors.textSecondary }]}>{selectedStep.step_context}</Text>
+              ) : null}
+              <View style={[s.messageBox, { backgroundColor: colors.surface }]}>
+                <Text style={[s.messageText, { color: colors.text }]}>{stepMessage}</Text>
+              </View>
+              <Text style={[s.channelLabel, { color: colors.textSecondary }]}>
+                via {selectedStep?.channel?.toUpperCase() || 'SMS'}
+              </Text>
+            </ScrollView>
+
+            <View style={[s.modalActions, { borderTopColor: colors.surface }]}>
+              {Platform.OS === 'web' ? (
+                <>
+                  <button
+                    type="button"
+                    data-testid="copy-message-btn"
+                    onClick={() => handleCopyMessage()}
+                    style={{
+                      flex: 1, padding: 14, borderRadius: 12, border: 'none',
+                      backgroundColor: '#007AFF', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    <Text style={s.actionBtnText}>Copy Message</Text>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="mark-sent-btn"
+                    disabled={marking}
+                    onClick={() => handleMarkSent()}
+                    style={{
+                      flex: 1, padding: 14, borderRadius: 12, border: 'none',
+                      backgroundColor: '#34C759', cursor: marking ? 'not-allowed' : 'pointer',
+                      opacity: marking ? 0.6 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    {marking ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={s.actionBtnText}>Mark as Sent</Text>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#007AFF' }]} onPress={handleCopyMessage} data-testid="copy-message-btn">
+                    <Ionicons name="copy-outline" size={18} color="#fff" />
+                    <Text style={s.actionBtnText}>Copy Message</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#34C759' }]} onPress={handleMarkSent} disabled={marking} data-testid="mark-sent-btn">
+                    {marking ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="checkmark-circle" size={18} color="#fff" />}
+                    <Text style={s.actionBtnText}>Mark as Sent</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   wrapper: { paddingHorizontal: 16, marginBottom: 12 },
+  loadingWrap: { padding: 16, borderRadius: 12, borderWidth: 1 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   headerText: { fontSize: 15, fontWeight: '700' },
   headerCount: { fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
-  container: { padding: 16, borderRadius: 12, borderWidth: 1 },
   card: { borderRadius: 12, borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, paddingBottom: 8 },
   cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
@@ -234,23 +338,38 @@ const styles = StyleSheet.create({
   campaignName: { fontSize: 14, fontWeight: '700' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   metaText: { fontSize: 12 },
+  pendingBadge: { backgroundColor: '#FF950020', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
+  pendingBadgeText: { fontSize: 10, fontWeight: '700', color: '#FF9500' },
   aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#FFD60A15', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   aiBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFD60A' },
   progressBg: { height: 3, marginHorizontal: 12 },
   progressFill: { height: 3, borderRadius: 2 },
-  nextUpPreview: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 0.5 },
-  nextUpText: { fontSize: 12, flex: 1 },
   timeline: { paddingHorizontal: 12, paddingBottom: 12, paddingTop: 8 },
   timelineStep: { flexDirection: 'row', minHeight: 48 },
   timelineLeft: { width: 20, alignItems: 'center' },
   timelineDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2, marginTop: 4 },
   timelineLine: { width: 1.5, flex: 1, marginVertical: 2 },
   timelineContent: { flex: 1, marginLeft: 8, marginBottom: 10, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  timelineContentNext: { borderWidth: 1, borderRadius: 8 },
+  timelineContentActive: { borderWidth: 1, borderRadius: 8 },
   stepHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
   stepLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   stepMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   delayText: { fontSize: 10, fontWeight: '600' },
   stepMessage: { fontSize: 12, lineHeight: 17 },
   timestamp: { fontSize: 10, marginTop: 3 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContainer: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
+  modalClose: { fontSize: 16, color: '#007AFF', fontWeight: '500' },
+  modalTitle: { fontSize: 17, fontWeight: '600' },
+  modalBody: { padding: 16 },
+  modalContext: { fontSize: 13, marginBottom: 12, lineHeight: 18 },
+  messageBox: { padding: 16, borderRadius: 12, marginBottom: 8 },
+  messageText: { fontSize: 15, lineHeight: 22 },
+  channelLabel: { fontSize: 12, marginBottom: 12 },
+  modalActions: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 14, borderRadius: 12 },
+  actionBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

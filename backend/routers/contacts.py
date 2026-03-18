@@ -1299,25 +1299,48 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
 
     enrollments = await db.campaign_enrollments.find(
         {"contact_id": contact_id, "user_id": user_id},
-        {"_id": 0}
     ).to_list(None)
+
+    # Pre-load pending sends and tasks for this contact to cross-reference
+    pending_sends = await db.campaign_pending_sends.find(
+        {"contact_id": contact_id, "user_id": user_id}
+    ).to_list(None)
+    ps_by_key = {}
+    for ps in pending_sends:
+        key = f"{ps.get('campaign_id')}_{ps.get('step')}"
+        ps_by_key[key] = ps
+
+    campaign_tasks = await db.tasks.find(
+        {"contact_id": contact_id, "user_id": user_id, "type": "campaign_send"}
+    ).to_list(None)
+    task_by_key = {}
+    for t in campaign_tasks:
+        cid = t.get("campaign_id", "")
+        # Get step from pending_send
+        psid = t.get("pending_send_id", "")
+        if psid:
+            for ps in pending_sends:
+                if str(ps.get("_id")) == psid:
+                    key = f"{cid}_{ps.get('step')}"
+                    task_by_key[key] = t
+                    break
 
     journeys = []
     for enrollment in enrollments:
+        enrollment_id = str(enrollment.get("_id", ""))
         campaign_id = enrollment.get("campaign_id", "")
         campaign = None
         try:
             campaign = await db.campaigns.find_one(
                 {"_id": ObjectId(campaign_id)},
-                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1}
+                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1, "delivery_mode": 1}
             )
         except Exception:
             pass
         if not campaign:
-            # Try string ID
             campaign = await db.campaigns.find_one(
                 {"_id": campaign_id},
-                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1}
+                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1, "delivery_mode": 1}
             )
         if not campaign:
             continue
@@ -1326,12 +1349,15 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
         current_step = enrollment.get("current_step", 1)
         messages_sent = enrollment.get("messages_sent", [])
         status = enrollment.get("status", "active")
+        delivery_mode = campaign.get("delivery_mode", "manual")
 
-        # Build step details
         steps = []
         for i, seq in enumerate(sequences):
             step_num = i + 1
             sent_record = next((m for m in messages_sent if m.get("step") == step_num), None)
+            ps_key = f"{campaign_id}_{step_num}"
+            ps_doc = ps_by_key.get(ps_key)
+            task_doc = task_by_key.get(ps_key)
 
             step_info = {
                 "step": step_num,
@@ -1342,10 +1368,35 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
                 "delay_months": seq.get("delay_months", 0),
                 "ai_generated": seq.get("ai_generated", False),
                 "step_context": seq.get("step_context", ""),
+                "enrollment_id": enrollment_id,
+                "campaign_id": campaign_id,
             }
 
+            # Include pending_send_id if exists
+            if ps_doc:
+                step_info["pending_send_id"] = str(ps_doc["_id"])
+                # Use the actual message from pending send (may have template vars replaced)
+                if ps_doc.get("message"):
+                    step_info["full_message"] = ps_doc["message"]
+
             if sent_record:
-                record_status = sent_record.get("status", "sent")  # default "sent" for legacy data
+                record_status = sent_record.get("status")
+                if record_status is None:
+                    # Legacy data: no status field. Check task/pending_send for truth.
+                    if delivery_mode == "manual":
+                        if task_doc and task_doc.get("completed"):
+                            record_status = "sent"
+                        elif task_doc and not task_doc.get("completed"):
+                            record_status = "pending"
+                        elif ps_doc and ps_doc.get("status") == "sent":
+                            record_status = "sent"
+                        elif ps_doc and ps_doc.get("status") == "pending":
+                            record_status = "pending"
+                        else:
+                            record_status = "sent"  # assume sent for very old data
+                    else:
+                        record_status = "sent"  # automated mode
+
                 if record_status == "pending":
                     step_info["status"] = "pending_send"
                     queued = sent_record.get("queued_at", sent_record.get("sent_at"))
@@ -1375,7 +1426,80 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
             "total_steps": len(sequences),
             "enrolled_at": enrollment.get("enrolled_at", "").isoformat() if enrollment.get("enrolled_at") else None,
             "next_send_at": enrollment.get("next_send_at", "").isoformat() if enrollment.get("next_send_at") else None,
+            "enrollment_id": enrollment_id,
             "steps": steps,
         })
 
     return journeys
+
+
+@router.post("/{user_id}/{contact_id}/campaign-journey/mark-sent")
+async def mark_campaign_step_sent(user_id: str, contact_id: str, body: dict):
+    """Mark a campaign step as sent from the contact page. Single action that updates everything."""
+    db = get_db()
+    enrollment_id = body.get("enrollment_id", "")
+    step_num = body.get("step")
+    pending_send_id = body.get("pending_send_id", "")
+
+    if not enrollment_id or not step_num:
+        raise HTTPException(status_code=400, detail="enrollment_id and step are required")
+
+    now = datetime.now(timezone.utc)
+
+    # 1. Update enrollment messages_sent entry
+    await db.campaign_enrollments.update_one(
+        {"_id": ObjectId(enrollment_id), "messages_sent.step": step_num},
+        {"$set": {
+            "messages_sent.$.status": "sent",
+            "messages_sent.$.sent_at": now,
+            "last_sent_at": now,
+        }}
+    )
+
+    # 2. Update pending send
+    if pending_send_id:
+        await db.campaign_pending_sends.update_one(
+            {"_id": ObjectId(pending_send_id)},
+            {"$set": {"status": "sent", "sent_at": now}}
+        )
+
+    # 3. Complete associated task
+    task = None
+    if pending_send_id:
+        task = await db.tasks.find_one({
+            "user_id": user_id, "pending_send_id": pending_send_id, "type": "campaign_send"
+        })
+    if not task:
+        # Fallback: find by campaign_id and contact_id
+        enrollment = await db.campaign_enrollments.find_one({"_id": ObjectId(enrollment_id)})
+        if enrollment:
+            task = await db.tasks.find_one({
+                "user_id": user_id,
+                "contact_id": contact_id,
+                "campaign_id": enrollment.get("campaign_id", ""),
+                "type": "campaign_send",
+                "completed": {"$ne": True},
+            })
+
+    if task:
+        await db.tasks.update_one(
+            {"_id": task["_id"]},
+            {"$set": {"status": "completed", "completed": True, "completed_at": now}}
+        )
+
+    # 4. Log one clean activity event
+    enrollment = await db.campaign_enrollments.find_one({"_id": ObjectId(enrollment_id)})
+    campaign_name = (enrollment or {}).get("campaign_name", "Campaign")
+    contact_name = (enrollment or {}).get("contact_name", "contact")
+
+    await db.contact_events.insert_one({
+        "event_type": "campaign_step_sent",
+        "user_id": user_id,
+        "contact_id": contact_id,
+        "title": f"Sent Step {step_num} of {campaign_name}",
+        "description": f"Manually sent campaign step {step_num} to {contact_name}",
+        "timestamp": now,
+        "source": "campaign_journey",
+    })
+
+    return {"success": True, "message": f"Step {step_num} marked as sent"}
