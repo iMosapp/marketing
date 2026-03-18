@@ -15,7 +15,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { showSimpleAlert } from '../../services/alert';
+import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 export default function InviteTeamScreen() {
@@ -161,19 +161,24 @@ export default function InviteTeamScreen() {
   };
 
   const handleDeleteMember = async (memberId: string, memberName: string) => {
-    const confirmed = Platform.OS === 'web'
-      ? window.confirm(`Remove ${memberName}? This cannot be undone.`)
-      : true; // On native, we'd use Alert.alert but for now just proceed
-    if (!confirmed) return;
-    try {
-      await api.delete(`/admin/users/${memberId}`, {
-        headers: { 'X-User-ID': user?._id },
-      });
-      loadRecentInvites();
-    } catch (error: any) {
-      const detail = error?.response?.data?.detail || 'Failed to delete user';
-      showSimpleAlert('Error', detail);
-    }
+    showConfirm(
+      'Remove Team Member',
+      `Are you sure you want to remove ${memberName}? This action cannot be undone.`,
+      async () => {
+        try {
+          await api.delete(`/admin/users/${memberId}`, {
+            headers: { 'X-User-ID': user?._id },
+          });
+          loadRecentInvites();
+        } catch (error: any) {
+          const detail = error?.response?.data?.detail || 'Failed to delete user';
+          showSimpleAlert('Error', detail);
+        }
+      },
+      undefined,
+      'Remove',
+      'Cancel'
+    );
   };
 
   const getRoleBadgeColor = (r: string) => {

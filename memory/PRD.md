@@ -135,6 +135,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Backend auto-links org to partner's `organization_ids` list
   - "None (No Partner)" option available for standalone orgs
   - Non-super-admin users don't see the dropdown
+- Delete Confirmation Dialogs Audit & Fix — IMPLEMENTED (Mar 18, 2026):
+  - CRITICAL FIX: White-label partner delete now requires confirmation with clear warning about consequences
+  - Fixed: quotes.tsx delete/archive actions upgraded from raw `confirm()` to `showConfirm`
+  - Fixed: invite-team.tsx member removal upgraded from `window.confirm` to `showConfirm`
+  - Verified all other delete actions (orgs, users, contacts, campaigns, broadcasts, tags, templates, shared inboxes) already had proper confirmation dialogs
 
 ### P1
 - Gamification & Leaderboards

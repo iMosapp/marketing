@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
-import { showSimpleAlert } from '../../services/alert';
+import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 export default function WhiteLabelPartnersScreen() {
@@ -71,8 +71,24 @@ export default function WhiteLabelPartnersScreen() {
     } catch (e) { console.error(e); }
   };
 
-  const handleDelete = async (id: string) => {
-    try { await api.delete(`/admin/partners/${id}`); loadPartners(); } catch (e) { console.error(e); }
+  const handleDelete = async (id: string, name: string) => {
+    showConfirm(
+      'Delete White-Label Partner',
+      `Are you sure you want to delete "${name}"? This will remove all partner branding, billing configurations, and organization associations. This action CANNOT be undone.`,
+      async () => {
+        try {
+          await api.delete(`/admin/partners/${id}`);
+          loadPartners();
+          showSimpleAlert('Deleted', `Partner "${name}" has been removed.`);
+        } catch (e) {
+          console.error(e);
+          showSimpleAlert('Error', 'Failed to delete partner.');
+        }
+      },
+      undefined,
+      'Delete Partner',
+      'Cancel'
+    );
   };
 
   return (
@@ -301,7 +317,7 @@ export default function WhiteLabelPartnersScreen() {
                   <Ionicons name="receipt-outline" size={18} color="#34C759" />
                   <Text style={[s.actionText, { color: '#34C759' }]}>Billing</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.actionBtn} onPress={() => handleDelete(p._id)}>
+                <TouchableOpacity style={s.actionBtn} onPress={() => handleDelete(p._id, p.name)}>
                   <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                   <Text style={[s.actionText, { color: '#FF3B30' }]}>Delete</Text>
                 </TouchableOpacity>

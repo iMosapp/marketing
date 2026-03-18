@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 interface Quote {
@@ -71,31 +72,45 @@ export default function QuotesListPage() {
 
   const handleDeleteQuote = async (quoteId: string, status: string) => {
     if (status !== 'draft') {
-      alert('Only draft quotes can be deleted');
+      showSimpleAlert('Cannot Delete', 'Only draft quotes can be deleted');
       return;
     }
     
-    if (!confirm('Are you sure you want to delete this quote?')) return;
-    
-    try {
-      await api.delete(`/subscriptions/quotes/${quoteId}`);
-      loadQuotes();
-    } catch (error) {
-      console.error('Error deleting quote:', error);
-      alert('Failed to delete quote');
-    }
+    showConfirm(
+      'Delete Quote',
+      'Are you sure you want to delete this quote? This action cannot be undone.',
+      async () => {
+        try {
+          await api.delete(`/subscriptions/quotes/${quoteId}`);
+          loadQuotes();
+        } catch (error) {
+          console.error('Error deleting quote:', error);
+          showSimpleAlert('Error', 'Failed to delete quote');
+        }
+      },
+      undefined,
+      'Delete',
+      'Cancel'
+    );
   };
 
   const handleArchiveQuote = async (quoteId: string) => {
-    if (!confirm('Are you sure you want to archive this quote?')) return;
-    
-    try {
-      await api.put(`/subscriptions/quotes/${quoteId}/archive`);
-      loadQuotes();
-    } catch (error) {
-      console.error('Error archiving quote:', error);
-      alert('Failed to archive quote');
-    }
+    showConfirm(
+      'Archive Quote',
+      'Are you sure you want to archive this quote?',
+      async () => {
+        try {
+          await api.put(`/subscriptions/quotes/${quoteId}/archive`);
+          loadQuotes();
+        } catch (error) {
+          console.error('Error archiving quote:', error);
+          showSimpleAlert('Error', 'Failed to archive quote');
+        }
+      },
+      undefined,
+      'Archive',
+      'Cancel'
+    );
   };
 
   const getStatusColor = (status: string) => {
