@@ -2530,10 +2530,19 @@ def normalize_phone_number(phone: str) -> str:
 # ============= HIERARCHY MANAGEMENT ENDPOINTS =============
 
 @router.get("/hierarchy/overview")
-async def get_hierarchy_overview():
-    """Get complete hierarchy overview with counts"""
-    # Get all organizations with store and user counts
-    orgs = await get_db().organizations.find().limit(500).to_list(500)
+async def get_hierarchy_overview(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Get complete hierarchy overview with counts - scoped by user role"""
+    user = await get_requesting_user(x_user_id)
+    role = user.get('role', 'user') if user else None
+
+    if user and role != 'super_admin':
+        from routers.rbac import get_scoped_organization_ids
+        allowed_org_ids = await get_scoped_organization_ids(user)
+        org_filter = {"_id": {"$in": [oid for oid in (safe_objectid(x) for x in allowed_org_ids) if oid is not None]}}
+    else:
+        org_filter = {}
+
+    orgs = await get_db().organizations.find(org_filter).limit(500).to_list(500)
     
     result = []
     for org in orgs:
@@ -2735,11 +2744,24 @@ async def get_store_hierarchy(store_id: str):
 async def get_all_users_hierarchy(
     filter: Optional[str] = None,  # unassigned, org_admins, store_managers
     organization_id: Optional[str] = None,
-    store_id: Optional[str] = None
+    store_id: Optional[str] = None,
+    x_user_id: str = Header(None, alias="X-User-ID")
 ):
-    """Get all users with their org/store assignments"""
+    """Get all users with their org/store assignments - scoped by user role"""
+    user = await get_requesting_user(x_user_id)
+    role = user.get('role', 'user') if user else None
+
     query = {}
-    
+
+    # Apply RBAC scoping for non-super-admins
+    if user and role != 'super_admin':
+        from routers.rbac import get_scoped_organization_ids
+        allowed_org_ids = await get_scoped_organization_ids(user)
+        if allowed_org_ids:
+            query["organization_id"] = {"$in": allowed_org_ids}
+        else:
+            return {"users": [], "total": 0}
+
     if filter == "unassigned":
         query["$or"] = [
             {"organization_id": None},
