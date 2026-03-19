@@ -748,21 +748,6 @@ export default function HomeScreen() {
           )}
 
           {/* Activity Feed tile */}
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/activity-feed' as any)}
-            activeOpacity={0.85}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
-            data-testid="activity-feed-tile"
-          >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,122,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="pulse-outline" size={20} color="#007AFF" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Activity Feed</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{recentActivity.length > 0 ? `${recentActivity.length} recent events` : 'No recent activity'}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#48484A" />
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
