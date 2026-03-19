@@ -8,12 +8,17 @@ from datetime import datetime, timezone
 from bson import ObjectId
 import json
 import logging
+import time
 
 from routers.database import get_db
 from utils.image_urls import resolve_user_photo, resolve_store_logo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/seo", tags=["seo"])
+
+# ─── In-memory TTL cache for health scores ──────────────────────────
+_score_cache: dict = {}  # {user_id: {"data": ..., "ts": timestamp}}
+SCORE_CACHE_TTL = 300  # 5 minutes
 
 # ─── helpers ────────────────────────────────────────────────────────
 
@@ -699,14 +704,36 @@ async def seo_analytics(user_id: str):
 # ─── SEO Health Score ──────────────────────────────────────────────
 
 @router.get("/health-score/{user_id}")
-async def seo_health_score(user_id: str):
+async def seo_health_score(user_id: str, skip_cache: bool = False):
     """Calculate a comprehensive SEO/AEO health score (0-100) for a user."""
+    # Validate user_id format
+    if not user_id or user_id in ("undefined", "null", "None") or len(user_id) != 24:
+        return {"error": "Invalid user ID"}
+
+    # Check cache first
+    now = time.time()
+    if not skip_cache and user_id in _score_cache:
+        cached = _score_cache[user_id]
+        if now - cached["ts"] < SCORE_CACHE_TTL:
+            return cached["data"]
+
+    try:
+        result = await _compute_health_score(user_id)
+    except Exception as e:
+        logger.error(f"[SEO] Health score error for {user_id}: {e}")
+        return {"error": "Failed to compute score"}
+
+    # Cache the result
+    if "error" not in result:
+        _score_cache[user_id] = {"data": result, "ts": now}
+
+    return result
+
+
+async def _compute_health_score(user_id: str) -> dict:
+    """Internal: compute the health score with minimal DB queries."""
     db = get_db()
 
-    # Validate user_id format
-    if not user_id or user_id == "undefined" or len(user_id) != 24:
-        return {"error": "Invalid user ID"}
-    
     try:
         user = await db.users.find_one(
             {"_id": ObjectId(user_id)},
@@ -714,7 +741,7 @@ async def seo_health_score(user_id: str):
         )
     except Exception:
         return {"error": "Invalid user ID format"}
-        
+
     if not user:
         return {"error": "User not found"}
 
@@ -728,7 +755,12 @@ async def seo_health_score(user_id: str):
         user["seo_slug"] = slug
 
     store_id = user.get("store_id")
-    store = await db.stores.find_one({"store_id": store_id}) if store_id else None
+    store = None
+    if store_id:
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+        except Exception:
+            pass
 
     # ── Factor 1: Profile Completeness (20 pts) ────────────────────
     profile_checks = {
@@ -755,15 +787,15 @@ async def seo_health_score(user_id: str):
             profile_tips.append(tip_map[key])
 
     # ── Factor 2: Review Strength (20 pts) ─────────────────────────
-    reviews = await db.customer_feedback.find({
-        "salesperson_id": user_id,
-        "approved": True,
-        "rating": {"$gte": 1}
-    }).to_list(200)
-    review_count = len(reviews)
-    avg_rating = round(sum(r.get("rating", 5) for r in reviews) / review_count, 1) if review_count else 0
+    # Use aggregation instead of fetching all reviews
+    review_pipeline = [
+        {"$match": {"salesperson_id": user_id, "approved": True, "rating": {"$gte": 1}}},
+        {"$group": {"_id": None, "count": {"$sum": 1}, "avg_rating": {"$avg": "$rating"}}}
+    ]
+    review_agg = await db.customer_feedback.aggregate(review_pipeline).to_list(1)
+    review_count = review_agg[0]["count"] if review_agg else 0
+    avg_rating = round(review_agg[0]["avg_rating"], 1) if review_agg else 0
 
-    # Scale: 0 reviews = 0, 5+ reviews = full count points (10), 4.5+ rating = full rating points (10)
     count_pts = min(review_count / 5, 1.0) * 10
     rating_pts = (avg_rating / 5.0) * 10 if review_count > 0 else 0
     review_score = round(count_pts + rating_pts)
@@ -777,19 +809,19 @@ async def seo_health_score(user_id: str):
     card_stats = await db.seo_stats.find_one({"reference_id": user_id, "page_type": "card"})
     card_visits = card_stats.get("total_visits", 0) if card_stats else 0
 
-    short_urls = await db.short_urls.find(
-        {"user_id": user_id}
-    ).to_list(200)
-    total_link_clicks = sum(s.get("click_count", 0) for s in short_urls)
-    active_links = len([s for s in short_urls if s.get("click_count", 0) > 0])
+    # Use aggregation for short_urls instead of fetching all docs
+    link_pipeline = [
+        {"$match": {"user_id": user_id}},
+        {"$group": {"_id": None, "active": {"$sum": {"$cond": [{"$gt": ["$click_count", 0]}, 1, 0]}}, "total_clicks": {"$sum": "$click_count"}}}
+    ]
+    link_agg = await db.short_urls.aggregate(link_pipeline).to_list(1)
+    active_links = link_agg[0]["active"] if link_agg else 0
 
-    # card shares from tasks or messages
     shares_count = await db.tasks.count_documents({
         "assigned_to": user_id,
         "type": {"$in": ["card_share", "digital_card_share"]}
     })
 
-    # Scale: 10+ visits = full (8pts), 5+ active links = full (6pts), 5+ shares = full (6pts)
     visit_pts = min(card_visits / 10, 1.0) * 8
     link_pts = min(active_links / 5, 1.0) * 6
     share_pts = min(shares_count / 5, 1.0) * 6
@@ -801,16 +833,13 @@ async def seo_health_score(user_id: str):
         distribution_tips.append({"tip": "Create and share tracking links to monitor engagement", "points": round((1 - min(active_links / 5, 1.0)) * 6), "route": "/settings/link-page"})
 
     # ── Factor 4: Search Visibility (20 pts) ───────────────────────
-    # Based on organic/direct visits and source diversity
     recent_sources = card_stats.get("recent_sources", []) if card_stats else []
     organic_visits = sum(1 for s in recent_sources if s.get("source") in ["organic", "direct", "google", "bing"])
     unique_sources = len(set(s.get("source", "unknown") for s in recent_sources)) if recent_sources else 0
 
-    # Also check if user has schema.org data setup (store exists)
-    has_store_schema = bool(store and store.get("store_name"))
+    has_store_schema = bool(store and store.get("name"))
     has_person_schema = bool(user.get("name") and user.get("seo_slug"))
 
-    # Scale: 10+ organic visits = full (8pts), 3+ unique sources = full (4pts), schema checks (8pts)
     organic_pts = min(organic_visits / 10, 1.0) * 8
     source_pts = min(unique_sources / 3, 1.0) * 4
     schema_pts = (4 if has_person_schema else 0) + (4 if has_store_schema else 0)
@@ -822,11 +851,6 @@ async def seo_health_score(user_id: str):
         visibility_tips.append({"tip": "Boost organic traffic by sharing your public profile on social media", "points": round((1 - min(organic_visits / 10, 1.0)) * 8), "route": ""})
 
     # ── Factor 5: Freshness & Activity (20 pts) ───────────────────
-    stats = user.get("stats", {})
-    contacts_added = stats.get("contacts_added", 0)
-    messages_sent = stats.get("messages_sent", 0)
-
-    # Recent activity: contacts added in last 30 days
     thirty_days_ago = datetime.now(timezone.utc).isoformat()[:10]
     recent_contacts = await db.contacts.count_documents({
         "user_id": user_id,
@@ -837,11 +861,10 @@ async def seo_health_score(user_id: str):
         "created_at": {"$gte": thirty_days_ago}
     })
 
-    # Scale: 10+ contacts this month (8pts), 20+ messages this month (8pts), login recency (4pts)
     contact_pts = min(recent_contacts / 10, 1.0) * 8
     msg_pts = min(recent_messages / 20, 1.0) * 8
     last_login = user.get("last_login")
-    login_recency = 4  # assume recent unless we know otherwise
+    login_recency = 4
     if last_login:
         try:
             if isinstance(last_login, str):
@@ -849,7 +872,7 @@ async def seo_health_score(user_id: str):
             else:
                 ll = last_login
             days_since = (datetime.now(timezone.utc) - ll.replace(tzinfo=timezone.utc)).days
-            login_recency = max(0, 4 - days_since)  # lose 1pt per day inactive
+            login_recency = max(0, 4 - days_since)
         except Exception:
             login_recency = 2
     freshness_score = round(contact_pts + msg_pts + login_recency)
@@ -862,24 +885,17 @@ async def seo_health_score(user_id: str):
     # ── Total Score ────────────────────────────────────────────────
     total_score = min(profile_score + review_score + distribution_score + visibility_score + freshness_score, 100)
 
-    # Grade
     if total_score >= 80:
-        grade = "Excellent"
-        grade_color = "#34C759"
+        grade, grade_color = "Excellent", "#34C759"
     elif total_score >= 60:
-        grade = "Good"
-        grade_color = "#007AFF"
+        grade, grade_color = "Good", "#007AFF"
     elif total_score >= 40:
-        grade = "Fair"
-        grade_color = "#FF9500"
+        grade, grade_color = "Fair", "#FF9500"
     elif total_score >= 20:
-        grade = "Needs Work"
-        grade_color = "#FF3B30"
+        grade, grade_color = "Needs Work", "#FF3B30"
     else:
-        grade = "Getting Started"
-        grade_color = "#8E8E93"
+        grade, grade_color = "Getting Started", "#8E8E93"
 
-    # Collect all tips sorted by points (highest impact first)
     all_tips = profile_tips + review_tips + distribution_tips + visibility_tips + freshness_tips
     all_tips.sort(key=lambda t: t["points"], reverse=True)
 
@@ -914,10 +930,10 @@ async def seo_team_scores(store_id: str):
     results = []
     for member in members:
         uid = str(member["_id"])
-        # Use the same scoring logic as the individual endpoint
         try:
+            # seo_health_score uses caching, so repeated calls are fast
             score_data = await seo_health_score(uid)
-            if "error" in score_data:
+            if isinstance(score_data, dict) and "error" in score_data:
                 continue
             results.append({
                 "user_id": uid,
@@ -929,7 +945,8 @@ async def seo_team_scores(store_id: str):
                 "review_count": score_data["factors"]["reviews"]["details"]["count"],
                 "card_visits": score_data["factors"]["distribution"]["details"]["card_visits"],
             })
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[SEO] Team score error for {uid}: {e}")
             continue
 
     results.sort(key=lambda x: x["score"], reverse=True)

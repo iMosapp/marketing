@@ -74,20 +74,29 @@ export default function SEOHealthScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'my' | 'team'>('my');
+  const [error, setError] = useState(false);
 
   const isManager = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'store_manager';
 
   const fetchData = useCallback(async () => {
     if (!user?._id) return;
+    setError(false);
     try {
       const res = await api.get(`/seo/health-score/${user._id}`);
-      setData(res.data);
+      if (res.data?.error) {
+        setError(true);
+      } else {
+        setData(res.data);
+      }
       if (isManager && user?.store_id) {
-        const teamRes = await api.get(`/seo/health-score/team/${user.store_id}`);
-        setTeam(teamRes.data.team || []);
+        try {
+          const teamRes = await api.get(`/seo/health-score/team/${user.store_id}`);
+          setTeam(teamRes.data.team || []);
+        } catch {}
       }
     } catch (e) {
       console.error('SEO health fetch error:', e);
+      setError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,7 +138,28 @@ export default function SEOHealthScreen() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} data-testid="seo-health-back-btn">
+            <Ionicons name="chevron-back" size={28} color={textPrimary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textPrimary }]}>SEO Health</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.loadingWrap}>
+          <Ionicons name="warning-outline" size={48} color={textSecondary} />
+          <Text style={{ color: textSecondary, fontSize: 15, marginTop: 12, textAlign: 'center' }}>
+            {error ? 'Unable to load SEO score. Pull down to retry.' : 'No data available'}
+          </Text>
+          <TouchableOpacity onPress={() => { setLoading(true); fetchData(); }} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#007AFF', borderRadius: 10 }} data-testid="seo-retry-btn">
+            <Text style={{ color: '#FFF', fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const scoreAngle = (data.total_score / 100) * 360;
 
