@@ -718,12 +718,21 @@ async def seo_health_score(user_id: str):
     if not user:
         return {"error": "User not found"}
 
+    # Auto-generate SEO slug if missing
+    if not user.get("seo_slug") and user.get("name"):
+        import re
+        base_slug = re.sub(r'[^a-z0-9]+', '-', user["name"].lower()).strip('-')
+        existing = await db.users.find_one({"seo_slug": base_slug, "_id": {"$ne": user["_id"]}})
+        slug = f"{base_slug}-{str(user['_id'])[-4:]}" if existing else base_slug
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"seo_slug": slug}})
+        user["seo_slug"] = slug
+
     store_id = user.get("store_id")
     store = await db.stores.find_one({"store_id": store_id}) if store_id else None
 
     # ── Factor 1: Profile Completeness (20 pts) ────────────────────
     profile_checks = {
-        "profile_photo": bool(user.get("profile_image")),
+        "profile_photo": bool(user.get("photo_url") or user.get("profile_image")),
         "bio": bool((user.get("persona", {}) or {}).get("bio") or user.get("bio")),
         "phone": bool(user.get("phone")),
         "title": bool(user.get("title")),
@@ -734,12 +743,12 @@ async def seo_health_score(user_id: str):
     profile_score = round((profile_filled / len(profile_checks)) * 20)
     profile_tips = []
     tip_map = {
-        "profile_photo": {"tip": "Add a professional profile photo", "points": 3},
-        "bio": {"tip": "Write a personal bio to help customers find you", "points": 3},
-        "phone": {"tip": "Add your phone number for direct contact", "points": 3},
-        "title": {"tip": "Set your job title (e.g., 'Sales Manager')", "points": 3},
-        "seo_slug": {"tip": "Create an SEO-friendly URL slug for your public page", "points": 4},
-        "social_links": {"tip": "Connect at least one social media profile", "points": 4},
+        "profile_photo": {"tip": "Add a professional profile photo in Hub > Settings > My Profile", "points": 3},
+        "bio": {"tip": "Write a personal bio in Hub > Settings > AI Persona", "points": 3},
+        "phone": {"tip": "Add your phone number in Hub > Settings > My Profile", "points": 3},
+        "title": {"tip": "Set your job title in Hub > Settings > My Profile", "points": 3},
+        "seo_slug": {"tip": "Your SEO-friendly URL has been auto-generated! Refresh to update.", "points": 4},
+        "social_links": {"tip": "Connect social media profiles in Hub > Settings > My Profile", "points": 4},
     }
     for key, passed in profile_checks.items():
         if not passed:
