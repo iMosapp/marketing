@@ -14,6 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { UniversalShareModal } from '../components/UniversalShareModal';
 
 const FACTOR_ICONS: Record<string, string> = {
   profile: 'person-circle',
@@ -75,6 +76,7 @@ export default function SEOHealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'my' | 'team'>('my');
   const [error, setError] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const isManager = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'store_manager';
 
@@ -170,7 +172,13 @@ export default function SEOHealthScreen() {
           <Ionicons name="chevron-back" size={28} color={textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: textPrimary }]}>SEO Health</Text>
-        <View style={{ width: 28 }} />
+        {data ? (
+          <TouchableOpacity onPress={() => setShowShare(true)} data-testid="seo-share-header-btn">
+            <Ionicons name="share-outline" size={24} color={textPrimary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 28 }} />
+        )}
       </View>
 
       {isManager && (
@@ -214,6 +222,14 @@ export default function SEOHealthScreen() {
                   ? "You're on the right track. Focus on the tips below to grow."
                   : "Let's build your online presence. Start with the quick wins below."}
               </Text>
+              <TouchableOpacity
+                onPress={() => setShowShare(true)}
+                style={[styles.shareBtn, { borderColor: data.grade_color }]}
+                data-testid="seo-share-score-btn"
+              >
+                <Ionicons name="share-social-outline" size={16} color={data.grade_color} />
+                <Text style={[styles.shareBtnText, { color: data.grade_color }]}>Share My Score</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Factor Breakdown */}
@@ -357,6 +373,22 @@ export default function SEOHealthScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {data && (
+        <UniversalShareModal
+          visible={showShare}
+          onClose={() => setShowShare(false)}
+          title="Share My SEO Score"
+          subtitle={`${data.total_score}/100 - ${data.grade}`}
+          shareUrl={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
+          shareText={`My SEO Health Score is ${data.total_score}/100 (${data.grade}) on i'M On Social! Check out my digital card:`}
+          showPreview={true}
+          previewUrl={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
+          showQR={true}
+          userId={user?._id}
+          eventType="seo_score_shared"
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -379,6 +411,8 @@ const styles = StyleSheet.create({
   scoreOf: { fontSize: 14, fontWeight: '500', marginTop: -4 },
   gradeText: { fontSize: 20, fontWeight: '800', marginBottom: 4 },
   gradeSubtext: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5 },
+  shareBtnText: { fontSize: 14, fontWeight: '700' },
   // Factors
   sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12, marginTop: 4 },
   factorCard: { borderRadius: 14, padding: 16, marginBottom: 10 },

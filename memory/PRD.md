@@ -35,6 +35,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Performance:** Added 5-minute TTL in-memory cache (`_score_cache`) to avoid recomputing on every page load
 - **Performance:** Replaced `find().to_list()` with MongoDB aggregation pipelines for reviews and short_urls
 - **Frontend:** Fixed blank screen on SEO Health page — now shows error state with retry button instead of returning null
+- **Feature:** Added "Share My Score" button on SEO Health page + share icon in header — opens UniversalShareModal with score info, digital card link, QR code, and all share channels
 - **Testing:** 14/14 backend tests pass, 100% frontend pass
 
 ### SEO Health Score Dashboard (Mar 18, 2026)
