@@ -681,6 +681,12 @@ async def get_performance(user_id: str, period: str = "week"):
 
     match = {"user_id": user_id, "timestamp": {"$gte": start, "$lt": end}}
 
+    # Define actual customer-facing touchpoint types (not internal events like tag_added, contact_added)
+    TOUCHPOINT_EVENT_TYPES = SMS_EVENT_TYPES + [
+        "email_sent", "email_failed",
+        "call_placed", "call_received",
+    ]
+
     # Aggregate events by type
     pipeline = [
         {"$match": match},
@@ -703,12 +709,13 @@ async def get_performance(user_id: str, period: str = "week"):
     except Exception:
         pass
 
-    # Previous period for trend
+    # Previous period for trend — only count actual touchpoints
     period_length = end - start
     prev_start = start - period_length
-    prev_match = {"user_id": user_id, "timestamp": {"$gte": prev_start, "$lt": start}}
-    prev_total = await db.contact_events.count_documents(prev_match)
-    curr_total = await db.contact_events.count_documents(match)
+    touchpoint_match = {"user_id": user_id, "event_type": {"$in": TOUCHPOINT_EVENT_TYPES}, "timestamp": {"$gte": start, "$lt": end}}
+    prev_touchpoint_match = {"user_id": user_id, "event_type": {"$in": TOUCHPOINT_EVENT_TYPES}, "timestamp": {"$gte": prev_start, "$lt": start}}
+    prev_total = await db.contact_events.count_documents(prev_touchpoint_match)
+    curr_total = await db.contact_events.count_documents(touchpoint_match)
     # Include engagement signals in total
     eng_total = sum(eng_signals.values())
     curr_total += eng_total
@@ -726,10 +733,12 @@ async def get_performance(user_id: str, period: str = "week"):
     })
 
     # Daily scorecard: today vs yesterday (always calculated using user's local timezone)
+    # Only count actual customer-facing touchpoints, not internal events (tag_added, contact_added, etc.)
     today_start_tz, today_end_tz = await get_user_day_bounds(user_id, "today")
     yesterday_start_tz = today_start_tz - timedelta(days=1)
-    today_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": today_start_tz, "$lt": today_end_tz}})
-    yesterday_events = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": yesterday_start_tz, "$lt": today_start_tz}})
+    touchpoint_filter = {"user_id": user_id, "event_type": {"$in": TOUCHPOINT_EVENT_TYPES}}
+    today_events = await db.contact_events.count_documents({**touchpoint_filter, "timestamp": {"$gte": today_start_tz, "$lt": today_end_tz}})
+    yesterday_events = await db.contact_events.count_documents({**touchpoint_filter, "timestamp": {"$gte": yesterday_start_tz, "$lt": today_start_tz}})
     try:
         today_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": today_start_tz, "$lt": today_end_tz}})
         yesterday_eng = await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": yesterday_start_tz, "$lt": today_start_tz}})
@@ -741,14 +750,12 @@ async def get_performance(user_id: str, period: str = "week"):
     # Streak: consecutive days with 5+ touchpoints (looking back up to 90 days)
     STREAK_THRESHOLD = 5
     streak = 0
-    # Count today toward streak if already at threshold
     if today_events >= STREAK_THRESHOLD:
         streak = 1
-    # Walk backwards from yesterday
     for days_ago in range(1, 91):
         day_start = today_start_tz - timedelta(days=days_ago)
         day_end = day_start + timedelta(days=1)
-        day_count = await db.contact_events.count_documents({"user_id": user_id, "timestamp": {"$gte": day_start, "$lt": day_end}})
+        day_count = await db.contact_events.count_documents({**touchpoint_filter, "timestamp": {"$gte": day_start, "$lt": day_end}})
         try:
             day_count += await db.engagement_signals.count_documents({"user_id": user_id, "created_at": {"$gte": day_start, "$lt": day_end}})
         except Exception:
