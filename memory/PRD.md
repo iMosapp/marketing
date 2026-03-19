@@ -30,6 +30,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
+### Campaign Dashboard Fix (Mar 19, 2026)
+- **Bug Fix:** `GET /campaigns/{user_id}` was returning 500 because `CampaignSequenceStep.step` was required but some DB records lacked it. Made it default to 0 and auto-assign sequentially on load.
+- **Bug Fix:** `GET /campaigns/scheduler/pending` endpoint didn't exist — dashboard pending/upcoming counts were always 0. Created new endpoint.
+- **Bug Fix:** `POST /campaigns/scheduler/process` had wrong name (backend had `/trigger`). Added alias endpoint.
+- **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
+- **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
+
 ### SEO Health Score Performance Fix (Mar 19, 2026) -- LATEST
 - **Bug Fix:** Store query was using `{"store_id": store_id}` instead of `{"_id": ObjectId(store_id)}` — stores were never found
 - **Performance:** Added 5-minute TTL in-memory cache (`_score_cache`) to avoid recomputing on every page load
