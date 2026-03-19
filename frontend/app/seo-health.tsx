@@ -42,6 +42,7 @@ interface Factor {
 interface Tip {
   tip: string;
   points: number;
+  route?: string;
 }
 
 interface TeamMember {
@@ -250,6 +251,22 @@ export default function SEOHealthScreen() {
               </View>
             ))}
 
+            {/* How to Improve Link */}
+            <TouchableOpacity
+              onPress={() => router.push('/seo-guide' as any)}
+              style={[styles.guideBtn, { backgroundColor: cardBg, borderColor: border }]}
+              data-testid="seo-guide-link"
+            >
+              <View style={[styles.guideBtnIcon, { backgroundColor: '#007AFF18' }]}>
+                <Ionicons name="book" size={20} color="#007AFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.guideBtnTitle, { color: textPrimary }]}>How to Improve Your Score</Text>
+                <Text style={[styles.guideBtnSub, { color: textSecondary }]}>Step-by-step guide with direct links</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={textSecondary} />
+            </TouchableOpacity>
+
             {/* Tips */}
             {data.tips.length > 0 && (
               <>
@@ -260,7 +277,18 @@ export default function SEOHealthScreen() {
                       <View style={styles.tipBadge}>
                         <Text style={styles.tipBadgeText}>+{tip.points}</Text>
                       </View>
-                      <Text style={[styles.tipText, { color: textPrimary }]}>{tip.tip}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.tipText, { color: textPrimary }]}>{tip.tip}</Text>
+                        {tip.route ? (
+                          <TouchableOpacity
+                            style={styles.fixBtn}
+                            onPress={() => router.push(tip.route as any)}
+                          >
+                            <Text style={styles.fixBtnText}>Fix This</Text>
+                            <Ionicons name="arrow-forward" size={12} color="#007AFF" />
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -346,6 +374,13 @@ const styles = StyleSheet.create({
   tipBadge: { backgroundColor: '#34C75920', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, minWidth: 38, alignItems: 'center' },
   tipBadgeText: { color: '#34C759', fontWeight: '800', fontSize: 13 },
   tipText: { fontSize: 14, flex: 1, lineHeight: 19 },
+  fixBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: '#007AFF12', alignSelf: 'flex-start', marginTop: 6 },
+  fixBtnText: { fontSize: 12, fontWeight: '700', color: '#007AFF' },
+  // Guide button
+  guideBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  guideBtnIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  guideBtnTitle: { fontSize: 15, fontWeight: '600' },
+  guideBtnSub: { fontSize: 12, marginTop: 1 },
   // Team
   teamRow: { borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   teamRank: { width: 36, alignItems: 'center' },

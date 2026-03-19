@@ -743,12 +743,12 @@ async def seo_health_score(user_id: str):
     profile_score = round((profile_filled / len(profile_checks)) * 20)
     profile_tips = []
     tip_map = {
-        "profile_photo": {"tip": "Add a professional profile photo in Hub > Settings > My Profile", "points": 3},
-        "bio": {"tip": "Write a personal bio in Hub > Settings > AI Persona", "points": 3},
-        "phone": {"tip": "Add your phone number in Hub > Settings > My Profile", "points": 3},
-        "title": {"tip": "Set your job title in Hub > Settings > My Profile", "points": 3},
-        "seo_slug": {"tip": "Your SEO-friendly URL has been auto-generated! Refresh to update.", "points": 4},
-        "social_links": {"tip": "Connect social media profiles in Hub > Settings > My Profile", "points": 4},
+        "profile_photo": {"tip": "Add a professional profile photo", "points": 3, "route": "/my-account"},
+        "bio": {"tip": "Write a personal bio to help customers find you", "points": 3, "route": "/settings/persona"},
+        "phone": {"tip": "Add your phone number for direct contact", "points": 3, "route": "/my-account"},
+        "title": {"tip": "Set your job title (e.g., 'Sales Manager')", "points": 3, "route": "/my-account"},
+        "seo_slug": {"tip": "Your SEO-friendly URL has been auto-generated! Refresh to update.", "points": 4, "route": ""},
+        "social_links": {"tip": "Connect your social media profiles", "points": 4, "route": "/settings/brand-kit"},
     }
     for key, passed in profile_checks.items():
         if not passed:
@@ -769,9 +769,9 @@ async def seo_health_score(user_id: str):
     review_score = round(count_pts + rating_pts)
     review_tips = []
     if review_count < 5:
-        review_tips.append({"tip": f"Get {5 - review_count} more reviews to reach 'Strong' status", "points": round((5 - review_count) / 5 * 10)})
+        review_tips.append({"tip": f"Get {5 - review_count} more reviews to reach 'Strong' status", "points": round((5 - review_count) / 5 * 10), "route": "/settings/review-links"})
     if review_count > 0 and avg_rating < 4.5:
-        review_tips.append({"tip": "Focus on 5-star experiences to boost your average rating", "points": round((4.5 - avg_rating) / 5 * 10)})
+        review_tips.append({"tip": "Focus on 5-star experiences to boost your average rating", "points": round((4.5 - avg_rating) / 5 * 10), "route": ""})
 
     # ── Factor 3: Content Distribution (20 pts) ────────────────────
     card_stats = await db.seo_stats.find_one({"reference_id": user_id, "page_type": "card"})
@@ -796,9 +796,9 @@ async def seo_health_score(user_id: str):
     distribution_score = round(visit_pts + link_pts + share_pts)
     distribution_tips = []
     if card_visits < 10:
-        distribution_tips.append({"tip": "Share your digital card to drive more page views", "points": round((1 - min(card_visits / 10, 1.0)) * 8)})
+        distribution_tips.append({"tip": "Share your digital card to drive more page views", "points": round((1 - min(card_visits / 10, 1.0)) * 8), "route": "/settings/create-card"})
     if active_links < 5:
-        distribution_tips.append({"tip": "Create and share tracking links to monitor engagement", "points": round((1 - min(active_links / 5, 1.0)) * 6)})
+        distribution_tips.append({"tip": "Create and share tracking links to monitor engagement", "points": round((1 - min(active_links / 5, 1.0)) * 6), "route": "/settings/link-page"})
 
     # ── Factor 4: Search Visibility (20 pts) ───────────────────────
     # Based on organic/direct visits and source diversity
@@ -817,9 +817,9 @@ async def seo_health_score(user_id: str):
     visibility_score = round(organic_pts + source_pts + schema_pts)
     visibility_tips = []
     if not has_person_schema:
-        visibility_tips.append({"tip": "Complete your profile & SEO slug to enable Person schema markup", "points": 4})
+        visibility_tips.append({"tip": "Complete your profile & SEO slug to enable Person schema markup", "points": 4, "route": "/my-account"})
     if organic_visits < 10:
-        visibility_tips.append({"tip": "Boost organic traffic by sharing your public profile on social media", "points": round((1 - min(organic_visits / 10, 1.0)) * 8)})
+        visibility_tips.append({"tip": "Boost organic traffic by sharing your public profile on social media", "points": round((1 - min(organic_visits / 10, 1.0)) * 8), "route": ""})
 
     # ── Factor 5: Freshness & Activity (20 pts) ───────────────────
     stats = user.get("stats", {})
@@ -855,9 +855,9 @@ async def seo_health_score(user_id: str):
     freshness_score = round(contact_pts + msg_pts + login_recency)
     freshness_tips = []
     if recent_contacts < 10:
-        freshness_tips.append({"tip": f"Add {10 - recent_contacts} more contacts this month to maximize freshness", "points": round((1 - min(recent_contacts / 10, 1.0)) * 8)})
+        freshness_tips.append({"tip": f"Add {10 - recent_contacts} more contacts this month to maximize freshness", "points": round((1 - min(recent_contacts / 10, 1.0)) * 8), "route": ""})
     if recent_messages < 20:
-        freshness_tips.append({"tip": "Send more messages to show active engagement signals", "points": round((1 - min(recent_messages / 20, 1.0)) * 8)})
+        freshness_tips.append({"tip": "Send more messages to show active engagement signals", "points": round((1 - min(recent_messages / 20, 1.0)) * 8), "route": ""})
 
     # ── Total Score ────────────────────────────────────────────────
     total_score = min(profile_score + review_score + distribution_score + visibility_score + freshness_score, 100)
