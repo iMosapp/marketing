@@ -24,28 +24,39 @@ logger = logging.getLogger(__name__)
 async def _catchup_overdue_campaign_tasks(user_id: str):
     """Create missing tasks for overdue campaign enrollments.
     This ensures campaign steps that the scheduler missed still appear in Today's Touchpoints.
+    Checks both: 1) enrollments where next_send_at passed, and 2) steps marked 'pending' in messages_sent.
     """
     db = get_db()
     now = datetime.now(timezone.utc)
 
     try:
+        # ── Path 1: Enrollments where next_send_at has passed ──
         overdue_enrollments = await db.campaign_enrollments.find({
             "user_id": user_id,
             "status": "active",
             "next_send_at": {"$lte": now},
         }).to_list(50)
 
+        # ── Path 2: Enrollments with pending message steps (scheduler already advanced but task missing/dismissed) ──
+        pending_step_enrollments = await db.campaign_enrollments.find({
+            "user_id": user_id,
+            "status": "active",
+            "messages_sent.status": "pending",
+        }).to_list(50)
+
+        # Merge and deduplicate by enrollment _id
+        seen_ids = set()
+        all_enrollments = []
+        for e in overdue_enrollments + pending_step_enrollments:
+            eid = str(e["_id"])
+            if eid not in seen_ids:
+                seen_ids.add(eid)
+                all_enrollments.append(e)
+
         created = 0
-        for enrollment in overdue_enrollments:
+        for enrollment in all_enrollments:
             campaign_id = enrollment.get("campaign_id", "")
             contact_id = enrollment.get("contact_id", "")
-            current_step = enrollment.get("current_step", 1)
-            idem_key = f"campaign_{campaign_id}_{contact_id}_{current_step}"
-
-            # Skip if task already exists for this step
-            existing = await db.tasks.find_one({"idempotency_key": idem_key})
-            if existing:
-                continue
 
             # Load campaign to get step details
             campaign = None
@@ -53,73 +64,117 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
                 campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id)})
             except Exception:
                 pass
-            if not campaign or not campaign.get("active", False):
+            if not campaign:
                 continue
 
             sequences = campaign.get("sequences", [])
-            if current_step > len(sequences):
+            if not sequences:
                 continue
 
-            step = sequences[current_step - 1]
-            channel = step.get("channel", "sms")
-            message_content = step.get("message_template", "") or step.get("message", "")
-            contact_display = enrollment.get("contact_name", "contact")
-            action_type = step.get("action_type", "message")
+            # Determine which steps need tasks
+            steps_to_process = []
+            messages_sent = enrollment.get("messages_sent", [])
 
-            if action_type == "send_card":
-                card_type = step.get("card_type", "congrats")
-                task_title = f"Send {card_type.title()} Card to {contact_display}"
-                task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_type} card."
-            else:
-                task_title = f"Send {channel.upper()} to {contact_display}"
-                task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
+            # Check for pending steps in messages_sent
+            for msg in messages_sent:
+                if msg.get("status") == "pending":
+                    steps_to_process.append(msg.get("step", 0))
 
-            # Create pending send
-            pending_result = await db.campaign_pending_sends.insert_one({
-                "user_id": user_id,
-                "campaign_id": campaign_id,
-                "campaign_name": campaign.get("name", ""),
-                "contact_id": contact_id,
-                "contact_name": enrollment.get("contact_name", ""),
-                "contact_phone": enrollment.get("contact_phone", ""),
-                "step": current_step,
-                "channel": channel,
-                "message": message_content,
-                "status": "pending",
-                "created_at": now,
-            })
+            # Also check current step if next_send_at passed
+            current_step = enrollment.get("current_step", 1)
+            next_send_at = enrollment.get("next_send_at")
+            if next_send_at and next_send_at <= now and current_step not in steps_to_process:
+                steps_to_process.append(current_step)
 
-            # Replace template variables
-            contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
-            clean_message = message_content.replace("{name}", contact_first).replace("{first_name}", contact_first)
+            for step_num in steps_to_process:
+                if step_num < 1 or step_num > len(sequences):
+                    continue
 
-            try:
-                await db.tasks.insert_one({
-                    "user_id": user_id,
-                    "contact_id": contact_id,
-                    "contact_name": enrollment.get("contact_name", ""),
-                    "contact_phone": enrollment.get("contact_phone", ""),
-                    "type": "campaign_send",
-                    "title": task_title,
-                    "description": task_desc,
-                    "suggested_message": clean_message,
-                    "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
-                    "due_date": now,
-                    "priority": "high",
-                    "priority_order": 1,
-                    "status": "pending",
-                    "completed": False,
-                    "source": "campaign",
+                idem_key = f"campaign_{campaign_id}_{contact_id}_{step_num}"
+
+                # Skip if a usable task already exists (pending or snoozed)
+                existing = await db.tasks.find_one({"idempotency_key": idem_key})
+                if existing:
+                    ex_status = existing.get("status", "")
+                    if ex_status in ("pending", "snoozed"):
+                        continue  # Task exists and is active — no action needed
+                    elif ex_status in ("dismissed",):
+                        # Task was dismissed but step is still pending — recreate it
+                        await db.tasks.delete_one({"_id": existing["_id"]})
+                    else:
+                        continue  # completed or other — skip
+
+                step = sequences[step_num - 1]
+                channel = step.get("channel", "sms")
+                message_content = step.get("message_template", "") or step.get("message", "")
+                contact_display = enrollment.get("contact_name", "contact")
+                action_type = step.get("action_type", "message")
+
+                if action_type == "send_card":
+                    card_type = step.get("card_type", "congrats")
+                    task_title = f"Send {card_type.title()} Card to {contact_display}"
+                    task_desc = f"Campaign '{campaign.get('name', '')}' step {step_num}: Send a {card_type} card."
+                else:
+                    task_title = f"Send {channel.upper()} to {contact_display}"
+                    task_desc = f"Campaign '{campaign.get('name', '')}' step {step_num}: {message_content[:200]}"
+
+                # Check if pending_send exists, if not create one
+                existing_ps = await db.campaign_pending_sends.find_one({
                     "campaign_id": campaign_id,
-                    "campaign_name": campaign.get("name", ""),
-                    "pending_send_id": str(pending_result.inserted_id),
-                    "channel": channel,
-                    "created_at": now,
-                    "idempotency_key": idem_key,
+                    "contact_id": contact_id,
+                    "step": step_num,
+                    "status": "pending",
                 })
-                created += 1
-            except Exception:
-                pass  # DuplicateKeyError or other - skip silently
+
+                if existing_ps:
+                    pending_send_id = str(existing_ps["_id"])
+                else:
+                    pending_result = await db.campaign_pending_sends.insert_one({
+                        "user_id": user_id,
+                        "campaign_id": campaign_id,
+                        "campaign_name": campaign.get("name", ""),
+                        "contact_id": contact_id,
+                        "contact_name": enrollment.get("contact_name", ""),
+                        "contact_phone": enrollment.get("contact_phone", ""),
+                        "step": step_num,
+                        "channel": channel,
+                        "message": message_content,
+                        "status": "pending",
+                        "created_at": now,
+                    })
+                    pending_send_id = str(pending_result.inserted_id)
+
+                # Replace template variables
+                contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
+                clean_message = message_content.replace("{name}", contact_first).replace("{first_name}", contact_first)
+
+                try:
+                    await db.tasks.insert_one({
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "contact_name": enrollment.get("contact_name", ""),
+                        "contact_phone": enrollment.get("contact_phone", ""),
+                        "type": "campaign_send",
+                        "title": task_title,
+                        "description": task_desc,
+                        "suggested_message": clean_message,
+                        "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
+                        "due_date": now,
+                        "priority": "high",
+                        "priority_order": 1,
+                        "status": "pending",
+                        "completed": False,
+                        "source": "campaign",
+                        "campaign_id": campaign_id,
+                        "campaign_name": campaign.get("name", ""),
+                        "pending_send_id": pending_send_id,
+                        "channel": channel,
+                        "created_at": now,
+                        "idempotency_key": idem_key,
+                    })
+                    created += 1
+                except Exception:
+                    pass  # DuplicateKeyError or other - skip silently
 
         if created > 0:
             logger.info(f"[Tasks] Catch-up: created {created} missing campaign tasks for user {user_id}")
