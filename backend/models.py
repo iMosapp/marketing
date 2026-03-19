@@ -419,7 +419,7 @@ class CallCreate(BaseModel):
 
 # Campaign Models
 class CampaignSequenceStep(BaseModel):
-    step: int
+    step: int = 0
     action_type: str = "message"  # "message" or "send_card"
     card_type: str = ""  # congrats, birthday, anniversary, thankyou, welcome, holiday
     message_template: str = ""

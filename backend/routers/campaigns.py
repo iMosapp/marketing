@@ -523,6 +523,37 @@ def calculate_next_send_date(step: dict) -> datetime:
     else:
         return now + timedelta(days=delay_value)
 
+@router.get("/scheduler/pending")
+async def get_scheduler_pending():
+    """Get counts of pending and upcoming campaign messages for the dashboard."""
+    db = get_db()
+    now = datetime.utcnow()
+
+    pending_count = await db.campaign_enrollments.count_documents({
+        "status": "active",
+        "next_send_at": {"$lte": now}
+    })
+
+    upcoming_count = await db.campaign_enrollments.count_documents({
+        "status": "active",
+        "next_send_at": {"$gt": now}
+    })
+
+    return {
+        "pending": pending_count,
+        "upcoming": upcoming_count,
+    }
+
+@router.post("/scheduler/process")
+async def process_scheduler():
+    """Alias for scheduler/trigger — used by the campaign dashboard."""
+    result = await trigger_scheduler()
+    return {
+        "sent": result.get("processed", 0),
+        "completed": 0,
+        "pending_found": result.get("pending_found", 0),
+    }
+
 @router.get("/{user_id}/permissions")
 async def get_campaign_permissions(user_id: str):
     """Check if user has campaign editing permissions"""
@@ -598,7 +629,14 @@ async def get_campaigns(user_id: str):
             idx = next(i for i, c in enumerate(result) if (c.get("name"), c.get("type")) == key)
             result[idx] = camp
     
-    return [Campaign(**{**camp, "_id": str(camp["_id"])}) for camp in result]
+    result_models = []
+    for camp in result:
+        # Auto-assign step numbers if missing from DB data
+        for i, seq in enumerate(camp.get("sequences", [])):
+            if not seq.get("step"):
+                seq["step"] = i + 1
+        result_models.append(Campaign(**{**camp, "_id": str(camp["_id"])}))
+    return result_models
 
 # ============= PENDING SENDS (Manual Campaigns) =============
 # NOTE: These routes MUST be above /{user_id}/{campaign_id} to avoid route collision.
