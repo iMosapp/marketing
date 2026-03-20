@@ -52,6 +52,7 @@ export default function ContactsScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
   
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
@@ -76,7 +77,7 @@ export default function ContactsScreen() {
   // Auto-refresh when tab gains focus (e.g. after adding a new contact)
   useFocusEffect(
     useCallback(() => {
-      if (initialLoadDone.current && userId && !isPending) {
+      if (initialLoadDone.current && userId && !isPending && !deletingRef.current) {
         loadContacts();
       }
     }, [userId, isPending])
@@ -225,14 +226,21 @@ export default function ContactsScreen() {
       `Are you sure you want to permanently delete ${selectedIds.size} contact${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`,
       async () => {
         setDeleting(true);
+        deletingRef.current = true;
+        const idsToDelete = new Set(selectedIds);
         try {
-          await contactsAPI.bulkDelete(userId || '', Array.from(selectedIds));
+          // Optimistically remove from local state first (prevents scroll jump)
+          setContacts(prev => prev.filter(c => !idsToDelete.has(c._id)));
           exitSelectMode();
-          loadContacts();
+          await contactsAPI.bulkDelete(userId || '', Array.from(idsToDelete));
         } catch (err: any) {
           showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to delete contacts');
+          // Refetch on error to restore accurate state
+          loadContacts();
         } finally {
           setDeleting(false);
+          // Small delay before allowing focus-triggered reloads
+          setTimeout(() => { deletingRef.current = false; }, 1000);
         }
       }
     );
