@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   poweredRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 2,
   },
   poweredText: {
     fontSize: 12,
