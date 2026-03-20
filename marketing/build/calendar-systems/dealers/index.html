@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Calendar Systems | A New Way to Use Your Delivery Photos</title>
+  <meta name="description" content="You're already taking delivery photos. Now those photos can do a whole lot more — instant customer engagement, automated follow-up, and branded review requests. Powered by i'M On Social."/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--cs-primary:#1B3A5C;--cs-dark:#0F2540;--cs-accent:#2E86DE;--cs-accent-dark:#1A6FC4;--cs-green:#27AE60;--cs-red:#E74C3C;--cs-orange:#F39C12;--cs-gold:#C9A962;--text:#1A1A2E;--text-2:#4A4A68;--text-3:#8888A0;--bg:#FFF;--bg-2:#F6F8FB;--surface:#EEF1F6;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1)}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ANIMATIONS */
+.rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}.rv-4{transition-delay:.4s}
+
+/* TOP BAR */
+.top-bar{background:var(--cs-dark);padding:10px 24px;text-align:center;font-size:12px;color:rgba(255,255,255,.5);font-weight:500;letter-spacing:.3px}
+.top-bar a{color:rgba(255,255,255,.7);text-decoration:none;font-weight:600}.top-bar a:hover{color:#FFF}
+
+/* NAV */
+nav{background:#FFF;border-bottom:1px solid var(--border-2);position:sticky;top:0;z-index:100}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 24px}
+.cs-logo{font-size:22px;font-weight:900;color:var(--cs-primary);letter-spacing:-.02em;text-decoration:none;display:flex;align-items:center;gap:10px}
+.cs-logo i{font-size:20px;color:var(--cs-accent)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-right a{font-size:14px;font-weight:600;color:var(--text-2);text-decoration:none;transition:color .2s}.nav-right a:hover{color:var(--cs-accent)}
+.btn-get-started{background:var(--cs-accent);color:#FFF;padding:10px 24px;border-radius:980px;font-size:14px;font-weight:700;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(46,134,222,.2)}.btn-get-started:hover{background:var(--cs-accent-dark);transform:translateY(-1px);box-shadow:0 6px 20px rgba(46,134,222,.3)}
+
+/* HERO */
+.hero{padding:100px 24px 80px;text-align:center;background:linear-gradient(180deg,var(--bg-2) 0%,#FFF 100%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:980px;background:rgba(46,134,222,.08);border:1px solid rgba(46,134,222,.15);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--cs-accent);margin-bottom:24px}
+.hero h1{font-size:56px;font-weight:900;line-height:1.06;letter-spacing:-.04em;color:var(--text);max-width:780px;margin:0 auto 20px}
+.hero h1 span{color:var(--cs-accent)}
+.hero .sub{font-size:19px;color:var(--text-2);line-height:1.7;max-width:600px;margin:0 auto 32px}
+.hero .powered{font-size:13px;color:var(--text-3);font-weight:500}
+.hero .powered img{height:20px;vertical-align:middle;margin-left:4px}
+@media(max-width:768px){.hero{padding:60px 24px 48px}.hero h1{font-size:34px}}
+
+/* ANNOUNCEMENT BANNER */
+.announce{padding:56px 24px;background:var(--cs-dark);text-align:center}
+.announce-inner{max-width:700px;margin:0 auto}
+.announce h2{font-size:28px;font-weight:800;color:#FFF;margin-bottom:12px;line-height:1.3}
+.announce p{font-size:16px;color:rgba(255,255,255,.55);line-height:1.7}
+.announce strong{color:rgba(255,255,255,.85)}
+@media(max-width:768px){.announce h2{font-size:22px}}
+
+/* WHAT CHANGES */
+.changes{padding:100px 24px;max-width:1000px;margin:0 auto}
+.changes h2{font-size:40px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.changes>p{text-align:center;color:var(--text-2);font-size:17px;max-width:560px;margin:0 auto 56px;line-height:1.6}
+.change-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.ch-card{padding:36px;border-radius:20px;border:1px solid var(--border-2);transition:all .3s}
+.ch-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.06);border-color:transparent}
+.ch-card i{font-size:28px;margin-bottom:16px;display:block}
+.ch-card h3{font-size:18px;font-weight:800;margin-bottom:8px}
+.ch-card p{font-size:15px;color:var(--text-2);line-height:1.65}
+@media(max-width:768px){.change-cards{grid-template-columns:1fr}.changes h2{font-size:30px}.changes{padding:64px 24px}}
+
+/* HOW IT WORKS */
+.how{padding:100px 24px;background:var(--bg-2)}
+.how-inner{max-width:800px;margin:0 auto}
+.how h2{font-size:40px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.how-inner>p{text-align:center;color:var(--text-2);font-size:17px;max-width:520px;margin:0 auto 56px}
+.how-steps{display:flex;flex-direction:column;gap:0}
+.how-step{display:grid;grid-template-columns:64px 1fr;gap:20px;align-items:flex-start;position:relative;padding-bottom:40px}
+.how-step:last-child{padding-bottom:0}
+.how-step::before{content:'';position:absolute;left:31px;top:52px;bottom:0;width:2px;background:linear-gradient(var(--cs-accent),rgba(46,134,222,.1))}
+.how-step:last-child::before{display:none}
+.how-num{width:64px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--cs-accent);border:1px solid rgba(46,134,222,.2);background:rgba(46,134,222,.04);flex-shrink:0}
+.how-body h3{font-size:18px;font-weight:800;margin-bottom:4px}
+.how-body p{font-size:15px;color:var(--text-2);line-height:1.65}
+.how-body .hl{color:var(--cs-accent);font-weight:600}
+@media(max-width:768px){.how{padding:64px 24px}.how h2{font-size:30px}.how-step{grid-template-columns:48px 1fr;gap:14px}.how-num{width:48px;height:40px;font-size:17px}.how-step::before{left:23px;top:40px}}
+
+/* BENEFITS FOR YOUR TEAM */
+.benefits{padding:100px 24px;max-width:1000px;margin:0 auto}
+.benefits h2{font-size:40px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.benefits>p{text-align:center;color:var(--text-2);font-size:17px;max-width:520px;margin:0 auto 56px}
+.ben-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ben-card{padding:28px 24px;border-radius:20px;border:1px solid var(--border-2);text-align:center;transition:all .3s}
+.ben-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:transparent}
+.ben-card i{font-size:28px;color:var(--cs-accent);margin-bottom:14px;display:block}
+.ben-card h4{font-size:16px;font-weight:700;margin-bottom:6px}
+.ben-card p{font-size:14px;color:var(--text-2);line-height:1.55}
+@media(max-width:768px){.ben-grid{grid-template-columns:1fr}.benefits h2{font-size:30px}.benefits{padding:64px 24px}}
+
+/* ONBOARDING */
+.onboard{padding:80px 24px;background:var(--bg-2)}
+.onboard-inner{max-width:700px;margin:0 auto;text-align:center}
+.onboard h2{font-size:36px;font-weight:900;letter-spacing:-.03em;margin-bottom:12px}
+.onboard p{font-size:17px;color:var(--text-2);line-height:1.7;margin-bottom:16px}
+.onboard-stats{display:flex;justify-content:center;gap:48px;margin-top:32px}
+.ob-stat .num{font-size:48px;font-weight:900;color:var(--cs-accent);line-height:1}
+.ob-stat .lbl{font-size:13px;color:var(--text-3);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+@media(max-width:768px){.onboard h2{font-size:28px}.onboard-stats{gap:32px}.ob-stat .num{font-size:36px}}
+
+/* GET STARTED FORM */
+.get-started{padding:100px 24px;background:var(--cs-dark);position:relative;overflow:hidden}
+.get-started::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(46,134,222,.08) 0%,transparent 60%);pointer-events:none}
+.gs-inner{max-width:520px;margin:0 auto;position:relative}
+.gs-inner h2{font-size:36px;font-weight:900;color:#FFF;text-align:center;margin-bottom:8px;letter-spacing:-.02em}
+.gs-inner>p{text-align:center;color:rgba(255,255,255,.45);font-size:15px;margin-bottom:36px;line-height:1.6}
+.gs-form{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:36px}
+.gs-field{margin-bottom:16px}
+.gs-field label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+.gs-field input,.gs-field select{width:100%;padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#FFF;font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+.gs-field input::placeholder{color:rgba(255,255,255,.25)}
+.gs-field input:focus,.gs-field select:focus{border-color:var(--cs-accent)}
+.gs-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236688AA' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.gs-field select option{background:var(--cs-dark);color:#FFF}
+.gs-submit{width:100%;padding:14px;background:var(--cs-accent);color:#FFF;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 16px rgba(46,134,222,.3)}.gs-submit:hover{background:var(--cs-accent-dark);box-shadow:0 6px 24px rgba(46,134,222,.4)}.gs-submit:disabled{opacity:.5;cursor:not-allowed}
+.gs-note{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.3)}
+@media(max-width:768px){.get-started{padding:64px 24px}.gs-inner h2{font-size:28px}.gs-form{padding:24px 20px}}
+
+/* FOOTER */
+.cs-footer{border-top:1px solid var(--border);background:var(--bg-2);padding:40px 24px;text-align:center}
+.cs-footer .ft-brand{font-size:18px;font-weight:800;color:var(--cs-primary);margin-bottom:8px}
+.cs-footer .ft-powered{font-size:13px;color:var(--text-3);margin-bottom:16px}
+.cs-footer .ft-powered a{color:var(--cs-accent);text-decoration:none;font-weight:600}
+.cs-footer .ft-links{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.cs-footer .ft-links a{font-size:13px;color:var(--text-3);text-decoration:none;transition:color .2s}.cs-footer .ft-links a:hover{color:var(--cs-accent)}
+.cs-footer .ft-copy{margin-top:20px;font-size:12px;color:var(--text-3)}
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">A message from Calendar Systems to our valued dealer partners &nbsp;|&nbsp; <a href="#get-started">Get Started Today</a></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="cs-logo"><i class="fa-regular fa-calendar"></i> Calendar Systems</a>
+    <div class="nav-right">
+      <a href="https://app.imonsocial.com" class="btn-get-started">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge rv"><i class="fa-solid fa-bullhorn"></i> New for Calendar Systems Dealers</div>
+  <h1 class="rv">You're already taking the photos.<br/>Now they do <span>a whole lot more.</span></h1>
+  <p class="sub rv">We're excited to announce a new platform that turns your existing delivery photos into instant customer engagement, automated follow-up, and branded review requests. Same workflow, bigger results.</p>
+  <p class="powered rv">Powered by <img src="/marketing-logo.png" alt="i'M On Social"/></p>
+</section>
+
+<!-- ANNOUNCEMENT -->
+<section class="announce rv">
+  <div class="announce-inner">
+    <h2>We've been listening.</h2>
+    <p>You told us the photos were valuable but felt like a one-way street. Your salespeople take them, they go into the calendar, and that's it. <strong>We wanted to change that.</strong> So we partnered with i'M On Social to make every delivery photo the starting point for a real, ongoing customer relationship.</p>
+  </div>
+</section>
+
+<!-- WHAT CHANGES FOR YOUR DEALERSHIP -->
+<section class="changes">
+  <h2 class="rv">What changes for your dealership</h2>
+  <p class="rv">Your salespeople take the same photo at delivery. Everything after that is new.</p>
+  <div class="change-cards">
+    <div class="ch-card rv rv-1">
+      <i class="fa-solid fa-paper-plane" style="color:var(--cs-accent)"></i>
+      <h3>Instant Delivery to the Customer</h3>
+      <p>The customer gets a beautiful, branded congrats card with their delivery photo via text. Right there at the dealership. They love it. Your salesperson looks like a pro.</p>
+    </div>
+    <div class="ch-card rv rv-2">
+      <i class="fa-solid fa-arrows-spin" style="color:var(--cs-green)"></i>
+      <h3>Automated Follow-Up for Years</h3>
+      <p>Birthday texts, anniversary check-ins, service reminders, referral requests. All running automatically in the background. Your salespeople stay top of mind without lifting a finger.</p>
+    </div>
+    <div class="ch-card rv rv-3">
+      <i class="fa-solid fa-star" style="color:var(--cs-orange)"></i>
+      <h3>Branded Review Requests</h3>
+      <p>Every customer who receives a delivery photo also gets a review request with your dealership's logo front and center. More reviews, better online reputation, zero extra effort.</p>
+    </div>
+    <div class="ch-card rv rv-4">
+      <i class="fa-solid fa-plug" style="color:#8E44AD"></i>
+      <h3>Real-Time Data Integration</h3>
+      <p>Every photo pushes directly into Calendar Systems in real time, along with the customer name, phone number, stock number, and deal number. No manual uploads. No end-of-month scramble.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="how-inner">
+    <h2 class="rv">How it works</h2>
+    <p class="rv">Nothing changes about the photo. Everything changes about what happens after.</p>
+    <div class="how-steps">
+      <div class="how-step rv">
+        <div class="how-num">1</div>
+        <div class="how-body">
+          <h3>Salesperson takes the delivery photo</h3>
+          <p>Same moment, same workflow. They open the app, snap the photo with the customer and their new vehicle. <span class="hl">Takes 30 seconds.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">2</div>
+        <div class="how-body">
+          <h3>Customer gets it instantly via text</h3>
+          <p>A branded congrats card with their photo goes to the customer's phone right there at the dealership. <span class="hl">They share it, save it, love it.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">3</div>
+        <div class="how-body">
+          <h3>Review request goes out automatically</h3>
+          <p>A few days after delivery, the customer gets a review request with your dealership's branded logo. <span class="hl">More five-star reviews on autopilot.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">4</div>
+        <div class="how-body">
+          <h3>Long-term follow-up kicks in</h3>
+          <p>Birthdays, purchase anniversaries, service reminders. The platform handles it all, for years, automatically. <span class="hl">Your salesperson builds a book of business without extra work.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">5</div>
+        <div class="how-body">
+          <h3>Calendar Systems gets the data in real time</h3>
+          <p>Customer name, phone number, stock number, deal number, the photo. All pushed into the Calendar Systems platform the moment it happens. <span class="hl">No CSVs. No waiting. No chasing.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS FOR YOUR TEAM -->
+<section class="benefits">
+  <h2 class="rv">What your team gets</h2>
+  <p class="rv">Every person at the dealership benefits, from the sales floor to the GM's office.</p>
+  <div class="ben-grid">
+    <div class="ben-card rv rv-1">
+      <i class="fa-solid fa-mobile-screen-button"></i>
+      <h4>Salesperson App</h4>
+      <p>Every rep gets a mobile app with their digital business card, customer CRM, inbox, and campaign dashboard. All branded Calendar Systems.</p>
+    </div>
+    <div class="ben-card rv rv-2">
+      <i class="fa-solid fa-chart-line"></i>
+      <h4>Engagement Tracking</h4>
+      <p>See who's opening, clicking, and responding. Know which customers are engaged and which are going cold. Real data, not guesswork.</p>
+    </div>
+    <div class="ben-card rv rv-3">
+      <i class="fa-solid fa-trophy"></i>
+      <h4>Leaderboards</h4>
+      <p>Track photo submissions and customer engagement across your entire sales team. Friendly competition drives consistency.</p>
+    </div>
+    <div class="ben-card rv rv-1">
+      <i class="fa-solid fa-address-book"></i>
+      <h4>Personal Book of Business</h4>
+      <p>Salespeople build long-term customer relationships they own. Referrals come back. Repeat buyers come back. Everyone wins.</p>
+    </div>
+    <div class="ben-card rv rv-2">
+      <i class="fa-solid fa-shield-halved"></i>
+      <h4>Your Brand, Front and Center</h4>
+      <p>Every touchpoint the customer sees carries your dealership's branding. Review requests, congrats cards, follow-ups. It's all you.</p>
+    </div>
+    <div class="ben-card rv rv-3">
+      <i class="fa-solid fa-users-gear"></i>
+      <h4>Manager Dashboard</h4>
+      <p>One place to see submissions, team activity, and customer engagement across all salespeople. Full visibility, zero micromanaging.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ONBOARDING -->
+<section class="onboard rv">
+  <div class="onboard-inner">
+    <h2>Up and running in minutes. Not days or weeks.</h2>
+    <p>We handle the setup. Your team downloads the app, logs in, and they're ready to go. No IT involvement. No complex integrations. No training manuals. Pricing is custom based on your dealership's needs, so there's a plan that fits.</p>
+    <div class="onboard-stats">
+      <div class="ob-stat"><div class="num">5</div><div class="lbl">Minute Setup</div></div>
+      <div class="ob-stat"><div class="num">0</div><div class="lbl">IT Required</div></div>
+      <div class="ob-stat"><div class="num">1</div><div class="lbl">App, Everything</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- GET STARTED FORM -->
+<section class="get-started" id="get-started">
+  <div class="gs-inner">
+    <h2 class="rv">Ready to get started?</h2>
+    <p class="rv">Fill out the form below and your Calendar Systems representative will be in touch to get you set up.</p>
+    <div class="gs-form rv">
+      <form id="gsForm" onsubmit="submitGetStarted(event)">
+        <div class="gs-field"><label>Dealership Name *</label><input type="text" id="gs-dealer" placeholder="ABC Motors" required/></div>
+        <div class="gs-field"><label>Contact Name *</label><input type="text" id="gs-name" placeholder="John Smith" required/></div>
+        <div class="gs-field"><label>Email *</label><input type="email" id="gs-email" placeholder="john@abcmotors.com" required/></div>
+        <div class="gs-field"><label>Phone</label><input type="tel" id="gs-phone" placeholder="(555) 123-4567"/></div>
+        <div class="gs-field"><label>Number of Salespeople</label><select id="gs-size"><option value="">Select team size</option><option value="1-5">1 - 5</option><option value="6-15">6 - 15</option><option value="16-30">16 - 30</option><option value="30+">30+</option></select></div>
+        <button type="submit" class="gs-submit" id="gsSubmitBtn">Get Started</button>
+      </form>
+      <div id="gsSuccess" style="display:none;text-align:center;padding:32px 0">
+        <div style="font-size:48px;color:var(--cs-green);margin-bottom:12px">&#10003;</div>
+        <h3 style="font-size:20px;font-weight:700;color:#FFF;margin-bottom:8px">You're All Set</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:20px">Your Calendar Systems rep will reach out shortly to get you up and running.</p>
+        <a href="https://app.imonsocial.com" class="btn-get-started" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px"><i class="fa-solid fa-arrow-right"></i> Go to the App</a>
+      </div>
+    </div>
+    <p class="gs-note">Custom pricing based on your dealership's needs.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="cs-footer">
+  <div class="ft-brand"><i class="fa-regular fa-calendar"></i> Calendar Systems</div>
+  <p class="ft-powered">Powered by <a href="https://www.imonsocial.com">i'M On Social</a></p>
+  <div class="ft-links">
+    <a href="https://www.imonsocial.com/privacy/">Privacy</a>
+    <a href="https://www.imonsocial.com/terms/">Terms</a>
+    <a href="mailto:forest@imonsocial.com">Contact</a>
+    <a href="https://app.imonsocial.com">Sign In</a>
+  </div>
+  <p class="ft-copy">&copy; 2026 Calendar Systems. All rights reserved.</p>
+</div>
+
+<script>
+const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+async function submitGetStarted(e){e.preventDefault();var btn=document.getElementById('gsSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('gs-name').value,email:document.getElementById('gs-email').value,phone:document.getElementById('gs-phone').value,company:document.getElementById('gs-dealer').value,business_type:document.getElementById('gs-size').value,lead_source:'calendar_systems_dealer_page'})});if(res.ok){document.getElementById('gsForm').style.display='none';document.getElementById('gsSuccess').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Get Started';alert('Something went wrong. Please try again.')}}
+</script>
+</body>
+</html>
