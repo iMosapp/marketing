@@ -32,8 +32,8 @@
   "start_url": "/cs-login",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#102050",
-  "background_color": "#102050",
+  "theme_color": "#FFFFFF",
+  "background_color": "#FFFFFF",
   "orientation": "portrait",
   "prefer_related_applications": false
 }

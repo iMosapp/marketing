@@ -67,7 +67,7 @@ export default function CSLoginScreen() {
         if (el) el.setAttribute('content', content);
       };
       setMeta('apple-mobile-web-app-title', 'Calendar Systems');
-      setMeta('theme-color', '#102050');
+      setMeta('theme-color', '#FFFFFF');
       document.title = 'Calendar Systems';
     }
 
@@ -167,7 +167,7 @@ export default function CSLoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Email"
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor="#999999"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -183,7 +183,7 @@ export default function CSLoginScreen() {
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Password"
-                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  placeholderTextColor="#999999"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -194,7 +194,7 @@ export default function CSLoginScreen() {
                   data-testid="cs-login-password"
                 />
                 <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="rgba(255,255,255,0.4)" />
+                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="#999999" />
                 </TouchableOpacity>
               </View>
 
@@ -247,7 +247,7 @@ export default function CSLoginScreen() {
                   onPress={() => { if (typeof window !== 'undefined') window.location.href = '/install.html'; }}
                   data-testid="cs-install-app"
                 >
-                  <Ionicons name="download" size={18} color="rgba(255,255,255,0.4)" />
+                  <Ionicons name="download" size={18} color="#888888" />
                   <Text style={styles.installText}>Add to Home Screen</Text>
                 </TouchableOpacity>
               )}
@@ -266,7 +266,7 @@ const ORANGE = '#F08010';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: NAVY,
+    backgroundColor: '#FFFFFF',
   },
   inner: {
     flex: 1,
@@ -296,39 +296,39 @@ const styles = StyleSheet.create({
   },
   poweredText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.3)',
+    color: '#888888',
     fontWeight: '500',
   },
   imosLogo: {
     width: 80,
     height: 20,
-    opacity: 0.4,
+    opacity: 0.6,
   },
   form: {
     gap: 16,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F4F6FA',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: NAVY,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(16,32,80,0.1)',
   },
   passwordWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F4F6FA',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(16,32,80,0.1)',
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: NAVY,
   },
   eyeBtn: {
     padding: 16,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(16,32,80,0.2)',
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     borderColor: ORANGE,
   },
   rememberText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#666666',
     fontSize: 14,
   },
   forgotText: {
@@ -386,13 +386,13 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,80,80,0.1)',
+    backgroundColor: 'rgba(255,59,48,0.08)',
     borderRadius: 8,
     padding: 12,
     gap: 8,
   },
   errorText: {
-    color: '#FF6B6B',
+    color: '#FF3B30',
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     gap: 10,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   installText: {
-    color: 'rgba(255,255,255,0.4)',
+    color: '#888888',
     fontSize: 14,
     fontWeight: '500',
   },
