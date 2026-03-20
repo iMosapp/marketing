@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### SEO Health Score Performance Fix (Mar 19, 2026) -- LATEST
+### Calendar Systems Landing Page (Mar 20, 2026) -- LATEST
+- Rebuilt `/marketing/build/calendar-systems/index.html` with full sales presentation content
+- 11 sections covering: core reframe, problem statement, stat comparison, before/after flip, 5 value propositions, how-it-works flow, salesperson benefits, objection handling, white-label features, positioning statement, and closing vision
+- Content sourced from user's detailed sales pitch, rewritten conversationally (not word-for-word)
+
+### SEO Health Score Performance Fix (Mar 19, 2026)
 - **Bug Fix:** Store query was using `{"store_id": store_id}` instead of `{"_id": ObjectId(store_id)}` — stores were never found
 - **Performance:** Added 5-minute TTL in-memory cache (`_score_cache`) to avoid recomputing on every page load
 - **Performance:** Replaced `find().to_list()` with MongoDB aggregation pipelines for reviews and short_urls

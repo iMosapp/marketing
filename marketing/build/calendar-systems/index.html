@@ -40,23 +40,27 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 /* ANIMATIONS */
 .rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}.rv-4{transition-delay:.4s}
 
-/* HERO — Dark, cinematic */
+/* HERO */
 .cs-hero{padding:180px 24px 120px;text-align:center;background:#0A0A0F;position:relative;overflow:hidden}
 .cs-hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
 .cs-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(transparent,#0A0A0F);pointer-events:none}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:980px;border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.06);font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:28px;position:relative}
-.cs-hero h1{font-size:64px;font-weight:900;line-height:1.04;letter-spacing:-.045em;color:#FFF;max-width:800px;margin:0 auto 28px;position:relative}
+.cs-hero h1{font-size:64px;font-weight:900;line-height:1.04;letter-spacing:-.045em;color:#FFF;max-width:880px;margin:0 auto 28px;position:relative}
 .cs-hero h1 em{font-style:normal;color:var(--gold)}
-.cs-hero .sub{font-size:20px;color:rgba(255,255,255,.45);line-height:1.6;max-width:580px;margin:0 auto 44px;position:relative}
+.cs-hero .sub{font-size:20px;color:rgba(255,255,255,.45);line-height:1.7;max-width:620px;margin:0 auto 20px;position:relative}
+.cs-hero .sub-2{font-size:17px;color:rgba(255,255,255,.3);line-height:1.6;max-width:520px;margin:0 auto 44px;position:relative;font-weight:500}
 .hero-cta{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25);position:relative}
 .hero-cta:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
 @media(max-width:768px){.cs-hero{padding:140px 24px 80px}.cs-hero h1{font-size:36px}}
 
 /* PROBLEM SECTION */
-.problem{padding:120px 24px;max-width:900px;margin:0 auto;text-align:center}
-.problem h2{font-size:48px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:20px}
+.problem{padding:120px 24px;max-width:900px;margin:0 auto}
+.problem h2{font-size:48px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:24px;text-align:center}
 .problem h2 span{color:var(--red)}
-.problem .deck{font-size:19px;color:var(--text-2);line-height:1.7;max-width:640px;margin:0 auto}
+.problem .deck{font-size:19px;color:var(--text-2);line-height:1.7;max-width:680px;margin:0 auto 32px;text-align:center}
+.problem-list{max-width:580px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.problem-list li{display:flex;align-items:flex-start;gap:12px;font-size:16px;color:var(--text-2);line-height:1.6}
+.problem-list li i{margin-top:4px;flex-shrink:0;color:var(--red);font-size:14px}
 @media(max-width:768px){.problem h2{font-size:32px}.problem{padding:80px 24px}}
 
 /* STAT BAR */
@@ -65,12 +69,14 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .stat-box .big{font-size:64px;font-weight:900;line-height:1;letter-spacing:-.03em}
 .stat-box .label{font-size:14px;color:var(--text-3);font-weight:500;margin-top:4px}
 .stat-vs{font-size:16px;font-weight:800;color:var(--text-3);padding:12px 20px;border:2px solid var(--border-2);border-radius:14px}
+.stat-caption{max-width:900px;margin:24px auto 0;text-align:center;font-size:16px;color:var(--text-2);font-weight:500}
+.stat-caption strong{color:var(--text);font-weight:700}
 @media(max-width:768px){.stat-bar-inner{grid-template-columns:1fr;gap:20px}.stat-vs{display:none}}
 
 /* THE FLIP */
 .flip{padding:120px 24px;max-width:1100px;margin:0 auto}
 .flip h2{font-size:44px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:16px}
-.flip>p{text-align:center;color:var(--text-2);font-size:18px;max-width:600px;margin:0 auto 56px}
+.flip>p{text-align:center;color:var(--text-2);font-size:18px;max-width:640px;margin:0 auto 56px;line-height:1.65}
 .flip-grid{display:grid;grid-template-columns:1fr 60px 1fr;gap:0;align-items:stretch}
 .flip-side{padding:40px;border-radius:24px;border:1px solid var(--border-2)}
 .flip-side.before{background:var(--surface);opacity:.7}
@@ -86,11 +92,26 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .flip-side ul li i{margin-top:3px;flex-shrink:0}
 @media(max-width:768px){.flip-grid{grid-template-columns:1fr;gap:16px}.flip-arrow{transform:rotate(90deg);padding:8px 0}.flip h2{font-size:32px}.flip{padding:80px 24px}}
 
+/* VALUE PROPS */
+.value{padding:120px 24px;background:var(--bg-2)}
+.value-inner{max-width:1000px;margin:0 auto}
+.value h2{font-size:44px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.value>p,.value-inner>p{text-align:center;color:var(--text-2);font-size:18px;max-width:580px;margin:0 auto 56px;line-height:1.6}
+.value-cards{display:flex;flex-direction:column;gap:24px}
+.v-card{display:grid;grid-template-columns:72px 1fr;gap:24px;padding:36px;background:#FFF;border:1px solid var(--border-2);border-radius:24px;transition:all .3s}
+.v-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.06);border-color:transparent}
+.v-ico{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.v-body h3{font-size:20px;font-weight:800;margin-bottom:8px}
+.v-body p{font-size:15px;color:var(--text-2);line-height:1.7}
+.v-body .v-highlight{font-weight:700;color:var(--text)}
+@media(max-width:768px){.v-card{grid-template-columns:1fr;gap:16px}.v-ico{width:56px;height:56px;font-size:22px}.value h2{font-size:32px}.value{padding:80px 24px}}
+
 /* FLOW SECTION */
 .flow{background:#0A0A0F;padding:120px 24px;position:relative;overflow:hidden}
 .flow::before{content:'';position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
 .flow-inner{max-width:900px;margin:0 auto;position:relative}
-.flow h2{font-size:44px;font-weight:900;color:#FFF;text-align:center;letter-spacing:-.03em;margin-bottom:56px}
+.flow h2{font-size:44px;font-weight:900;color:#FFF;text-align:center;letter-spacing:-.03em;margin-bottom:16px}
+.flow>p,.flow-inner>p{text-align:center;color:rgba(255,255,255,.4);font-size:18px;max-width:560px;margin:0 auto 56px}
 .flow-steps{display:flex;flex-direction:column;gap:0}
 .flow-step{display:grid;grid-template-columns:80px 1fr;gap:24px;align-items:flex-start;position:relative;padding-bottom:48px}
 .flow-step:last-child{padding-bottom:0}
@@ -102,27 +123,62 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .flow-content .highlight{color:var(--gold);font-weight:600}
 @media(max-width:768px){.flow{padding:80px 24px}.flow h2{font-size:30px}.flow-step{grid-template-columns:56px 1fr;gap:16px}.flow-num{width:56px;height:48px;font-size:20px}.flow-step::before{left:27px;top:48px}}
 
+/* OBJECTIONS */
+.objections{padding:120px 24px;max-width:800px;margin:0 auto}
+.objections h2{font-size:40px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.objections>p{text-align:center;color:var(--text-2);font-size:17px;margin-bottom:56px}
+.obj-item{margin-bottom:32px;padding:32px;border-radius:20px;border:1px solid var(--border-2);transition:all .3s}
+.obj-item:hover{border-color:var(--gold);box-shadow:0 8px 32px rgba(0,0,0,.04)}
+.obj-q{font-size:17px;font-weight:800;color:var(--text);margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.obj-q i{color:var(--text-3);margin-top:3px;flex-shrink:0}
+.obj-a{font-size:15px;color:var(--text-2);line-height:1.7;padding-left:30px}
+.obj-a strong{color:var(--text);font-weight:700}
+@media(max-width:768px){.objections h2{font-size:30px}.objections{padding:80px 24px}}
+
 /* WHITE LABEL */
-.wl{padding:120px 24px;max-width:900px;margin:0 auto;text-align:center}
+.wl{padding:120px 24px;background:var(--bg-2)}
+.wl-inner{max-width:900px;margin:0 auto;text-align:center}
 .wl h2{font-size:48px;font-weight:900;letter-spacing:-.035em;margin-bottom:16px;line-height:1.08}
 .wl h2 span{color:var(--gold)}
-.wl>p{font-size:18px;color:var(--text-2);max-width:560px;margin:0 auto 48px;line-height:1.6}
+.wl-inner>p{font-size:18px;color:var(--text-2);max-width:600px;margin:0 auto 48px;line-height:1.6}
 .wl-features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:left}
-.wl-feat{padding:28px 24px;border-radius:20px;border:1px solid var(--border-2);transition:all .3s}
+.wl-feat{padding:28px 24px;border-radius:20px;border:1px solid var(--border-2);background:#FFF;transition:all .3s}
 .wl-feat:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.06);border-color:transparent}
 .wl-feat i{font-size:24px;color:var(--gold);margin-bottom:14px;display:block}
 .wl-feat h4{font-size:16px;font-weight:700;margin-bottom:6px}
 .wl-feat p{font-size:14px;color:var(--text-2);line-height:1.5}
 @media(max-width:768px){.wl-features{grid-template-columns:1fr}.wl h2{font-size:32px}.wl{padding:80px 24px}}
 
+/* SALESPERSON VALUE */
+.sp-value{padding:120px 24px;max-width:900px;margin:0 auto}
+.sp-value h2{font-size:44px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.sp-value>p{text-align:center;color:var(--text-2);font-size:18px;max-width:580px;margin:0 auto 48px;line-height:1.6}
+.sp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.sp-card{padding:32px;border-radius:20px;border:1px solid var(--border-2);text-align:center;transition:all .3s}
+.sp-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:transparent}
+.sp-card i{font-size:32px;color:var(--gold);margin-bottom:16px;display:block}
+.sp-card h4{font-size:17px;font-weight:700;margin-bottom:8px}
+.sp-card p{font-size:14px;color:var(--text-2);line-height:1.6}
+@media(max-width:768px){.sp-grid{grid-template-columns:1fr}.sp-value h2{font-size:32px}.sp-value{padding:80px 24px}}
+
 /* CLOSER */
 .closer{background:#0A0A0F;padding:120px 24px;text-align:center;position:relative;overflow:hidden}
 .closer::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
-.closer-quote{font-size:36px;font-weight:900;color:#FFF;line-height:1.15;letter-spacing:-.02em;max-width:700px;margin:0 auto 12px;position:relative}
-.closer-sub{font-size:18px;color:var(--gold);font-weight:600;margin-bottom:40px;position:relative}
+.closer-pre{font-size:18px;color:rgba(255,255,255,.3);margin-bottom:20px;position:relative;font-weight:500}
+.closer-quote{font-size:40px;font-weight:900;color:#FFF;line-height:1.15;letter-spacing:-.02em;max-width:750px;margin:0 auto 16px;position:relative}
+.closer-sub{font-size:19px;color:var(--gold);font-weight:600;margin-bottom:16px;position:relative}
+.closer-tag{font-size:16px;color:rgba(255,255,255,.3);margin-bottom:44px;position:relative;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.6}
 .btn-gold{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25);position:relative}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
-@media(max-width:768px){.closer{padding:80px 24px}.closer-quote{font-size:26px}}
+@media(max-width:768px){.closer{padding:80px 24px}.closer-quote{font-size:26px}.closer-pre{font-size:15px}}
+
+/* POSITIONING */
+.positioning{padding:80px 24px 0;max-width:700px;margin:0 auto;text-align:center}
+.positioning .not-list{display:flex;justify-content:center;gap:24px;margin-bottom:20px;flex-wrap:wrap}
+.positioning .not-item{font-size:14px;color:var(--text-3);font-weight:600;display:flex;align-items:center;gap:6px;text-decoration:line-through;opacity:.6}
+.positioning .is-label{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.positioning .is-text{font-size:22px;font-weight:800;color:var(--text);line-height:1.4;max-width:560px;margin:0 auto}
+@media(max-width:768px){.positioning .not-list{gap:16px}}
 
 /* FOOTER */
 footer{border-top:1px solid var(--border);background:var(--bg-2)}
@@ -142,7 +198,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   <div class="nav-inner">
     <a href="https://www.imonsocial.com" class="logo"><img src="/marketing-logo.png" alt="i'M On Social"/></a>
     <div class="nav-links">
-      <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><div class="nav-dd-label">Your Digital Presence</div><a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Cards</strong><span>Shareable, trackable business cards</span></div></a><a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a><a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:#34C759"></i></div><div class="dd-txt"><strong>Link Pages</strong><span>All your socials in one link</span></div></a><div class="nav-dd-label">Engagement</div><a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a><a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a><a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, email, all in one place</span></div></a><div class="nav-dd-label">Intelligence</div><a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI powered relationship insights</span></div></a><a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a></div></div></div>
+      <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><div class="nav-dd-label">Your Digital Presence</div><a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Cards</strong><span>Shareable, trackable business cards</span></div></a><a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a><a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:#34C759"></i></div><div class="dd-txt"><strong>Link Pages</strong><span>All your socials in one link</span></div></a><div class="nav-dd-label">Engagement</div><a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a><a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a><a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-solid fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, email, all in one place</span></div></a><div class="nav-dd-label">Intelligence</div><a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI powered relationship insights</span></div></a><a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a></div></div></div>
       <div class="nav-item"><button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><div class="nav-dd-label">By Role</div><a class="dd-link" href="/organizations/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:#007AFF"></i></div><div class="dd-txt"><strong>For Organizations</strong><span>Manage teams, stores & reputation</span></div></a><a class="dd-link" href="/individuals/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div><div class="dd-txt"><strong>For Individuals</strong><span>Own your personal brand</span></div></a><div class="nav-dd-label">By Industry</div><a class="dd-link" href="/salespresentation/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a><a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-briefcase" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a></div></div></div>
       <div class="nav-item"><button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a><a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:#34C759"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a><a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a></div></div></div>
       <div class="nav-item"><a href="/pricing/">Pricing</a></div>
@@ -159,21 +215,28 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   </div>
 </nav>
 
-<!-- HERO -->
+<!-- ========== HERO ========== -->
 <section class="cs-hero">
   <div class="hero-eyebrow rv"><i class="fa-solid fa-calendar"></i> CALENDAR SYSTEMS + i'M ON SOCIAL</div>
   <h1 class="rv">You don't have a photo problem.<br/>You have a <em>salesperson behavior</em> problem.</h1>
-  <p class="sub rv">Some stores are at 90%. Some are at 20%. That's not a process issue. That's motivation. We fix the motivation.</p>
+  <p class="sub rv">Behavior doesn't change because of calendars. It changes because of tools salespeople actually want to use.</p>
+  <p class="sub-2 rv">Some stores are at 90%. Some are at 20%. That's not a process issue. That's motivation. We fix the motivation.</p>
   <a href="#" class="hero-cta rv" onclick="openDemoModal(event,'cs_hero')"><i class="fa-solid fa-play"></i> See How It Works</a>
 </section>
 
-<!-- THE PROBLEM -->
+<!-- ========== THE REAL PROBLEM ========== -->
 <section class="problem rv">
-  <h2>Right now, taking a photo <span>doesn't do anything</span> for the salesperson.</h2>
-  <p class="deck">It's for the calendar. Months later. Maybe. The salesperson gets nothing from it — no value, no engagement, no reason to care. So they don't. And you're left chasing submissions at the end of every month.</p>
+  <h2>The photo doesn't do <span>anything</span> for the salesperson.</h2>
+  <p class="deck">That's the whole issue. The salesperson takes a photo at delivery because someone told them to. It goes to the calendar company. Months later, maybe the customer sees it. The salesperson? They got nothing out of it. No engagement. No follow-up. No reason to care. So they don't.</p>
+  <ul class="problem-list">
+    <li><i class="fa-solid fa-xmark"></i> Zero immediate value for the person taking the photo</li>
+    <li><i class="fa-solid fa-xmark"></i> The customer doesn't see the photo for months</li>
+    <li><i class="fa-solid fa-xmark"></i> End-of-month scramble chasing submissions from every store</li>
+    <li><i class="fa-solid fa-xmark"></i> No follow-up, no engagement tracking, no relationship built</li>
+  </ul>
 </section>
 
-<!-- STAT BAR -->
+<!-- ========== STAT BAR ========== -->
 <section class="stat-bar rv">
   <div class="stat-bar-inner">
     <div class="stat-box">
@@ -186,125 +249,236 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="label">Your worst store</div>
     </div>
   </div>
+  <p class="stat-caption rv">That gap isn't a process problem. It's a <strong>motivation problem</strong>. We make every store perform like your best one.</p>
 </section>
 
-<!-- THE FLIP -->
+<!-- ========== THE FLIP ========== -->
 <section class="flip">
-  <h2 class="rv">We flip it.</h2>
-  <p class="rv">The photo stops being a task and starts being a tool.</p>
+  <h2 class="rv">We flip the whole thing.</h2>
+  <p class="rv">The photo stops being a task the salesperson has to do and becomes a tool they actually want to use. That's the unlock.</p>
   <div class="flip-grid rv">
     <div class="flip-side before">
-      <div class="tag">Before</div>
+      <div class="tag">How it works today</div>
       <h3>The photo is a chore</h3>
-      <p>Salesperson takes a photo at delivery because they have to. It goes to the calendar company. The customer never sees it. The salesperson gets nothing.</p>
+      <p>Salesperson takes a photo at delivery because they have to. It gets sent to the calendar company. The customer doesn't see it for months. The salesperson gets nothing from it. So at half your stores, it barely happens.</p>
       <ul>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No immediate value for the salesperson</li>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Customer doesn't see it for months</li>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> End-of-month scramble for submissions</li>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No follow-up, no engagement tracking</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Photo is for the dealership, not the salesperson</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Customer sees it months later, if ever</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Managers chase submissions every single month</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No follow-up. No engagement. Nothing happens next.</li>
       </ul>
     </div>
     <div class="flip-arrow"><i class="fa-solid fa-arrow-right"></i></div>
     <div class="flip-side after">
-      <div class="tag">After</div>
+      <div class="tag">How it works with us</div>
       <h3>The photo is a power tool</h3>
-      <p>Salesperson snaps a photo, sends it instantly to the customer, and that single moment kicks off years of automated follow-up, engagement tracking, and relationship building.</p>
+      <p>Salesperson snaps the same photo, but now it goes directly to the customer as a beautiful congrats card. Instantly. Right there at the dealership. Then it kicks off years of automated follow-up, engagement tracking, and relationship building.</p>
       <ul>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Instant value — customer gets the photo immediately</li>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Automated follow-up for years</li>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Photos happen at delivery, in real time</li>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Engagement tracking on every touchpoint</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Customer gets the photo immediately via text</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Automated follow-up runs for years, hands-free</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Photos happen at delivery because the rep wants to take them</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Every interaction is tracked and measurable</li>
       </ul>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS FLOW -->
+<!-- ========== VALUE TO CALENDAR SYSTEMS ========== -->
+<section class="value">
+  <div class="value-inner">
+    <h2 class="rv">What this means for Calendar Systems</h2>
+    <p class="rv">We don't pitch features. This is about outcomes. Here's what changes when the salesperson actually cares about the photo.</p>
+    <div class="value-cards">
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-camera" style="color:var(--green)"></i></div>
+        <div class="v-body">
+          <h3>More Photos. More Calendars Sold.</h3>
+          <p>When the photo has immediate value for the salesperson, your submission rate goes up on its own. Stores sitting at 20% start moving toward 60&ndash;80%. Stores already at 90% stay consistent. <span class="v-highlight">You're not asking anyone to change their behavior &mdash; you're making the right behavior natural.</span></p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-clone" style="color:var(--blue)"></i></div>
+        <div class="v-body">
+          <h3>Standardization Across Every Store</h3>
+          <p>Right now every store does it differently. Every manager pushes it differently. Every rep decides on their own whether to care. With this platform, it's the same workflow, the same prompts, the same expectations, the same quality. <span class="v-highlight">You finally control the process without having to manage it.</span></p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-bolt" style="color:var(--orange)"></i></div>
+        <div class="v-body">
+          <h3>Real-Time Photo Capture</h3>
+          <p>No more chasing photos at the end of the month. Photos happen at the moment of delivery because the salesperson is using them right then and there. Metadata is captured instantly. Nothing gets lost. Nothing gets forgotten. <span class="v-highlight">The end-of-month scramble disappears.</span></p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-chart-column" style="color:var(--purple)"></i></div>
+        <div class="v-body">
+          <h3>A Data Layer That Changes Everything</h3>
+          <p>This is the real differentiator. You don't just get a photo &mdash; you get the story behind the sale. Customer name, salesperson, vehicle, deal info, date, and full engagement data: who clicked, who responded, who went cold. <span class="v-highlight">You go from a photo company to a data and relationship company.</span> That's a big jump.</p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-shield-halved" style="color:var(--gold)"></i></div>
+        <div class="v-body">
+          <h3>Stickier Dealer Partnerships</h3>
+          <p>When you're powering the dealership's entire post-sale customer experience &mdash; not just their calendar &mdash; you become impossible to replace. One photo now has a year's worth of value attached to it. <span class="v-highlight">You stop being a vendor and start being infrastructure.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOW IT ACTUALLY WORKS ========== -->
 <section class="flow">
   <div class="flow-inner">
     <h2 class="rv">How it actually works</h2>
+    <p class="rv">Same photo. Same moment. But now it does something for everyone.</p>
     <div class="flow-steps">
       <div class="flow-step rv">
         <div class="flow-num">1</div>
         <div class="flow-content">
-          <h3>Salesperson takes the photo at delivery</h3>
-          <p>No change to their workflow. Same photo. Same moment. But now it <span class="highlight">does something for them</span>.</p>
+          <h3>Salesperson takes the delivery photo</h3>
+          <p>No change to their day. Same photo, same moment. But now it <span class="highlight">actually does something for them</span>.</p>
         </div>
       </div>
       <div class="flow-step rv">
         <div class="flow-num">2</div>
         <div class="flow-content">
-          <h3>Photo goes to the customer instantly</h3>
-          <p>The customer gets a beautiful congrats card with their photo via text. <span class="highlight">Right there at the dealership.</span> The salesperson looks like a pro.</p>
+          <h3>Customer gets it instantly</h3>
+          <p>A beautiful, branded congrats card with their photo hits the customer's phone via text. <span class="highlight">Right there at the dealership.</span> The salesperson looks like a pro. The customer is thrilled.</p>
         </div>
       </div>
       <div class="flow-step rv">
         <div class="flow-num">3</div>
         <div class="flow-content">
           <h3>Automated follow-up kicks in</h3>
-          <p>Birthday texts. Anniversary check-ins. Service reminders. Referral requests. <span class="highlight">For years. Automatically.</span> The salesperson doesn't lift a finger.</p>
+          <p>Birthday texts. Anniversary check-ins. Service reminders. Referral requests. <span class="highlight">For years. Automatically.</span> The salesperson builds a book of business without lifting a finger.</p>
         </div>
       </div>
       <div class="flow-step rv">
         <div class="flow-num">4</div>
         <div class="flow-content">
-          <h3>Calendar Systems gets the data too</h3>
-          <p>Every photo, every data point flows into your calendar pipeline. <span class="highlight">No end-of-month scramble.</span> Photos happen in real time because the salesperson actually wants to take them.</p>
+          <h3>Calendar Systems gets every data point</h3>
+          <p>Every photo, every customer detail flows into your calendar pipeline. <span class="highlight">No end-of-month scramble.</span> Photos happen in real time because the salesperson actually wants to take them.</p>
         </div>
       </div>
       <div class="flow-step rv">
         <div class="flow-num">5</div>
         <div class="flow-content">
           <h3>Engagement data flows back</h3>
-          <p>Track who's opening, clicking, replying. Know which customers are engaged and which are going cold. <span class="highlight">Data that matters — not just a photo in a folder.</span></p>
+          <p>Track who's opening, clicking, replying. Know which customers are engaged and which are going cold. <span class="highlight">Real data that drives decisions &mdash; not just a photo sitting in a folder.</span></p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- WHITE LABEL -->
-<section class="wl">
-  <h2 class="rv">White-labeled as <span>Calendar Systems</span></h2>
-  <p class="rv">You don't lose your brand — you upgrade it. You go from being a calendar company to the platform that powers customer relationships after the sale.</p>
-  <div class="wl-features">
-    <div class="wl-feat rv rv-1">
-      <i class="fa-solid fa-palette"></i>
-      <h4>Your Brand, Your Look</h4>
-      <p>Your logo, your colors, your domain. Dealers and salespeople see Calendar Systems — powered by enterprise-grade technology under the hood.</p>
+<!-- ========== WHAT THE SALESPERSON GETS ========== -->
+<section class="sp-value">
+  <h2 class="rv">What's in it for the salesperson?</h2>
+  <p class="rv">For the first time, the photo actually helps them sell more cars.</p>
+  <div class="sp-grid">
+    <div class="sp-card rv rv-1">
+      <i class="fa-solid fa-share-from-square"></i>
+      <h4>An Instant Shareable Moment</h4>
+      <p>The customer gets a beautiful card with their delivery photo, right there at the dealership. The salesperson looks incredible.</p>
     </div>
-    <div class="wl-feat rv rv-2">
-      <i class="fa-solid fa-chart-line"></i>
-      <h4>New Revenue Streams</h4>
-      <p>Charge for the relationship platform alongside your calendar product. One photo now has a year's worth of value attached to it.</p>
+    <div class="sp-card rv rv-2">
+      <i class="fa-solid fa-arrows-spin"></i>
+      <h4>Automated Follow-Up</h4>
+      <p>Birthdays, anniversaries, service reminders &mdash; all running in the background. They stay top of mind without any extra work.</p>
     </div>
-    <div class="wl-feat rv rv-3">
-      <i class="fa-solid fa-shield-halved"></i>
-      <h4>Stickier Partnerships</h4>
-      <p>When you're powering the dealership's entire post-sale experience — not just the calendar — you become impossible to replace.</p>
+    <div class="sp-card rv rv-3">
+      <i class="fa-solid fa-address-book"></i>
+      <h4>A Growing Book of Business</h4>
+      <p>Every customer they sell becomes a long-term relationship they own. Referrals come back. Repeat buyers come back.</p>
     </div>
-    <div class="wl-feat rv rv-1">
-      <i class="fa-solid fa-bolt"></i>
-      <h4>Zero Development Cost</h4>
-      <p>No engineers needed. No app to build. Full platform, ready to deploy under your brand. We handle the infrastructure.</p>
-    </div>
-    <div class="wl-feat rv rv-2">
-      <i class="fa-solid fa-mobile-screen-button"></i>
-      <h4>Salesperson App</h4>
-      <p>Every rep gets a mobile app with their digital card, CRM, inbox, and campaign dashboard. All branded Calendar Systems.</p>
-    </div>
-    <div class="wl-feat rv rv-3">
-      <i class="fa-solid fa-users-gear"></i>
-      <h4>Dealer Admin Dashboard</h4>
-      <p>Give your dealer clients a management dashboard to track submissions, engagement, and team performance across all stores.</p>
+    <div class="sp-card rv rv-4">
+      <i class="fa-solid fa-chart-simple"></i>
+      <h4>Visibility Into Engagement</h4>
+      <p>They can actually see who's clicking, opening, and responding. For the first time, they know who's warm and who's going cold.</p>
     </div>
   </div>
 </section>
 
-<!-- CLOSER -->
+<!-- ========== OBJECTION HANDLING ========== -->
+<section class="objections">
+  <h2 class="rv">Fair questions. Real answers.</h2>
+  <p class="rv">We've heard these before. Here's how we think about them.</p>
+
+  <div class="obj-item rv">
+    <div class="obj-q"><i class="fa-solid fa-quote-left"></i> "Our dealers already have a process."</div>
+    <div class="obj-a">Totally fair. That's exactly why some stores are at 90% and others are at 20%. The process exists &mdash; the consistency doesn't. This doesn't replace the process. <strong>It makes every store perform like your best one.</strong></div>
+  </div>
+
+  <div class="obj-item rv">
+    <div class="obj-q"><i class="fa-solid fa-quote-left"></i> "We don't want to add another tool."</div>
+    <div class="obj-a">Neither do your salespeople. That's the whole point. This doesn't add work &mdash; <strong>it replaces effort with automation.</strong> The salesperson takes the same photo they're already supposed to take. Everything else happens automatically.</div>
+  </div>
+
+  <div class="obj-item rv">
+    <div class="obj-q"><i class="fa-solid fa-quote-left"></i> "What does the salesperson actually get out of this?"</div>
+    <div class="obj-a">An instant shareable moment with their customer. Automated follow-up that runs for years. A growing book of business. Visibility into who's engaged and who's not. <strong>For the first time, the photo actually helps them sell more cars.</strong></div>
+  </div>
+</section>
+
+<!-- ========== WHITE LABEL ========== -->
+<section class="wl">
+  <div class="wl-inner">
+    <h2 class="rv">White-labeled as <span>Calendar Systems</span></h2>
+    <p class="rv">This isn't replacing Calendar Systems. It's powering you. Your logo, your brand, your dealers, your relationships. We're invisible infrastructure. You win. We scale.</p>
+    <div class="wl-features">
+      <div class="wl-feat rv rv-1">
+        <i class="fa-solid fa-palette"></i>
+        <h4>Your Brand, Your Look</h4>
+        <p>Your logo, your colors, your domain. Dealers and salespeople see Calendar Systems &mdash; powered by enterprise-grade technology under the hood.</p>
+      </div>
+      <div class="wl-feat rv rv-2">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <h4>New Revenue Layer</h4>
+        <p>Charge for the relationship platform alongside your calendar product. One photo now carries a year's worth of value. New revenue, same customer base.</p>
+      </div>
+      <div class="wl-feat rv rv-3">
+        <i class="fa-solid fa-lock"></i>
+        <h4>Impossible to Replace</h4>
+        <p>When you're powering the dealership's entire post-sale experience, you stop being a calendar vendor and start being essential infrastructure.</p>
+      </div>
+      <div class="wl-feat rv rv-1">
+        <i class="fa-solid fa-bolt"></i>
+        <h4>Zero Development Cost</h4>
+        <p>No engineers needed. No app to build. Full platform, ready to deploy under your brand. We handle everything.</p>
+      </div>
+      <div class="wl-feat rv rv-2">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <h4>Salesperson App</h4>
+        <p>Every rep gets a mobile app with their digital card, CRM, inbox, and campaign dashboard. All branded Calendar Systems.</p>
+      </div>
+      <div class="wl-feat rv rv-3">
+        <i class="fa-solid fa-users-gear"></i>
+        <h4>Dealer Admin Dashboard</h4>
+        <p>Your dealer clients get a full management dashboard to track submissions, engagement, and team performance across every store.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== POSITIONING ========== -->
+<section class="positioning rv">
+  <div class="not-list">
+    <span class="not-item">A photo tool</span>
+    <span class="not-item">A CRM</span>
+    <span class="not-item">A marketing platform</span>
+  </div>
+  <div class="is-label">What we actually are</div>
+  <p class="is-text">The behavior engine that drives photo capture, relationship building, and long-term customer engagement.</p>
+</section>
+
+<!-- ========== CLOSER ========== -->
 <section class="closer rv">
-  <div class="closer-quote">We don't help you collect more photos.<br/>We make salespeople <em style="font-style:normal;color:var(--gold)">want</em> to take them.</div>
-  <div class="closer-sub">When the salesperson cares about the photo&hellip; your submission problem disappears.</div>
+  <p class="closer-pre">For 30 years, you've helped dealerships remember their customers once a year.</p>
+  <div class="closer-quote">We can help them build relationships with those customers <em style="font-style:normal;color:var(--gold)">every single day.</em></div>
+  <div class="closer-sub">Every photo becomes more than a memory. It becomes the start of a 5-year relationship.</div>
+  <p class="closer-tag">We don't help you collect more photos. We make salespeople <em style="font-style:italic;color:#FFF">want</em> to take them.</p>
   <a href="#" class="btn-gold" onclick="openDemoModal(event,'cs_closer')"><i class="fa-solid fa-calendar"></i> Let's Talk</a>
 </section>
 
