@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Calendar Systems | Powered by i'M On Social</title>
+  <meta name="description" content="You don't have a photo problem. You have a salesperson behavior problem. We make salespeople want to take photos — and turn every one into years of automated follow-up."/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#007AFF;--blue-dark:#0059CC;--green:#34C759;--red:#FF3B30;--yellow:#FFD60A;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--surface:#F2F2F7;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);--gold:#C9A962}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
+nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:72px;width:auto}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-item{position:relative}
+.nav-item>a,.nav-trigger{font-size:14px;font-weight:500;color:var(--text-2);text-decoration:none;padding:8px 16px;border-radius:10px;display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:inherit;transition:all .2s}
+.nav-item>a:hover,.nav-trigger:hover{color:var(--text);background:var(--bg-2)}
+.nav-trigger .chev{font-size:10px;transition:transform .25s}.nav-item:hover .chev{transform:rotate(180deg)}
+.nav-dd{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);padding-top:10px;min-width:300px}.nav-item:hover .nav-dd{display:block}
+.nav-dd-inner{background:#FFF;border:1px solid var(--border-2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:10px}
+.nav-dd-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);padding:10px 14px 6px}
+.dd-link{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:12px;text-decoration:none;color:var(--text);transition:background .15s}.dd-link:hover{background:var(--bg-2)}
+.dd-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.dd-txt strong{font-size:14px;font-weight:600;display:block}.dd-txt span{font-size:12px;color:var(--text-3);line-height:1.3}
+.nav-cta{display:flex;align-items:center;gap:10px}
+.btn-sign{padding:10px 20px;border-radius:980px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;transition:background .2s}.btn-sign:hover{background:var(--bg-2)}
+.btn-demo{background:var(--blue);padding:10px 24px;border-radius:980px;font-size:14px;font-weight:600;color:#FFF;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}.btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
+.mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px;max-height:80vh;overflow-y:auto}.mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
+.mob-group{border-bottom:1px solid var(--border)}.mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}.mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}.mob-group.open .mob-chev{transform:rotate(180deg)}.mob-sub{display:none;padding:0 0 12px 16px}.mob-group.open .mob-sub{display:block}.mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none}.mob-sub a:hover{color:var(--blue)}.mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}.mob-direct:hover{color:var(--blue)}
+@media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
+
+/* ANIMATIONS */
+.rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}.rv-4{transition-delay:.4s}
+
+/* HERO — Dark, cinematic */
+.cs-hero{padding:180px 24px 120px;text-align:center;background:#0A0A0F;position:relative;overflow:hidden}
+.cs-hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.cs-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(transparent,#0A0A0F);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:980px;border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.06);font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:28px;position:relative}
+.cs-hero h1{font-size:64px;font-weight:900;line-height:1.04;letter-spacing:-.045em;color:#FFF;max-width:800px;margin:0 auto 28px;position:relative}
+.cs-hero h1 em{font-style:normal;color:var(--gold)}
+.cs-hero .sub{font-size:20px;color:rgba(255,255,255,.45);line-height:1.6;max-width:580px;margin:0 auto 44px;position:relative}
+.hero-cta{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25);position:relative}
+.hero-cta:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
+@media(max-width:768px){.cs-hero{padding:140px 24px 80px}.cs-hero h1{font-size:36px}}
+
+/* PROBLEM SECTION */
+.problem{padding:120px 24px;max-width:900px;margin:0 auto;text-align:center}
+.problem h2{font-size:48px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:20px}
+.problem h2 span{color:var(--red)}
+.problem .deck{font-size:19px;color:var(--text-2);line-height:1.7;max-width:640px;margin:0 auto}
+@media(max-width:768px){.problem h2{font-size:32px}.problem{padding:80px 24px}}
+
+/* STAT BAR */
+.stat-bar{background:var(--surface);padding:56px 24px}
+.stat-bar-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;gap:40px;align-items:center;text-align:center}
+.stat-box .big{font-size:64px;font-weight:900;line-height:1;letter-spacing:-.03em}
+.stat-box .label{font-size:14px;color:var(--text-3);font-weight:500;margin-top:4px}
+.stat-vs{font-size:16px;font-weight:800;color:var(--text-3);padding:12px 20px;border:2px solid var(--border-2);border-radius:14px}
+@media(max-width:768px){.stat-bar-inner{grid-template-columns:1fr;gap:20px}.stat-vs{display:none}}
+
+/* THE FLIP */
+.flip{padding:120px 24px;max-width:1100px;margin:0 auto}
+.flip h2{font-size:44px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:16px}
+.flip>p{text-align:center;color:var(--text-2);font-size:18px;max-width:600px;margin:0 auto 56px}
+.flip-grid{display:grid;grid-template-columns:1fr 60px 1fr;gap:0;align-items:stretch}
+.flip-side{padding:40px;border-radius:24px;border:1px solid var(--border-2)}
+.flip-side.before{background:var(--surface);opacity:.7}
+.flip-side.after{background:linear-gradient(135deg,rgba(201,169,98,.03),rgba(0,122,255,.03));border-color:var(--gold)}
+.flip-arrow{display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--gold)}
+.flip-side .tag{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px}
+.flip-side.before .tag{color:var(--red)}
+.flip-side.after .tag{color:var(--green)}
+.flip-side h3{font-size:22px;font-weight:800;margin-bottom:12px}
+.flip-side p{font-size:15px;color:var(--text-2);line-height:1.65}
+.flip-side ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.flip-side ul li{font-size:14px;color:var(--text-2);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.flip-side ul li i{margin-top:3px;flex-shrink:0}
+@media(max-width:768px){.flip-grid{grid-template-columns:1fr;gap:16px}.flip-arrow{transform:rotate(90deg);padding:8px 0}.flip h2{font-size:32px}.flip{padding:80px 24px}}
+
+/* FLOW SECTION */
+.flow{background:#0A0A0F;padding:120px 24px;position:relative;overflow:hidden}
+.flow::before{content:'';position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.flow-inner{max-width:900px;margin:0 auto;position:relative}
+.flow h2{font-size:44px;font-weight:900;color:#FFF;text-align:center;letter-spacing:-.03em;margin-bottom:56px}
+.flow-steps{display:flex;flex-direction:column;gap:0}
+.flow-step{display:grid;grid-template-columns:80px 1fr;gap:24px;align-items:flex-start;position:relative;padding-bottom:48px}
+.flow-step:last-child{padding-bottom:0}
+.flow-step::before{content:'';position:absolute;left:39px;top:56px;bottom:0;width:2px;background:linear-gradient(rgba(201,169,98,.3),rgba(201,169,98,.05))}
+.flow-step:last-child::before{display:none}
+.flow-num{width:80px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:var(--gold);border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.04);flex-shrink:0}
+.flow-content h3{font-size:20px;font-weight:800;color:#FFF;margin-bottom:6px}
+.flow-content p{font-size:15px;color:rgba(255,255,255,.4);line-height:1.65}
+.flow-content .highlight{color:var(--gold);font-weight:600}
+@media(max-width:768px){.flow{padding:80px 24px}.flow h2{font-size:30px}.flow-step{grid-template-columns:56px 1fr;gap:16px}.flow-num{width:56px;height:48px;font-size:20px}.flow-step::before{left:27px;top:48px}}
+
+/* WHITE LABEL */
+.wl{padding:120px 24px;max-width:900px;margin:0 auto;text-align:center}
+.wl h2{font-size:48px;font-weight:900;letter-spacing:-.035em;margin-bottom:16px;line-height:1.08}
+.wl h2 span{color:var(--gold)}
+.wl>p{font-size:18px;color:var(--text-2);max-width:560px;margin:0 auto 48px;line-height:1.6}
+.wl-features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:left}
+.wl-feat{padding:28px 24px;border-radius:20px;border:1px solid var(--border-2);transition:all .3s}
+.wl-feat:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.06);border-color:transparent}
+.wl-feat i{font-size:24px;color:var(--gold);margin-bottom:14px;display:block}
+.wl-feat h4{font-size:16px;font-weight:700;margin-bottom:6px}
+.wl-feat p{font-size:14px;color:var(--text-2);line-height:1.5}
+@media(max-width:768px){.wl-features{grid-template-columns:1fr}.wl h2{font-size:32px}.wl{padding:80px 24px}}
+
+/* CLOSER */
+.closer{background:#0A0A0F;padding:120px 24px;text-align:center;position:relative;overflow:hidden}
+.closer::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.closer-quote{font-size:36px;font-weight:900;color:#FFF;line-height:1.15;letter-spacing:-.02em;max-width:700px;margin:0 auto 12px;position:relative}
+.closer-sub{font-size:18px;color:var(--gold);font-weight:600;margin-bottom:40px;position:relative}
+.btn-gold{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25);position:relative}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
+@media(max-width:768px){.closer{padding:80px 24px}.closer-quote{font-size:26px}}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);background:var(--bg-2)}
+.ft-inner{max-width:1200px;margin:0 auto;padding:56px 24px 40px;display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:56px}
+.ft-logo{margin-bottom:12px}.ft-logo img{height:44px;width:auto}.ft-tag{font-size:14px;color:var(--text-3);line-height:1.5;margin-bottom:18px}
+.ft-social{display:flex;gap:10px}.ft-social a{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:15px;text-decoration:none;transition:all .2s}.ft-social a:hover{border-color:var(--blue);color:var(--blue)}
+.ft-col{display:flex;flex-direction:column;gap:11px}.ft-col-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin-bottom:4px}.ft-col a{font-size:14px;color:var(--text-3);text-decoration:none;transition:color .2s}.ft-col a:hover{color:var(--blue)}
+.ft-bottom{border-top:1px solid var(--border);padding:20px 24px;text-align:center}.ft-copy{font-size:12px;color:var(--text-3)}
+@media(max-width:768px){.ft-inner{grid-template-columns:1fr 1fr;gap:32px}.ft-brand{grid-column:span 2}}@media(max-width:480px){.ft-inner{grid-template-columns:1fr}.ft-brand{grid-column:span 1}}
+
+/* DEMO MODAL */
+.demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}.demo-overlay.active{display:flex}.demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2)}.demo-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}.demo-close:hover{background:var(--border)}.dm-field{margin-bottom:14px}.dm-field label{display:block;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}.dm-field input,.dm-field select{width:100%;padding:12px 14px;background:#FFF;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}.dm-field input:focus,.dm-field select:focus{border-color:var(--gold)}.dm-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}.dm-submit{width:100%;padding:14px;background:var(--gold);color:#0A0A0F;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 12px rgba(201,169,98,.25)}.dm-submit:hover{background:#D4B86A;box-shadow:0 6px 24px rgba(201,169,98,.35)}.dm-submit:disabled{opacity:.5;cursor:not-allowed}@media(max-width:768px){.demo-modal{padding:28px 20px;border-radius:20px}}
+  </style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="https://www.imonsocial.com" class="logo"><img src="/marketing-logo.png" alt="i'M On Social"/></a>
+    <div class="nav-links">
+      <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><div class="nav-dd-label">Your Digital Presence</div><a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Cards</strong><span>Shareable, trackable business cards</span></div></a><a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a><a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:#34C759"></i></div><div class="dd-txt"><strong>Link Pages</strong><span>All your socials in one link</span></div></a><div class="nav-dd-label">Engagement</div><a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a><a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a><a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, email, all in one place</span></div></a><div class="nav-dd-label">Intelligence</div><a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI powered relationship insights</span></div></a><a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a></div></div></div>
+      <div class="nav-item"><button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><div class="nav-dd-label">By Role</div><a class="dd-link" href="/organizations/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:#007AFF"></i></div><div class="dd-txt"><strong>For Organizations</strong><span>Manage teams, stores & reputation</span></div></a><a class="dd-link" href="/individuals/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div><div class="dd-txt"><strong>For Individuals</strong><span>Own your personal brand</span></div></a><div class="nav-dd-label">By Industry</div><a class="dd-link" href="/salespresentation/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a><a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-briefcase" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a></div></div></div>
+      <div class="nav-item"><button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a><a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:#34C759"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a><a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a></div></div></div>
+      <div class="nav-item"><a href="/pricing/">Pricing</a></div>
+    </div>
+    <div class="nav-cta"><a href="#" class="btn-demo" onclick="openDemoModal(event,'cs_nav')">Book a Demo</a><a href="https://app.imonsocial.com" class="btn-sign">Sign In</a></div>
+    <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+  </div>
+  <div class="mob-menu" id="mob">
+    <div class="mob-group"><button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button><div class="mob-sub"><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/showcase/">Showcase Pages</a><a href="/inbox/">Unified Inbox</a><a href="/date-triggers/">Automated Campaigns</a><a href="/congrats-template/">Congrats Cards</a><a href="/jessi/">Jessi AI</a><a href="/leaderboard/">Leaderboards</a></div></div>
+    <div class="mob-group"><button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Solutions <i class="fa-solid fa-chevron-down mob-chev"></i></button><div class="mob-sub"><a href="/organizations/">For Organizations</a><a href="/individuals/">For Individuals</a><a href="/salespresentation/">Automotive</a><a href="/hub/">Sales Teams</a><a href="/features/">All Features</a></div></div>
+    <div class="mob-group"><button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Resources <i class="fa-solid fa-chevron-down mob-chev"></i></button><div class="mob-sub"><a href="/training/">Training Hub</a><a href="/help/">Help Center</a><a href="/why-imonsocial/">Why i'M On Social</a></div></div>
+    <a href="/pricing/" class="mob-direct">Pricing</a><a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
+    <a href="#" class="mob-cta" onclick="openDemoModal(event,'cs_mob')">Book a Demo</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="cs-hero">
+  <div class="hero-eyebrow rv"><i class="fa-solid fa-calendar"></i> CALENDAR SYSTEMS + i'M ON SOCIAL</div>
+  <h1 class="rv">You don't have a photo problem.<br/>You have a <em>salesperson behavior</em> problem.</h1>
+  <p class="sub rv">Some stores are at 90%. Some are at 20%. That's not a process issue. That's motivation. We fix the motivation.</p>
+  <a href="#" class="hero-cta rv" onclick="openDemoModal(event,'cs_hero')"><i class="fa-solid fa-play"></i> See How It Works</a>
+</section>
+
+<!-- THE PROBLEM -->
+<section class="problem rv">
+  <h2>Right now, taking a photo <span>doesn't do anything</span> for the salesperson.</h2>
+  <p class="deck">It's for the calendar. Months later. Maybe. The salesperson gets nothing from it — no value, no engagement, no reason to care. So they don't. And you're left chasing submissions at the end of every month.</p>
+</section>
+
+<!-- STAT BAR -->
+<section class="stat-bar rv">
+  <div class="stat-bar-inner">
+    <div class="stat-box">
+      <div class="big" style="color:var(--green)">90%</div>
+      <div class="label">Your best store</div>
+    </div>
+    <div class="stat-vs">vs</div>
+    <div class="stat-box">
+      <div class="big" style="color:var(--red)">20%</div>
+      <div class="label">Your worst store</div>
+    </div>
+  </div>
+</section>
+
+<!-- THE FLIP -->
+<section class="flip">
+  <h2 class="rv">We flip it.</h2>
+  <p class="rv">The photo stops being a task and starts being a tool.</p>
+  <div class="flip-grid rv">
+    <div class="flip-side before">
+      <div class="tag">Before</div>
+      <h3>The photo is a chore</h3>
+      <p>Salesperson takes a photo at delivery because they have to. It goes to the calendar company. The customer never sees it. The salesperson gets nothing.</p>
+      <ul>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No immediate value for the salesperson</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Customer doesn't see it for months</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> End-of-month scramble for submissions</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No follow-up, no engagement tracking</li>
+      </ul>
+    </div>
+    <div class="flip-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+    <div class="flip-side after">
+      <div class="tag">After</div>
+      <h3>The photo is a power tool</h3>
+      <p>Salesperson snaps a photo, sends it instantly to the customer, and that single moment kicks off years of automated follow-up, engagement tracking, and relationship building.</p>
+      <ul>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Instant value — customer gets the photo immediately</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Automated follow-up for years</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Photos happen at delivery, in real time</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Engagement tracking on every touchpoint</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS FLOW -->
+<section class="flow">
+  <div class="flow-inner">
+    <h2 class="rv">How it actually works</h2>
+    <div class="flow-steps">
+      <div class="flow-step rv">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <h3>Salesperson takes the photo at delivery</h3>
+          <p>No change to their workflow. Same photo. Same moment. But now it <span class="highlight">does something for them</span>.</p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <h3>Photo goes to the customer instantly</h3>
+          <p>The customer gets a beautiful congrats card with their photo via text. <span class="highlight">Right there at the dealership.</span> The salesperson looks like a pro.</p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <h3>Automated follow-up kicks in</h3>
+          <p>Birthday texts. Anniversary check-ins. Service reminders. Referral requests. <span class="highlight">For years. Automatically.</span> The salesperson doesn't lift a finger.</p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <h3>Calendar Systems gets the data too</h3>
+          <p>Every photo, every data point flows into your calendar pipeline. <span class="highlight">No end-of-month scramble.</span> Photos happen in real time because the salesperson actually wants to take them.</p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <h3>Engagement data flows back</h3>
+          <p>Track who's opening, clicking, replying. Know which customers are engaged and which are going cold. <span class="highlight">Data that matters — not just a photo in a folder.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHITE LABEL -->
+<section class="wl">
+  <h2 class="rv">White-labeled as <span>Calendar Systems</span></h2>
+  <p class="rv">You don't lose your brand — you upgrade it. You go from being a calendar company to the platform that powers customer relationships after the sale.</p>
+  <div class="wl-features">
+    <div class="wl-feat rv rv-1">
+      <i class="fa-solid fa-palette"></i>
+      <h4>Your Brand, Your Look</h4>
+      <p>Your logo, your colors, your domain. Dealers and salespeople see Calendar Systems — powered by enterprise-grade technology under the hood.</p>
+    </div>
+    <div class="wl-feat rv rv-2">
+      <i class="fa-solid fa-chart-line"></i>
+      <h4>New Revenue Streams</h4>
+      <p>Charge for the relationship platform alongside your calendar product. One photo now has a year's worth of value attached to it.</p>
+    </div>
+    <div class="wl-feat rv rv-3">
+      <i class="fa-solid fa-shield-halved"></i>
+      <h4>Stickier Partnerships</h4>
+      <p>When you're powering the dealership's entire post-sale experience — not just the calendar — you become impossible to replace.</p>
+    </div>
+    <div class="wl-feat rv rv-1">
+      <i class="fa-solid fa-bolt"></i>
+      <h4>Zero Development Cost</h4>
+      <p>No engineers needed. No app to build. Full platform, ready to deploy under your brand. We handle the infrastructure.</p>
+    </div>
+    <div class="wl-feat rv rv-2">
+      <i class="fa-solid fa-mobile-screen-button"></i>
+      <h4>Salesperson App</h4>
+      <p>Every rep gets a mobile app with their digital card, CRM, inbox, and campaign dashboard. All branded Calendar Systems.</p>
+    </div>
+    <div class="wl-feat rv rv-3">
+      <i class="fa-solid fa-users-gear"></i>
+      <h4>Dealer Admin Dashboard</h4>
+      <p>Give your dealer clients a management dashboard to track submissions, engagement, and team performance across all stores.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSER -->
+<section class="closer rv">
+  <div class="closer-quote">We don't help you collect more photos.<br/>We make salespeople <em style="font-style:normal;color:var(--gold)">want</em> to take them.</div>
+  <div class="closer-sub">When the salesperson cares about the photo&hellip; your submission problem disappears.</div>
+  <a href="#" class="btn-gold" onclick="openDemoModal(event,'cs_closer')"><i class="fa-solid fa-calendar"></i> Let's Talk</a>
+</section>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-brand"><div class="ft-logo"><img src="/marketing-logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
+      <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a></div>
+    </div>
+    <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/inbox/">Inbox</a><a href="/date-triggers/">Automations</a><a href="/leaderboard/">Leaderboards</a><a href="/jessi/">Jessi AI</a></div>
+    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="#" onclick="openDemoModal(event,'cs_footer')">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a></div>
+  </div>
+  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
+</footer>
+
+<div class="demo-overlay" id="demoModal"><div class="demo-modal"><button class="demo-close" onclick="closeDemoModal()">&times;</button><div id="demoFormWrap"><h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Let's Talk</h2><p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how Calendar Systems + i'M On Social works together.</p><form onsubmit="submitDemoForm(event)"><div class="dm-field"><label>Full Name *</label><input type="text" id="dm-name" placeholder="John Smith" required/></div><div class="dm-field"><label>Email *</label><input type="email" id="dm-email" placeholder="john@calendarsystems.com" required/></div><div class="dm-field"><label>Phone</label><input type="tel" id="dm-phone" placeholder="(555) 123-4567"/></div><div class="dm-field"><label>Company</label><input type="text" id="dm-company" placeholder="Your company name"/></div><div class="dm-field"><label>Number of Dealer Clients</label><select id="dm-type"><option value="">How many dealers do you serve?</option><option value="1-10">1-10</option><option value="11-50">11-50</option><option value="51-200">51-200</option><option value="200+">200+</option></select></div><button type="submit" class="dm-submit" id="dmSubmitBtn">Schedule a Call</button></form></div><div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0"><div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div><h3 style="font-size:20px;font-weight:700;margin-bottom:8px">We'll Be In Touch</h3><p style="font-size:14px;color:var(--text-3)">Expect a call within 24 hours to discuss the Calendar Systems partnership.</p></div></div></div>
+
+<script>
+const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+let _demoSource='';function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'calendar_systems_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Schedule a Call';alert('Something went wrong. Please try again.')}}
+</script>
+</body>
+</html>
