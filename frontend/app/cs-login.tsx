@@ -152,14 +152,7 @@ export default function CSLoginScreen() {
                 style={styles.csLogo}
                 resizeMode="contain"
               />
-              <View style={styles.poweredRow}>
-                <Text style={styles.poweredText}>Powered by</Text>
-                <Image
-                  source={{ uri: '/marketing-logo.png' }}
-                  style={styles.imosLogo}
-                  resizeMode="contain"
-                />
-              </View>
+              <Text style={styles.poweredText}>Powered by i'M On Social</Text>
             </View>
 
             {/* Form */}
@@ -289,20 +282,11 @@ const styles = StyleSheet.create({
     height: 70,
     marginBottom: 16,
   },
-  poweredRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
   poweredText: {
-    fontSize: 12,
-    color: '#888888',
+    fontSize: 13,
+    color: '#999999',
     fontWeight: '500',
-  },
-  imosLogo: {
-    width: 80,
-    height: 20,
-    opacity: 0.6,
+    marginTop: 8,
   },
   form: {
     gap: 16,

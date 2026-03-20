@@ -11,6 +11,10 @@ import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloati
 function usePWAMetaTags() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+    
+    // Skip PWA overrides if on CS login — that page manages its own branding
+    if (typeof window !== 'undefined' && window.location.pathname.includes('cs-login')) return;
+    
     const head = document.head;
     
     const ensureMeta = (name: string, content: string, attr = 'name') => {
@@ -73,7 +77,7 @@ export default function RootLayout() {
   
   // Hide Jessi on auth/public/customer-facing screens
   // These are ALL routes where a customer/public visitor could land
-  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide'];
+  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide', 'cs-login'];
   const isPublicScreen = !segments.length || publicRoutes.includes(segments[0]);
   // Double-check with pathname for routes that sometimes resolve differently
   const pathname = segments.join('/');
@@ -110,6 +114,7 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
               <Stack.Screen name="index" options={{ animation: 'none' }} />
               <Stack.Screen name="auth/login" options={{ animation: 'none' }} />
+              <Stack.Screen name="cs-login" options={{ animation: 'none' }} />
               <Stack.Screen name="auth/signup" />
               <Stack.Screen name="auth/forgot-password" />
               <Stack.Screen name="onboarding/index" />
