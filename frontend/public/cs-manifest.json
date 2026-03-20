@@ -1,0 +1,39 @@
+{
+  "id": "/cs-login",
+  "short_name": "Calendar Systems",
+  "name": "Calendar Systems",
+  "description": "The relationship platform for Calendar Systems dealers.",
+  "icons": [
+    {
+      "src": "cs-logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "cs-logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "cs-logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "cs-logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/cs-login",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#102050",
+  "background_color": "#102050",
+  "orientation": "portrait",
+  "prefer_related_applications": false
+}
