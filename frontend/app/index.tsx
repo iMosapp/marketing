@@ -53,7 +53,12 @@ export default function Index() {
     if (!mounted || isLoading) return;
     
     if (!isAuthenticated) {
-      setRedirectPath('/auth/login');
+      // Check if this is a Calendar Systems branded PWA
+      if (Platform.OS === 'web' && typeof localStorage !== 'undefined' && localStorage.getItem('pwa_brand') === 'calendar-systems') {
+        setRedirectPath('/cs-login');
+      } else {
+        setRedirectPath('/auth/login');
+      }
     } else if (!isImpersonating && (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete)) {
       // Check local backup flag before showing onboarding again
       if (user?._id) {
