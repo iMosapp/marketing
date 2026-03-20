@@ -237,7 +237,7 @@ export default function CSLoginScreen() {
               {Platform.OS === 'web' && (
                 <TouchableOpacity
                   style={styles.installBtn}
-                  onPress={() => { if (typeof window !== 'undefined') window.location.href = '/install.html'; }}
+                  onPress={() => { if (typeof window !== 'undefined') window.location.href = '/cs/'; }}
                   data-testid="cs-install-app"
                 >
                   <Ionicons name="download" size={18} color="#888888" />

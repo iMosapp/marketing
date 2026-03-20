@@ -29,7 +29,7 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/cs-login",
+  "start_url": "/cs/",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#FFFFFF",

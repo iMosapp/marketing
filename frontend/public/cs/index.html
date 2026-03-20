@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" style="height:100%;background:#FFFFFF">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,shrink-to-fit=no,viewport-fit=cover"/>
+  <title>Calendar Systems</title>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Calendar Systems"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#FFFFFF"/>
+  <link rel="manifest" href="/cs-manifest.json"/>
+  <link rel="apple-touch-icon" href="/cs-apple-touch-icon.png"/>
+  <link rel="icon" href="/cs-apple-touch-icon.png"/>
+  <style>
+    body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;background:#FFF;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+    .loader{text-align:center}
+    .loader img{width:200px;height:auto;margin-bottom:12px}
+    .loader p{color:#999;font-size:13px}
+  </style>
+  <script>
+    // Set brand flag so the SPA knows to stay on CS login
+    try { localStorage.setItem('pwa_brand', 'calendar-systems'); } catch(e) {}
+    // Redirect to the SPA CS login route
+    window.location.replace('/cs-login');
+  </script>
+</head>
+<body>
+  <div class="loader">
+    <img src="/calendar-systems/cs-logo.png" alt="Calendar Systems"/>
+    <p>Loading...</p>
+  </div>
+</body>
+</html>
