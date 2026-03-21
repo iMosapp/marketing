@@ -37,7 +37,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Industry Pitch Pages + Nav Integration (Mar 21, 2026) -- LATEST
+### Enhanced Products Dropdown + SEO & Store Reviews Pages (Mar 21, 2026) -- LATEST
+- **Products Nav:** Reorganized into 3 sections (Your Digital Presence, Engagement, Visibility & Intelligence) with 11 items including new Store Reviews, Voice Notes, SEO & AEO, Personal Landing Pages (renamed from Link Pages)
+- **New Pages:** Created `/seo/` (SEO & AEO feature page with AEO explanation) and `/store-reviews/` (store review hub feature page)
+- **Automotive Fix:** Updated nav link from `/salespresentation/` to `/dealers/` across all pages
+- **Scope:** Updated 61+ marketing and pitch pages total across all nav changes
+
+### Industry Pitch Pages + Nav Integration (Mar 21, 2026)
 - **Feature:** Created 8 industry-specific pitch landing pages with unique messaging tailored to each vertical
 - **Industries:** Real Estate, Salons & Spas, Restaurants & Hospitality, Powersports & Recreation, Home Services, Fitness & Personal Training, Insurance & Financial, Medical & Dental
 - **Nav Integration:** Updated Solutions > By Industry dropdown across ALL 47+ marketing pages (26 original + 21 hex-color variant) with 10-industry 2-column grid
