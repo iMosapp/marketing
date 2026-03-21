@@ -273,7 +273,7 @@ async def submit_feedback(store_slug: str, feedback: dict):
         "salesperson_id": feedback.get("salesperson_id"),
         "salesperson_name": feedback.get("salesperson_name"),
         "source": feedback.get("source", "review_page"),
-        "approved": False,
+        "approved": feedback.get("rating", 5) >= 4,  # Auto-approve 4+ star reviews
         "created_at": datetime.now(timezone.utc),
     }
     

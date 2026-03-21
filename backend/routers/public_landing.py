@@ -210,7 +210,7 @@ async def submit_review(
         "text_review": text_review,
         "purchase_photo_url": purchase_photo_url,
         "photo_consent": True,
-        "approved": False,  # Requires approval
+        "approved": rating >= 4,  # Auto-approve 4+ star reviews
         "source": "landing_page",
         "created_at": datetime.now(timezone.utc)
     }

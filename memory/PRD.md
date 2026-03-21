@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Email Signature Generator (Mar 21, 2026) -- LATEST
+### Digital Card Reviews Auto-Approve Fix (Mar 21, 2026) -- LATEST
+- **Bug Fix:** Reviews submitted via review pages and landing pages defaulted to `approved: False`, so they never appeared in the card's "What Customers Say" section
+- **Fix:** 4+ star reviews now auto-approve on submission (both `public_review.py` and `public_landing.py`). Under 4 stars still require moderation.
+- **Data fix:** Retroactively approved existing 4+ star reviews stuck as unapproved
+
+### Email Signature Generator (Mar 21, 2026)
 - **New Feature:** Email Signature page at `/email-signature`, accessible from My Brand section in Hub
 - **Features:** Pick link destination (Digital Card, Showcase, Link Page, Landing Page), live preview with photo/name/title/phone/email/social links, copy rich HTML or plain text, step-by-step instructions for Gmail, Outlook, iPhone, and Gmail mobile
 - **File:** `/app/frontend/app/email-signature.tsx`
