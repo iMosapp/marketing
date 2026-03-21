@@ -99,7 +99,7 @@ async def create_demo_request(data: dict):
         if not data.get(field):
             return {"status": "error", "message": f"{field} is required"}
 
-    source = data.get("source", "").strip()
+    source = (data.get("source") or data.get("lead_source") or "").strip()
     utm_source = data.get("utm_source", "").strip()
     utm_medium = data.get("utm_medium", "").strip()
     utm_campaign = data.get("utm_campaign", "").strip()
@@ -124,6 +124,7 @@ async def create_demo_request(data: dict):
         "utm_term": utm_term,
         "referrer": data.get("referrer", "").strip(),
         "referred_by": data.get("ref", "").strip(),
+        "business_type": data.get("business_type", "").strip(),
         "status": "new",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -215,6 +216,130 @@ async def create_demo_request(data: dict):
             )
         except Exception:
             pass
+
+    # === CREATE CONTACT + INBOX THREAD FOR FAST RESPONSE ===
+    try:
+        # Pretty source name for display
+        source_labels = {
+            "seo_page": "SEO & AEO", "store_reviews_page": "Store Reviews",
+            "digital_card_page": "Digital Cards", "showcase_page": "Showcase",
+            "reviews_page": "Reviews", "inbox_page": "Inbox",
+            "congrats_cards_page": "Congrats Cards", "automations_page": "Automations",
+            "jessi_ai_page": "Jessi AI", "leaderboard_page": "Leaderboards",
+            "homepage": "Homepage", "pricing_page": "Pricing",
+            "organizations_page": "For Organizations", "individuals_page": "For Individuals",
+            "features_page": "Features", "dealers_page": "Automotive",
+            "pitch_powersports": "Powersports", "pitch_real_estate": "Real Estate",
+            "pitch_salons": "Salons & Spas", "pitch_restaurants": "Restaurants",
+            "pitch_home_services": "Home Services", "pitch_fitness": "Fitness",
+            "pitch_insurance": "Insurance & Financial", "pitch_medical": "Medical & Dental",
+        }
+        pretty_source = source_labels.get(lead_source, lead_source.replace("_", " ").title() if lead_source else "Website")
+
+        # Find or pick owner — prefer referring salesperson, else first admin notified
+        owner_id = demo.get("referred_by_user_id") or (list(notify_user_ids)[0] if notify_user_ids else None)
+
+        if owner_id:
+            # Create contact if email/phone doesn't already exist
+            contact_filter = []
+            if demo.get("email"):
+                contact_filter.append({"email": demo["email"]})
+            if demo.get("phone"):
+                contact_filter.append({"phone": demo["phone"]})
+
+            existing_contact = None
+            if contact_filter:
+                existing_contact = await db.contacts.find_one({
+                    "user_id": owner_id,
+                    "$or": contact_filter
+                }, {"_id": 1})
+
+            if existing_contact:
+                contact_id = str(existing_contact["_id"])
+            else:
+                # Split name
+                name_parts = lead_name.split(" ", 1)
+                new_contact = {
+                    "user_id": owner_id,
+                    "first_name": name_parts[0] if name_parts else lead_name,
+                    "last_name": name_parts[1] if len(name_parts) > 1 else "",
+                    "email": demo.get("email", ""),
+                    "phone": demo.get("phone", ""),
+                    "company": demo.get("company", ""),
+                    "source": f"demo_form_{lead_source}",
+                    "tags": ["new-lead", "demo-request"],
+                    "notes": f"Submitted demo form from {pretty_source} page",
+                    "created_at": datetime.now(timezone.utc),
+                }
+                contact_result = await db.contacts.insert_one(new_contact)
+                contact_id = str(contact_result.inserted_id)
+
+            # Create inbox conversation
+            existing_conv = await db.conversations.find_one({
+                "user_id": owner_id,
+                "contact_id": contact_id,
+            })
+
+            if existing_conv:
+                conv_id = str(existing_conv["_id"])
+                # Update it to unread + high priority
+                await db.conversations.update_one(
+                    {"_id": existing_conv["_id"]},
+                    {"$set": {
+                        "unread": True,
+                        "unread_count": (existing_conv.get("unread_count", 0) or 0) + 1,
+                        "last_message_at": datetime.now(timezone.utc),
+                        "ai_outcome": "new_lead",
+                        "ai_outcome_priority": 1,
+                    }}
+                )
+            else:
+                new_conv = {
+                    "user_id": owner_id,
+                    "contact_id": contact_id,
+                    "contact_phone": demo.get("phone", ""),
+                    "status": "active",
+                    "unread": True,
+                    "unread_count": 1,
+                    "ai_enabled": False,
+                    "ai_outcome": "new_lead",
+                    "ai_outcome_priority": 1,
+                    "needs_assistance": True,
+                    "created_at": datetime.now(timezone.utc),
+                    "last_message_at": datetime.now(timezone.utc),
+                }
+                conv_result = await db.conversations.insert_one(new_conv)
+                conv_id = str(conv_result.inserted_id)
+
+            # Add the lead info as the first message in the thread
+            intro_lines = [f"New lead from {pretty_source}"]
+            if demo.get("company"):
+                intro_lines.append(f"Company: {demo['company']}")
+            if demo.get("email"):
+                intro_lines.append(f"Email: {demo['email']}")
+            if demo.get("phone"):
+                intro_lines.append(f"Phone: {demo['phone']}")
+            if demo.get("business_type"):
+                intro_lines.append(f"Industry: {demo['business_type']}")
+            if demo.get("message"):
+                intro_lines.append(f"Message: {demo['message'][:300]}")
+
+            await db.messages.insert_one({
+                "conversation_id": conv_id,
+                "user_id": owner_id,
+                "contact_id": contact_id,
+                "direction": "inbound",
+                "channel": "form",
+                "body": "\n".join(intro_lines),
+                "type": "lead_form",
+                "read": False,
+                "created_at": datetime.now(timezone.utc),
+            })
+
+    except Exception as e:
+        # Don't fail the demo request if inbox creation fails
+        import traceback
+        traceback.print_exc()
 
     return {"status": "success", "message": "Demo request received! We'll be in touch soon."}
 

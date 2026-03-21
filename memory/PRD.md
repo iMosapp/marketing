@@ -37,7 +37,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### CS Login PWA + Marketing Fixes (Mar 21, 2026) -- LATEST
+### Demo Leads → Inbox Integration (Mar 21, 2026) -- LATEST
+- **New Feature:** Demo form submissions now auto-create a contact (tagged `new-lead`, `demo-request`) + inbox conversation + first message with lead context
+- **Lead source tracking:** Every page-specific source (e.g., `dealers_page`, `seo_page`, `pitch_salons`) maps to a human-readable label in the inbox message ("New lead from Automotive", "New lead from SEO & AEO")
+- **Bug fix:** Marketing forms were sending `lead_source` but backend only read `source` — now reads both
+- **Bug fix:** `business_type` from forms was not being stored — now captured
+
+### CS Login PWA + Marketing Fixes (Mar 21, 2026)
 - **PWA Fix:** Rebuilt `/cs/index.html` as complete standalone login page — no SPA redirect, API login directly in static HTML, stores token for SPA pickup
 - **Marketing Links:** Fixed `/cs/` → `/cs-login` in 4 calendar-systems marketing links
 - **Copy:** Changed all "5-year" to "lifetime" across dealers, calendar-systems, outreach, tiktok pages
