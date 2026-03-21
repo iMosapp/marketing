@@ -62,31 +62,33 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
         if not RESEND_API_KEY:
             raise HTTPException(status_code=500, detail="Email service not configured")
 
-        custom_msg = f'<p style="font-size: 15px; line-height: 1.6; color: #ccc; margin-bottom: 20px;">{data.custom_message}</p>' if data.custom_message else ""
+        custom_msg = f'<p style="font-size: 15px; line-height: 1.6; color: #444; margin-bottom: 20px;">{data.custom_message}</p>' if data.custom_message else ""
 
         html = f"""
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111;">
-            <div style="text-align: center; padding: 24px; background: #1A1A2E; border-radius: 16px 16px 0 0;">
-                <h1 style="margin: 0; font-size: 28px; font-weight: 700;">
-                    <span style="color:#FF3B30;">i</span><span style="color:#FFD60A;">M</span><span style="color:#34C759;">O</span><span style="color:#007AFF;">s</span>
-                </h1>
-                <p style="margin: 6px 0 0; font-size: 12px; color: #888; letter-spacing: 1px;">Relationship Management System</p>
-            </div>
-            <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 0 0 16px 16px; color: white;">
-                <h2 style="margin-top: 0; color: #C9A962;">Hi {recipient_name}!</h2>
-                <p style="font-size: 15px; line-height: 1.6; color: #ccc;">{sender_name} shared a page with you from <strong style="color:#fff;">i'M On Social</strong>:</p>
-                {custom_msg}
-                <div style="background: rgba(255,255,255,0.08); padding: 16px 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #C9A962;">
-                    <p style="margin: 0; font-size: 17px; font-weight: 600; color: #fff;">{data.page_name}</p>
-                    <p style="margin: 6px 0 0; font-size: 13px; color: #888;">{data.page_path}</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+            <div style="background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e5e5;">
+                <div style="text-align: center; padding: 24px; border-bottom: 1px solid #eee;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">
+                        <span style="color:#FF3B30;">i</span><span style="color:#FFD60A;">'M</span> <span style="color:#34C759;">On</span> <span style="color:#007AFF;">Social</span>
+                    </h1>
+                    <p style="margin: 6px 0 0; font-size: 12px; color: #888; letter-spacing: 1px;">Relationship Management System</p>
                 </div>
-                <div style="text-align: center; margin-top: 24px;">
-                    <a href="{page_url}" style="display: inline-block; background: #C9A962; color: #000; padding: 14px 36px; text-decoration: none; border-radius: 30px; font-weight: 700; font-size: 15px;">
-                        View Page
-                    </a>
+                <div style="padding: 30px; background-color: #ffffff;">
+                    <h2 style="margin-top: 0; color: #111;">Hi {recipient_name}!</h2>
+                    <p style="font-size: 15px; line-height: 1.6; color: #444;"><strong>{sender_name}</strong> shared a page with you from <strong>i'M On Social</strong>:</p>
+                    {custom_msg}
+                    <div style="background-color: #f8f9fa; padding: 16px 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #007AFF;">
+                        <p style="margin: 0; font-size: 17px; font-weight: 600; color: #111;">{data.page_name}</p>
+                        <p style="margin: 6px 0 0; font-size: 13px; color: #888;">{data.page_path}</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 24px;">
+                        <a href="{page_url}" style="display: inline-block; background-color: #007AFF; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+                            View Page
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 20px; color: #555; font-size: 11px;">
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 11px;">
                 <p>Sent from i'M On Social by {sender_name}</p>
             </div>
         </div>

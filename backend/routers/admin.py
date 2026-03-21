@@ -79,41 +79,43 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
         "subject": f"You're Invited to Join i'M On Social as {role_title}",
         "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-                <div style="text-align: center; margin-bottom: 0; padding: 24px 20px 16px 20px; background-color: #ffffff; border-radius: 16px 16px 0 0; border-bottom: 2px solid #C9A962;">
-                    <img src="cid:imos-logo" alt="i'M On Social" width="120" style="max-width: 120px; height: auto;" />
-                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #666; letter-spacing: 1px;">Relationship Management System</p>
-                </div>
-                
-                <div style="background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); padding: 30px; border-radius: 0 0 16px 16px; color: white;">
-                    <h2 style="margin-top: 0; color: #C9A962;">Welcome, {name}!</h2>
-                    <p style="font-size: 16px; line-height: 1.6;">You've been invited to join <strong>i'M On Social</strong> as a <strong style="color: #C9A962;">{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
-                    
-                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin: 25px 0;">
-                        <p style="margin: 0 0 15px 0; font-weight: 600; color: #C9A962;">Your Login Credentials:</p>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="padding: 8px 0; color: rgba(255,255,255,0.7);">Email:</td>
-                                <td style="padding: 8px 0;"><code style="background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; color: #fff;">{email}</code></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: rgba(255,255,255,0.7);">Temporary Password:</td>
-                                <td style="padding: 8px 0;"><code style="background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; color: #fff;">{temp_password}</code></td>
-                            </tr>
-                        </table>
+                <div style="background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e5e5;">
+                    <div style="text-align: center; padding: 32px 20px 20px 20px; border-bottom: 1px solid #eee;">
+                        <img src="cid:imos-logo" alt="i'M On Social" width="100" height="100" style="width: 100px; height: 100px; border-radius: 50%; display: block; margin: 0 auto;" />
+                        <p style="margin: 10px 0 0 0; font-size: 13px; color: #888; letter-spacing: 1px;">Relationship Management System</p>
                     </div>
                     
-                    <p style="font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 25px;">You'll be prompted to create a new password when you first log in.</p>
-                    
-                    <div style="text-align: center;">
-                        <a href="{login_url}" style="display: inline-block; background: #C9A962; color: #000; padding: 16px 40px; text-decoration: none; border-radius: 30px; font-weight: 700; font-size: 16px;">
-                            Get Started
-                        </a>
+                    <div style="padding: 32px 30px; background-color: #ffffff;">
+                        <h2 style="margin: 0 0 8px 0; color: #111; font-size: 22px;">Welcome, {name}!</h2>
+                        <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 24px 0;">You've been invited to join <strong>i'M On Social</strong> as a <strong style="color: #007AFF;">{role_title}</strong>{f' by {inviter_name}' if inviter_name else ''}.</p>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px 24px; border-radius: 12px; margin: 0 0 24px 0; border: 1px solid #e9ecef;">
+                            <p style="margin: 0 0 14px 0; font-weight: 700; color: #333; font-size: 14px;">Your Login Credentials</p>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #666; font-size: 14px; width: 160px;">Email:</td>
+                                    <td style="padding: 8px 0;"><code style="background: #fff; padding: 5px 12px; border-radius: 6px; color: #111; font-size: 14px; border: 1px solid #ddd;">{email}</code></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Temporary Password:</td>
+                                    <td style="padding: 8px 0;"><code style="background: #fff; padding: 5px 12px; border-radius: 6px; color: #111; font-size: 14px; font-weight: 600; border: 1px solid #ddd;">{temp_password}</code></td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <p style="font-size: 14px; color: #666; margin: 0 0 28px 0;">You'll be prompted to create a new password when you first log in.</p>
+                        
+                        <div style="text-align: center;">
+                            <a href="{login_url}" style="display: inline-block; background-color: #007AFF; color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+                                Get Started
+                            </a>
+                        </div>
                     </div>
                 </div>
                 
-                <div style="text-align: center; margin-top: 25px; color: #888; font-size: 12px;">
-                    <p style="margin: 5px 0;">i'M On Social - Your Relationship Management System</p>
-                    <p style="margin: 5px 0; color: #aaa;">Questions? Contact support@imonsocial.com</p>
+                <div style="text-align: center; margin-top: 24px; color: #999; font-size: 12px;">
+                    <p style="margin: 5px 0;">i'M On Social &mdash; Your Relationship Management System</p>
+                    <p style="margin: 5px 0;">Questions? Contact support@imonsocial.com</p>
                 </div>
             </div>
             """
