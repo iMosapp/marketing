@@ -192,7 +192,7 @@ export default function CreateCardPage() {
     if (prefillText) params.set('prefill', prefillText);
     params.set('event_type', `${cardType}_card_sent`);
     const url = `/thread/${contactId}?${params.toString()}`;
-    router.push(url as any);
+    router.replace(url as any);
   };
 
   const handleShare = async (platform: string) => {

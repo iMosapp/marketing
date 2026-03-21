@@ -160,7 +160,7 @@ export default function QuickSendPage() {
       if (phone) params.set('prefillPhone', phone);
       if (email) params.set('prefillEmail', email);
       params.set('return_quick_send', '1');
-      router.push(`/settings/create-card?${params.toString()}` as any);
+      router.replace(`/settings/create-card?${params.toString()}` as any);
       return;
     }
 

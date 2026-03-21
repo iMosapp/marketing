@@ -26,6 +26,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
+import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
@@ -127,6 +128,7 @@ export default function ThreadScreen() {
   
   // Color mode state - theme-aware
   const [messageMode, setMessageMode] = useState<'sms' | 'email'>('sms');
+  const channelPicker = useChannelPicker();
   const themeColors = useThemeStore(s => s.colors);
   const themeMode = useThemeStore(s => s.mode);
   const colors = themeMode === 'light' ? {
@@ -733,30 +735,19 @@ export default function ThreadScreen() {
         }
       }
       
-      // 4. Copy message to clipboard (best-effort)
-      try {
-        if (IS_WEB && navigator.clipboard) {
-          navigator.clipboard.writeText(contentToSend).catch(() => {});
-        }
-      } catch {}
-      
-      // 5. Open native SMS app — this navigates away from the browser
-      const isIOS = /iPad|iPhone|iPod|Macintosh/.test(
-        IS_WEB ? navigator.userAgent : ''
-      );
-      const separator = isIOS ? '&' : '?';
-      const smsUrl = `sms:${contactPhone}${separator}body=${encodeURIComponent(contentToSend)}`;
-      
-      if (IS_WEB) {
-        const a = document.createElement('a');
-        a.href = smsUrl;
-        a.target = '_self';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        Linking.openURL(smsUrl);
-      }
+      // 4. Open channel picker (shows all org-enabled channels: SMS, WhatsApp, Messenger, etc.)
+      channelPicker.open({
+        message: contentToSend,
+        phone: contactPhone,
+        email: (contact_email as string) || savedContactEmail || '',
+        onSent: (ch) => {
+          // Update the just-logged event with the actual channel used
+          const cid = contactIdForNav || (id as string);
+          if (cid && user?._id) {
+            api.patch(`/contacts/${user._id}/${cid}/events/latest-channel`, { channel: ch }).catch(() => {});
+          }
+        },
+      });
       
       setSelectedTemplateInfo(null);
       setPendingEventType(null);
@@ -1777,7 +1768,7 @@ export default function ThreadScreen() {
           color={messageMode === 'sms' ? '#007AFF' : '#34C759'} 
         />
         <Text style={styles.modeBannerText}>
-          {messageMode === 'sms' ? 'SMS Mode' : 'Email Mode'}
+          {messageMode === 'sms' ? 'Message Mode' : 'Email Mode'}
         </Text>
         <TouchableOpacity 
           style={styles.modeSwitchButton}
@@ -2830,6 +2821,15 @@ export default function ThreadScreen() {
           </View>
         </View>
       </Modal>
+      <ChannelPicker
+        message={channelPicker.message}
+        phone={channelPicker.phone}
+        email={channelPicker.email}
+        link={channelPicker.link}
+        onSent={channelPicker.onSent}
+        visible={channelPicker.visible}
+        onClose={channelPicker.close}
+      />
     </SafeAreaView>
   );
 }
