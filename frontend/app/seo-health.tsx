@@ -381,7 +381,7 @@ export default function SEOHealthScreen() {
           title="Share My SEO Score"
           subtitle={`${data.total_score}/100 - ${data.grade}`}
           shareUrl={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
-          shareText={`My SEO Health Score is ${data.total_score}/100 (${data.grade}) on i'M On Social! Check out my digital card:`}
+          shareText={`My SEO Health Score is ${data.total_score}/100 (${data.grade}) on i'M On Social! Check out my digital card: ${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
           showPreview={true}
           previewUrl={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
           showQR={true}

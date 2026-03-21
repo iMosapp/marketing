@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Enhanced Products Dropdown + SEO & Store Reviews Pages (Mar 21, 2026) -- LATEST
+### SEO Share Bug Fix (Mar 21, 2026) -- LATEST
+- **Bug Fix:** SEO Health Score share text said "Check out my digital card:" but didn't include the actual card URL
+- **Fix:** Appended the user's digital card URL (`/card/{userId}`) to the `shareText` prop in `seo-health.tsx`
+- **Impact:** All share channels (SMS, email, link share) now include the full card URL in the message body
+
+### Enhanced Products Dropdown + SEO & Store Reviews Pages (Mar 21, 2026)
 - **Products Nav:** Reorganized into 3 sections (Your Digital Presence, Engagement, Visibility & Intelligence) with 11 items including new Store Reviews, Voice Notes, SEO & AEO, Personal Landing Pages (renamed from Link Pages)
 - **New Pages:** Created `/seo/` (SEO & AEO feature page with AEO explanation) and `/store-reviews/` (store review hub feature page)
 - **Automotive Fix:** Updated nav link from `/salespresentation/` to `/dealers/` across all pages
