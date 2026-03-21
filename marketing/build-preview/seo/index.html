@@ -280,10 +280,6 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <div class="eyebrow rv" style="border:1px solid rgba(52,199,89,.2);background:rgba(52,199,89,.06);color:#34C759"><i class="fa-solid fa-magnifying-glass-chart"></i> SEO & AEO</div>
     <h1 class="rv">Be found everywhere<br/>people <em style="color:#34C759">search</em>.</h1>
     <p class="sub rv">Google. ChatGPT. Siri. Alexa. Your digital presence is automatically optimized for search engines and AI answer engines. No SEO expertise required.</p>
-    <div class="hero-cta-row rv">
-      <a href="/pricing/" class="btn-primary" style="background:#34C759;color:#0A0A0F;box-shadow:0 4px 32px rgba(52,199,89,.25)">Get Started</a>
-      <a href="/features/" class="btn-outline">See All Features</a>
-    </div>
   </div>
 </section>
 
@@ -401,7 +397,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 <section class="closer rv">
   <h2>Stop paying for visibility.<br/>Start <em style="color:#34C759">building</em> it.</h2>
   <p>Every digital card, every review, every landing page compounds your search presence. Automatically. Forever.</p>
-  <a href="/pricing/" class="btn-primary" style="background:#34C759;color:#0A0A0F;box-shadow:0 4px 32px rgba(52,199,89,.25)">Get Started Free</a>
+  <a href="#" class="btn-primary" style="background:#34C759;color:#0A0A0F;box-shadow:0 4px 32px rgba(52,199,89,.25)" onclick="openDemoModal(event,'seo_closer')">Book a Demo</a>
 </section>
 
 <footer>
@@ -449,9 +445,11 @@ let _demoSource='';
 function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}
 function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}
 document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
-async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'marketing_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'seo_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
 </script>
 
+<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
 </body>
+<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
 </body>
 </html>

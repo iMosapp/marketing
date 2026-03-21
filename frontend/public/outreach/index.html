@@ -370,5 +370,6 @@ async function submitDemoForm(e){e.preventDefault();var btn=document.getElementB
 
 function copyTemplate(btn){var body=btn.parentElement;var text=body.innerText.replace('Copy','').replace('Copied!','').trim();navigator.clipboard.writeText(text).then(function(){btn.innerHTML='<i class="fa-solid fa-check"></i> Copied!';btn.classList.add('copied');setTimeout(function(){btn.innerHTML='<i class="fa-regular fa-copy"></i> Copy';btn.classList.remove('copied')},2000)}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.innerHTML='<i class="fa-solid fa-check"></i> Copied!';btn.classList.add('copied');setTimeout(function(){btn.innerHTML='<i class="fa-regular fa-copy"></i> Copy';btn.classList.remove('copied')},2000)})}
 </script>
+<script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
 </body>
 </html>

@@ -215,7 +215,7 @@ Want me to send a quick video?</div>
         <button class="tmpl-copy" onclick="copyTemplate(this)"><i class="fa-regular fa-copy"></i> Copy</button>
 Last one from me, <span class="placeholder">[First Name]</span>. If the timing's not right, no worries at all.
 
-But if you ever want to see how one photo with a customer can turn into 5 years of automated follow-up — I'm here.
+But if you ever want to see how one photo with a customer can turn into a lifetime of automated follow-up — I'm here.
 
 Either way, hope you're crushing it over there. <span class="placeholder">[Link to your demo page]</span></div>
       <div class="tmpl-note"><i class="fa-solid fa-lightbulb" style="color:var(--yellow)"></i> Why it works: Breakup texts have the highest response rates. It's respectful, includes a link for later, and leaves on a high note.</div>
@@ -370,5 +370,6 @@ async function submitDemoForm(e){e.preventDefault();var btn=document.getElementB
 
 function copyTemplate(btn){var body=btn.parentElement;var text=body.innerText.replace('Copy','').replace('Copied!','').trim();navigator.clipboard.writeText(text).then(function(){btn.innerHTML='<i class="fa-solid fa-check"></i> Copied!';btn.classList.add('copied');setTimeout(function(){btn.innerHTML='<i class="fa-regular fa-copy"></i> Copy';btn.classList.remove('copied')},2000)}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.innerHTML='<i class="fa-solid fa-check"></i> Copied!';btn.classList.add('copied');setTimeout(function(){btn.innerHTML='<i class="fa-regular fa-copy"></i> Copy';btn.classList.remove('copied')},2000)})}
 </script>
+<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
 </body>
 </html>

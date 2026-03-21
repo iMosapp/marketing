@@ -280,10 +280,6 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <div class="eyebrow rv" style="border:1px solid rgba(255,149,0,.2);background:rgba(255,149,0,.06);color:#FF9500"><i class="fa-solid fa-store"></i> STORE REVIEWS</div>
     <h1 class="rv">Your store&rsquo;s reputation,<br/><em style="color:#FF9500">on autopilot</em>.</h1>
     <p class="sub rv">A branded review page for your business. Route happy customers to Google, Yelp, and Facebook. Catch unhappy ones before they go public. All in one link.</p>
-    <div class="hero-cta-row rv">
-      <a href="/pricing/" class="btn-primary" style="background:#FF9500;color:#0A0A0F;box-shadow:0 4px 32px rgba(255,149,0,.25)">Get Started</a>
-      <a href="/reviews/" class="btn-outline">Personal Reviews</a>
-    </div>
   </div>
 </section>
 
@@ -370,7 +366,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 <section class="closer rv">
   <h2>Every happy customer is a <em style="color:#FF9500">5-star review</em> waiting to happen.</h2>
   <p>Stop hoping customers leave reviews. Give them the easiest possible path to do it.</p>
-  <a href="/pricing/" class="btn-primary" style="background:#FF9500;color:#0A0A0F;box-shadow:0 4px 32px rgba(255,149,0,.25)">Get Started Free</a>
+  <a href="#" class="btn-primary" style="background:#FF9500;color:#0A0A0F;box-shadow:0 4px 32px rgba(255,149,0,.25)" onclick="openDemoModal(event,'store_reviews_closer')">Book a Demo</a>
 </section>
 
 <footer>
@@ -418,9 +414,11 @@ let _demoSource='';
 function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}
 function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}
 document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
-async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'marketing_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'store_reviews_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
 </script>
 
+<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
 </body>
+<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
 </body>
 </html>

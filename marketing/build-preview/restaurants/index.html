@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>i'M On Social for Restaurants & Hospitality</title>
+  <meta name="description" content="Your guests leave happy. Then they forget you exist. Until they're hungry again and pick whoever shows up first on Google."/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/pitch.css">
+<style>
+    /* NAV DROPDOWNS */
+    .nav-links{display:flex;align-items:center;gap:2px}
+    .nav-item{position:relative}
+    .nav-item>a,.nav-trigger{font-size:14px;font-weight:500;color:var(--text-2);text-decoration:none;padding:8px 16px;border-radius:10px;display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:inherit;transition:all .2s}
+    .nav-item>a:hover,.nav-trigger:hover{color:var(--text);background:var(--bg-2)}
+    .nav-trigger .chev{font-size:10px;transition:transform .25s}
+    .nav-item:hover .chev{transform:rotate(180deg)}
+    .nav-dd{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);padding-top:10px;min-width:300px}
+    .nav-item:hover .nav-dd{display:block}
+    .nav-dd-inner{background:#FFF;border:1px solid var(--border-2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:10px}
+    .nav-dd-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);padding:10px 14px 6px}
+    .dd-link{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:12px;text-decoration:none;color:var(--text);transition:background .15s}
+    .dd-link:hover{background:var(--bg-2)}
+    .dd-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+    .dd-txt strong{font-size:14px;font-weight:600;display:block}
+    .dd-txt span{font-size:12px;color:var(--text-3);line-height:1.3}
+    .hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
+    .mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px;max-height:80vh;overflow-y:auto}
+    .mob-menu a{display:block;padding:14px 0;font-size:16px;font-weight:500;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
+    .mob-group{border-bottom:1px solid var(--border)}
+    .mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}
+    .mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}
+    .mob-group.open .mob-chev{transform:rotate(180deg)}
+    .mob-sub{display:none;padding:0 0 12px 16px}
+    .mob-group.open .mob-sub{display:block}
+    .mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none;border-bottom:none}
+    .mob-sub a:hover{color:var(--blue)}
+    .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-direct:hover{color:var(--blue)}
+    @media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
+    .btn-demo{background:var(--blue,#007AFF);color:#FFF;box-shadow:0 2px 12px rgba(0,122,255,.25)}.btn-demo:hover{background:var(--blue-dark,#0059CC);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+    .nav-inner .btn-demo{background:var(--blue,#007AFF);color:#FFF}
+
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="https://www.imonsocial.com" class="logo"><img src="/marketing-logo.png" alt="i'M On Social"/></a>
+    <div class="nav-links">
+      <!-- Products -->
+      <div class="nav-item">
+        <button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="nav-dd" style="min-width:520px"><div class="nav-dd-inner">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          <div>
+          <div class="nav-dd-label">Your Digital Presence</div>
+          <a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Business Cards</strong><span>Shareable, trackable cards</span></div></a>
+          <a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-user-astronaut" style="color:#34C759"></i></div><div class="dd-txt"><strong>Personal Landing Pages</strong><span>Your profile, links & reviews</span></div></a>
+          <a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a>
+          <a class="dd-link" href="/store-reviews/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-store" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Store Reviews</strong><span>Google-ready review pages</span></div></a>
+          <div class="nav-dd-label">Engagement</div>
+          <a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a>
+          </div>
+          <div>
+          <div class="nav-dd-label" style="visibility:hidden">-</div>
+          <a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a>
+          <a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, WhatsApp, email in one place</span></div></a>
+          <a class="dd-link" href="/features/#voice"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-microphone" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Voice Notes</strong><span>AI-powered voice memos & intel</span></div></a>
+          <div class="nav-dd-label">Visibility & Intelligence</div>
+          <a class="dd-link" href="/seo/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-magnifying-glass-chart" style="color:#34C759"></i></div><div class="dd-txt"><strong>SEO & AEO</strong><span>Be found on Google & AI search</span></div></a>
+          <a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI relationship insights</span></div></a>
+          <a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a>
+          </div>
+          </div>
+        </div></div>
+      </div>
+      <!-- Solutions -->
+      <div class="nav-item">
+        <button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="nav-dd" style="min-width:580px"><div class="nav-dd-inner">
+          <div class="nav-dd-label">By Role</div>
+          <a class="dd-link" href="/organizations/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:var(--blue)"></i></div><div class="dd-txt"><strong>For Organizations</strong><span>Manage teams, stores & reputation</span></div></a>
+          <a class="dd-link" href="/individuals/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div><div class="dd-txt"><strong>For Individuals</strong><span>Own your personal brand</span></div></a>
+          <div class="nav-dd-label">By Industry</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 4px">
+          <a class="dd-link" href="/dealers/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a>
+          <a class="dd-link" href="/real-estate/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-house-chimney" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Real Estate</strong><span>Agents & brokerages</span></div></a>
+          <a class="dd-link" href="/powersports/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-motorcycle" style="color:#34C759"></i></div><div class="dd-txt"><strong>Powersports</strong><span>RV, motorcycle & ATV dealers</span></div></a>
+          <a class="dd-link" href="/restaurants/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-utensils" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Restaurants</strong><span>Guest relationships & reviews</span></div></a>
+          <a class="dd-link" href="/salons/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-solid fa-scissors" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Salons & Spas</strong><span>Client retention & rebooking</span></div></a>
+          <a class="dd-link" href="/home-services/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-house-circle-check" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Home Services</strong><span>Roofing, solar, HVAC & more</span></div></a>
+          <a class="dd-link" href="/fitness/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-dumbbell" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Fitness</strong><span>Gyms, studios & trainers</span></div></a>
+          <a class="dd-link" href="/insurance/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-solid fa-shield-halved" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Insurance & Financial</strong><span>Agents & advisors</span></div></a>
+          <a class="dd-link" href="/medical/"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-tooth" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Medical & Dental</strong><span>Patient retention & reviews</span></div></a>
+          <a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-briefcase" style="color:#C9A962"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a>
+          </div>
+        </div></div>
+      </div>
+      <!-- Resources -->
+      <div class="nav-item">
+        <button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="nav-dd"><div class="nav-dd-inner">
+          <a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:var(--blue)"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a>
+          <a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:var(--green)"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a>
+          <a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:var(--orange)"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a>
+        </div></div>
+      </div>
+      <div class="nav-item"><a href="/pricing/">Pricing</a></div>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="btn-demo" onclick="openDemoModal(event,'pitch_restaurants_nav')">Book a Demo</a>
+      <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+  </div>
+  <div class="mob-menu" id="mob">
+        <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/digital-card/">Digital Business Cards</a>
+        <a href="/showcase/">Personal Landing Pages</a>
+        <a href="/reviews/">Personal Reviews</a>
+        <a href="/store-reviews/">Store Reviews</a>
+        <a href="/congrats-template/">Congrats Cards</a>
+        <a href="/date-triggers/">Automated Campaigns</a>
+        <a href="/inbox/">Inbox & Messaging</a>
+        <a href="/features/#voice">Voice Notes</a>
+        <a href="/seo/">SEO & AEO</a>
+        <a href="/jessi/">Jessi AI</a>
+        <a href="/leaderboard/">Leaderboards</a>
+      </div>
+    </div>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Solutions <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/organizations/">For Organizations</a>
+        <a href="/individuals/">For Individuals</a>
+        <a href="/dealers/">Automotive</a>
+        <a href="/real-estate/">Real Estate</a>
+        <a href="/powersports/">Powersports</a>
+        <a href="/restaurants/">Restaurants</a>
+        <a href="/salons/">Salons & Spas</a>
+        <a href="/home-services/">Home Services</a>
+        <a href="/fitness/">Fitness</a>
+        <a href="/insurance/">Insurance & Financial</a>
+        <a href="/medical/">Medical & Dental</a>
+        <a href="/hub/">Sales Teams</a>
+        <a href="/features/">All Features</a>
+      </div>
+    </div>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Resources <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/training/">Training Hub</a>
+        <a href="/help/">Help Center</a>
+        <a href="/why-imonsocial/">Why i'M On Social</a>
+      </div>
+    </div>
+    <a href="/pricing/" class="mob-direct">Pricing</a>
+    <a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
+    <a href="#" class="mob-cta" onclick="openDemoModal(event,'mob_cta')">Book a Demo</a>
+  </div>
+</nav>
+
+<section class="cs-hero">
+  <div class="hero-eyebrow rv"><i class="fa-solid fa-champagne-glasses"></i> i'M ON SOCIAL FOR RESTAURANTS</div>
+  <h1 class="rv">Every great meal is a <em>relationship</em> waiting to happen.<br/>If you follow up.</h1>
+  <p class="sub rv">Your guests leave happy. Then they forget you exist. Until they're hungry again and pick whoever shows up first on Google.</p>
+  <p class="sub-2 rv">The restaurants that thrive don't just serve great food. They make guests feel remembered.</p>
+</section>
+
+<section class="problem rv">
+  <h2>Regulars don't happen <span>by accident</span>.</h2>
+  <p class="deck">A guest has an incredible experience. The food is perfect, the service is warm, they tell the server how much they loved it. They leave. And unless they happen to drive past your restaurant six weeks later, they end up somewhere else.</p>
+  <ul class="problem-list">
+    <li><i class="fa-solid fa-xmark"></i> No way to capture guest info without being pushy</li>
+    <li><i class="fa-solid fa-xmark"></i> Google review requests happen once or never</li>
+    <li><i class="fa-solid fa-xmark"></i> Birthday and anniversary programs are manual nightmares</li>
+    <li><i class="fa-solid fa-xmark"></i> Repeat visit rates are left entirely to chance</li>
+  </ul>
+</section>
+
+<section class="stat-bar rv">
+  <div class="stat-bar-inner">
+    <div class="stat-box">
+      <div class="big" style="color:var(--green)">70%</div>
+      <div class="label">of restaurant revenue comes from repeat guests</div>
+    </div>
+    <div class="stat-vs">vs</div>
+    <div class="stat-box">
+      <div class="big" style="color:var(--red)">5%</div>
+      <div class="label">of restaurants actively nurture guest relationships</div>
+    </div>
+  </div>
+  <p class="stat-caption rv">The money is in the relationship. <strong>Most restaurants leave it on the table.</strong></p>
+</section>
+
+<section class="flip">
+  <h2 class="rv">We flip the whole thing.</h2>
+  <div class="flip-grid rv">
+    <div class="flip-side before">
+      <div class="tag">How it works today</div>
+      <h3>Amazing meal, zero follow-up</h3>
+      <p>Guest has a memorable dinner. Server asks 'how was everything?' They say great. Maybe they leave a review if they remember. The restaurant has no idea who they are, when their birthday is, or when they'll come back.</p>
+      <ul>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Guest info captured only through reservations (maybe)</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Review generation is awkward table-side asks</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Birthday/anniversary programs don't exist or are manual</li>
+        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No way to bring back guests who loved their experience</li>
+      </ul>
+    </div>
+    <div class="flip-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+    <div class="flip-side after">
+      <div class="tag">How it works with us</div>
+      <h3>Every great experience builds the relationship</h3>
+      <p>Guest scans a simple QR code or the server captures their info during a natural moment. They get a thank-you message. Then birthday offers, seasonal specials, and review requests flow automatically. They come back because they feel known.</p>
+      <ul>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Guest info captured naturally through digital interactions</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Review requests timed perfectly after the experience</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Birthday and anniversary surprises run automatically</li>
+        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Seasonal and event promotions reach the right people</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="value">
+  <div class="value-inner">
+    <h2 class="rv">What this means for your restaurant</h2>
+    <p class="rv">Turn one-time guests into regulars. Turn regulars into ambassadors. All without adding work for your staff.</p>
+    <div class="value-cards">
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-rotate" style="color:var(--green)"></i></div>
+        <div class="v-body">
+          <h3>Turn First-Timers Into Regulars</h3>
+          <p>A simple follow-up after a great meal makes all the difference. 'Thanks for dining with us' texts, seasonal invitations, and personalized offers keep your restaurant top of mind. <span class='v-highlight'>Repeat visits go up because you're the restaurant that remembers.</span></p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(255,214,10,.08)"><i class="fa-solid fa-star" style="color:#D4AD00"></i></div>
+        <div class="v-body">
+          <h3>Google Reviews on Autopilot</h3>
+          <p>Every guest who has a great experience gets a perfectly timed review request. No awkward table-side asks. No 'if you enjoyed your meal, please...' cards. <span class='v-highlight'>Your star rating climbs while your staff focuses on hospitality.</span></p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(255,45,85,.08)"><i class="fa-solid fa-cake-candles" style="color:var(--pink)"></i></div>
+        <div class="v-body">
+          <h3>Birthday & Anniversary Programs That Run Themselves</h3>
+          <p>Capture dates once. The system sends birthday offers, anniversary invitations, and celebration suggestions automatically. <span class='v-highlight'>Guests feel special. You fill tables on their most important nights.</span></p>
+        </div>
+      </div>
+      <div class="v-card rv">
+        <div class="v-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-bullhorn" style="color:var(--blue)"></i></div>
+        <div class="v-body">
+          <h3>Event & Seasonal Marketing Made Simple</h3>
+          <p>New menu launch? Wine dinner? Holiday brunch? One message reaches your entire guest database. <span class='v-highlight'>No social media algorithms. Direct to their phone.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="flow">
+  <div class="flow-inner">
+    <h2 class="rv">How it works for restaurants</h2>
+    <p class="rv">Simple for staff. Powerful for the business. Delightful for guests.</p>
+    <div class="flow-steps">
+      <div class="flow-step rv">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <h3>Guest connects naturally</h3>
+          <p>QR code on the table, digital receipt, or server captures info during a natural moment. <span class='highlight'>No friction, no forced sign-ups.</span></p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <h3>Thank-you message goes out</h3>
+          <p>A warm, branded thank-you hits their phone. <span class='highlight'>The guest feels valued. The relationship starts.</span></p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <h3>Review request at the perfect moment</h3>
+          <p>While the experience is still fresh, they get a simple review request. <span class='highlight'>5-star reviews flow in naturally.</span></p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <h3>Automated nurturing begins</h3>
+          <p>Birthday offers, seasonal invitations, event announcements. <span class='highlight'>All automated. All personalized. All on time.</span></p>
+        </div>
+      </div>
+      <div class="flow-step rv">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <h3>Regulars are created, not hoped for</h3>
+          <p>Guests come back because they feel known. They bring friends. <span class='highlight'>Word of mouth becomes your strongest marketing channel.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sp-value">
+  <h2 class="rv">What your staff gets</h2>
+  <p class="rv">Zero extra work for servers. Massive upside for the restaurant.</p>
+  <div class="sp-grid">
+    <div class="sp-card rv rv-1">
+      <i class="fa-solid fa-qrcode"></i>
+      <h4>Effortless Guest Capture</h4>
+      <p>QR codes and digital tools capture guest info without disrupting the dining experience.</p>
+    </div>
+    <div class="sp-card rv rv-2">
+      <i class="fa-solid fa-envelope-open-text"></i>
+      <h4>Automated Thank-You Messages</h4>
+      <p>Every guest gets a personal follow-up without staff lifting a finger.</p>
+    </div>
+    <div class="sp-card rv rv-3">
+      <i class="fa-solid fa-calendar-days"></i>
+      <h4>Birthday & Event Autopilot</h4>
+      <p>Never miss a birthday dinner opportunity. The system handles everything.</p>
+    </div>
+    <div class="sp-card rv rv-4">
+      <i class="fa-solid fa-chart-pie"></i>
+      <h4>Know Your Guest Base</h4>
+      <p>See engagement data, repeat visit patterns, and which promotions are actually working.</p>
+    </div>
+  </div>
+</section>
+
+<section class="objections">
+  <h2 class="rv">Fair questions. Real answers.</h2>
+  <p class="rv">We've heard these before. Here's how we think about them.</p>
+  <div class="obj-item rv">
+    <div class="obj-q"><i class="fa-solid fa-quote-left"></i> "We already have a POS and reservation system."</div>
+    <div class="obj-a">Perfect. Those handle transactions and tables. This handles the relationship between visits. <strong>Your POS tells you what they ordered. We help you bring them back to order again.</strong></div>
+  </div>
+  <div class="obj-item rv">
+    <div class="obj-q"><i class="fa-solid fa-quote-left"></i> "Our staff is already stretched thin."</div>
+    <div class="obj-a">That's exactly the point. This adds zero work for servers. A QR code scan or a quick name capture is all it takes. <strong>Everything after that is automated.</strong></div>
+  </div>
+  <div class="obj-item rv">
+    <div class="obj-q"><i class="fa-solid fa-quote-left"></i> "We're a small restaurant, not a chain."</div>
+    <div class="obj-a">Small restaurants benefit the most. Chains have marketing departments. You have regulars. <strong>This makes sure your regulars keep coming back and bringing friends.</strong></div>
+  </div>
+</section>
+
+<section class="closer rv">
+  <p class="closer-pre">You create incredible experiences every single night.</p>
+  <div class="closer-quote">We make sure those experiences turn into <em style='font-style:normal;color:var(--gold)'>relationships that last years.</em></div>
+  <div class="closer-sub">Every guest who walks through your door can become a regular.</div>
+  <p class="closer-tag">We don't help you find new guests. We help you keep the ones who already love you.</p>
+  <a href="#" class="btn-gold" onclick="openDemoModal(event,'pitch_restaurants_cta')"><i class="fa-solid fa-arrow-right"></i> See It In Action</a>
+</section>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-brand"><div class="ft-logo"><img src="/marketing-logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
+      <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a></div>
+    </div>
+    <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/inbox/">Inbox</a><a href="/date-triggers/">Automations</a></div>
+    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="#" onclick="openDemoModal(event,'pitch_restaurants_footer')">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a></div>
+  </div>
+  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
+</footer>
+
+<div class="demo-overlay" id="demoModal"><div class="demo-modal"><button class="demo-close" onclick="closeDemoModal()">&times;</button><div id="demoFormWrap"><h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Let's Talk</h2><p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how i'M On Social turns your guests into lifelong regulars.</p><form onsubmit="submitDemoForm(event)"><div class="dm-field"><label>Full Name *</label><input type="text" id="dm-name" placeholder="Your name" required/></div><div class="dm-field"><label>Email *</label><input type="email" id="dm-email" placeholder="you@company.com" required/></div><div class="dm-field"><label>Phone</label><input type="tel" id="dm-phone" placeholder="(555) 123-4567"/></div><div class="dm-field"><label>Company</label><input type="text" id="dm-company" placeholder="Your company name"/></div><div class="dm-field"><label>Number of Locations</label><select id="dm-type"><option value="">Select size</option><option value="1">1</option>
+<option value="2-5">2-5</option>
+<option value="6-20">6-20</option>
+<option value="20+">20+</option></select></div><button type="submit" class="dm-submit" id="dmSubmitBtn">Schedule a Call</button></form></div><div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0"><div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div><h3 style="font-size:20px;font-weight:700;margin-bottom:8px">We'll Be In Touch</h3><p style="font-size:14px;color:var(--text-3)">Expect a call within 24 hours.</p></div></div></div>
+
+<script>
+const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+let _demoSource='';function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'pitch_restaurants'})}); if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Schedule a Call';alert('Something went wrong. Please try again.')}}
+</script>
+<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
+</body>
+</html>

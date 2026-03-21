@@ -10,6 +10,8 @@ import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request
 
+from routers.database import get_db
+
 router = APIRouter(prefix="/chat", tags=["Chat Widget"])
 logger = logging.getLogger("chat_widget")
 
@@ -44,10 +46,6 @@ IMPORTANT:
 - Never fabricate features that don't exist.
 - If asked something you don't know, say "Great question — that's something our team can dive deeper into on a call."
 """
-
-
-def _get_db(request: Request):
-    return request.app.state.db
 
 
 @router.post("/start")
@@ -99,7 +97,7 @@ async def send_message(request: Request):
             api_key=api_key,
             session_id=f"chat_widget_{session_id}",
             system_message=JESSI_SYSTEM_PROMPT
-        ).with_model("openai", "gpt-4o-mini")
+        ).with_model("openai", "gpt-5.2")
 
         # Build conversation context
         msg_count = len([m for m in session["messages"] if m["role"] == "visitor"])
@@ -119,7 +117,7 @@ async def send_message(request: Request):
 
         # If lead was just captured, create the inbox thread
         if session["lead_captured"] and not session.get("inbox_created"):
-            db = _get_db(request)
+            db = get_db()
             await _create_inbox_lead(db, session)
             session["inbox_created"] = True
 
@@ -155,7 +153,7 @@ async def capture_lead(request: Request):
         session["lead_captured"] = True
 
         if not session.get("inbox_created"):
-            db = _get_db(request)
+            db = get_db()
             await _create_inbox_lead(db, session)
             session["inbox_created"] = True
 
