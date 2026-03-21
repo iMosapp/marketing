@@ -828,7 +828,7 @@ async def _compute_health_score(user_id: str) -> dict:
     distribution_score = round(visit_pts + link_pts + share_pts)
     distribution_tips = []
     if card_visits < 10:
-        distribution_tips.append({"tip": "Share your digital card to drive more page views", "points": round((1 - min(card_visits / 10, 1.0)) * 8), "route": "/settings/create-card"})
+        distribution_tips.append({"tip": "Share your digital card to drive more page views", "points": round((1 - min(card_visits / 10, 1.0)) * 8), "route": "/quick-send/digitalcard"})
     if active_links < 5:
         distribution_tips.append({"tip": "Create and share tracking links to monitor engagement", "points": round((1 - min(active_links / 5, 1.0)) * 6), "route": "/settings/link-page"})
 
