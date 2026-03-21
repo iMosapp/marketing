@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
@@ -122,6 +123,28 @@ export default function CreateCardPage() {
       // Use the tracked short URL from the backend (enables contextual OG previews in iMessage)
       const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
       setShowPreview(false);
+
+      // Auto-save original photo to camera roll
+      if (photo?.uri) {
+        try {
+          if (!IS_WEB) {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status === 'granted') {
+              await MediaLibrary.saveToLibraryAsync(photo.uri);
+            }
+          } else {
+            // Web: trigger a background download so the image is saved
+            const a = document.createElement('a');
+            a.href = photo.uri;
+            a.download = `delivery-photo-${customerName.trim().replace(/\s+/g, '-')}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+        } catch (saveErr) {
+          console.log('Auto-save photo to library failed:', saveErr);
+        }
+      }
 
       // If we came from an inbox thread, auto-return with the card link pre-filled
       if (returnToThread) {
