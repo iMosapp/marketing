@@ -40,10 +40,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### Jessi AI Chat Widget (Mar 21, 2026) -- LATEST
 - **New Feature:** AI-powered chat widget on all 35 marketing site pages (floating blue bubble → expandable chat panel)
 - **Backend:** `/api/chat/start`, `/api/chat/message`, `/api/chat/capture` — sessions, AI conversation via Emergent LLM Key (GPT-5.2), auto-extraction of name/email/phone from messages
-- **Lead Pipeline:** When visitor shares contact info, automatically creates Contact (tagged `new-lead`, `website-chat`), Conversation (unread, `needs_assistance=True`), Message (full chat transcript), and Notification for admin
+- **Lead Pipeline:** When visitor shares contact info, automatically creates Contact (tagged `new-lead`, `website-chat`), Conversation (unread, `needs_assistance=True`, `claimed=False`), Message (full chat transcript), and Notification for admin
+- **Claimable Leads:** `GET /api/chat/leads` returns unclaimed chat leads for the org; `POST /api/chat/claim/{id}` lets any salesperson claim a lead, reassigning conversation + contact to them (appears in their personal inbox)
+- **Team Inbox Integration:** Frontend Team Inbox tab now loads unclaimed Jessi chat leads as "Website Leads" with Jump Ball badge and claim button
+- **Proactive Nudge:** After 30 seconds on a marketing page, a subtle "Have questions? I'm here to help!" tooltip slides up from the bubble. Clicking opens chat, X dismisses. Only shows once per session.
 - **Close Behavior:** Clicking X closes the widget for the entire browser session (sessionStorage), does not reappear
-- **Files:** `/app/backend/routers/chat_widget.py`, `/app/marketing/build/chat-widget.js`, injected into 35 marketing HTML pages
-- **Testing:** 100% backend (13/13), 100% frontend pass
+- **Files:** `/app/backend/routers/chat_widget.py`, `/app/marketing/build/chat-widget.js`, `/app/frontend/app/(tabs)/inbox.tsx` (Team Inbox fetch + claim routing)
+- **Testing:** 100% backend (23/23 across 2 iterations), 100% frontend pass
 
 ### Demo Leads → Inbox Integration (Mar 21, 2026)
 - **New Feature:** Demo form submissions now auto-create a contact (tagged `new-lead`, `demo-request`) + inbox conversation + first message with lead context
@@ -143,6 +146,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - `POST /api/chat/start` — start anonymous chat session
 - `POST /api/chat/message` — send visitor message, get Jessi AI response
 - `POST /api/chat/capture` — manually capture lead contact info
+- `GET /api/chat/leads?user_id=` — unclaimed chat widget leads for org
+- `POST /api/chat/claim/{conv_id}?user_id=` — claim a chat lead
 - `GET /api/messaging-channels/user/{user_id}` — org-enabled messaging channels
 - `GET /api/messaging-channels/available` — all available channel definitions
 - `GET /api/seo/health-score/{user_id}` — cached SEO score (5-min TTL)
