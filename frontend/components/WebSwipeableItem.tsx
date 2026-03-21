@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -29,10 +29,9 @@ export default function WebSwipeableItem({
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
   const startY = useRef(0);
-  const currentX = useRef(0);
+  const startTranslate = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
   const hasMoved = useRef(false);
-  const containerRef = useRef<View>(null);
 
   const ACTION_WIDTH = 72;
   const leftMax = leftActions.length * ACTION_WIDTH;
@@ -43,7 +42,7 @@ export default function WebSwipeableItem({
     const clientY = e.nativeEvent?.pageY ?? e.pageY ?? 0;
     startX.current = clientX;
     startY.current = clientY;
-    currentX.current = translateX;
+    startTranslate.current = translateX;
     isHorizontal.current = null;
     hasMoved.current = false;
     setIsDragging(true);
@@ -56,17 +55,19 @@ export default function WebSwipeableItem({
     const dx = clientX - startX.current;
     const dy = clientY - startY.current;
 
+    // Determine direction lock
     if (isHorizontal.current === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
       isHorizontal.current = Math.abs(dx) > Math.abs(dy);
     }
     if (!isHorizontal.current) return;
     hasMoved.current = true;
 
-    let next = currentX.current + dx;
-    if (next > 0) next = Math.min(next, leftMax);
-    if (next < 0) next = Math.max(next, -rightMax);
-    if (next > 0 && leftActions.length === 0) next = next * 0.2;
-    if (next < 0 && rightActions.length === 0) next = next * 0.2;
+    let next = startTranslate.current + dx;
+    // Clamp with rubber-band on edges
+    if (next > 0 && leftActions.length > 0) next = Math.min(next, leftMax + 20);
+    else if (next > 0) next = next * 0.15;
+    if (next < 0 && rightActions.length > 0) next = Math.max(next, -(rightMax + 20));
+    else if (next < 0) next = next * 0.15;
 
     setTranslateX(next);
   }, [isDragging, leftMax, rightMax, leftActions.length, rightActions.length]);
@@ -75,47 +76,33 @@ export default function WebSwipeableItem({
     if (!isDragging) return;
     setIsDragging(false);
 
-    const threshold = ACTION_WIDTH * 0.4;
-    if (translateX > threshold && leftActions.length > 0) {
+    // If user barely moved, treat it as a tap → close if open
+    if (!hasMoved.current && translateX !== 0) {
+      setTranslateX(0);
+      return;
+    }
+
+    const snapThreshold = ACTION_WIDTH * 0.4;
+    const velocity = translateX - startTranslate.current; // direction of this gesture
+
+    // Snap logic: consider both position and swipe direction
+    if (translateX > snapThreshold && leftActions.length > 0 && velocity > 0) {
       setTranslateX(leftMax);
-    } else if (translateX < -threshold && rightActions.length > 0) {
+    } else if (translateX < -snapThreshold && rightActions.length > 0 && velocity < 0) {
       setTranslateX(-rightMax);
     } else {
+      // Snap closed — either didn't reach threshold or swiped back
       setTranslateX(0);
     }
   }, [isDragging, translateX, leftMax, rightMax, leftActions.length, rightActions.length]);
 
-  const close = useCallback(() => {
-    setTranslateX(0);
-  }, []);
-
   const handleActionPress = useCallback((action: SwipeAction) => {
-    close();
-    setTimeout(() => action.onPress(), 150);
-  }, [close]);
-
-  const isOpen = translateX !== 0;
-
-  // Web-specific: close on click outside by listening to document clicks
-  useEffect(() => {
-    if (!isOpen || Platform.OS !== 'web') return;
-
-    const handleDocumentClick = (e: MouseEvent) => {
-      if (containerRef.current) {
-        const node = containerRef.current as any;
-        if (node && typeof node.contains === 'function' && !node.contains(e.target as Node)) {
-          close();
-        }
-      }
-    };
-
-    document.addEventListener('click', handleDocumentClick, true);
-    return () => document.removeEventListener('click', handleDocumentClick, true);
-  }, [isOpen, close]);
+    setTranslateX(0);
+    setTimeout(() => action.onPress(), 200);
+  }, []);
 
   return (
     <View
-      ref={containerRef}
       style={styles.container}
       data-testid="web-swipeable-item"
     >
@@ -155,13 +142,13 @@ export default function WebSwipeableItem({
         </View>
       )}
 
-      {/* Content layer */}
+      {/* Content layer — handles all swiping */}
       <View
         style={[
           styles.content,
           {
             transform: [{ translateX }],
-            transition: isDragging ? 'none' : 'transform 0.25s ease-out',
+            transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(.25,.8,.25,1)',
           } as any,
         ]}
         onPointerDown={handlePointerDown}
@@ -171,31 +158,6 @@ export default function WebSwipeableItem({
       >
         {children}
       </View>
-
-      {/* Tap-to-close overlay when open — uses a real div on web for reliable hit testing */}
-      {isOpen && !isDragging && Platform.OS === 'web' && (
-        <div
-          onClick={(e) => { e.stopPropagation(); close(); }}
-          data-testid="swipe-close-overlay"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 10,
-            cursor: 'pointer',
-            backgroundColor: 'transparent',
-          }}
-        />
-      )}
-      {isOpen && !isDragging && Platform.OS !== 'web' && (
-        <TouchableOpacity
-          style={styles.closeOverlay}
-          onPress={close}
-          activeOpacity={1}
-        />
-      )}
     </View>
   );
 }
@@ -209,6 +171,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   content: {
     position: 'relative',
     zIndex: 2,
+    backgroundColor: colors.background || '#fff',
   },
   actionsLeft: {
     position: 'absolute',
@@ -236,14 +199,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.2,
-  },
-  closeOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
-    backgroundColor: 'transparent',
   },
 });
