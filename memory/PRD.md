@@ -37,7 +37,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Jessi AI Chat Widget (Mar 21, 2026) -- LATEST
+### Enhanced User Creation + Auto-Contact (Mar 21, 2026) -- LATEST
+- **Mandatory fields:** First name, last name, email, phone
+- **Optional enrichment:** Title, company, website, Instagram/Facebook/LinkedIn/Twitter URLs — saved to user profile for onboarding pre-fill
+- **SMS option:** Toggle to send login info + App Store/Google Play links + temp password via text
+- **Auto-contact creation:** New user automatically added as a Contact under the creator with "new-user" tag (triggers onboarding campaigns)
+- **Result card:** Shows SMS sent status, contact created badge, tap-to-copy password
+- **Testing:** 100% backend (13/13), frontend code review passed
+
+### Jessi AI Chat Widget (Mar 21, 2026)
 - **New Feature:** AI-powered chat widget on all 35 marketing site pages (floating blue bubble → expandable chat panel)
 - **Backend:** `/api/chat/start`, `/api/chat/message`, `/api/chat/capture` — sessions, AI conversation via Emergent LLM Key (GPT-5.2), auto-extraction of name/email/phone from messages
 - **Lead Pipeline:** When visitor shares contact info, automatically creates Contact (tagged `new-lead`, `website-chat`), Conversation (unread, `needs_assistance=True`, `claimed=False`), Message (full chat transcript), and Notification for admin
