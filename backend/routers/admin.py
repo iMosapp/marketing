@@ -789,7 +789,7 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
 
 @router.post("/users/create")
 async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Create a user and optionally send invite email - admins only"""
+    """Create a user and optionally send invite email/SMS - admins only"""
     import secrets
     import string
     
@@ -800,11 +800,24 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         if role not in ['super_admin', 'org_admin', 'store_manager']:
             raise HTTPException(status_code=403, detail="Only admins can create users")
     
-    name = data.get('name', '').strip()
+    first_name = data.get('first_name', '').strip()
+    last_name = data.get('last_name', '').strip()
+    name = data.get('name', '').strip() or f"{first_name} {last_name}".strip()
     email = data.get('email', '').strip().lower()
     phone = data.get('phone', '').strip()
     user_role = data.get('role', 'user')
     send_invite = data.get('send_invite', True)
+    send_sms = data.get('send_sms', False)
+    
+    # Optional enrichment fields
+    title = data.get('title', '').strip()
+    company = data.get('company', '').strip()
+    website = data.get('website', '').strip()
+    social_links = {}
+    for key in ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok', 'youtube']:
+        val = data.get(f'social_{key}', '').strip()
+        if val:
+            social_links[key] = val
     
     # Get org and store from request, or fall back to requesting user's
     organization_id = data.get('organization_id')
@@ -819,10 +832,14 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         if not organization_id:
             organization_id = requesting_user.get('organization_id')
     
-    if not name:
-        raise HTTPException(status_code=400, detail="Name is required")
+    if not first_name:
+        raise HTTPException(status_code=400, detail="First name is required")
+    if not last_name:
+        raise HTTPException(status_code=400, detail="Last name is required")
     if not email or '@' not in email:
         raise HTTPException(status_code=400, detail="Valid email is required")
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number is required")
     
     # Check if email exists
     existing = await get_db().users.find_one({"email": email})
@@ -836,6 +853,8 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "email": email,
         "password": hash_password(temp_password),
         "name": name,
+        "first_name": first_name,
+        "last_name": last_name,
         "phone": phone,
         "role": user_role,
         "organization_id": organization_id,
@@ -858,6 +877,16 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
             'compare_scope': 'state'
         }
     }
+    
+    # Add enrichment fields if provided
+    if title:
+        user_dict["title"] = title
+    if company:
+        user_dict["company"] = company
+    if website:
+        user_dict["website"] = website
+    if social_links:
+        user_dict["social_links"] = social_links
     
     # Auto-inherit partner_id from the organization
     if organization_id:
@@ -903,6 +932,52 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         else:
             logger.warning(f"Failed to send invite email to {email}")
     
+    # Send SMS if requested
+    sms_sent = False
+    if send_sms and phone:
+        try:
+            sms_body = (
+                f"Welcome to i'M On Social, {first_name}! "
+                f"Your login: {email}\n"
+                f"Temp password: {temp_password}\n\n"
+                f"Download the app:\n"
+                f"Apple: https://apps.apple.com/app/im-on-social/id6743597907\n"
+                f"Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n\n"
+                f"Or log in at: https://app.imonsocial.com"
+            )
+            from services.twilio_service import send_sms as send_sms_func
+            await send_sms_func(phone, sms_body)
+            sms_sent = True
+            logger.info(f"Invite SMS sent to {phone}")
+        except Exception as e:
+            logger.warning(f"Failed to send invite SMS to {phone}: {e}")
+    
+    # Auto-create the new user as a Contact under the creator
+    contact_created = False
+    if x_user_id:
+        try:
+            contact_doc = {
+                "user_id": x_user_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "phone": phone,
+                "tags": ["new-user"],
+                "source": "user_creation",
+                "status": "active",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            }
+            if title:
+                contact_doc["title"] = title
+            if company:
+                contact_doc["company"] = company
+            await get_db().contacts.insert_one(contact_doc)
+            contact_created = True
+            logger.info(f"Auto-created contact for new user {email} under creator {x_user_id}")
+        except Exception as e:
+            logger.error(f"Failed to auto-create contact for {email}: {e}")
+    
     return {
         "success": True,
         "user_id": user_id,
@@ -912,8 +987,10 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "organization_id": organization_id,
         "store_id": store_id,
         "invite_sent": invite_sent,
+        "sms_sent": sms_sent,
+        "contact_created": contact_created,
         "temp_password": temp_password,
-        "message": f"User created successfully. {'Invite email sent.' if invite_sent else 'Share the temporary password securely.'}"
+        "message": f"User created successfully. {'Invite email sent.' if invite_sent else ''} {'SMS sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip()
     }
 
 

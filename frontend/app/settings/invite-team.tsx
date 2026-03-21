@@ -29,11 +29,22 @@ export default function InviteTeamScreen() {
   const [loadingRecent, setLoadingRecent] = useState(true);
   
   // Form state
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [role, setRole] = useState('user');
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [website, setWebsite] = useState('');
+  const [socialInstagram, setSocialInstagram] = useState('');
+  const [socialFacebook, setSocialFacebook] = useState('');
+  const [socialLinkedin, setSocialLinkedin] = useState('');
+  const [socialTwitter, setSocialTwitter] = useState('');
+  const [sendSms, setSendSms] = useState(true);
+  const [showExtras, setShowExtras] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [inviteResult, setInviteResult] = useState<{ name: string; email: string; password: string; role: string } | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ name: string; email: string; phone: string; password: string; role: string; sms_sent?: boolean; contact_created?: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
   // Available roles based on current user's role
@@ -84,12 +95,20 @@ export default function InviteTeamScreen() {
   };
 
   const handleSendInvite = async () => {
-    if (!name.trim()) {
-      showSimpleAlert('Name Required', 'Please enter the person\'s name');
+    if (!firstName.trim()) {
+      showSimpleAlert('First Name Required', 'Please enter a first name');
+      return;
+    }
+    if (!lastName.trim()) {
+      showSimpleAlert('Last Name Required', 'Please enter a last name');
       return;
     }
     if (!email.trim() || !email.includes('@')) {
       showSimpleAlert('Valid Email Required', 'Please enter a valid email address');
+      return;
+    }
+    if (!phone.trim()) {
+      showSimpleAlert('Phone Required', 'Please enter a phone number');
       return;
     }
 
@@ -98,31 +117,49 @@ export default function InviteTeamScreen() {
     setInviteResult(null);
     setCopied(false);
     try {
-      const res = await api.post('/admin/users/create', {
-        name: name.trim(),
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      const payload: any = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        name: fullName,
         email: email.trim().toLowerCase(),
+        phone: phone.trim(),
         role: role === 'individual' ? 'user' : role,
         send_invite: true,
-        // Individual = no org/store; otherwise inherit from current user context
+        send_sms: sendSms,
         ...(role !== 'individual' && user?.organization_id ? { organization_id: user.organization_id } : {}),
         ...(role !== 'individual' && role === 'user' && user?.store_id ? { store_id: user.store_id } : {}),
-      }, {
+      };
+      if (title.trim()) payload.title = title.trim();
+      if (company.trim()) payload.company = company.trim();
+      if (website.trim()) payload.website = website.trim();
+      if (socialInstagram.trim()) payload.social_instagram = socialInstagram.trim();
+      if (socialFacebook.trim()) payload.social_facebook = socialFacebook.trim();
+      if (socialLinkedin.trim()) payload.social_linkedin = socialLinkedin.trim();
+      if (socialTwitter.trim()) payload.social_twitter = socialTwitter.trim();
+
+      const res = await api.post('/admin/users/create', payload, {
         headers: { 'X-User-ID': user?._id }
       });
 
       const data = res.data;
       if (data.success) {
         const roleName = roleOptions.find(r => r.value === role)?.label || 'Team Member';
-        setSuccessMessage(`${name.trim()} has been created as ${roleName}.`);
+        setSuccessMessage(`${fullName} has been created as ${roleName}.`);
         setInviteResult({
-          name: name.trim(),
+          name: fullName,
           email: email.trim().toLowerCase(),
+          phone: phone.trim(),
           password: data.temp_password || '',
           role: roleName,
+          sms_sent: data.sms_sent,
+          contact_created: data.contact_created,
         });
-        setName('');
-        setEmail('');
-        setRole('user');
+        // Reset form
+        setFirstName(''); setLastName(''); setEmail(''); setPhone('');
+        setTitle(''); setCompany(''); setWebsite('');
+        setSocialInstagram(''); setSocialFacebook(''); setSocialLinkedin(''); setSocialTwitter('');
+        setRole('user'); setShowExtras(false);
         loadRecentInvites();
       }
     } catch (error: any) {
@@ -135,8 +172,15 @@ export default function InviteTeamScreen() {
 
   const getInviteText = () => {
     if (!inviteResult) return '';
-    const loginLink = `https://app.imonsocial.com/auth/login?email=${encodeURIComponent(inviteResult.email)}&password=${encodeURIComponent(inviteResult.password)}`;
-    return `i'M On Social`;
+    return (
+      `Welcome to i'M On Social, ${inviteResult.name}!\n\n` +
+      `Your login: ${inviteResult.email}\n` +
+      `Temp password: ${inviteResult.password}\n\n` +
+      `Download the app:\n` +
+      `Apple: https://apps.apple.com/app/im-on-social/id6743597907\n` +
+      `Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n\n` +
+      `Or log in at: https://app.imonsocial.com`
+    );
   };
 
   const handleCopyInvite = async () => {
@@ -230,17 +274,44 @@ export default function InviteTeamScreen() {
                 <Ionicons name="checkmark-circle" size={24} color="#34C759" />
                 <Text style={styles.inviteResultTitle}>{successMessage}</Text>
               </View>
+
+              {inviteResult.sms_sent && (
+                <View style={[styles.successBanner, { marginBottom: 0 }]}>
+                  <Ionicons name="chatbubble" size={16} color="#34C759" />
+                  <Text style={styles.successText}>SMS sent with login info &amp; app links</Text>
+                </View>
+              )}
+              {inviteResult.contact_created && (
+                <View style={[styles.successBanner, { marginBottom: 0, backgroundColor: 'rgba(0,122,255,0.1)' }]}>
+                  <Ionicons name="person-add" size={16} color="#007AFF" />
+                  <Text style={[styles.successText, { color: '#007AFF' }]}>Added to your contacts with "new-user" tag</Text>
+                </View>
+              )}
               
               <View style={styles.inviteCredentials}>
                 <View style={styles.credRow}>
                   <Text style={styles.credLabel}>Email</Text>
-                  <Text style={styles.credValue}>{inviteResult.email}</Text>
+                  <Text style={styles.credValue} selectable>{inviteResult.email}</Text>
                 </View>
                 <View style={styles.credDivider} />
                 <View style={styles.credRow}>
-                  <Text style={styles.credLabel}>Password</Text>
-                  <Text style={styles.credValue}>{inviteResult.password}</Text>
+                  <Text style={styles.credLabel}>Phone</Text>
+                  <Text style={styles.credValue} selectable>{inviteResult.phone}</Text>
                 </View>
+                <View style={styles.credDivider} />
+                <TouchableOpacity style={styles.credRow} onPress={async () => {
+                  try {
+                    if (Platform.OS === 'web') { await navigator.clipboard.writeText(inviteResult.password); }
+                    else { await Clipboard.setStringAsync(inviteResult.password); }
+                    showSimpleAlert('Copied', 'Password copied to clipboard');
+                  } catch {}
+                }}>
+                  <Text style={styles.credLabel}>Password</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.credValue, { color: '#007AFF' }]} selectable>{inviteResult.password}</Text>
+                    <Ionicons name="copy-outline" size={14} color="#007AFF" />
+                  </View>
+                </TouchableOpacity>
                 <View style={styles.credDivider} />
                 <View style={styles.credRow}>
                   <Text style={styles.credLabel}>Role</Text>
@@ -278,18 +349,36 @@ export default function InviteTeamScreen() {
             </View>
           ) : null}
 
-          <View style={styles.formGroup}>
-            <Text style={styles.inputLabel}>Full Name *</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.textInput}
-                value={name}
-                onChangeText={setName}
-                placeholder="John Smith"
-                placeholderTextColor="#6E6E73"
-                autoCapitalize="words"
-              />
+          {/* First + Last Name — side by side */}
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>First Name *</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={styles.textInput}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="John"
+                  placeholderTextColor="#6E6E73"
+                  autoCapitalize="words"
+                  data-testid="invite-first-name"
+                />
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Last Name *</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.textInput}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Smith"
+                  placeholderTextColor="#6E6E73"
+                  autoCapitalize="words"
+                  data-testid="invite-last-name"
+                />
+              </View>
             </View>
           </View>
 
@@ -305,9 +394,87 @@ export default function InviteTeamScreen() {
                 placeholderTextColor="#6E6E73"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                data-testid="invite-email"
               />
             </View>
           </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Phone Number *</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
+              <TextInput
+                style={styles.textInput}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="(555) 123-4567"
+                placeholderTextColor="#6E6E73"
+                keyboardType="phone-pad"
+                data-testid="invite-phone"
+              />
+            </View>
+          </View>
+
+          {/* Optional enrichment — collapsible */}
+          <TouchableOpacity
+            style={styles.extrasToggle}
+            onPress={() => setShowExtras(!showExtras)}
+            data-testid="invite-show-extras"
+          >
+            <Ionicons name={showExtras ? 'chevron-up' : 'chevron-down'} size={18} color="#007AFF" />
+            <Text style={styles.extrasToggleText}>
+              {showExtras ? 'Hide' : 'Add'} title, company & social links
+            </Text>
+          </TouchableOpacity>
+
+          {showExtras && (
+            <View style={styles.extrasSection}>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Title</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="briefcase-outline" size={16} color={colors.textSecondary} />
+                    <TextInput style={styles.textInput} value={title} onChangeText={setTitle} placeholder="Sales Manager" placeholderTextColor="#6E6E73" autoCapitalize="words" data-testid="invite-title" />
+                  </View>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Company</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="business-outline" size={16} color={colors.textSecondary} />
+                    <TextInput style={styles.textInput} value={company} onChangeText={setCompany} placeholder="ABC Motors" placeholderTextColor="#6E6E73" autoCapitalize="words" data-testid="invite-company" />
+                  </View>
+                </View>
+              </View>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Website</Text>
+                <View style={styles.inputRow}>
+                  <Ionicons name="globe-outline" size={16} color={colors.textSecondary} />
+                  <TextInput style={styles.textInput} value={website} onChangeText={setWebsite} placeholder="www.company.com" placeholderTextColor="#6E6E73" autoCapitalize="none" keyboardType="url" data-testid="invite-website" />
+                </View>
+              </View>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Social Links</Text>
+                <View style={{ gap: 8 }}>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="logo-instagram" size={16} color="#E4405F" />
+                    <TextInput style={styles.textInput} value={socialInstagram} onChangeText={setSocialInstagram} placeholder="Instagram URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                  </View>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="logo-facebook" size={16} color="#1877F2" />
+                    <TextInput style={styles.textInput} value={socialFacebook} onChangeText={setSocialFacebook} placeholder="Facebook URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                  </View>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
+                    <TextInput style={styles.textInput} value={socialLinkedin} onChangeText={setSocialLinkedin} placeholder="LinkedIn URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                  </View>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="logo-twitter" size={16} color="#1DA1F2" />
+                    <TextInput style={styles.textInput} value={socialTwitter} onChangeText={setSocialTwitter} placeholder="Twitter/X URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
 
           <View style={styles.formGroup}>
             <Text style={styles.inputLabel}>Role</Text>
@@ -340,17 +507,36 @@ export default function InviteTeamScreen() {
             </View>
           </View>
 
+          {/* SMS Toggle */}
+          <TouchableOpacity
+            style={styles.smsToggle}
+            onPress={() => setSendSms(!sendSms)}
+            data-testid="invite-sms-toggle"
+          >
+            <View style={styles.smsToggleLeft}>
+              <Ionicons name="chatbubble-outline" size={18} color={sendSms ? '#34C759' : colors.textSecondary} />
+              <View>
+                <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Send SMS with login info</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>App links + temp password via text</Text>
+              </View>
+            </View>
+            <View style={[styles.toggle, sendSms && styles.toggleActive]}>
+              <View style={[styles.toggleDot, sendSms && styles.toggleDotActive]} />
+            </View>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.sendButton, sending && { opacity: 0.6 }]}
             onPress={handleSendInvite}
             disabled={sending}
+            data-testid="invite-send-btn"
           >
             {sending ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="send" size={18} color={colors.text} />
-                <Text style={styles.sendButtonText}>Create & Copy Invite</Text>
+                <Ionicons name="person-add" size={18} color={colors.text} />
+                <Text style={styles.sendButtonText}>Create User</Text>
               </>
             )}
           </TouchableOpacity>
@@ -686,5 +872,55 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
     fontSize: 14,
     fontWeight: '500',
+  },
+  extrasToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  extrasToggleText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  extrasSection: {
+    marginBottom: 8,
+  },
+  smsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  smsToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  toggle: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.borderLight,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleActive: {
+    backgroundColor: '#34C759',
+  },
+  toggleDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#fff',
+  },
+  toggleDotActive: {
+    alignSelf: 'flex-end' as const,
   },
 });
