@@ -53,19 +53,45 @@ IMPORTANT:
 async def start_session(request: Request):
     """Start an anonymous chat session."""
     data = await request.json()
+    page = data.get("page", "website")
     session_id = str(uuid.uuid4())
     _sessions[session_id] = {
         "id": session_id,
         "messages": [],
         "lead_captured": False,
         "contact_info": {},
-        "page_source": data.get("page", "website"),
+        "page_source": page,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    return {
-        "session_id": session_id,
-        "greeting": "Hi! I'm Jessi from i'M On Social. What can I help you with today?"
+
+    greetings = {
+        "dealers": "Hi! I'm Jessi. Looking for a better way to keep your dealership's customers coming back after the sale?",
+        "powersports": "Hey there! I'm Jessi. Curious how powersports dealers are turning one-time buyers into lifelong riders?",
+        "real-estate": "Hi! I'm Jessi. Want to see how top agents stay top-of-mind with every past client automatically?",
+        "salons": "Hey! I'm Jessi. Wondering how salons keep chairs full with repeat clients without lifting a finger?",
+        "restaurants": "Hi! I'm Jessi. Want to turn every guest into a regular who keeps coming back?",
+        "fitness": "Hey! I'm Jessi. Curious how gyms and studios keep members engaged and referring friends?",
+        "insurance": "Hi! I'm Jessi. Looking for a better way to stay connected with your policyholders year-round?",
+        "medical": "Hey there! I'm Jessi. Want to see how practices build lasting patient relationships and collect more reviews?",
+        "home-services": "Hi! I'm Jessi. Wondering how home service pros turn one-time jobs into repeat customers and referrals?",
+        "individuals": "Hey! I'm Jessi. Want to build your personal brand and stay connected with every customer automatically?",
+        "organizations": "Hi! I'm Jessi. Curious how organizations keep their teams accountable and their customer relationships growing?",
+        "pricing": "Hi! I'm Jessi. Have questions about pricing or which plan fits your team? I can help!",
+        "seo": "Hey! I'm Jessi. Want to see how i'M On Social boosts your search rankings and online visibility?",
+        "reviews": "Hi! I'm Jessi. Struggling to get more reviews? I can show you how to make it effortless.",
+        "digital-card": "Hey there! I'm Jessi. Curious about digital business cards that actually drive repeat business?",
+        "showcase": "Hi! I'm Jessi. Want to see how Showcase pages help your team stand out online?",
     }
+
+    # Match page source to a greeting
+    greeting = "Hi! I'm Jessi from i'M On Social. What can I help you with today?"
+    page_lower = page.lower().replace("_page", "").replace("_", "-").replace("/", "-")
+    for key, msg in greetings.items():
+        if key in page_lower:
+            greeting = msg
+            break
+
+    return {"session_id": session_id, "greeting": greeting}
 
 
 @router.post("/message")
