@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Automotive Page Redesign (Mar 21, 2026) -- LATEST
+### Email Signature Generator (Mar 21, 2026) -- LATEST
+- **New Feature:** Email Signature page at `/email-signature`, accessible from My Brand section in Hub
+- **Features:** Pick link destination (Digital Card, Showcase, Link Page, Landing Page), live preview with photo/name/title/phone/email/social links, copy rich HTML or plain text, step-by-step instructions for Gmail, Outlook, iPhone, and Gmail mobile
+- **File:** `/app/frontend/app/email-signature.tsx`
+
+### Automotive Page Redesign (Mar 21, 2026)
 - **Redesign:** Rebuilt `/dealers/` page from custom one-off design to use shared `pitch.css` industry template
 - **Now matches:** powersports, real estate, salons, restaurants, and all other industry pages
 - **Sections:** Dark hero, problem, stat bar, before/after flip, value cards, flow timeline, sales team grid, objections, dark closer CTA

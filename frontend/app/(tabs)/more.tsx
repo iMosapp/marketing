@@ -537,6 +537,7 @@ export default function MoreScreen() {
       { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', onPress: () => { setShowShareModal(true); }, color: '#FFD60A' },
       { permKey: 'sms_templates', icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates I use', onPress: () => router.push('/settings/templates'), color: '#AF52DE' },
       { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
+      { icon: 'mail-outline', title: 'Email Signature', subtitle: 'Copy & paste into your email client', onPress: () => router.push('/email-signature' as any), color: '#5856D6' },
     ];
     const filtered = items.filter(i => !i.permKey || perm('content', i.permKey));
     if (filtered.length > 0) sections.push({ id: 'my_brand', title: 'My Brand', icon: 'sparkles', color: '#C9A962', defaultExpanded: true, items: filtered });
