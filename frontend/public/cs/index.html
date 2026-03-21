@@ -13,22 +13,160 @@
   <link rel="apple-touch-icon" href="/cs-apple-touch-icon.png"/>
   <link rel="icon" href="/cs-apple-touch-icon.png"/>
   <style>
-    body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;background:#FFF;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-    .loader{text-align:center}
-    .loader img{width:200px;height:auto;margin-bottom:12px}
-    .loader p{color:#999;font-size:13px}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      height:100%;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(180deg,#FAFAFA 0%,#F0F0F0 100%);
+      padding:24px;padding-top:env(safe-area-inset-top);
+    }
+    .card{
+      width:100%;max-width:380px;background:#FFF;border-radius:24px;
+      padding:40px 28px;text-align:center;
+      box-shadow:0 8px 40px rgba(0,0,0,0.08);
+    }
+    .logo{width:180px;height:auto;margin:0 auto 24px;display:block}
+    .tagline{font-size:13px;color:#999;margin-bottom:32px;line-height:1.4}
+    .field{margin-bottom:16px;text-align:left}
+    .field label{display:block;font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+    .field input{
+      width:100%;padding:14px 16px;border:1.5px solid #E5E5E5;border-radius:14px;
+      font-size:16px;font-family:inherit;color:#111;background:#FAFAFA;
+      outline:none;transition:border-color 0.2s;
+      -webkit-appearance:none;
+    }
+    .field input:focus{border-color:#C9A962;background:#FFF}
+    .pw-wrap{position:relative}
+    .pw-toggle{
+      position:absolute;right:14px;top:50%;transform:translateY(-50%);
+      background:none;border:none;font-size:18px;color:#999;cursor:pointer;padding:4px;
+    }
+    .btn{
+      width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;
+      font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:8px;
+      font-family:inherit;
+    }
+    .btn-primary{background:#C9A962;color:#FFF}
+    .btn-primary:hover{background:#B8953E}
+    .btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+    .error{
+      background:#FEE;border:1px solid #FCC;border-radius:10px;
+      padding:10px 14px;margin-bottom:16px;font-size:13px;color:#C00;
+      text-align:left;display:none;
+    }
+    .error.show{display:block}
+    .remember{display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer}
+    .remember input{width:18px;height:18px;accent-color:#C9A962}
+    .remember span{font-size:13px;color:#666}
+    .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:#CCC;font-size:12px}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:#E5E5E5}
+    .link{color:#C9A962;font-size:13px;text-decoration:none;font-weight:600}
+    .link:hover{text-decoration:underline}
+    @media(max-width:400px){.card{padding:32px 20px;border-radius:20px}}
   </style>
-  <script>
-    // Set brand flag so the SPA knows to stay on CS login
-    try { localStorage.setItem('pwa_brand', 'calendar-systems'); } catch(e) {}
-    // Redirect to the SPA CS login route
-    window.location.replace('/cs-login');
-  </script>
 </head>
 <body>
-  <div class="loader">
-    <img src="/calendar-systems/cs-logo.png" alt="Calendar Systems"/>
-    <p>Loading...</p>
+  <div class="card">
+    <img src="/calendar-systems/cs-logo.png" alt="Calendar Systems" class="logo"/>
+    <p class="tagline">The relationship platform for Calendar Systems dealers</p>
+
+    <div class="error" id="loginError"></div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@company.com" required autocomplete="email" autocapitalize="none" data-testid="cs-pwa-email"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="Enter password" required autocomplete="current-password" data-testid="cs-pwa-password"/>
+          <button type="button" class="pw-toggle" onclick="togglePw()" aria-label="Toggle password">&#128065;</button>
+        </div>
+      </div>
+      <label class="remember">
+        <input type="checkbox" id="remember"/>
+        <span>Remember me</span>
+      </label>
+      <button type="submit" class="btn btn-primary" id="submitBtn" data-testid="cs-pwa-submit">Log In</button>
+    </form>
+
+    <div class="divider">or</div>
+    <a href="/cs-login" class="link">Open in full app &rarr;</a>
   </div>
+
+<script>
+const API = 'https://app.imonsocial.com/api';
+
+// Load remembered email
+try {
+  const saved = localStorage.getItem('cs_remembered_email');
+  if (saved) {
+    document.getElementById('email').value = saved;
+    document.getElementById('remember').checked = true;
+  }
+} catch(e) {}
+
+function togglePw() {
+  const pw = document.getElementById('password');
+  pw.type = pw.type === 'password' ? 'text' : 'password';
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const errEl = document.getElementById('loginError');
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+      credentials: 'include'
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Invalid credentials');
+    }
+
+    // Remember email
+    if (document.getElementById('remember').checked) {
+      localStorage.setItem('cs_remembered_email', email);
+    } else {
+      localStorage.removeItem('cs_remembered_email');
+    }
+
+    // Store auth token the same way the SPA does
+    const token = data.token;
+    if (token) {
+      localStorage.setItem('imonsocial_token', token);
+    }
+
+    // Store user data for the SPA to pick up
+    if (data.user) {
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
+    }
+
+    // Also set the pwa_brand flag so the SPA maintains CS branding
+    localStorage.setItem('pwa_brand', 'calendar-systems');
+
+    // Navigate to the main app — the SPA will pick up the stored token
+    window.location.replace('/(tabs)/home');
+  } catch (err) {
+    errEl.textContent = err.message || 'Login failed. Please try again.';
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Log In';
+  }
+}
+</script>
 </body>
 </html>

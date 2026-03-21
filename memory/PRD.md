@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Digital Card Reviews Auto-Approve Fix (Mar 21, 2026) -- LATEST
+### CS Login PWA + Marketing Fixes (Mar 21, 2026) -- LATEST
+- **PWA Fix:** Rebuilt `/cs/index.html` as complete standalone login page — no SPA redirect, API login directly in static HTML, stores token for SPA pickup
+- **Marketing Links:** Fixed `/cs/` → `/cs-login` in 4 calendar-systems marketing links
+- **Copy:** Changed all "5-year" to "lifetime" across dealers, calendar-systems, outreach, tiktok pages
+
+### Digital Card Reviews Auto-Approve Fix (Mar 21, 2026)
 - **Bug Fix:** Reviews submitted via review pages and landing pages defaulted to `approved: False`, so they never appeared in the card's "What Customers Say" section
 - **Fix:** 4+ star reviews now auto-approve on submission (both `public_review.py` and `public_landing.py`). Under 4 stars still require moderation.
 - **Data fix:** Retroactively approved existing 4+ star reviews stuck as unapproved
