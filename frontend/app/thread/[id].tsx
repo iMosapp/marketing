@@ -21,6 +21,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1150,6 +1151,20 @@ export default function ThreadScreen() {
       if (response.data.success) {
         // Success haptic feedback - feels satisfying!
         if (!IS_WEB) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // Auto-save original photo to camera roll
+        if (congratsPhoto?.uri) {
+          try {
+            if (!IS_WEB) {
+              const { status } = await MediaLibrary.requestPermissionsAsync();
+              if (status === 'granted') {
+                await MediaLibrary.saveToLibraryAsync(congratsPhoto.uri);
+              }
+            }
+          } catch (saveErr) {
+            console.log('Auto-save photo to library failed:', saveErr);
+          }
+        }
         
         // Apply selected tags to the contact and trigger campaign enrollment
         if (congratsSelectedTags.length > 0 && (id || createdContactId)) {
