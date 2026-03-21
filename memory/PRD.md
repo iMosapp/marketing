@@ -37,7 +37,15 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Demo Leads → Inbox Integration (Mar 21, 2026) -- LATEST
+### Jessi AI Chat Widget (Mar 21, 2026) -- LATEST
+- **New Feature:** AI-powered chat widget on all 35 marketing site pages (floating blue bubble → expandable chat panel)
+- **Backend:** `/api/chat/start`, `/api/chat/message`, `/api/chat/capture` — sessions, AI conversation via Emergent LLM Key (GPT-5.2), auto-extraction of name/email/phone from messages
+- **Lead Pipeline:** When visitor shares contact info, automatically creates Contact (tagged `new-lead`, `website-chat`), Conversation (unread, `needs_assistance=True`), Message (full chat transcript), and Notification for admin
+- **Close Behavior:** Clicking X closes the widget for the entire browser session (sessionStorage), does not reappear
+- **Files:** `/app/backend/routers/chat_widget.py`, `/app/marketing/build/chat-widget.js`, injected into 35 marketing HTML pages
+- **Testing:** 100% backend (13/13), 100% frontend pass
+
+### Demo Leads → Inbox Integration (Mar 21, 2026)
 - **New Feature:** Demo form submissions now auto-create a contact (tagged `new-lead`, `demo-request`) + inbox conversation + first message with lead context
 - **Lead source tracking:** Every page-specific source (e.g., `dealers_page`, `seo_page`, `pitch_salons`) maps to a human-readable label in the inbox message ("New lead from Automotive", "New lead from SEO & AEO")
 - **Bug fix:** Marketing forms were sending `lead_source` but backend only read `source` — now reads both
@@ -132,6 +140,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ---
 
 ## Key API Endpoints
+- `POST /api/chat/start` — start anonymous chat session
+- `POST /api/chat/message` — send visitor message, get Jessi AI response
+- `POST /api/chat/capture` — manually capture lead contact info
 - `GET /api/messaging-channels/user/{user_id}` — org-enabled messaging channels
 - `GET /api/messaging-channels/available` — all available channel definitions
 - `GET /api/seo/health-score/{user_id}` — cached SEO score (5-min TTL)
@@ -145,6 +156,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Prioritized Backlog
 
 ### P1
+- App Store Preparation (eas.json, app.json store config)
 - Gamification & Leaderboards
 - AI-Powered Outreach (contextual follow-up on "sold" tag)
 - Lead Notification System Phase 2 (push notifications)
