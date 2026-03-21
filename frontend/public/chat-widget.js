@@ -51,7 +51,11 @@
     '#imos-chat-panel .ch-foot button:disabled{background:#ccc;cursor:default}',
     '#imos-chat-panel .ch-foot button svg{width:16px;height:16px;fill:#fff}',
 
-    '@media(max-width:480px){#imos-chat-panel{width:100%;height:100%;max-width:100%;max-height:100%;bottom:0;right:0;border-radius:0}}'
+    '@media(max-width:480px){#imos-chat-panel{width:100%;height:100%;max-width:100%;max-height:100%;bottom:0;right:0;border-radius:0}}',
+
+    '#imos-chat-nudge{position:fixed;bottom:90px;right:24px;z-index:99998;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:16px;padding:10px 14px;box-shadow:0 8px 32px rgba(0,0,0,.12);display:flex;align-items:center;gap:10px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;animation:imos-slide-up .4s ease}',
+    '#imos-chat-nudge span{font-size:14px;font-weight:500;color:#111;cursor:pointer}',
+    '#imos-chat-nudge button{background:none;border:none;font-size:18px;color:#888;cursor:pointer;padding:0 2px;line-height:1}'
   ].join('\n');
   document.head.appendChild(style);
 
@@ -165,6 +169,7 @@
 
   // Open panel
   bubble.addEventListener('click', function() {
+    dismissNudge();
     bubble.style.display = 'none';
     panel.style.display = 'flex';
     input.focus();
@@ -186,5 +191,41 @@
   input.addEventListener('input', function() {
     sendBtn.disabled = !input.value.trim();
   });
+
+  // === Proactive nudge after 30s ===
+  var nudge = null;
+  var NUDGE_KEY = 'imos_chat_nudged';
+
+  function dismissNudge() {
+    if (nudge) { nudge.remove(); nudge = null; }
+  }
+
+  if (!sessionStorage.getItem(NUDGE_KEY)) {
+    setTimeout(function() {
+      // Don't show if panel is already open or closed
+      if (panel.style.display === 'flex') return;
+      if (sessionStorage.getItem(CLOSED_KEY) === '1') return;
+
+      sessionStorage.setItem(NUDGE_KEY, '1');
+      nudge = document.createElement('div');
+      nudge.id = 'imos-chat-nudge';
+      nudge.setAttribute('data-testid', 'chat-widget-nudge');
+      nudge.innerHTML = '<span>Have questions? I\'m here to help!</span><button data-testid="chat-widget-nudge-close">&times;</button>';
+      document.body.appendChild(nudge);
+
+      // Click nudge text → open chat
+      nudge.querySelector('span').addEventListener('click', function() {
+        dismissNudge();
+        bubble.click();
+      });
+      // Click X on nudge → dismiss only
+      nudge.querySelector('button').addEventListener('click', function(e) {
+        e.stopPropagation();
+        dismissNudge();
+      });
+      // Auto-dismiss after 8 seconds
+      setTimeout(function() { dismissNudge(); }, 8000);
+    }, 30000);
+  }
 
 })();

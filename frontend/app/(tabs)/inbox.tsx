@@ -235,18 +235,32 @@ export default function InboxScreen() {
     if (!user) return;
     setLoadingTeam(true);
     try {
-      // Get user's teams/shared inboxes
-      const teamsResponse = await fetch(
-        `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/admin/team/shared-inboxes?user_id=${user._id}`
-      );
-      const teamsData = await teamsResponse.json();
-      
-      // teamsData is an array directly (not wrapped in {inboxes: ...})
-      const teams = Array.isArray(teamsData) ? teamsData : (teamsData.inboxes || []);
-      
-      if (teams.length > 0) {
-        // Get conversations for all teams
-        const allTeamConversations: any[] = [];
+      const allTeamConversations: any[] = [];
+
+      // 1. Load chat widget leads (Jessi conversations) — always available
+      try {
+        const chatRes = await fetch(
+          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/chat/leads?user_id=${user._id}`
+        );
+        const chatData = await chatRes.json();
+        if (chatData.conversations) {
+          allTeamConversations.push(...chatData.conversations.map((c: any) => ({
+            ...c,
+            team_name: 'Website Leads',
+          })));
+        }
+      } catch (e) {
+        console.log('No chat leads');
+      }
+
+      // 2. Load shared inbox / team conversations
+      try {
+        const teamsResponse = await fetch(
+          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/admin/team/shared-inboxes?user_id=${user._id}`
+        );
+        const teamsData = await teamsResponse.json();
+        const teams = Array.isArray(teamsData) ? teamsData : (teamsData.inboxes || []);
+        
         for (const team of teams) {
           const teamId = team._id || team.id;
           try {
@@ -264,10 +278,11 @@ export default function InboxScreen() {
             console.log(`No leads for team ${teamId}`);
           }
         }
-        setTeamConversations(allTeamConversations);
-      } else {
-        setTeamConversations([]);
+      } catch (e) {
+        console.log('No shared inboxes');
       }
+
+      setTeamConversations(allTeamConversations);
     } catch (error) {
       console.error('Failed to load team conversations:', error);
       setTeamConversations([]);
@@ -989,10 +1004,12 @@ export default function InboxScreen() {
       if (!user) return;
       
       try {
-        const response = await fetch(
-          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/lead-sources/claim/${item.id}?user_id=${user._id}`,
-          { method: 'POST' }
-        );
+        // Use chat widget claim endpoint for Jessi leads, lead-sources for others
+        const isJessiLead = item.lead_source_name && item.lead_source_name.startsWith('Jessi Chat');
+        const claimUrl = isJessiLead
+          ? `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/chat/claim/${item.id}?user_id=${user._id}`
+          : `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/lead-sources/claim/${item.id}?user_id=${user._id}`;
+        const response = await fetch(claimUrl, { method: 'POST' });
         const data = await response.json();
         if (data.success) {
           Alert.alert('Claimed', 'You have claimed this lead');

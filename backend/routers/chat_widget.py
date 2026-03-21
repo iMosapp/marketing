@@ -8,7 +8,8 @@ import os
 import uuid
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
+from bson import ObjectId
 
 from routers.database import get_db
 
@@ -160,6 +161,122 @@ async def capture_lead(request: Request):
     return {"status": "ok", "lead_captured": session["lead_captured"]}
 
 
+@router.get("/leads")
+async def get_chat_leads(user_id: str):
+    """Get unclaimed chat widget leads for the user's organization."""
+    db = get_db()
+
+    # Find user's org
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1, "organization_id": 1, "role": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    org_id = user.get("organization_id")
+    is_admin = user.get("role") in ("super_admin", "admin", "org_admin")
+
+    # Find all unclaimed chat widget conversations
+    query = {
+        "channel": "chat_widget",
+    }
+
+    if is_admin:
+        # Admins see all chat leads (claimed and unclaimed)
+        pass
+    else:
+        # Regular users only see unclaimed ones
+        query["$or"] = [{"claimed": False}, {"claimed": {"$exists": False}}]
+
+    if org_id and not is_admin:
+        # Scope to org
+        org_user_ids = []
+        async for u in db.users.find({"organization_id": org_id}, {"_id": 1}):
+            org_user_ids.append(str(u["_id"]))
+        if org_user_ids:
+            query["user_id"] = {"$in": org_user_ids}
+
+    conversations = await db.conversations.find(query).sort("created_at", -1).to_list(100)
+
+    result = []
+    for c in conversations:
+        cid = c.get("contact_id")
+        contact_photo = None
+        contact_email = ""
+        contact_name = c.get("contact_name", "Website Visitor")
+        if cid:
+            try:
+                contact = await db.contacts.find_one({"_id": ObjectId(cid)}, {"_id": 0, "photo_thumbnail": 1, "photo_url": 1, "email": 1, "first_name": 1, "last_name": 1})
+                if contact:
+                    contact_photo = contact.get("photo_thumbnail") or contact.get("photo_url")
+                    contact_email = contact.get("email", "")
+                    contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or contact_name
+            except Exception:
+                pass
+        result.append({
+            "id": str(c["_id"]),
+            "contact_id": cid,
+            "contact_name": contact_name,
+            "contact_phone": c.get("contact_phone", ""),
+            "contact_email": contact_email,
+            "contact_photo": contact_photo,
+            "lead_source_name": c.get("lead_source_name", "Jessi Chat"),
+            "status": c.get("status", "new"),
+            "claimed": c.get("claimed", False),
+            "claimed_by": c.get("claimed_by"),
+            "created_at": c.get("created_at"),
+            "last_message_at": c.get("last_message_at"),
+        })
+
+    return {"success": True, "conversations": result}
+
+
+@router.post("/claim/{conversation_id}")
+async def claim_chat_lead(conversation_id: str, user_id: str):
+    """Claim a chat widget lead — assigns the conversation + contact to the claimer."""
+    db = get_db()
+
+    try:
+        conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID")
+
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    if conv.get("claimed"):
+        raise HTTPException(status_code=400, detail="Lead already claimed")
+
+    # Verify user exists
+    claimer = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1, "name": 1, "organization_id": 1, "store_id": 1})
+    if not claimer:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Claim the conversation
+    await db.conversations.update_one(
+        {"_id": ObjectId(conversation_id), "claimed": {"$ne": True}},
+        {"$set": {
+            "claimed": True,
+            "claimed_by": user_id,
+            "claimed_by_name": claimer.get("name", ""),
+            "user_id": user_id,
+            "claimed_at": datetime.now(timezone.utc),
+        }}
+    )
+
+    # Also reassign the contact to the claimer
+    contact_id = conv.get("contact_id")
+    if contact_id:
+        await db.contacts.update_one(
+            {"_id": ObjectId(contact_id)},
+            {"$set": {
+                "user_id": user_id,
+                "claimed_by": user_id,
+                "claimed_at": datetime.now(timezone.utc),
+            }}
+        )
+
+    return {"success": True, "message": "Lead claimed successfully", "claimed_by": user_id}
+
+
 def _try_extract_contact(session: dict, message: str):
     """Try to detect if the visitor shared contact info in their message."""
     import re
@@ -203,11 +320,17 @@ async def _create_inbox_lead(db, session: dict):
         }
         pretty_source = source_labels.get(page_source, page_source.replace("_", " ").title())
 
-        # Find an admin user to own this lead
-        admin = await db.users.find_one({"role": {"$in": ["super_admin", "admin"]}}, {"_id": 1})
+        # Find an admin user to own this lead (prefer super_admin with an org)
+        admin = await db.users.find_one(
+            {"role": "super_admin", "organization_id": {"$exists": True, "$ne": None}},
+            {"_id": 1, "organization_id": 1}
+        )
+        if not admin:
+            admin = await db.users.find_one({"role": {"$in": ["super_admin", "admin"]}}, {"_id": 1, "organization_id": 1})
         if not admin:
             return
         owner_id = str(admin["_id"])
+        org_id = admin.get("organization_id")
 
         # Create contact
         name = info.get("name", "Website Visitor")
@@ -245,12 +368,15 @@ async def _create_inbox_lead(db, session: dict):
             await db.conversations.update_one(
                 {"_id": existing_conv["_id"]},
                 {"$set": {"unread": True, "last_message_at": datetime.now(timezone.utc), "ai_outcome": "new_lead", "ai_outcome_priority": 1,
-                          "unread_count": (existing_conv.get("unread_count", 0) or 0) + 1}}
+                          "unread_count": (existing_conv.get("unread_count", 0) or 0) + 1,
+                          "channel": "chat_widget", "claimed": False, "lead_source_name": f"Jessi Chat — {pretty_source}",
+                          "contact_name": name}}
             )
         else:
             result = await db.conversations.insert_one({
                 "user_id": owner_id,
                 "contact_id": contact_id,
+                "contact_name": name,
                 "contact_phone": info.get("phone", ""),
                 "status": "active",
                 "unread": True,
@@ -259,6 +385,9 @@ async def _create_inbox_lead(db, session: dict):
                 "ai_outcome": "new_lead",
                 "ai_outcome_priority": 1,
                 "needs_assistance": True,
+                "channel": "chat_widget",
+                "claimed": False,
+                "lead_source_name": f"Jessi Chat — {pretty_source}",
                 "created_at": datetime.now(timezone.utc),
                 "last_message_at": datetime.now(timezone.utc),
             })
