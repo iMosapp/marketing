@@ -406,6 +406,7 @@ export default function ContactDetailScreen() {
   const [ncVoiceRecording, setNcVoiceRecording] = useState(false);
   const [ncVoiceTranscribing, setNcVoiceTranscribing] = useState(false);
   const ncVoiceRef = useRef<any>(null);
+  const ncVoiceAudioBlob = useRef<Blob | null>(null); // Store audio for post-save upload
 
   // Ref for ScrollView in new contact form
   const ncScrollRef = useRef<ScrollView>(null);
@@ -1152,8 +1153,11 @@ export default function ContactDetailScreen() {
             if (IS_WEB) {
               const resp = await fetch(uri);
               const blob = await resp.blob();
+              ncVoiceAudioBlob.current = blob; // Save for post-creation upload
               formData.append('file', blob, 'recording.webm');
             } else {
+              // On native, store the URI for later upload
+              ncVoiceAudioBlob.current = { uri, type: 'audio/m4a', name: 'recording.m4a' } as any;
               formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
             }
             try {
@@ -1184,6 +1188,7 @@ export default function ContactDetailScreen() {
         await recording.prepareToRecordAsync(recordingOptions);
         await recording.startAsync();
         ncVoiceRef.current = recording;
+        ncVoiceAudioBlob.current = null; // Clear previous
         setNcVoiceRecording(true);
       }
     } catch (err) {
@@ -1232,6 +1237,27 @@ export default function ContactDetailScreen() {
       if (isNewContact) {
         // Navigate to the new contact's page so user can record voice notes, etc.
         const newId = result?._id || result?.id;
+        
+        // Upload the voice recording as a proper voice note (triggers AI intelligence extraction)
+        if (newId && ncVoiceAudioBlob.current) {
+          try {
+            const voiceFormData = new FormData();
+            if (IS_WEB && ncVoiceAudioBlob.current instanceof Blob) {
+              voiceFormData.append('audio', ncVoiceAudioBlob.current, 'recording.webm');
+            } else {
+              voiceFormData.append('audio', ncVoiceAudioBlob.current as any);
+            }
+            voiceFormData.append('duration', '0');
+            await api.post(`/voice-notes/${user._id}/${newId}`, voiceFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            ncVoiceAudioBlob.current = null;
+          } catch (voiceErr) {
+            console.error('Failed to save voice note after contact creation:', voiceErr);
+            // Non-critical — contact was still saved, notes text is preserved
+          }
+        }
+        
         if (newId) {
           router.replace(`/contact/${newId}` as any);
         } else {
