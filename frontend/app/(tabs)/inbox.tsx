@@ -31,6 +31,7 @@ import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../ser
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
 import WebSwipeableItem from '../../components/WebSwipeableItem';
 import AppointmentModal from '../../components/AppointmentModal';
+import { useToast } from '../../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -146,6 +147,7 @@ export default function InboxScreen() {
   const user = useAuthStore((state) => state.user);
   const themeColors = useThemeStore((s) => s.colors);
   const themeMode = useThemeStore((s) => s.mode);
+  const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai'>('active');
@@ -581,8 +583,10 @@ export default function InboxScreen() {
       
       if (isArchived) {
         await messagesAPI.restoreConversation(conversationId);
+        showToast('Restored', 'success', 2000);
       } else {
         await messagesAPI.archiveConversation(conversationId);
+        showToast('Archived', 'success', 2000);
       }
       // Refresh to get server truth
       await loadConversations();
@@ -590,7 +594,7 @@ export default function InboxScreen() {
       console.error('Error archiving conversation:', error);
       // Revert on failure
       await loadConversations();
-      Alert.alert('Error', 'Failed to archive conversation');
+      showToast('Failed to archive', 'error', 2500);
     }
   };
 
@@ -650,9 +654,11 @@ export default function InboxScreen() {
       const conv = conversations.find(c => c._id === conversationId);
       const newFlagged = !conv?.flagged;
       await messagesAPI.flagConversation(user._id, conversationId, newFlagged);
+      showToast(newFlagged ? 'Flagged' : 'Unflagged', 'success', 2000);
       loadConversations();
     } catch (error) {
       console.error('Error flagging conversation:', error);
+      showToast('Failed to flag', 'error', 2500);
     }
   };
 
@@ -673,10 +679,10 @@ export default function InboxScreen() {
         due_date: tomorrow.toISOString(),
         priority: 'medium',
       });
-      Alert.alert('Task Created', `Follow-up task for ${contactName} created for tomorrow.`);
+      showToast(`Task created for ${contactName}`, 'success', 2500);
     } catch (error) {
       console.error('Error creating task:', error);
-      Alert.alert('Error', 'Failed to create task');
+      showToast('Failed to create task', 'error', 2500);
     }
   };
 
@@ -705,7 +711,7 @@ export default function InboxScreen() {
       const currentTags = contact.tags || [];
       if (!currentTags.includes(tagName)) {
         await contactsAPI.update(user._id, contactId, { tags: [...currentTags, tagName] });
-        Alert.alert('Tagged', `"${tagName}" added to ${swipeTagTarget.contact?.name || 'contact'}`);
+        showToast(`"${tagName}" added to ${swipeTagTarget.contact?.name || 'contact'}`, 'success', 2500);
       }
     } catch (error) {
       console.error('Error tagging contact:', error);
@@ -1012,14 +1018,14 @@ export default function InboxScreen() {
         const response = await fetch(claimUrl, { method: 'POST' });
         const data = await response.json();
         if (data.success) {
-          Alert.alert('Claimed', 'You have claimed this lead');
+          showToast('Lead claimed!', 'success', 2000);
           loadTeamConversations();
         } else {
-          Alert.alert('Error', data.detail || 'Could not claim lead');
+          showToast(data.detail || 'Could not claim lead', 'error', 2500);
         }
       } catch (error) {
         console.error('Error claiming lead:', error);
-        Alert.alert('Error', 'Failed to claim lead');
+        showToast('Failed to claim lead', 'error', 2500);
       }
     };
     
