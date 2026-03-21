@@ -17,6 +17,7 @@ import base64
 import uuid
 import re
 import io
+import os
 import logging
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from routers.database import get_db
@@ -935,6 +936,110 @@ async def track_card_action(card_id: str, data: dict):
         pass
     
     return {"success": True}
+
+
+@router.get("/share/{card_id}")
+async def share_card_og(card_id: str):
+    """
+    Serves an HTML page with Open Graph meta tags for social media previews.
+    Crawlers (Facebook, iMessage, Twitter, etc.) get rich previews with the
+    delivery photo, customer name, and dealership branding.
+    Human visitors are redirected to the interactive card page.
+    Also logs a share-click event for tracking/attribution.
+    """
+    from fastapi.responses import HTMLResponse
+    db = get_db()
+
+    card = await db.congrats_cards.find_one({"card_id": card_id})
+    if not card:
+        card = await db.birthday_cards.find_one({"card_id": card_id})
+    if not card:
+        try:
+            card = await db.congrats_cards.find_one({"_id": ObjectId(card_id)})
+        except Exception:
+            pass
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    # Track the share click
+    await db.congrats_cards.update_one({"card_id": card_id}, {"$inc": {"share_clicks": 1}})
+
+    # Log engagement signal
+    try:
+        from routers.engagement_signals import record_signal
+        await record_signal(
+            signal_type="share_link_clicked",
+            user_id=card.get("salesman_id", ""),
+            contact_id=card.get("contact_id"),
+            contact_name=card.get("customer_name"),
+            metadata={"card_id": card_id, "card_type": card.get("card_type", "congrats")},
+        )
+    except Exception:
+        pass
+
+    # Build OG meta data
+    customer_name = card.get("customer_name", "")
+    salesman_name = card.get("salesman_name", "")
+    store_name = card.get("store_name", "")
+    headline = card.get("headline", "Congratulations!")
+    card_type = card.get("card_type", "congrats")
+
+    og_title = headline
+    if customer_name:
+        og_title = f"{headline} {customer_name}!"
+
+    og_description = ""
+    if salesman_name and store_name:
+        og_description = f"From {salesman_name} at {store_name}"
+    elif salesman_name:
+        og_description = f"From {salesman_name}"
+    elif store_name:
+        og_description = f"From {store_name}"
+
+    # Use the card image endpoint as the OG image (rendered card with photo)
+    base_url = os.environ.get("REACT_APP_BACKEND_URL", "https://app.imonsocial.com")
+    og_image = f"{base_url}/api/congrats/card/{card_id}/image"
+    card_url = f"{base_url}/congrats/{card_id}"
+    accent = card.get("accent_color", "#C9A962")
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{og_title}</title>
+<!-- Open Graph -->
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="{og_title}"/>
+<meta property="og:description" content="{og_description}"/>
+<meta property="og:image" content="{og_image}"/>
+<meta property="og:image:width" content="1080"/>
+<meta property="og:image:height" content="1080"/>
+<meta property="og:url" content="{base_url}/api/congrats/share/{card_id}"/>
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="{og_title}"/>
+<meta name="twitter:description" content="{og_description}"/>
+<meta name="twitter:image" content="{og_image}"/>
+<!-- iMessage -->
+<meta property="og:site_name" content="{store_name or 'i&#39;M On Social'}"/>
+<!-- Redirect human visitors to the interactive card -->
+<meta http-equiv="refresh" content="0;url={card_url}"/>
+<style>
+body{{margin:0;background:#000;color:#fff;font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}}
+a{{color:{accent};font-size:18px;font-weight:700;text-decoration:none}}
+</style>
+</head>
+<body>
+<div>
+<p>Opening your card...</p>
+<a href="{card_url}">Tap here if it doesn't open</a>
+</div>
+<script>window.location.replace("{card_url}");</script>
+</body>
+</html>"""
+
+    return HTMLResponse(content=html, status_code=200)
 
 
 @router.post("/referral-link/{salesman_id}")

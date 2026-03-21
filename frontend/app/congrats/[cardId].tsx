@@ -274,9 +274,12 @@ export default function CongratsCardPage() {
   const handleShare = async (platform?: string) => {
     await trackAction('share');
     
-    // Always use the tracked short URL for sharing
-    const shareUrl = cardData?.short_url || 
-      (Platform.OS === 'web' ? window.location.href : `https://app.imonsocial.com/congrats/${cardId}`);
+    // Use the OG-enabled share URL for rich social previews + tracking
+    const baseUrl = Platform.OS === 'web' ? window.location.origin : 'https://app.imonsocial.com';
+    const ogShareUrl = `${baseUrl}/api/congrats/share/${cardId}`;
+    
+    // Use short_url if available, otherwise the OG share URL
+    const shareUrl = cardData?.short_url || ogShareUrl;
     
     const shareText = `${cardData?.headline || 'Check this out!'} — from ${cardData?.salesman?.name || cardData?.store_name || 'us'}`;
     
