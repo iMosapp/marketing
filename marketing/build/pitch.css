@@ -66,7 +66,7 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .flip-side ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:10px}
 .flip-side ul li{font-size:14px;color:var(--text-2);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
 .flip-side ul li i{margin-top:3px;flex-shrink:0}
-@media(max-width:768px){.flip-grid{grid-template-columns:1fr;gap:16px}.flip-arrow{transform:rotate(90deg);padding:8px 0}.flip h2{font-size:32px}.flip{padding:80px 24px}}
+@media(max-width:900px){.flip-grid{grid-template-columns:1fr;gap:16px}.flip-arrow{transform:rotate(90deg);padding:8px 0}.flip h2{font-size:32px}.flip{padding:80px 24px}}
 
 /* VALUE PROPS */
 .value{padding:120px 24px;background:var(--bg-2)}
@@ -80,7 +80,7 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .v-body h3{font-size:20px;font-weight:800;margin-bottom:8px}
 .v-body p{font-size:15px;color:var(--text-2);line-height:1.7}
 .v-body .v-highlight{font-weight:700;color:var(--text)}
-@media(max-width:768px){.v-card{grid-template-columns:1fr;gap:16px}.v-ico{width:56px;height:56px;font-size:22px}.value h2{font-size:32px}.value{padding:80px 24px}}
+@media(max-width:900px){.v-card{grid-template-columns:1fr;gap:16px}.v-ico{width:56px;height:56px;font-size:22px}.value h2{font-size:32px}.value{padding:80px 24px}}
 
 /* FLOW */
 .flow{background:#0A0A0F;padding:120px 24px;position:relative;overflow:hidden}
@@ -121,7 +121,7 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .sp-card i{font-size:32px;color:var(--accent);margin-bottom:16px;display:block}
 .sp-card h4{font-size:17px;font-weight:700;margin-bottom:8px}
 .sp-card p{font-size:14px;color:var(--text-2);line-height:1.6}
-@media(max-width:768px){.sp-grid{grid-template-columns:1fr}.sp-value h2{font-size:32px}.sp-value{padding:80px 24px}}
+@media(max-width:900px){.sp-grid{grid-template-columns:1fr}.sp-value h2{font-size:32px}.sp-value{padding:80px 24px}}
 
 /* CLOSER */
 .closer{background:#0A0A0F;padding:120px 24px;text-align:center;position:relative;overflow:hidden}
