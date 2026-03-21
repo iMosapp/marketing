@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Calendar Systems Landing Page (Mar 20, 2026) -- LATEST
+### Inbox Multi-Channel Composer & Navigation Fix (Mar 21, 2026) -- LATEST
+- **Feature:** Integrated `ChannelPicker` into `/app/frontend/app/thread/[id].tsx` so inbox composer shows all org-enabled messaging channels (SMS, WhatsApp, Messenger, Telegram, LinkedIn, Clipboard) instead of just SMS/Email toggle
+- **Fix:** Changed `router.push()` to `router.replace()` in `create-card.tsx` (navigateToThread) and `quick-send/[action].tsx` to prevent deep navigation stack buildup (4-swipe-back problem)
+- **Testing:** 19/19 backend, 100% frontend pass
+
+### Calendar Systems Landing Page (Mar 20, 2026)
 - Rebuilt `/marketing/build/calendar-systems/index.html` with full sales presentation content
 - 11 sections covering: core reframe, problem statement, stat comparison, before/after flip, 5 value propositions, how-it-works flow, salesperson benefits, objection handling, white-label features, positioning statement, and closing vision
 - Content sourced from user's detailed sales pitch, rewritten conversationally (not word-for-word)
@@ -77,6 +82,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ---
 
 ## Key API Endpoints
+- `GET /api/messaging-channels/user/{user_id}` — org-enabled messaging channels
+- `GET /api/messaging-channels/available` — all available channel definitions
 - `GET /api/seo/health-score/{user_id}` — cached SEO score (5-min TTL)
 - `GET /api/seo/health-score/team/{store_id}` — team leaderboard
 - `PATCH /api/contacts/{user_id}/{contact_id}/tags` — triggers sold workflow
