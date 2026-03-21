@@ -169,32 +169,104 @@ export default function CongratsCardPage() {
         const resp = await fetch(imageUrl);
         const blob = await resp.blob();
         const file = new File([blob], `card-${cardId}.png`, { type: 'image/png' });
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: cardData?.headline || 'Card' });
-          setDownloading(false);
-          return;
-        }
-      } catch {
-        // Web Share failed or was cancelled — that's fine
-      }
 
-      // Fallback for desktop browsers only (not iOS Safari)
-      try {
-        const resp = await fetch(imageUrl);
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `card-${cardId}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // iOS Safari: use Web Share API (gives native "Save Image" option)
+        if (navigator.share && navigator.canShare) {
+          try {
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: cardData?.headline || 'Card' });
+              setDownloading(false);
+              return;
+            }
+          } catch {
+            // Share cancelled or failed — fall through
+          }
+        }
+
+        // Check if iOS Safari (no download attribute support for camera roll)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+          // Open image directly — user can long-press to save to Photos
+          const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          const w = window.open('');
+          if (w) {
+            w.document.write(`<html><head><title>Save Card</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;background:#000}img{width:100%;height:auto}</style></head><body><img src="${dataUrl}"/></body></html>`);
+            w.document.close();
+          }
+        } else {
+          // Desktop: trigger download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `card-${cardId}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
       } catch {
         window.open(imageUrl, '_blank');
       }
     } else {
       Linking.openURL(imageUrl);
+    }
+    setDownloading(false);
+  };
+
+  const handleSaveOriginalPhoto = async () => {
+    if (!cardData?.customer_photo) return;
+    setDownloading(true);
+
+    trackAction('download').catch(() => {});
+
+    if (Platform.OS === 'web') {
+      try {
+        const resp = await fetch(cardData.customer_photo);
+        const blob = await resp.blob();
+        const ext = blob.type.includes('png') ? 'png' : 'jpg';
+        const file = new File([blob], `delivery-photo.${ext}`, { type: blob.type });
+
+        if (navigator.share && navigator.canShare) {
+          try {
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: 'Delivery Photo' });
+              setDownloading(false);
+              return;
+            }
+          } catch {}
+        }
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+          const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          const w = window.open('');
+          if (w) {
+            w.document.write(`<html><head><title>Delivery Photo</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;background:#000}img{width:100%;height:auto}</style></head><body><img src="${dataUrl}"/></body></html>`);
+            w.document.close();
+          }
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `delivery-photo.${ext}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        window.open(cardData.customer_photo, '_blank');
+      }
+    } else {
+      Linking.openURL(cardData.customer_photo);
     }
     setDownloading(false);
   };
@@ -499,6 +571,19 @@ export default function CongratsCardPage() {
           )}
         </TouchableOpacity>
 
+        {/* Save Original Photo Button */}
+        {cardData?.customer_photo && (
+          <TouchableOpacity
+            style={[styles.originalPhotoButton, { opacity: downloading ? 0.7 : 1 }]}
+            onPress={handleSaveOriginalPhoto}
+            disabled={downloading}
+            data-testid="save-original-photo-btn"
+          >
+            <Ionicons name="image-outline" size={20} color={style.accent_color} />
+            <Text style={[styles.originalPhotoText, { color: style.accent_color }]}>Save Full-Size Photo</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Social Share Buttons */}
         <View style={styles.socialButtons}>
           <TouchableOpacity
@@ -778,6 +863,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
+  },
+  originalPhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'transparent',
+    marginBottom: 20,
+  },
+  originalPhotoText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   socialButtons: {
     flexDirection: 'row',
