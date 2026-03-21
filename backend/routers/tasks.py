@@ -350,12 +350,12 @@ async def get_task_summary(user_id: str):
 
     total_today = await db.tasks.count_documents({
         "user_id": user_id,
+        "status": {"$nin": ["dismissed", "completed"]},
         "$or": [
-            {"due_date": {"$lte": today_end}},
+            {"due_date": {"$gte": today_start, "$lte": today_end}},
             {"due_date": {"$exists": False}},
             {"due_date": None},
         ],
-        "status": {"$nin": ["dismissed"]},
     })
 
     completed_today = await db.tasks.count_documents({
@@ -459,7 +459,7 @@ async def get_task_summary(user_id: str):
         "completed_today": combined_completed,
         "pending_today": pending,
         "overdue": overdue,
-        "progress_pct": round((combined_completed / max(combined_total, 1)) * 100),
+        "progress_pct": round((combined_completed / max(combined_total, 1)) * 100) if combined_total > 0 else 0,
         "activity": {
             "calls": activity.get("call_placed", 0) + activity.get("call_received", 0),
             "texts": texts_sent,

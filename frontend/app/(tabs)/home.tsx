@@ -693,9 +693,15 @@ export default function HomeScreen() {
             <View style={{ backgroundColor: colors.border, borderRadius: 5, height: 6, overflow: 'hidden', marginBottom: 6 }}>
               <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${taskSummary?.progress_pct || 0}%` }} />
             </View>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 12 }}>
-              {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} touchpoints completed
+            <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }}>
+              {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} today's touchpoints
             </Text>
+            {(taskSummary?.overdue || 0) > 0 && (
+              <Text style={{ fontSize: 11, color: '#FF9500', textAlign: 'center', marginBottom: 12, fontWeight: '600' }}>
+                + {taskSummary.overdue} overdue from past days
+              </Text>
+            )}
+            {(taskSummary?.overdue || 0) === 0 && <View style={{ marginBottom: 12 }} />}
 
             {/* Top 3 task previews */}
             {pendingTasks.slice(0, 3).map((task, idx) => {
