@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### SEO Share Bug Fix (Mar 21, 2026) -- LATEST
+### Why i'M On Social Page Fix (Mar 21, 2026) -- LATEST
+- **Bug Fix:** Page had no site navigation or footer — was a dead-end for visitors
+- **Fix:** Added full marketing site nav (Products/Solutions/Resources/Pricing dropdowns), footer, and demo modal to match all other marketing pages
+- **Updated:** All 3 copies synced (frontend/public, marketing/build, marketing/build-preview)
+
+### SEO Share Bug Fix (Mar 21, 2026)
 - **Bug Fix:** SEO Health Score share text said "Check out my digital card:" but didn't include the actual card URL
 - **Fix:** Appended the user's digital card URL (`/card/{userId}`) to the `shareText` prop in `seo-health.tsx`
 - **Impact:** All share channels (SMS, email, link share) now include the full card URL in the message body
