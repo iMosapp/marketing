@@ -134,14 +134,29 @@
       sessionId = data.session_id;
       sessionStorage.setItem(SESSION_KEY, sessionId);
       addMsg(data.greeting, 'jessi');
+      return true;
     } catch (e) {
-      addMsg("Hi! I'm Jessi. Having a small connection hiccup — try again in a moment!", 'jessi');
+      addMsg("Hi! I'm Jessi — I'll be right with you. Go ahead and type your question!", 'jessi');
+      return false;
     }
   }
 
   async function sendMessage() {
     var text = input.value.trim();
-    if (!text || sending || !sessionId) return;
+    if (!text || sending) return;
+
+    // Retry session if it wasn't established yet
+    if (!sessionId) {
+      sending = true;
+      sendBtn.disabled = true;
+      var ok = await startSession();
+      if (!ok) {
+        sending = false;
+        sendBtn.disabled = false;
+        return;
+      }
+      // Clear the previous fallback greeting if session now works
+    }
 
     sending = true;
     sendBtn.disabled = true;
