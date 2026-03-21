@@ -37,7 +37,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Inbox Multi-Channel Composer & Navigation Fix (Mar 21, 2026) -- LATEST
+### Industry Pitch Pages (Mar 21, 2026) -- LATEST
+- **Feature:** Created 8 industry-specific pitch landing pages with unique messaging tailored to each vertical's pain points, value props, stats, and objection handling
+- **Industries:** Real Estate, Salons & Spas, Restaurants & Hospitality, Powersports & Recreation, Home Services, Fitness & Personal Training, Insurance & Financial, Medical & Dental
+- **Directory:** Internal directory page at `/pitch/` with all URLs, copy-all button, and noindex meta tag
+- **Testing:** 100% pass rate - all 9 pages + shared CSS verified
+
+### Inbox Multi-Channel Composer & Navigation Fix (Mar 21, 2026)
 - **Feature:** Integrated `ChannelPicker` into `/app/frontend/app/thread/[id].tsx` so inbox composer shows all org-enabled messaging channels (SMS, WhatsApp, Messenger, Telegram, LinkedIn, Clipboard) instead of just SMS/Email toggle
 - **Fix:** Changed `router.push()` to `router.replace()` in `create-card.tsx` (navigateToThread) and `quick-send/[action].tsx` to prevent deep navigation stack buildup (4-swipe-back problem)
 - **Testing:** 19/19 backend, 100% frontend pass
