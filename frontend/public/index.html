@@ -1,51 +1,665 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="refresh" content="0;url=/auth/login" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="On Social" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="description" content="i'M On Social — Build authentic customer relationships at scale." />
-    <meta property="og:title" content="i'M On Social — Relationship Management" />
-    <meta property="og:description" content="Build authentic customer relationships at scale." />
-    <meta property="og:image" content="/logo512.png" />
-    <meta property="og:type" content="website" />
-    <title>i'M On Social</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
-    <style>
-      * { box-sizing: border-box; }
-      html, body, #root { 
-        margin: 0; 
-        padding: 0; 
-        height: 100%; 
-        width: 100%;
-        background-color: #000;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      }
-    </style>
-  </head>
-  <body>
-    <noscript>Redirecting to login...</noscript>
-    <div id="root"></div>
-    <script>
-      // Register service worker for PWA install
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      }
-      // Fallback redirect if meta refresh doesn't work
-      window.location.replace('/auth/login');
-    </script>
-  </body>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>i'M On Social The Relationship Engine for Sales Professionals</title>
+  <meta name="description" content="Digital cards. Personal reviews. Automated outreach. The backend work that makes salespeople unforgettable."/>
+  <meta property="og:title" content="i'M On Social The Relationship Engine for Sales"/>
+  <meta property="og:description" content="Digital cards. Personal reviews. Automated outreach. The backend work that makes salespeople unforgettable."/>
+  <meta property="og:type" content="website"/>
+  <link rel="icon" href="favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --blue:#007AFF;--blue-dark:#0059CC;--green:#34C759;--red:#FF3B30;
+      --yellow:#FFD60A;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;
+      --text:#111;--text-2:#555;--text-3:#888;
+      --bg:#FFF;--bg-2:#F8F9FB;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+    /* NAV */
+    nav{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
+    nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
+    .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+    .logo{display:flex;align-items:center;text-decoration:none}
+    .logo img{height:72px;width:auto}
+    .nav-links{display:flex;align-items:center;gap:2px}
+    .nav-item{position:relative}
+    .nav-item>a,.nav-trigger{font-size:14px;font-weight:500;color:var(--text-2);text-decoration:none;padding:8px 16px;border-radius:10px;display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:inherit;transition:all .2s}
+    .nav-item>a:hover,.nav-trigger:hover{color:var(--text);background:var(--bg-2)}
+    .nav-trigger .chev{font-size:10px;transition:transform .25s}
+    .nav-item:hover .chev{transform:rotate(180deg)}
+    .nav-dd{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);padding-top:10px;min-width:300px}
+    .nav-item:hover .nav-dd{display:block}
+    .nav-dd-inner{background:#FFF;border:1px solid var(--border-2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:10px}
+    .nav-dd-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);padding:10px 14px 6px}
+    .nav-dd-label:first-child{margin-top:0}
+    .dd-link{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:12px;text-decoration:none;color:var(--text);transition:background .15s}
+    .dd-link:hover{background:var(--bg-2)}
+    .dd-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+    .dd-txt strong{font-size:14px;font-weight:600;display:block}
+    .dd-txt span{font-size:12px;color:var(--text-3);line-height:1.3}
+    .nav-cta{display:flex;align-items:center;gap:10px}
+    .btn-sign{padding:10px 20px;border-radius:980px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;transition:background .2s}
+    .btn-sign:hover{background:var(--bg-2)}
+    .btn-demo{background:var(--blue);padding:10px 24px;border-radius:980px;font-size:14px;font-weight:600;color:#FFF;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}
+    .btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+    .hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
+    .mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px;max-height:80vh;overflow-y:auto}
+    .mob-menu a{display:block;padding:14px 0;font-size:16px;font-weight:500;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-menu a:last-of-type{border-bottom:none}
+    .mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
+    .mob-group{border-bottom:1px solid var(--border)}
+    .mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}
+    .mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}
+    .mob-group.open .mob-chev{transform:rotate(180deg)}
+    .mob-sub{display:none;padding:0 0 12px 16px}
+    .mob-group.open .mob-sub{display:block}
+    .mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none;border-bottom:none}
+    .mob-sub a:hover{color:var(--blue)}
+    .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
+    .mob-direct:hover{color:var(--blue)}
+    @media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
+
+    /* HERO */
+    .hero{padding:160px 24px 100px;text-align:center;max-width:820px;margin:0 auto}
+    .hero-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(0,122,255,.06);border:1px solid rgba(0,122,255,.1);border-radius:980px;padding:7px 18px;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:28px}
+    .hero h1{font-size:64px;font-weight:900;line-height:1.06;letter-spacing:-.035em;margin-bottom:20px}
+    .hero p{font-size:20px;color:var(--text-2);line-height:1.6;max-width:600px;margin:0 auto 40px}
+    .hero-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+    .btn-lg{padding:16px 36px;border-radius:980px;font-size:16px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:all .25s;border:none;cursor:pointer}
+    .btn-lg.primary{background:var(--blue);color:#FFF;box-shadow:0 4px 20px rgba(0,122,255,.3)}
+    .btn-lg.primary:hover{background:var(--blue-dark);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,122,255,.35)}
+    .btn-lg.ghost{color:var(--text);border:2px solid var(--border-2);background:transparent}
+    .btn-lg.ghost:hover{border-color:var(--text);background:var(--bg-2)}
+    @media(max-width:768px){.hero{padding:120px 24px 64px}.hero h1{font-size:38px}.hero p{font-size:17px}.hero-btns{flex-direction:column;align-items:center}}
+
+    /* SECTION HELPERS */
+    .sec{padding:100px 24px}
+    .sec.alt{background:var(--bg-2)}
+    .sec-head{text-align:center;max-width:680px;margin:0 auto 60px}
+    .sec-tag{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+    .sec-head h2{font-size:44px;font-weight:900;line-height:1.1;letter-spacing:-.03em;margin-bottom:14px}
+    .sec-head p{font-size:18px;color:var(--text-2);line-height:1.6}
+    @media(max-width:768px){.sec{padding:72px 24px}.sec-head h2{font-size:30px}.sec-head p{font-size:16px}}
+
+    /* PRODUCT GRID - links to real pages */
+    .prod-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .prod-card{background:#FFF;border:1px solid var(--border-2);border-radius:20px;padding:32px 28px;text-decoration:none;color:var(--text);transition:all .25s;display:block}
+    .sec.alt .prod-card{background:var(--bg)}
+    .prod-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.08);border-color:var(--blue)}
+    .prod-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px}
+    .prod-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+    .prod-card p{font-size:15px;color:var(--text-2);line-height:1.55;margin-bottom:16px}
+    .prod-link{font-size:14px;font-weight:600;color:var(--blue);display:inline-flex;align-items:center;gap:6px}
+    .prod-link i{font-size:11px;transition:transform .2s}
+    .prod-card:hover .prod-link i{transform:translateX(4px)}
+    @media(max-width:768px){.prod-grid{grid-template-columns:1fr;gap:14px}}
+
+    /* BIG FEATURE ROWS - link to pages */
+    .feat{max-width:1100px;margin:0 auto;padding:80px 24px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+    .feat.rev{direction:rtl}.feat.rev>*{direction:ltr}
+    .feat-visual{background:var(--bg-2);border:1px solid var(--border);border-radius:24px;padding:48px;text-align:center;position:relative}
+    .feat-visual .big-ico{font-size:80px;opacity:.9}
+    .feat-tag{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+    .feat h3{font-size:34px;font-weight:800;line-height:1.2;letter-spacing:-.02em;margin-bottom:14px}
+    .feat p{font-size:17px;color:var(--text-2);line-height:1.65;margin-bottom:24px}
+    .feat-checks{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+    .feat-chk{display:flex;align-items:center;gap:12px}
+    .feat-chk-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+    .feat-chk span{font-size:15px;font-weight:500}
+    .feat-cta{font-size:15px;font-weight:600;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:gap .2s}
+    .feat-cta:hover{gap:12px}
+    @media(max-width:768px){.feat,.feat.rev{grid-template-columns:1fr;gap:32px;padding:48px 24px;direction:ltr}.feat h3{font-size:26px}.feat-visual{padding:32px}}
+
+    /* STATS */
+    .stats{background:#0A0A0F;padding:80px 24px}
+    .stats-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:48px;text-align:center}
+    .stat-num{font-size:52px;font-weight:900;color:#FFF;letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+    .stat-desc{font-size:14px;color:rgba(255,255,255,.45);font-weight:500;line-height:1.4}
+    @media(max-width:768px){.stats-inner{grid-template-columns:1fr 1fr;gap:32px}.stat-num{font-size:40px}}
+
+    /* INDUSTRY ROW */
+    .ind-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .ind-card{background:#FFF;border:1px solid var(--border-2);border-radius:20px;padding:28px 24px;text-align:center;text-decoration:none;color:var(--text);transition:all .25s}
+    .sec.alt .ind-card{background:var(--bg)}
+    .ind-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:var(--blue)}
+    .ind-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px}
+    .ind-card h4{font-size:16px;font-weight:700;margin-bottom:6px}
+    .ind-card p{font-size:13px;color:var(--text-2);line-height:1.5}
+    @media(max-width:768px){.ind-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:480px){.ind-grid{grid-template-columns:1fr}}
+
+    /* HOW IT WORKS */
+    .steps{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+    .step{}
+    .step-num{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#FFF;margin-bottom:18px}
+    .step h4{font-size:17px;font-weight:700;margin-bottom:6px}
+    .step p{font-size:14px;color:var(--text-2);line-height:1.6}
+    @media(max-width:768px){.steps{grid-template-columns:1fr 1fr;gap:36px}}
+    @media(max-width:480px){.steps{grid-template-columns:1fr}}
+
+    /* BOTTOM CTA */
+    .cta-bottom{padding:120px 24px;text-align:center;background:#0A0A0F;position:relative;overflow:hidden}
+    .cta-bottom::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(0,122,255,.08) 0%,transparent 60%);pointer-events:none}
+    .cta-bottom h2{font-size:52px;font-weight:900;line-height:1.1;letter-spacing:-.03em;color:#FFF;margin-bottom:16px;max-width:650px;margin-left:auto;margin-right:auto;position:relative}
+    .cta-bottom p{font-size:18px;color:rgba(255,255,255,.45);line-height:1.6;max-width:500px;margin:0 auto 36px;position:relative}
+    .cta-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;position:relative}
+    .btn-w{background:#FFF;padding:16px 36px;border-radius:980px;font-size:16px;font-weight:700;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:all .25s}
+    .btn-w:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,255,255,.12)}
+    .btn-gw{padding:16px 36px;border-radius:980px;font-size:16px;font-weight:600;color:rgba(255,255,255,.65);text-decoration:none;border:2px solid rgba(255,255,255,.12);display:inline-flex;align-items:center;gap:10px;transition:all .25s}
+    .btn-gw:hover{border-color:rgba(255,255,255,.35);color:#FFF}
+    @media(max-width:768px){.cta-bottom{padding:80px 24px}.cta-bottom h2{font-size:34px}.cta-btns{flex-direction:column;align-items:center}}
+
+    /* FOOTER */
+    footer{border-top:1px solid var(--border);background:var(--bg-2)}
+    .ft-inner{max-width:1200px;margin:0 auto;padding:56px 24px 40px;display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:56px}
+    .ft-logo{margin-bottom:12px}.ft-logo img{height:44px;width:auto}
+    .ft-tag{font-size:14px;color:var(--text-3);line-height:1.5;margin-bottom:18px}
+    .ft-social{display:flex;gap:10px}
+    .ft-social a{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:15px;text-decoration:none;transition:all .2s}
+    .ft-social a:hover{border-color:var(--blue);color:var(--blue)}
+    .ft-col{display:flex;flex-direction:column;gap:11px}
+    .ft-col-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin-bottom:4px}
+    .ft-col a{font-size:14px;color:var(--text-3);text-decoration:none;transition:color .2s}
+    .ft-col a:hover{color:var(--blue)}
+    .ft-bottom{border-top:1px solid var(--border);padding:20px 24px;text-align:center}
+    .ft-copy{font-size:12px;color:var(--text-3)}
+    @media(max-width:768px){.ft-inner{grid-template-columns:1fr 1fr;gap:32px}.ft-brand{grid-column:span 2}}
+    @media(max-width:480px){.ft-inner{grid-template-columns:1fr}.ft-brand{grid-column:span 1}}
+
+    /* DEMO MODAL */
+    .demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+    .demo-overlay.active{display:flex}
+    .demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+    .demo-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .demo-close:hover{background:var(--border)}
+    .dm-field{margin-bottom:14px}
+    .dm-field label{display:block;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+    .dm-field input,.dm-field select,.dm-field textarea{width:100%;padding:12px 14px;background:#FFF;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+    .dm-field input:focus,.dm-field select:focus{border-color:var(--blue)}
+    .dm-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+    .dm-submit{width:100%;padding:14px;background:var(--blue);color:#FFF;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}
+    .dm-submit:hover{background:var(--blue-dark);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+    .dm-submit:disabled{opacity:.5;cursor:not-allowed}
+    @media(max-width:768px){.demo-modal{padding:28px 20px;border-radius:20px}}
+
+    /* REVEAL ANIM */
+    .rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+    .rv.vis{opacity:1;transform:translateY(0)}
+    .rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="https://www.imonsocial.com" class="logo"><img src="/marketing-logo.png" alt="i'M On Social"/></a>
+    <div class="nav-links">
+      <!-- Products -->
+      <div class="nav-item">
+        <button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="nav-dd" style="min-width:520px"><div class="nav-dd-inner">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          <div>
+          <div class="nav-dd-label">Your Digital Presence</div>
+          <a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Business Cards</strong><span>Shareable, trackable cards</span></div></a>
+          <a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-user-astronaut" style="color:#34C759"></i></div><div class="dd-txt"><strong>Personal Landing Pages</strong><span>Your profile, links & reviews</span></div></a>
+          <a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a>
+          <a class="dd-link" href="/store-reviews/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-store" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Store Reviews</strong><span>Google-ready review pages</span></div></a>
+          <div class="nav-dd-label">Engagement</div>
+          <a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a>
+          </div>
+          <div>
+          <div class="nav-dd-label" style="visibility:hidden">-</div>
+          <a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a>
+          <a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, WhatsApp, email in one place</span></div></a>
+          <a class="dd-link" href="/features/#voice"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-microphone" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Voice Notes</strong><span>AI-powered voice memos & intel</span></div></a>
+          <div class="nav-dd-label">Visibility & Intelligence</div>
+          <a class="dd-link" href="/seo/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-magnifying-glass-chart" style="color:#34C759"></i></div><div class="dd-txt"><strong>SEO & AEO</strong><span>Be found on Google & AI search</span></div></a>
+          <a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI relationship insights</span></div></a>
+          <a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a>
+          </div>
+          </div>
+        </div></div>
+      </div>
+      <!-- Solutions -->
+      <div class="nav-item">
+        <button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="nav-dd" style="min-width:580px"><div class="nav-dd-inner">
+          <div class="nav-dd-label">By Role</div>
+          <a class="dd-link" href="/organizations/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:var(--blue)"></i></div><div class="dd-txt"><strong>For Organizations</strong><span>Manage teams, stores & reputation</span></div></a>
+          <a class="dd-link" href="/individuals/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div><div class="dd-txt"><strong>For Individuals</strong><span>Own your personal brand</span></div></a>
+          <div class="nav-dd-label">By Industry</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 4px">
+          <a class="dd-link" href="/dealers/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a>
+          <a class="dd-link" href="/real-estate/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-house-chimney" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Real Estate</strong><span>Agents & brokerages</span></div></a>
+          <a class="dd-link" href="/powersports/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-motorcycle" style="color:#34C759"></i></div><div class="dd-txt"><strong>Powersports</strong><span>RV, motorcycle & ATV dealers</span></div></a>
+          <a class="dd-link" href="/restaurants/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-utensils" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Restaurants</strong><span>Guest relationships & reviews</span></div></a>
+          <a class="dd-link" href="/salons/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-solid fa-scissors" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Salons & Spas</strong><span>Client retention & rebooking</span></div></a>
+          <a class="dd-link" href="/home-services/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-house-circle-check" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Home Services</strong><span>Roofing, solar, HVAC & more</span></div></a>
+          <a class="dd-link" href="/fitness/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-dumbbell" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Fitness</strong><span>Gyms, studios & trainers</span></div></a>
+          <a class="dd-link" href="/insurance/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-solid fa-shield-halved" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Insurance & Financial</strong><span>Agents & advisors</span></div></a>
+          <a class="dd-link" href="/medical/"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-tooth" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Medical & Dental</strong><span>Patient retention & reviews</span></div></a>
+          <a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-briefcase" style="color:#C9A962"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a>
+          </div>
+        </div></div>
+      </div>
+      <!-- Resources -->
+      <div class="nav-item">
+        <button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="nav-dd"><div class="nav-dd-inner">
+          <a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:var(--blue)"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a>
+          <a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:var(--green)"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a>
+          <a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:var(--orange)"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a>
+        </div></div>
+      </div>
+      <div class="nav-item"><a href="/pricing/">Pricing</a></div>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="btn-demo" onclick="openDemoModal(event,'homepage_nav')">Book a Demo</a>
+      <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
+      
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+  </div>
+  <div class="mob-menu" id="mob">
+        <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/digital-card/">Digital Business Cards</a>
+        <a href="/showcase/">Personal Landing Pages</a>
+        <a href="/reviews/">Personal Reviews</a>
+        <a href="/store-reviews/">Store Reviews</a>
+        <a href="/congrats-template/">Congrats Cards</a>
+        <a href="/date-triggers/">Automated Campaigns</a>
+        <a href="/inbox/">Inbox & Messaging</a>
+        <a href="/features/#voice">Voice Notes</a>
+        <a href="/seo/">SEO & AEO</a>
+        <a href="/jessi/">Jessi AI</a>
+        <a href="/leaderboard/">Leaderboards</a>
+      </div>
+    </div>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Solutions <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/organizations/">For Organizations</a>
+        <a href="/individuals/">For Individuals</a>
+        <a href="/dealers/">Automotive</a>
+        <a href="/real-estate/">Real Estate</a>
+        <a href="/powersports/">Powersports</a>
+        <a href="/restaurants/">Restaurants</a>
+        <a href="/salons/">Salons & Spas</a>
+        <a href="/home-services/">Home Services</a>
+        <a href="/fitness/">Fitness</a>
+        <a href="/insurance/">Insurance & Financial</a>
+        <a href="/medical/">Medical & Dental</a>
+        <a href="/hub/">Sales Teams</a>
+        <a href="/features/">All Features</a>
+      </div>
+    </div>
+    <div class="mob-group">
+      <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Resources <i class="fa-solid fa-chevron-down mob-chev"></i></button>
+      <div class="mob-sub">
+        <a href="/training/">Training Hub</a>
+        <a href="/help/">Help Center</a>
+        <a href="/why-imonsocial/">Why i'M On Social</a>
+      </div>
+    </div>
+    <a href="/pricing/" class="mob-direct">Pricing</a>
+    <a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
+    <a href="#" class="mob-cta" onclick="openDemoModal(event,'mob_cta')">Book a Demo</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero rv">
+  <div class="hero-tag"><i class="fa-solid fa-bolt" style="color:var(--yellow)"></i> Built for sales professionals</div>
+  <h1>The backend work that makes you unforgettable.</h1>
+  <p>Every customer you've ever helped is a referral waiting to happen. They just need a reason to remember your name. We give them that reason , on autopilot.</p>
+</section>
+
+<!-- WHAT WE DO - Product Grid -->
+<section class="sec alt" id="features">
+  <div class="sec-head rv">
+    <div class="sec-tag" style="color:var(--blue)">The Platform</div>
+    <h2>Everything a salesperson needs to never be forgotten.</h2>
+    <p>One platform. Your identity, your reputation, your outreach, your analytics. All connected. All yours.</p>
+  </div>
+  <div class="prod-grid">
+    <a href="/digital-card/" class="prod-card rv rv-1">
+      <div class="prod-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
+      <h3>Digital Business Cards</h3>
+      <p>Shareable via text, email, or QR. Tracks every view. Links to your reviews, socials, and contact info. Paper is dead.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/reviews/" class="prod-card rv rv-2">
+      <div class="prod-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div>
+      <h3>Personal Reviews</h3>
+      <p>Reviews that belong to you, not your company. Switch jobs, switch industries , your 5 star reputation follows you.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/showcase/" class="prod-card rv rv-3">
+      <div class="prod-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:var(--green)"></i></div>
+      <h3>Link Pages & Showcase</h3>
+      <p>One link for everything. Instagram, TikTok, Google reviews, your digital card, all on your own personal My Links page.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/congrats-template/" class="prod-card rv rv-1">
+      <div class="prod-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
+      <h3>Congrats Cards</h3>
+      <p>Every sale triggers a branded card to your customer. It links to your review page, socials, and digital card , all in one tap.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/date-triggers/" class="prod-card rv rv-2">
+      <div class="prod-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div>
+      <h3>Automated Campaigns</h3>
+      <p>Birthdays. Anniversaries. Sold date follow ups. Holiday greetings. All automated, all personal. Your customers think you remembered.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/inbox/" class="prod-card rv rv-3">
+      <div class="prod-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div>
+      <h3>Inbox & Messaging</h3>
+      <p>SMS, email, all in one thread. Track opens, clicks, and replies. Know exactly when to follow up and what to say.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+  </div>
+</section>
+
+<!-- BIG FEATURE 1: Portable Reputation -->
+<div class="feat rv">
+  <div class="feat-visual">
+    <div class="big-ico"><i class="fa-solid fa-star" style="color:var(--yellow)"></i></div>
+  </div>
+  <div>
+    <div class="feat-tag" style="color:#D4AD00">Portable Reputation</div>
+    <h3>Your reviews should follow you for life.</h3>
+    <p>Every salesperson deserves credit for the relationships they build. Personal reviews are tied to the person, portable across jobs and companies. And every review request also links to the store's Google, Yelp, and social pages, so the business grows its reputation too.</p>
+    <div class="feat-checks">
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(255,214,10,.1)"><i class="fa-solid fa-check" style="color:#D4AD00"></i></div><span>Personal reviews tied to each salesperson</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(255,214,10,.1)"><i class="fa-solid fa-check" style="color:#D4AD00"></i></div><span>Store review links included in every request</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(255,214,10,.1)"><i class="fa-solid fa-check" style="color:#D4AD00"></i></div><span>Stays with you if you switch companies</span></div>
+    </div>
+    <a href="/reviews/" class="feat-cta">See how reviews work <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+</div>
+
+<!-- BIG FEATURE 2: Automated Outreach -->
+<div class="feat rev rv">
+  <div class="feat-visual">
+    <div class="big-ico"><i class="fa-solid fa-bolt" style="color:var(--green)"></i></div>
+  </div>
+  <div>
+    <div class="feat-tag" style="color:var(--green)">Automated Outreach</div>
+    <h3>Your customers think you have a photographic memory.</h3>
+    <p>Birthday messages. Anniversary cards. Sold date follow ups. All sent automatically, all feeling personal. You get the credit. You didn't lift a finger.</p>
+    <div class="feat-checks">
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Date triggered campaigns on autopilot</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Congrats cards on every sale</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-check" style="color:var(--green)"></i></div><span>Pause or customize per contact</span></div>
+    </div>
+    <a href="/date-triggers/" class="feat-cta">See how automations work <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+</div>
+
+<!-- BIG FEATURE 3: Teams & Leaderboards -->
+<div class="feat rv">
+  <div class="feat-visual">
+    <div class="big-ico"><i class="fa-solid fa-trophy" style="color:var(--blue)"></i></div>
+  </div>
+  <div>
+    <div class="feat-tag" style="color:var(--blue)">Teams & Leaderboards</div>
+    <h3>See who's actually building relationships.</h3>
+    <p>Cards shared, reviews collected, engagement driven , all tracked. Store-level, org-level, and individual rankings that reward the salespeople who do the work.</p>
+    <div class="feat-checks">
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Multi store, multi team management</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Role based permissions</span></div>
+      <div class="feat-chk"><div class="feat-chk-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-check" style="color:var(--blue)"></i></div><span>Performance leaderboards</span></div>
+    </div>
+    <a href="/leaderboard/" class="feat-cta">See leaderboards <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+</div>
+
+<!-- STATS -->
+<section class="stats rv">
+  <div class="stats-inner">
+    <div><div class="stat-num">5min</div><div class="stat-desc">Setup to live. No training needed.</div></div>
+    <div><div class="stat-num">24/7</div><div class="stat-desc">Automated outreach working while you sleep.</div></div>
+    <div><div class="stat-num">100%</div><div class="stat-desc">Of your reviews stay with you. Forever.</div></div>
+    <div><div class="stat-num">1 tap</div><div class="stat-desc">Share your card, reviews, and socials.</div></div>
+  </div>
+</section>
+
+<!-- INDUSTRIES -->
+<section class="sec" id="industries">
+  <div class="sec-head rv">
+    <div class="sec-tag" style="color:var(--green)">Industries</div>
+    <h2>Built for every sales professional.</h2>
+    <p>Whether you sell cars, homes, insurance, or services , your relationships are your business.</p>
+  </div>
+  <div class="ind-grid">
+    <a href="/salespresentation/" class="ind-card rv rv-1">
+      <div class="ind-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-car" style="color:var(--blue)"></i></div>
+      <h4>Automotive</h4>
+      <p>Congrats cards on every sale. Reviews that follow you dealership to dealership.</p>
+    </a>
+    <a href="/hub/" class="ind-card rv rv-2">
+      <div class="ind-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-house" style="color:var(--green)"></i></div>
+      <h4>Real Estate</h4>
+      <p>Anniversary follow ups and referral requests on autopilot.</p>
+    </a>
+    <a href="/hub/" class="ind-card rv rv-3">
+      <div class="ind-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-shield-halved" style="color:var(--orange)"></i></div>
+      <h4>Insurance</h4>
+      <p>Renewal reminders and a review profile that builds trust before the first meeting.</p>
+    </a>
+    <a href="/hub/" class="ind-card rv">
+      <div class="ind-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-sun" style="color:var(--purple)"></i></div>
+      <h4>Home Services</h4>
+      <p>Digital cards replace paper. Automations bring repeat business.</p>
+    </a>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="sec alt" id="how">
+  <div class="sec-head rv">
+    <div class="sec-tag" style="color:var(--purple)">How It Works</div>
+    <h2>Live in five minutes. No IT needed.</h2>
+    <p>No complicated setup. No training required.</p>
+  </div>
+  <div class="steps">
+    <div class="step rv rv-1">
+      <div class="step-num" style="background:var(--blue)">1</div>
+      <h4>Create your profile</h4>
+      <p>Add your photo, bio, and links. Your digital card, review page, and link page go live instantly.</p>
+    </div>
+    <div class="step rv rv-2">
+      <div class="step-num" style="background:var(--green)">2</div>
+      <h4>Add your people</h4>
+      <p>Import contacts or add as you go. Tag them, track birthdays, anniversaries, and key dates.</p>
+    </div>
+    <div class="step rv rv-3">
+      <div class="step-num" style="background:var(--purple)">3</div>
+      <h4>Turn on autopilot</h4>
+      <p>Enable automated campaigns. Birthdays, follow ups, congrats cards send themselves.</p>
+    </div>
+    <div class="step rv">
+      <div class="step-num" style="background:var(--orange)">4</div>
+      <h4>Watch it grow</h4>
+      <p>Track every view, click, and review. Compete on leaderboards. Build a reputation that's yours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MORE PRODUCTS ROW -->
+<section class="sec">
+  <div class="sec-head rv">
+    <div class="sec-tag" style="color:var(--purple)">More Tools</div>
+    <h2>Go deeper.</h2>
+    <p>Every tool a salesperson needs, in one place.</p>
+  </div>
+  <div class="prod-grid">
+    <a href="/jessi/" class="prod-card rv rv-1">
+      <div class="prod-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple)"></i></div>
+      <h3>Jessi AI Assistant</h3>
+      <p>AI powered relationship intelligence. Ask Jessi anything about your contacts, your performance, or what to do next.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/organizations/" class="prod-card rv rv-2">
+      <div class="prod-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:var(--blue)"></i></div>
+      <h3>Organization Management</h3>
+      <p>Structure your entire team. Orgs, stores, managers, and individuals , all connected. Everyone's accountable.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+    <a href="/training/" class="prod-card rv rv-3">
+      <div class="prod-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-graduation-cap" style="color:var(--green)"></i></div>
+      <h3>Training Hub</h3>
+      <p>Courses, videos, and best practices to get the most out of every feature. Onboard your team in minutes.</p>
+      <span class="prod-link">Learn more <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+  </div>
+</section>
+
+<!-- BOTTOM CTA -->
+<section class="cta-bottom">
+  <h2>You just need help remembering who you know.</h2>
+  <p>Be the one they never forget. Start building your reputation today.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-inner">
+    <div class="ft-brand">
+      <div class="ft-logo"><img src="/marketing-logo.png" alt="i'M On Social"/></div>
+      <p class="ft-tag">The relationship engine for sales professionals. Build a reputation that's yours forever.</p>
+      <div class="ft-social">
+        <a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        <a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+      </div>
+    </div>
+    <div class="ft-col">
+      <div class="ft-col-t">Product</div>
+      <a href="/digital-card/">Digital Cards</a>
+      <a href="/reviews/">Personal Reviews</a>
+      <a href="/inbox/">Inbox</a>
+      <a href="/date-triggers/">Automations</a>
+      <a href="/leaderboard/">Leaderboards</a>
+      <a href="/jessi/">Jessi AI</a>
+    </div>
+    <div class="ft-col">
+      <div class="ft-col-t">Company</div>
+      <a href="/organizations/">For Teams</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+      <a href="/landing.html">Why i'M On Social</a>
+      <a href="mailto:forest@imonsocial.com">Contact</a>
+    </div>
+    <div class="ft-col">
+      <div class="ft-col-t">Get Started</div>
+      <a href="#" onclick="openDemoModal(event,'homepage_footer')">Schedule a Demo</a>
+      <a href="https://app.imonsocial.com">Sign In</a>
+      <a href="/training/">Training</a>
+      <a href="/help/">Help Center</a>
+      <a href="https://app.imonsocial.com/install.html">Install App</a>
+    </div>
+  </div>
+  <div class="ft-bottom">
+    <span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span>
+  </div>
+</footer>
+
+<!-- DEMO MODAL -->
+<div class="demo-overlay" id="demoModal">
+  <div class="demo-modal">
+    <button class="demo-close" onclick="closeDemoModal()">&times;</button>
+    <div id="demoFormWrap">
+      <h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Book a Demo</h2>
+      <p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how i'M On Social can transform your business.</p>
+      <form onsubmit="submitDemoForm(event)">
+        <div class="dm-field">
+          <label>Full Name *</label>
+          <input type="text" id="dm-name" placeholder="John Smith" required/>
+        </div>
+        <div class="dm-field">
+          <label>Email *</label>
+          <input type="email" id="dm-email" placeholder="john@company.com" required/>
+        </div>
+        <div class="dm-field">
+          <label>Phone</label>
+          <input type="tel" id="dm-phone" placeholder="(555) 123-4567"/>
+        </div>
+        <div class="dm-field">
+          <label>Business Type</label>
+          <select id="dm-type">
+            <option value="">Select your industry...</option>
+            <option value="car_dealer">Car Dealership</option>
+            <option value="real_estate">Real Estate</option>
+            <option value="small_business">Small Business / Retail</option>
+            <option value="hospitality">Hospitality / Food & Beverage</option>
+            <option value="sales_team">Sales Team</option>
+            <option value="events">Events & Entertainment</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="dm-field">
+          <label>Company</label>
+          <input type="text" id="dm-company" placeholder="Your business name"/>
+        </div>
+        <button type="submit" class="dm-submit" id="dmSubmitBtn">Book My Demo</button>
+      </form>
+    </div>
+    <div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0">
+      <div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div>
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">You're In!</h3>
+      <p style="font-size:14px;color:var(--text-3)">We'll reach out within 24 hours to schedule your personalized demo. Keep an eye on your inbox.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')})},{threshold:.08,rootMargin:'0px 0px -32px 0px'});
+document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+
+/* Demo Modal */
+let _demoSource='';
+function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}
+function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}
+document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
+
+async function submitDemoForm(e){
+  e.preventDefault();
+  var btn=document.getElementById('dmSubmitBtn');
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    var res=await fetch('https://app.imonsocial.com/api/demo-requests',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:document.getElementById('dm-name').value,
+        email:document.getElementById('dm-email').value,
+        phone:document.getElementById('dm-phone').value,
+        business_type:document.getElementById('dm-type').value,
+        company:document.getElementById('dm-company').value,
+        lead_source:_demoSource||'homepage'
+      })
+    });
+    if(res.ok){
+      document.getElementById('demoFormWrap').style.display='none';
+      document.getElementById('demoSuccessWrap').style.display='block';
+    }else{throw new Error()}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}
+}
+</script>
+</body>
 </html>
