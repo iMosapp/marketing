@@ -340,12 +340,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [loadingActivity, setLoadingActivity] = useState(false);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [taskSummary, setTaskSummary] = useState<any>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [seoScore, setSeoScore] = useState<any>(null);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Modals
   const [showContactAction, setShowContactAction] = useState(false);
@@ -372,24 +372,45 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?._id) { loadRecentActivity(); loadPendingTasks(); loadTaskSummary(); loadStoreSlug(); loadSeoScore(); }
+      if (user?._id) loadAllData();
     }, [user?._id])
   );
 
-  // Auto-refresh activity feed and tasks every 30 seconds
+  // Auto-refresh every 30 seconds (silent — no loading flash)
   useEffect(() => {
     if (!user?._id) return;
-    const interval = setInterval(() => { loadRecentActivity(); loadPendingTasks(); loadTaskSummary(); }, 30000);
+    const interval = setInterval(() => loadAllData(true), 30000);
     return () => clearInterval(interval);
   }, [user?._id]);
 
-  const loadStoreSlug = async () => {
-    if (user?.store_slug) { setStoreSlug(user.store_slug); return; }
-    if (user?.store_id) {
-      try {
-        const res = await api.get(`/admin/stores/${user.store_id}`, { headers: { 'X-User-ID': user._id } });
-        setStoreSlug(res.data?.slug || res.data?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-      } catch {}
+  const loadAllData = async (silent = false) => {
+    if (!user?._id) return;
+    if (!silent) setLoadingTasks(true);
+    try {
+      const [actRes, taskRes, summRes, seoRes] = await Promise.all([
+        api.get(`/activity/${user._id}?limit=10`).catch(() => ({ data: { activities: [] } })),
+        api.get(`/tasks/${user._id}?filter=today`).catch(() => ({ data: [] })),
+        api.get(`/tasks/${user._id}/summary`).catch(() => ({ data: null })),
+        api.get(`/seo/health-score/${user._id}`).catch(() => ({ data: null })),
+      ]);
+      setRecentActivity(actRes.data.activities || []);
+      const tasks = Array.isArray(taskRes.data) ? taskRes.data : [];
+      setPendingTasks(tasks.sort((a: any, b: any) => (a.priority_order || 3) - (b.priority_order || 3) || new Date(a.due_date).getTime() - new Date(b.due_date).getTime()));
+      setTaskSummary(summRes.data);
+      setSeoScore(seoRes.data);
+      // Load store slug (sync, not parallel — depends on user data)
+      if (!storeSlug) {
+        if (user?.store_slug) { setStoreSlug(user.store_slug); }
+        else if (user?.store_id) {
+          try {
+            const sRes = await api.get(`/admin/stores/${user.store_id}`, { headers: { 'X-User-ID': user._id } });
+            setStoreSlug(sRes.data?.slug || sRes.data?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+          } catch {}
+        }
+      }
+    } finally {
+      if (!silent) setLoadingTasks(false);
+      setInitialLoaded(true);
     }
   };
 
@@ -414,39 +435,6 @@ export default function HomeScreen() {
     const timer = setInterval(() => setTickRefresh(t => t + 1), 60000);
     return () => clearInterval(timer);
   }, []);
-
-  const loadRecentActivity = async () => {
-    if (!user?._id) return;
-    try { setLoadingActivity(true); const res = await api.get(`/activity/${user._id}?limit=10`); setRecentActivity(res.data.activities || []); } catch {} finally { setLoadingActivity(false); }
-  };
-
-  const loadPendingTasks = async () => {
-    if (!user?._id) return;
-    try {
-      setLoadingTasks(true);
-      const res = await api.get(`/tasks/${user._id}?filter=today`);
-      const tasks = Array.isArray(res.data) ? res.data : [];
-      // Sort by priority_order ascending, then due_date
-      const sorted = tasks.sort((a: any, b: any) => (a.priority_order || 3) - (b.priority_order || 3) || new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-      setPendingTasks(sorted);
-    } catch {} finally { setLoadingTasks(false); }
-  };
-
-  const loadTaskSummary = async () => {
-    if (!user?._id) return;
-    try {
-      const res = await api.get(`/tasks/${user._id}/summary`);
-      setTaskSummary(res.data);
-    } catch {}
-  };
-
-  const loadSeoScore = async () => {
-    if (!user?._id) return;
-    try {
-      const res = await api.get(`/seo/health-score/${user._id}`);
-      setSeoScore(res.data);
-    } catch {}
-  };
 
   const completeTask = async (taskId: string) => {
     if (!user?._id) return;
@@ -635,6 +623,12 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {!initialLoaded && loadingTasks ? (
+          <View style={{ flex: 1, paddingTop: 60, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.accent} />
+          </View>
+        ) : (
+        <>
         <View style={styles.tilesGrid} data-testid="home-tiles-grid">
           {TILES.map((tile) => (
             <TouchableOpacity key={tile.key} style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={tile.onPress} activeOpacity={0.7} data-testid={`home-tile-${tile.key}`}>
@@ -755,6 +749,8 @@ export default function HomeScreen() {
 
           {/* Activity Feed tile */}
         </View>
+        </>
+        )}
       </ScrollView>
 
       {/* Universal Share Modal  - used by Share My Card, Review Link, Showcase */}
