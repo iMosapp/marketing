@@ -37,7 +37,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Why i'M On Social Page Fix (Mar 21, 2026) -- LATEST
+### Automotive Page Redesign (Mar 21, 2026) -- LATEST
+- **Redesign:** Rebuilt `/dealers/` page from custom one-off design to use shared `pitch.css` industry template
+- **Now matches:** powersports, real estate, salons, restaurants, and all other industry pages
+- **Sections:** Dark hero, problem, stat bar, before/after flip, value cards, flow timeline, sales team grid, objections, dark closer CTA
+
+### Why i'M On Social Page Fix (Mar 21, 2026)
 - **Bug Fix:** Page had no site navigation or footer — was a dead-end for visitors
 - **Fix:** Added full marketing site nav (Products/Solutions/Resources/Pricing dropdowns), footer, and demo modal to match all other marketing pages
 - **Updated:** All 3 copies synced (frontend/public, marketing/build, marketing/build-preview)
