@@ -40,6 +40,35 @@ logger = logging.getLogger(__name__)
 
 APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
+
+@router.post("/emergency-reset")
+async def emergency_password_reset(data: dict):
+    """Emergency password reset - resets password to plaintext for locked-out admins.
+    Requires the secret key. Remove this endpoint after use."""
+    secret = data.get("secret", "")
+    email = (data.get("email") or "").strip().lower()
+    new_password = data.get("new_password", "Admin123!")
+    
+    if secret != "imos_emergency_2026":
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    
+    db = get_db()
+    user = await db.users.find_one({"email": {"$regex": f"^{email}$", "$options": "i"}})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Store as plaintext - will auto-upgrade to bcrypt on next login
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"password": new_password}}
+    )
+    
+    return {"success": True, "message": f"Password reset for {email}. Login with your new password."}
+
+
 # Resend configuration
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
@@ -268,7 +297,10 @@ async def login(credentials: dict):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if not verify_password(password, user.get('password', '')):
-        logger.warning(f"Login failed: wrong password for email '{email}'")
+        # Log details for debugging (no password values)
+        stored_pw = user.get('password', '')
+        is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
+        logger.warning(f"Login failed: wrong password for email '{email}' (stored_is_hashed={is_hashed}, bcrypt_available={BCRYPT_AVAILABLE})")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Auto-upgrade legacy plain-text passwords to bcrypt
