@@ -53,8 +53,8 @@ export default function Index() {
     if (!mounted || isLoading) return;
     
     if (!isAuthenticated) {
-      // Check if this is a Calendar Systems branded PWA
-      if (Platform.OS === 'web' && typeof localStorage !== 'undefined' && localStorage.getItem('pwa_brand') === 'calendar-systems') {
+      // Check if this is a Calendar Systems branded PWA (only when currently on a CS path)
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.pathname.includes('cs-login')) {
         setRedirectPath('/cs-login');
       } else {
         setRedirectPath('/auth/login');

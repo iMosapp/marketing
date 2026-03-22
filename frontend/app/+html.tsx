@@ -38,7 +38,7 @@ export default function Root({ children }: PropsWithChildren) {
             __html: `
               (function() {
                 var isCS = window.location.pathname.indexOf('cs-login') !== -1
-                  || localStorage.getItem('pwa_brand') === 'calendar-systems';
+                  || window.location.pathname.indexOf('/cs/') !== -1;
                 if (isCS) {
                   localStorage.setItem('pwa_brand', 'calendar-systems');
                   document.querySelector('meta[name="apple-mobile-web-app-title"]').content = 'Calendar Systems';
@@ -46,6 +46,8 @@ export default function Root({ children }: PropsWithChildren) {
                   document.querySelector('link[rel="manifest"]').href = '/cs-manifest.json';
                   document.querySelector('link[rel="apple-touch-icon"]').href = '/cs-apple-touch-icon.png';
                   document.title = 'Calendar Systems';
+                } else {
+                  localStorage.removeItem('pwa_brand');
                 }
               })();
             `,
