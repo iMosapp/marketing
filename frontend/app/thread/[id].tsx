@@ -461,6 +461,7 @@ export default function ThreadScreen() {
       }
     } catch (error) {
       // Contact photo not available from conversation - try loading from contact directly
+      // id is likely a contact_id, not a conversation_id
       try {
         const contactResponse = await api.get(`/contacts/${user?._id}/${id}`);
         if (contactResponse.data?.photo_thumbnail || contactResponse.data?.photo_url || contactResponse.data?.photo) {
@@ -470,6 +471,10 @@ export default function ThreadScreen() {
         const contactEmail = contactResponse.data?.email || contactResponse.data?.email_work;
         if (contactEmail && !savedContactEmail) {
           setSavedContactEmail(contactEmail);
+        }
+        // Since we loaded from contact directly, id IS the contact_id
+        if (!contactIdForNav) {
+          setContactIdForNav(id as string);
         }
       } catch (e) {
         console.log('Contact photo not available');
@@ -500,6 +505,11 @@ export default function ThreadScreen() {
         });
         const convId = response.data._id;
         setActualConversationId(convId);
+        
+        // id is confirmed as a contact_id — set it for intel loading
+        if (!contactIdForNav) {
+          setContactIdForNav(id as string);
+        }
         
         // Load messages for the conversation
         const msgs = await messagesAPI.getThread(convId);
